@@ -1,0 +1,360 @@
+{
+ "app": "navegador-ia-educacao",
+ "versao": 4,
+ "salvo": "2026-10-06T14:21:38.162Z",
+ "exemplo": "A",
+ "caso": {
+  "titulo": "Copiloto para professores",
+  "situacao": "proposta",
+  "problema": "Professores do ensino fundamental relatam gastar parte relevante da semana preparando atividades e materiais adaptados, tempo que deixa de ir para o acompanhamento dos estudantes. A secretaria não sabe quanto tempo é gasto, em que tarefas, nem se a carga é igual entre escolas.",
+  "resultado": "Reduzir o tempo de preparação de materiais sem perda de qualidade pedagógica, liberando tempo para acompanhamento individual.",
+  "populacao": "12.000 professores do ensino fundamental da rede",
+  "linhaBase": "parcial",
+  "alternativaSemIA": true,
+  "capacidade": [
+   "finalidade",
+   "risco",
+   "contas"
+  ],
+  "classes": [
+   "geracao"
+  ],
+  "autonomia": 2,
+  "usuarios": [
+   "professores"
+  ],
+  "afetados": [
+   "professores",
+   "criancas"
+  ],
+  "vulneraveis": false,
+  "idiomas": false,
+  "consequencias": [
+   "nenhuma"
+  ],
+  "dados": [
+   "pessoais_serv"
+  ],
+  "treino": "nao_sei",
+  "elegiveis": 12000,
+  "alcance": "",
+  "frequencia": "semanal",
+  "reversibilidade": "antes",
+  "verificabilidade": "parcial",
+  "contestacao": "na",
+  "cumulativo": "nao",
+  "arquitetura": "saas",
+  "pilotoGratuito": false,
+  "degrau": 2,
+  "ajustes": {}
+ },
+ "ctx": {
+  "nivel": "estado",
+  "nivelOutro": "",
+  "local": "Rede estadual (exemplo)",
+  "etapas": {
+   "fund2": {
+    "on": true,
+    "escolas": 420,
+    "alunos": 160000
+   },
+   "medio": {
+    "on": true,
+    "escolas": 380,
+    "alunos": 140000
+   }
+  },
+  "dominio": "qualificacao",
+  "comps": [
+   "alfabetizacao",
+   "matematica",
+   "ciencias"
+  ],
+  "compOutro": "",
+  "olhando": "Professores dedicam muitas horas ao planejamento de aulas e à adaptação de materiais."
+ },
+ "resp": {},
+ "respC": {},
+ "pular": {},
+ "piloto": {
+  "escolas": 20,
+  "participantes": 480,
+  "meses": 4
+ },
+ "feitos": {},
+ "checks": {},
+ "custo": {
+  "base": "caso",
+  "cfg": {
+   "nome": "Seu caso: Copiloto para professores",
+   "arq": "saas",
+   "risco": "moderado",
+   "unidade": "usuário",
+   "unidadePl": "usuários",
+   "demanda": {
+    "E": [
+     600,
+     12000,
+     12000,
+     12000
+    ],
+    "adocao": [
+     0.7,
+     0.35,
+     0.45,
+     0.5
+    ],
+    "s": 0,
+    "i": 0,
+    "meses": [
+     4,
+     12,
+     12,
+     12
+    ]
+   },
+   "saas": {
+    "ativo": true,
+    "qtd": [
+     600,
+     12000,
+     12000,
+     12000
+    ],
+    "preco": 9,
+    "reajuste": 0.04,
+    "mesesCobr": [
+     4,
+     12,
+     12,
+     12
+    ],
+    "fatorPreco": [
+     0,
+     1,
+     1,
+     1
+    ],
+    "precoNominal": 13,
+    "fatorNominal": 1.15
+   },
+   "implantacao": [
+    {
+     "cat": "Integração",
+     "nome": "Integração SSO, diretório e AVA (implantação)",
+     "valor": 40000,
+     "manutPct": 0.15,
+     "nomeManut": "Manutenção de integrações",
+     "s": "K3.1",
+     "sManut": "K6.1"
+    }
+   ],
+   "itens": [
+    {
+     "cat": "Privacidade e conformidade",
+     "s": "K3.3",
+     "nome": "Revisão jurídica e de proteção de dados",
+     "nat": "D",
+     "v": [
+      8000,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "cat": "Formação e mudança",
+     "s": "K4.3",
+     "nome": "Programa de formação (formadores, materiais)",
+     "nat": "D",
+     "v": [
+      20000,
+      12000,
+      12000,
+      12000
+     ]
+    },
+    {
+     "cat": "Avaliação",
+     "s": "K5.5",
+     "nome": "Avaliação externa na expansão",
+     "nat": "D",
+     "v": [
+      0,
+      25000,
+      0,
+      20000
+     ]
+    },
+    {
+     "cat": "Governança",
+     "s": "K5.4",
+     "nome": "Auditoria pontual (valor a estimar)",
+     "nat": "D",
+     "v": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "aEstimar": true
+    }
+   ],
+   "pessoas": [
+    {
+     "cat": "Pessoas",
+     "s": "K3.2",
+     "nome": "Configuração e políticas (TI)",
+     "nat": "C",
+     "partes": [
+      [
+       "eng_integracao",
+       [
+        0.25,
+        0,
+        0,
+        0
+       ]
+      ]
+     ]
+    },
+    {
+     "cat": "Pessoas",
+     "s": "K4.1",
+     "nome": "Gestão do produto",
+     "nat": "C",
+     "partes": [
+      [
+       "gestor_produto",
+       [
+        0.15,
+        0.3,
+        0.3,
+        0.3
+       ]
+      ]
+     ]
+    },
+    {
+     "cat": "Governança",
+     "s": "K5.1",
+     "nome": "Gestão contratual e de fornecedor",
+     "nat": "C",
+     "partes": [
+      [
+       "gestor_contrato",
+       [
+        0,
+        0.1,
+        0.1,
+        0.1
+       ]
+      ]
+     ]
+    },
+    {
+     "cat": "Governança",
+     "s": "K5.2",
+     "nome": "Privacidade, segurança e conformidade",
+     "nat": "C",
+     "partes": [
+      [
+       "analista_privacidade",
+       [
+        0.05,
+        0.1,
+        0.1,
+        0.1
+       ]
+      ]
+     ]
+    },
+    {
+     "cat": "Monitoramento",
+     "s": "K5.3",
+     "nome": "Monitoramento e revisão de saídas",
+     "nat": "C",
+     "partes": [
+      [
+       "especialista_pedagogico",
+       [
+        0,
+        0.2,
+        0.2,
+        0.2
+       ]
+      ]
+     ]
+    }
+   ],
+   "suporte": {
+    "ativo": true,
+    "nome": "Suporte aos usuários (escalonado)",
+    "sal": "suporte_n1",
+    "faixas": [
+     [
+      5000,
+      0.5
+     ]
+    ],
+    "acima": 1,
+    "anos": [
+     1,
+     2,
+     3
+    ]
+   },
+   "formacaoTempo": {
+    "ativo": true,
+    "nome": "Tempo docente em formação",
+    "modo": "ativos",
+    "horas": 3,
+    "custoHora": 12,
+    "rot": 0.1
+   },
+   "saida": {
+    "itens": [
+     {
+      "nome": "Exportação e transformação de materiais",
+      "valor": 8000
+     },
+     {
+      "nome": "Formadores para a nova solução",
+      "valor": 8000
+     },
+     {
+      "nome": "Desativação, exclusão e evidência",
+      "valor": 2000
+     }
+    ],
+    "reconstrucaoPct": 0.6,
+    "mesesParalelo": 1,
+    "horasRetreino": 2,
+    "custoHora": 12,
+    "internos": []
+   },
+   "origem": "A",
+   "__base": "caso",
+   "opc": {
+    "H": 3,
+    "correcoes": true,
+    "pi": 0.025,
+    "dep": 0,
+    "r": 0,
+    "sigmaCap": 1,
+    "doados": true,
+    "pSaida": 1,
+    "fechamento": "saida",
+    "vidaUtil": 5,
+    "contPct": 0.05,
+    "delta": 0
+   }
+  },
+  "editado": false
+ },
+ "moeda": {
+  "cod": "USD",
+  "taxa": ""
+ },
+ "lang": "pt"
+}

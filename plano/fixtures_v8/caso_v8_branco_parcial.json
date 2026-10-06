@@ -1,0 +1,103 @@
+{
+ "app": "navegador-ia-educacao",
+ "versao": 4,
+ "salvo": "2026-10-06T14:21:38.643Z",
+ "exemplo": "novo",
+ "caso": {
+  "titulo": "",
+  "situacao": "testar",
+  "problema": "",
+  "resultado": "",
+  "populacao": "",
+  "linhaBase": "nao",
+  "alternativaSemIA": false,
+  "capacidade": [],
+  "classes": [
+   "previsao",
+   "apoio"
+  ],
+  "autonomia": 2,
+  "usuarios": [],
+  "afetados": [],
+  "vulneraveis": false,
+  "idiomas": false,
+  "consequencias": [
+   "nenhuma"
+  ],
+  "dados": [
+   "nenhum"
+  ],
+  "treino": "nao_sei",
+  "elegiveis": 1000,
+  "alcance": "",
+  "frequencia": "semanal",
+  "reversibilidade": "tempo",
+  "verificabilidade": "parcial",
+  "contestacao": "na",
+  "cumulativo": "nao",
+  "arquitetura": "indefinida",
+  "pilotoGratuito": false,
+  "degrau": 2,
+  "ajustes": {}
+ },
+ "ctx": {
+  "nivel": "municipio",
+  "nivelOutro": "",
+  "local": "Cidade X",
+  "etapas": {
+   "fund1": {
+    "on": true,
+    "escolas": 30,
+    "alunos": 9000
+   },
+   "fund2": {
+    "on": true,
+    "escolas": 20,
+    "alunos": 7000,
+    "porAno": true,
+    "anos": [
+     1800,
+     1750,
+     1700,
+     1750
+    ]
+   }
+  },
+  "dominio": "",
+  "comps": [],
+  "compOutro": "",
+  "olhando": ""
+ },
+ "resp": {
+  "g-equipe": "sim",
+  "g-comite": "nao",
+  "g-orcamento": "parcial",
+  "g-avaliacao": "nao",
+  "g-politica": "na",
+  "r-sucesso": "sim",
+  "i-evidencia": "parcial",
+  "s-orcamento": "nao"
+ },
+ "respC": {
+  "situacao": true,
+  "classes": true
+ },
+ "pular": {},
+ "piloto": {
+  "escolas": 5,
+  "participantes": 300,
+  "meses": 3
+ },
+ "feitos": {},
+ "checks": {},
+ "custo": {
+  "base": "caso",
+  "cfg": null,
+  "editado": false
+ },
+ "moeda": {
+  "cod": "USD",
+  "taxa": ""
+ },
+ "lang": "pt"
+}

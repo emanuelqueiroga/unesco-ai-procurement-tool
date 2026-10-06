@@ -1,0 +1,92 @@
+{
+ "app": "navegador-ia-educacao",
+ "versao": 4,
+ "salvo": "2026-10-06T14:21:38.400Z",
+ "exemplo": "C",
+ "caso": {
+  "titulo": "Alerta precoce de abandono escolar",
+  "situacao": "nova",
+  "problema": "A taxa de abandono no ensino médio está concentrada em algumas escolas e grupos. As equipes identificam estudantes em risco tarde, quando as faltas já se acumularam, e não há critério comum para priorizar o apoio.",
+  "resultado": "Identificar mais cedo os estudantes que se beneficiariam de apoio e reduzir o abandono, sem gerar estigmatização.",
+  "populacao": "Estudantes do ensino médio da rede estadual",
+  "linhaBase": "sim",
+  "alternativaSemIA": false,
+  "capacidade": [
+   "finalidade",
+   "contas"
+  ],
+  "classes": [
+   "previsao",
+   "apoio"
+  ],
+  "autonomia": 3,
+  "usuarios": [
+   "gestores",
+   "professores"
+  ],
+  "afetados": [
+   "criancas",
+   "familias"
+  ],
+  "vulneraveis": true,
+  "idiomas": false,
+  "consequencias": [
+   "apoio_est",
+   "recursos"
+  ],
+  "dados": [
+   "pessoais_est",
+   "sensiveis"
+  ],
+  "treino": "nao_sei",
+  "elegiveis": 2500,
+  "alcance": 80000,
+  "frequencia": "semanal",
+  "reversibilidade": "lenta",
+  "verificabilidade": "parcial",
+  "contestacao": "nao",
+  "cumulativo": "sim",
+  "arquitetura": "indefinida",
+  "pilotoGratuito": false,
+  "degrau": 2,
+  "ajustes": {}
+ },
+ "ctx": {
+  "nivel": "estado",
+  "nivelOutro": "",
+  "local": "Rede estadual (exemplo)",
+  "etapas": {
+   "medio": {
+    "on": true,
+    "escolas": 300,
+    "alunos": 80000
+   }
+  },
+  "dominio": "qualificacao",
+  "comps": [
+   "outro"
+  ],
+  "compOutro": "Permanência e conclusão do ensino médio",
+  "olhando": "Alta taxa de abandono no 1º ano do ensino médio."
+ },
+ "resp": {},
+ "respC": {},
+ "pular": {},
+ "piloto": {
+  "escolas": 20,
+  "participantes": 100,
+  "meses": 4
+ },
+ "feitos": {},
+ "checks": {},
+ "custo": {
+  "base": "caso",
+  "cfg": null,
+  "editado": false
+ },
+ "moeda": {
+  "cod": "USD",
+  "taxa": ""
+ },
+ "lang": "pt"
+}

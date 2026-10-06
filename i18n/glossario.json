@@ -1,0 +1,152 @@
+{
+ "Piloto": {
+  "en": "Pilot",
+  "es": "Piloto",
+  "fr": "Pilote"
+ },
+ "Implantação": {
+  "en": "Deployment",
+  "es": "Implantación",
+  "fr": "Déploiement"
+ },
+ "Sustentabilidade e expansão": {
+  "en": "Sustainability and scale-up",
+  "es": "Sostenibilidad y escalamiento",
+  "fr": "Pérennisation et passage à l'échelle"
+ },
+ "Entendendo o seu contexto": {
+  "en": "Understanding your context",
+  "es": "Comprender su contexto",
+  "fr": "Comprendre votre contexte"
+ },
+ "Perfil de risco": {
+  "en": "Risk profile",
+  "es": "Perfil de riesgo",
+  "fr": "Profil de risque"
+ },
+ "Governança, políticas e planejamento do ciclo de vida": {
+  "en": "Governance, policy and lifecycle planning",
+  "es": "Gobernanza, políticas y planificación del ciclo de vida",
+  "fr": "Gouvernance, politiques et planification du cycle de vie"
+ },
+ "Custo total do ciclo de vida": {
+  "en": "Total life-cycle cost",
+  "es": "Costo total del ciclo de vida",
+  "fr": "Coût total du cycle de vie"
+ },
+ "Dotação a solicitar": {
+  "en": "Appropriation to request",
+  "es": "Asignación presupuestaria por solicitar",
+  "fr": "Crédits budgétaires à demander"
+ },
+ "Ponto de decisão {0}": {
+  "en": "Decision point {0}",
+  "es": "Punto de decisión {0}",
+  "fr": "Point de décision {0}"
+ },
+ "Nível de diligência do caso de uso": {
+  "en": "Use-case due diligence level",
+  "es": "Nivel de debida diligencia del caso de uso",
+  "fr": "Niveau de diligence raisonnable du cas d'usage"
+ },
+ "Sim": {
+  "en": "Yes",
+  "es": "Sí",
+  "fr": "Oui"
+ },
+ "Em parte": {
+  "en": "Partly",
+  "es": "En parte",
+  "fr": "En partie"
+ },
+ "Não": {
+  "en": "No",
+  "es": "No",
+  "fr": "Non"
+ },
+ "Não se aplica": {
+  "en": "Not applicable",
+  "es": "No aplica",
+  "fr": "Sans objet"
+ },
+ "Passo": {
+  "en": null,
+  "es": null,
+  "fr": null
+ },
+ "Continuar": {
+  "en": "Continue",
+  "es": "Continuar",
+  "fr": "Continuer"
+ },
+ "Camadas nesta fase": {
+  "en": "Layers in this phase",
+  "es": "Capas en esta fase",
+  "fr": "Couches de cette phase"
+ },
+ "Custo recorrente por ano de operação": {
+  "en": "Recurring cost per year of operation",
+  "es": "Costo recurrente por año de operación",
+  "fr": "Coût récurrent par année d'exploitation"
+ },
+ "Por usuário ativo por ano": {
+  "en": "Per active user per year",
+  "es": "Por usuario activo por año",
+  "fr": "Par utilisateur actif et par an"
+ },
+ "Elegíveis": {
+  "en": null,
+  "es": null,
+  "fr": null
+ },
+ "Exportar": {
+  "en": "Export",
+  "es": "Exportar",
+  "fr": "Exporter"
+ },
+ "Importar caso": {
+  "en": "Import case",
+  "es": "Importar caso",
+  "fr": "Importer un cas"
+ },
+ "Copiar relatório": {
+  "en": "Copy report",
+  "es": "Copiar informe",
+  "fr": "Copier le rapport"
+ },
+ "Bloqueio": {
+  "en": "Blocker",
+  "es": "Bloqueo",
+  "fr": "Blocage"
+ },
+ "Atenção": {
+  "en": "Caution",
+  "es": "Atención",
+  "fr": "Attention"
+ },
+ "Estudantes": {
+  "en": "Students",
+  "es": "Estudiantes",
+  "fr": "Élèves"
+ },
+ "Escolas": {
+  "en": "Schools",
+  "es": "Escuelas",
+  "fr": "Établissements"
+ },
+ "Caso sem título": {
+  "en": "Untitled case",
+  "es": "Caso sin título",
+  "fr": "Cas sans titre"
+ },
+ "Resumo e exportação": {
+  "en": "Summary and export",
+  "es": "Resumen y exportación",
+  "fr": "Synthèse et exportation"
+ },
+ "Começar um caso em branco": {
+  "en": "Start a blank case",
+  "es": "Comenzar un caso en blanco",
+  "fr": "Commencer un cas vierge"
+ }
+}
