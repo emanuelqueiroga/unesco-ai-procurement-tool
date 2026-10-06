@@ -6,16 +6,21 @@
 // adaptação, outra moeda): (1) os termos da fórmula geral somam ctEco; (2) as linhas de cada ano mais
 // "Outros itens" somam o custo econômico do ano; (3) cada linha é uma conta "×" e "=" ou um valor fixo da
 // premissa; (4) os valores mostrados (arredondados) também fecham; (5) HTML, seções do plano e traduções EN/ES/FR.
+// v11: variantes com internet, dispositivos, formação (papéis, formato, pagador), suporte do fornecedor,
+// acompanhamento, prova de conceito + piloto e ferramentas adicionais; as linhas novas são contas exatas e a
+// origem explica o caminho da demanda (teste → primeira etapa da implantação → expansão).
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const RAIZ = path.join(__dirname, '..');
-const ler = f => fs.readFileSync(path.join(RAIZ, f), 'utf8').split('\n').filter(l => !l.startsWith('if (typeof module')).join('\n');
+// as linhas "if (typeof module…" (exportações para o node) viram código morto, mesmo quando ocupam mais de uma linha
+const ler = f => fs.readFileSync(path.join(RAIZ, f), 'utf8').replace(/^if \(typeof module/gm, 'if (false && typeof module');
 const json = f => JSON.parse(fs.readFileSync(path.join(RAIZ, f), 'utf8'));
 
 function dicionario(l) {
   const d = {};
   const arqs = [`i18n/${l}.json`, `i18n/extra_${l}.json`]
     .concat(fs.readdirSync(path.join(RAIZ, 'i18n')).filter(f => /^v9_.*\.json$/.test(f) && f.endsWith(`_${l}.json`)).sort().map(f => 'i18n/' + f))
-    .concat(fs.readdirSync(path.join(RAIZ, 'i18n')).filter(f => /^v10_.*\.json$/.test(f) && f.endsWith(`_${l}.json`)).sort().map(f => 'i18n/' + f));
+    .concat(fs.readdirSync(path.join(RAIZ, 'i18n')).filter(f => /^v10_.*\.json$/.test(f) && f.endsWith(`_${l}.json`)).sort().map(f => 'i18n/' + f))
+    .concat(fs.readdirSync(path.join(RAIZ, 'i18n')).filter(f => /^v11_.*\.json$/.test(f) && f.endsWith(`_${l}.json`)).sort().map(f => 'i18n/' + f));
   arqs.forEach(f => { if (fs.existsSync(path.join(RAIZ, f))) Object.assign(d, json(f)); });
   return d;
 }
@@ -53,7 +58,17 @@ run(`
   CENARIOS['D com continuidade'] = (() => { const c = cfgExemplo('D'); c.opc = Object.assign({}, c.opc, { fechamento: 'continuidade' }); return c; })();
   CENARIOS['C compatibilidade v1'] = (() => { const c = cfgExemplo('C'); c.opc = Object.assign({}, OPC_COMPAT, { H: 3 }); return c; })();
   CENARIOS['A adaptação só configuração'] = cfgExemplo('A', { adaptacao: 'config' });
-  CENARIOS['A gratuito e infra complementar'] = cfgExemplo('A', { pagamento: 'gratuito', infra: 'complementar' });
+  CENARIOS['A gratuito, internet e dispositivos parciais'] = cfgExemplo('A', { pagamento: 'gratuito', internet: 'parcial', dispExistem: 'parcial' });
+  CENARIOS['B v11: PoC + piloto, sem internet nem dispositivos, formação online do fornecedor, suporte dedicado do fornecedor, acompanhamento intensivo'] =
+    cfgExemplo('B', { testes: ['poc', 'piloto'], poc: { participantes: 15, meses: 2 }, internet: 'nao', modeloDisp: 'um_por_aluno', dispExistem: 'nao',
+      formados: ['professores', 'gestores', 'tecnica'], formacaoFormato: 'online', formacaoPaga: 'fornecedor', formacaoHoras: 6, formacaoEstimativa: false,
+      suporteQuem: 'fornecedor', suporteNivel: 'dedicado', acompanhamento: 'intensivo' });
+  CENARIOS['A v11: duas ferramentas extras, suporte das duas equipes, formação híbrida, internet parcial com número'] =
+    cfgExemplo('A', { nFerramentas: '3mais', ferramentas: [CASOS.A.ferramentas[0], { nome: 'Corretor de redações', tarefas: ['feedback_redacao'], tipoTec: 'paga', pagamento: 'usuario', preco: 4 },
+      { nome: 'Banco de questões', tarefas: ['materiais'], tipoTec: 'paga', pagamento: 'institucional', preco: '' }],
+      internet: 'parcial', escolasInternet: 600, modeloDisp: 'rotativo', dispExistem: 'nao', formados: ['professores', 'administrativo'], formacaoFormato: 'hibrida',
+      suporteQuem: 'ambos', suporteNivel: 'ampliado', acompanhamento: 'leve' });
+  CENARIOS['D v11: PoC, suporte básico do fornecedor'] = cfgExemplo('D', { suporteQuem: 'fornecedor', suporteNivel: 'basico' });
   CENARIOS['B tecnologia pública, 5 anos'] = cfgExemplo('B', { tipoTec: 'publica', horizonte: 5 });
   CENARIOS['A pessoal interno a 80% (sigma)'] = (() => { const c = cfgExemplo('A'); c.opc = Object.assign({}, c.opc, { sigmaCap: 0.8 }); c.itens[0].prob = 0.5; return c; })();
 `);
@@ -101,7 +116,7 @@ function verificar(nome, moeda) {
       const conta = x.texto.includes('×') && x.texto.includes('=');
       chk(`${tag}: ${a.rotulo} "${x.nome}" escrito como conta ou valor fixo`, conta || x.texto.startsWith(r.fixo), x.texto);
       if (x.qtd != null) {
-        const v = x.qtd * x.preco / (x.divisor || 1);
+        const v = x.qtd * x.preco * (x.mult || 1) / (x.divisor || 1);
         eq(`${tag}: ${a.rotulo} "${x.nome}" quantidade × preço = valor`, v, x.valor, 1e-9);
       }
       if (x.fator != null) eq(`${tag}: ${a.rotulo} "${x.nome}" base × fator = valor`, x.base * x.fator / (x.divisor || 1), x.valor, 1e-9);
@@ -124,6 +139,41 @@ chk('A: origem "12.000 licenças × 12 meses = 144.000 licenças-mês"', exA.ori
 chk('A: origem com adoção de 35% no Ano 1', exA.origem.some(x => x.includes('Ano 1: 35%')));
 chk('A: leitura com o que mais pesa, o que muda e onde editar', /mais pesa/.test(exA.leitura[0]) && /muda o custo/.test(exA.leitura[1]) && /calculadora completa/.test(exA.leitura[2]));
 chk('A: total da fórmula igual ao KPI (grande)', run('grande(explicacaoCusto(CFG).formula.totalMostrado) === grande(avaliar(calcular(CFG)).ctEco)'));
+
+// v11: linhas novas como contas exatas e origem com o caminho da demanda
+run(`LANG = 'pt'; S.moeda = { cod: 'USD', taxa: '' };`);
+const exV = run(`explicacaoCusto(CENARIOS[${JSON.stringify('B v11: PoC + piloto, sem internet nem dispositivos, formação online do fornecedor, suporte dedicado do fornecedor, acompanhamento intensivo')}])`);
+const todas = a => a.linhas.concat(a.outros ? a.outros.itens : []);
+const linhaV = (a, re) => todas(a).find(x => re.test(x.nome));
+const a0 = exV.anos[0], a1 = exV.anos[1];
+const net = linhaV(a1, /^Conexão das escolas/);
+chk('v11 B: internet como conta "escolas sem internet adequada × US$ 600 por escola por ano"', net && /escolas? sem internet adequada × US\$ 600 por escola por ano = /.test(net.texto), net && net.texto);
+const disp = linhaV(a0, /^Dispositivos a comprar/);
+chk('v11 B: dispositivos como conta "dispositivos novos × US$ 300 por dispositivo"', disp && /dispositivos novos × US\$ 300 por dispositivo = /.test(disp.texto), disp && disp.texto);
+const sup0 = linhaV(a0, /^Suporte do fornecedor/), sup1 = linhaV(a1, /^Suporte do fornecedor/);
+chk('v11 B: suporte do fornecedor no Ano 0 com os meses do teste (× 6/12)', sup0 && /usuários? ativos? × US\$ 5,00 por usuário ativo por ano × 6\/12 \(meses do teste\) = /.test(sup0.texto), sup0 && sup0.texto);
+chk('v11 B: suporte do fornecedor no Ano 1 por usuário ativo', sup1 && /usuários ativos × US\$ 5,00 por usuário ativo por ano ÷ 1,025 = /.test(sup1.texto), sup1 && sup1.texto);
+const prog = exV.anos.map(a => linhaV(a, /^Programa de formação|^Formação de professores|^Formação \(materiais/)).find(Boolean);
+chk('v11 B: programa de formação × 0,5 (formato online), cedido sem custo', prog && /× 0,5 \(formato da formação, passo 2\.5\.3\)/.test(prog.texto) && prog.tipo === 'O', prog && [prog.texto, prog.tipo]);
+const papel = exV.anos.map(a => linhaV(a, /^Tempo de formação: equipe técnica/)).find(Boolean);
+chk('v11 B: formação da equipe técnica como pessoas formadas × preço', papel && /pessoas? formadas? × US\$ [\d,]+ por pessoa formada = /.test(papel.texto), papel && papel.texto);
+const oV = exV.origem.join(' | ');
+chk('v11 B: origem com caminho da demanda, PoC + piloto e meses somados', /Caminho da demanda/.test(oV) && /prova de conceito e depois piloto/.test(oV) && /meses de uso: 6, a soma/.test(oV), exV.origem);
+chk('v11 B: origem com primeira etapa da implantação (Ano 1)', /Ano 1: primeira etapa da implantação, com 50\.000 pessoas/.test(oV), exV.origem);
+chk('v11 B: origem explica internet, dispositivos, formação, suporte e acompanhamento',
+  /Internet \(passo 2\.4\)/.test(oV) && /Dispositivos \(passo 2\.4\)/.test(oV) && /Formação \(passo 2\.5\)/.test(oV) && /Suporte do fornecedor: usuários ativos × US\$ 5,00/.test(oV) && /Acompanhamento do uso/.test(oV), exV.origem);
+const exF = run(`explicacaoCusto(CENARIOS[${JSON.stringify('A v11: duas ferramentas extras, suporte das duas equipes, formação híbrida, internet parcial com número')}])`);
+const corr = exF.anos.map(a => linhaV(a, /^Licenças: Corretor de redações/)).filter(Boolean)[1];
+chk('v11 A: licenças da ferramenta extra pelo nome, "licenças-mês × US$ 4,00"', corr && /licenças-mês × US\$ 4,00 por licença por mês ÷ 1,025 = /.test(corr.texto), corr && corr.texto);
+chk('v11 A: ferramenta sem preço usa o preço de exemplo, dito na origem', exF.origem.some(x => /^Licenças: Banco de questões: .*preço de exemplo do guia; peça cotação/.test(x)), exF.origem);
+chk('v11 A: ferramenta com preço informado, dita na origem', exF.origem.some(x => /^Licenças: Corretor de redações: .*preço informado no passo 2\.3/.test(x)), exF.origem);
+chk('v11 A: internet parcial com número de escolas', exF.origem.some(x => /Escolas sem internet adequada: \d+% das escolas do escopo/.test(x)), exF.origem);
+chk('v11 A: dispositivos rotativos explicados', exF.origem.some(x => /Rotativo/.test(x) && /30 dispositivos por escola/.test(x)), exF.origem);
+// exemplos A–C neutros: sem internet, dispositivos, suporte do fornecedor nem licenças extras
+['A', 'B', 'C'].forEach(k => {
+  const nomes = run(`calcular(CENARIOS.${k}).linhas.map(l => l.nome)`);
+  chk(`v11 ${k}: exemplo neutro (sem linhas novas)`, !nomes.some(n => /^Conexão das escolas|^Dispositivos a comprar|^Suporte do fornecedor|^Licenças: /.test(n)), nomes);
+});
 
 // HTML e seções do plano
 const html = run(`S.formulaAno = undefined; renderFormula()`);

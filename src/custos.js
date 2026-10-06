@@ -169,8 +169,10 @@ function calcular(cfg) {
   // ---- itens por ano
   (cfg.itens || []).forEach(x => {
     const s = x.s || MAPA_CAT[x.cat] || 'K4.1', fa = fatorAdapt(cfg, s);
+    // v11: itens podem trazer quantidade (q), preço (p), unidade (un), etiqueta (tag) e pagador; neutro quando ausentes
     add({ nome: x.nome, s, cat: x.cat, nat: x.nat || 'D', comp: x.comp || 'F', moeda: x.moeda || 'LOC', orc: x.orc || 'corrente',
-      prob: x.prob, v: T.map(t => ano(x.v, t) * fa) });
+      prob: x.prob, v: T.map(t => ano(x.v, t) * fa), q: x.q ? T.map(t => ano(x.q, t)) : undefined, p: x.p ? T.map(t => ano(x.p, t)) : undefined,
+      un: x.un, tag: x.tag, pagador: x.pagador });
   });
   // ---- pessoas
   (cfg.pessoas || []).forEach(pp => {
@@ -197,8 +199,17 @@ function calcular(cfg) {
       if (t === 1 && !o.correcoes) return U[1];                     // versão 1: reconta o piloto
       return Math.max(U[t] - U[t - 1], 0) + f.rot * U[t - 1];       // versão 2: estoque formado
     });
-    add({ nome: f.nome, s: 'K4.4', cat: 'Formação e mudança', nat: 'C', comp: 'V', moeda: 'LOC', un: 'pessoa formada',
-      q: pessoas, p: T.map(() => f.horas * f.custoHora * m.pessoas), v: pessoas.map(n => n * f.horas * f.custoHora * m.pessoas) });
+    // v11: fator sobre as pessoas formadas (papéis marcados na 2.5.1), neutro quando ausente
+    if (f.fator != null) pessoas = pessoas.map(n => n * (+f.fator));
+    if (pessoas.some(n => n > 0) || !(f.extras || []).length)
+      add({ nome: f.nome, s: 'K4.4', cat: 'Formação e mudança', nat: 'C', comp: 'V', moeda: 'LOC', un: 'pessoa formada',
+        q: pessoas, p: T.map(() => f.horas * f.custoHora * m.pessoas), v: pessoas.map(n => n * f.horas * f.custoHora * m.pessoas) });
+    // v11: outros papéis formados (gestores, equipe técnica...), com as mesmas horas e o mesmo custo-hora
+    (f.extras || []).forEach(x => {
+      const q = T.map(t => +ano(x.q, t) || 0);
+      add({ nome: x.nome, s: 'K4.4', cat: 'Formação e mudança', nat: 'C', comp: 'V', moeda: 'LOC', un: 'pessoa formada', tag: 'formacao_papel',
+        q, p: T.map(() => f.horas * f.custoHora * m.pessoas), v: q.map(n => n * f.horas * f.custoHora * m.pessoas) });
+    });
   }
 
   // ---- saída ao final do horizonte

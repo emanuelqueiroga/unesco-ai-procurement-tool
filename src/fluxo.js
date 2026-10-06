@@ -1,16 +1,25 @@
 // =====================================================================
-// Percurso em três fases: lógica, telas e eventos (dados em fluxo_dados.js)
-// Durante o percurso só há perguntas; diagnóstico e recomendações ficam no plano de contratação.
+// Percurso em quatro fases (v11): lógica, telas e eventos (dados em fluxo_dados.js)
+// Durante o percurso só há perguntas; diagnóstico e recomendações ficam no fim da fase 4 e no plano de contratação.
 // =====================================================================
 
 const CAMPO_POR_ID = {};
 CAMPOS.forEach(f => { CAMPO_POR_ID[f.id] = f; });
+// v11: um campo do caso cujo valor em CASO_VAZIO não é vazio só conta depois que a pessoa responde
+if (typeof CASO_VAZIO !== 'undefined') CAMPOS.forEach(f => {
+  const v = CASO_VAZIO[f.id];
+  if (f.onde === 'caso' && !f.padrao && ['radio', 'chips', 'multi'].includes(f.tipo) && !(v == null || v === '' || (Array.isArray(v) && !v.length))) f.padrao = true;
+});
 const CAMPOS_SUGERIDOS = ['usuarios', 'afetados', 'consequencias', 'frequencia'];
-let ARQ_ABERTA = false;
-let NUM_ABERTO = false;   // <details> "Ver os números detalhados" do 3.3
+// Passos sem perguntas (4.2 estimativa, 4.3 recomendações): concluídos quando abertos
+const PASSOS_VER = ['4b', '4c'];
+let NUM_ABERTO = false;   // <details> "Ver os números detalhados" do 4.2
 let CONF_LIMPAR = false;  // confirmação inline de "Começar em branco" no painel
+const FIG_ABERTA = {};    // figura das sete camadas aberta, por nota ⓘ
 
 // ----------------------------------------------------------- estado
+const SUB_OBJ = { piloto: ['escolas', 'participantes', 'meses'], poc: ['participantes', 'meses'], implantacao: ['escolas', 'pessoas'] };
+function objVazio(k) { const o = {}; SUB_OBJ[k].forEach(x => { o[x] = ''; }); return o; }
 function estadoFluxo() {
   S.ctx = Object.assign({ nivel: '', nivelOutro: '', local: '', etapas: {}, dominio: '', comps: [], compOutro: '', olhando: '' }, S.ctx || {});
   if (!S.ctx.etapas || typeof S.ctx.etapas !== 'object') S.ctx.etapas = {};
@@ -18,20 +27,46 @@ function estadoFluxo() {
   S.respC = S.respC || {};
   S.feitos = S.feitos || {};
   S.info = S.info || {};
-  if (S.caso && (!S.caso.piloto || typeof S.caso.piloto !== 'object')) S.caso.piloto = { escolas: '', participantes: '', meses: '' };
+  if (S.caso) {
+    Object.keys(SUB_OBJ).forEach(k => { if (!S.caso[k] || typeof S.caso[k] !== 'object') S.caso[k] = objVazio(k); });
+    if (!Array.isArray(S.caso.testes)) S.caso.testes = [];
+    if (!Array.isArray(S.caso.ferramentas)) S.caso.ferramentas = [];
+  }
   if (S.fase == null || (S.fase !== '' && !PASSOS[S.fase])) S.fase = 'contexto';
   if (S.passo == null) S.passo = '';
   if (S.fase && S.passo && !PASSOS[S.fase].some(p => p[0] === S.passo)) S.passo = PASSOS[S.fase][0][0];
   if (S.vista && S.vista !== 'plano') S.vista = '';
   return S.ctx;
 }
+// 2.0: testes marcados (compatível com o campo antigo "teste") e modo derivado
+function testesDe(c) {
+  c = c || S.caso || {};
+  const t = Array.isArray(c.testes) ? c.testes : [];
+  if (!t.length && c.teste) return c.teste === 'ambos' ? ['poc', 'piloto'] : [c.teste];
+  return t;
+}
+// 'poc' | 'piloto' | 'ambos' | 'recomendar' | ''
+function modoTeste(c) {
+  const t = testesDe(c);
+  if (t.includes('recomendar')) return 'recomendar';
+  if (t.includes('poc') && t.includes('piloto')) return 'ambos';
+  return t[0] || '';
+}
+// A pergunta aparece? (condição "se" do registro CAMPOS)
+function visivel(f) { try { return !f.se || !!f.se(S.caso || {}); } catch (e) { return true; } }
 // Num caso em branco, um campo com valor padrão só conta depois que a pessoa responde.
 function respondido(campo) { return S.exemplo !== 'novo' || !!(S.respC || {})[campo]; }
 function aplicarExemploFluxo(k) {
   const CX = typeof CTX_EX !== 'undefined' ? CTX_EX : {}, RX = typeof RESP_EX !== 'undefined' ? RESP_EX : {};
   S.ctx = clone(CX[k] || {}); S.resp = clone(RX[k] || {}); S.feitos = {}; S.respC = {}; S.vista = ''; S.info = {}; S.revisar = [];
   // nos exemplos, as respostas de experiência de uso já estão confirmadas (as sugestões não as substituem)
-  if (k !== 'novo') { CAMPOS_SUGERIDOS.forEach(c => { S.respC[c] = true; }); confirmarGerados(S.caso, S.respC); }
+  if (k !== 'novo') {
+    // v11: nos exemplos, horas de formação "estimadas" aparecem com o número da estimativa e a arquitetura
+    // não informada aparece como "Ainda não sei (usar a presumida)", as duas já respondidas
+    if (S.caso.formacaoEstimativa && vazio(S.caso.formacaoHoras)) S.caso.formacaoHoras = horasEstimativa();
+    if (!S.caso.arquitetura) S.caso.arquitetura = 'nao_sei';
+    CAMPOS_SUGERIDOS.forEach(c => { S.respC[c] = true; }); confirmarGerados(S.caso, S.respC);
+  }
   S.v10 = true;
   if (CX[k]) { ['local', 'olhando', 'compOutro'].forEach(c => { if (S.ctx[c]) S.ctx[c] = tr(S.ctx[c]); }); }
   S.fase = 'contexto'; S.passo = '1a';
@@ -65,17 +100,27 @@ function valorCampo(f) {
   return S.caso[f.id];
 }
 function vazio(v) { return v == null || v === '' || (Array.isArray(v) && !v.length); }
-function textoCampo(f) { return f.tPoc && S.caso.teste === 'poc' ? f.tPoc : f.t; }
+function textoCampo(f) { const m = modoTeste(); return m === 'poc' && f.tPoc ? f.tPoc : m === 'ambos' && f.tAmbos ? f.tAmbos : f.t; }
 
-// ----------------------------------------------------------- padrões gerados (v10)
+// ----------------------------------------------------------- padrões gerados (v10, ampliados na v11)
 // Nada vem marcado antes de a pessoa agir. Quando ela marca uma resposta de origem, os campos que dependem
 // dela recebem um valor sugerido ("sugerido"), que só conta depois de confirmado (S.respC), como no passo 2.2.
 // Mudar a origem recalcula só as sugestões ainda não confirmadas.
-//   2.0 teste → 2.3.6 tamanho e duração; 2.3.1 tipo de tecnologia → 2.3.2 pagamento e 2.3.3 licença;
-//   2.2.1 usuários (confirmados) → 3.1.1 pessoas na rede.
-const SUB_PILOTO = ['escolas', 'participantes', 'meses'];
+//   2.0 testes → 2.3.8 tamanho e duração (PoC, piloto ou os dois); 2.3.4 tipo de tecnologia → 2.3.5 pagamento e 2.3.6 licença;
+//   2.4.3 dispositivos próprios → 2.4.4 "já existem"; 2.2.1 usuários (confirmados) → 4.1.1 pessoas na rede;
+//   4.1.1 pessoas na rede (ou as etapas do 1.1) → 3.1.1 primeira etapa (1/3); botão "Usar uma estimativa" → 2.5.4 horas.
 const PAG_LIC = { publica: ['gratuito', 'termos'], aberta: ['consumo', 'aberta'], paga: ['institucional', 'assinatura'] };
 const ALUNOS_POR_PROF = 25;   // premissa ilustrativa: 1 professor para cada 25 estudantes
+// premissa ilustrativa (casos.js, PREMISSAS_V11): a primeira etapa da implantação alcança 1/3 das pessoas e das escolas
+const FRACAO_IMPLANT = typeof PREMISSAS_V11 !== 'undefined' && +PREMISSAS_V11.implantacaoFracao > 0 ? +PREMISSAS_V11.implantacaoFracao : 1 / 3;
+const CAMPOS_GERADOS = ['pagamento', 'licenca', 'elegiveis', 'dispExistem'];
+// Horas de formação por pessoa da estimativa ilustrativa (premissa do motor, se houver)
+function horasEstimativa() {
+  if (typeof horasFormacaoEstimada === 'function') { try { const h = +horasFormacaoEstimada(S.caso); if (h > 0) return h; } catch (e) { } }
+  const P = typeof PREMISSAS_V11 !== 'undefined' ? PREMISSAS_V11 : {};
+  const h = +(P.horasFormacao || (P.formacao && P.formacao.horas) || 0);
+  return h > 0 ? h : 8;
+}
 // Usuários de 2.2.1 já confirmados pela pessoa (uma sugestão das tarefas ainda não conta)
 function usuariosMarcados() { return S.respC.usuarios || S.exemplo !== 'novo' ? (S.caso.usuarios || []) : []; }
 // Base de pessoas para as sugestões: estudantes das etapas ou, se só professores usam, a estimativa de professores
@@ -86,10 +131,12 @@ function basePessoas() {
   if (u.includes('professores')) return { n: Math.max(1, Math.round(al / ALUNOS_POR_PROF)), prof: true };
   return { n: 0, prof: false };
 }
+// Origem da sugestão do 3.1.1: 'eleg' (resposta 4.1.1) | 'etapas' (passo 1.1) | ''
+function origemImplantacao() { return +S.caso.elegiveis > 0 ? 'eleg' : totaisCtx().alunos > 0 || totaisCtx().escolas > 0 ? 'etapas' : ''; }
 function padroesGerados() {
-  const c = S.caso, t = totaisCtx(), g = {};
-  if (c.teste === 'poc') g.piloto = { escolas: '', participantes: 15, meses: 2 };
-  else if (c.teste === 'piloto' || c.teste === 'recomendar') {
+  const c = S.caso, t = totaisCtx(), g = {}, m = modoTeste(c);
+  if (m === 'poc' || m === 'ambos') g.poc = { participantes: 15, meses: 2 };
+  if (m === 'piloto' || m === 'recomendar' || m === 'ambos') {
     const b = basePessoas();
     g.piloto = {
       escolas: t.escolas > 0 ? Math.min(t.escolas, Math.max(3, Math.min(30, Math.round(0.05 * t.escolas)))) : '',
@@ -101,60 +148,89 @@ function padroesGerados() {
   if (pl) { g.pagamento = pl[0]; g.licenca = pl[1]; }
   const u = usuariosMarcados();
   if (u.length) { const b = basePessoas(); if (b.n > 0) g.elegiveis = b.n; }
+  if (c.modeloDisp === 'proprio') g.dispExistem = 'sim';
+  const o = origemImplantacao();
+  if (o) {
+    const E = o === 'eleg' ? +c.elegiveis : basePessoas().n;
+    g.implantacao = { escolas: t.escolas > 0 ? Math.max(1, Math.round(FRACAO_IMPLANT * t.escolas)) : '', pessoas: E > 0 ? Math.max(1, Math.round(FRACAO_IMPLANT * E)) : '' };
+  }
   return g;
 }
 function aplicarPadroes() {
   if (!S.caso) return false;
   const c = S.caso, g = padroesGerados();
   let mudou = false;
-  ['pagamento', 'licenca', 'elegiveis'].forEach(k => {
+  CAMPOS_GERADOS.forEach(k => {
     if (S.respC[k]) return;
     const v = g[k] != null ? g[k] : '';
     if (c[k] !== v) { c[k] = v; mudou = true; }
   });
-  c.piloto = c.piloto && typeof c.piloto === 'object' ? c.piloto : { escolas: '', participantes: '', meses: '' };
-  SUB_PILOTO.forEach(k => {
-    if (S.respC['piloto.' + k]) return;
-    const v = g.piloto && g.piloto[k] != null ? g.piloto[k] : '';
-    if (c.piloto[k] !== v) { c.piloto[k] = v; mudou = true; }
+  Object.keys(SUB_OBJ).forEach(o => {
+    c[o] = c[o] && typeof c[o] === 'object' ? c[o] : objVazio(o);
+    SUB_OBJ[o].forEach(k => {
+      if (S.respC[o + '.' + k]) return;
+      const v = g[o] && g[o][k] != null ? g[o][k] : '';
+      if (c[o][k] !== v) { c[o][k] = v; mudou = true; }
+    });
   });
+  // a primeira ferramenta da lista é a principal: tecnologia e pagamento são os das perguntas 2.3.4 e 2.3.5
+  const f0 = (c.ferramentas || [])[0];
+  if (f0) { if (f0.tipoTec !== (c.tipoTec || '')) { f0.tipoTec = c.tipoTec || ''; mudou = true; } if (f0.pagamento !== (c.pagamento || '')) { f0.pagamento = c.pagamento || ''; mudou = true; } }
   if (mudou && S.custo) S.custo.editado = false;
   return mudou;
 }
 // Marca como confirmados os valores já preenchidos dos campos gerados (exemplos e estados anteriores à v10)
 function confirmarGerados(caso, respC) {
-  ['pagamento', 'licenca', 'elegiveis'].forEach(k => { if (!vazio(caso[k])) respC[k] = true; });
-  const p = caso.piloto || {};
-  SUB_PILOTO.forEach(k => { if (!vazio(p[k])) respC['piloto.' + k] = true; });
+  CAMPOS_GERADOS.concat(['formacaoHoras']).forEach(k => { if (!vazio(caso[k])) respC[k] = true; });
+  Object.keys(SUB_OBJ).forEach(o => { const p = caso[o] || {}; SUB_OBJ[o].forEach(k => { if (!vazio(p[k])) respC[o + '.' + k] = true; }); });
+}
+// Subcampos (objeto.chave) de uma pergunta de tamanho: 2.3.8 conforme a resposta 2.0; 3.1.1
+function subcampos(f) {
+  if (f.id === 'implantacao') return SUB_OBJ.implantacao.map(k => ['implantacao', k]);
+  if (f.id !== 'piloto') return [];
+  const m = modoTeste(), L = [];
+  if (m === 'poc' || m === 'ambos') SUB_OBJ.poc.forEach(k => L.push(['poc', k]));
+  if (m !== 'poc') SUB_OBJ.piloto.forEach(k => L.push(['piloto', k]));
+  return L;
 }
 // Confirma a sugestão de um campo (rodapé "Confirmar e continuar" ou clique na opção sugerida)
 function confirmarSugestao(f) {
-  if (f.id === 'piloto') SUB_PILOTO.forEach(k => { S.respC['piloto.' + k] = true; });
+  subcampos(f).forEach(([o, k]) => { S.respC[o + '.' + k] = true; });
   S.respC[f.id] = true;
 }
 // O campo mostra um valor gerado ainda não confirmado pela pessoa?
 function sugerido(f) {
   if (!f) return false;
   if (f.sugere) return !S.respC[f.id] && (S.caso.tarefas || []).length > 0;
+  if (f.tipo === 'horas') return !S.respC[f.id] && !!S.caso.formacaoEstimativa && !vazio(S.caso[f.id]);
   if (!f.sugDe) return false;
-  if (f.id === 'piloto') { const p = S.caso.piloto || {}; return SUB_PILOTO.some(k => !S.respC['piloto.' + k] && !vazio(p[k])); }
+  if (f.tipo === 'setup' || f.tipo === 'implant') return subcampos(f).some(([o, k]) => !S.respC[o + '.' + k] && !vazio((S.caso[o] || {})[k]));
   return !S.respC[f.id] && !vazio(valorCampo(f));
 }
 function textoSugerido(f) {
   if (f.sugere) return 'sugerido pela tarefa';
-  return { teste: 'sugerido pela resposta 2.0', tipoTec: 'sugerido pela resposta 2.3.1', usuarios: 'sugerido pela resposta 2.2.1' }[f.sugDe] || 'sugerido';
+  if (f.tipo === 'horas') return 'estimativa ilustrativa';
+  if (f.id === 'implantacao') return origemImplantacao() === 'eleg' ? 'sugerido pela resposta 4.1.1' : 'sugerido pelas etapas do passo 1.1';
+  return { testes: 'sugerido pela resposta 2.0', tipoTec: 'sugerido pela resposta 2.3.4', usuarios: 'sugerido pela resposta 2.2.1', modeloDisp: 'sugerido pela resposta 2.4.3' }[f.sugDe] || 'sugerido';
 }
 // Nota que explica de onde vem o valor sugerido (só aparece enquanto a sugestão não é confirmada)
 function notaSugerido(f) {
-  const L = [];
-  if (f.id === 'piloto' && S.caso.teste === 'poc') L.push('Sugestão para uma prova de conceito: 15 pessoas por 2 meses, sem escolas. Ajuste ao seu teste.');
-  else if (f.id === 'piloto') {
-    L.push('Sugestão: cerca de 5% das escolas da rede (no mínimo 3 e no máximo 30), 5% das pessoas que usariam e 4 meses. Ajuste ao seu piloto.');
-    if (basePessoas().prof) L.push('Participantes estimados com uma premissa ilustrativa de 1 professor para cada 25 estudantes, e não com um dado da sua rede.');
+  const L = [], m = modoTeste();
+  if (f.id === 'piloto') {
+    if (m === 'poc' || m === 'ambos') L.push('Sugestão para uma prova de conceito: 15 pessoas por 2 meses, sem escolas. Ajuste ao seu teste.');
+    if (m !== 'poc') {
+      L.push('Sugestão: cerca de 5% das escolas da rede (no mínimo 3 e no máximo 30), 5% das pessoas que usariam e 4 meses. Ajuste ao seu piloto.');
+      if (basePessoas().prof) L.push('Participantes estimados com uma premissa ilustrativa de 1 professor para cada 25 estudantes, e não com um dado da sua rede.');
+    }
   } else if (f.id === 'elegiveis') {
     L.push(basePessoas().prof ? 'Sugestão ilustrativa: 1 professor para cada 25 estudantes das etapas marcadas. É uma premissa desta ferramenta, e não um dado da sua rede; informe o número real se souber.'
       : 'Sugestão: o total de estudantes das etapas marcadas no passo 1.1. Confirme ou informe outro número.');
+  } else if (f.id === 'implantacao') {
+    L.push(origemImplantacao() === 'eleg' ? 'Sugestão ilustrativa: um terço das pessoas da resposta 4.1.1 e um terço das escolas da rede. Confirme ou informe os números da sua primeira etapa.'
+      : 'Sugestão ilustrativa: um terço dos estudantes e das escolas das etapas marcadas no passo 1.1. Confirme ou informe os números da sua primeira etapa.');
   } else if (f.id === 'pagamento' || f.id === 'licenca') L.push('Sugestão a partir do tipo de tecnologia. Confirme ou escolha outra opção.');
+  else if (f.id === 'dispExistem') L.push('Sugestão: com dispositivos próprios das pessoas, a rede não precisa comprar equipamentos. Confirme ou escolha outra opção.');
+  else if (f.id === 'formacaoHoras') L.push('Estimativa ilustrativa: ' + horasEstimativa() + ' horas por pessoa. É uma premissa desta ferramenta, e não um dado da sua rede; confirme ou informe as horas do seu plano de formação.');
   return L.length ? `<div class="hint sug-nota">${L.map(x => `<span>${esc(x)}</span>`).join(' ')}</div>` : '';
 }
 // A pergunta está respondida? Com semSug, considera as sugestões como se estivessem confirmadas.
@@ -167,19 +243,23 @@ function qOk(f, semSug) {
     case 'dom': return !!x.dominio;
     case 'comps': return (x.comps || []).length > 0;
     case 'texto': case 'area': return !!String(v || '').trim();
-    case 'num': return +v > 0 && (semSug || !sugerido(f));
-    case 'setup': { const p = c.piloto || {}; return +p.participantes > 0 && +p.meses > 0 && (c.teste === 'poc' || +p.escolas > 0) && (semSug || !sugerido(f)); }
+    case 'num': case 'horas': return +v > 0 && (semSug || !sugerido(f));
+    case 'testes': return testesDe(c).length > 0;
+    case 'ferramentas': { const L = c.ferramentas || []; return L.length > 0 && L.every(t => !!String(t.nome || '').trim()); }
+    case 'setup': case 'implant': {
+      const sc = subcampos(f);
+      return sc.length > 0 && sc.every(([o, k]) => +(c[o] || {})[k] > 0 || (o === 'implantacao' && k === 'escolas' && !(totaisCtx().escolas > 0))) && (semSug || !sugerido(f));
+    }
+    case 'arq': return !!c.arquitetura;
     default:
       if (vazio(v)) return false;
       if (!semSug && sugerido(f)) return false;
       return f.padrao ? respondido(f.id) || (semSug && sugerido(f)) : true;
   }
 }
-function camposPasso(id) { return CAMPOS.filter(f => f.passo === id); }
+function camposPasso(id) { return CAMPOS.filter(f => f.passo === id && visivel(f)); }
 // Perguntas obrigatórias ainda sem resposta num passo (objetos de CAMPOS)
 function faltas(id) { return camposPasso(id).filter(f => !f.opcional && !qOk(f)); }
-// Passos sem perguntas (3.3 estimativa, 3.4 recomendações): concluídos quando abertos
-const PASSOS_VER = ['3c', '3d'];
 function passoFeito(id) { return PASSOS_VER.includes(id) ? !!S.feitos[id] : !faltas(id).length; }
 function estadoPasso(id) {
   if (passoFeito(id)) return 'ok';
@@ -254,7 +334,7 @@ function avisoRevisar(id) {
 }
 
 // Premissas unitárias da estimativa, tiradas de cfgAtual(): exemplo de origem, pessoas, adoção, preço da
-// licença, uso do modelo, dispositivos e conectividade. Usadas no passo 3.3 e em A2 do plano. Textos já traduzidos.
+// licença, uso do modelo, dispositivos e conectividade. Usadas no passo 4.2 e em A2 do plano. Textos já traduzidos.
 function premissasUnitarias() {
   const cfg = cfgAtual(), ce = casoAtual(), c = S.caso, L = [];
   const nf = (x, d = 1) => (+x || 0).toLocaleString(LOC(), { maximumFractionDigits: d });
@@ -263,7 +343,7 @@ function premissasUnitarias() {
   if (orig && typeof PRESET_ARQ !== 'undefined' && PRESET_ARQ[orig]) L.push(tr('Premissas de partida:') + ' ' + tr(PRESET_ARQ[orig]) + '.');
   const dm = cfg.demanda || {}, E = dm.E || [], H = Math.max(1, E.length - 1);
   const Emax = Math.max(0, ...E.slice(1));
-  if (Emax) L.push(tr('Pessoas que usariam na rede:') + ' ' + fmtInt(Emax) + (ce.__elegPadrao ? ' (' + tr('premissa padrão; informe no passo 3.1.1') + ')' : '') + '.');
+  if (Emax) L.push(tr('Pessoas que usariam na rede:') + ' ' + fmtInt(Emax) + (ce.__elegPadrao ? ' (' + tr('premissa padrão; informe no passo 4.1.1') + ')' : '') + '.');
   if (E[0]) L.push(tr('Participantes do teste (Ano 0):') + ' ' + fmtInt(E[0]) + '.');
   if (dm.adocao != null) {
     const anos = Array.from({ length: H }, (_, i) => i + 1);
@@ -285,15 +365,17 @@ function premissasUnitarias() {
     const o = cfg.ow;
     L.push(tr('Modelo de pesos abertos:') + ' ' + tr(fmtInt(o.Tin) + ' tokens de entrada e ' + fmtInt(o.Tout) + ' de saída por interação') + '; ' + tr('preço da hora de GPU:') + ' ' + din(o.Pgpu, 2) + '.');
   }
-  if (ce.infra === 'complementar' && typeof PREMISSAS_K1 !== 'undefined') {
+  // v11: internet e dispositivos separados (2.4)
+  if (typeof PREMISSAS_K1 !== 'undefined') {
     const K = PREMISSAS_K1;
-    L.push(tr('Dispositivos complementares:') + ' ' + din(K.precoDispositivo, 0) + ' ' + tr('por dispositivo, para ' + pct(K.fracaoSemDispositivo) + ' dos novos usuários') + '; ' + tr('conectividade incremental:') + ' ' + din(K.conectEscolaAno, 0) + ' ' + tr('por escola por ano') + '.');
+    if (c.internet === 'nao' || c.internet === 'parcial') L.push(tr('Conexão para as escolas sem internet adequada:') + ' ' + din(K.conectEscolaAno, 0) + ' ' + tr('por escola por ano') + '.');
+    if ((c.dispExistem === 'nao' || c.dispExistem === 'parcial') && c.modeloDisp && c.modeloDisp !== 'proprio') L.push(tr('Dispositivos que faltam:') + ' ' + din(K.precoDispositivo, 0) + ' ' + tr('por dispositivo') + '.');
   }
   return L;
 }
-// Adaptação ao contexto (K3.1 + K3.2) no Ano 0, para mostrar o efeito da resposta 2.3.4
+// Adaptação ao contexto (K3.1 + K3.2) no Ano 0, para mostrar o efeito da resposta 2.3.7
 function adaptacaoAno0(av) { return (av.linhas || []).filter(l => l.s === 'K3.1' || l.s === 'K3.2').reduce((t, l) => t + ((l.eco || [])[0] || 0), 0); }
-// O painel só mostra a estimativa depois das respostas que a definem (2.1.1, 2.3.1 e 3.1.1)
+// O painel só mostra a estimativa depois das respostas que a definem (2.1.1, 2.3.4 e 4.1.1)
 function faltasEstimativa() { return ['tarefas', 'tipoTec', 'elegiveis'].map(k => CAMPO_POR_ID[k]).filter(f => f && !qOk(f)); }
 
 // ----------------------------------------------------------- componentes
@@ -378,12 +460,71 @@ function opComps() {
   return `<div class="opts cols" role="group" aria-labelledby="qt-comps">${d.comps.map(([k, n, s]) => `<label class="opt"><input type="checkbox" data-comp="${k}" ${(x.comps || []).includes(k) ? 'checked' : ''}><span><b>${esc(n)}</b><small>${esc(s)}</small></span></label>`).join('')}</div>
     ${(x.comps || []).includes('outro') ? `<div class="outro">${tCampo('c-compOutro', 'data-ctxt="compOutro"', x.compOutro, 'Qual componente?', 'Qual componente?')}</div>` : ''}`;
 }
+// 2.3.8 tamanho e duração: campos da prova de conceito (caso.poc), do piloto (caso.piloto) ou dos dois
 function opSetup() {
-  const c = S.caso, p = c.piloto || {}, poc = c.teste === 'poc', t = totaisCtx();
-  const lab = (txt, k) => `<label class="g-c"><span>${esc(txt)}</span>${nCampo({ id: 'pl-' + k, attrs: `data-fn="piloto.${k}"`, valor: p[k], casas: 0, rotulo: txt, ph: ' ' })}</label>`;
-  const pctRede = !poc && t.escolas && +p.escolas ? Math.min(1, +p.escolas / t.escolas) : 0;
-  return `<div class="g-campos setup">${poc ? '' : lab('Escolas', 'escolas')}${lab(poc ? 'Pessoas que vão testar' : 'Participantes', 'participantes')}${lab('Duração (meses)', 'meses')}</div>
+  const c = S.caso, m = modoTeste(), t = totaisCtx();
+  const lab = (o, txt, k) => `<label class="g-c"><span>${esc(txt)}</span>${nCampo({ id: (o === 'poc' ? 'poc-' : 'pl-') + k, attrs: `data-fn="${o}.${k}"`, valor: (c[o] || {})[k], casas: 0, rotulo: tr(txt), ph: ' ' })}</label>`;
+  const p = c.piloto || {};
+  const pctRede = m !== 'poc' && t.escolas && +p.escolas ? Math.min(1, +p.escolas / t.escolas) : 0;
+  const poc = `<div class="g-campos setup">${lab('poc', 'Pessoas que vão testar', 'participantes')}${lab('poc', 'Duração (meses)', 'meses')}</div>`;
+  const pil = `<div class="g-campos setup">${lab('piloto', 'Escolas', 'escolas')}${lab('piloto', 'Participantes', 'participantes')}${lab('piloto', 'Duração (meses)', 'meses')}</div>
     <div class="hint" id="pct-rede"${pctRede ? '' : ' hidden'}><span>Escolas do piloto em relação à rede:</span> <b class="num">${pct(pctRede)}</b></div>`;
+  if (m === 'poc') return poc;
+  if (m === 'ambos') return `<div class="setup-dois"><div class="setup-bloco"><h4 class="setup-h">Prova de conceito</h4>${poc}</div><div class="setup-bloco"><h4 class="setup-h">Piloto</h4>${pil}</div></div>`;
+  return pil;
+}
+// 2.0: prova de conceito, piloto ou os dois; "Não sei, recomende para mim" é exclusiva (app.js)
+function opTestes(f) {
+  return `<div class="opts cols" role="group" aria-labelledby="qt-${f.id}">${listaOpc(f).map(o => `<label class="opt"><input type="checkbox" data-fm="testes" value="${esc(o[0])}" ${testesDe().includes(o[0]) ? 'checked' : ''}><span><b>${esc(o[1])}</b>${subOpc(o) ? `<small>${esc(subOpc(o))}</small>` : ''}</span></label>`).join('')}</div>`;
+}
+// 2.3.3 lista de ferramentas: adicionar e remover linhas no próprio passo (sem caixas de diálogo)
+function rotTarefa(k) { return k === 'outra' ? (S.caso.tarefaOutra || 'Outra tarefa') : rotulo(listaOpc(CAMPO_POR_ID.tarefas), k); }
+function opFerramentas() {
+  const c = S.caso, L = c.ferramentas || [], tars = c.tarefas || [];
+  const sel = (i, k, lista, val, rot) => `<label class="g-c fe-c"><span>${esc(rot)}</span><select class="f" id="fe-${i}-${k}" data-ferr="${i}.${k}"><option value="">${esc('Escolha')}</option>${lista.map(o => `<option value="${esc(o[0])}" ${String(val) === String(o[0]) ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
+  const linhas = L.map((t, i) => {
+    const princ = i === 0;
+    const nTit = tr('Ferramenta ' + (i + 1));
+    return `<fieldset class="ferr" id="ferr-${i}" aria-labelledby="ferr-t-${i}">
+      <div class="ferr-cab"><b id="ferr-t-${i}"><span>${esc(nTit)}</span>${princ ? ` <span class="tag">${esc('principal')}</span>` : ''}</b>
+        <button type="button" class="link" data-act="ferr-rm" data-i="${i}" aria-label="${esc(tr('Remover') + ' ' + nTit)}">Remover</button></div>
+      <label class="g-c fe-nome"><span>Nome da ferramenta</span>${tCampo('fe-' + i + '-nome', `data-ferr="${i}.nome"`, t.nome, ' ')}</label>
+      <div class="fe-tar" role="group" aria-labelledby="fe-tt-${i}"><span class="fe-l" id="fe-tt-${i}">Tarefas que ela cobre</span>
+        ${tars.length ? `<div class="chips">${tars.map(k => `<label class="chip"><input type="checkbox" data-ferr-t="${i}" value="${esc(k)}" ${(t.tarefas || []).includes(k) ? 'checked' : ''}><span>${esc(rotTarefa(k))}</span></label>`).join('')}</div>`
+          : `<p class="hint">Marque antes as tarefas no passo 2.1.</p>`}</div>
+      <div class="fe-sel">${sel(i, 'tipoTec', listaOpc(CAMPO_POR_ID.tipoTec), princ ? c.tipoTec : t.tipoTec, 'Tipo de tecnologia')}${sel(i, 'pagamento', listaOpc(CAMPO_POR_ID.pagamento), princ ? c.pagamento : t.pagamento, 'Forma de pagamento')}
+        <label class="g-c fe-c"><span>Preço por usuário por mês, em US$ (opcional)</span>${nCampo({ id: 'fe-' + i + '-preco', attrs: `data-ferr="${i}.preco"`, valor: t.preco, casas: 2, ph: ' ' })}</label></div>
+      ${princ ? '<p class="hint">Na ferramenta principal, tecnologia e pagamento são as respostas 2.3.4 e 2.3.5.</p>' : ''}</fieldset>`;
+  }).join('');
+  return `<div class="ferrs">${linhas || '<p class="hint vazio-g">Nenhuma ferramenta na lista.</p>'}
+    <div class="row"><button type="button" class="btn" data-act="ferr-add" id="ferr-add">+ <span>Adicionar ferramenta</span></button></div></div>`;
+}
+// 3.1.1 primeira etapa da implantação
+function opImplant() {
+  const c = S.caso, p = c.implantacao || {}, t = totaisCtx();
+  const lab = (txt, k) => `<label class="g-c"><span>${esc(txt)}</span>${nCampo({ id: 'im-' + k, attrs: `data-fn="implantacao.${k}"`, valor: p[k], casas: 0, rotulo: tr(txt), ph: ' ' })}</label>`;
+  return `<div class="g-campos setup">${lab('Escolas', 'escolas')}${lab('Pessoas', 'pessoas')}</div>
+    ${t.escolas > 0 ? `<div class="hint"><span>Escolas da rede, segundo o passo 1.1:</span> <b class="num">${fmtInt(t.escolas)}</b></div>` : ''}`;
+}
+// 2.5.4 horas de formação por pessoa, com "Usar uma estimativa" (valor ilustrativo marcado como sugerido)
+function opHoras(f) {
+  const c = S.caso, est = sugerido(f);
+  return `<div class="horas">${nCampo({ id: 'f-' + f.id, attrs: `data-fn="${f.id}"`, valor: c[f.id], casas: 0, rotulo: tr(f.t), ph: ' ' })}
+    ${est ? '' : `<button type="button" class="btn" data-act="horas-est">Usar uma estimativa</button>`}</div>`;
+}
+// 3.2.1 arquitetura: as três opções em linguagem simples e "Ainda não sei (usar a presumida: X)"
+function arqPresumida() {
+  if (typeof derivarArquitetura !== 'function') return '';
+  try { return derivarArquitetura(Object.assign({}, S.caso, { arquitetura: '', arquiteturaManual: '' }), true); } catch (e) { return ''; }
+}
+function opArq(f) {
+  const c = S.caso;
+  const arqs = ((typeof OPC !== 'undefined' && OPC.arquitetura) || []).filter(o => ['saas', 'api', 'ow'].includes(o[0]));
+  const pres = rotulo(arqs, arqPresumida());
+  const op = (v, corpo) => `<label class="opt"><input type="radio" name="arquitetura" value="${v}" data-f="arquitetura" ${c.arquitetura === v ? 'checked' : ''}><span>${corpo}</span></label>`;
+  return `<div class="opts" role="radiogroup" aria-labelledby="qt-${f.id}">
+    ${arqs.map(o => op(o[0], `<b>${esc(o[1])}</b>${ARQ_DESC[o[0]] ? `<small>${esc(ARQ_DESC[o[0]])}</small>` : ''}`)).join('')}
+    ${op('nao_sei', `<b><span>Ainda não sei</span>${pres ? ` (<span>usar a presumida:</span> <span>${esc(pres)}</span>)` : ''}</b><small>${esc('A ferramenta deduz a arquitetura das respostas do passo 2.3 para estimar o custo.')}</small>`)}</div>`;
 }
 function controle(f) {
   switch (f.tipo) {
@@ -396,6 +537,11 @@ function controle(f) {
     case 'dom': return opDominio();
     case 'comps': return opComps();
     case 'setup': return opSetup();
+    case 'testes': return opTestes(f);
+    case 'ferramentas': return opFerramentas();
+    case 'implant': return opImplant();
+    case 'horas': return opHoras(f);
+    case 'arq': return opArq(f);
     case 'texto': {
       let ph = f.ph;
       if (f.id === 'titulo') { const t0 = (S.caso.tarefas || [])[0]; ph = t0 ? (t0 === 'outra' ? (S.caso.tarefaOutra || '') : rotulo(listaOpc(CAMPO_POR_ID.tarefas), t0)) : ''; }
@@ -407,31 +553,42 @@ function controle(f) {
   return '';
 }
 function renderQ(f) {
-  const ok = qOk(f), sug = sugerido(f) && !vazio(valorCampo(f));
-  const poc = S.caso.teste === 'poc' && f.tPoc;
-  const t = poc ? f.tPoc : f.t, h = poc ? f.hPoc : f.h, ex = poc ? f.exPoc : f.ex;
-  const rotTag = ['texto', 'area', 'num'].includes(f.tipo) ? `label for="f-${f.id}"` : 'div';
+  const ok = qOk(f), sug = sugerido(f) && (f.tipo === 'setup' || f.tipo === 'implant' || !vazio(valorCampo(f)));
+  const m = modoTeste();
+  const alt = m === 'poc' && f.tPoc ? 'Poc' : m === 'ambos' && f.tAmbos ? 'Ambos' : '';
+  const t = alt ? f['t' + alt] : f.t, h = alt ? f['h' + alt] : f.h, ex = alt ? f['ex' + alt] : f.ex;
+  const rotTag = ['texto', 'area', 'num', 'horas'].includes(f.tipo) ? `label for="f-${f.id}"` : 'div';
   let extra = '';
   if (f.id === 'elegiveis') {
     const tt = totaisCtx();
     if ((S.caso.usuarios || []).includes('estudantes') && tt.alunos > 0 && +S.caso.elegiveis !== tt.alunos) extra = `<div class="hint"><button type="button" class="link" data-act="usar-alunos">${esc(tr('Usar o total de estudantes do contexto (' + fmtInt(tt.alunos) + ')'))}</button></div>`;
   }
+  if (f.id === 'escolasInternet') { const tt = totaisCtx(); if (tt.escolas > 0) extra = `<div class="hint"><span>Escolas da rede, segundo o passo 1.1:</span> <b class="num">${fmtInt(tt.escolas)}</b></div>`; }
+  const temTag = f.sugere || f.sugDe || f.tipo === 'horas';
   return `<div class="q${ok ? ' ok' : ''}${sug ? ' sug' : ''}" id="${idQ(f.n)}" data-n="${f.n}" data-campo="${f.id}">
-    <${rotTag} class="q-t" id="qt-${f.id}"><span class="qn">${f.n}</span> <span class="qt">${esc(t)}</span>${f.opcional ? ' <span class="tag opc">opcional</span>' : ''}${f.sugere || f.sugDe ? `<span class="tag sug-tag">${esc(textoSugerido(f))}</span>` : ''}<span class="sr q-sr">${ok ? 'respondida' : ''}</span></${rotTag.split(' ')[0]}>
+    <${rotTag} class="q-t" id="qt-${f.id}"><span class="qn">${f.n}</span> <span class="qt">${esc(t)}</span>${f.opcional ? ' <span class="tag opc">opcional</span>' : ''}${temTag ? `<span class="tag sug-tag">${esc(textoSugerido(f))}</span>` : ''}<span class="sr q-sr">${ok ? 'respondida' : ''}</span></${rotTag.split(' ')[0]}>
     ${h ? `<div class="hint">${esc(h)}</div>` : ''}${ex ? `<div class="hint ex">${esc(ex)}</div>` : ''}
     ${controle(f)}${sug ? notaSugerido(f) : ''}${extra}</div>`;
 }
-// Botão ⓘ e nota com a explicação da camada e a referência ao documento de Krueger e Jackson (2026)
-const INFO_ROT = { c1: 'Sobre a camada 1', c2: 'Sobre a camada 2', c234: 'Sobre as camadas 2, 3 e 4', c37: 'Sobre as sete camadas' };
+// Botão ⓘ e nota com a explicação da camada, a referência ao documento de Krueger e Jackson (2026)
+// e o botão que abre a Figura 1 (p. 11) sem alteração, com legenda e crédito.
+const INFO_ROT = { c1: 'Sobre a camada 1', c2: 'Sobre a camada 2', c24: 'Sobre as camadas 2 e 4', c3: 'Sobre a camada 3', c6: 'Sobre a camada 6', c7: 'Sobre a camada 7', c45: 'Sobre as camadas 4 e 5', c37: 'Sobre as sete camadas' };
 function botaoInfo(chave, id) {
   return `<button type="button" class="info" data-info="${chave}" data-info-id="${id}" aria-expanded="${!!S.info[id]}" aria-controls="nota-${id}" aria-label="${esc(INFO_ROT[chave] || 'Sobre as camadas')}">ⓘ</button>`;
+}
+function figuraCamadas(id) {
+  if (typeof FIG_TCO === 'undefined' || !FIG_TCO) return '';
+  const ab = !!FIG_ABERTA[id];
+  return `<div class="fig-in"><button type="button" class="btn fig-btn" data-fig="${id}" aria-expanded="${ab}" aria-controls="fig-${id}">${esc(ab ? FIG_INFO.fechar : FIG_INFO.botao)}</button>
+    ${ab ? `<figure class="fig-tco" id="fig-${id}"><img src="${FIG_TCO}" alt="${esc(FIG_INFO.alt)}" width="900" height="1225" decoding="async">
+      <figcaption>${esc(FIG_INFO.legenda)}</figcaption></figure>` : ''}</div>`;
 }
 function notaInfo(chave, id) {
   if (!S.info[id]) return '';
   return `<div class="info-nota" id="nota-${id}"><p>${esc(CAMADAS_INFO[chave])}</p>
     <p class="ref-tco"><span>${esc(REF_TCO.autores)}</span> <cite data-notr>${esc(REF_TCO.titulo)}</cite> <span>${esc(REF_TCO.local)}</span>
       <a href="${REF_TCO.url}" target="_blank" rel="noopener">${esc(REF_TCO.link)}</a></p>
-    <p class="small muted">${esc(REF_TCO.nota)}</p></div>`;
+    <p class="small muted">${esc(REF_TCO.nota)}</p>${figuraCamadas(id)}</div>`;
 }
 
 // ----------------------------------------------------------- corpo dos passos
@@ -445,22 +602,7 @@ function corpoPadrao(id) {
     s += `<div class="ai" id="ia-box"><div class="row" style="justify-content:space-between"><div><b>Estruturar a descrição com Claude</b><div class="small muted">Lê o problema e o resultado, sugere respostas para a fase 2 e aponta lacunas. Você revisa antes de aplicar.</div></div>
       <button class="btn pri" type="button" data-act="ia" ${IA.estado === 'rodando' ? 'disabled' : ''}>${IA.estado === 'rodando' ? 'Analisando…' : 'Analisar descrição'}</button></div><div id="ia-out">${typeof renderIA === 'function' ? renderIA() : ''}</div></div>`;
   }
-  if (id === '2c') s += detalheArquitetura();
   return s;
-}
-function detalheArquitetura() {
-  const c = S.caso;
-  let presumida = '';
-  if (typeof derivarArquitetura === 'function') { try { presumida = derivarArquitetura(Object.assign({}, c, { arquiteturaManual: '' })); } catch (e) { presumida = ''; } }
-  const arqs = ((typeof OPC !== 'undefined' && OPC.arquitetura) || []).filter(o => o[0] !== 'indefinida');
-  const opcs = [['', 'Usar a arquitetura presumida'], ...arqs];
-  const atual = c.arquiteturaManual || '';
-  // v10: nenhuma opção vem marcada; "Usar a arquitetura presumida" só aparece marcada se a pessoa a escolheu
-  const marcada = v => atual === v && (v !== '' || !!S.respC.arquiteturaManual);
-  return `<details class="arq" data-arq ${ARQ_ABERTA ? 'open' : ''}><summary>Para equipes técnicas: arquitetura presumida</summary>
-    <div class="arq-in"><p class="hint">A ferramenta deduz a arquitetura das respostas acima para estimar o custo. Mude só se souber que é outra.</p>
-      <p><span>Arquitetura presumida:</span> <b>${esc(rotulo(arqs, presumida) || '—')}</b></p>
-      <div class="opts" role="radiogroup" aria-label="Arquitetura">${opcs.map(o => `<label class="opt"><input type="radio" name="arquiteturaManual" value="${esc(o[0])}" data-f="arquiteturaManual" ${marcada(o[0]) ? 'checked' : ''}><span><b>${esc(o[1])}</b></span></label>`).join('')}</div></div></details>`;
 }
 function seletorMoeda() {
   if (typeof MOEDAS === 'undefined' || typeof moedaInfo !== 'function') return '';
@@ -471,16 +613,16 @@ function seletorMoeda() {
   const op = c => `<option value="${c}" ${mi.cod === c ? 'selected' : ''}>${c} · ${esc(nm(c))}</option>`;
   return `<div class="moeda-est"><label for="moeda-est">Moeda de exibição</label><select class="f" id="moeda-est" data-moeda="cod">${top.map(op).join('')}<option disabled>──────────</option>${resto.map(op).join('')}</select></div>`;
 }
-function passo3c() {
+function passo4b() {
   let n;
   try { n = numerosCusto(); } catch (e) { return '<p class="muted">Não foi possível calcular com as premissas atuais.</p>'; }
   const T = n.av.r.anos;
-  const pend = ['2c', '3a', '3b'].some(id => faltas(id).length);
+  const pend = ['2c', '2d', '2e', '2f', '3a', '3b', '4a'].some(id => faltas(id).length);
   const cam = n.camadas;
   let prem = [];
   try { prem = premissasUnitarias(); } catch (e) { console.warn(e); }
   const nivelAd = S.caso.adaptacao ? tr(rotulo(listaOpc(CAMPO_POR_ID.adaptacao), S.caso.adaptacao)) : tr('nível do exemplo do guia');
-  const linhaAdapt = `<p class="adapt"><span>${esc(tr('Adaptação (K3.1 + K3.2), Ano 0:'))}</span> <b class="num">${grande(adaptacaoAno0(n.av))}</b> <span class="muted">· <span>${esc(tr('Nível escolhido no passo 2.3.4:'))}</span> ${esc(nivelAd)}</span></p>`;
+  const linhaAdapt = `<p class="adapt"><span>${esc(tr('Adaptação (K3.1 + K3.2), Ano 0:'))}</span> <b class="num">${grande(adaptacaoAno0(n.av))}</b> <span class="muted">· <span>${esc(tr('Nível escolhido no passo 2.3.7:'))}</span> ${esc(nivelAd)}</span></p>`;
   const tabCam = cam ? (() => {
     const tot = CAMADAS.reduce((s, [k]) => s + ((cam.total || {})[k] || 0), 0);
     const thC = [tr('Camada'), tr('Ano 0') + ' (' + unidMil() + ')', tr('Total do ciclo') + ' (' + unidMil() + ')'];
@@ -488,11 +630,11 @@ function passo3c() {
       ${CAMADAS.map(([k, nome]) => `<tr><td data-th="${esc(thC[0])}"><span class="cn-t">${k}</span> <span>${esc(nome)}</span></td><td class="n" data-th="${esc(thC[1])}">${mil((cam.ano0 || {})[k] || 0)}</td><td class="n" data-th="${esc(thC[2])}">${mil((cam.total || {})[k] || 0)}</td><td class="n" data-th="%">${pct(tot ? ((cam.total || {})[k] || 0) / tot : 0)}</td></tr>`).join('')}
       <tr class="tot"><td data-th="${esc(thC[0])}">Total</td><td class="n" data-th="${esc(thC[1])}">${mil(CAMADAS.reduce((s, [k]) => s + ((cam.ano0 || {})[k] || 0), 0))}</td><td class="n" data-th="${esc(thC[2])}">${mil(tot)}</td><td class="n" data-th="%">100%</td></tr></tbody></table></div>`;
   })() : '';
-  // v10: "Como o custo é calculado" (R3) no topo, depois os indicadores; tabelas e premissas recolhidas
+  // "Como o custo é calculado" (formula.js) no topo, depois os indicadores; tabelas e premissas recolhidas
   let formula = '';
   if (typeof renderFormula === 'function') { try { formula = renderFormula(); } catch (e) { console.error(e); formula = ''; } }
   return `${seletorMoeda()}
-    ${pend ? '<p class="hint">Enquanto faltarem respostas nos passos 2.3, 3.1 e 3.2, a estimativa usa premissas padrão.</p>' : ''}
+    ${pend ? '<p class="hint">Enquanto faltarem respostas nos passos 2.3 a 2.6, 3.1, 3.2 e 4.1, a estimativa usa premissas padrão.</p>' : ''}
     ${formula ? `<div class="formula-box">${formula}</div>` : ''}
     <div class="kpis kpis5">
       <div class="kpi"><span class="v">${grande(n.ano0)}</span><span class="l">Custo do Ano 0 (prova de conceito ou piloto)</span></div>
@@ -515,14 +657,14 @@ function passo3c() {
     <details class="calc" data-calc ${S.calcAberta ? 'open' : ''}><summary>Ajustar premissas, itens e cenários na calculadora completa</summary>
       <div id="custos-box" class="embutido">${S.calcAberta && typeof renderCustos === 'function' ? renderCustos() : ''}</div></details>`;
 }
-// Passo 3.4: recomendações de ação para o caso (R2, recomendacoes.js)
-function passo3d() {
+// Passo 4.3: recomendações para você (recomendacoes.js)
+function passo4c() {
   if (typeof renderRecomendacoes === 'function') {
     try { return renderRecomendacoes(); } catch (e) { console.error(e); return '<p class="muted">Não foi possível montar as recomendações com as respostas atuais.</p>'; }
   }
-  return '<p class="muted">As recomendações para o seu caso ainda não estão disponíveis nesta versão da ferramenta.</p>';
+  return '<p class="muted">As recomendações para você ainda não estão disponíveis nesta versão da ferramenta.</p>';
 }
-function corpoPasso(id) { return id === '3c' ? passo3c() : id === '3d' ? passo3d() : corpoPadrao(id); }
+function corpoPasso(id) { return id === '4b' ? passo4b() : id === '4c' ? passo4c() : corpoPadrao(id); }
 
 // ----------------------------------------------------------- passos, rodapés e fases
 function resumoPasso(id) {
@@ -530,13 +672,16 @@ function resumoPasso(id) {
   if (id === '1a' && passoFeito(id)) { const t = totaisCtx(); return [tr(rotulo(NIVEIS_ADM, x.nivel)), x.local, fmtInt(t.alunos) + ' ' + tr('estudantes')].filter(Boolean).join(' · '); }
   if (id === '1b' && x.olhando) return x.olhando;
   if (id === '2a' && (c.tarefas || []).length) return rotTarefas(3);
-  if (id === '20' && c.teste) return tr(rotulo(listaOpc(CAMPO_POR_ID.teste), c.teste));
+  if (id === '20' && testesDe(c).length) return rotTestes();
   if (id === '2c' && qOk(CAMPO_POR_ID.tipoTec)) return tr(rotulo(listaOpc(CAMPO_POR_ID.tipoTec), c.tipoTec));
-  if (id === '3c') return S.feitos['3c'] ? tr('Estimativa vista') : '';
-  if (id === '3d') return S.feitos['3d'] ? tr('Recomendações vistas') : '';
+  if (id === '2d' && c.internet) return tr('Internet') + ': ' + tr(rotulo(listaOpc(CAMPO_POR_ID.internet), c.internet));
+  if (id === '4b') return S.feitos['4b'] ? tr('Estimativa vista') : '';
+  if (id === '4c') return S.feitos['4c'] ? tr('Recomendações vistas') : '';
   const cs = camposPasso(id).filter(f => !f.opcional);
   return tr(cs.filter(qOk).length + ' de ' + cs.length + ' respondidas');
 }
+// Rótulo traduzido da resposta 2.0 ("Prova de conceito + Piloto")
+function rotTestes() { const L = listaOpc(CAMPO_POR_ID.testes); return testesDe().map(k => tr(rotulo(L, k))).join(' + '); }
 function rotTarefas(lim) {
   const c = S.caso, ts = (c.tarefas || []).map(k => k === 'outra' ? (c.tarefaOutra || tr('Outra')) : tr(rotulo(listaOpc(CAMPO_POR_ID.tarefas), k)));
   return ts.slice(0, lim).join('; ') + (ts.length > lim ? ' +' + (ts.length - lim) : '');
@@ -574,8 +719,8 @@ function rodapeFase(f) {
   const ult = PASSOS[f.id][PASSOS[f.id].length - 1][0];
   const completa = progressoFase(f.id).completa;
   const msg = completa ? `<span class="ok-msg">${esc(tr('Fase ' + f.n + ' completa'))}</span>`
-    : `<span class="muted">${esc(n ? (n === 1 ? tr('Falta 1 resposta nesta fase. Você pode continuar e voltar depois.') : tr('Faltam ' + n + ' respostas nesta fase. Você pode continuar e voltar depois.')) : tr(naoVistos.includes('3c') ? 'Abra a estimativa de custo para concluir esta fase.' : 'Abra as recomendações para o seu caso (3.4) para concluir esta fase.'))}</span>`;
-  return `<div class="fase-pe" id="fpe-${f.id}">${msg}${botaoSeguir(f.id, ult, f.id === 'custo' ? '' : 'ir-fase')}</div>`;
+    : `<span class="muted">${esc(n ? (n === 1 ? tr('Falta 1 resposta nesta fase. Você pode continuar e voltar depois.') : tr('Faltam ' + n + ' respostas nesta fase. Você pode continuar e voltar depois.')) : tr(naoVistos.includes('4b') ? 'Abra a estimativa de custo para concluir esta fase.' : 'Abra as recomendações para você (4.3) para concluir esta fase.'))}</span>`;
+  return `<div class="fase-pe" id="fpe-${f.id}">${msg}${botaoSeguir(f.id, ult, f.id === 'expansao' ? '' : 'ir-fase')}</div>`;
 }
 function marcaPasso(id, st) {
   return st === 'ok' ? `<span aria-hidden="true">✓</span><span class="sr">${numPasso(id)}</span>` : numPasso(id);
@@ -625,8 +770,8 @@ function boasVindas() {
     </div>` : '';
   return `<section class="boas card" id="boas">${escolha}
     <div class="eyebrow">Como funciona</div>
-    <h2>Do contexto ao plano de contratação, em três fases</h2>
-    <p>Você descreve a sua rede, o problema e o que quer que a IA faça, escolhe entre prova de conceito e piloto e define como vai adotar e pagar a tecnologia. No fim, um clique gera o plano de contratação, com custo, compra e recomendações de política. Os valores são ilustrativos.</p>
+    <h2>Do contexto ao plano de contratação, em quatro fases</h2>
+    <p>Você descreve a sua rede, o problema e o que quer que a IA faça; planeja a prova de conceito ou o piloto, com ferramentas, internet, dispositivos, formação e suporte; define a primeira etapa da implantação e até onde quer chegar na expansão. No fim, você vê a estimativa de custo e as recomendações para você, e um clique gera o plano de contratação. Os valores são ilustrativos.</p>
     <ol class="boas-fases">${FASES.map(f => `<li class="f${f.n}"><span class="fase-n">${f.n}</span><span><b>${esc(f.nome)}</b><small>${esc(f.sub)}</small></span></li>`).join('')}</ol>
     ${sv ? '' : '<div class="row"><button type="button" class="btn pri grande" data-act="comecar">Começar um caso em branco</button><button type="button" class="btn grande" data-act="ver-exemplo">Ver um exemplo preenchido</button></div>'}
     ${sv ? '<div class="row"><button type="button" class="link" data-act="ver-exemplo">Ver um exemplo preenchido</button></div>' : ''}
@@ -653,7 +798,7 @@ function mandala() {
     return `M${f1(x0)},${f1(y0)} A${r1},${r1} 0 ${larga} 1 ${f1(x1)},${f1(y1)} L${f1(x2)},${f1(y2)} A${r0},${r0} 0 ${larga} 0 ${f1(x3)},${f1(y3)}Z`;
   };
   const ang = (i, n) => -Math.PI / 2 + i * 2 * Math.PI / n;
-  const ANEIS = { contexto: [0, 48], piloto: [52, 86], custo: [90, 118] };
+  const ANEIS = { contexto: [0, 40], piloto: [44, 76], implantacao: [80, 98], expansao: [102, 120] };
   const EST = { ok: ['m-ok', 'concluído'], andamento: ['m-and', 'em andamento'], '': ['m-vazio', 'ainda não iniciado'] };
   let s = `<svg class="mandala" viewBox="-6 -6 312 312" role="img" aria-label="${esc(tr('Mandala: fases, passos e camadas'))}">`;
   FASES.forEach(f => {
@@ -661,7 +806,7 @@ function mandala() {
     ps.forEach(([id, nome], i) => {
       const a0 = ang(i, ps.length), a1 = ang(i + 1, ps.length), st = estadoPasso(id), [cls, rot] = EST[st];
       const at = S.vista !== 'plano' && S.fase === f.id && (S.passo === id);
-      const [tx, ty] = pt(r0 ? (r0 + r1) / 2 : 30, (a0 + a1) / 2);
+      const [tx, ty] = pt(r0 ? (r0 + r1) / 2 : 24, (a0 + a1) / 2);
       s += `<a href="#" data-ir="${f.id}:${id}" data-setor="${id}" class="m-set f${f.n} ${cls}${at ? ' m-at' : ''}"><title>${esc(numPasso(id) + ' ' + tr(nome) + ' · ' + tr(rot))}</title><path d="${setor(r0, r1, a0, a1)}"/><text x="${f1(tx)}" y="${f1(ty + 4)}" text-anchor="middle">${numPasso(id)}</text></a>`;
     });
   });
@@ -687,7 +832,8 @@ function renderPainel() {
   }
   const t = totaisCtx(), c = S.caso;
   const prog = FASES.map(f => { const pr = progressoFase(f.id); return `<li><button type="button" class="prog-f f${f.n}${pr.completa ? ' feita' : ''}" data-fase="${f.id}"><span class="fase-n">${marcaFase(f, pr)}</span><span class="vl-t">${esc(f.nome)}</span><span class="vl-n">${esc(tr(pr.feitos + ' de ' + pr.total + ' passos'))}</span></button></li>`; }).join('');
-  const teste = c.teste ? (c.teste === 'recomendar' ? tr('a recomendar') : tr(rotulo(listaOpc(CAMPO_POR_ID.teste), c.teste))) : '—';
+  const m = modoTeste(c);
+  const teste = m ? (m === 'recomendar' ? tr('a recomendar') : rotTestes()) : '—';
   const tec = c.tipoTec ? tr(rotulo(listaOpc(CAMPO_POR_ID.tipoTec), c.tipoTec)) : '—';
   let est = '';
   const fe = faltasEstimativa();
@@ -696,10 +842,10 @@ function renderPainel() {
       const n = numerosCusto(), ce = casoAtual();
       const pessoas = Math.max(0, ...(n.av.r.E || []).slice(1)) || +ce.elegiveis || 0;
       est = `<div class="estim"><div class="eyebrow">Estimativa ilustrativa</div>
-        <p class="small premissa">${esc(tr('Considera ' + fmtInt(pessoas) + ' pessoas usando a ferramenta na rede (passo 3.1.1).'))}</p>
+        <p class="small premissa">${esc(tr('Considera ' + fmtInt(pessoas) + ' pessoas usando a ferramenta na rede (passo 4.1.1).'))}</p>
         <div class="linha"><span>Ano 0 (prova de conceito ou piloto)</span><span class="num">${grande(n.ano0)}</span></div>
         <div class="linha"><span><span>Custo total do ciclo</span> <small>(${esc(tr(n.H + ' anos'))})</small></span><span class="num">${grande(n.total)}</span></div>
-        <p class="small muted">Valores ilustrativos. As premissas estão no passo 3.3.</p></div>`;
+        <p class="small muted">Valores ilustrativos. As premissas estão no passo 4.2.</p></div>`;
     } catch (e) { est = ''; }
   } else {
     est = `<div class="estim"><div class="eyebrow">Estimativa ilustrativa</div>
@@ -710,7 +856,7 @@ function renderPainel() {
   el.innerHTML = `<div class="card painel-in">
     <div class="prog"><div class="eyebrow">Seu progresso</div><ul class="vlist">${prog}</ul></div>
     <div class="mand">${mandala()}
-      <p class="small muted leg-m"><span>Verde: concluído. Cor clara: em andamento. Contorno: ainda não iniciado. Centro: fase 1; anéis: fases 2 e 3; anel externo: as sete camadas do custo total.</span> ${botaoInfo('c37', 'm')}</p>${notaInfo('c37', 'm')}
+      <p class="small muted leg-m"><span>Verde: concluído. Cor clara: em andamento. Contorno: ainda não iniciado. Centro: fase 1; anéis: fases 2, 3 e 4; anel externo: as sete camadas do custo total.</span> ${botaoInfo('c37', 'm')}</p>${notaInfo('c37', 'm')}
       <ol class="leg">${CAMADAS.map(([n, nome]) => `<li><span class="cn">${n}</span>${esc(nome)}</li>`).join('')}</ol></div>
     <div class="fatos"><div class="eyebrow">Seu caso</div>
       <div class="linha"><span>Lugar</span><span>${esc(S.ctx.local || '—')}</span></div>
@@ -737,7 +883,7 @@ function confLimpar() {
 // ----------------------------------------------------------- render
 function render() {
   estadoFluxo();
-  if (S.vista !== 'plano' && S.fase === 'custo' && PASSOS_VER.includes(S.passo)) S.feitos[S.passo] = true;
+  if (S.vista !== 'plano' && S.fase === 'expansao' && PASSOS_VER.includes(S.passo)) S.feitos[S.passo] = true;
   aplicarPadroes();
   const y = window.scrollY, foco = document.activeElement && document.activeElement.id;
   const ex = ['A', 'B', 'C', 'D', 'editado'].includes(S.exemplo) && S.boasVindas === false;
@@ -822,22 +968,56 @@ function continuar(modo, de) {
 // Gancho chamado por app.js depois de gravar S.caso[campo] (ou um caminho como 'piloto.escolas').
 // Devolve true porque já atualizou a tela.
 function aoMudarCampo(campo) {
-  const f = CAMPO_POR_ID[campo];
+  const f = CAMPO_POR_ID[campo], c = S.caso;
   if (campo === 'tarefas') aplicarSugestoes();
-  if (String(campo).startsWith('piloto') || campo === 'elegiveis') {
-    const c = S.caso, p = c.piloto || {}, t = totaisCtx(), el = document.getElementById('pct-rede');
-    const v = c.teste !== 'poc' && t.escolas && +p.escolas ? Math.min(1, +p.escolas / t.escolas) : 0;
+  if (campo === 'testes') delete c.teste;   // v11: casoEfetivo deriva "teste" de "testes"
+  // 2.3.2 "Sim": a lista de ferramentas começa com tantas linhas quantas a resposta 2.3.1 indica
+  if (campo === 'conheceFerramentas' && c.conheceFerramentas === 'sim' && !(c.ferramentas || []).length) {
+    const n = ({ '1': 1, '2': 2, '3mais': 3 })[c.nFerramentas] || 1;
+    c.ferramentas = Array.from({ length: n }, () => novaFerramenta());
+  }
+  if (campo === 'formacaoHoras') c.formacaoEstimativa = false;   // horas digitadas pela pessoa
+  if (['piloto', 'poc', 'implantacao', 'elegiveis', 'escolasInternet', 'formacaoHoras'].includes(String(campo).split('.')[0])) {
+    const p = c.piloto || {}, t = totaisCtx(), el = document.getElementById('pct-rede');
+    const v = modoTeste() !== 'poc' && t.escolas && +p.escolas ? Math.min(1, +p.escolas / t.escolas) : 0;
     if (el) { el.hidden = !v; const b = el.querySelector('b'); if (b) b.textContent = pct(v); }
     atualizarLaterais(); return true;
   }
   if ((f && ['texto', 'area'].includes(f.tipo)) || ['tarefaOutra', 'impactoOutro', 'nivelOutro', 'titulo', 'problema', 'resultado'].includes(campo)) { atualizarLaterais(); return true; }
   render(); return true;
 }
+function novaFerramenta() { return { nome: '', tarefas: [], tipoTec: '', pagamento: '', preco: '' }; }
+// Lista de ferramentas (2.3.3): data-ferr="<i>.<campo>" e data-ferr-t="<i>" (tarefas)
+function gravarFerramenta(el, final) {
+  const c = S.caso, L = c.ferramentas = c.ferramentas || [];
+  if (el.dataset.ferrT != null) {
+    const t = L[+el.dataset.ferrT]; if (!t) return;
+    const s = new Set(t.tarefas || []); el.checked ? s.add(el.value) : s.delete(el.value);
+    const ord = c.tarefas || []; t.tarefas = ord.filter(k => s.has(k));
+  } else {
+    const [i, k] = el.dataset.ferr.split('.'), t = L[+i]; if (!t) return;
+    if (k === 'preco') { const v = lerNum(el.value); t.preco = v === '' ? '' : Math.max(0, +v || 0); }
+    else t[k] = el.value;
+    // ferramenta principal: tecnologia e pagamento são as respostas 2.3.4 e 2.3.5
+    if (+i === 0 && (k === 'tipoTec' || k === 'pagamento')) { c[k] = el.value; if (el.value) S.respC[k] = true; else delete S.respC[k]; }
+  }
+  S.respC.ferramentas = true;
+  if (S.exemplo !== 'novo') S.exemplo = 'editado';
+  if (S.custo) S.custo.editado = false;
+  if (final && el.dataset.ferr && /\.(tipoTec|pagamento)$/.test(el.dataset.ferr) && el.dataset.ferr.startsWith('0.')) { render(); return; }
+  atualizarLaterais();
+}
 function eventoFluxo(e) {
   const el = e.target;
   if (e.type === 'click') {
     const inf = el.closest('[data-info]');
     if (inf) { const id = inf.dataset.infoId || inf.dataset.info; S.info[id] = !S.info[id]; render(); return true; }
+    const fg = el.closest('[data-fig]');
+    if (fg) {
+      const id = fg.dataset.fig; FIG_ABERTA[id] = !FIG_ABERTA[id]; render();
+      requestAnimationFrame(() => { const b = document.querySelector(`[data-fig="${id}"]`); if (b) b.focus({ preventScroll: true }); });
+      return true;
+    }
     const iz = el.closest('[data-ir]');
     if (iz) { e.preventDefault(); const [f, p, q] = iz.dataset.ir.split(':'); abrirFase(f, p, q); return true; }
     const fz = el.closest('[data-fase]');
@@ -867,6 +1047,26 @@ function eventoFluxo(e) {
     if (act === 'limpar-pedir') { CONF_LIMPAR = true; renderPainel(); requestAnimationFrame(() => { const b = document.querySelector('#conf-limpar [data-act="limpar-nao"]'); if (b) b.focus(); }); return true; }
     if (act === 'limpar-nao') { CONF_LIMPAR = false; renderPainel(); requestAnimationFrame(() => { const b = document.getElementById('btn-limpar'); if (b) b.focus(); }); return true; }
     if (act === 'limpar-ok') { CONF_LIMPAR = false; carregarExemplo('novo'); S.boasVindas = false; abrirFase('contexto', '1a'); return true; }
+    if (act === 'ferr-add') {
+      const L = S.caso.ferramentas = S.caso.ferramentas || []; L.push(novaFerramenta()); S.respC.ferramentas = true; if (S.custo) S.custo.editado = false; render();
+      requestAnimationFrame(() => { const i = document.getElementById('fe-' + (L.length - 1) + '-nome'); if (i) i.focus(); });
+      return true;
+    }
+    if (act === 'ferr-rm') {
+      const L = S.caso.ferramentas || [], i = +a.dataset.i;
+      L.splice(i, 1);
+      // a nova primeira ferramenta passa a ser a principal: a tecnologia e o pagamento dela, se informados, viram as respostas 2.3.4 e 2.3.5
+      if (i === 0 && L[0]) ['tipoTec', 'pagamento'].forEach(k => { if (L[0][k]) { S.caso[k] = L[0][k]; S.respC[k] = true; } });
+      if (S.custo) S.custo.editado = false; render();
+      requestAnimationFrame(() => { const b = document.getElementById('ferr-add'); if (b) b.focus(); });
+      return true;
+    }
+    if (act === 'horas-est') {
+      S.caso.formacaoHoras = horasEstimativa(); S.caso.formacaoEstimativa = true; delete S.respC.formacaoHoras;
+      if (S.custo) S.custo.editado = false; if (S.exemplo !== 'novo') S.exemplo = 'editado'; render();
+      requestAnimationFrame(() => { const i = document.getElementById('f-formacaoHoras'); if (i) i.focus({ preventScroll: true }); });
+      return true;
+    }
     if (act === 'continuar') { continuar('normal', a.dataset.de); return true; }
     if (act === 'continuar-forcar') { continuar('forcar', a.dataset.de); return true; }
     if (act === 'continuar-confirmar') { continuar('confirmar', a.dataset.de); return true; }
@@ -878,6 +1078,10 @@ function eventoFluxo(e) {
     if (act === 'pdf') { if (typeof baixarPDF === 'function') baixarPDF(); return true; }
     if (act === 'usar-alunos') { S.caso.elegiveis = totaisCtx().alunos; S.respC.elegiveis = true; if (S.custo) S.custo.editado = false; if (S.exemplo !== 'novo') S.exemplo = 'editado'; render(); toast(tr('Total de estudantes aplicado.')); return true; }
     return false;
+  }
+  if ((e.type === 'change' || e.type === 'input') && el.dataset && (el.dataset.ferr != null || el.dataset.ferrT != null)) {
+    if (e.type === 'input' && el.tagName === 'SELECT') return true;
+    gravarFerramenta(el, e.type === 'change'); return true;
   }
   if (e.type === 'change') {
     if (el.dataset.ctx) {
@@ -900,7 +1104,6 @@ function eventoFluxo(e) {
     if (el.dataset.ctxn) { gravarCtxn(el); return true; }
   }
   if (e.type === 'toggle' && el.dataset) {
-    if (el.dataset.arq != null) { ARQ_ABERTA = el.open; return false; }
     if (el.dataset.numdet != null) { NUM_ABERTO = el.open; return false; }
     if (el.dataset.calc != null) {
       S.calcAberta = el.open;

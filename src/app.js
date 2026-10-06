@@ -1,11 +1,11 @@
 // =====================================================================
-// Estado, entradas, exportação, relatório e eventos gerais (v9)
+// Estado, entradas, exportação, relatório e eventos gerais (v9; v11: quatro fases e migração v10 → v11)
 // =====================================================================
 const CHAVE = 'aiedu-procurement-v9';
 const CHAVE_V8 = 'navegador-ia-educacao-v4';
 function estadoInicial() {
   return {
-    versao: 9, v10: true, caso: clone(CASO_VAZIO), ctx: {}, resp: {}, respC: {}, feitos: {}, exemplo: 'novo',
+    versao: 11, v10: true, caso: clone(CASO_VAZIO), ctx: {}, resp: {}, respC: {}, feitos: {}, exemplo: 'novo',
     fase: '', passo: '1a', vista: '', boasVindas: true, info: {},
     custo: { base: 'caso', cfg: null, editado: false }, moeda: { cod: 'USD', taxa: '' }, lang: '',
   };
@@ -24,18 +24,25 @@ const pill = n => `<span class="pill n-${n}">${NIVEL_NOME[n]}</span>`;
 
 // ----------------------------------------------------------- salvar, carregar e migrar
 function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(S)); } catch (e) { } }
-// completa o estado com os valores padrão e retira o que não existe mais na v9
+// completa o estado com os valores padrão e retira o que não existe mais (v9 → v10 → v11)
 function normalizarEstado() {
-  S.versao = 9;
-  S.caso = Object.assign(clone(CASO_VAZIO), S.caso || {});
-  S.caso.piloto = Object.assign({ escolas: '', participantes: '', meses: '' }, S.caso.piloto || {});
-  S.ctx = S.ctx || {}; S.resp = S.resp || {}; S.respC = S.respC || {}; S.feitos = S.feitos || {}; S.info = S.info || {};
   // antes da v10, pagamento, licença, tamanho do teste e pessoas na rede só tinham valor quando respondidos:
   // ficam confirmados, para que as sugestões geradas (fluxo.js, aplicarPadroes) não os substituam
+  S.caso = S.caso || {}; S.respC = S.respC || {};
   if (!S.v10) { if (typeof confirmarGerados === 'function') confirmarGerados(S.caso, S.respC); S.v10 = true; }
+  if (+S.versao !== 11) migrarEstadoV11(S);
+  S.versao = 11;
+  S.caso = Object.assign(clone(CASO_VAZIO), S.caso || {});
+  S.caso.piloto = Object.assign({ escolas: '', participantes: '', meses: '' }, S.caso.piloto || {});
+  S.caso.poc = Object.assign({ participantes: '', meses: '' }, S.caso.poc || {});
+  S.caso.implantacao = Object.assign({ escolas: '', pessoas: '' }, S.caso.implantacao || {});
+  if (!Array.isArray(S.caso.testes)) S.caso.testes = [];
+  if (!Array.isArray(S.caso.ferramentas)) S.caso.ferramentas = [];
+  ['pagaDepois', 'fonte', 'infra', 'arquiteturaManual'].forEach(k => { delete S.caso[k]; });
+  S.ctx = S.ctx || {}; S.resp = S.resp || {}; S.feitos = S.feitos || {}; S.info = S.info || {};
   S.custo = S.custo || { base: 'caso', cfg: null, editado: false };
   S.moeda = S.moeda || { cod: 'USD', taxa: '' };
-  if (!['contexto', 'piloto', 'custo', ''].includes(S.fase)) { S.fase = 'contexto'; S.passo = '1a'; }
+  if (!(S.fase === '' || (typeof PASSOS !== 'undefined' && PASSOS[S.fase]))) { S.fase = 'contexto'; S.passo = '1a'; }
   if (!['', 'plano'].includes(S.vista || '')) S.vista = '';
   ['piloto', 'pular', 'checks', 'sub', 'tab', 'dimAberta', 'pdAberto'].forEach(k => { delete S[k]; });
 }
@@ -49,7 +56,7 @@ function carregar() {
       if (t8) { const v = JSON.parse(t8); if (v && v.caso) { o = migrarV8(v); MIGROU = true; } }
     } catch (e) { o = null; MIGROU = false; }
   }
-  if (o && o.caso) S = Object.assign(estadoInicial(), o);
+  if (o && o.caso) { S = Object.assign(estadoInicial(), o); if (!o.versao) S.versao = 9; }
   normalizarEstado();
   if (MIGROU) salvar();   // grava na chave nova; a chave antiga fica intacta
   // v10: um caso salvo (desta versão, de uma sessão anterior ou convertido da v8) não abre preenchido sem a pessoa pedir
@@ -67,7 +74,7 @@ function temRespostas(o) {
   if (Object.keys(o.resp || {}).some(k => o.resp[k])) return true;
   const x = o.ctx || {}, c = o.caso;
   if (x.nivel || x.local || x.dominio || x.olhando || (x.comps || []).length || Object.values(x.etapas || {}).some(e => e && e.on)) return true;
-  return ['titulo', 'problema', 'resultado', 'teste', 'tipoTec', 'pagamento', 'licenca', 'elegiveis'].some(k => c[k]) || ['tarefas', 'impactos', 'usuarios'].some(k => (c[k] || []).length);
+  return ['titulo', 'problema', 'resultado', 'teste', 'tipoTec', 'pagamento', 'licenca', 'elegiveis', 'nFerramentas', 'conheceFerramentas', 'internet', 'modeloDisp', 'formacaoFormato', 'formacaoPaga', 'suporteQuem', 'suporteNivel', 'acompanhamento', 'arquitetura'].some(k => c[k]) || ['tarefas', 'impactos', 'usuarios', 'testes', 'ferramentas', 'formados', 'formacaoTipo'].some(k => (c[k] || []).length);
 }
 // Boas-vindas: continuar o caso salvo, no passo em que a pessoa parou
 function continuarSalvo() {
@@ -77,6 +84,53 @@ function continuarSalvo() {
   const p = PASSOS[f].some(x => x[0] === S.passo) ? S.passo : PASSOS[f][0][0];
   abrirFase(f, p);
   toast(tr(migrou ? 'Caso da versão anterior convertido. Revise as respostas de adoção.' : 'Caso salvo aberto.'));
+}
+// ----------------------------------------------------------- migração v10 → v11 (plano/6_v11.md, "Campos")
+// Caso: teste → testes; PoC da v10 (caso.piloto sem escolas) → caso.poc; infra → internet + dispExistem;
+// arquiteturaManual → arquitetura; sem pagaDepois e fonte. Usa migrarCasoV10 (casos.js/framework.js) quando existe.
+function migrarCasoLocalV11(c0) {
+  const c = clone(c0 || {});
+  if (!Array.isArray(c.testes) || !c.testes.length) c.testes = c.teste === 'ambos' ? ['poc', 'piloto'] : c.teste ? [c.teste] : [];
+  if (c.testes.length === 1 && c.testes[0] === 'poc' && c.piloto && !(c.poc && (+c.poc.participantes > 0 || +c.poc.meses > 0))) {
+    c.poc = { participantes: c.piloto.participantes == null ? '' : c.piloto.participantes, meses: c.piloto.meses == null ? '' : c.piloto.meses };
+    c.piloto = { escolas: '', participantes: '', meses: '' };
+  }
+  if (c.infra && !c.internet) {
+    if (c.infra === 'sim') { c.internet = 'sim'; c.dispExistem = 'sim'; }
+    else if (c.infra === 'complementar') { c.internet = 'parcial'; c.dispExistem = 'parcial'; }
+  }
+  if (c.arquiteturaManual && !c.arquitetura) c.arquitetura = c.arquiteturaManual;
+  ['pagaDepois', 'fonte', 'infra', 'arquiteturaManual'].forEach(k => { delete c[k]; });
+  return c;
+}
+// Estado: o caso (acima), as confirmações (S.respC), as fases e os passos (a fase "custo" vira "expansao").
+function migrarEstadoV11(o) {
+  const c0 = o.caso || {};
+  let c = null;
+  if (typeof migrarCasoV10 === 'function') { try { c = migrarCasoV10(clone(c0)); } catch (e) { console.warn(e); c = null; } }
+  c = migrarCasoLocalV11(c || c0);
+  const rc = o.respC = o.respC || {};
+  if (rc.teste) { rc.testes = true; delete rc.teste; }
+  if (rc.infra) { if (c.internet) rc.internet = true; if (c.dispExistem) rc.dispExistem = true; delete rc.infra; }
+  if (rc.arquiteturaManual) { if (c.arquitetura) rc.arquitetura = true; delete rc.arquiteturaManual; }
+  delete rc.pagaDepois; delete rc.fonte;
+  // PoC da v10: as confirmações do tamanho do teste passam para caso.poc
+  if (c.testes.length === 1 && c.testes[0] === 'poc') ['participantes', 'meses'].forEach(k => { if (rc['piloto.' + k]) { rc['poc.' + k] = true; delete rc['piloto.' + k]; } });
+  // valores que a migração preencheu (dispositivos e primeira etapa da implantação) ficam confirmados:
+  // as sugestões geradas (fluxo.js, aplicarPadroes) não os substituem
+  if (c.dispExistem) rc.dispExistem = true;
+  ['escolas', 'pessoas'].forEach(k => { if (c.implantacao && !(c.implantacao[k] === '' || c.implantacao[k] == null)) rc['implantacao.' + k] = true; });
+  o.caso = c;
+  if (Array.isArray(o.revisar)) o.revisar = o.revisar.filter(k => !['infra', 'arquiteturaManual', 'pagaDepois', 'fonte'].includes(k));
+  // fases e passos: 3.1 Escala → 4.1; 3.2 Fonte de recursos (removido) → 4.1; 3.3 → 4.2; 3.4 → 4.3
+  const fe = o.feitos || {}, novoFe = {};
+  if (fe['3c']) novoFe['4b'] = true;
+  if (fe['3d']) novoFe['4c'] = true;
+  Object.keys(fe).forEach(k => { if (/^(1|2)/.test(k)) novoFe[k] = fe[k]; });
+  o.feitos = novoFe;
+  if (o.fase === 'custo') { o.fase = 'expansao'; o.passo = ({ '3a': '4a', '3b': '4a', '3c': '4b', '3d': '4c' })[o.passo] || '4a'; }
+  o.versao = 11;
+  return o;
 }
 // Converte um estado ou uma exportação da v8 (formato 4) para a v9 (plano, seção E.2).
 function migrarV8(o) {
@@ -175,8 +229,9 @@ function cfgAtual() {
   return S.custo.cfg;
 }
 // campos cuja mudança refaz as premissas de custo montadas a partir do caso
-const CAMPOS_CUSTO = ['tarefas', 'usuarios', 'afetados', 'consequencias', 'teste', 'tipoTec', 'pagamento', 'licenca', 'adaptacao', 'infra', 'piloto',
-  'arquiteturaManual', 'elegiveis', 'expansao', 'horizonte', 'pagaDepois'];
+const CAMPOS_CUSTO = ['tarefas', 'usuarios', 'afetados', 'consequencias', 'testes', 'tipoTec', 'pagamento', 'licenca', 'adaptacao', 'piloto', 'poc',
+  'nFerramentas', 'conheceFerramentas', 'ferramentas', 'internet', 'escolasInternet', 'modeloDisp', 'dispExistem', 'formados', 'formacaoTipo', 'formacaoFormato',
+  'formacaoHoras', 'formacaoPaga', 'suporteQuem', 'suporteNivel', 'acompanhamento', 'implantacao', 'arquitetura', 'elegiveis', 'expansao', 'horizonte'];
 function marcarCampo(campo) {
   S.respC[campo] = true;
   if (S.exemplo !== 'novo') S.exemplo = 'editado';
@@ -310,15 +365,16 @@ function slugCaso() {
 function nomeArq(ext) { return 'procurement-plan-' + slugCaso() + '.' + ext; }
 function nomeArqCaso() { return 'ai-education-case-' + slugCaso() + '.json'; }
 function dadosCaso() {
-  return { app: 'ai-education-procurement-tool', formato: 9, v10: true, salvo: new Date().toISOString(), exemplo: S.exemplo, caso: S.caso, ctx: S.ctx, resp: S.resp, respC: S.respC, revisar: S.revisar || [], feitos: S.feitos, custo: S.custo, moeda: S.moeda, lang: S.lang };
+  return { app: 'ai-education-procurement-tool', formato: 11, versao: 11, v10: true, salvo: new Date().toISOString(), exemplo: S.exemplo, caso: S.caso, ctx: S.ctx, resp: S.resp, respC: S.respC, revisar: S.revisar || [], feitos: S.feitos, custo: S.custo, moeda: S.moeda, lang: S.lang };
 }
 function aplicarImportado(o) {
-  S.caso = Object.assign(clone(CASO_VAZIO), o.caso);
+  S.caso = clone(o.caso);   // normalizarEstado migra (v10 → v11) e completa com CASO_VAZIO
   S.ctx = o.ctx || {}; S.resp = o.resp || {}; S.respC = o.respC || {}; S.feitos = o.feitos || {}; S.revisar = Array.isArray(o.revisar) ? o.revisar : [];
   S.custo = o.custo || { base: 'caso', cfg: null, editado: false };
   if (o.moeda) S.moeda = o.moeda;
   S.exemplo = o.exemplo === 'novo' ? 'novo' : 'editado';
   S.fase = 'contexto'; S.passo = '1a'; S.vista = ''; S.boasVindas = false; S.v10 = !!o.v10;
+  S.versao = +o.formato === 11 || +o.versao === 11 ? 11 : 9;   // formato 9 (v9 e v10) passa pela migração v10 → v11
   SALVO = null; CONF_LIMPAR = false;
   IA = { estado: '', resposta: null, erro: '' };
   normalizarEstado();
@@ -326,7 +382,7 @@ function aplicarImportado(o) {
 function importarCaso(txt) {
   let o = null;
   try { o = JSON.parse(txt); } catch (e) { o = null; }
-  if (o && o.app === 'ai-education-procurement-tool' && +o.formato === 9 && o.caso) {
+  if (o && o.app === 'ai-education-procurement-tool' && [9, 11].includes(+o.formato) && o.caso) {
     aplicarImportado(o); render(); window.scrollTo(0, 0); toast(tr('Caso importado.')); return true;
   }
   if (o && o.app === 'navegador-ia-educacao' && o.caso) {
@@ -384,6 +440,8 @@ function editarCfg() {
 function textosExemplo() {
   const k = S.exemplo; if (!CASOS[k]) return;
   ['titulo', 'problema', 'resultado'].forEach(f => { if (CASOS[k][f]) S.caso[f] = tr(CASOS[k][f]); });
+  (CASOS[k].ferramentas || []).forEach((fe, i) => { if (fe && fe.nome && S.caso.ferramentas && S.caso.ferramentas[i]) S.caso.ferramentas[i].nome = tr(fe.nome); });
+  ['tarefaOutra', 'impactoOutro'].forEach(f => { if (CASOS[k][f]) S.caso[f] = tr(CASOS[k][f]); });
   const cx = CTX_EX[k]; if (cx && S.ctx) ['local', 'olhando', 'compOutro'].forEach(f => { if (cx[f]) S.ctx[f] = tr(cx[f]); });
 }
 function carregarExemplo(k) {
@@ -488,7 +546,7 @@ function ligar() {
     if (el.dataset.fm) {
       const k = el.dataset.fm; const s = new Set(S.caso[k] || []); el.checked ? s.add(el.value) : s.delete(el.value);
       // "nenhuma"/"nenhum" exclui as demais opções, e vice-versa
-      const nada = { consequencias: 'nenhuma', dados: 'nenhum' }[k];
+      const nada = { consequencias: 'nenhuma', dados: 'nenhum', testes: 'recomendar' }[k];
       if (nada && el.checked) { if (el.value === nada) { s.clear(); s.add(nada); } else s.delete(nada); }
       S.caso[k] = [...s]; marcarCampo(k);
       if (gancho(k)) return;

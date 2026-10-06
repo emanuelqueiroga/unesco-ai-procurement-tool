@@ -1,0 +1,102 @@
+{
+ "app": "ai-education-procurement-tool",
+ "formato": 9,
+ "v10": true,
+ "salvo": "2026-10-06T22:25:45.649Z",
+ "exemplo": "novo",
+ "caso": {
+  "titulo": "",
+  "situacao": "nova",
+  "problema": "",
+  "resultado": "",
+  "linhaBase": "nao",
+  "alternativa": "",
+  "impactos": [],
+  "impactoOutro": "",
+  "teste": "poc",
+  "tarefas": [
+   "tutoria"
+  ],
+  "tarefaOutra": "",
+  "usuarios": [
+   "professores",
+   "estudantes"
+  ],
+  "afetados": [
+   "criancas",
+   "professores",
+   "familias"
+  ],
+  "consequencias": [
+   "formativa"
+  ],
+  "frequencia": "continua",
+  "tipoTec": "paga",
+  "pagamento": "institucional",
+  "licenca": "assinatura",
+  "adaptacao": "",
+  "infra": "complementar",
+  "piloto": {
+   "escolas": "",
+   "participantes": 20,
+   "meses": 3
+  },
+  "arquiteturaManual": "api",
+  "elegiveis": 5000,
+  "expansao": "ano1",
+  "horizonte": 3,
+  "pagaDepois": "rede",
+  "fonte": "parcial",
+  "ajustes": {},
+  "degrau": 2
+ },
+ "ctx": {
+  "nivel": "estado",
+  "nivelOutro": "",
+  "local": "Rede v10",
+  "etapas": {
+   "fund2": {
+    "on": true,
+    "escolas": 300,
+    "soTotal": true,
+    "alunos": 60000
+   }
+  },
+  "dominio": "",
+  "comps": [],
+  "compOutro": "",
+  "olhando": ""
+ },
+ "resp": {},
+ "respC": {
+  "tarefas": true,
+  "afetados": true,
+  "usuarios": true,
+  "teste": true,
+  "piloto.meses": true,
+  "piloto.participantes": true,
+  "tipoTec": true,
+  "infra": true,
+  "arquiteturaManual": true,
+  "fonte": true,
+  "pagaDepois": true,
+  "elegiveis": true,
+  "expansao": true
+ },
+ "revisar": [],
+ "feitos": {
+  "3c": true,
+  "3d": true,
+  "2a": true
+ },
+ "custo": {
+  "base": "caso",
+  "cfg": null,
+  "editado": false
+ },
+ "moeda": {
+  "cod": "USD",
+  "taxa": ""
+ },
+ "lang": "pt"
+}

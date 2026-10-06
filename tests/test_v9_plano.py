@@ -2,15 +2,19 @@
 # Uso: python3 tests/test_v9_plano.py   (depois de bash build.sh)
 # Verifica, para os exemplos A–D e um caso em branco:
 #  - o botão [data-act="gerar-plano"] abre #plano;
-#  - blocos "Custo e compra" e "Política e governança", nessa ordem, com as seções A1–A8 e B1–B9;
+#  - blocos "Custo e compra" e "Política e governança", nessa ordem, com as seções A1–A7 e B1–B9
+#    (v11: a seção "Fonte de recursos" saiu; o dossiê passou a A7);
 #  - nenhuma seção "Suas respostas";
 #  - C (teste "recomendar") mostra a recomendação de prova de conceito com motivo;
 #  - caso em branco mostra "Plano parcial" com a lista numerada e botões "Responder";
 #  - A3 tem 7 linhas de camada e o link da UNESDOC;
-#  - v10: seção "Recomendações para o seu caso" (data-sec="recs") depois do resumo e antes do bloco A;
+#  - v10/v11: seção "Recomendações para você" (data-sec="recs") depois do resumo e antes do bloco A;
+#  - v11: resumo com ferramentas, internet, dispositivos, formação, suporte, acompanhamento, implantação;
+#    nada de fonte de recursos; Figura 1 (Krueger e Jackson, 2026, p. 11) em A3 com legenda e crédito;
 #    A2 traz "Como o custo é calculado" (formula.js) quando a fórmula está no build;
 #  - sem erro de console e sem rolagem horizontal (1400 e 400 px);
-#  - PDF em EN (pdftotext): "Procurement plan", "Cost and procurement", "Policy and governance", a URL,
+#  - PDF em EN (pdftotext): "Procurement plan", "Recommendations for you", "Cost and procurement", "Policy and governance", a URL,
+#    a Figura 1 numa página própria (imagem JPEG 900×1225 e crédito CC BY-SA 3.0 IGO na mesma página),
 #    nome procurement-plan-<slug>.pdf e nenhuma palavra em português da lista do test_idiomas.py.
 import asyncio, os, re, subprocess, sys
 from playwright.async_api import async_playwright
@@ -23,7 +27,11 @@ SK = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content=
 open(f'{TMP}/nav.html', 'w').write(SK)
 URL_TCO = 'https://unesdoc.unesco.org/ark:/48223/pf0000399348'
 PT = re.compile(r'ção|ções|ã|õ|\b(?:não|você|para o|do caso|também|custo|orçament|decisão)\b', re.I)
-SECOES = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9']
+SECOES = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9']
+RESUMO_V11 = ['Prova de conceito ou piloto', 'Quantas ferramentas', 'Internet adequada nas escolas', 'Modelo de uso dos dispositivos', 'Os dispositivos já existem',
+  'Quem será formado', 'Formato da formação', 'Horas de formação por pessoa', 'Quem paga a formação', 'Quem dá suporte aos usuários', 'Nível de suporte',
+  'Nível de acompanhamento do uso', 'Primeira etapa da implantação', 'Arquitetura considerada', 'Tempo para chegar a todos depois da implantação']
+CREDITO = 'Figura 1 de Krueger, K. e Jackson, F. para CoSN (2026), Beyond the price tag, p. 11. © UNESCO 2026, licença CC BY-SA 3.0 IGO; reproduzida sem alterações.'
 falhas = []
 
 def ok(cond, msg):
@@ -48,6 +56,7 @@ async def main():
             await pg.select_option('#sel-lang', 'pt'); await pg.wait_for_timeout(150)
             for ex in ['A', 'B', 'C', 'D', 'novo']:
                 await abrir_caso(pg, ex)
+                await pg.evaluate("Promise.all([...document.querySelectorAll('#plano figure img')].map(i => i.decode().catch(() => null)))")
                 r = await pg.evaluate("""(() => { const P = document.getElementById('plano'); if (!P) return null;
                   const ordem = [...P.querySelectorAll('[data-bloco], [data-sec]')].map(e => e.dataset.bloco ? '[' + e.dataset.bloco + ']' : e.dataset.sec);
                   const blocos = [...P.querySelectorAll('[data-bloco]')].map(e => e.textContent.trim());
@@ -56,6 +65,9 @@ async def main():
                     a3linhas: a3 ? a3.rows.length : 0, a3link: !!P.querySelector('[data-sec="A3"] a[href="%s"]'),
                     a1: (P.querySelector('[data-sec="A1"]') || {}).innerText || '', a2: (P.querySelector('[data-sec="A2"]') || {}).innerText || '',
                     formula: typeof secaoFormula === 'function',
+                    resumo: (P.querySelector('[data-sec="resumo"]') || {}).innerText || '', recsH: (P.querySelector('[data-sec="recs"] h3') || {}).innerText || '',
+                    fig: (() => { const f = P.querySelector('[data-sec="A3"] figure img, [data-sec="A3"] ~ figure img, #plano-fig-tco img'); const sec = f && f.closest('section'); return f ? { ok: f.complete && f.naturalWidth === 900 && f.naturalHeight === 1225, w: f.getBoundingClientRect().width, sec: sec ? sec.dataset.sec : '', cap: (f.closest('figure').querySelector('figcaption') || {}).innerText || '' } : null; })(),
+                    temFig: typeof FIG_TCO !== 'undefined',
                     parcial: (P.querySelector('.parcial') || {}).innerText || '', nResp: P.querySelectorAll('.parcial [data-ir]').length,
                     sw: document.documentElement.scrollWidth }; })()""" % URL_TCO)
                 ok(r is not None and r['vista'] == 'plano', f'{tag} {ex}: #plano aberto pelo botão')
@@ -63,8 +75,17 @@ async def main():
                 o = r['ordem']
                 ok(o.index('[A]') < o.index('[B]') if '[A]' in o and '[B]' in o else False, f'{tag} {ex}: bloco A antes do bloco B')
                 ok(r['blocos'][:2] == ['A. Custo e compra', 'B. Política e governança'], f'{tag} {ex}: nomes dos blocos {r["blocos"][:2]}')
-                ok([s for s in o if s in SECOES] == SECOES, f'{tag} {ex}: seções A1–A8 e B1–B9 em ordem')
-                ok(all(o.index(s) > o.index('[A]') for s in SECOES[:8]) and all(o.index(s) > o.index('[B]') for s in SECOES[8:]), f'{tag} {ex}: seções dentro dos blocos')
+                ok([s for s in o if s in SECOES] == SECOES and 'A8' not in o, f'{tag} {ex}: seções A1–A7 e B1–B9 em ordem')
+                ok(all(o.index(s) > o.index('[A]') for s in SECOES[:7]) and all(o.index(s) > o.index('[B]') for s in SECOES[7:]), f'{tag} {ex}: seções dentro dos blocos')
+                ok('Fonte de recursos' not in r['texto'] and 'Quem paga depois do teste' not in r['texto'], f'{tag} {ex}: sem fonte de recursos')
+                faltam = [k for k in RESUMO_V11 if k not in r['resumo']]
+                ok(not faltam, f'{tag} {ex}: resumo com os campos v11 (faltam {faltam})')
+                ok(r['recsH'] == 'Recomendações para você', f'{tag} {ex}: título "Recomendações para você" ({r["recsH"]})')
+                if r['temFig']:
+                    ok(r['fig'] is not None and r['fig']['sec'] == 'A3' and r['fig']['ok'], f'{tag} {ex}: Figura 1 na seção A3 ({r["fig"] and {k: v for k, v in r["fig"].items() if k != "cap"}})')
+                    ok(r['fig'] is not None and r['fig']['cap'] == CREDITO, f'{tag} {ex}: legenda e crédito da Figura 1')
+                    ok(r['fig'] is not None and r['fig']['w'] <= w - 20, f'{tag} {ex}: figura cabe na largura ({r["fig"] and r["fig"]["w"]})')
+                else: ok(False, f'{tag} {ex}: FIG_TCO no build')
                 ok('recs' in o and 'resumo' in o and o.index('resumo') < o.index('recs') < o.index('[A]'), f'{tag} {ex}: recomendações do caso depois do resumo e antes do bloco A')
                 if r['formula']: ok('Como o custo é calculado' in r['a2'] and 'As contas de cada ano' in r['a2'], f'{tag} {ex}: A2 com a fórmula do custo')
                 ok('Suas respostas' not in r['texto'], f'{tag} {ex}: sem "Suas respostas"')
@@ -78,16 +99,16 @@ async def main():
                     ok(re.search(r'\b1\.1\.\d', r['parcial']) is not None, f'{tag} novo: lista numerada')
                 await pg.screenshot(path=f'{TMP}/plano_{tag}_{ex}.png')
             # P1-4 / P2-6: "recomende para mim" com setup de piloto; P2-2: ponto de equilíbrio só com licença institucional
-            await pg.evaluate("""(()=>{carregarExemplo('novo'); S.boasVindas=false; S.caso.teste='recomendar'; S.respC.teste=true;
+            await pg.evaluate("""(()=>{carregarExemplo('novo'); S.boasVindas=false; S.caso.testes=['recomendar']; S.caso.teste='recomendar'; S.respC.testes=true; S.respC.teste=true;
               S.caso.piloto={escolas:20, participantes:1200, meses:4}; S.caso.tipoTec='paga'; S.caso.pagamento='usuario';
-              ['piloto','piloto.escolas','piloto.participantes','piloto.meses','tipoTec','pagamento'].forEach(k=>{S.respC[k]=true;});
+              ['piloto','piloto.escolas','piloto.participantes','piloto.meses','setup','tipoTec','pagamento'].forEach(k=>{S.respC[k]=true;});
               S.custo.editado=false; S.vista=''; render();})()""")
             await pg.locator('[data-act="gerar-plano"]:visible').first.click(); await pg.wait_for_timeout(250)
-            r = await pg.evaluate("""(()=>{const P=document.getElementById('plano'); const tr=[...P.querySelectorAll('[data-sec=resumo] tr')].find(t=>/Escolas no teste/.test(t.innerText));
+            r = await pg.evaluate("""(()=>{const P=document.getElementById('plano'); const tr=[...P.querySelectorAll('[data-sec=resumo] tr')].find(t=>/^Piloto: escolas/.test(t.innerText));
               return {esc: tr ? tr.querySelector('td').innerText : '', a1: P.querySelector('[data-sec=A1]').innerText, a3: P.querySelector('[data-sec=A3]').parentElement.innerText,
                 a2: (P.querySelector('[data-sec=A2] .kpi-nota')||{}).innerText||'', prem: P.querySelector('[data-sec=A2]').innerText}})()""")
-            ok(r['esc'] == '20', f'{tag} resumo mostra as escolas digitadas com "recomende" ({r["esc"]})')
-            ok('descreve um piloto' in r['a1'] and '2.3.6' in r['a1'], f'{tag} A1 avisa que o setup descreve um piloto')
+            ok(r['esc'].startswith('20 escolas'), f'{tag} resumo mostra as escolas digitadas com "recomende" ({r["esc"]})')
+            ok('descreve um piloto' in r['a1'] and '2.3.8' in r['a1'] if 'prova de conceito.' in r['a1'] else True, f'{tag} A1 avisa que o setup descreve um piloto quando recomenda só a prova de conceito')
             ok('licença institucional só compensa' not in r['a3'], f'{tag} A3 sem ponto de equilíbrio com licença por usuário')
             ok('premissas padrão' in r['a2'], f'{tag} A2 rotula estimativa com premissas padrão')
             # v10: com a fórmula (formula.js), preço e origem ficam em "De onde vêm os números"
@@ -110,8 +131,20 @@ async def main():
                         txt = subprocess.run(['pdftotext', '-layout', arq, '-'], capture_output=True, text=True).stdout
                         plano = re.sub(r'\s+', ' ', txt)
                         if lang == 'en':
-                            for s in ['Procurement plan', 'Recommendations for your case', 'Cost and procurement', 'Policy and governance', URL_TCO]:
+                            for s in ['Procurement plan', 'Recommendations for you', 'Cost and procurement', 'Policy and governance', URL_TCO]:
                                 ok(s in plano, f'pdf en {ex}: contém "{s}"')
+                            ok('Recommendations for your case' not in plano and 'Funding source' not in plano and 'Source of funds' not in plano, f'pdf en {ex}: sem título antigo nem fonte de recursos')
+                            # Figura 1 numa página própria: JPEG 900×1225 sozinho na página, com o crédito na mesma página
+                            imgs = subprocess.run(['pdfimages', '-list', arq], capture_output=True, text=True).stdout.split('\n')[2:]
+                            fig = [l.split() for l in imgs if l.strip() and l.split()[3:5] == ['900', '1225']]
+                            ok(len(fig) == 1, f'pdf en {ex}: Figura 1 (JPEG 900×1225) no PDF ({len(fig)})')
+                            if fig:
+                                pag = int(fig[0][0])
+                                tp = subprocess.run(['pdftotext', '-layout', '-f', str(pag), '-l', str(pag), arq, '-'], capture_output=True, text=True).stdout
+                                ok('CC BY-SA 3.0 IGO' in tp and 'Figure 1' in tp and 'reproduced without changes' in tp, f'pdf en {ex}: crédito da figura na página {pag}')
+                                ok(len([l for l in tp.split('\n') if l.strip()]) <= 8, f'pdf en {ex}: página da figura só com título, figura, legenda e rodapé')
+                                antes = subprocess.run(['pdftotext', '-layout', '-f', '1', '-l', str(pag - 1), arq, '-'], capture_output=True, text=True).stdout
+                                ok('A3.' in antes and 'A4.' not in antes, f'pdf en {ex}: figura logo depois de A3')
                             ok('Cost and procurement' in plano and 'Policy and governance' in plano and plano.index('Cost and procurement') < plano.index('Policy and governance'), f'pdf en {ex}: bloco A antes do B')
                             resto = [l.strip() for l in txt.split('\n') if PT.search(l) and 'Cátedra' not in l and 'Desplugada' not in l]
                             ok(not resto, f'pdf en {ex}: sem português ({len(resto)}) {resto[:5]}')

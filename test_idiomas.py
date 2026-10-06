@@ -1,4 +1,4 @@
-# Percorre as fases da v9 em EN/ES/FR e lista textos que ficaram em português
+# Percorre as quatro fases da v11 em EN/ES/FR e lista textos que ficaram em português
 # (percurso, ⓘ, details, calculadora, plano de contratação, Markdown do plano).
 # Rodar a partir de /home/claude/app depois de `bash build.sh`. Resultado em /tmp/claude-0/sobras.json.
 import asyncio, json, os, re
@@ -16,17 +16,18 @@ COL = """(() => { const out = new Set(); const w = document.createTreeWalker(doc
  document.querySelectorAll('[aria-label],[title],[placeholder]').forEach(e => ['aria-label','title','placeholder'].forEach(a => { const v = e.getAttribute(a); if (v) out.add(v); }));
  return [...out]; })()"""
 ABRIR = """(() => {
-  document.querySelectorAll('[data-info]').forEach(b => { const id = b.dataset.infoId || b.dataset.info; S.info[id] = true; });
+  document.querySelectorAll('[data-info]').forEach(b => { const id = b.dataset.infoId || b.dataset.info; S.info[id] = true; FIG_ABERTA[id] = true; });
   render();
   document.querySelectorAll('details').forEach(d => d.open = true);
   const box = document.getElementById('custos-box');
   if (box && !box.innerHTML && typeof renderCustos === 'function') { box.innerHTML = renderCustos(); renderCustosResultados(); }
   document.querySelectorAll('details').forEach(d => d.open = true);
 })()"""
-FASES = ['contexto', 'piloto', 'custo']
+FASES = ['contexto', 'piloto', 'implantacao', 'expansao']
 LANG_ATUAL = ['']
 def resto(t):
     if any(x in t for x in IGNORAR): return False
+    if t.startswith('data:image/'): return False
     return bool(PT.search(t) or (LANG_ATUAL[0] in ('en', 'fr') and MAG_PT.search(t)))
 async def main():
     res = {}
@@ -43,8 +44,17 @@ async def main():
                 for t in await pg.evaluate(COL):
                     if resto(t): sobra.add(t)
             await col()
-            for ex in ['novo','A','B','C','D']:
-                await pg.evaluate(f"carregarExemplo('{ex}')"); await pg.wait_for_timeout(150)
+            for ex in ['novo','A','B','C','D','v11']:
+                if ex == 'v11':
+                    # caso com as variações da v11: PoC e piloto, várias ferramentas, internet parcial, horas estimadas e sugestões
+                    await pg.evaluate("""(()=>{carregarExemplo('B'); const c=S.caso; c.testes=['poc','piloto']; c.conheceFerramentas='sim';
+                      c.ferramentas.push({nome:'X',tarefas:['tutoria'],tipoTec:'paga',pagamento:'usuario',preco:3});
+                      c.internet='parcial'; c.escolasInternet=100; c.modeloDisp='proprio'; delete S.respC.dispExistem; c.dispExistem='';
+                      c.formacaoHoras=2; c.formacaoEstimativa=true; delete S.respC.formacaoHoras;
+                      ['poc.participantes','poc.meses','implantacao.escolas','implantacao.pessoas'].forEach(k=>delete S.respC[k]); c.arquitetura='';
+                      c.poc={participantes:'',meses:''}; c.implantacao={escolas:'',pessoas:''}; render();})()"""); await pg.wait_for_timeout(150)
+                else:
+                    await pg.evaluate(f"carregarExemplo('{ex}')"); await pg.wait_for_timeout(150)
                 for fase in FASES:
                     for pid in await pg.evaluate(f"PASSOS['{fase}'].map(p=>p[0])"):
                         await pg.evaluate(f"(()=>{{S.boasVindas=false;S.calcAberta=true;S.vista='';S.fase='{fase}';S.passo='{pid}';render();}})()"); await pg.wait_for_timeout(100)

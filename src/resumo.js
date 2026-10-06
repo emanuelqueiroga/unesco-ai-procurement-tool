@@ -1,7 +1,10 @@
 // =====================================================================
 // Plano de contratação: página final e PDF, gerados por um único botão.
-// Estrutura: respostas que faltam, resumo do caso, recomendações para o seu caso
+// Estrutura: respostas que faltam, resumo do caso, recomendações para você
 // (v10, recomendacoes.js), bloco A (custo e compra), bloco B (política e governança) e referências.
+// v11: sem fonte de recursos (a antiga A7 saiu; o dossiê passou a A7); resumo com ferramentas, internet,
+// dispositivos, formação, suporte, acompanhamento, prova de conceito e piloto, implantação e expansão;
+// Figura 1 de Krueger e Jackson (2026, p. 11) em A3 (página) e numa página própria do PDF.
 // Conteúdo de contratação tirado do guia (caps. 11–16; Instrumento F) e do
 // quadro de custo total em camadas de Krueger e Jackson (2026, p. 11).
 // Textos fixos e recomendações: src/plano_dados.js.
@@ -47,7 +50,33 @@ function slugPlano() {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
   return b || 'case';
 }
-function testeEfetivo(c, rec) { return ['poc', 'piloto'].includes(c.teste) ? c.teste : (rec && rec.modo) || 'piloto'; }
+// 2.0 (v11, múltipla): 'poc' | 'piloto' | 'ambos' | 'recomendar' | ''
+function testeEscolhido(c) { return typeof recTesteDe === 'function' ? recTesteDe(c) : (c.teste || ''); }
+// teste que vem primeiro: com os dois marcados, a prova de conceito
+function testeEfetivo(c, rec) { const t = testeEscolhido(c); const m = rec && rec.modo; return t === 'ambos' ? 'poc' : ['poc', 'piloto'].includes(t) ? t : m === 'ambos' ? 'poc' : m || 'piloto'; }
+// rótulos das opções de um campo (OPC pelo nome do campo, v11)
+const opcDe = id => (typeof OPC !== 'undefined' && (OPC[id] || (id === 'testes' ? OPC.teste : null))) || [];
+const rotC = (id, v) => tr(rotP(opcDe(id), v)) || '';
+const nomesC = (id, vals) => nomesP(opcDe(id), vals);
+const plural = (n, um, varios) => tr((+n === 1 ? um : varios).replace('{0}', fmtInt(n)));
+const tarefaNome = (c, k) => k === 'outra' && c.tarefaOutra ? c.tarefaOutra : tr(rotP(OPC.tarefas, k));
+function ferramentasCaso(c) { return typeof recFerramentas === 'function' ? recFerramentas(c) : (c.ferramentas || []).filter(f => f && f.nome); }
+// setup da prova de conceito e do piloto em texto ("20 escolas, 600 participantes, 4 meses")
+function setupTxt(x, comEscolas) {
+  x = x || {};
+  const p = [];
+  if (comEscolas && +x.escolas > 0) p.push(plural(x.escolas, '{0} escola', '{0} escolas'));
+  if (+x.participantes > 0) p.push(plural(x.participantes, '{0} participante', '{0} participantes'));
+  if (+x.meses > 0) p.push(plural(x.meses, '{0} mês', '{0} meses'));
+  return p.join(', ') || '—';
+}
+function implantacaoTxt(c) {
+  const im = c.implantacao || {};
+  const p = [];
+  if (+im.escolas > 0) p.push(plural(im.escolas, '{0} escola', '{0} escolas'));
+  if (+im.pessoas > 0) p.push(plural(im.pessoas, '{0} pessoa', '{0} pessoas'));
+  return p.join(', ');
+}
 function arranjosCaso(ce) {
   const s = [];
   if (ce.tipoTec === 'publica') s.push('compartilhada');
@@ -80,10 +109,11 @@ function dadosPlano() {
   let custo = null;
   try { custo = numerosCusto(); if (custo && !custo.camadas) custo.camadas = somaPorCamada(custo.av); } catch (e) { console.warn(e); }
   const arq = ['saas', 'api', 'ow'].includes(ce.arquitetura) ? ce.arquitetura : 'saas';
-  const modo = testeEfetivo(c, rec);
+  const modo = testeEfetivo(c, rec), teste = testeEscolhido(c);
   let faltas = [];
   try { faltas = faltasTodas() || []; } catch (e) { console.warn(e); }
-  return { c, x, t, ce, p, rec, custo, arq, modo, poc: modo === 'poc', faltas,
+  return { c, x, t, ce, p, rec, custo, arq, modo, teste, poc: modo === 'poc' && teste !== 'ambos' && !(['recomendar', ''].includes(teste) && rec.modo === 'ambos'),
+    ambos: teste === 'ambos' || (['recomendar', ''].includes(teste) && rec.modo === 'ambos'), faltas,
     afeta: recAfeta(ce), dp: recDadosPessoais(ce), gratis: recGratuito(ce) };
 }
 
@@ -115,9 +145,19 @@ function secoesPlano() {
   const nivel = x.nivel === 'outro' ? (x.nivelOutro || tr('Outro')) : tr(rotP(typeof NIVEIS_ADM !== 'undefined' ? NIVEIS_ADM : [], x.nivel));
   const tarefas = (c.tarefas || []).map(k => k === 'outra' && c.tarefaOutra ? c.tarefaOutra : tr(rotP(OPC.tarefas, k))).filter(Boolean).join('; ');
   const impactos = (c.impactos || []).map(k => k === 'outro' && c.impactoOutro ? c.impactoOutro : tr(rotP(OPC.impactos, k))).filter(Boolean).join('; ');
-  const pl = c.piloto || {};
+  const pl = c.piloto || {}, pc = c.poc || {};
   const arqTxt = tr(rotP(OPC.arquitetura, arq)) + (ce.__arqPresumida ? ' (' + tr('deduzida das respostas') + ')' : '');
-  sec({ id: 'resumo', h: TIT_PLANO.resumo, kv: [
+  const testes = typeof recTestes === 'function' ? recTestes(c) : (c.teste ? [c.teste] : []);
+  // setup: PoC e piloto com campos próprios quando os dois forem marcados; com "recomende", o setup preenchido
+  // com "recomende para mim", só os setups preenchidos
+  const recomendar = ['recomendar', ''].includes(d.teste);
+  const temPoc = d.teste === 'poc' || d.teste === 'ambos' || (recomendar && setupTxt(pc) !== '—');
+  const temPil = d.teste === 'piloto' || d.teste === 'ambos' || (recomendar && setupTxt(pl, true) !== '—');
+  const pocDados = setupTxt(pc) !== '—' ? pc : (d.teste === 'poc' ? pl : pc);   // compatibilidade: PoC salva em "piloto" (v10)
+  const ferr = ferramentasCaso(c);
+  const escI = +c.escolasInternet || 0;
+  const horas = +c.formacaoHoras || 0;
+  const linhasResumo = [
     ['Nível administrativo', nivel || '—'],
     ['Lugar ou rede', x.local || '—'],
     ['Situação', respP('situacao', tr(rotP(OPC.situacao, c.situacao)) || '—')],
@@ -132,22 +172,42 @@ function secoesPlano() {
     ['Quem é afetado', nomesP(OPC.afetados, c.afetados) || '—'],
     ['O que se faz com a resposta', respP('consequencias', nomesP(OPC.consequencias, c.consequencias) || '—')],
     ['Frequência de uso', respP('frequencia', tr(rotP(OPC.frequencia, c.frequencia)) || '—')],
-    ['Prova de conceito ou piloto', tr(rotP(OPC.teste, c.teste)) || '—'],
-    ['Escolas no teste', c.teste === 'poc' ? '—' : (pl.escolas ? fmtInt(pl.escolas) : '—')],
-    ['Participantes do teste', pl.participantes ? fmtInt(pl.participantes) : '—'],
-    ['Duração do teste (meses)', pl.meses ? fmtInt(pl.meses) : '—'],
-    ['Tipo de tecnologia', tr(rotP(OPC.tipoTec, c.tipoTec)) || '—'],
-    ['Pagamento', tr(rotP(OPC.pagamento, c.pagamento)) || '—'],
+    ['Prova de conceito ou piloto', nomesC('testes', testes) || '—'],
+  ];
+  if (temPoc) linhasResumo.push(['Prova de conceito: participantes e duração', setupTxt(pocDados)]);
+  if (temPil) linhasResumo.push(['Piloto: escolas, participantes e duração', setupTxt(pl, true)]);
+  linhasResumo.push(
+    ['Quantas ferramentas', rotC('nFerramentas', c.nFerramentas) || '—'],
+    ['Ferramentas já escolhidas', ferr.length ? ferr.map(f => f.nome).join('; ') : (rotC('conheceFerramentas', c.conheceFerramentas) || '—')],
+    ['Tipo de tecnologia (ferramenta principal)', tr(rotP(OPC.tipoTec, c.tipoTec)) || '—'],
+    ['Pagamento (ferramenta principal)', tr(rotP(OPC.pagamento, c.pagamento)) || '—'],
     ['Licença', tr(rotP(OPC.licenca, c.licenca)) || '—'],
     ['Adaptação ao contexto', tr(rotP(OPC.adaptacao, c.adaptacao)) || '—'],
-    ['Dispositivos e internet', tr(rotP(OPC.infra, c.infra)) || '—'],
+    ['Internet adequada nas escolas', (rotC('internet', c.internet) || '—') + (c.internet === 'parcial' && escI > 0 ? ' (' + plural(escI, '{0} escola com internet adequada', '{0} escolas com internet adequada') + ')' : '')],
+    ['Modelo de uso dos dispositivos', rotC('modeloDisp', c.modeloDisp) || '—'],
+    ['Os dispositivos já existem', rotC('dispExistem', c.dispExistem) || '—'],
+    ['Quem será formado', nomesC('formados', c.formados) || '—'],
+    ['Tipo de formação', nomesC('formacaoTipo', c.formacaoTipo) || '—'],
+    ['Formato da formação', rotC('formacaoFormato', c.formacaoFormato) || '—'],
+    ['Horas de formação por pessoa', horas ? plural(horas, '{0} hora', '{0} horas') + (c.formacaoEstimativa ? ' (' + tr('estimativa ilustrativa') + ')' : '') : '—'],
+    ['Quem paga a formação', rotC('formacaoPaga', c.formacaoPaga) || '—'],
+    ['Quem dá suporte aos usuários', rotC('suporteQuem', c.suporteQuem) || '—'],
+    ['Nível de suporte', rotC('suporteNivel', c.suporteNivel) || '—'],
+    ['Nível de acompanhamento do uso', rotC('acompanhamento', c.acompanhamento) || '—'],
+    ['Primeira etapa da implantação', implantacaoTxt(c) || '—'],
     ['Arquitetura considerada', arqTxt],
-    ['Pessoas que usariam na rede', +c.elegiveis > 0 ? fmtInt(c.elegiveis) : '—'],
-    ['Ritmo de expansão', respP('expansao', tr(rotP(OPC.expansao, c.expansao)) || '—')],
+    ['Pessoas que usariam em toda a rede', +c.elegiveis > 0 ? fmtInt(c.elegiveis) : '—'],
+    ['Tempo para chegar a todos depois da implantação', respP('expansao', rotC('expansao', c.expansao) || '—')],
     ['Horizonte da estimativa', respP('horizonte', tr(rotP(OPC.horizonte, c.horizonte)) || '—')],
-    ['Quem paga depois do teste', tr(rotP(OPC.pagaDepois, c.pagaDepois)) || '—'],
-    ['Fonte de recursos', tr(rotP(OPC.fonte, c.fonte)) || '—'],
-  ] });
+  );
+  sec({ id: 'resumo', h: TIT_PLANO.resumo, kv: linhasResumo });
+  // ferramentas (2.3.3): a primeira da lista é a principal
+  if (ferr.length) {
+    const preco = f => f.pagamento === 'consumo' ? '—' : +f.preco > 0 ? din(+f.preco, 2) : (typeof recPagaFerr === 'function' && recPagaFerr(f) ? tr('sem preço informado') : '—');
+    sec({ sub: true, h: 'Ferramentas', table: { head: ['Ferramenta', 'Tarefas', 'Tipo de tecnologia', 'Pagamento', 'Preço por usuário por mês'],
+      rows: ferr.map((f, i) => [f.nome + (i === 0 ? ' (' + tr('principal') + ')' : ''), (f.tarefas || []).map(k => tarefaNome(c, k)).filter(Boolean).join('; ') || '—',
+        tr(rotP(OPC.tipoTec, f.tipoTec)) || '—', tr(rotP(OPC.pagamento, f.pagamento)) || '—', preco(f)]), b0: true, num: [4] } });
+  }
   if (linhasEt.length) sec({ sub: true, h: 'Etapas, escolas e estudantes', table: { head: ['Etapa de ensino', 'Escolas', 'Estudantes por ano ou série', 'Estudantes'], rows: linhasEt, num: [1, 3] } });
 
   // Recomendações para o seu caso (v10, recomendacoes.js): primeira seção depois do resumo, antes dos blocos A e B
@@ -160,24 +220,30 @@ function secoesPlano() {
 
   // A1
   const a1p = [];
-  if (c.teste === 'recomendar' || !c.teste) {
-    if (!c.teste) a1p.push('Você ainda não escolheu entre prova de conceito e piloto.');
-    a1p.push(rec.modo === 'poc' ? 'Recomendação: começar por uma prova de conceito.' : 'Recomendação: começar por um piloto.');
-  } else if (c.teste !== rec.modo) {
-    a1p.push(c.teste === 'poc' ? 'Você escolheu uma prova de conceito. Pelas respostas, a ferramenta indicaria um piloto.' : 'Você escolheu um piloto. Pelas respostas, a ferramenta indicaria uma prova de conceito.');
+  const tE = d.teste;
+  if (tE === 'recomendar' || !tE) {
+    if (!tE) a1p.push('Você ainda não escolheu entre prova de conceito e piloto.');
+    a1p.push(rec.modo === 'poc' ? 'Recomendação: começar por uma prova de conceito.' : rec.modo === 'ambos' ? 'Recomendação: começar por uma prova de conceito e, se ela der certo, fazer um piloto.' : 'Recomendação: começar por um piloto.');
+    if (rec.modo === 'ambos') a1p.push('São duas decisões separadas, cada uma com critérios de sucesso próprios: o piloto só começa se a prova de conceito cumprir os seus.');
+  } else if (tE === 'ambos') {
+    a1p.push(['poc', 'ambos'].includes(rec.modo) ? 'Você escolheu uma prova de conceito seguida de um piloto, como indicam as respostas.'
+      : 'Você escolheu uma prova de conceito seguida de um piloto. Pelas respostas, seria possível começar direto pelo piloto; mantenha a prova de conceito se houver uma dúvida técnica a resolver.');
+    a1p.push('São duas decisões separadas, cada uma com critérios de sucesso próprios: o piloto só começa se a prova de conceito cumprir os seus.');
+  } else if (tE !== rec.modo && !(tE === 'piloto' && rec.modo === 'piloto')) {
+    a1p.push(rec.modo === 'ambos' ? (tE === 'poc' ? 'Você escolheu uma prova de conceito. Pelas respostas, a ferramenta indicaria fazer depois um piloto, antes de implantar.' : 'Você escolheu um piloto. Pelas respostas, a ferramenta indicaria uma prova de conceito antes dele.') : tE === 'poc' ? 'Você escolheu uma prova de conceito. Pelas respostas, a ferramenta indicaria um piloto.' : 'Você escolheu um piloto. Pelas respostas, a ferramenta indicaria uma prova de conceito.');
   } else {
-    a1p.push(c.teste === 'poc' ? 'Você escolheu uma prova de conceito, como indicam as respostas.' : 'Você escolheu um piloto, como indicam as respostas.');
+    a1p.push(tE === 'poc' ? 'Você escolheu uma prova de conceito, como indicam as respostas.' : 'Você escolheu um piloto, como indicam as respostas.');
   }
-  const plEsc = c.teste !== 'poc' ? +pl.escolas || 0 : 0, plPart = +pl.participantes || 0;
-  if (d.poc && c.teste !== 'poc' && (plEsc > 0 || plPart > 30)) {
+  const plEsc = tE !== 'poc' ? +pl.escolas || 0 : 0, plPart = +pl.participantes || 0;
+  if (d.poc && tE !== 'poc' && (plEsc > 0 || plPart > 30)) {
     const partes = [];
     if (plEsc > 0) partes.push(fmtInt(plEsc) + ' ' + (plEsc === 1 ? 'escola' : 'escolas'));
     if (plPart > 0) partes.push(fmtInt(plPart) + ' ' + (plPart === 1 ? 'participante' : 'participantes'));
-    a1p.push(tr('O setup informado (' + partes.join(', ') + ') descreve um piloto.') + ' ' + tr('Para uma prova de conceito, reduza-o à equipe e a algumas pessoas convidadas (passo 2.3.6).'));
+    a1p.push(tr('O setup informado (' + partes.join(', ') + ') descreve um piloto.') + ' ' + tr('Para uma prova de conceito, reduza-o à equipe e a algumas pessoas convidadas (passo 2.3.8).'));
   }
   sec({ id: 'A1', h: tituloSec('A1'), p: a1p.concat((rec.motivos || []).length ? ['Por quê:'] : []), list: (rec.motivos || []).map(m => capP(tr(m)) + '.'),
     pos: ['Base: guia do projeto, cap. 14 (instrumentos de aprendizagem). O documento de Krueger e Jackson (2026) não define prova de conceito nem piloto.'] });
-  sec({ sub: true, h: 'Aprender antes de se comprometer', table: { head: ['Instrumento', 'Pergunta que responde', 'Condições'], rows: APRENDIZAGEM, hl: [d.modo === 'poc' ? 0 : 2], b0: true },
+  sec({ sub: true, h: 'Aprender antes de se comprometer', table: { head: ['Instrumento', 'Pergunta que responde', 'Condições'], rows: APRENDIZAGEM, hl: d.ambos ? [0, 2] : [d.modo === 'poc' ? 0 : 2], b0: true },
     list: TXT_A1.concat(d.poc ? [TXT_A1_POC] : []) });
 
   // A2
@@ -197,7 +263,7 @@ function secoesPlano() {
     ];
     const anos = custo.av.r.anos;
     const prem = [];
-    prem.push(tr('Arquitetura considerada:') + ' ' + tr(rotP(OPC.arquitetura, arq)) + (ce.__arqPresumida ? ' (' + tr('deduzida das respostas; mude no passo 2.3 se souber que é outra') + ')' : '') + '.');
+    prem.push(tr('Arquitetura considerada:') + ' ' + tr(rotP(OPC.arquitetura, arq)) + (ce.__arqPresumida ? ' (' + tr('deduzida das respostas; mude no passo 3.2 se souber que é outra') + ')' : '') + '.');
     // v10: "Como o custo é calculado" (formula.js, R3). Com a fórmula, quantidades e preços unitários ficam em
     // "De onde vêm os números" e saem desta lista de premissas (eram redundantes).
     let formula = [];
@@ -215,16 +281,20 @@ function secoesPlano() {
       prem.push(tr('Nível de adaptação:') + ' ' + tr(rotP(OPC.adaptacao, c.adaptacao)) + '. ' + tr('Multiplicador de K3.1: ' + numP(f.fK31, 2) + '; de K3.2: ' + numP(f.fK32, 2) + ' (convenção ilustrativa da ferramenta).'));
     } else prem.push('Nível de adaptação não informado: a estimativa usa o nível do exemplo do guia.');
     if (c.pagamento) prem.push(tr('Pagamento no teste:') + ' ' + tr(rotP(OPC.pagamento, c.pagamento)) + '.');
-    if (c.pagaDepois) prem.push(tr('Quem paga depois do teste:') + ' ' + tr(rotP(OPC.pagaDepois, c.pagaDepois)) + '.');
     const doado = (custo.av.fac || {}).doado || 0;
-    if (d.gratis || doado > 0 || ['parceiro', 'governo'].includes(c.pagaDepois)) {
+    if (d.gratis || doado > 0) {
       prem.push('Gratuito para a rede não quer dizer sem custo: o valor de referência aparece como cedido na conta econômica. Krueger e Jackson (2026, p. 7–8) mostram que a aquisição gratuita não elimina os custos do ciclo de vida.');
       if (doado > 0) prem.push(tr('Valor cedido sem custo na conta econômica:') + ' ' + grande(doado) + '.');
     }
-    prem.push(c.infra === 'complementar' ? 'Dispositivos e conectividade complementares estimados por convenção ilustrativa da ferramenta (passo 2.3.5).' : 'Dispositivos e internet considerados existentes: premissa a verificar.');
+    // v11: internet e dispositivos separados (passo 2.4)
+    prem.push(['parcial', 'nao'].includes(c.internet) ? 'Conexão das escolas sem internet adequada estimada por escola e por ano, por convenção ilustrativa da ferramenta (passo 2.4).' : 'Internet adequada considerada existente nas escolas: premissa a verificar.');
+    if (c.modeloDisp === 'proprio') prem.push('Dispositivos próprios das pessoas: a estimativa não inclui compra de dispositivos. Verifique quem fica sem acesso.');
+    else prem.push(['parcial', 'nao'].includes(c.dispExistem) ? 'Dispositivos que faltam estimados pelo modelo de uso e por um preço ilustrativo por dispositivo (passo 2.4), só para os novos usuários de cada ano.' : 'Dispositivos considerados existentes: premissa a verificar.');
+    if (['fornecedor', 'parceiro'].includes(c.formacaoPaga)) prem.push('Formação paga pelo fornecedor ou por um parceiro: o valor aparece como cedido na conta econômica e não entra na dotação da rede.');
+    if (c.formacaoEstimativa) prem.push('Horas de formação por pessoa: estimativa ilustrativa (passo 2.5). Substitua pelas horas do programa de formação.');
     if (ce.__elegPadrao && !unit.length) prem.push(tr('O número de pessoas que usariam na rede não foi informado: a estimativa usa ' + fmtInt(ce.elegiveis) + ' pessoas como premissa padrão.'));
-    prem.push(tr('Horizonte da estimativa:') + ' ' + tr('Ano 0') + ' + ' + tr(rotP(OPC.horizonte, H) || (H + ' anos')) + '. ' + tr('Ritmo de expansão:') + ' ' + tr(rotP(OPC.expansao, c.expansao || 'ano1')) + '.');
-    prem.push('Todas as premissas são ilustrativas e podem ser ajustadas na calculadora completa (passo 3.3).');
+    prem.push(tr('Horizonte da estimativa:') + ' ' + tr('Ano 0') + ' + ' + tr(rotP(OPC.horizonte, H) || (H + ' anos')) + '. ' + tr('Tempo para chegar a todos depois da implantação:') + ' ' + (rotC('expansao', c.expansao || 'ano1') || '—') + '.');
+    prem.push('Todas as premissas são ilustrativas e podem ser ajustadas na calculadora completa (passo 4.2).');
     const padrao = d.faltas.length > 8;
     sec({ id: 'A2', h: tituloSec('A2'), pre: padrao ? ['Estimativa baseada em premissas padrão: ' + d.faltas.length + ' perguntas ainda sem resposta.'] : null, kv, kpis: true, pos: ['Valores ilustrativos. Substitua por cotações e dados locais.'] });
     formula.forEach(f => sec(Object.assign({}, f, { sub: true, id: undefined })));
@@ -236,7 +306,7 @@ function secoesPlano() {
       rows: [[tr('Dotação a solicitar') + ' (' + unidMil() + ')'].concat(anos.map(a => mil(custo.orc.dot[a] || 0)))], num: anos.map((a, i) => i + 1) } });
     sec({ sub: true, h: 'Premissas desta estimativa', list: prem });
   } else {
-    sec({ id: 'A2', h: tituloSec('A2'), p: ['Não foi possível calcular a estimativa com as respostas atuais. Responda ao passo 2.3 (Adoção) e à fase 3.'] });
+    sec({ id: 'A2', h: tituloSec('A2'), p: ['Não foi possível calcular a estimativa com as respostas atuais. Responda ao passo 2.3 (Adoção) e às fases 3 e 4.'] });
   }
 
   // A3
@@ -247,12 +317,18 @@ function secoesPlano() {
   const nSim = gq.filter(q => resp[q.id] === 'sim').length;
   const neste = {
     1: tr((nSim === 0 ? 'Nenhuma de ' : nSim === 1 ? 'Uma de ' : nSim + ' de ') + gq.length + ' perguntas de governança com resposta Sim (passo 1.3).'),
-    2: [tarefas ? tr('Aplicações:') + ' ' + tarefas + '.' : '', c.pagamento ? tr('Pagamento:') + ' ' + tr(rotP(OPC.pagamento, c.pagamento)) + '.' : '', c.licenca ? tr('Licença:') + ' ' + tr(rotP(OPC.licenca, c.licenca)) + '.' : ''].filter(Boolean).join(' ') || '—',
-    3: c.infra ? tr('Dispositivos e internet:') + ' ' + tr(rotP(OPC.infra, c.infra)) + (c.infra !== 'complementar' ? ' (' + tr('premissa a verificar') + ')' : '') + '.' : tr('Dispositivos e internet: premissa a verificar.'),
-    4: c.adaptacao ? tr('Adaptação:') + ' ' + tr(rotP(OPC.adaptacao, c.adaptacao)) + '.' : '—',
+    2: [tarefas ? tr('Aplicações:') + ' ' + tarefas + '.' : '', ferr.length > 1 ? tr('Ferramentas:') + ' ' + ferr.map(f => f.nome).join('; ') + '.' : '',
+      c.pagamento ? tr('Pagamento:') + ' ' + tr(rotP(OPC.pagamento, c.pagamento)) + '.' : '', c.licenca ? tr('Licença:') + ' ' + tr(rotP(OPC.licenca, c.licenca)) + '.' : ''].filter(Boolean).join(' ') || '—',
+    3: [tr('Internet adequada:') + ' ' + (rotC('internet', c.internet) || tr('premissa a verificar')) + '.',
+      tr('Dispositivos:') + ' ' + [rotC('modeloDisp', c.modeloDisp), c.dispExistem ? tr('já existem:') + ' ' + rotC('dispExistem', c.dispExistem).toLowerCase() : ''].filter(Boolean).join('; ') + (c.modeloDisp || c.dispExistem ? '.' : ' ' + tr('premissa a verificar') + '.')].join(' '),
+    4: [c.adaptacao ? tr('Adaptação:') + ' ' + tr(rotP(OPC.adaptacao, c.adaptacao)) + '.' : '', c.arquitetura && c.arquitetura !== 'nao_sei' ? tr('Arquitetura:') + ' ' + tr(rotP(OPC.arquitetura, arq)) + '.' : ''].filter(Boolean).join(' ') || '—',
     5: tr('Dados derivados das tarefas:') + ' ' + nomesP(OPC.dados, ce.dados) + '.',
-    6: (c.usuarios || []).length ? tr('Quem precisa de formação:') + ' ' + nomesP(OPC.usuarios, c.usuarios) + '.' : '—',
-    7: custo && (custo.ind || {}).anosParaSair ? tr('Custo de sair estimado em ' + numP(custo.ind.anosParaSair, 1) + ' anos de custo recorrente.') + ' ' + tr(NOTA_SAIDA) : tr(NOTA_SAIDA),
+    6: (c.formados || []).length ? [tr('Quem será formado:') + ' ' + nomesC('formados', c.formados) + '.', c.formacaoFormato ? tr('Formato:') + ' ' + rotC('formacaoFormato', c.formacaoFormato) + '.' : '',
+      c.formacaoPaga ? tr('Quem paga:') + ' ' + rotC('formacaoPaga', c.formacaoPaga) + '.' : ''].filter(Boolean).join(' ')
+      : (c.usuarios || []).length ? tr('Quem precisa de formação:') + ' ' + nomesP(OPC.usuarios, c.usuarios) + '.' : '—',
+    7: [c.suporteQuem ? tr('Suporte:') + ' ' + [rotC('suporteQuem', c.suporteQuem), rotC('suporteNivel', c.suporteNivel)].filter(Boolean).join('; ') + '.' : '',
+      c.acompanhamento ? tr('Acompanhamento do uso:') + ' ' + rotC('acompanhamento', c.acompanhamento) + '.' : '',
+      custo && (custo.ind || {}).anosParaSair ? tr('Custo de sair estimado em ' + numP(custo.ind.anosParaSair, 1) + ' anos de custo recorrente.') + ' ' + tr(NOTA_SAIDA) : tr(NOTA_SAIDA)].filter(Boolean).join(' '),
   };
   const a3alertas = [];
   if (d.gratis) a3alertas.push(A3_ALERTAS.gratuito);
@@ -264,7 +340,10 @@ function secoesPlano() {
   sec({ id: 'A3', h: tituloSec('A3'), p: ['As sete camadas do quadro de Krueger e Jackson (2026, p. 11) e onde cada uma aparece na estimativa deste caso. As páginas citadas são do documento.'],
     table: { head: ['Camada', 'O que considerar', 'Onde está na estimativa', 'Neste caso'], rows: A3_CAMADAS.map(r => [rotuloCamada(r.n), r.considerar, subsDe(r.n) || '—', neste[r.n]]), b0: true, larg: [92, 150, 120] },
     pos: [NOTA_CONVENCAO, tr(REF_CURTA) + ' ' + URL_TCO] });
+  if (['parcial', 'nao'].includes(c.internet) || ['parcial', 'nao'].includes(c.dispExistem)) a3alertas.push(A3_ALERTAS.base || 'Condições de base: em sistemas com poucos recursos, conectividade, dispositivos e energia podem ser o primeiro e maior custo (p. 7).');
   if (a3alertas.length) sec({ sub: true, h: 'Pontos de atenção de custo neste caso', list: a3alertas });
+  // Figura 1 (p. 11): na página, dentro de A3; no PDF, numa página própria logo depois de A3
+  if (typeof FIG_TCO !== 'undefined' && FIG_TCO) sec({ tipo: 'figura', id: 'fig-tco', sub: true, h: FIG_TITULO, alt: FIG_ALT, pos: [FIG_LEGENDA] });
 
   // A4
   const arr = arranjosCaso(ce);
@@ -281,10 +360,14 @@ function secoesPlano() {
   const destA5 = [];
   if (d.gratis) RECS.filter(r => ['r-gratuito', 'r-ativos'].includes(r.id)).forEach(r => destA5.push(textoRec(r, d)));
   if (c.licenca === 'termos') destA5.push('Termos de uso padrão não bastam: negocie um contrato em que termos online não alterem as condições materiais.');
-  if (c.pagamento === 'incluida') destA5.push(TXT_A7.incluida);
+  if (c.pagamento === 'incluida') destA5.push(TXT_A5.incluida);
   if (c.pagamento === 'consumo') destA5.push('Cobrança por consumo: exija consumo visível antes da fatura, com alertas e limites.');
+  if (c.suporteQuem === 'fornecedor' || c.suporteQuem === 'ambos') destA5.push('Suporte do fornecedor: inclua no contrato os níveis de serviço (horário, canais, prazos de resposta e de solução).');
+  if (c.formacaoPaga === 'fornecedor') destA5.push('Formação a cargo do fornecedor: inclua no contrato as horas por pessoa, o conteúdo, o público e o formato.');
+  if (ferr.length > 1) destA5.push('Várias ferramentas: exija interoperabilidade e as mesmas cláusulas de dados em todos os contratos, e evite licenças sobrepostas.');
+  destA5.push(TXT_A5.sempre);
   sec({ id: 'A5', h: tituloSec('A5'), p: ['Checklist do Instrumento F do guia (cap. 16), filtrado pelas respostas deste caso. Inclua no termo de referência e no contrato.'],
-    list: destA5.length ? destA5 : null,
+    list: destA5,
     table: { head: ['Grupo', 'Requisito ou cláusula', 'Neste caso'], rows: linhasCl.map(xx => [xx[0], xx[1], destaque(xx) ? 'Prioridade' : (xx[2] ? TAG_CONTRATO[xx[2]] : '')]), grupo: true, larg: [80, 300], marca: [2],
       hl: linhasCl.map((xx, i) => destaque(xx) ? i : -1).filter(i => i >= 0) } });
 
@@ -296,18 +379,9 @@ function secoesPlano() {
     pos: ['A saída não consta no documento de Krueger e Jackson (2026); entra na estimativa por convenção desta ferramenta (guia, caps. 10 e 11). O documento trata a dependência como custo do ciclo de vida (p. 8).'] });
   sec({ sub: true, h: 'Pacote de transição a definir no contrato', p: ['A saída se prepara na entrada. Defina no contrato o pacote de transição:'], list: pacote.map(xx => tr(xx[0]) + ': ' + tr(xx[1])) });
 
-  // A7
-  const a7 = [];
-  if (c.fonte !== 'sim') recsDe('custo', d).forEach(r => a7.push(r.texto));
-  a7.push(TXT_A7.sempre);
-  if (c.pagaDepois === 'parceiro') a7.push(TXT_A7.parceiro);
-  if (c.pagaDepois === 'indefinido' || !c.pagaDepois) a7.push(TXT_A7.indefinido);
-  sec({ id: 'A7', h: tituloSec('A7'), kv: [['Quem paga depois do teste', tr(rotP(OPC.pagaDepois, c.pagaDepois)) || '—'], ['Fonte de recursos', tr(rotP(OPC.fonte, c.fonte)) || '—']], list: a7,
-    pos: ['Krueger e Jackson (2026, p. 9) observam que muitos sistemas avaliam a tecnologia pelo custo de aquisição, pelo financiamento do piloto ou por orçamentos de curto prazo.'] });
-
-  // A8
+  // A7 (v11: era A8; a seção de fonte de recursos saiu)
   const dossie = ['D9', 'D10', 'D11', 'D12', 'D13', 'D14', 'D15'].map(k => DOSSIE.find(z => z[0] === k)).filter(Boolean);
-  sec({ id: 'A8', h: tituloSec('A8'), table: { head: ['Doc.', 'Conteúdo', 'Capítulo do guia', 'Instrumento'], rows: dossie.map(z => [z[0], z[1], tr('Cap. ' + z[2]), z[3] ? tr('Instrumento ' + z[3]) : '—']), b0: true } });
+  sec({ id: 'A7', h: tituloSec('A7'), table: { head: ['Doc.', 'Conteúdo', 'Capítulo do guia', 'Instrumento'], rows: dossie.map(z => [z[0], z[1], tr('Cap. ' + z[2]), z[3] ? tr('Instrumento ' + z[3]) : '—']), b0: true } });
 
   // ================= Bloco B
   sec({ tipo: 'bloco', id: 'B', h: 'B. ' + tr(TIT_PLANO.B) });
@@ -405,7 +479,7 @@ function secoesPlano() {
 // Tradução só dos campos de conteúdo (ids, tipos e alvos de navegação ficam como estão)
 function trSecao(s) {
   const o = Object.assign({}, s);
-  ['h', 'det'].forEach(k => { if (o[k]) o[k] = tr(o[k]); });
+  ['h', 'det', 'alt'].forEach(k => { if (o[k]) o[k] = tr(o[k]); });
   ['pre', 'p', 'list', 'pos'].forEach(k => { if (o[k]) o[k] = o[k].map(z => tr(z)); });
   if (o.kv) o.kv = o.kv.map(([k, v]) => [tr(k), tr(v)]);
   if (o.table) o.table = Object.assign({}, o.table, { head: o.table.head.map(z => tr(z)), rows: o.table.rows.map(r => r.map(z => tr(z))) });
@@ -440,6 +514,15 @@ function htmlCorpoP(s) {
   (s.pos || []).forEach(x => { h += `<p class="note">${linkP(x)}</p>`; });
   return h;
 }
+// Figura 1 (p. 11) de Krueger e Jackson (2026), reproduzida sem alterações; legenda e crédito abaixo
+function htmlFiguraP(s) {
+  if (typeof FIG_TCO === 'undefined' || !FIG_TCO) return '';
+  return `<figure class="fig-tco" id="plano-fig-tco" data-fig="tco" style="margin:16px 0 8px;max-width:720px">
+    <h4 style="margin:0 0 8px">${esc(s.h)}</h4>
+    <img src="${FIG_TCO}" alt="${esc(s.alt || '')}" width="900" height="1225" decoding="async" style="display:block;width:100%;height:auto;border:1px solid var(--line,#DDE3E9);background:#fff">
+    <figcaption class="note" style="margin-top:8px">${linkP((s.pos || [])[0] || '')}</figcaption>
+  </figure>`;
+}
 function renderPlano() {
   const secs = secoesPlano().map(trSecao);
   const c = S.caso, data = new Date().toLocaleDateString(LOC());
@@ -451,6 +534,7 @@ function renderPlano() {
       return;
     }
     if (s.tipo === 'bloco') { fecha(); out += `<div class="bloco-faixa" data-bloco="${s.id}" role="heading" aria-level="2">${esc(s.h)}</div>`; return; }
+    if (s.tipo === 'figura') { out += htmlFiguraP(s); return; }
     if (s.sub) {
       if (s.det) out += `<details class="mais"><summary>${esc(s.det)}</summary>${htmlCorpoP(s)}</details>`;
       else out += `<h4>${esc(s.h)}</h4>${htmlCorpoP(s)}`;
@@ -510,6 +594,8 @@ function gerarPDF() {
     if (m) { url = m[0]; str = str.replace(url, '').replace(/\s{2,}/g, ' ').trim(); }
     doc.setFont('helvetica', o.b ? 'bold' : o.i ? 'italic' : 'normal'); doc.setFontSize(size); doc.setTextColor(...(o.cor || TINTA));
     const linhas = str ? doc.splitTextToSize(pdfTxt(str), (o.w || (W - 2 * M)) - ind) : [];
+    // itens de lista curtos não se partem entre páginas (evita uma linha solta no topo da página seguinte)
+    if (o.bullet && linhas.length > 1 && linhas.length <= 6) cabe(linhas.length * lh);
     linhas.forEach((l, i) => { cabe(lh); if (o.bullet && i === 0) doc.text('•', M + 2, y + size); doc.text(l, M + ind, y + size); y += lh; });
     if (url) {
       cabe(lh); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MARCA);
@@ -568,8 +654,29 @@ function gerarPDF() {
     }, opts));
     y = doc.lastAutoTable.finalY + 10;
   };
+  // Figura 1 numa página própria: largura total, proporção mantida, legenda e crédito abaixo
+  const figura = s => {
+    if (typeof FIG_TCO === 'undefined' || !FIG_TCO) return;
+    let pr = { width: 900, height: 1225 };
+    try { pr = doc.getImageProperties(FIG_TCO) || pr; } catch (e) { }
+    novaPag();
+    texto(s.h, { b: true, size: 11.5, cor: MARCA, after: 6 });
+    doc.setFont('helvetica', 'italic'); doc.setFontSize(9);
+    const leg = doc.splitTextToSize(pdfTxt((s.pos || [])[0] || ''), W - 2 * M);
+    const hLeg = leg.length * 9 * 1.38 + 8;
+    let w = W - 2 * M, h = w * pr.height / pr.width;
+    const hMax = H - M - 20 - y - hLeg;
+    if (h > hMax) { h = hMax; w = h * pr.width / pr.height; }
+    const x0 = M + (W - 2 * M - w) / 2;
+    try { doc.addImage(FIG_TCO, 'JPEG', x0, y, w, h); } catch (e) { console.warn(e); }
+    doc.setDrawColor(221, 227, 233); doc.setLineWidth(0.5); doc.rect(x0, y, w, h);
+    y += h + 8;
+    texto((s.pos || [])[0] || '', { i: true, size: 9, cor: CINZA });
+    novaPag();
+  };
   secs.forEach(s => {
     if (s.soPagina) return;
+    if (s.tipo === 'figura') { figura(s); return; }
     if (s.tipo === 'bloco') { cabe(120); y += 8; faixa(s.h, FAIXA, [255, 255, 255], 14, true); return; }
     if (!s.sub) { cabe(70); if (y > M + 40) y += 6; } else cabe(44);
     texto(s.h, { b: true, size: s.sub ? 11.5 : 14, cor: s.sub ? MARCA : AZUL, after: 4 });

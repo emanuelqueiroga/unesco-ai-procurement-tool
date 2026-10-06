@@ -1,8 +1,9 @@
-/* ---------- percurso em três fases (claro sempre; azul claro → azul escuro dá a ideia de crescimento) */
+/* ---------- percurso em quatro fases (claro sempre; azul claro → azul escuro dá a ideia de crescimento) */
 :root {
   --f1: #A9D4F5; --f1s: #6FB2E6; --f1-ink: #0C2D4D; --f1-tint: #EEF7FE;
   --f2: #5FA8E3; --f2s: #3E8FD0; --f2-ink: #0A2540; --f2-tint: #E6F1FB;
   --f3: #1F6FB8; --f3s: #165A99; --f3-ink: #FFFFFF; --f3-tint: #E3EDF7;
+  --f4: #0B3C6E; --f4s: #072A4F; --f4-ink: #FFFFFF; --f4-tint: #E1E8F0;
   --bg: #FFFFFF; --surface-3: #F7F9FB;
 }
 body { font-size: 16px; }
@@ -12,22 +13,23 @@ body { font-size: 16px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 button.link, label.link { border: 0; background: none; padding: 0; color: var(--brand); text-decoration: underline; cursor: pointer; font: inherit; text-align: left; }
 
-/* stepper: três fases e o botão do plano */
-.stepper { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 4px; margin-bottom: 6px; }
+/* stepper: quatro fases e o botão do plano */
+.stepper { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 4px; margin-bottom: 6px; }
 .step-f { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto 6px; gap: 6px 10px; align-items: center; text-align: left;
   padding: 12px 14px 10px; border: 0; cursor: pointer; font: inherit; border-radius: 0; }
 .step-f:first-child { border-radius: 8px 0 0 8px; }
 .step-f.f1 { background: var(--f1); color: var(--f1-ink); } .step-f.f2 { background: var(--f2); color: var(--f2-ink); }
-.step-f.f3 { background: var(--f3); color: var(--f3-ink); }
+.step-f.f3 { background: var(--f3); color: var(--f3-ink); } .step-f.f4 { background: var(--f4); color: var(--f4-ink); }
 .sf-n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid currentColor; font-weight: 700; font-size: .9rem; }
 .step-f.at.f1 .sf-n, .step-f.at.f2 .sf-n { box-shadow: inset 0 0 0 20px var(--f1-ink); color: var(--f1); }
 .step-f.at.f3 .sf-n { box-shadow: inset 0 0 0 20px #fff; color: var(--f3); }
+.step-f.at.f4 .sf-n { box-shadow: inset 0 0 0 20px #fff; color: var(--f4); }
 .step-f.feita .sf-n, .step-f.at.feita .sf-n { background: var(--ok-bg); color: var(--ok); border-color: var(--ok-bg); box-shadow: none; }
 .step-f.at.feita .sf-n { outline: 2px solid currentColor; outline-offset: 2px; }
 .sf-t { font-weight: 700; line-height: 1.2; font-size: .95rem; }
 .sf-bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: color-mix(in srgb, currentColor 22%, transparent); overflow: hidden; }
 .sf-bar i { display: block; height: 100%; background: var(--ok); border-radius: 3px; }
-.step-f.f3 .sf-bar i { background: #8FD3AE; }
+.step-f.f3 .sf-bar i, .step-f.f4 .sf-bar i { background: #8FD3AE; }
 .step-f:focus-visible, .step-r:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; position: relative; z-index: 1; }
 .step-r { border: 0; border-radius: 0 8px 8px 0; padding: 12px 16px; font: inherit; font-weight: 700; cursor: pointer; background: var(--surface); color: var(--brand); box-shadow: inset 0 0 0 2px var(--brand); }
 .step-r:hover { background: var(--brand-tint); }
@@ -40,6 +42,7 @@ button.link, label.link { border: 0; background: none; padding: 0; color: var(--
 .fase.f1 .fase-cab { background: linear-gradient(90deg, var(--f1), color-mix(in srgb, var(--f1) 55%, #fff)); color: var(--f1-ink); }
 .fase.f2 .fase-cab { background: linear-gradient(90deg, var(--f2), color-mix(in srgb, var(--f2) 60%, var(--f1))); color: var(--f2-ink); }
 .fase.f3 .fase-cab { background: linear-gradient(90deg, var(--f3), color-mix(in srgb, var(--f3) 65%, var(--f2))); color: var(--f3-ink); }
+.fase.f4 .fase-cab { background: linear-gradient(90deg, var(--f4), color-mix(in srgb, var(--f4) 70%, var(--f3))); color: var(--f4-ink); }
 .fase-n { display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; border: 2px solid currentColor; font: 700 1.15rem/1 var(--f-head); flex: none; }
 .fase.feita .fase-cab .fase-n { background: var(--ok-bg); color: var(--ok); border-color: var(--ok-bg); }
 .fase-t b { display: block; font: 700 1.25rem/1.25 var(--f-head); }
@@ -49,7 +52,7 @@ button.link, label.link { border: 0; background: none; padding: 0; color: var(--
 [aria-expanded="true"] > .chev { transform: rotate(-135deg); margin-top: 6px; }
 .fase-cab:focus-visible, .passo-cab:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
 .fase-corpo { display: grid; gap: 12px; padding: 16px 20px 20px; }
-.fase.f1 .fase-corpo { background: var(--f1-tint); } .fase.f2 .fase-corpo { background: var(--f2-tint); } .fase.f3 .fase-corpo { background: var(--f3-tint); }
+.fase.f1 .fase-corpo { background: var(--f1-tint); } .fase.f2 .fase-corpo { background: var(--f2-tint); } .fase.f3 .fase-corpo { background: var(--f3-tint); } .fase.f4 .fase-corpo { background: var(--f4-tint); }
 .fase-corpo > .abertura { margin: 0; max-width: 78ch; color: var(--ink-2); }
 .fase-pe { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); }
 .fase-pe .btn { min-height: 42px; padding-inline: 20px; font-size: 1rem; }
@@ -65,6 +68,7 @@ button.link, label.link { border: 0; background: none; padding: 0; color: var(--
 .passo.st-andamento .pn { background: var(--f1); color: var(--f1-ink); }
 .fase.f2 .passo.st-andamento .pn { background: var(--f2); color: var(--f2-ink); }
 .fase.f3 .passo.st-andamento .pn { background: var(--f3); color: var(--f3-ink); }
+.fase.f4 .passo.st-andamento .pn { background: var(--f4); color: var(--f4-ink); }
 .passo.st-ok .pn { background: var(--ok); color: #fff; font-size: 1rem; }
 .pt b { display: block; font-size: 1.05rem; color: var(--head); }
 .pt small { display: block; color: var(--muted); font-size: .88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -188,7 +192,7 @@ details.calc > .embutido { padding: 0 14px 14px; }
 .prog-f { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); font: inherit; font-size: .92rem; color: var(--ink); cursor: pointer; text-align: left; }
 .prog-f:hover { background: var(--hover); }
 .prog-f .fase-n { width: 28px; height: 28px; font-size: .9rem; border: 0; }
-.prog-f.f1 .fase-n { background: var(--f1); color: var(--f1-ink); } .prog-f.f2 .fase-n { background: var(--f2); color: var(--f2-ink); } .prog-f.f3 .fase-n { background: var(--f3); color: var(--f3-ink); }
+.prog-f.f1 .fase-n { background: var(--f1); color: var(--f1-ink); } .prog-f.f2 .fase-n { background: var(--f2); color: var(--f2-ink); } .prog-f.f3 .fase-n { background: var(--f3); color: var(--f3-ink); } .prog-f.f4 .fase-n { background: var(--f4); color: var(--f4-ink); }
 .prog-f.feita .fase-n { background: var(--ok); color: #fff; }
 .vl-t { font-weight: 600; line-height: 1.2; }
 .vl-n { color: var(--muted); font-size: .88rem; white-space: nowrap; }
@@ -196,9 +200,9 @@ details.calc > .embutido { padding: 0 14px 14px; }
 .mandala a { cursor: pointer; }
 .mandala a:focus-visible { outline: 2px solid var(--focus); }
 .mandala .m-set path { stroke-width: 1.2; }
-.mandala .m-set.f1 path { stroke: var(--f1s); } .mandala .m-set.f2 path { stroke: var(--f2s); } .mandala .m-set.f3 path { stroke: var(--f3s); }
+.mandala .m-set.f1 path { stroke: var(--f1s); } .mandala .m-set.f2 path { stroke: var(--f2s); } .mandala .m-set.f3 path { stroke: var(--f3s); } .mandala .m-set.f4 path { stroke: var(--f4s); }
 .mandala .m-set.m-vazio path { fill: var(--surface); }
-.mandala .m-set.m-and.f1 path { fill: var(--f1); fill-opacity: .35; } .mandala .m-set.m-and.f2 path { fill: var(--f2); fill-opacity: .35; } .mandala .m-set.m-and.f3 path { fill: var(--f3); fill-opacity: .35; }
+.mandala .m-set.m-and.f1 path { fill: var(--f1); fill-opacity: .35; } .mandala .m-set.m-and.f2 path { fill: var(--f2); fill-opacity: .35; } .mandala .m-set.m-and.f3 path { fill: var(--f3); fill-opacity: .35; } .mandala .m-set.m-and.f4 path { fill: var(--f4); fill-opacity: .35; }
 .mandala .m-ok path { fill: var(--ok); fill-opacity: .85; stroke: var(--ok); }
 .mandala .m-set.m-at path { stroke: var(--focus); stroke-width: 2.5; }
 .mandala .m-set text { font: 700 12px var(--f-ui); fill: var(--head); pointer-events: none; }
@@ -228,14 +232,14 @@ details.calc > .embutido { padding: 0 14px 14px; }
 .boas { display: grid; gap: 14px; padding: 24px; border-top: 6px solid var(--f2); }
 .boas h2 { font-size: 1.5rem; }
 .boas p { margin: 0; max-width: 70ch; }
-.boas-fases { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.boas-fases { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .boas-fases li { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 8px; }
 .boas-fases li b { display: block; line-height: 1.25; }
 .boas-fases li small { display: block; font-size: .88rem; opacity: .92; margin-top: 2px; }
-.boas-fases .f1 { background: var(--f1); color: var(--f1-ink); } .boas-fases .f2 { background: var(--f2); color: var(--f2-ink); } .boas-fases .f3 { background: var(--f3); color: var(--f3-ink); }
+.boas-fases .f1 { background: var(--f1); color: var(--f1-ink); } .boas-fases .f2 { background: var(--f2); color: var(--f2-ink); } .boas-fases .f3 { background: var(--f3); color: var(--f3-ink); } .boas-fases .f4 { background: var(--f4); color: var(--f4-ink); }
 .boas-fases .fase-n { flex: none; width: 30px; height: 30px; font-size: .95rem; }
 .btn.grande { min-height: 46px; padding-inline: 22px; font-size: 1.02rem; }
-.cta-resumo { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; justify-content: space-between; padding: 20px 22px; border-top: 6px solid var(--f3); }
+.cta-resumo { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; justify-content: space-between; padding: 20px 22px; border-top: 6px solid var(--f4); }
 .cta-resumo h2 { font-size: 1.3rem; }
 .cta-resumo p { margin: 4px 0 0; max-width: 62ch; }
 
@@ -285,14 +289,15 @@ details.mais > summary { cursor: pointer; color: var(--brand); font-size: .9rem;
 
 @media (max-width: 1100px) {
   .wrap { grid-template-columns: minmax(0, 1fr); }
+  .boas-fases { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #painel { position: static; }
   .painel-in { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
   .painel-in > .prog, .painel-in > .painel-acoes { grid-column: 1 / -1; }
 }
 @media (max-width: 760px) {
-  .stepper { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stepper { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .step-f { padding: 10px 10px 8px; gap: 6px 8px; }
-  .step-f:first-child { border-radius: 8px 0 0 0; } .step-f:nth-child(3) { border-radius: 0 8px 0 0; }
+  .step-f:first-child { border-radius: 8px 0 0 0; } .step-f:nth-child(4) { border-radius: 0 8px 0 0; }
   .step-r { grid-column: 1 / -1; border-radius: 0 0 8px 8px; }
   .doms { grid-template-columns: minmax(0, 1fr); }
   .painel-in { grid-template-columns: minmax(0, 1fr); }
@@ -312,6 +317,8 @@ details.mais > summary { cursor: pointer; color: var(--brand); font-size: .9rem;
 }
 @media (max-width: 480px) {
   /* número, nome da fase e barra em três linhas: o nome nunca cobre o número nem a barra */
+  .stepper { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .step-f:first-child { border-radius: 8px 0 0 0; } .step-f:nth-child(2) { border-radius: 0 8px 0 0; } .step-f:nth-child(4) { border-radius: 0; }
   .step-f { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 6px; align-items: start; align-content: start; }
   .sf-n { width: 24px; height: 24px; }
   .sf-t { font-size: .86rem; overflow-wrap: break-word; hyphens: auto; }
@@ -349,3 +356,32 @@ details.numeros > summary { color: var(--brand); }
 .q.sug .opt input:checked + span b::before, .q.sug .chip input:checked + span::before { content: none; }
 .q.sug .opt:has(input:checked), .q.sug .chip:has(input:checked) { border-style: dashed; border-color: var(--pd-ink); background: var(--pd-bg); box-shadow: none; }
 .q.sug .campo input:not(:placeholder-shown) { border-style: dashed; border-color: var(--pd-ink); }
+
+/* v11: 2.0 com as duas opções, lista de ferramentas, horas de formação e figura das sete camadas */
+.setup-dois { display: grid; gap: 12px; }
+.setup-bloco { display: grid; gap: 8px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-3); }
+.setup-h { margin: 0; font-size: 1rem; color: var(--head); }
+.ferrs { display: grid; gap: 10px; }
+fieldset.ferr { display: grid; gap: 10px; padding: 12px 14px; margin: 0; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface-3); min-width: 0; }
+.ferr-cab { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; justify-content: space-between; }
+.ferr-cab b { color: var(--head); }
+.ferr-cab .tag { font-size: .86rem; }
+.fe-nome { max-width: 520px; }
+.fe-l { display: block; font-size: .9rem; font-weight: 600; color: var(--ink-2); margin-bottom: 4px; }
+.fe-sel { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; align-items: end; }
+.fe-c select { min-width: 0; }
+.fe-c input { text-align: right; }
+.ferr .hint, .fe-tar .hint { margin: 0; font-size: .86rem; color: var(--muted); }
+.horas { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.horas .campo { width: 10rem; }
+.horas .campo input { text-align: right; }
+.fig-in { display: grid; gap: 10px; margin-top: 4px; }
+.fig-btn { justify-self: start; }
+figure.fig-tco { margin: 0; display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+figure.fig-tco img { display: block; width: 100%; height: auto; }
+figure.fig-tco figcaption { font-size: .88rem; color: var(--ink-2); }
+.info-nota:has(figure.fig-tco) { max-width: none; }
+@media (max-width: 760px) {
+  .fe-sel { grid-template-columns: minmax(0, 1fr); }
+}
+.fe-nome input { text-align: left; }

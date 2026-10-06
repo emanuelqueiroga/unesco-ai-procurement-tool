@@ -1,4 +1,6 @@
 # Teste P4 (v9): números formatados enquanto se digita, ✓ dentro do valor e migração da v8.
+# v11 (S2): campos numéricos novos (2.4.2, 2.5.4, 3.1.1, preço na lista de ferramentas) e migração v10 → v11
+# (exportação e localStorage), com formato 11 na exportação.
 # Rodar a partir de /home/claude/app depois de `bash build.sh`:  python3 tests/test_v9_numeros.py
 import asyncio, json, os, re, sys
 from playwright.async_api import async_playwright
@@ -114,34 +116,35 @@ async def main():
             if not nome.startswith('caso_v8_'): continue
             txt = open(os.path.join(FIX, nome)).read()
             r = await pg.evaluate("t => { const ok = importarCaso(t); return { ok, v: S.versao, caso: S.caso, ctx: S.ctx, resp: S.resp, respC: S.respC }; }", txt)
-            chk(r['ok'] and r['v'] == 9, f'{nome}: importado e convertido para a versão 9')
+            chk(r['ok'] and r['v'] == 11, f'{nome}: importado e convertido para a versão 11')
             chk('g-equipe' not in r['resp'] and not any(re.match(r'[rpis]-', k) for k in r['resp']), f'{nome}: resp sem g-equipe nem r-/p-/i-/s-')
-            chk(all(k not in r['caso'] for k in ['classes', 'autonomia', 'dados', 'arquitetura', 'populacao', 'capacidade', 'pilotoGratuito']), f'{nome}: campos legados retirados do caso')
+            chk(all(k not in r['caso'] for k in ['classes', 'autonomia', 'dados', 'populacao', 'capacidade', 'pilotoGratuito', 'pagaDepois', 'fonte', 'infra', 'arquiteturaManual', 'teste']), f'{nome}: campos legados retirados do caso')
+            chk(r['caso'].get('arquitetura', '') in ('', 'saas', 'api', 'ow', 'nao_sei'), f'{nome}: arquitetura v11 válida ({r["caso"].get("arquitetura")!r})')
             chk(all('porAno' not in e for e in r['ctx'].get('etapas', {}).values()), f'{nome}: porAno retirado das etapas')
             o = json.loads(txt)
             if nome == 'caso_v8_branco_parcial.json':
                 c = r['caso']
                 chk(c['tarefas'] == ['alerta_precoce'], f'{nome}: classes previsao+apoio → tarefa alerta_precoce (veio {c["tarefas"]})')
-                chk(c['fonte'] == 'parcial', f'{nome}: g-orcamento parcial → fonte parcial (veio {c["fonte"]!r})')
+                chk('fonte' not in c, f'{nome}: fonte de recursos removida na v11')
                 chk(r['ctx']['etapas']['fund1'].get('soTotal') is True, f'{nome}: fund1 só com total → soTotal true')
                 chk(r['ctx']['etapas']['fund2'].get('soTotal') is False, f'{nome}: fund2 por ano → soTotal false')
                 chk(r['resp'].get('g-comite') == 'nao' and r['resp'].get('g-politica') == 'nao_sei', f'{nome}: g-comite mantido e na → nao_sei')
-                chk(c['teste'] == 'recomendar' and c['situacao'] == 'nova', f'{nome}: situacao testar → teste recomendar e situacao nova')
+                chk(c['testes'] == ['recomendar'] and c['situacao'] == 'nova', f'{nome}: situacao testar → testes [recomendar] e situacao nova')
                 chk(c['piloto'] == {'escolas': 5, 'participantes': 300, 'meses': 3}, f'{nome}: S.piloto → caso.piloto')
-                chk(r['respC'].get('tarefas') is True and r['respC'].get('teste') is True and r['respC'].get('fonte') is True, f'{nome}: respC de tarefas, teste e fonte')
+                chk(r['respC'].get('tarefas') is True and r['respC'].get('testes') is True and 'fonte' not in r['respC'] and 'teste' not in r['respC'], f'{nome}: respC de tarefas e testes, sem teste nem fonte')
                 chk(c['elegiveis'] == '', f'{nome}: elegíveis padrão da v8 não vira resposta')
             if nome == 'caso_v8_B.json':
                 c = r['caso']
-                chk(c['tarefas'] == ['tutoria'] and c['tipoTec'] == 'aberta' and c['adaptacao'] == 'sob_medida' and c['pagamento'] == 'consumo' and c['arquiteturaManual'] == 'ow',
-                    f'{nome}: ow → tutoria/aberta/sob_medida/consumo/ow')
-                chk(c['fonte'] == 'nao' and c['alternativa'] == 'sim', f'{nome}: fonte nao e alternativa sim')
+                chk(c['tarefas'] == ['tutoria'] and c['tipoTec'] == 'aberta' and c['adaptacao'] == 'sob_medida' and c['pagamento'] == 'consumo' and c['arquitetura'] == 'ow',
+                    f'{nome}: ow → tutoria/aberta/sob_medida/consumo/arquitetura ow')
+                chk('fonte' not in c and c['alternativa'] == 'sim', f'{nome}: sem fonte e alternativa sim')
             if nome == 'caso_v8_D.json':
                 c = r['caso']
                 chk(c['tarefas'] == ['duvidas'] and c['pagamento'] == 'gratuito' and c['tipoTec'] == 'paga', f'{nome}: D → duvidas, gratuito, paga')
             # exportar e reimportar dá o mesmo caso
             ida = await pg.evaluate("() => { const a = JSON.stringify(S.caso); const d = JSON.stringify(dadosCaso()); importarCaso(d); return [a, JSON.stringify(S.caso), JSON.parse(d)]; }")
             chk(ida[0] == ida[1], f'{nome}: exportar e reimportar preserva o caso')
-            chk(ida[2].get('app') == 'ai-education-procurement-tool' and ida[2].get('formato') == 9, f'{nome}: exportação no formato 9')
+            chk(ida[2].get('app') == 'ai-education-procurement-tool' and ida[2].get('formato') == 11, f'{nome}: exportação no formato 11')
             # o plano é gerado sem erro
             try:
                 await pg.evaluate("secoesPlano().length")
@@ -156,11 +159,67 @@ async def main():
         await pg.evaluate("t => { localStorage.clear(); localStorage.setItem('navegador-ia-educacao-v4', t); }", txt)
         await pg.reload(); await pg.wait_for_timeout(400)
         r = await pg.evaluate("({ v: S.versao, caso: S.caso, ctx: S.ctx, resp: S.resp, nova: !!localStorage.getItem('aiedu-procurement-v9'), velha: !!localStorage.getItem('navegador-ia-educacao-v4') })")
-        chk(r['v'] == 9, 'localStorage v8: S.versao === 9')
-        chk(r['caso']['tarefas'] == ['alerta_precoce'] and r['caso']['fonte'] == 'parcial', 'localStorage v8: tarefas e fonte convertidas')
+        chk(r['v'] == 11, 'localStorage v8: S.versao === 11')
+        chk(r['caso']['tarefas'] == ['alerta_precoce'] and 'fonte' not in r['caso'] and r['caso']['testes'] == ['recomendar'], 'localStorage v8: tarefas e testes convertidos, sem fonte')
         chk(r['ctx']['etapas']['fund1'].get('soTotal') is True, 'localStorage v8: fund1.soTotal === true')
         chk('g-equipe' not in r['resp'], 'localStorage v8: resp sem g-equipe')
         chk(r['nova'] and r['velha'], 'localStorage v8: grava na chave v9 e mantém a antiga')
+
+        # ---- v11: migração v10 → v11 (exportação da v10 e estado salvo no localStorage)
+        V10_OK = """(() => { const c = S.caso, rc = S.respC;
+          return { testes: c.testes, poc: c.poc, piloto: c.piloto, internet: c.internet, disp: c.dispExistem, arq: c.arquitetura,
+            removidos: ['teste', 'pagaDepois', 'fonte', 'infra', 'arquiteturaManual'].filter(k => k in c),
+            rc: ['testes', 'poc.participantes', 'poc.meses', 'arquitetura', 'internet', 'dispExistem'].filter(k => rc[k]),
+            rcVelhos: ['teste', 'infra', 'arquiteturaManual', 'pagaDepois', 'fonte', 'piloto.participantes'].filter(k => rc[k]),
+            impl: c.implantacao, implC: !!rc['implantacao.pessoas'], eleg: c.elegiveis, pag: c.pagamento, pagSug: sugerido(CAMPO_POR_ID.pagamento),
+            fase: S.fase, passo: S.passo, feitos: Object.keys(S.feitos).sort(), v: S.versao, ce: casoAtual().teste }; })()"""
+        def conferir_v10(r, nome):
+            chk(r['v'] == 11, f'{nome}: versão 11')
+            chk(r['testes'] == ['poc'] and r['ce'] == 'poc', f'{nome}: teste poc → testes [poc] (casoEfetivo: {r["ce"]!r})')
+            chk(r['poc'] == {'participantes': 20, 'meses': 3} and r['piloto']['participantes'] == '', f'{nome}: tamanho da PoC da v10 → caso.poc ({r["poc"]}, {r["piloto"]})')
+            chk(r['internet'] == 'parcial' and r['disp'] == 'parcial', f'{nome}: infra complementar → internet e dispositivos parciais')
+            chk(r['arq'] == 'api', f'{nome}: arquiteturaManual → arquitetura ({r["arq"]!r})')
+            chk(not r['removidos'], f'{nome}: campos removidos fora do caso ({r["removidos"]})')
+            chk(set(r['rc']) == {'testes', 'poc.participantes', 'poc.meses', 'arquitetura', 'internet', 'dispExistem'} and not r['rcVelhos'], f'{nome}: confirmações migradas {r["rc"]} / restos {r["rcVelhos"]}')
+            chk(r['impl']['pessoas'] == 5000 and r['implC'] and r['eleg'] == 5000, f'{nome}: expansão no 1º ano → primeira etapa com as 5.000 pessoas, confirmada ({r["impl"]})')
+            chk(r['pag'] == 'institucional' and r['pagSug'], f'{nome}: sugestão não confirmada da v10 continua "sugerido"')
+        txt = open(os.path.join(FIX, 'caso_v10_poc.json')).read()
+        r = await pg.evaluate("t => { importarCaso(t); render(); return " + V10_OK + "; }", txt)
+        conferir_v10(r, 'exportação v10')
+        chk(r['fase'] == 'contexto', 'exportação v10: importação abre o 1.1')
+        ida = await pg.evaluate("() => { const d = JSON.stringify(dadosCaso()); importarCaso(d); return [JSON.parse(d).formato, " + V10_OK + "]; }")
+        chk(ida[0] == 11 and ida[1]['poc'] == {'participantes': 20, 'meses': 3} and ida[1]['impl']['pessoas'] == 5000, 'exportação v11 reimportada sem nova migração')
+        txt = open(os.path.join(FIX, 'localStorage_v10_poc.json')).read()
+        await pg.evaluate("t => { localStorage.clear(); localStorage.setItem('aiedu-procurement-v9', t); }", txt)
+        await pg.reload(); await pg.wait_for_timeout(400)
+        chk(await pg.evaluate("!!SALVO && S.boasVindas===true"), 'localStorage v10: caso salvo oferecido nas boas-vindas')
+        await pg.evaluate("continuarSalvo()"); await pg.wait_for_timeout(300)
+        r = await pg.evaluate(V10_OK)
+        conferir_v10(r, 'localStorage v10')
+        chk(r['fase'] == 'expansao' and r['passo'] == '4b' and r['feitos'] == ['2a', '4b', '4c'], f'localStorage v10: passo 3.3 → 4.2, feitos 3.3/3.4 → 4.2/4.3 (2.1 mantido) ({r["fase"]}, {r["passo"]}, {r["feitos"]})')
+        chk(await pg.evaluate("JSON.parse(localStorage.getItem('aiedu-procurement-v9')).versao") == 11, 'localStorage v10: estado regravado na versão 11')
+
+        # ---- v11: campos numéricos novos formatados enquanto se digita
+        NOVOS = [('#f-escolasInternet', "(()=>{S.caso.internet='parcial'; S.respC.internet=true; abrirFase('piloto','2d');})()", 'S.caso.escolasInternet', '12345', 12345),
+                 ('#f-formacaoHoras', "abrirFase('piloto','2e')", 'S.caso.formacaoHoras', '1200', 1200),
+                 ('#im-pessoas', "abrirFase('implantacao','3a')", 'S.caso.implantacao.pessoas', '25000', 25000)]
+        FMT = {'pt': {12345: '12.345', 1200: '1.200', 25000: '25.000'}, 'en': {12345: '12,345', 1200: '1,200', 25000: '25,000'}, 'fr': {12345: '12 345', 1200: '1 200', 25000: '25 000'}}
+        for lang in ['pt', 'en', 'fr']:
+            await pg.select_option('#sel-lang', lang); await pg.wait_for_timeout(120)
+            await pg.evaluate("(()=>{carregarExemplo('novo'); S.boasVindas=false; S.ctx.etapas={fund2:{on:true,escolas:600,soTotal:true,alunos:150000}}; render();})()"); await pg.wait_for_timeout(120)
+            for sel, abrir, campo, dig, num in NOVOS:
+                await pg.evaluate(abrir); await pg.wait_for_timeout(150)
+                await digitar_vazio(pg, sel, dig)
+                v = await pg.input_value(sel)
+                chk(ESP.sub(' ', v) == FMT[lang][num], f'{lang}: {sel} formata {dig} como {FMT[lang][num]!r} (veio {v!r})')
+                await pg.keyboard.press('Tab'); await pg.wait_for_timeout(100)
+                chk(await pg.evaluate(campo) == num, f'{lang}: {campo} = {num} (número puro)')
+            # preço por usuário por mês (decimal) numa linha da lista de ferramentas
+            await pg.evaluate("(()=>{S.caso.conheceFerramentas='sim'; S.respC.conheceFerramentas=true; S.caso.ferramentas=[{nome:'A',tarefas:[],tipoTec:'',pagamento:'',preco:''}]; abrirFase('piloto','2c');})()"); await pg.wait_for_timeout(150)
+            await digitar_vazio(pg, '#fe-0-preco', '12.5' if lang == 'en' else '12,5')
+            await pg.keyboard.press('Tab'); await pg.wait_for_timeout(100)
+            chk(await pg.evaluate("S.caso.ferramentas[0].preco") == 12.5, f'{lang}: preço da ferramenta gravado como 12.5')
+            chk(await pg.evaluate("document.getElementById('fe-0-preco').dataset.num") == 'dec', f'{lang}: preço é campo decimal')
 
         chk(not erros, 'sem erros de console: ' + ' | '.join(erros[:5]))
         await b.close()

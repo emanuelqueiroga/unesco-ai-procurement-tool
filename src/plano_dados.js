@@ -18,8 +18,7 @@ const TIT_PLANO = {
   A4: 'Arranjo de aquisição',
   A5: 'Requisitos e cláusulas de custo e compra',
   A6: 'Dependência e saída',
-  A7: 'Fonte de recursos',
-  A8: 'Documentos do dossiê a preparar',
+  A7: 'Documentos do dossiê a preparar',
   B1: 'Governança da rede (camada 1)',
   B2: 'Funções que não podem ser terceirizadas',
   B3: 'Regras da prova de conceito ou do piloto',
@@ -51,7 +50,7 @@ const recDadosPessoais = ce => (ce.dados || []).some(k => k !== 'nenhum');
 const recClasse = (ce, ...ks) => (ce.classes || []).some(k => ks.includes(k));
 const recGratuito = ce => ce.pagamento === 'gratuito' || ce.tipoTec === 'publica' || !!ce.pilotoGratuito;
 
-// grupo: regras (B3), local (B4), rede e manter (B7), dados (B6), custo (A7), aval (B8)
+// grupo: regras (B3), local (B4), rede e manter (B7), dados (B6), aval (B8)
 // poc: true → também vale na prova de conceito (só para o grupo "local")
 // textoPoc: redação para quando o teste é uma prova de conceito
 // quando(ce, p): condição sobre o caso efetivo e o perfil de risco
@@ -69,9 +68,9 @@ const RECS = [
   { id: 'p-usuarios', grupo: 'local', camada: 2, poc: true, texto: 'Envolver professores, estudantes ou servidores na escolha e no teste.' },
   { id: 'p-adocao', grupo: 'local', camada: 2, texto: 'Definir medidas de uso e adoção para acompanhar o piloto.' },
   { id: 'p-idiomas', grupo: 'local', camada: 2, texto: 'Testar a aplicação nos idiomas e contextos dos usuários.', quando: ce => !!ce.idiomas },
-  { id: 'p-conect', grupo: 'local', camada: 3, texto: 'Garantir conectividade nas escolas do piloto ou ajustar o uso previsto.' },
-  { id: 'p-disp', grupo: 'local', camada: 3, texto: 'Garantir dispositivos para os participantes do piloto.' },
-  { id: 'p-desplug', grupo: 'local', camada: 3, texto: 'Prever alternativa sem conexão ou atividades desplugadas para escolas com pouca infraestrutura.' },
+  { id: 'p-conect', grupo: 'local', camada: 3, texto: 'Garantir conectividade nas escolas do piloto ou ajustar o uso previsto.', quando: ce => ce.internet !== 'sim' },
+  { id: 'p-disp', grupo: 'local', camada: 3, texto: 'Garantir dispositivos para os participantes do piloto.', quando: ce => ce.dispExistem !== 'sim' || ce.modeloDisp === 'proprio' },
+  { id: 'p-desplug', grupo: 'local', camada: 3, texto: 'Prever alternativa sem conexão ou atividades desplugadas para escolas com pouca infraestrutura.', quando: ce => ce.internet !== 'sim' || ce.dispExistem !== 'sim' },
   { id: 'p-protecao', grupo: 'local', camada: 5, texto: 'Minimizar e proteger os dados do piloto.', quando: ce => recDadosPessoais(ce) },
   { id: 'p-acessos', grupo: 'local', camada: 5, poc: true, texto: 'Controlar contas e acessos dos participantes.' },
   { id: 'p-incidente', grupo: 'local', camada: 5, poc: true, texto: 'Abrir um canal para relatar problemas e incidentes.' },
@@ -119,9 +118,7 @@ const RECS = [
   { id: 's-formacao', grupo: 'manter', camada: 6, texto: 'Manter formação contínua e preparar lideranças.' },
   { id: 's-saida', grupo: 'manter', camada: 7, texto: 'Calcular o custo de saída e testar o plano de transição.' },
   { id: 's-equidade', grupo: 'manter', camada: 7, texto: 'Garantir o mesmo acesso e suporte às escolas com menos condições.' },
-  // fonte de recursos (A7) e monitoramento (B8)
-  { id: 'g-orcamento', grupo: 'custo', camada: 1, texto: 'Prever a fonte de recursos para operar e manter a solução depois do piloto.' },
-  { id: 's-orcamento', grupo: 'custo', camada: 7, texto: 'Garantir orçamento recorrente para os próximos exercícios.' },
+  // monitoramento (B8). v11: sem fonte de recursos (o passo saiu do percurso).
   { id: 'g-avaliacao', grupo: 'aval', camada: 1, texto: 'Definir indicadores, responsáveis e rotina de monitoramento e avaliação.' },
 ];
 
@@ -165,6 +162,7 @@ const A3_ALERTAS = {
   gratuito: 'Custos adiados pela gratuidade: uma ferramenta doada, gratuita ou embutida passa por fora do momento em que as condições normalmente são negociadas, e os custos que ela adia não desaparecem. Registre o que acontece quando o período gratuito terminar (p. 7–8; p. 13, pergunta 2).',
   consumo: 'Custo variável por uso: cada uso consome capacidade de computação e é cobrado à medida que se acumula. Monitore esse custo à medida que o uso cresce (p. 6).',
   licencas: 'Licenças pagas e não usadas são desperdício (p. 3): compare o custo por usuário licenciado com o custo por usuário ativo.',
+  base: 'Condições de base: em sistemas com poucos recursos, conectividade, dispositivos e energia podem ser o primeiro e maior custo, e a desigualdade de acesso começa aí (p. 7).',
 };
 
 // ----------------------------------------------------------- textos fixos
@@ -175,13 +173,17 @@ const TXT_A1 = [
 ];
 const TXT_A1_POC = 'Use dados de teste ou selecionados, sem usuários reais nem integrações que criem dependência.';
 const TXT_A4 = 'Os arranjos são combináveis: uma aplicação própria pode usar um modelo por API e uma base de conhecimento compartilhada. O que importa é a clareza sobre quem controla cada componente e por quê.';
-const TXT_A7 = {
+// v11: a seção "Fonte de recursos" saiu do plano; estes dois textos continuam em A5 (requisitos de custo e compra)
+const TXT_A5 = {
   sempre: 'Teste o orçamento sem condições promocionais e compare as propostas no mesmo horizonte, incluindo mudança e saída.',
-  parceiro: 'Defina o que acontece quando o financiamento do parceiro acabar (Krueger e Jackson, 2026, p. 8).',
-  indefinido: 'Defina quem vai pagar a tecnologia depois do teste antes de assumir qualquer compromisso com o fornecedor.',
   incluida: 'Verifique se o preço da plataforma que a rede já paga mudou com a IA e em que unidade é cobrado (Krueger e Jackson, 2026, p. 6, custos embutidos e distribuídos).',
 };
+// Figura 1 de Krueger e Jackson (2026, p. 11), reproduzida em A3 (página) e no PDF (página própria).
+// A imagem vem de assets/fig1_tco.jpg, injetada pelo build como FIG_TCO (data URI); sem ela, a figura não aparece.
+const FIG_LEGENDA = 'Figura 1 de Krueger, K. e Jackson, F. para CoSN (2026), Beyond the price tag, p. 11. © UNESCO 2026, licença CC BY-SA 3.0 IGO; reproduzida sem alterações.';
+const FIG_TITULO = 'Quadro de custo total em camadas';
+const FIG_ALT = 'Figura 1 de Krueger e Jackson (2026): as sete camadas do custo total da IA na educação, de governança a operação e sustentabilidade.';
 const TXT_B1_REF = 'Krueger e Jackson (2026) incluem na camada 1 estruturas de governança, política, revisão ética, orientação de compras e revisão jurídica (p. 11) e sugerem uma governança que reúna tecnologia, currículo, cibersegurança, jurídico e conformidade, compras, operação e direção (p. 12).';
 const TXT_B8_REF = 'Krueger e Jackson (2026, p. 13) sugerem mecanismos para medir impacto organizacional, sustentabilidade, equidade, efetividade operacional e qualidade da implementação no longo prazo.';
 
-if (typeof module !== 'undefined') module.exports = { TIT_PLANO, FAIXA_PLANO, URL_TCO, REFS_PLANO, REF_CURTA, RECS, ACOES_G, PRIORIDADE_G, RESP_G_NOME, FUNCOES_INTERNAS, A3_CAMADAS, CAMADA_DE_S_PLANO, NOTA_CONVENCAO, NOTA_SAIDA, A3_ALERTAS, TXT_A1, TXT_A1_POC, TXT_A4, TXT_A7, TXT_B1_REF, TXT_B8_REF };
+if (typeof module !== 'undefined') module.exports = { TIT_PLANO, FAIXA_PLANO, URL_TCO, REFS_PLANO, REF_CURTA, RECS, ACOES_G, PRIORIDADE_G, RESP_G_NOME, FUNCOES_INTERNAS, A3_CAMADAS, CAMADA_DE_S_PLANO, NOTA_CONVENCAO, NOTA_SAIDA, A3_ALERTAS, TXT_A1, TXT_A1_POC, TXT_A4, TXT_A5, FIG_LEGENDA, FIG_TITULO, FIG_ALT, TXT_B1_REF, TXT_B8_REF };

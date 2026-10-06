@@ -175,7 +175,7 @@ function renderCustos() {
 
   <details class="box" ${sc.abrirPrem ? 'open' : ''} data-det="prem"><summary>Premissas de demanda, arquitetura e tempo</summary><div class="in">
     <div class="prem">
-      ${anosC('Pessoas elegíveis', 'demanda.E', d.E, H, { step: '1', hint: 'Ano 0 = população do piloto. Além do último ano informado, o valor se repete.' })}
+      ${anosC('Pessoas elegíveis', 'demanda.E', d.E, H, { step: '1', hint: 'Ano 0 = participantes do teste (prova de conceito e/ou piloto); Ano 1 = primeira etapa da implantação. Além do último ano informado, o valor se repete.' })}
       ${anosC('Taxa de adoção (usuários ativos ÷ elegíveis)', 'demanda.adocao', d.adocao, H, { pct: true })}
       ${anosC('Meses de uso no ano', 'demanda.meses', d.meses, H, { step: '1' })}
       ${arq !== 'saas' ? campo('Sessões por usuário ativo por mês (s)', 'demanda.s', d.s, { step: '1' }) + campo('Interações por sessão (i)', 'demanda.i', d.i, { step: '1' }) : ''}

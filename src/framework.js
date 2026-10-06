@@ -36,8 +36,18 @@ const OPC = {
   teste: [
     ['poc', 'Prova de conceito', 'Testa se a solução funciona tecnicamente, com a equipe e dados de teste, sem usuários reais.'],
     ['piloto', 'Piloto', 'Testa o uso com professores ou estudantes reais, em poucas escolas e por tempo limitado.'],
-    ['recomendar', 'Não sei, recomende para mim', 'Responda às próximas perguntas como se fosse um piloto. O plano de contratação recomenda prova de conceito ou piloto e explica por quê.'],
+    ['recomendar', 'Não sei, recomende para mim', 'Responda às próximas perguntas como se fosse um piloto. O plano de contratação recomenda prova de conceito, piloto ou os dois e explica por quê.'],
   ],
+  // v11: a 2.0 é múltipla (S.caso.testes ⊂ {'poc','piloto'} ou ['recomendar'], exclusiva); as opções são as de OPC.teste.
+  // testeEfetivo: rótulos do teste derivado (casoEfetivo → ce.teste), com 'ambos' quando as duas são marcadas.
+  testeEfetivo: [
+    ['poc', 'Prova de conceito'], ['piloto', 'Piloto'],
+    ['ambos', 'Prova de conceito e depois piloto', 'Primeiro testa se a solução funciona tecnicamente; depois, testa o uso com pessoas reais em poucas escolas.'],
+    ['recomendar', 'Não sei, recomende para mim'],
+  ],
+  // v11: ferramentas (2.3)
+  nFerramentas: [['1', 'Uma'], ['2', 'Duas'], ['3mais', 'Três ou mais'], ['nao_sei', 'Ainda não sei']],
+  conheceFerramentas: [['sim', 'Sim'], ['nao', 'Ainda não']],
   // tarefas (2.1.1): preenchido abaixo a partir de TAREFAS — [id, texto, exemplo]
   tarefas: [],
   // v9: adoção (2.3)
@@ -66,15 +76,56 @@ const OPC = {
     ['integracao', 'Integração com sistemas da rede (login, matrícula, ambiente virtual)'],
     ['sob_medida', 'Desenvolvimento sob medida (novas funções, aplicação própria)'],
   ],
-  infra: [['sim', 'Sim'], ['complementar', 'Em parte: será preciso complementar'], ['nao_sei', 'Não sei']],
-  // v9: fase 3
-  expansao: [['ano1', 'No primeiro ano depois do teste'], ['ano2', 'Em dois anos'], ['ano3', 'Em três anos']],
-  horizonte: [[3, '3 anos'], [5, '5 anos']],
-  pagaDepois: [
-    ['rede', 'A própria rede'], ['governo', 'Outra esfera de governo ou programa público'],
-    ['parceiro', 'Parceiro privado ou doador'], ['indefinido', 'Ainda não definido'],
+  // v11: 2.4 Infraestrutura e dispositivos (camada 3); substitui a antiga pergunta "infra"
+  internet: [
+    ['sim', 'Sim', 'Todas as escolas do uso previsto têm conexão estável e rápida o suficiente.'],
+    ['parcial', 'Parcialmente', 'Só parte das escolas tem internet adequada.'],
+    ['nao', 'Não', 'As escolas vão precisar de conexão nova ou melhor.'],
   ],
-  fonte: [['sim', 'Sim, prevista no orçamento'], ['parcial', 'Em parte ou só para o primeiro ano'], ['nao', 'Não']],
+  modeloDisp: [
+    ['um_por_aluno', 'Um por estudante', 'Cada estudante usa um dispositivo da escola só para si.'],
+    ['compartilhado', 'Compartilhado na sala', 'Os estudantes dividem os dispositivos da sala em pequenos grupos.'],
+    ['rotativo', 'Rotativo (carrinho ou laboratório)', 'Um conjunto de dispositivos circula entre as turmas da escola.'],
+    ['por_professor', 'Um por professor', 'Só os professores usam; os estudantes não precisam de dispositivo.'],
+    ['proprio', 'Dispositivos próprios das pessoas', 'Cada pessoa usa o próprio celular ou computador.'],
+  ],
+  dispExistem: [
+    ['sim', 'Sim', 'As escolas já têm os dispositivos necessários, em bom estado.'],
+    ['parcial', 'Parcialmente', 'Faltam dispositivos em parte das escolas ou turmas.'],
+    ['nao', 'Não', 'Será preciso comprar ou alugar os dispositivos.'],
+  ],
+  // v11: 2.5 Formação e capacidade das equipes (camada 6)
+  formados: [['professores', 'Professores'], ['gestores', 'Gestores escolares'], ['tecnica', 'Equipe técnica'], ['administrativo', 'Equipe administrativa']],
+  formacaoTipo: [
+    ['tecnologia', 'Uso da tecnologia', 'Como acessar e usar a ferramenta no dia a dia.'],
+    ['pedagogico', 'Uso pedagógico', 'Como usar a ferramenta para ensinar e acompanhar os estudantes.'],
+    ['piloto', 'Formação específica do piloto', 'O que testar, como registrar e como avaliar o piloto.'],
+    ['dados_etica', 'Proteção de dados e uso responsável', 'Cuidados com dados pessoais, limites da IA e como contestar erros.'],
+  ],
+  formacaoFormato: [
+    ['presencial', 'Presencial', 'Encontros com formadores nas escolas ou em polos.'],
+    ['online', 'Online', 'Cursos e encontros a distância.'],
+    ['hibrida', 'Híbrida', 'Parte presencial e parte online.'],
+  ],
+  formacaoPaga: [
+    ['fornecedor', 'Incluída no contrato do fornecedor'], ['rede', 'A própria rede'],
+    ['parceiro', 'Parceiro ou outro programa'], ['indefinido', 'Ainda não definido'],
+  ],
+  // v11: 2.6 Operação e suporte (camada 7)
+  suporteQuem: [['fornecedor', 'Equipe do fornecedor'], ['rede', 'Equipe da própria rede'], ['ambos', 'As duas']],
+  suporteNivel: [
+    ['basico', 'Básico', 'Atendimento por um canal escrito, em horário comercial, para dúvidas de acesso e uso.'],
+    ['ampliado', 'Ampliado', 'Atendimento por vários canais, com prazos de resposta definidos e apoio às escolas nos primeiros meses.'],
+    ['dedicado', 'Dedicado', 'Uma equipe ou pessoa de referência para a rede, com resposta rápida e visitas às escolas quando preciso.'],
+  ],
+  acompanhamento: [
+    ['leve', 'Leve', 'Indicadores de uso e registro de incidentes, revistos de tempos em tempos.'],
+    ['regular', 'Regular', 'Indicadores mensais e revisão de uma amostra das respostas da IA a cada período.'],
+    ['intensivo', 'Intensivo', 'Revisão frequente de amostras, acompanhamento por escola e relatórios para a coordenação.'],
+  ],
+  // v11: 4.1.2 em quanto tempo, depois da implantação (3.1), o uso chega a todas as pessoas
+  expansao: [['ano1', 'Um ano depois da implantação'], ['ano2', 'Dois anos depois da implantação'], ['ano3', 'Três anos depois da implantação']],
+  horizonte: [[3, '3 anos'], [5, '5 anos']],
   simNao: [['sim', 'Sim'], ['nao', 'Ainda não']],
   classes: [
     ['geracao', 'Geração de conteúdo'], ['recomendacao', 'Recomendação'], ['classificacao', 'Classificação'],
@@ -116,9 +167,14 @@ const OPC = {
   verificabilidade: [['sim', 'Há informação para verificar e registrar como cada saída foi produzida', 'limitado'], ['parcial', 'Parcialmente', 'moderado'], ['nao', 'Não, a solução é opaca para a instituição', 'elevado']],
   contestacao: [['efetiva', 'Existe caminho efetivo, com prazo e autoridade para rever', 'limitado'], ['formal', 'Existe apenas formalmente', 'moderado'], ['nao', 'Não existe', 'elevado'], ['na', 'Não se aplica (não afeta pessoas)', 'limitado']],
   cumulativo: [['nao', 'Não', 'limitado'], ['possivel', 'Possível', 'moderado'], ['sim', 'Sim, o mesmo grupo é afetado repetidamente ou por anos', 'elevado']],
+  // v11: pergunta 3.2.1 (S.caso.arquitetura). 'nao_sei' usa a arquitetura presumida (derivarArquitetura);
+  // 'indefinida' fica só para exibição de casos antigos (não é opção da pergunta).
   arquitetura: [
-    ['saas', 'Produto pronto (SaaS) por licença'], ['api', 'Aplicação própria ou contratada usando modelo por API, com base de conhecimento (RAG)'],
-    ['ow', 'Modelo de pesos abertos em infraestrutura contratada'], ['indefinida', 'Ainda não definida'],
+    ['saas', 'Produto pronto (SaaS) por licença', 'Um produto pronto, usado pela internet e pago por licença ou assinatura. O fornecedor cuida da tecnologia.'],
+    ['api', 'Aplicação própria ou contratada usando modelo por API, com base de conhecimento (RAG)', 'Uma aplicação feita para a rede, que usa um modelo de IA de uma empresa, pago pelo uso, e consulta documentos da rede.'],
+    ['ow', 'Modelo de pesos abertos em infraestrutura contratada', 'Um modelo aberto instalado em servidores contratados, com custo de infraestrutura e de uma equipe que o opera.'],
+    ['nao_sei', 'Ainda não sei (usar a arquitetura presumida)', 'A ferramenta usa a arquitetura deduzida das respostas sobre tecnologia, pagamento e licença.'],
+    ['indefinida', 'Ainda não definida'],
   ],
   linhaBase: [['sim', 'Sim, medida'], ['parcial', 'Em parte ou estimada'], ['nao', 'Não']],
   capacidade: [
@@ -167,6 +223,9 @@ const TAREFAS = [
     dados: ['nenhum'], reversibilidade: 'tempo', cumulativo: 'possivel', frequencia: 'semanal' },
 ];
 OPC.tarefas = TAREFAS.map(x => [x.id, x.t, x.ex]);
+// v11: a 2.0 múltipla usa as mesmas opções de OPC.teste
+OPC.testes = OPC.teste;
+OPC.arquiteturaPergunta = OPC.arquitetura.filter(o => o[0] !== 'indefinida');
 // Tarefas ligadas a cada impacto (só para a etiqueta "sugerida pelo impacto" no 2.1; não pré-marcam)
 const IMPACTO_TAREFAS = {
   aprendizagem: ['tutoria', 'feedback_redacao', 'materiais'],
@@ -206,18 +265,60 @@ function perfisSugeridos(tarefas, etapasIds) {
 }
 
 // Arquitetura presumida a partir das respostas de adoção (2.3). Devolve 'saas' | 'api' | 'ow'.
-// Com ignorarManual = true, devolve a arquitetura deduzida mesmo que haja escolha manual.
+// v11: a escolha da pergunta 3.2.1 (c.arquitetura = 'saas' | 'api' | 'ow') prevalece; 'nao_sei' ou vazio usa a presumida.
+// Compatibilidade: c.arquiteturaManual (v9–v10) vale como escolha quando c.arquitetura não é uma das três.
+// Com ignorarManual = true, devolve a arquitetura deduzida mesmo que haja escolha.
+const ARQS = ['saas', 'api', 'ow'];
+function arquiteturaEscolhida(c) {
+  c = c || {};
+  if (ARQS.includes(c.arquitetura)) return c.arquitetura;
+  if (ARQS.includes(c.arquiteturaManual)) return c.arquiteturaManual;
+  return '';
+}
 function derivarArquitetura(c, ignorarManual) {
   c = c || {};
-  if (!ignorarManual && ['saas', 'api', 'ow'].includes(c.arquiteturaManual)) return c.arquiteturaManual;
+  const esc = ignorarManual ? '' : arquiteturaEscolhida(c);
+  if (esc) return esc;
   if (c.tipoTec === 'aberta' || c.licenca === 'aberta') return 'ow';
   if (c.pagamento === 'consumo') return 'api';
   return 'saas';
 }
 
+// v11: teste derivado da 2.0 (múltipla). testes ⊂ {'poc','piloto'} ou ['recomendar'] (exclusiva).
+// Os dois marcados → 'ambos'; um só → 'poc' | 'piloto'; ['recomendar'] → 'recomendar'; vazio → ''.
+// Compatibilidade: com testes vazio e c.teste antigo preenchido, usa c.teste.
+function testeDe(c) {
+  c = c || {};
+  const ts = Array.isArray(c.testes) ? c.testes : [];
+  if (ts.includes('recomendar')) return 'recomendar';
+  const poc = ts.includes('poc'), pil = ts.includes('piloto');
+  if (poc && pil) return 'ambos';
+  if (poc) return 'poc';
+  if (pil) return 'piloto';
+  return ['poc', 'piloto', 'ambos', 'recomendar'].includes(c.teste) ? c.teste : '';
+}
+
+// v11: quantas das pessoas que usariam (E) são estudantes e quantas são professores.
+// CONVENÇÃO EDITORIAL ILUSTRATIVA (a mesma da sugestão do passo 3.1/4.1): 1 professor para cada 25 estudantes.
+// Se estudantes usam, E conta estudantes e os professores são E ÷ 25; se não, E conta servidores, divididos
+// igualmente entre os papéis marcados (professores, gestores, servidores administrativos).
+const RAZAO_EST_PROF = 25;
+function papeisUsuarios(c, E) {
+  const us = (c && c.usuarios) || [];
+  E = +E || 0;
+  const usaEst = us.includes('estudantes');
+  const equipe = us.filter(u => ['professores', 'gestores', 'administrativo'].includes(u));
+  const parte = equipe.length ? E / equipe.length : 0;
+  if (usaEst) return { usaEst, estudantes: E, professores: Math.round(E / RAZAO_EST_PROF), gestores: 0, administrativo: 0, equipe };
+  return { usaEst, estudantes: 0, professores: us.includes('professores') ? Math.round(parte) : 0,
+    gestores: us.includes('gestores') ? Math.round(parte) : 0, administrativo: us.includes('administrativo') ? Math.round(parte) : 0, equipe };
+}
+
 // Caso efetivo: cópia do caso com os campos legados (classes, autonomia, dados, reversibilidade,
 // verificabilidade, contestação, arquitetura...) derivados das tarefas e da adoção. Não altera c.
 // tot = { alunos, escolas, etapas: [ids] } (totaisCtx()).
+// v11: deriva teste (incl. 'ambos'), usa c.arquitetura quando é saas/api/ow, conta estudantes e professores
+// usuários (usuariosEstudantes, usuariosProfessores) e a primeira etapa da implantação (implantacaoEfetiva).
 function casoEfetivo(c, tot) {
   const ce = JSON.parse(JSON.stringify(c || {}));
   tot = tot || {};
@@ -226,6 +327,8 @@ function casoEfetivo(c, tot) {
   const us = ce.usuarios || [], af = ce.afetados || [];
   ce.consequencias = Array.isArray(ce.consequencias) ? ce.consequencias : ['nenhuma'];
   const cons = ce.consequencias;
+  ce.teste = testeDe(ce);
+  ce.testes = Array.isArray(ce.testes) ? ce.testes : [];
   ce.classes = uniaoOrd(OPC.classes, [].concat(...T.map(x => x.classes)));
   ce.autonomia = T.length ? Math.max(...T.map(x => x.autonomia)) : 2;
   // dados
@@ -239,31 +342,60 @@ function casoEfetivo(c, tot) {
   ce.treino = 'nao_sei';  // premissa: o plano pede a cláusula de proibição
   ce.reversibilidade = piorDe(ORDEM_REV, T.map(x => x.reversibilidade), 'tempo');
   ce.cumulativo = piorDe(ORDEM_CUM, T.map(x => x.cumulativo), 'possivel');
-  ce.arquitetura = derivarArquitetura(ce);
-  ce.__arqPresumida = !['saas', 'api', 'ow'].includes(ce.arquiteturaManual) && ['', 'nao_sei', undefined, null].includes(ce.tipoTec);
+  // arquitetura: escolha da 3.2.1 (ou a manual antiga) ou a presumida
+  const escolhida = arquiteturaEscolhida(c);
+  ce.arquiteturaResposta = (c && c.arquitetura) || '';
+  ce.arquitetura = escolhida || derivarArquitetura(ce, true);
+  ce.__arqEscolhida = !!escolhida;
+  ce.__arqPresumida = !escolhida && ['', 'nao_sei', undefined, null].includes(ce.tipoTec);
   ce.verificabilidade = ['api', 'ow'].includes(ce.arquitetura) ? 'sim' : ce.licenca === 'termos' ? 'nao' : 'parcial';
   const pesoMax = Math.max(0, ...cons.map(k => (OPC.consequencias.find(x => x[0] === k) || [0, 0, 0])[2]));
   ce.contestacao = pesoMax === 0 ? 'na' : 'formal';
   ce.vulneraveis = false;
   ce.idiomas = T.some(x => x.id === 'acessibilidade') || ['conteudo', 'integracao', 'sob_medida'].includes(ce.adaptacao);
+  // pessoas que usariam (E): informado; senão estudantes das etapas (se estudantes usam) ou
+  // 1 professor para cada 25 estudantes (se só professores usam, convenção ilustrativa); senão 1.000
+  const usaEst = us.includes('estudantes'), soProf = !usaEst && us.includes('professores');
   if (+ce.elegiveis > 0) { ce.elegiveis = +ce.elegiveis; ce.__elegPadrao = false; }
-  else { ce.elegiveis = (us.includes('estudantes') && alunos > 0) ? alunos : 1000; ce.__elegPadrao = true; }
+  else {
+    ce.elegiveis = (usaEst && alunos > 0) ? alunos : (soProf && alunos > 0 ? Math.max(1, Math.round(alunos / RAZAO_EST_PROF)) : 1000);
+    ce.__elegPadrao = true;
+  }
   ce.alcance = (af.includes('criancas') || af.includes('adultos_est')) && alunos > 0 ? alunos : '';
   ce.pilotoGratuito = ce.pagamento === 'gratuito';
   ce.alternativaSemIA = ce.alternativa === 'sim';
   ce.escolasRede = escolas;
+  ce.alunosRede = alunos;
+  ce.professoresRede = alunos > 0 ? Math.round(alunos / RAZAO_EST_PROF) : 0;
+  // contagens efetivas por papel (na escala completa E)
+  const pap = papeisUsuarios(ce, ce.elegiveis);
+  ce.usuariosEstudantes = pap.estudantes;
+  ce.usuariosProfessores = pap.professores;
   ce.horizonte = +ce.horizonte || 3;
   ce.piloto = Object.assign({ escolas: '', participantes: '', meses: '' }, ce.piloto || {});
+  ce.poc = Object.assign({ participantes: '', meses: '' }, ce.poc || {});
+  // primeira etapa da implantação (3.1): informada ou 1/3 de E (sugestão ilustrativa); escolas proporcionais
+  const imp = Object.assign({ escolas: '', pessoas: '' }, ce.implantacao || {});
+  ce.implantacao = imp;
+  const E = ce.elegiveis;
+  const p1 = +imp.pessoas > 0 ? Math.min(E, Math.round(+imp.pessoas)) : Math.max(1, Math.round(E / 3));
+  const e1 = +imp.escolas > 0 ? Math.round(+imp.escolas) : (escolas > 0 ? Math.max(1, Math.round(escolas * p1 / E)) : 0);
+  ce.implantacaoEfetiva = { pessoas: p1, escolas: e1, padraoPessoas: !(+imp.pessoas > 0), padraoEscolas: !(+imp.escolas > 0) };
+  ce.ferramentas = Array.isArray(ce.ferramentas) ? ce.ferramentas : [];
   return ce;
 }
 
-// Prova de conceito ou piloto? (guia, cap. 14, instrumentos de aprendizagem)
-// Devolve { modo: 'poc' | 'piloto', motivos: [frases em PT, chaves de i18n], ids: [códigos dos motivos] }.
+// Prova de conceito, piloto ou os dois? (guia, cap. 14, instrumentos de aprendizagem)
+// Devolve { modo: 'poc' | 'piloto' | 'ambos', motivos: [frases em PT, chaves de i18n], ids: [códigos dos motivos],
+//   poc: bool, piloto: bool }.
+// v11: quando há motivo para uma prova de conceito e a solução vai chegar a professores ou estudantes,
+// recomenda os dois (prova de conceito e depois piloto). Só servidores e gestores → só a prova de conceito.
 const MOTIVOS_TESTE = {
   tecnologia: 'a tecnologia ainda não foi escolhida',
   sob_medida: 'a solução exige desenvolvimento sob medida, cuja viabilidade técnica ainda não foi demonstrada',
   outra: 'há uma tarefa fora da lista, sem referência de uso',
   linha_base: 'sem linha de base, um piloto ainda não conseguiria medir mudança',
+  pessoas_reais: 'depois, a solução será usada por professores ou estudantes, o que pede um piloto antes da implantação',
   escolhida: 'a tecnologia está escolhida',
   adapt_config: 'a adaptação se limita à configuração',
   adapt_conteudo: 'a adaptação se limita a conteúdo e idioma',
@@ -278,11 +410,16 @@ function recomendarTeste(ce) {
   if (ce.adaptacao === 'sob_medida') poc.push('sob_medida');
   if ((ce.tarefas || []).includes('outra')) poc.push('outra');
   if (ce.linhaBase === 'nao') poc.push('linha_base');
-  if (poc.length) return { modo: 'poc', ids: poc, motivos: poc.map(k => MOTIVOS_TESTE[k]) };
+  const fim = (modo, ids) => ({ modo, ids, motivos: ids.map(k => MOTIVOS_TESTE[k]), poc: modo !== 'piloto', piloto: modo !== 'poc' });
+  if (poc.length) {
+    const us = ce.usuarios || [];
+    const reais = us.includes('professores') || us.includes('estudantes');
+    return reais ? fim('ambos', poc.concat('pessoas_reais')) : fim('poc', poc);
+  }
   const ok = ['escolhida'];
   if (['config', 'conteudo', 'integracao'].includes(ce.adaptacao)) ok.push('adapt_' + ce.adaptacao);
   if (ce.linhaBase === 'sim' || ce.linhaBase === 'parcial') ok.push('base_' + ce.linhaBase);
-  return { modo: 'piloto', ids: ok, motivos: ok.map(k => MOTIVOS_TESTE[k]) };
+  return fim('piloto', ok);
 }
 
 // ----------------------------------------------------------- perfil de risco
@@ -738,4 +875,4 @@ function instrumentosCaso(c, perfil) {
 // ----------------------------------------------------------- utilitários de formato
 function fmtInt(x) { return Math.round(+x || 0).toLocaleString(LOC()); }
 
-if (typeof module !== 'undefined') module.exports = { TAREFAS, IMPACTO_TAREFAS, MOTIVOS_TESTE, perfisSugeridos, derivarArquitetura, casoEfetivo, recomendarTeste, NIVEIS, NIVEL_NOME, NIVEL_CRIT, OPC, DIMENSOES, perfilAutomatico, perfilFinal, anexoIII, DILIGENCIA, PDS, DOSSIE, INSTRUMENTOS, CAPITULOS, ROTAS, ESCADA, SUPERVISAO, CONTESTACAO, FORMAS_SUP, DADOS_REQ, CONTRATO, MUDANCA, METRICAS, SEVERIDADE, PACOTE, LOCKIN, alertas, formaSupervisao, extrasPD, instrumentosCaso, fmtInt };
+if (typeof module !== 'undefined') module.exports = { TAREFAS, tarefasDe, IMPACTO_TAREFAS, MOTIVOS_TESTE, perfisSugeridos, derivarArquitetura, arquiteturaEscolhida, testeDe, papeisUsuarios, RAZAO_EST_PROF, casoEfetivo, recomendarTeste, NIVEIS, NIVEL_NOME, NIVEL_CRIT, OPC, DIMENSOES, perfilAutomatico, perfilFinal, anexoIII, DILIGENCIA, PDS, DOSSIE, INSTRUMENTOS, CAPITULOS, ROTAS, ESCADA, SUPERVISAO, CONTESTACAO, FORMAS_SUP, DADOS_REQ, CONTRATO, MUDANCA, METRICAS, SEVERIDADE, PACOTE, LOCKIN, alertas, formaSupervisao, extrasPD, instrumentosCaso, fmtInt };

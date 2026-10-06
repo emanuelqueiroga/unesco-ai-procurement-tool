@@ -1,25 +1,27 @@
 // =====================================================================
-// Recomendações do caso (v10, decisão C): motor de regras que transforma as
+// Recomendações para você (v10, decisão C; v11): motor de regras que transforma as
 // respostas DESTE caso numa lista curta e priorizada de ações.
 // Cada item: { id, quando, tipo, prioridade, texto, porque: { n, pergunta, resposta, sugerido }, ir }
 //   quando: 'antes_teste' | 'antes_contratar' | 'manter'
 //   tipo: 'custo' (custo e compra) | 'politica' (política e governança)
 //   prioridade: 'alta' | 'media'
 //   ir: 'fase:passo:n' (n com hífens), o mesmo formato de data-ir do percurso.
-// Mostradas no passo 3.4 (renderRecomendacoes, chamado por fluxo.js) e como
+// Mostradas no passo 4.3 (renderRecomendacoes, chamado por fluxo.js) e como
 // primeira seção do plano de contratação (secaoRecomendacoes, em resumo.js).
-// Páginas citadas: Krueger e Jackson (2026), só as já usadas no plano.
-// O texto em português é a chave de tradução (i18n/v10_r2_*.json).
+// v11: sem fonte de recursos; regras novas para ferramentas, internet, dispositivos, formação,
+// suporte, acompanhamento, prova de conceito e piloto juntos, implantação, arquitetura e expansão.
+// Páginas citadas: Krueger e Jackson (2026), só as já usadas no plano (ver plano/2_tco_unesco.md).
+// O texto em português é a chave de tradução (i18n/v10_r2_*.json e i18n/v11_s3_*.json).
 // =====================================================================
 
 const QUANDO_REC = [['antes_teste', 'Antes do teste'], ['antes_contratar', 'Antes de contratar'], ['manter', 'Para manter e ampliar']];
 const TIPO_REC = { custo: 'Custo e compra', politica: 'Política e governança' };
 const PRIO_REC = { alta: 'Alta', media: 'Média' };
-const TIT_REC = 'Recomendações para o seu caso';
+const TIT_REC = 'Recomendações para você';
 const TXT_REC = {
   intro: 'Ações para este caso, geradas a partir das suas respostas. Comece pelas de prioridade alta. Cada ação mostra a pergunta e a resposta que a originou: se mudar a resposta, a lista muda.',
   introPlano: 'Ações geradas a partir das respostas deste caso, por momento e prioridade. As listas dos blocos A e B, a seguir, servem de referência completa.',
-  vazio: 'Ainda não há respostas suficientes para recomendar ações. Responda às perguntas das fases 1 a 3.',
+  vazio: 'Ainda não há respostas suficientes para recomendar ações. Responda às perguntas das fases 1 a 4.',
   negrito: 'Em negrito: prioridade alta.',
   ir: 'Ir à pergunta',
   porque: 'Por quê:',
@@ -38,15 +40,32 @@ const REGRAS_REC = [
     texto: 'Completar a linha de base com dados medidos nas escolas do teste antes de começar.' },
   { id: 'alternativa', campo: 'alternativa', tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.v('alternativa') === 'nao',
     texto: 'Comparar ao menos uma alternativa sem IA, em custo e resultado esperado, antes de decidir a compra.' },
-  // 2.0 Prova de conceito ou piloto (recomendarTeste, guia cap. 14)
-  { id: 'teste-recomendado', campo: 'teste', tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('teste') === 'recomendar',
+  // 2.0 Prova de conceito e/ou piloto (recomendarTeste, guia cap. 14)
+  { id: 'teste-recomendado', campo: 'testes', vals: k => k.testes, tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.teste === 'recomendar',
     texto: k => k.rec.modo === 'poc' ? 'Começar por uma prova de conceito, como indicam as respostas, antes de envolver escolas e estudantes.'
+      : k.rec.modo === 'ambos' ? 'Começar por uma prova de conceito e, se ela cumprir os critérios de sucesso, fazer um piloto em poucas escolas.'
       : 'Começar por um piloto em poucas escolas, com critérios de sucesso e de parada definidos antes.' },
-  { id: 'teste-rever', campo: 'teste', tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('teste') === 'piloto' && k.rec.modo === 'poc',
+  { id: 'teste-rever', campo: 'testes', vals: k => k.testes, tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.teste === 'piloto' && ['poc', 'ambos'].includes(k.rec.modo),
     texto: 'Rever a escolha do piloto: pelas respostas, uma prova de conceito deveria vir antes.' },
-  { id: 'teste-piloto-possivel', campo: 'teste', tipo: 'politica', quando: 'antes_teste', prioridade: 'media', se: k => k.v('teste') === 'poc' && k.rec.modo === 'piloto',
+  { id: 'teste-piloto-possivel', campo: 'testes', vals: k => k.testes, tipo: 'politica', quando: 'antes_teste', prioridade: 'media', se: k => k.teste === 'poc' && k.rec.modo === 'piloto',
     texto: 'As respostas já permitem um piloto: mantenha a prova de conceito só se houver uma dúvida técnica a resolver.' },
-  // 2.3 Adoção: tecnologia, pagamento, licença, adaptação, infraestrutura
+  { id: 'teste-ambos', campo: 'testes', vals: k => k.testes, tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.teste === 'ambos' || (k.teste === 'recomendar' && k.rec.modo === 'ambos'),
+    texto: 'Tratar prova de conceito e piloto como decisões separadas, com critérios de sucesso próprios: o piloto só começa se a prova de conceito cumprir os seus.' },
+  { id: 'teste-ambos-contrato', campo: 'testes', vals: k => k.testes, tipo: 'custo', quando: 'antes_teste', prioridade: 'media', se: k => k.teste === 'ambos',
+    texto: 'Acordar com o fornecedor que a prova de conceito não obriga a fazer o piloto nem a comprar, e o preço de cada etapa.' },
+  // 2.3 Adoção: ferramentas
+  { id: 'ferramentas-levantar', campo: k => k.v('conheceFerramentas') === 'nao' ? 'conheceFerramentas' : 'nFerramentas', tipo: 'custo', quando: 'antes_teste', prioridade: 'media',
+    se: k => k.v('conheceFerramentas') === 'nao' || k.v('nFerramentas') === 'nao_sei',
+    texto: 'Listar as ferramentas candidatas e as tarefas de cada uma antes do teste: o custo depende de quantas forem e de como são pagas.' },
+  { id: 'ferramentas-interop', campo: k => k.ferr.length > 1 ? 'ferramentas' : 'nFerramentas', vals: k => k.ferr.length > 1 ? k.ferr.map(f => f.nome) : [k.v('nFerramentas')],
+    tipo: 'politica', quando: 'antes_contratar', prioridade: 'alta', se: k => k.variasFerr,
+    texto: 'Exigir interoperabilidade entre as ferramentas e aplicar uma só política de dados a todas elas: acesso, guarda, exclusão e proibição de treinar modelos.' },
+  { id: 'ferramentas-sobrepostas', campo: k => k.ferr.length > 1 ? 'ferramentas' : 'nFerramentas', vals: k => k.ferr.length > 1 ? k.ferr.map(f => f.nome) : [k.v('nFerramentas')],
+    tipo: 'custo', quando: 'antes_contratar', prioridade: k => k.sobrepostas ? 'alta' : 'media', se: k => k.variasFerr,
+    texto: 'Verificar se as ferramentas cobrem as mesmas tarefas e evitar pagar licenças sobrepostas.' },
+  { id: 'ferramentas-cotacao', campo: 'ferramentas', vals: k => k.semPreco.map(f => f.nome), tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.semPreco.length > 0,
+    texto: 'Pedir cotação por escrito das ferramentas pagas sem preço informado: até lá, a estimativa usa um preço de exemplo.' },
+  // 2.3 Adoção: tecnologia, pagamento, licença e adaptação da ferramenta principal
   { id: 'tecnologia', campo: 'tipoTec', tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('tipoTec') === 'nao_sei',
     texto: 'Fazer uma consulta ao mercado e uma prova de conceito para escolher a tecnologia antes de qualquer piloto.' },
   { id: 'gratis-adiados', campo: k => k.v('pagamento') === 'gratuito' ? 'pagamento' : 'tipoTec', tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.gratis,
@@ -79,10 +98,51 @@ const REGRAS_REC = [
     texto: 'Garantir no contrato que código e configurações são da rede, com documentação e transferência de conhecimento à equipe.' },
   { id: 'integracao', campo: 'adaptacao', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('adaptacao') === 'integracao',
     texto: 'Exigir interoperabilidade com os sistemas da rede e exportação de dados e configurações em formato aberto.' },
-  { id: 'infra-complementar', campo: 'infra', tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('infra') === 'complementar',
-    texto: 'Levantar dispositivos, internet e energia nas escolas do teste e incluir o complemento no orçamento (Krueger e Jackson, 2026, p. 7).' },
-  { id: 'infra-levantar', campo: 'infra', tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('infra') === 'nao_sei',
-    texto: 'Fazer um levantamento de dispositivos, internet e energia nas escolas antes do teste: em muitas redes, é o primeiro custo.' },
+  // 2.4 Infraestrutura e dispositivos (camada 3). Condições de base: Krueger e Jackson (2026, p. 7)
+  { id: 'internet-parcial', campo: 'internet', vals: k => k.valsInternet, tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('internet') === 'parcial',
+    texto: 'Levantar as escolas sem internet adequada e orçar a conexão antes do teste: as condições de base costumam ser o primeiro custo (Krueger e Jackson, 2026, p. 7).' },
+  { id: 'internet-nao', campo: 'internet', tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('internet') === 'nao',
+    texto: 'Orçar a conexão das escolas antes do teste ou escolher uma ferramenta que funcione sem internet (Krueger e Jackson, 2026, p. 7).' },
+  { id: 'internet-teste', campo: 'internet', vals: k => k.valsInternet, tipo: 'politica', quando: 'antes_teste', prioridade: 'media', se: k => ['parcial', 'nao'].includes(k.v('internet')) && !k.poc,
+    texto: 'Escolher as escolas do piloto incluindo algumas com internet fraca, para que o resultado valha também para elas.' },
+  { id: 'disp-nao', campo: 'dispExistem', tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('dispExistem') === 'nao' && k.v('modeloDisp') !== 'proprio',
+    texto: 'Orçar a compra dos dispositivos e planejar a reposição ao longo dos anos de uso: dispositivos têm vida útil e precisam de manutenção.' },
+  { id: 'disp-parcial', campo: 'dispExistem', tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('dispExistem') === 'parcial' && k.v('modeloDisp') !== 'proprio',
+    texto: 'Levantar quantos dispositivos faltam em cada escola e incluir a compra e a reposição no orçamento.' },
+  { id: 'disp-proprio', campo: 'modeloDisp', tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('modeloDisp') === 'proprio',
+    texto: 'Garantir acesso a quem não tem dispositivo próprio: depender de soluções das famílias pode ampliar desigualdades (Krueger e Jackson, 2026, p. 12).' },
+  { id: 'disp-compartilhado', campo: 'modeloDisp', tipo: 'politica', quando: 'antes_teste', prioridade: 'media', se: k => ['compartilhado', 'rotativo'].includes(k.v('modeloDisp')),
+    texto: 'Organizar a agenda de uso dos dispositivos compartilhados e definir quem os mantém carregados, atualizados e com contas separadas.' },
+  { id: 'disp-renovar', campo: 'dispExistem', tipo: 'custo', quando: 'manter', prioridade: 'media', se: k => ['nao', 'parcial'].includes(k.v('dispExistem')) && k.v('modeloDisp') !== 'proprio',
+    texto: () => recTxt('s-renovacao') || 'Planejar a renovação de dispositivos e infraestrutura.' },
+  // 2.5 Formação e capacidade das equipes (camada 6)
+  { id: 'formacao-pagador', campo: 'formacaoPaga', tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.v('formacaoPaga') === 'indefinido',
+    texto: 'Definir quem paga a formação antes de contratar: sem isso, ela costuma ficar fora do orçamento.' },
+  { id: 'formacao-contrato', campo: 'formacaoPaga', tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.v('formacaoPaga') === 'fornecedor',
+    texto: 'Incluir a formação no contrato, com horas por pessoa, conteúdo, público e formato definidos, e a formação de quem entrar depois.' },
+  { id: 'formacao-parceiro', campo: 'formacaoPaga', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('formacaoPaga') === 'parceiro',
+    texto: 'Formalizar com o parceiro o que a formação cobre e quem a mantém quando o apoio terminar.' },
+  { id: 'formacao-papeis', campo: 'formados', tipo: 'politica', quando: 'antes_teste', prioridade: 'media',
+    se: k => { const f = k.arr('formados'); return f.length > 0 && !f.includes('gestores') && !f.includes('tecnica'); },
+    texto: 'Formar também as equipes técnicas e de gestão que vão governar e manter a IA, e não só quem a usa (Krueger e Jackson, 2026, p. 3 e p. 12).' },
+  { id: 'formacao-dados', campo: 'formacaoTipo', tipo: 'politica', quando: 'antes_teste', prioridade: 'alta',
+    se: k => k.dadosEst && k.arr('formacaoTipo').length > 0 && !k.arr('formacaoTipo').includes('dados_etica'),
+    texto: 'Incluir proteção de dados e uso responsável na formação: o caso trata dados de estudantes.' },
+  { id: 'formacao-horas', campo: 'formacaoHoras', vals: k => [k.valHoras], tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => !!k.c.formacaoEstimativa && !!k.valHoras,
+    texto: 'Confirmar as horas de formação por pessoa com quem vai oferecer a formação: a estimativa usa um valor ilustrativo.' },
+  { id: 'formacao-continua', campo: 'formacaoTipo', tipo: 'politica', quando: 'manter', prioridade: 'media', se: k => k.arr('formacaoTipo').length > 0,
+    texto: 'Planejar formação contínua, e não única: as ferramentas mudam e as equipes se renovam (Krueger e Jackson, 2026, p. 6).' },
+  // 2.6 Operação e suporte (camada 7)
+  { id: 'suporte-sla', campo: 'suporteQuem', tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.v('suporteQuem') === 'fornecedor',
+    texto: 'Fixar no contrato os níveis de serviço do suporte: horário, canais, prazos de resposta e de solução, e o que acontece se não forem cumpridos.' },
+  { id: 'suporte-divisao', campo: 'suporteQuem', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('suporteQuem') === 'ambos',
+    texto: 'Dividir por escrito o que o suporte do fornecedor e o da rede atendem, com prazos de resposta para cada um.' },
+  { id: 'suporte-dedicado', campo: 'suporteNivel', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('suporteNivel') === 'dedicado' && k.v('suporteQuem') !== 'fornecedor',
+    texto: 'Reservar o tempo da equipe que fará o suporte dedicado: a estimativa conta essas pessoas como custo, mesmo que já sejam da rede.' },
+  { id: 'acomp-intensivo', campo: 'acompanhamento', tipo: 'custo', quando: 'antes_teste', prioridade: 'media', se: k => k.v('acompanhamento') === 'intensivo',
+    texto: 'Nomear quem faz o acompanhamento intensivo do uso e reservar o tempo dessa equipe no orçamento.' },
+  { id: 'acomp-reforcar', campo: 'acompanhamento', tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('acompanhamento') === 'leve' && (k.alto || k.consDecide.length > 0),
+    texto: 'Reforçar o acompanhamento do uso: com risco elevado ou decisões sobre estudantes, acompanhamento leve não basta.' },
   // 2.1 e 2.2: dados de estudantes, decisões sobre estudantes, crianças
   { id: 'dados-acordo', campo: k => k.campoDados, vals: k => k.valsDados, tipo: 'politica', quando: k => k.poc ? 'antes_contratar' : 'antes_teste', prioridade: 'alta', se: k => k.dadosEst,
     texto: () => recTxt('r-acordo') || 'Assinar acordo de tratamento de dados que proíba usar os dados para treinar modelos.' },
@@ -97,21 +157,26 @@ const REGRAS_REC = [
   { id: 'criancas', campo: 'afetados', vals: () => ['criancas'], tipo: 'politica', quando: 'antes_teste', se: k => (k.ce.afetados || []).includes('criancas'),
     prioridade: k => (k.ce.usuarios || []).includes('estudantes') || k.pesoMax > 0 ? 'alta' : 'media',
     texto: 'Aplicar as regras de proteção de crianças e adolescentes: uso adequado à idade e famílias informadas antes do teste.' },
-  // 3.1 Escala: chegar a toda a rede no primeiro ano com muitas pessoas
-  { id: 'etapas', campo: 'expansao', tipo: 'custo', quando: 'antes_contratar', se: k => k.v('expansao') === 'ano1' && k.eleg >= 5000,
+  // 3.1 Primeira etapa da implantação: começar por todo o sistema
+  { id: 'etapas', campo: 'implantacao', vals: k => [k.valImpl], tipo: 'custo', quando: 'antes_contratar', se: k => k.implTudo && k.eleg >= 5000,
     prioridade: k => k.eleg >= 50000 ? 'alta' : 'media',
-    texto: 'Contratar por etapas: ampliar por grupos de escolas, com critérios para avançar, em vez de toda a rede no primeiro ano.' },
-  // 3.2 Fonte de recursos
-  { id: 'paga-indefinido', campo: 'pagaDepois', tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('pagaDepois') === 'indefinido',
-    texto: () => (typeof TXT_A7 !== 'undefined' && TXT_A7.indefinido) || 'Defina quem vai pagar a tecnologia depois do teste antes de assumir qualquer compromisso com o fornecedor.' },
-  { id: 'paga-parceiro', campo: 'pagaDepois', tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.v('pagaDepois') === 'parceiro',
-    texto: () => (typeof TXT_A7 !== 'undefined' && TXT_A7.parceiro) || 'Defina o que acontece quando o financiamento do parceiro acabar (Krueger e Jackson, 2026, p. 8).' },
-  { id: 'paga-governo', campo: 'pagaDepois', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('pagaDepois') === 'governo',
-    texto: 'Formalizar por escrito o compromisso da outra esfera de governo: valor, prazo e o que acontece se acabar.' },
-  { id: 'fonte-nao', campo: 'fonte', tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.v('fonte') === 'nao',
-    texto: () => recTxt('g-orcamento') || 'Prever a fonte de recursos para operar e manter a solução depois do piloto.' },
-  { id: 'fonte-parcial', campo: 'fonte', tipo: 'custo', quando: 'manter', prioridade: 'alta', se: k => k.v('fonte') === 'parcial',
-    texto: () => recTxt('s-orcamento') || 'Garantir orçamento recorrente para os próximos exercícios.' },
+    texto: 'Contratar por etapas: começar a implantação por um grupo de escolas, com critérios para avançar, em vez de todo o sistema de uma vez.' },
+  { id: 'implantacao-criterios', campo: 'implantacao', vals: k => [k.valImpl], tipo: 'politica', quando: 'antes_contratar', prioridade: 'media', se: k => k.implP > 0 && !k.implTudo,
+    texto: 'Definir antes da implantação os critérios para passar da primeira etapa à expansão: uso, resultado, custo por usuário e suporte.' },
+  // 3.2 Arquitetura e integração
+  { id: 'arquitetura-decidir', campo: 'arquitetura', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('arquitetura') === 'nao_sei',
+    texto: 'Decidir a arquitetura antes de contratar a implantação: ela muda quem integra, opera e paga cada parte.' },
+  { id: 'arquitetura-saas', campo: 'arquitetura', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('arquitetura') === 'saas',
+    texto: 'Exigir aviso prévio de mudanças do produto e direito de exportar dados e configurações ao final do contrato.' },
+  { id: 'arquitetura-api', campo: 'arquitetura', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('arquitetura') === 'api',
+    texto: 'Definir quem integra e governa a aplicação: com o modelo por API, essa parte fica com a rede ou com um integrador contratado.' },
+  { id: 'aberta-operacao', campo: 'arquitetura', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('arquitetura') === 'ow',
+    texto: 'Definir quem vai operar o modelo aberto: se um só integrador fizer tudo, a dependência apenas muda de lugar.' },
+  // 4.1 Expansão
+  { id: 'expansao-rapida', campo: 'expansao', tipo: 'politica', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('expansao') === 'ano1' && k.eleg >= 50000,
+    texto: 'Vincular a expansão aos resultados da primeira etapa: chegar a todos em um ano deixa pouco tempo para corrigir problemas.' },
+  { id: 'expansao-recorrente', campo: 'elegiveis', vals: k => [k.valEleg], tipo: 'custo', quando: 'manter', prioridade: 'media', se: k => k.eleg > 0,
+    texto: 'Prever e monitorar a cada ano o custo recorrente da expansão: licenças, suporte e formação crescem com o número de usuários (Krueger e Jackson, 2026, p. 6).' },
 ];
 
 // ----------------------------------------------------------- respostas
@@ -121,18 +186,23 @@ function recValor(id) {
   const onde = f ? f.onde : 'caso';
   const v = onde === 'resp' ? (S.resp || {})[id] : onde === 'ctx' ? (S.ctx || {})[id] : (S.caso || {})[id];
   if (v == null || v === '' || (Array.isArray(v) && !v.length)) return '';
+  if (typeof v === 'object' && !Array.isArray(v) && !Object.keys(v).some(k => v[k] !== '' && v[k] != null)) return '';
   if (f && f.padrao && typeof respondido === 'function' && !respondido(id)) return '';
   return v;
 }
-function recCampo(id) { return (typeof CAMPO_POR_ID !== 'undefined' && CAMPO_POR_ID[id]) || (typeof CAMPOS !== 'undefined' ? CAMPOS.find(f => f.id === id) : null); }
-function recOpcoes(f) {
-  if (!f) return [];
+function recCampo(id) {
+  const ach = x => (typeof CAMPO_POR_ID !== 'undefined' && CAMPO_POR_ID[x]) || (typeof CAMPOS !== 'undefined' ? CAMPOS.find(f => f.id === x) : null);
+  return ach(id) || (id === 'testes' ? ach('teste') : null);
+}
+function recOpcoes(f, id) {
+  if (!f) return (typeof OPC !== 'undefined' && id && OPC[id]) || [];
   if (typeof listaOpc === 'function') return listaOpc(f);
   return typeof f.opc === 'string' ? ((typeof OPC !== 'undefined' && OPC[f.opc]) || []) : (f.opc || []);
 }
 // Rótulo (PT) de cada valor da resposta
 function recRotulos(id, vals) {
-  const f = recCampo(id), L = recOpcoes(f);
+  const f = recCampo(id); let L = recOpcoes(f, id);
+  if (!L.length && id === 'testes' && typeof OPC !== 'undefined') L = OPC.teste || [];
   const c = S.caso || {};
   return [].concat(vals == null ? [] : vals).map(v => {
     if (id === 'tarefas' && v === 'outra' && c.tarefaOutra) return c.tarefaOutra;
@@ -156,14 +226,38 @@ function recPorque(id, vals) {
 }
 
 // ----------------------------------------------------------- contexto das regras
+const fmtR = x => (typeof fmtInt === 'function' ? fmtInt(x) : String(Math.round(+x || 0)));
+// 2.0: lista de testes marcados (v11) → 'poc' | 'piloto' | 'ambos' | 'recomendar' | ''
+function recTestes(c) {
+  c = c || {};
+  if (Array.isArray(c.testes) && c.testes.length) return c.testes.slice();
+  return c.teste && c.teste !== 'ambos' ? [c.teste] : c.teste === 'ambos' ? ['poc', 'piloto'] : [];
+}
+function recTesteDe(c) {
+  const T = recTestes(c);
+  if (T.includes('recomendar')) return 'recomendar';
+  if (T.includes('poc') && T.includes('piloto')) return 'ambos';
+  return T[0] || '';
+}
+// ferramentas com nome (2.3.3), só quando a pessoa disse que já sabe quais são
+const recPagaFerr = f => ['usuario', 'institucional', 'consumo'].includes(f.pagamento) || (f.tipoTec === 'paga' && !['gratuito', 'incluida'].includes(f.pagamento));
+function recFerramentas(c) {
+  return (Array.isArray(c.ferramentas) ? c.ferramentas : []).filter(f => f && String(f.nome || '').trim())
+    .map(f => Object.assign({}, f, { nome: String(f.nome).trim() }));
+}
 function recContexto() {
   const c = S.caso || {};
   let ce = c;
   try { ce = casoAtual(); } catch (e) { console.warn(e); }
   let rec = { modo: 'piloto' };
   try { rec = recomendarTeste(ce) || rec; } catch (e) { }
+  let p = null;
+  try { p = typeof perfil === 'function' ? perfil() : null; } catch (e) { }
   const v = recValor;
-  const modo = ['poc', 'piloto'].includes(c.teste) ? c.teste : rec.modo;
+  const arr = id => { const x = v(id); return Array.isArray(x) ? x : x ? [x] : []; };
+  const testes = v('testes') ? recTestes(c) : (v('teste') ? recTestes({ teste: c.teste }) : []);
+  const teste = testes.length ? recTesteDe({ testes }) : '';
+  const modo = teste === 'poc' ? 'poc' : (teste === 'recomendar' || !teste) && rec.modo === 'poc' ? 'poc' : 'piloto';
   const peso = k => ((typeof OPC !== 'undefined' ? OPC.consequencias : []).find(x => x[0] === k) || [0, 0, 0])[2];
   const cons = ce.consequencias || [];
   const consDecide = cons.filter(k => peso(k) >= 2);
@@ -176,8 +270,32 @@ function recContexto() {
   const campoDados = tDados.length || !usaEst ? 'tarefas' : 'usuarios';
   const valsDados = campoDados === 'usuarios' ? ['estudantes'] : (tDados.length ? tDados : c.tarefas || []);
   const eleg = +v('elegiveis') || 0;
-  return { c, ce, rec, v, poc: modo === 'poc', gratis: v('pagamento') === 'gratuito' || v('tipoTec') === 'publica',
-    consDecide, pesoMax, dadosEst, campoDados, valsDados, eleg };
+  // ferramentas
+  const ferr = v('conheceFerramentas') === 'sim' ? recFerramentas(c) : [];
+  // a primeira ferramenta é a principal: tecnologia e pagamento vêm das perguntas 2.3.4 e 2.3.5
+  if (ferr[0]) { if (c.tipoTec) ferr[0].tipoTec = c.tipoTec; if (c.pagamento) ferr[0].pagamento = c.pagamento; }
+  const variasFerr = ferr.length > 1 || ['2', '3mais'].includes(v('nFerramentas'));
+  const vistas = {}; let sobrepostas = false;
+  ferr.forEach(f => (f.tarefas || []).forEach(t => { if (vistas[t]) sobrepostas = true; vistas[t] = true; }));
+  // preço por usuário por mês: só faz sentido para licença por usuário ou assinatura institucional
+  const semPreco = ferr.filter(f => recPagaFerr(f) && f.pagamento !== 'consumo' && !(+f.preco > 0));
+  // internet: com "Parcialmente", cita também quantas escolas já têm internet adequada
+  const escI = +c.escolasInternet || 0;
+  const valsInternet = [v('internet')].concat(v('internet') === 'parcial' && escI > 0 ? [tr('{0} escolas com internet adequada'.replace('{0}', fmtR(escI)))] : []).filter(Boolean);
+  // horas de formação
+  let h = +c.formacaoHoras || 0;
+  if (c.formacaoEstimativa) { try { h = typeof horasFormacaoEstimada === 'function' ? horasFormacaoEstimada(ce) : h; } catch (e) { } }
+  const valHoras = h ? tr((c.formacaoEstimativa ? '{0} horas por pessoa (estimativa)' : '{0} horas por pessoa').replace('{0}', fmtR(h))) : '';
+  // primeira etapa da implantação (3.1)
+  const im = c.implantacao || {};
+  const implP = +im.pessoas || 0, implE = +im.escolas || 0;
+  const valImpl = implE ? tr('{0} escolas e {1} pessoas'.replace('{0}', fmtR(implE)).replace('{1}', fmtR(implP))) : implP ? tr('{0} pessoas'.replace('{0}', fmtR(implP))) : '';
+  const implTudo = implP > 0 && eleg > 0 && implP >= 0.8 * eleg;
+  const valEleg = eleg ? tr('{0} pessoas'.replace('{0}', fmtR(eleg))) : '';
+  return { c, ce, rec, v, arr, p, alto: !!(p && p.alto), testes, teste, poc: modo === 'poc',
+    gratis: v('pagamento') === 'gratuito' || v('tipoTec') === 'publica',
+    consDecide, pesoMax, dadosEst, campoDados, valsDados, eleg, ferr, variasFerr, sobrepostas, semPreco,
+    valsInternet, valHoras, implP, implTudo, valImpl, valEleg };
 }
 const recF = (x, k) => (typeof x === 'function' ? x(k) : x);
 const ORD_PRIO = { alta: 0, media: 1 };
@@ -229,7 +347,7 @@ function recContagem(recs) {
   return n;
 }
 
-// ----------------------------------------------------------- HTML (passo 3.4 e página do plano)
+// ----------------------------------------------------------- HTML (passo 4.3 e página do plano)
 const CSS_RECS = `
 .rc { display: grid; gap: 14px; }
 .rc p { margin: 0; }
@@ -273,7 +391,7 @@ function htmlItemRec(r) {
     ${r.ir ? `<button type="button" class="link rc-ir" data-ir="${escR(r.ir)}">${escR(tr(TXT_REC.ir))}</button>` : ''}</div>
   </li>`;
 }
-// Grupos por momento, contagem por tipo; sem botão (página do plano) ou com o botão do plano (passo 3.4)
+// Grupos por momento, contagem por tipo; sem botão (página do plano) ou com o botão do plano (passo 4.3)
 function htmlRecs(recs, o = {}) {
   cssRecs();
   if (!recs.length) return `<div class="rc"><div class="vazio"><p>${escR(tr(TXT_REC.vazio))}</p></div>${o.botao ? htmlFimRecs() : ''}</div>`;
@@ -290,15 +408,15 @@ function htmlRecs(recs, o = {}) {
 function htmlFimRecs() {
   return `<div class="rc-fim"><button type="button" class="btn pri" data-act="gerar-plano">${escR(tr('Gerar plano de contratação'))}</button></div>`;
 }
-// Corpo do passo 3.4 "Recomendações para o seu caso" (chamado por fluxo.js)
+// Corpo do passo 4.3 "Recomendações para você" (chamado por fluxo.js)
 function renderRecomendacoes() {
   let recs = [];
   try { recs = recomendacoesCaso(); } catch (e) { console.warn(e); }
   let nf = 0;
   try { nf = (faltasTodas() || []).length; } catch (e) { }
   const nota = nf && recs.length ? `<p class="note">${escR(tr(nf === 1 ? 'Falta 1 resposta: a lista pode mudar quando você responder.' : 'Faltam ' + nf + ' respostas: a lista pode mudar quando você responder.'))}</p>` : '';
-  // o rodapé do passo 3.4 (fluxo.js) já traz "Gerar plano de contratação"; sem ele, o botão fica aqui
-  const rodape = typeof PASSOS_VER !== 'undefined' && PASSOS_VER.includes('3d');
+  // o rodapé do passo 4.3 (fluxo.js) já traz "Gerar plano de contratação"; sem ele, o botão fica aqui
+  const rodape = typeof PASSOS_VER !== 'undefined' && (PASSOS_VER.includes('4c') || PASSOS_VER.includes('3d'));
   return htmlRecs(recs, { intro: TXT_REC.intro, botao: !rodape }).replace('<div class="rc">', '<div class="rc" id="recs-caso">' + nota);
 }
 
@@ -317,4 +435,4 @@ function secaoRecomendacoes(recs) {
     pos: rows.length ? [TXT_REC.negrito] : null };
 }
 
-if (typeof module !== 'undefined') module.exports = { QUANDO_REC, TIPO_REC, PRIO_REC, TIT_REC, TXT_REC, REGRAS_REC, recomendacoesCaso, renderRecomendacoes, secaoRecomendacoes };
+if (typeof module !== 'undefined') module.exports = { QUANDO_REC, TIPO_REC, PRIO_REC, TIT_REC, TXT_REC, REGRAS_REC, recTestes, recTesteDe, recFerramentas, recPagaFerr, recomendacoesCaso, renderRecomendacoes, secaoRecomendacoes };
