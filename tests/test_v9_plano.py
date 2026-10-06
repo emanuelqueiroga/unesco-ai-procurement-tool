@@ -71,6 +71,18 @@ async def main():
                     ok(re.search(r'Plano parcial: \d+ perguntas? sem resposta', r['parcial']) is not None and r['nResp'] > 0, f'{tag} novo: "Plano parcial" com lista ({r["nResp"]})')
                     ok(re.search(r'\b1\.1\.\d', r['parcial']) is not None, f'{tag} novo: lista numerada')
                 await pg.screenshot(path=f'{TMP}/plano_{tag}_{ex}.png')
+            # P1-4 / P2-6: "recomende para mim" com setup de piloto; P2-2: ponto de equilíbrio só com licença institucional
+            await pg.evaluate("""(()=>{carregarExemplo('novo'); S.boasVindas=false; S.caso.teste='recomendar'; S.respC.teste=true;
+              S.caso.piloto={escolas:20, participantes:1200, meses:4}; S.caso.tipoTec='paga'; S.caso.pagamento='usuario'; S.custo.editado=false; S.vista=''; render();})()""")
+            await pg.locator('[data-act="gerar-plano"]:visible').first.click(); await pg.wait_for_timeout(250)
+            r = await pg.evaluate("""(()=>{const P=document.getElementById('plano'); const tr=[...P.querySelectorAll('[data-sec=resumo] tr')].find(t=>/Escolas no teste/.test(t.innerText));
+              return {esc: tr ? tr.querySelector('td').innerText : '', a1: P.querySelector('[data-sec=A1]').innerText, a3: P.querySelector('[data-sec=A3]').parentElement.innerText,
+                a2: (P.querySelector('[data-sec=A2] .kpi-nota')||{}).innerText||'', prem: P.querySelector('[data-sec=A2]').innerText}})()""")
+            ok(r['esc'] == '20', f'{tag} resumo mostra as escolas digitadas com "recomende" ({r["esc"]})')
+            ok('descreve um piloto' in r['a1'] and '2.3.6' in r['a1'], f'{tag} A1 avisa que o setup descreve um piloto')
+            ok('licença institucional só compensa' not in r['a3'], f'{tag} A3 sem ponto de equilíbrio com licença por usuário')
+            ok('premissas padrão' in r['a2'], f'{tag} A2 rotula estimativa com premissas padrão')
+            ok('Preço da licença por usuário por mês' in r['prem'] and 'Premissas de partida' in r['prem'], f'{tag} A2 lista preço da licença e exemplo de origem')
             # Responder leva de volta à pergunta
             if tag == 'd':
                 await pg.locator('.parcial [data-ir]').first.click(); await pg.wait_for_timeout(200)

@@ -108,7 +108,9 @@ const ARQ = [
   [{ tipoTec: 'paga', pagamento: 'institucional' }, 'saas'],
   [{ tipoTec: 'paga', pagamento: 'usuario', licenca: 'assinatura' }, 'saas'],
   [{ tipoTec: 'paga', pagamento: 'consumo' }, 'api'],
-  [{ tipoTec: 'paga', pagamento: 'institucional', adaptacao: 'sob_medida' }, 'api'],
+  [{ tipoTec: 'paga', pagamento: 'institucional', adaptacao: 'sob_medida' }, 'saas'],
+  [{ tipoTec: 'nao_sei', pagamento: 'usuario', adaptacao: 'sob_medida' }, 'saas'],
+  [{ tipoTec: 'paga', pagamento: 'consumo', adaptacao: 'config' }, 'api'],
   [{ tipoTec: 'aberta', pagamento: 'consumo' }, 'ow'],
   [{ tipoTec: 'paga', licenca: 'aberta' }, 'ow'],
   [{ tipoTec: 'publica', pagamento: 'gratuito' }, 'saas'],
@@ -207,6 +209,32 @@ chk('D: linha cedida no Ano 0', RES.D.a.linhas.some(l => l.tag === 'doado' && l.
   // adaptação no caso: config < sob_medida
   const kA = n => av(cfgDoCaso(Object.assign(clone(RES.A.ce), { adaptacao: n }), RES.A.p)).porK.K3;
   chk('caso A: K3 com sob_medida > config', kA('sob_medida') > kA('config'));
+  // adaptação no caso: com tipoTec e pagamento fixos, a arquitetura não muda e o total
+  // (conta econômica) é não decrescente de config → conteudo → integracao → sob_medida
+  const MONO = [
+    ['A', { tipoTec: 'paga', pagamento: 'institucional' }, 'saas'],
+    ['A', { tipoTec: 'paga', pagamento: 'usuario' }, 'saas'],
+    ['A', { tipoTec: 'nao_sei', pagamento: 'institucional' }, 'saas'],
+    ['D', { tipoTec: 'paga', pagamento: 'consumo', arquiteturaManual: '' }, 'api'],
+    ['C', { tipoTec: 'paga', pagamento: 'consumo' }, 'api'],
+    ['B', { tipoTec: 'aberta', pagamento: 'consumo' }, 'ow'],
+    ['C', { tipoTec: 'aberta', pagamento: 'institucional' }, 'ow'],
+  ];
+  MONO.forEach(([k, fix, arqEsp]) => {
+    let ant = -Infinity, okMono = true, okArq = true; const tots = [];
+    NIV.forEach(n => {
+      const c = Object.assign(clone(CASOS[k]), fix, { adaptacao: n });
+      const ce = casoEfetivo(c, totDe(CTX_EX[k]));
+      if (ce.arquitetura !== arqEsp) okArq = false;
+      const t = av(cfgDoCaso(ce, perfilFinal(ce))).ctEco;
+      tots.push(Math.round(t));
+      if (!(t >= ant - 1e-6)) okMono = false; ant = t;
+    });
+    const nome = 'caso ' + k + ' ' + JSON.stringify(fix);
+    chk(nome + ': arquitetura ' + arqEsp + ' em todos os níveis de adaptação', okArq);
+    chk(nome + ': total não decrescente de config a sob_medida', okMono, tots);
+    chk(nome + ': sob_medida > config', tots[3] > tots[0], tots);
+  });
   // horizonte de 5 anos e expansão em três anos
   const c5 = cfgDoCaso(Object.assign(clone(RES.A.ce), { horizonte: 5, expansao: 'ano3' }), RES.A.p);
   chk('horizonte 5: demanda com 6 posições e expansão em três anos', JSON.stringify(c5.demanda.E) === JSON.stringify([600, 4000, 8000, 12000, 12000, 12000]), c5.demanda.E);

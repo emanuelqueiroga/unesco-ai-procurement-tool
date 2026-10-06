@@ -8,6 +8,9 @@ SK = '<!doctype html><html><head><meta charset=utf8></head><body>' + open('naveg
 open('/tmp/claude-0/nav_lang.html','w').write(SK)
 PT = re.compile(r'ção|ções|ã|õ|\b(?:não|você|para o|do caso|também|custo|orçament|decisão)\b', re.I)
 IGNORAR = ('Cátedra', 'Desplugada', 'Tutor de matemática', 'São Tomé')
+# magnitudes em português depois de um valor ("US$ 162 mil", "2,65 mi") ou na unidade ("USD mil"):
+# em inglês e francês, "162 mil" se lê como 162 milhões. Em espanhol, "mil" é correto.
+MAG_PT = re.compile(r'(?:\d|\b[A-Z]{3})[\s\u00a0\u202f](?:mil|mi|bi)\b')
 COL = """(() => { const out = new Set(); const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
  let n; while ((n = w.nextNode())) { const p = n.parentElement; if (!p || p.closest('script,style,textarea,[data-notr],#txt-vinculo')) continue; const t = n.data.trim(); if (t) out.add(t); }
  document.querySelectorAll('[aria-label],[title],[placeholder]').forEach(e => ['aria-label','title','placeholder'].forEach(a => { const v = e.getAttribute(a); if (v) out.add(v); }));
@@ -21,7 +24,10 @@ ABRIR = """(() => {
   document.querySelectorAll('details').forEach(d => d.open = true);
 })()"""
 FASES = ['contexto', 'piloto', 'custo']
-def resto(t): return PT.search(t) and not any(x in t for x in IGNORAR)
+LANG_ATUAL = ['']
+def resto(t):
+    if any(x in t for x in IGNORAR): return False
+    return bool(PT.search(t) or (LANG_ATUAL[0] in ('en', 'fr') and MAG_PT.search(t)))
 async def main():
     res = {}
     async with async_playwright() as p:
@@ -31,6 +37,7 @@ async def main():
             pg.on('pageerror', lambda e: errs.append(str(e)))
             await pg.goto('file:///tmp/claude-0/nav_lang.html'); await pg.evaluate('localStorage.clear()'); await pg.reload(); await pg.wait_for_timeout(300)
             await pg.select_option('#sel-lang', lang); await pg.wait_for_timeout(200)
+            LANG_ATUAL[0] = lang
             sobra = set()
             async def col():
                 for t in await pg.evaluate(COL):

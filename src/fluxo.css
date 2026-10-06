@@ -163,6 +163,12 @@ details.arq > summary { padding: 10px 14px; cursor: pointer; font-weight: 600; c
 .arq-in p { margin: 0; }
 
 /* estimativa de custo */
+.adapt { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.adapt b { color: var(--head); }
+ul.prem-u { max-width: 80ch; }
+.aviso.rev { background: var(--info-bg); border-color: color-mix(in srgb, var(--info) 30%, transparent); border-left: 3px solid var(--info); }
+.estim .premissa { margin: 0; color: var(--ink-2); }
+.estim ul.req { font-size: .92rem; list-style: none; padding-left: 0; }
 .kpis5 { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
 .sub-h { font-size: 1.05rem; margin: 0; }
 .cn-t { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--head); color: #fff; font-weight: 700; font-size: .86rem; margin-right: 4px; }
@@ -211,6 +217,7 @@ details.calc > .embutido { padding: 0 14px 14px; }
 .fatos .linha > span:last-child, .estim .linha > span:last-child { text-align: right; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 .estim { border-top: 1px solid var(--line); padding-top: 10px; }
 .estim .linha small { font-weight: 400; color: var(--muted); }
+.estim .linha > .num { white-space: nowrap; flex: none; }
 .estim p { margin: 0; }
 .painel-acoes { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
 .painel-acoes .btn { width: 100%; }
@@ -233,6 +240,27 @@ details.calc > .embutido { padding: 0 14px 14px; }
 .cta-resumo p { margin: 4px 0 0; max-width: 62ch; }
 
 /* ---------- plano de contratação (P3 usa estas classes) */
+/* KPIs: o valor quebra dentro do cartão em vez de passar da borda (sem reduzir a fonte) */
+.kpis3 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.kpi { min-width: 0; }
+.kpi .v { white-space: normal; overflow-wrap: break-word; }
+.kpi-nota { margin: 0; font-weight: 700; color: var(--head); }
+/* rolagem horizontal visível: sombra na borda do lado em que há mais colunas */
+.tw { background:
+  linear-gradient(to right, var(--surface) 30%, rgba(255, 255, 255, 0)) left center / 40px 100% no-repeat local,
+  linear-gradient(to left, var(--surface) 30%, rgba(255, 255, 255, 0)) right center / 40px 100% no-repeat local,
+  radial-gradient(farthest-side at 0 50%, rgba(12, 45, 77, .24), rgba(12, 45, 77, 0)) left center / 14px 100% no-repeat scroll,
+  radial-gradient(farthest-side at 100% 50%, rgba(12, 45, 77, .24), rgba(12, 45, 77, 0)) right center / 14px 100% no-repeat scroll;
+  background-color: var(--surface); }
+/* diálogo de importação: arquivo ou dados colados */
+dialog.dlg-imp { border: 1px solid var(--line-2); border-radius: 10px; padding: 0; width: min(560px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+dialog.dlg-imp::backdrop { background: rgba(12, 45, 77, .35); }
+.dlg-in { display: grid; gap: 10px; padding: 20px; }
+.dlg-in h2 { font-size: 1.25rem; margin: 0; }
+.dlg-in p { margin: 0; }
+.dlg-in label { font-weight: 600; }
+.dlg-in textarea { width: 100%; font: .9rem/1.4 ui-monospace, Menlo, Consolas, monospace; }
+.dlg-pe { justify-content: flex-end; }
 .resumo { display: grid; gap: 18px; }
 .res-topo { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: flex-end; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .res-topo h2 { font-size: 1.6rem; }
@@ -283,6 +311,20 @@ details.mais > summary { cursor: pointer; color: var(--brand); font-size: .9rem;
   .fase-pe { justify-content: flex-start; }
 }
 @media (max-width: 480px) {
-  .step-f { grid-template-columns: minmax(0, 1fr); }
+  /* número, nome da fase e barra em três linhas: o nome nunca cobre o número nem a barra */
+  .step-f { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 6px; align-items: start; align-content: start; }
   .sf-n { width: 24px; height: 24px; }
+  .sf-t { font-size: .86rem; overflow-wrap: break-word; hyphens: auto; }
+  /* tabelas do plano e do 3.3 empilhadas: cada célula traz o nome da coluna, nenhuma coluna fica escondida */
+  table.pilha thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  table.pilha, table.pilha tbody, table.pilha tr, table.pilha td { display: block; width: 100%; }
+  table.pilha tr { padding: 6px 0; border-bottom: 1px solid var(--line-2); }
+  table.pilha tbody tr:last-child { border-bottom: 0; }
+  table.pilha td { border: 0; padding: 3px 12px; min-width: 0; text-align: left; white-space: normal; }
+  table.pilha td::before { content: attr(data-th); display: block; font-size: .86rem; font-weight: 700; color: var(--muted); }
+  table.pilha td[data-th=""]::before { content: none; }
+  table.pilha td[data-vazio] { display: none; }
+  table.pilha td.n { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; text-align: right; }
+  table.pilha td.n::before { display: inline; text-align: left; font-weight: 600; }
+  .tw:has(> table.pilha) { background: var(--surface); }
 }

@@ -56,7 +56,7 @@ const CASOS = {
     teste: 'poc', tarefas: ['duvidas'],
     usuarios: ['administrativo', 'gestores'], afetados: ['servidores'], consequencias: ['organizacao'], frequencia: 'diaria',
     tipoTec: 'paga', pagamento: 'gratuito', licenca: 'termos', adaptacao: 'sob_medida', infra: 'sim',
-    piloto: { escolas: '', participantes: 150, meses: 3 },
+    piloto: { escolas: '', participantes: 150, meses: 3 }, arquiteturaManual: 'api',
     elegiveis: 3000, expansao: 'ano1', horizonte: 3, pagaDepois: 'rede', fonte: 'sim',
   }),
 };
@@ -76,7 +76,7 @@ const CTX_EX = {
   D: { nivel: 'municipio', local: 'Secretaria municipal (exemplo)', etapas: {
     infantil: { on: true, escolas: 120, anos: [12000, 18000], alunos: 30000, soTotal: false },
     fund1: { on: true, escolas: 150, anos: [9000, 9000, 9000, 9000, 9000], alunos: 45000, soTotal: false } },
-    dominio: '', comps: [], olhando: 'Servidores das escolas esperam dias por respostas sobre normas e procedimentos.' },
+    dominio: 'qualificacao', comps: ['outro'], compOutro: 'Gestão escolar: normas, prazos e procedimentos', olhando: 'Servidores das escolas esperam dias por respostas sobre normas e procedimentos.' },
 };
 // Respostas de governança (1.3) dos exemplos
 const RESP_EX = {

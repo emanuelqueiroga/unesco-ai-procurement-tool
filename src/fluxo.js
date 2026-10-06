@@ -27,7 +27,7 @@ function estadoFluxo() {
 function respondido(campo) { return S.exemplo !== 'novo' || !!(S.respC || {})[campo]; }
 function aplicarExemploFluxo(k) {
   const CX = typeof CTX_EX !== 'undefined' ? CTX_EX : {}, RX = typeof RESP_EX !== 'undefined' ? RESP_EX : {};
-  S.ctx = clone(CX[k] || {}); S.resp = clone(RX[k] || {}); S.feitos = {}; S.respC = {}; S.vista = ''; S.info = {};
+  S.ctx = clone(CX[k] || {}); S.resp = clone(RX[k] || {}); S.feitos = {}; S.respC = {}; S.vista = ''; S.info = {}; S.revisar = [];
   // nos exemplos, as respostas de experiência de uso já estão confirmadas (as sugestões não as substituem)
   if (k !== 'novo') CAMPOS_SUGERIDOS.forEach(c => { S.respC[c] = true; });
   if (CX[k]) { ['local', 'olhando', 'compOutro'].forEach(c => { if (S.ctx[c]) S.ctx[c] = tr(S.ctx[c]); }); }
@@ -116,17 +116,91 @@ function numerosCusto() {
   try { if (typeof somaPorCamada === 'function') camadas = somaPorCamada(av); } catch (e) { camadas = null; }
   return { av, ind, orc, H: av.r.H, piloto: orc.dot[0] || 0, ano0: (av.ecoAno || [])[0] || 0, anual, porAluno: ind.icu, total: av.ctEco, camadas };
 }
-// Pré-marca a experiência de uso a partir das tarefas, sem tocar nos campos já confirmados
+// Pré-marca a experiência de uso a partir das tarefas. Nos campos já confirmados, acrescenta o que as
+// tarefas novas sugerem, sem retirar o que a pessoa escolheu; o campo volta a "sugerido pela tarefa"
+// e o passo 2.2 mostra o aviso de revisão (S.revisar).
 function aplicarSugestoes() {
   const tarefas = S.caso.tarefas || [];
   let sug = null;
   if (tarefas.length && typeof perfisSugeridos === 'function') { try { sug = perfisSugeridos(tarefas, totaisCtx().etapas); } catch (e) { sug = null; } }
+  const rev = [];
   CAMPOS_SUGERIDOS.forEach(k => {
-    if (S.respC[k]) return;
+    if (S.respC[k]) {
+      if (!sug || sug[k] == null) return;
+      const novo = juntarSugestao(k, S.caso[k], sug[k]);
+      if (JSON.stringify(novo) !== JSON.stringify(S.caso[k])) { S.caso[k] = novo; delete S.respC[k]; rev.push(k); }
+      return;
+    }
     if (sug && sug[k] != null) S.caso[k] = clone(sug[k]);
     else if (!tarefas.length && typeof CASO_VAZIO !== 'undefined') S.caso[k] = clone(CASO_VAZIO[k]);
   });
+  if (rev.length) { S.revisar = [...new Set((S.revisar || []).concat(rev))]; if (S.custo) S.custo.editado = false; }
+  return rev;
 }
+// União da resposta confirmada com a sugestão nova (listas) ou a frequência mais alta das duas
+function juntarSugestao(k, atual, sug) {
+  if (!Array.isArray(sug)) {
+    const O = typeof ORDEM_FREQ !== 'undefined' ? ORDEM_FREQ : [];
+    if (!atual) return sug;
+    return k === 'frequencia' && O.indexOf(sug) > O.indexOf(atual) ? sug : atual;
+  }
+  const lista = (Array.isArray(atual) ? atual : []).concat(sug.filter(v => !(atual || []).includes(v)));
+  const ids = (typeof OPC !== 'undefined' && OPC[k] ? OPC[k] : []).map(o => o[0]);
+  let out = ids.filter(v => lista.includes(v)).concat(lista.filter(v => !ids.includes(v)));
+  if (k === 'consequencias' && out.length > 1) out = out.filter(v => v !== 'nenhuma');
+  return out;
+}
+// Campos da experiência de uso que as tarefas mudaram e que ainda aguardam revisão
+function camposRevisar() { return (S.revisar || []).map(k => CAMPO_POR_ID[k]).filter(f => f && sugerido(f)); }
+function avisoRevisar(id) {
+  const fs = camposRevisar(); if (!fs.length) return '';
+  if (id === '2a') return `<div class="aviso rev" role="status"><b>As tarefas mudaram as respostas sugeridas do passo 2.2.</b> <button type="button" class="link" data-ir="piloto:2b">Revisar o passo 2.2</button></div>`;
+  return `<div class="aviso rev" role="status" id="aviso-rev"><b>As tarefas mudaram. Revise estas respostas.</b>
+    <ul>${fs.map(f => `<li><button type="button" class="link" data-ir="piloto:2b:${f.n.replace(/\./g, '-')}"><span class="qn-l">${f.n}</span> <span>${esc(textoCampo(f))}</span></button></li>`).join('')}</ul></div>`;
+}
+
+// Premissas unitárias da estimativa, tiradas de cfgAtual(): exemplo de origem, pessoas, adoção, preço da
+// licença, uso do modelo, dispositivos e conectividade. Usadas no passo 3.3 e em A2 do plano. Textos já traduzidos.
+function premissasUnitarias() {
+  const cfg = cfgAtual(), ce = casoAtual(), c = S.caso, L = [];
+  const nf = (x, d = 1) => (+x || 0).toLocaleString(LOC(), { maximumFractionDigits: d });
+  const arqC = typeof arquitetura === 'function' ? arquitetura(cfg) : ({ A: 'saas', B: 'api', C: 'ow' })[cfg.origem];
+  const orig = ({ A: 'saas', B: 'api', C: 'ow' })[cfg.origem] || arqC;
+  if (orig && typeof PRESET_ARQ !== 'undefined' && PRESET_ARQ[orig]) L.push(tr('Premissas de partida:') + ' ' + tr(PRESET_ARQ[orig]) + '.');
+  const dm = cfg.demanda || {}, E = dm.E || [], H = Math.max(1, E.length - 1);
+  const Emax = Math.max(0, ...E.slice(1));
+  if (Emax) L.push(tr('Pessoas que usariam na rede:') + ' ' + fmtInt(Emax) + (ce.__elegPadrao ? ' (' + tr('premissa padrão; informe no passo 3.1.1') + ')' : '') + '.');
+  if (E[0]) L.push(tr('Participantes do teste (Ano 0):') + ' ' + fmtInt(E[0]) + '.');
+  if (dm.adocao != null) {
+    const anos = Array.from({ length: H }, (_, i) => i + 1);
+    L.push(tr('Usuários ativos entre as pessoas que usariam:') + ' ' + anos.map(t => tr('Ano ' + t) + ': ' + pct(ano(dm.adocao, t))).join('; ') + '.');
+  }
+  if (arqC === 'saas' && cfg.saas && cfg.saas.ativo) {
+    const sa = cfg.saas;
+    if (c.pagamento === 'incluida' || !(+sa.preco > 0)) L.push(tr('Licença: incluída em contrato existente, sem preço adicional.'));
+    else if (c.pagamento === 'usuario') L.push(tr('Preço da licença por usuário por mês:') + ' ' + din(sa.preco, 2) + ' (' + tr('licenças contratadas = usuários ativos + ' + pct((+sa.fatorNominal || 1) - 1)) + ').');
+    else L.push(tr('Preço da licença institucional por pessoa que usaria, por mês:') + ' ' + din(sa.preco, 2) + '.');
+    if ((c.usuarios || []).includes('estudantes') && (c.usuarios || []).length && cfg.origem === 'A') L.push(tr('O preço de referência vem de um copiloto para professores; confira o preço por estudante, que costuma ser diferente.'));
+  }
+  if ((arqC === 'api' || arqC === 'ow') && +dm.s > 0) L.push(tr('Uso por usuário ativo:') + ' ' + tr(nf(dm.s) + ' sessões por mês e ' + nf(dm.i) + ' interações por sessão') + '.');
+  if (arqC === 'api' && cfg.api) {
+    const a = cfg.api;
+    L.push(tr('Modelo por API:') + ' ' + tr(nf(a.k) + ' chamadas por interação, com ' + fmtInt(a.Tin) + ' tokens de entrada e ' + fmtInt(a.Tout) + ' de saída por chamada') + '; ' + tr('preço por milhão de tokens de entrada e de saída:') + ' ' + din(a.Pin, 2) + ' / ' + din(a.Pout, 2) + '.');
+  }
+  if (arqC === 'ow' && cfg.ow) {
+    const o = cfg.ow;
+    L.push(tr('Modelo de pesos abertos:') + ' ' + tr(fmtInt(o.Tin) + ' tokens de entrada e ' + fmtInt(o.Tout) + ' de saída por interação') + '; ' + tr('preço da hora de GPU:') + ' ' + din(o.Pgpu, 2) + '.');
+  }
+  if (ce.infra === 'complementar' && typeof PREMISSAS_K1 !== 'undefined') {
+    const K = PREMISSAS_K1;
+    L.push(tr('Dispositivos complementares:') + ' ' + din(K.precoDispositivo, 0) + ' ' + tr('por dispositivo, para ' + pct(K.fracaoSemDispositivo) + ' dos novos usuários') + '; ' + tr('conectividade incremental:') + ' ' + din(K.conectEscolaAno, 0) + ' ' + tr('por escola por ano') + '.');
+  }
+  return L;
+}
+// Adaptação ao contexto (K3.1 + K3.2) no Ano 0, para mostrar o efeito da resposta 2.3.4
+function adaptacaoAno0(av) { return (av.linhas || []).filter(l => l.s === 'K3.1' || l.s === 'K3.2').reduce((t, l) => t + ((l.eco || [])[0] || 0), 0); }
+// O painel só mostra a estimativa depois das respostas que a definem (2.1.1, 2.3.1 e 3.1.1)
+function faltasEstimativa() { return ['tarefas', 'tipoTec', 'elegiveis'].map(k => CAMPO_POR_ID[k]).filter(f => f && !qOk(f)); }
 
 // ----------------------------------------------------------- componentes
 function nCampo(o) {
@@ -270,7 +344,9 @@ function notaInfo(chave, id) {
 function corpoPadrao(id) {
   const pi = PASSO_INFO[id] || {};
   let s = pi.abertura ? `<p class="abertura muted">${esc(pi.abertura)}</p>` : '';
+  if (id === '2b') s += avisoRevisar(id);
   s += camposPasso(id).map(renderQ).join('');
+  if (id === '2a') s += avisoRevisar(id);
   if (id === '1b' && typeof CAP !== 'undefined' && CAP.sample) {
     s += `<div class="ai" id="ia-box"><div class="row" style="justify-content:space-between"><div><b>Estruturar a descrição com Claude</b><div class="small muted">Lê o problema e o resultado, sugere respostas para a fase 2 e aponta lacunas. Você revisa antes de aplicar.</div></div>
       <button class="btn pri" type="button" data-act="ia" ${IA.estado === 'rodando' ? 'disabled' : ''}>${IA.estado === 'rodando' ? 'Analisando…' : 'Analisar descrição'}</button></div><div id="ia-out">${typeof renderIA === 'function' ? renderIA() : ''}</div></div>`;
@@ -305,11 +381,16 @@ function passo3c() {
   const T = n.av.r.anos;
   const pend = ['2c', '3a', '3b'].some(id => faltas(id).length);
   const cam = n.camadas;
+  let prem = [];
+  try { prem = premissasUnitarias(); } catch (e) { console.warn(e); }
+  const nivelAd = S.caso.adaptacao ? tr(rotulo(listaOpc(CAMPO_POR_ID.adaptacao), S.caso.adaptacao)) : tr('nível do exemplo do guia');
+  const linhaAdapt = `<p class="adapt"><span>${esc(tr('Adaptação (K3.1 + K3.2), Ano 0:'))}</span> <b class="num">${grande(adaptacaoAno0(n.av))}</b> <span class="muted">· <span>${esc(tr('Nível escolhido no passo 2.3.4:'))}</span> ${esc(nivelAd)}</span></p>`;
   const tabCam = cam ? (() => {
     const tot = CAMADAS.reduce((s, [k]) => s + ((cam.total || {})[k] || 0), 0);
-    return `<h3 class="sub-h">Custo por camada</h3><div class="tw"><table><thead><tr><th>Camada</th><th class="n"><span>Ano 0</span> (${esc(unidMil())})</th><th class="n"><span>Total do ciclo</span> (${esc(unidMil())})</th><th class="n">%</th></tr></thead><tbody>
-      ${CAMADAS.map(([k, nome]) => `<tr><td><span class="cn-t">${k}</span> <span>${esc(nome)}</span></td><td class="n">${mil((cam.ano0 || {})[k] || 0)}</td><td class="n">${mil((cam.total || {})[k] || 0)}</td><td class="n">${pct(tot ? ((cam.total || {})[k] || 0) / tot : 0)}</td></tr>`).join('')}
-      <tr class="tot"><td>Total</td><td class="n">${mil(CAMADAS.reduce((s, [k]) => s + ((cam.ano0 || {})[k] || 0), 0))}</td><td class="n">${mil(tot)}</td><td class="n">100%</td></tr></tbody></table></div>`;
+    const thC = [tr('Camada'), tr('Ano 0') + ' (' + unidMil() + ')', tr('Total do ciclo') + ' (' + unidMil() + ')'];
+    return `<h3 class="sub-h">Custo por camada</h3><div class="tw"><table class="pilha"><thead><tr><th>Camada</th><th class="n"><span>Ano 0</span> (${esc(unidMil())})</th><th class="n"><span>Total do ciclo</span> (${esc(unidMil())})</th><th class="n">%</th></tr></thead><tbody>
+      ${CAMADAS.map(([k, nome]) => `<tr><td data-th="${esc(thC[0])}"><span class="cn-t">${k}</span> <span>${esc(nome)}</span></td><td class="n" data-th="${esc(thC[1])}">${mil((cam.ano0 || {})[k] || 0)}</td><td class="n" data-th="${esc(thC[2])}">${mil((cam.total || {})[k] || 0)}</td><td class="n" data-th="%">${pct(tot ? ((cam.total || {})[k] || 0) / tot : 0)}</td></tr>`).join('')}
+      <tr class="tot"><td data-th="${esc(thC[0])}">Total</td><td class="n" data-th="${esc(thC[1])}">${mil(CAMADAS.reduce((s, [k]) => s + ((cam.ano0 || {})[k] || 0), 0))}</td><td class="n" data-th="${esc(thC[2])}">${mil(tot)}</td><td class="n" data-th="%">100%</td></tr></tbody></table></div>`;
   })() : '';
   return `${seletorMoeda()}
     ${pend ? '<p class="hint">Enquanto faltarem respostas nos passos 2.3, 3.1 e 3.2, a estimativa usa premissas padrão.</p>' : ''}
@@ -319,11 +400,15 @@ function passo3c() {
       <div class="kpi"><span class="v">${grande(n.anual)}</span><span class="l">Dotação média por ano de operação</span></div>
       <div class="kpi"><span class="v">${din(n.porAluno, 2)}</span><span class="l">Por usuário ativo por ano</span></div>
       <div class="kpi"><span class="v">${(n.ind.anosParaSair || 0).toLocaleString(LOC(), { maximumFractionDigits: (n.ind.anosParaSair || 0) < 1 ? 2 : 1 })}</span><span class="l">Custo de sair, em anos de custo recorrente</span></div></div>
+    ${linhaAdapt}
     ${tabCam}
     <h3 class="sub-h">Dotação a solicitar por exercício</h3>
-    <div class="tw"><table><thead><tr><th>Exercício</th>${T.map(x => `<th class="n">${esc(tr('Ano ' + x))}</th>`).join('')}</tr></thead><tbody>
-      <tr><td><span>Dotação a solicitar</span> (${esc(unidMil())})</td>${T.map(x => `<td class="n">${mil(n.orc.dot[x])}</td>`).join('')}</tr></tbody></table></div>
+    <div class="tw"><table class="pilha"><thead><tr><th>Exercício</th>${T.map(x => `<th class="n">${esc(tr('Ano ' + x))}</th>`).join('')}</tr></thead><tbody>
+      <tr><td data-th="${esc(tr('Exercício'))}"><span>Dotação a solicitar</span> (${esc(unidMil())})</td>${T.map(x => `<td class="n" data-th="${esc(tr('Ano ' + x))}">${mil(n.orc.dot[x])}</td>`).join('')}</tr></tbody></table></div>
     <p class="note"><span>Valores ilustrativos. Substitua por cotações e dados locais.</span> <span>Custo total em preços constantes, com tempo das equipes; dotação em preços correntes, só desembolso.</span></p>
+    <h3 class="sub-h">Premissas desta estimativa</h3>
+    <ul class="req prem-u">${prem.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+    <p class="note">Premissas ilustrativas. Ajuste preços, quantidades e itens na calculadora completa, logo abaixo.</p>
     <details class="calc" data-calc ${S.calcAberta ? 'open' : ''}><summary>Ajustar premissas, itens e cenários na calculadora completa</summary>
       <div id="custos-box" class="embutido">${S.calcAberta && typeof renderCustos === 'function' ? renderCustos() : ''}</div></details>`;
 }
@@ -476,16 +561,23 @@ function renderPainel() {
   const teste = c.teste ? (c.teste === 'recomendar' ? tr('a recomendar') : tr(rotulo(listaOpc(CAMPO_POR_ID.teste), c.teste))) : '—';
   const tec = c.tipoTec ? tr(rotulo(listaOpc(CAMPO_POR_ID.tipoTec), c.tipoTec)) : '—';
   let est = '';
-  if (qOk(CAMPO_POR_ID.tarefas) && qOk(CAMPO_POR_ID.tipoTec)) {
+  const fe = faltasEstimativa();
+  if (!fe.length) {
     try {
-      const n = numerosCusto();
+      const n = numerosCusto(), ce = casoAtual();
+      const pessoas = Math.max(0, ...(n.av.r.E || []).slice(1)) || +ce.elegiveis || 0;
       est = `<div class="estim"><div class="eyebrow">Estimativa ilustrativa</div>
+        <p class="small premissa">${esc(tr('Considera ' + fmtInt(pessoas) + ' pessoas usando a ferramenta na rede (passo 3.1.1).'))}</p>
         <div class="linha"><span>Ano 0 (prova de conceito ou piloto)</span><span class="num">${grande(n.ano0)}</span></div>
         <div class="linha"><span><span>Custo total do ciclo</span> <small>(${esc(tr(n.H + ' anos'))})</small></span><span class="num">${grande(n.total)}</span></div>
-        <p class="small muted">Valores ilustrativos</p></div>`;
+        <p class="small muted">Valores ilustrativos. As premissas estão no passo 3.3.</p></div>`;
     } catch (e) { est = ''; }
+  } else {
+    est = `<div class="estim"><div class="eyebrow">Estimativa ilustrativa</div>
+      <p class="small muted">${esc(tr('A estimativa de custo aparece depois destas respostas:'))}</p>
+      <ul class="req small">${fe.map(f => `<li><button type="button" class="link" data-ir="${fasePasso(f.passo)}:${f.passo}:${f.n.replace(/\./g, '-')}"><span class="qn-l">${f.n}</span> <span>${esc(textoCampo(f))}</span></button></li>`).join('')}</ul></div>`;
   }
-  const exp = `<button type="button" class="link" data-act="exp-json">Exportar caso</button>`;
+  const exp = `<button type="button" class="link" data-act="exp-json">${CAP.downloads ? 'Exportar caso' : 'Copiar dados do caso'}</button>`;
   el.innerHTML = `<div class="card painel-in">
     <div class="prog"><div class="eyebrow">Seu progresso</div><ul class="vlist">${prog}</ul></div>
     <div class="mand">${mandala()}
@@ -579,7 +671,10 @@ function gerarPlano() {
 function continuar(modo, de) {
   const id = de || S.passo, fid = fasePasso(id); if (!fid) return;
   if (modo === 'normal' && faltas(id).length) { render(); return; }
-  if (modo === 'confirmar') camposPasso(id).forEach(f => { if (sugerido(f) && !vazio(valorCampo(f))) S.respC[f.id] = true; });
+  if (modo === 'confirmar') {
+    camposPasso(id).forEach(f => { if (sugerido(f) && !vazio(valorCampo(f))) S.respC[f.id] = true; });
+    S.revisar = (S.revisar || []).filter(k => !S.respC[k]);
+  }
   S.feitos[id] = true;
   const p = proximo(fid, id);
   if (p.tipo === 'plano') { gerarPlano(); return; }

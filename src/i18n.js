@@ -9,6 +9,24 @@ let LANG = 'pt';
 function LOC() { const x = IDIOMAS.find(i => i[0] === LANG); return x ? x[2] : 'pt-BR'; }
 
 const RE_NUM = /(?<![\p{L}\d.,])[-−+]?\d+(?:[.,  ]\d+)*/gu;
+// Magnitudes abreviadas (milhar, milhão, bilhão) e unidade "milhares de <moeda>" por idioma.
+// Usadas por grande() e unidMil() (custos_ui.js). Em inglês, "162 mil" se leria como 162 milhões.
+const MAGNITUDES = { pt: ['mil', 'mi', 'bi'], en: ['k', 'M', 'bn'], es: ['mil', 'M', 'mil M'], fr: ['k', 'M', 'Md'] };
+const UNID_MIL = { pt: c => c + ' mil', en: c => c + ' thousand', es: c => 'miles de ' + c, fr: c => 'milliers de ' + c };
+function magnitudes(l) { return MAGNITUDES[l || LANG] || MAGNITUDES.pt; }
+function unidMilDe(cod, l) { return (UNID_MIL[l || LANG] || UNID_MIL.pt)(cod); }
+// Devolve valores e unidades do idioma exibido à forma em português (a forma das chaves do dicionário):
+// "Árvore de custos (USD thousand)" → "Árvore de custos (USD mil)"; "US$ 2.65 M" → "US$ 2.65 mi".
+function unidadesParaPT(s) {
+  if (LANG === 'pt') return s;
+  const cod = typeof moedaInfo === 'function' ? moedaInfo().cod : 'USD';
+  let out = s.split(unidMilDe(cod)).join(unidMilDe(cod, 'pt'));
+  const L = magnitudes(), P = MAGNITUDES.pt;
+  const rx = x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const ordem = [2, 1, 0].filter(i => L[i] !== P[i]);   // "mil M" antes de "mil"
+  if (ordem.length) out = out.replace(new RegExp('(\\d) (' + ordem.map(i => rx(L[i])).join('|') + ')(?![\\p{L}])', 'gu'), (_, d, u) => d + ' ' + P[L.indexOf(u)]);
+  return out;
+}
 function normalizar(s) {
   const nums = [];
   const chave = s.replace(RE_NUM, m => { nums.push(m); return '{' + (nums.length - 1) + '}'; }).replace(/\s+/g, ' ').trim();
@@ -34,6 +52,11 @@ function tr(s) {
       const a2 = dic[k2];
       if (a2 != null) alvo = a2.split('USD').join(mi.cod).split('US$').join(mi.pre);
     }
+  }
+  if (alvo == null && !tr.emPT) {
+    // valores e unidades já no idioma exibido (grande(), unidMil()): procura a forma em português
+    const pt = unidadesParaPT(corpo);
+    if (pt !== corpo) { let t; tr.emPT = true; try { t = tr(pt); } finally { tr.emPT = false; } if (t !== pt) return m[1] + t + m[3]; }
   }
   if (alvo == null) {
     // número com magnitude abreviada: "R$ 1,8 mi"

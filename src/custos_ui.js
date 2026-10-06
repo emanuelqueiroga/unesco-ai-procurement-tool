@@ -24,9 +24,18 @@ function din(x, dec) {
   return m.pre + ' ' + v.toLocaleString(LOC(), { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
 function mil(x, dec = 1) { const m = moedaInfo(); return (x * m.f / 1000).toLocaleString(LOC(), { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
-function grande(x) { const m = moedaInfo(); const v = x * m.f; if (Math.abs(v) >= 1e9) return m.pre + ' ' + (v / 1e9).toLocaleString(LOC(), { maximumFractionDigits: 2 }) + ' bi'; if (Math.abs(v) >= 1e6) return m.pre + ' ' + (v / 1e6).toLocaleString(LOC(), { maximumFractionDigits: 2 }) + ' mi'; return m.pre + ' ' + (v / 1e3).toLocaleString(LOC(), { maximumFractionDigits: 1 }) + ' mil'; }
+// valor abreviado com a magnitude do idioma (MAGNITUDES, i18n.js): PT "US$ 162 mil", EN "US$ 162 k", ES "US$ 162 mil", FR "US$ 162 k"
+function grande(x) {
+  const m = moedaInfo(); const v = x * m.f;
+  const [k, M, B] = typeof magnitudes === 'function' ? magnitudes() : ['mil', 'mi', 'bi'];
+  const f = (d, n, u) => m.pre + ' ' + (v / d).toLocaleString(LOC(), { maximumFractionDigits: n }) + ' ' + u;
+  if (Math.abs(v) >= 1e9) return f(1e9, 2, B);
+  if (Math.abs(v) >= 1e6) return f(1e6, 2, M);
+  return f(1e3, 1, k);
+}
 const pct = (x, d = 0) => (100 * (x || 0)).toLocaleString(LOC(), { maximumFractionDigits: d, minimumFractionDigits: d }) + '%';
-function unidMil() { return moedaInfo().cod + ' mil'; }
+// unidade das tabelas em milhares: PT "USD mil", EN "USD thousand", ES "miles de USD", FR "milliers de USD"
+function unidMil() { const cod = moedaInfo().cod; return typeof unidMilDe === 'function' ? unidMilDe(cod) : cod + ' mil'; }
 
 // ----------------------------------------------------------- estado
 function estadoCusto() {

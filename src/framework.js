@@ -211,7 +211,7 @@ function derivarArquitetura(c, ignorarManual) {
   c = c || {};
   if (!ignorarManual && ['saas', 'api', 'ow'].includes(c.arquiteturaManual)) return c.arquiteturaManual;
   if (c.tipoTec === 'aberta' || c.licenca === 'aberta') return 'ow';
-  if (c.pagamento === 'consumo' || c.adaptacao === 'sob_medida') return 'api';
+  if (c.pagamento === 'consumo') return 'api';
   return 'saas';
 }
 

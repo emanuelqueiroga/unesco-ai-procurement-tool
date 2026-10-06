@@ -238,6 +238,7 @@ function relHTML(secs, completo) {
   secs = trFundo(secs);
   const e = esc;
   const body = secs.map(s => `<h3>${e(s.h)}</h3>
+    ${(s.pre || []).map(x => `<p><b>${e(x)}</b></p>`).join('')}
     ${(s.kv || []).length ? `<div class="tw"><table><tbody>${s.kv.map(([k, v]) => `<tr><th style="width:28%">${e(k)}</th><td>${e(v)}</td></tr>`).join('')}</tbody></table></div>` : ''}
     ${(s.p || []).map(x => `<p>${e(x)}</p>`).join('')}
     ${(s.list || []).length ? `<ul>${s.list.map(x => `<li>${e(x)}</li>`).join('')}</ul>` : ''}
@@ -253,6 +254,7 @@ function relMD(secs) {
   const L = ['# ' + tituloPlano(), '', '_' + NOME_FERRAMENTA + ' · ' + tr('Plano de contratação') + ' · ' + tr('Gerado em') + ' ' + new Date().toLocaleDateString(LOC()) + '. ' + tr('Documento de trabalho baseado no guia; valores ilustrativos.') + '_', '', tr(TXT_VINCULO), '', '_' + tr(TXT_ISENCAO) + '_', ''];
   secs.forEach(s => {
     L.push('## ' + s.h, '');
+    (s.pre || []).forEach(x => L.push('**' + x + '**', ''));
     (s.kv || []).forEach(([k, v]) => L.push('- **' + k + ':** ' + (v || '')));
     if ((s.kv || []).length) L.push('');
     (s.p || []).forEach(x => L.push(x, ''));
@@ -274,11 +276,11 @@ function slugCaso() {
 function nomeArq(ext) { return 'procurement-plan-' + slugCaso() + '.' + ext; }
 function nomeArqCaso() { return 'ai-education-case-' + slugCaso() + '.json'; }
 function dadosCaso() {
-  return { app: 'ai-education-procurement-tool', formato: 9, salvo: new Date().toISOString(), exemplo: S.exemplo, caso: S.caso, ctx: S.ctx, resp: S.resp, respC: S.respC, feitos: S.feitos, custo: S.custo, moeda: S.moeda, lang: S.lang };
+  return { app: 'ai-education-procurement-tool', formato: 9, salvo: new Date().toISOString(), exemplo: S.exemplo, caso: S.caso, ctx: S.ctx, resp: S.resp, respC: S.respC, revisar: S.revisar || [], feitos: S.feitos, custo: S.custo, moeda: S.moeda, lang: S.lang };
 }
 function aplicarImportado(o) {
   S.caso = Object.assign(clone(CASO_VAZIO), o.caso);
-  S.ctx = o.ctx || {}; S.resp = o.resp || {}; S.respC = o.respC || {}; S.feitos = o.feitos || {};
+  S.ctx = o.ctx || {}; S.resp = o.resp || {}; S.respC = o.respC || {}; S.feitos = o.feitos || {}; S.revisar = Array.isArray(o.revisar) ? o.revisar : [];
   S.custo = o.custo || { base: 'caso', cfg: null, editado: false };
   if (o.moeda) S.moeda = o.moeda;
   S.exemplo = o.exemplo === 'novo' ? 'novo' : 'editado';
@@ -310,6 +312,25 @@ function escolherArquivoCaso() {
   }
   inp.click();
 }
+// Importar caso: escolher o arquivo .json ou colar os dados copiados com "Copiar dados do caso"
+function abrirImportar() {
+  let dlg = document.getElementById('dlg-imp');
+  if (!dlg) {
+    dlg = document.createElement('dialog'); dlg.id = 'dlg-imp'; dlg.className = 'dlg-imp'; dlg.setAttribute('aria-labelledby', 'dlg-imp-t');
+    document.body.appendChild(dlg);
+  }
+  dlg.innerHTML = `<form method="dialog" class="dlg-in">
+    <h2 id="dlg-imp-t">${esc(tr('Importar caso'))}</h2>
+    <p>${esc(tr('Escolha o arquivo .json exportado pela ferramenta ou cole os dados do caso copiados antes.'))}</p>
+    <div class="row"><button type="button" class="btn" data-act="imp-arquivo">${esc(tr('Escolher arquivo .json'))}</button></div>
+    <label for="imp-txt">${esc(tr('Dados do caso copiados'))}</label>
+    <textarea id="imp-txt" rows="5" spellcheck="false" placeholder="{&quot;app&quot;: &quot;ai-education-procurement-tool&quot;, …}"></textarea>
+    <div class="row dlg-pe"><button type="button" class="btn pri" data-act="imp-colar">${esc(tr('Importar dados colados'))}</button><button type="submit" class="btn" value="cancelar">${esc(tr('Cancelar'))}</button></div>
+  </form>`;
+  try { dlg.showModal(); } catch (e) { dlg.setAttribute('open', ''); }
+  const ta = dlg.querySelector('#imp-txt'); if (ta) ta.focus();
+}
+function fecharImportar() { const d = document.getElementById('dlg-imp'); if (d) { try { d.close(); } catch (e) { d.removeAttribute('open'); } } }
 function selecionarTexto() {
   const r = document.querySelector('#plano') || document.querySelector('.report'); if (!r) return;
   const sel = window.getSelection(), rg = document.createRange(); rg.selectNodeContents(r); sel.removeAllRanges(); sel.addRange(rg);
@@ -384,7 +405,13 @@ function ligar() {
       if (CAP.downloads) baixar(nomeArqCaso(), t); else copiarTexto(JSON.stringify(dadosCaso()), 'Dados do caso copiados.');
     }
     else if (act === 'copiar-json') copiarTexto(JSON.stringify(dadosCaso()), 'Dados do caso copiados.');
-    else if (act === 'imp-json') escolherArquivoCaso();
+    else if (act === 'imp-json') abrirImportar();
+    else if (act === 'imp-arquivo') { fecharImportar(); escolherArquivoCaso(); }
+    else if (act === 'imp-colar') {
+      const ta = document.getElementById('imp-txt'), txt = ta ? ta.value.trim() : '';
+      if (!txt) { toast(tr('Cole antes os dados do caso.')); return; }
+      if (importarCaso(txt)) fecharImportar();
+    }
     else if (act === 'dl-md') baixar(nomeArq('md'), relMD(dadosRelatorio()));
     else if (act === 'dl-html') baixar(nomeArq('html'), relHTML(dadosRelatorio(), true));
     else if (act === 'dl-csv') baixar('costs-' + slugCaso() + '.csv', csvCustos());
