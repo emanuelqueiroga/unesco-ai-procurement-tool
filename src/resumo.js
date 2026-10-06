@@ -1,6 +1,10 @@
 // =====================================================================
-// Resumo e recomendações: decisão, plano de ação e modelo de contratação
-// Conteúdo de contratação tirado do guia (caps. 13, 14 e 16; Instrumento F).
+// Plano de contratação: página final e PDF, gerados por um único botão.
+// Estrutura: respostas que faltam, resumo do caso, bloco A (custo e compra),
+// bloco B (política e governança) e referências.
+// Conteúdo de contratação tirado do guia (caps. 11–16; Instrumento F) e do
+// quadro de custo total em camadas de Krueger e Jackson (2026, p. 11).
+// Textos fixos e recomendações: src/plano_dados.js.
 // =====================================================================
 const NOME_FERRAMENTA = 'AI in Education Procurement Tool';
 
@@ -14,7 +18,6 @@ const ARRANJOS = [
   ['compartilhada', 'Solução compartilhada', 'Várias instituições com necessidades semelhantes; organizações pequenas.', 'Quem prioriza mudanças, financia a expansão, aceita riscos e arbitra divergências.', 'Governança interinstitucional, financiamento.'],
   ['modular', 'Contratação modular ou por lotes', 'Fronteiras técnicas naturais e mercado real por componente.', 'Quem integra; responsabilidade por falhas entre componentes; esforço de gerir vários contratos.', 'Integração, gestão de múltiplos fornecedores.'],
 ];
-const ARRANJO_ARQ = { saas: ['saas'], api: ['api'], ow: ['interno', 'contratar'] };
 const NOTA_ARQ = {
   saas: 'SaaS introduz subprocessadores e concentra infraestrutura e manutenção na licença. Mudanças do fornecedor podem invalidar testes, e a saída fica complexa se a solução virar componente crítico.',
   api: 'Consumir um modelo por API reduz a quantidade de produto adquirido, mas aumenta a quantidade de solução que a instituição precisa integrar e governar. A API expõe a mudanças de versão e de preço e aumenta a variabilidade do custo.',
@@ -26,300 +29,535 @@ const APRENDIZAGEM = [
   ['Ambiente controlado (sandbox)', 'Que comportamento e que riscos aparecem sem expor o processo real?', 'Dados sintéticos ou selecionados, ações restritas; validade externa limitada, que deve ser registrada.'],
   ['Piloto', 'O caso de uso funciona em condições próximas das reais?', 'População e período delimitados, desenho de avaliação, possibilidade real de não continuar.'],
 ];
-// Perguntas do navegador que alimentam cada grupo de cláusulas (Instrumento F)
-const CAT_Q = {
-  Escopo: ['p-problema', 'i-supervisao', 'i-acessib', 'p-idiomas'],
-  Desempenho: ['r-sucesso', 'i-evidencia', 's-evidencia', 'i-pico', 'p-adocao', 'i-adocao'],
-  Mudança: ['s-mudanca', 'i-geracao'],
-  Dados: ['g-dados', 'r-baselegal', 'r-acordo', 'p-protecao', 'i-finalidade', 'i-dpia', 'i-base', 's-qualidade'],
-  Verificação: ['p-incidente', 'i-incidente', 'i-adversarial', 'i-rastreio', 'i-contestacao', 'i-identidade', 'p-acessos', 's-revisao', 'i-monitor'],
-  Direitos: ['i-fornecedor', 'r-ativos'],
-  Custo: ['r-gratuito', 'g-orcamento', 's-orcamento'],
-  Saída: ['r-parada', 'i-portab', 's-saida', 's-interop'],
-  Gestão: ['i-contrato', 'i-gestao', 'g-compras', 'p-suporte', 'i-suporte'],
-};
-const CATS = ['Escopo', 'Desempenho', 'Mudança', 'Dados', 'Verificação', 'Direitos', 'Custo', 'Saída', 'Gestão'];
-// Documentos do dossiê por fase
-const DOSSIE_FASE = { contexto: ['D1', 'D2', 'D3', 'D4'], piloto: ['D5', 'D6', 'D7', 'D8'], implantacao: ['D9', 'D10', 'D11', 'D12', 'D13', 'D14', 'D15', 'D16', 'D17'], escala: ['D18'] };
+// Grupos do Instrumento F por bloco do plano
+const GRUPOS_COMPRA = ['Escopo', 'Desempenho', 'Mudança', 'Direitos', 'Custo', 'Saída', 'Gestão'];
+const GRUPOS_DADOS = ['Dados', 'Verificação'];
+const TAG_CONTRATO = { alto: 'risco elevado', pessoas: 'afeta pessoas', consumo: 'cobrança por consumo' };
+const ROT_ALERTA = { bloqueio: 'Resolver antes de contratar', atencao: 'Tratar no plano', info: 'Nota' };
+const PRESET_ARQ = { saas: 'Exemplo A do guia (cap. 12): produto pronto por licença', api: 'Exemplo B do guia (cap. 12): aplicação com modelo por API e base de conhecimento', ow: 'Exemplo C do guia (cap. 12): modelo de pesos abertos em infraestrutura contratada' };
 
-const REC = {
-  contexto: { sim: 'O contexto está claro: siga para o desenho do piloto.', cond: 'O contexto permite planejar o piloto; trate as condições de governança em paralelo.', nao: 'Antes de planejar o piloto, resolva os impedimentos de governança.', falta: 'Complete o contexto para obter uma recomendação.' },
-  piloto: { sim: 'Pode iniciar o piloto nas condições descritas.', cond: 'Pode iniciar o piloto se as condições abaixo entrarem no plano, com responsável e prazo.', nao: 'Não inicie o piloto ainda: resolva os impedimentos abaixo.', falta: 'Complete a fase do piloto para obter uma recomendação.' },
-  implantacao: { sim: 'Pode levar a solução à rede e preparar a contratação.', cond: 'Pode preparar a implantação e a contratação, desde que as condições abaixo entrem no termo de referência e no contrato.', nao: 'Não implante nem contrate ainda: resolva os impedimentos abaixo.', falta: 'Complete a fase de implantação para obter uma recomendação.' },
-  escala: { sim: 'Pode manter e ampliar nas condições atuais.', cond: 'Pode manter e ampliar, desde que as condições abaixo entrem no plano.', nao: 'Não amplie nem renove ainda: resolva os impedimentos abaixo.', falta: 'Complete a fase de sustentabilidade e expansão para obter uma recomendação.' },
-};
-// A recomendação principal vem da primeira fase avaliada que ainda não está pronta; se todas estiverem, da última.
-function recomendacao() {
-  const av = fasesAvaliadas();
-  let alvo = av.find(f => ['nao', 'falta'].includes(veredito(f.id).st)) || av[av.length - 1];
-  const v = veredito(alvo.id);
-  const pul = FASES.filter(f => pulada(f.id));
-  let nota = '';
-  if (pul.length === 2) nota = 'As fases 3 e 4 não foram avaliadas. A recomendação vale até o piloto; antes de implantar na rede e contratar em escala, avalie a fase 3.';
-  else if (pul.length === 1) nota = 'A fase 4 não foi avaliada. Antes de renovar ou ampliar, avalie a sustentabilidade e a expansão.';
-  return { fase: alvo, st: v.st, texto: REC[alvo.id][v.st], nota };
+// ----------------------------------------------------------- utilitários
+const rotP = (lista, v) => ((lista || []).find(o => String(o[0]) === String(v)) || ['', ''])[1];
+const nomesP = (lista, vals) => (vals || []).map(v => tr(rotP(lista, v) || v)).filter(Boolean).join('; ');
+const capP = s => { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); };
+const numP = (x, d = 1) => (+x || 0).toLocaleString(LOC(), { maximumFractionDigits: Math.abs(+x || 0) < 1 && d > 0 ? 2 : d, minimumFractionDigits: 0 });
+function respP(campo, v) { try { return respondido(campo) ? v : '—'; } catch (e) { return v; } }
+function slugPlano() {
+  const b = String(S.caso.titulo || (S.ctx || {}).olhando || 'case').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
+  return b || 'case';
 }
-function lacunasCat(cat) {
-  const ids = CAT_Q[cat] || [];
-  const out = [];
-  fasesAvaliadas().forEach(f => questoes(f.id).forEach(q => {
-    if (!ids.includes(q.id)) return;
-    const v = S.resp[q.id];
-    if (v === 'nao' || v === 'parcial') out.push([{ q, texto: ACOES[q.id] || q.t, ir: f.id + ':' + passoDaQuestao(q) + ':' + q.id, resp: v }, v === 'nao' && ESSENCIAIS.has(q.id) ? 'crit' : 'warn']);
-  }));
-  return out;
+function testeEfetivo(c, rec) { return ['poc', 'piloto'].includes(c.teste) ? c.teste : (rec && rec.modo) || 'piloto'; }
+function arranjosCaso(ce) {
+  const s = [];
+  if (ce.tipoTec === 'publica') s.push('compartilhada');
+  ({ saas: ['saas'], api: ['api', 'contratar'], ow: ['interno', 'contratar'] }[ce.arquitetura] || []).forEach(k => s.push(k));
+  if (ce.adaptacao === 'sob_medida') s.push('contratar');
+  return [...new Set(s)].map(k => ARRANJOS.find(a => a[0] === k)).filter(Boolean);
 }
-function clausulasCaso() {
-  const c = S.caso, p = perfil(), afeta = (c.consequencias || []).some(k => k !== 'nenhuma');
-  return CONTRATO.filter(x => !x[2] || (x[2] === 'alto' && p.alto) || (x[2] === 'pessoas' && afeta) || (x[2] === 'consumo' && c.arquitetura !== 'saas'));
+function recsDe(grupo, d) {
+  return RECS.filter(r => r.grupo === grupo && (!r.quando || r.quando(d.ce, d.p)) && (grupo !== 'local' || !d.poc || r.poc));
 }
-function dadosReqCaso() {
-  const c = S.caso;
-  return DADOS_REQ.filter(d => d[0] !== 'rag' || c.arquitetura === 'api').map(d => ({ h: d[1], t: d[2], prio: d[0] === 'treino' && c.treino !== 'nao' }));
+const textoRec = (r, d) => (d.poc && r.textoPoc) || r.texto;
+function camadaDeS(s) { return (typeof CAMADA_DE_S !== 'undefined' ? CAMADA_DE_S : CAMADA_DE_S_PLANO)[s] || 7; }
+function nomeCamada(n) {
+  const L = typeof CAMADAS !== 'undefined' ? CAMADAS : [];
+  const x = L.find(z => (Array.isArray(z) ? z[0] : z.n) === n);
+  return x ? (Array.isArray(x) ? x[1] : x.nome) : '';
 }
-function dossieCaso() { return fasesAvaliadas().flatMap(f => DOSSIE_FASE[f.id]).map(k => DOSSIE.find(d => d[0] === k)); }
+const rotuloCamada = n => n + '. ' + tr(nomeCamada(n));
+function govQuestoes() {
+  try { const q = questoesGov(); if (q && q.length) return q; } catch (e) { }
+  return Object.keys(ACOES_G).map((id, i) => ({ id, n: '1.3.' + (i + 1), t: id }));
+}
+
+// Tudo o que o plano precisa, calculado uma vez
+function dadosPlano() {
+  const c = S.caso, x = S.ctx || {}, t = totaisCtx();
+  const ce = casoAtual(), p = perfil();
+  let rec = { modo: 'piloto', motivos: [] };
+  try { rec = recomendarTeste(ce) || rec; } catch (e) { console.warn(e); }
+  let custo = null;
+  try { custo = numerosCusto(); if (custo && !custo.camadas) custo.camadas = somaPorCamada(custo.av); } catch (e) { console.warn(e); }
+  const arq = ['saas', 'api', 'ow'].includes(ce.arquitetura) ? ce.arquitetura : 'saas';
+  const modo = testeEfetivo(c, rec);
+  let faltas = [];
+  try { faltas = faltasTodas() || []; } catch (e) { console.warn(e); }
+  return { c, x, t, ce, p, rec, custo, arq, modo, poc: modo === 'poc', faltas,
+    afeta: recAfeta(ce), dp: recDadosPessoais(ce), gratis: recGratuito(ce) };
+}
+
+// ----------------------------------------------------------- seções (PDF, Markdown, HTML e página)
+// Cada item: { tipo: 'faltas' | 'bloco', id, h, sub, kv, kpis, p, list, table, pos, det, soPagina, irs }
+function secoesPlano() {
+  const d = dadosPlano();
+  const { c, x, t, ce, p, rec, custo, arq } = d;
+  const S_ = [];
+  const sec = o => { S_.push(o); return o; };
+  const tituloSec = id => id + '. ' + tr(TIT_PLANO[id]);
+
+  // Respostas que faltam
+  if (d.faltas.length) {
+    sec({ tipo: 'faltas', id: 'faltas', h: TIT_PLANO.faltas,
+      p: [d.faltas.length === 1 ? 'Plano parcial: 1 pergunta sem resposta.' : tr('Plano parcial: ' + d.faltas.length + ' perguntas sem resposta.'), 'O plano já pode ser usado; as seções que dependem dessas respostas usam premissas e dizem isso.'],
+      list: d.faltas.map(f => (f.n ? f.n + ' ' : '') + tr(f.texto)), irs: d.faltas.map(f => f.ir || '') });
+  }
+
+  // 0. Resumo do caso
+  const etapas = (typeof etapasAtivas === 'function' ? etapasAtivas() : []);
+  const linhasEt = etapas.map(e => {
+    const et = (x.etapas || {})[e[0]] || {};
+    const anos = (e[3] || []).length && !et.soTotal ? e[3].map((a, i) => tr(a) + ': ' + fmtInt((et.anos || [])[i] || 0)).join('; ') : '—';
+    return [tr(e[1]), et.escolas ? fmtInt(et.escolas) : '—', anos, fmtInt(alunosEtapa(e[0]))];
+  });
+  if (linhasEt.length > 1) linhasEt.push([tr('Total'), fmtInt(t.escolas), '', fmtInt(t.alunos)]);
+  const nivel = x.nivel === 'outro' ? (x.nivelOutro || tr('Outro')) : tr(rotP(typeof NIVEIS_ADM !== 'undefined' ? NIVEIS_ADM : [], x.nivel));
+  const tarefas = (c.tarefas || []).map(k => k === 'outra' && c.tarefaOutra ? c.tarefaOutra : tr(rotP(OPC.tarefas, k))).filter(Boolean).join('; ');
+  const impactos = (c.impactos || []).map(k => k === 'outro' && c.impactoOutro ? c.impactoOutro : tr(rotP(OPC.impactos, k))).filter(Boolean).join('; ');
+  const pl = c.piloto || {};
+  const arqTxt = tr(rotP(OPC.arquitetura, arq)) + (ce.__arqPresumida ? ' (' + tr('deduzida das respostas') + ')' : '');
+  sec({ id: 'resumo', h: TIT_PLANO.resumo, kv: [
+    ['Nível administrativo', nivel || '—'],
+    ['Lugar ou rede', x.local || '—'],
+    ['Situação', respP('situacao', tr(rotP(OPC.situacao, c.situacao)) || '—')],
+    ['Como a equipe descreve o problema', x.olhando || '—'],
+    ['Situação atual', c.problema || '—'],
+    ['Impacto desejado', impactos || '—'],
+    ['Resultado esperado e como medir', c.resultado || '—'],
+    ['Linha de base', respP('linhaBase', tr(rotP(OPC.linhaBase, c.linhaBase)) || '—')],
+    ['Alternativa sem IA comparada', tr(rotP(OPC.simNao, c.alternativa)) || '—'],
+    ['Aplicações', tarefas || '—'],
+    ['Quem usa', nomesP(OPC.usuarios, c.usuarios) || '—'],
+    ['Quem é afetado', nomesP(OPC.afetados, c.afetados) || '—'],
+    ['O que se faz com a resposta', respP('consequencias', nomesP(OPC.consequencias, c.consequencias) || '—')],
+    ['Frequência de uso', respP('frequencia', tr(rotP(OPC.frequencia, c.frequencia)) || '—')],
+    ['Prova de conceito ou piloto', tr(rotP(OPC.teste, c.teste)) || '—'],
+    ['Escolas no teste', d.poc ? '—' : (pl.escolas ? fmtInt(pl.escolas) : '—')],
+    ['Participantes do teste', pl.participantes ? fmtInt(pl.participantes) : '—'],
+    ['Duração do teste (meses)', pl.meses ? fmtInt(pl.meses) : '—'],
+    ['Tipo de tecnologia', tr(rotP(OPC.tipoTec, c.tipoTec)) || '—'],
+    ['Pagamento', tr(rotP(OPC.pagamento, c.pagamento)) || '—'],
+    ['Licença', tr(rotP(OPC.licenca, c.licenca)) || '—'],
+    ['Adaptação ao contexto', tr(rotP(OPC.adaptacao, c.adaptacao)) || '—'],
+    ['Dispositivos e internet', tr(rotP(OPC.infra, c.infra)) || '—'],
+    ['Arquitetura considerada', arqTxt],
+    ['Pessoas que usariam na rede', +c.elegiveis > 0 ? fmtInt(c.elegiveis) : '—'],
+    ['Ritmo de expansão', respP('expansao', tr(rotP(OPC.expansao, c.expansao)) || '—')],
+    ['Horizonte da estimativa', respP('horizonte', tr(rotP(OPC.horizonte, c.horizonte)) || '—')],
+    ['Quem paga depois do teste', tr(rotP(OPC.pagaDepois, c.pagaDepois)) || '—'],
+    ['Fonte de recursos', tr(rotP(OPC.fonte, c.fonte)) || '—'],
+  ] });
+  if (linhasEt.length) sec({ sub: true, h: 'Etapas, escolas e estudantes', table: { head: ['Etapa de ensino', 'Escolas', 'Estudantes por ano ou série', 'Estudantes'], rows: linhasEt, num: [1, 3] } });
+
+  // ================= Bloco A
+  sec({ tipo: 'bloco', id: 'A', h: 'A. ' + tr(TIT_PLANO.A) });
+
+  // A1
+  const a1p = [];
+  if (c.teste === 'recomendar' || !c.teste) {
+    if (!c.teste) a1p.push('Você ainda não escolheu entre prova de conceito e piloto.');
+    a1p.push(rec.modo === 'poc' ? 'Recomendação: começar por uma prova de conceito.' : 'Recomendação: começar por um piloto.');
+  } else if (c.teste !== rec.modo) {
+    a1p.push(c.teste === 'poc' ? 'Você escolheu uma prova de conceito. Pelas respostas, a ferramenta indicaria um piloto.' : 'Você escolheu um piloto. Pelas respostas, a ferramenta indicaria uma prova de conceito.');
+  } else {
+    a1p.push(c.teste === 'poc' ? 'Você escolheu uma prova de conceito, como indicam as respostas.' : 'Você escolheu um piloto, como indicam as respostas.');
+  }
+  sec({ id: 'A1', h: tituloSec('A1'), p: a1p.concat((rec.motivos || []).length ? ['Por quê:'] : []), list: (rec.motivos || []).map(m => capP(tr(m)) + '.'),
+    pos: ['Base: guia do projeto, cap. 14 (instrumentos de aprendizagem). O documento de Krueger e Jackson (2026) não define prova de conceito nem piloto.'] });
+  sec({ sub: true, h: 'Aprender antes de se comprometer', table: { head: ['Instrumento', 'Pergunta que responde', 'Condições'], rows: APRENDIZAGEM, hl: [d.modo === 'poc' ? 0 : 2], b0: true },
+    list: TXT_A1.concat(d.poc ? [TXT_A1_POC] : []) });
+
+  // A2
+  if (custo) {
+    const cam = custo.camadas, H = custo.H;
+    const tot = [1, 2, 3, 4, 5, 6, 7].reduce((s, n) => s + (cam.total[n] || 0), 0);
+    const tot0 = [1, 2, 3, 4, 5, 6, 7].reduce((s, n) => s + (cam.ano0[n] || 0), 0);
+    const E0 = (custo.av.r.E || [])[0] || 0;
+    const ind = custo.ind || {};
+    const kv = [
+      ['Custo do Ano 0 (prova de conceito ou piloto)', grande(tot0)],
+      ['Custo total do ciclo de vida', grande(custo.total)],
+      ['Dotação média por ano de operação', grande(custo.anual)],
+      ['Por usuário ativo por ano', din(custo.porAluno, 2)],
+      ['Custo do Ano 0 por participante do teste', E0 ? din(tot0 / E0, 0) : '—'],
+      ['Custo de sair, em anos de custo recorrente', ind.anosParaSair ? numP(ind.anosParaSair, 1) : '—'],
+    ];
+    const anos = custo.av.r.anos;
+    const prem = [];
+    prem.push(tr('Arquitetura considerada:') + ' ' + tr(rotP(OPC.arquitetura, arq)) + (ce.__arqPresumida ? ' (' + tr('deduzida das respostas; mude no passo 2.3 se souber que é outra') + ')' : '') + '.');
+    prem.push(tr('Premissas de partida:') + ' ' + tr(PRESET_ARQ[arq]) + '.');
+    if (c.adaptacao) {
+      let f = { fK31: 1, fK32: 1 };
+      try { f = fatoresAdaptacao(c.adaptacao, { saas: 'A', api: 'B', ow: 'C' }[arq]) || f; } catch (e) { }
+      prem.push(tr('Nível de adaptação:') + ' ' + tr(rotP(OPC.adaptacao, c.adaptacao)) + '. ' + tr('Multiplicador de K3.1: ' + numP(f.fK31, 2) + '; de K3.2: ' + numP(f.fK32, 2) + ' (convenção ilustrativa da ferramenta).'));
+    } else prem.push('Nível de adaptação não informado: a estimativa usa o nível do exemplo do guia.');
+    if (c.pagamento) prem.push(tr('Pagamento no teste:') + ' ' + tr(rotP(OPC.pagamento, c.pagamento)) + '.');
+    if (c.pagaDepois) prem.push(tr('Quem paga depois do teste:') + ' ' + tr(rotP(OPC.pagaDepois, c.pagaDepois)) + '.');
+    const doado = (custo.av.fac || {}).doado || 0;
+    if (d.gratis || doado > 0 || ['parceiro', 'governo'].includes(c.pagaDepois)) {
+      prem.push('Gratuito para a rede não quer dizer sem custo: o valor de referência aparece como cedido na conta econômica. Krueger e Jackson (2026, p. 7–8) mostram que a aquisição gratuita não elimina os custos do ciclo de vida.');
+      if (doado > 0) prem.push(tr('Valor cedido sem custo na conta econômica:') + ' ' + grande(doado) + '.');
+    }
+    prem.push(c.infra === 'complementar' ? 'Dispositivos e conectividade complementares estimados por convenção ilustrativa da ferramenta (passo 2.3.5).' : 'Dispositivos e internet considerados existentes: premissa a verificar.');
+    if (ce.__elegPadrao) prem.push(tr('O número de pessoas que usariam na rede não foi informado: a estimativa usa ' + fmtInt(ce.elegiveis) + ' pessoas como premissa padrão.'));
+    prem.push(tr('Horizonte da estimativa:') + ' ' + tr('Ano 0') + ' + ' + tr(rotP(OPC.horizonte, H) || (H + ' anos')) + '. ' + tr('Ritmo de expansão:') + ' ' + tr(rotP(OPC.expansao, c.expansao || 'ano1')) + '.');
+    sec({ id: 'A2', h: tituloSec('A2'), kv, kpis: true, pos: ['Valores ilustrativos. Substitua por cotações e dados locais.'] });
+    sec({ sub: true, h: 'Custo por camada', table: { head: ['Camada', tr('Ano 0') + ' (' + unidMil() + ')', tr('Total do ciclo') + ' (' + unidMil() + ')', '%'],
+      rows: [1, 2, 3, 4, 5, 6, 7].map(n => [rotuloCamada(n), mil(cam.ano0[n] || 0), mil(cam.total[n] || 0), pct(tot ? (cam.total[n] || 0) / tot : 0)])
+        .concat([[tr('Total'), mil(tot0), mil(tot), pct(1)]]), num: [1, 2, 3] },
+      pos: [NOTA_CONVENCAO] });
+    sec({ sub: true, h: 'Dotação a solicitar por exercício', table: { head: ['Exercício'].concat(anos.map(a => tr('Ano ' + a))),
+      rows: [[tr('Dotação a solicitar') + ' (' + unidMil() + ')'].concat(anos.map(a => mil(custo.orc.dot[a] || 0)))], num: anos.map((a, i) => i + 1) } });
+    sec({ sub: true, h: 'Premissas desta estimativa', list: prem });
+  } else {
+    sec({ id: 'A2', h: tituloSec('A2'), p: ['Não foi possível calcular a estimativa com as respostas atuais. Responda ao passo 2.3 (Adoção) e à fase 3.'] });
+  }
+
+  // A3
+  const subsDe = n => Object.keys(typeof CAMADA_DE_S !== 'undefined' ? CAMADA_DE_S : CAMADA_DE_S_PLANO).filter(s => camadaDeS(s) === n)
+    .map(s => s + ' ' + tr((typeof NOME_S !== 'undefined' && NOME_S[s]) || '')).join('; ');
+  const resp = S.resp || {};
+  const gq = govQuestoes();
+  const nSim = gq.filter(q => resp[q.id] === 'sim').length;
+  const neste = {
+    1: tr(nSim + ' de ' + gq.length + ' perguntas de governança com resposta Sim (passo 1.3).'),
+    2: [tarefas ? tr('Aplicações:') + ' ' + tarefas + '.' : '', c.pagamento ? tr('Pagamento:') + ' ' + tr(rotP(OPC.pagamento, c.pagamento)) + '.' : '', c.licenca ? tr('Licença:') + ' ' + tr(rotP(OPC.licenca, c.licenca)) + '.' : ''].filter(Boolean).join(' ') || '—',
+    3: c.infra ? tr('Dispositivos e internet:') + ' ' + tr(rotP(OPC.infra, c.infra)) + (c.infra !== 'complementar' ? ' (' + tr('premissa a verificar') + ')' : '') + '.' : tr('Dispositivos e internet: premissa a verificar.'),
+    4: c.adaptacao ? tr('Adaptação:') + ' ' + tr(rotP(OPC.adaptacao, c.adaptacao)) + '.' : '—',
+    5: tr('Dados derivados das tarefas:') + ' ' + nomesP(OPC.dados, ce.dados) + '.',
+    6: (c.usuarios || []).length ? tr('Quem precisa de formação:') + ' ' + nomesP(OPC.usuarios, c.usuarios) + '.' : '—',
+    7: custo && (custo.ind || {}).anosParaSair ? tr('Custo de sair estimado em ' + numP(custo.ind.anosParaSair, 1) + ' anos de custo recorrente.') + ' ' + tr(NOTA_SAIDA) : tr(NOTA_SAIDA),
+  };
+  const a3alertas = [];
+  if (d.gratis) a3alertas.push(A3_ALERTAS.gratuito);
+  if (['api', 'ow'].includes(arq) || c.pagamento === 'consumo') a3alertas.push(A3_ALERTAS.consumo);
+  if (arq === 'saas' && ['usuario', 'institucional'].includes(c.pagamento)) {
+    let cl = null; try { cl = compLicenca(cfgAtual()); } catch (e) { }
+    a3alertas.push(tr(A3_ALERTAS.licencas) + (cl && cl.aEq ? ' ' + tr('Com as premissas atuais, a licença institucional só compensa com adoção acima de ' + pct(cl.aEq) + ' das pessoas elegíveis.') : ''));
+  }
+  sec({ id: 'A3', h: tituloSec('A3'), p: ['As sete camadas do quadro de Krueger e Jackson (2026, p. 11) e onde cada uma aparece na estimativa deste caso. As páginas citadas são do documento.'],
+    table: { head: ['Camada', 'O que considerar', 'Onde está na estimativa', 'Neste caso'], rows: A3_CAMADAS.map(r => [rotuloCamada(r.n), r.considerar, subsDe(r.n) || '—', neste[r.n]]), b0: true, larg: [92, 150, 120] },
+    pos: [NOTA_CONVENCAO, tr(REF_CURTA) + ' ' + URL_TCO] });
+  if (a3alertas.length) sec({ sub: true, h: 'Pontos de atenção de custo neste caso', list: a3alertas });
+
+  // A4
+  const arr = arranjosCaso(ce);
+  const headArr = ['Arranjo', 'Tende a ser adequado quando', 'Exige atenção a', 'Capacidade pública crítica'];
+  sec({ id: 'A4', h: tituloSec('A4'), p: [tr('Arranjos mais próximos da arquitetura considerada') + ' (' + tr(rotP(OPC.arquitetura, arq)) + '):'],
+    table: { head: headArr, rows: arr.map(a => a.slice(1)), b0: true }, pos: [NOTA_ARQ[arq], TXT_A4] });
+  sec({ sub: true, soPagina: true, det: 'Ver todos os arranjos', h: 'Ver todos os arranjos', table: { head: headArr, rows: ARRANJOS.map(a => a.slice(1)), b0: true } });
+
+  // A5
+  const filtroTag = xx => !xx[2] || (xx[2] === 'alto' && p.alto) || (xx[2] === 'pessoas' && d.afeta) || (xx[2] === 'consumo' && arq !== 'saas');
+  const clausulas = grupos => CONTRATO.filter(xx => grupos.includes(xx[0]) && filtroTag(xx));
+  const destaque = xx => (c.licenca === 'termos' && /^Hierarquia documental/.test(xx[1])) || (c.pagamento === 'consumo' && xx[2] === 'consumo');
+  const linhasCl = clausulas(GRUPOS_COMPRA).sort((a, b) => GRUPOS_COMPRA.indexOf(a[0]) - GRUPOS_COMPRA.indexOf(b[0]));
+  const destA5 = [];
+  if (d.gratis) RECS.filter(r => ['r-gratuito', 'r-ativos'].includes(r.id)).forEach(r => destA5.push(textoRec(r, d)));
+  if (c.licenca === 'termos') destA5.push('Termos de uso padrão não bastam: negocie um contrato em que termos online não alterem as condições materiais.');
+  if (c.pagamento === 'incluida') destA5.push(TXT_A7.incluida);
+  if (c.pagamento === 'consumo') destA5.push('Cobrança por consumo: exija consumo visível antes da fatura, com alertas e limites.');
+  sec({ id: 'A5', h: tituloSec('A5'), p: ['Checklist do Instrumento F do guia (cap. 16), filtrado pelas respostas deste caso. Inclua no termo de referência e no contrato.'],
+    list: destA5.length ? destA5 : null,
+    table: { head: ['Grupo', 'Requisito ou cláusula', 'Neste caso'], rows: linhasCl.map(xx => [xx[0], xx[1], destaque(xx) ? 'Prioridade' : (xx[2] ? TAG_CONTRATO[xx[2]] : '')]), grupo: true, larg: [80, 300], marca: [2],
+      hl: linhasCl.map((xx, i) => destaque(xx) ? i : -1).filter(i => i >= 0) } });
+
+  // A6
+  const pacote = PACOTE.filter(xx => !xx[2] || (xx[2] === 'rag' && arq === 'api'));
+  const a6p = [];
+  if (custo && custo.orc) a6p.push(tr('Custo estimado de transição e saída:') + ' ' + grande(custo.orc.saida || 0) + '.' + ((custo.ind || {}).anosParaSair ? ' ' + tr('Equivale a ' + numP(custo.ind.anosParaSair, 1) + ' anos de custo recorrente.') : ''));
+  sec({ id: 'A6', h: tituloSec('A6'), p: a6p.concat(['Formas de dependência mais comuns na arquitetura considerada:']), list: LOCKIN[arq] || [],
+    pos: ['A saída não consta no documento de Krueger e Jackson (2026); entra na estimativa por convenção desta ferramenta (guia, caps. 10 e 11). O documento trata a dependência como custo do ciclo de vida (p. 8).'] });
+  sec({ sub: true, h: 'Pacote de transição a definir no contrato', p: ['A saída se prepara na entrada. Defina no contrato o pacote de transição:'], list: pacote.map(xx => tr(xx[0]) + ': ' + tr(xx[1])) });
+
+  // A7
+  const a7 = [];
+  if (c.fonte !== 'sim') recsDe('custo', d).forEach(r => a7.push(r.texto));
+  a7.push(TXT_A7.sempre);
+  if (c.pagaDepois === 'parceiro') a7.push(TXT_A7.parceiro);
+  if (c.pagaDepois === 'indefinido' || !c.pagaDepois) a7.push(TXT_A7.indefinido);
+  sec({ id: 'A7', h: tituloSec('A7'), kv: [['Quem paga depois do teste', tr(rotP(OPC.pagaDepois, c.pagaDepois)) || '—'], ['Fonte de recursos', tr(rotP(OPC.fonte, c.fonte)) || '—']], list: a7,
+    pos: ['Krueger e Jackson (2026, p. 9) observam que muitos sistemas avaliam a tecnologia pelo custo de aquisição, pelo financiamento do piloto ou por orçamentos de curto prazo.'] });
+
+  // A8
+  const dossie = ['D9', 'D10', 'D11', 'D12', 'D13', 'D14', 'D15'].map(k => DOSSIE.find(z => z[0] === k)).filter(Boolean);
+  sec({ id: 'A8', h: tituloSec('A8'), table: { head: ['Doc.', 'Conteúdo', 'Capítulo do guia', 'Instrumento'], rows: dossie.map(z => [z[0], z[1], tr('Cap. ' + z[2]), z[3] ? tr('Instrumento ' + z[3]) : '—']), b0: true } });
+
+  // ================= Bloco B
+  sec({ tipo: 'bloco', id: 'B', h: 'B. ' + tr(TIT_PLANO.B) });
+
+  // B1
+  const rowsG = gq.map(q => {
+    const v = resp[q.id];
+    const fazer = ['nao', 'parcial', 'nao_sei'].includes(v) ? ACOES_G[q.id] || '' : v === 'sim' ? 'Manter e revisar periodicamente.' : 'Responder no passo 1.3.';
+    const prio = v === 'sim' ? '—' : PRIORIDADE_G[q.id] === 'alta' ? 'Alta' : 'Normal';
+    return [q.n || '', q.t, v ? RESP_G_NOME[v] || v : '—', fazer, prio];
+  });
+  sec({ id: 'B1', h: tituloSec('B1'), table: { head: ['N.', 'Pergunta', 'Resposta', 'O que fazer', 'Prioridade'], rows: rowsG, larg: [34, 150, 54, 0, 54], marca: [4] }, pos: [TXT_B1_REF] });
+
+  // B2
+  sec({ id: 'B2', h: tituloSec('B2'), p: ['Nomeie responsáveis internos para as funções que não podem ser terceirizadas (guia, cap. 2):'], list: FUNCOES_INTERNAS });
+
+  // B3
+  const b3 = recsDe('regras', d).map(r => (d.poc && r.dadosReais ? tr('Se usar dados reais:') + ' ' + tr(textoRec(r, d)) : textoRec(r, d)));
+  const iSuc = recsDe('regras', d).findIndex(r => r.id === 'r-sucesso');
+  if (iSuc >= 0) {
+    const extra = [tr('Linha de base informada:') + ' ' + (tr(rotP(OPC.linhaBase, c.linhaBase)) || '—') + '.'];
+    if (impactos) extra.push(tr('Impacto desejado:') + ' ' + impactos + '.');
+    b3[iSuc] = tr(b3[iSuc]) + ' ' + extra.join(' ');
+  }
+  sec({ id: 'B3', h: tituloSec('B3'), p: [d.poc ? 'Regras para a prova de conceito, antes de começar:' : 'Regras para o piloto, antes de começar:'], list: b3 });
+
+  // B4
+  const b4 = recsDe('local', d);
+  sec({ id: 'B4', h: tituloSec('B4'), p: [d.poc ? 'Na prova de conceito, só o essencial: o teste é feito pela equipe, sem usuários reais.' : 'O que precisa estar pronto nas escolas do piloto, por camada:'],
+    table: { head: ['Camada', 'O que fazer'], rows: b4.map(r => [rotuloCamada(r.camada), textoRec(r, d)]), grupo: true, larg: [150] } });
+
+  // B5
+  const forma = FORMAS_SUP[formaSupervisao(ce, p)];
+  const al = alertas(ce, p) || [];
+  const premB5 = [
+    tr('Autonomia') + ': ' + ce.autonomia + '. ' + tr(rotP(OPC.autonomia, ce.autonomia)),
+    tr('Dados') + ': ' + nomesP(OPC.dados, ce.dados),
+    tr('Reversibilidade') + ': ' + tr(rotP(OPC.reversibilidade, ce.reversibilidade)),
+    tr('Efeito cumulativo') + ': ' + tr(rotP(OPC.cumulativo, ce.cumulativo)),
+    tr('Verificação das saídas') + ': ' + tr(rotP(OPC.verificabilidade, ce.verificabilidade)),
+    tr('Contestação') + ': ' + tr(rotP(OPC.contestacao, ce.contestacao)),
+  ];
+  sec({ id: 'B5', h: tituloSec('B5'), p: [tr('Nível de diligência:') + ' ' + tr(NIVEL_NOME[p.agregado]) + '. ' + tr(NIVEL_CRIT[p.agregado])],
+    table: { head: ['Dimensão', 'Nível', 'Justificativa'], rows: DIMENSOES.map(([k, n]) => [n, NIVEL_NOME[p.P[k]], p.J[k]]), b0: true } });
+  sec({ sub: true, h: 'Premissas deduzidas das tarefas escolhidas', list: premB5 });
+  if (forma) sec({ sub: true, h: 'Forma de supervisão indicada', p: [tr(forma[0]) + '. ' + tr(forma[1])] });
+  if (al.length) sec({ sub: true, h: 'Pontos de atenção', table: { head: ['O que fazer', 'Ponto', 'Guia'], rows: al.map(a => [ROT_ALERTA[a.nivel] || a.nivel, a.texto, a.cap ? tr('Cap. ' + a.cap) : '—']), larg: [100, 0, 50] } });
+  const ax = anexoIII(ce);
+  if (ax.length) sec({ sub: true, h: 'Nota normativa', p: ['O uso descrito corresponde a categorias que o Regulamento Europeu de IA classifica como de alto risco na educação (Anexo III, ponto 3):', ax.map(tr).join('; ') + '.', 'Obrigações aplicáveis a partir de dezembro de 2027. Verifique a legislação da jurisdição aplicável.'] });
+
+  // B6
+  const b6 = recsDe('dados', d).filter(r => r.id !== 'i-contestacao').map(r => r.texto);
+  if (ce.verificabilidade === 'nao') b6.push('Prioridade: com termos de uso padrão, a solução tende a ser opaca para a instituição. Peça registro de versões, fontes e configurações.');
+  sec({ id: 'B6', h: tituloSec('B6'), list: b6 });
+  sec({ sub: true, h: 'Requisitos de dados', list: DADOS_REQ.filter(z => z[0] !== 'rag' || arq === 'api').map(z => tr(z[1]) + ': ' + tr(z[2]) + (z[0] === 'treino' && ce.treino !== 'nao' ? ' (' + tr('prioridade') + ')' : '')) });
+  const clD = clausulas(GRUPOS_DADOS);
+  sec({ sub: true, h: 'Cláusulas de dados e de verificação', table: { head: ['Grupo', 'Requisito ou cláusula', 'Neste caso'], rows: clD.map(xx => [xx[0], xx[1], xx[2] ? TAG_CONTRATO[xx[2]] : '']), grupo: true, larg: [80, 300] } });
+  if (d.afeta) {
+    const rc = RECS.find(r => r.id === 'i-contestacao');
+    sec({ sub: true, h: 'Contestação', p: [rc.texto, 'Um mecanismo efetivo reúne seis elementos:'], list: CONTESTACAO.map(z => tr(z[0]) + ': ' + tr(z[1])) });
+  }
+
+  // B7
+  const tabRecs = g => recsDe(g, d).map(r => [rotuloCamada(r.camada), r.texto]);
+  sec({ id: 'B7', h: tituloSec('B7'), p: ['Recomendações para levar a solução a toda a rede e mantê-la, por camada do custo total.'] });
+  sec({ sub: true, h: 'Antes de levar à rede', table: { head: ['Camada', 'O que fazer'], rows: tabRecs('rede'), grupo: true, larg: [150] } });
+  sec({ sub: true, h: 'Para manter e ampliar', table: { head: ['Camada', 'O que fazer'], rows: tabRecs('manter'), grupo: true, larg: [150] } });
+  sec({ sub: true, det: 'Lista de verificação da supervisão humana', h: 'Lista de verificação da supervisão humana', table: { head: ['Condição', 'Pergunta'], rows: SUPERVISAO, b0: true, larg: [110] } });
+  sec({ sub: true, det: 'Níveis de governança da mudança', h: 'Níveis de governança da mudança', table: { head: ['Nível', 'Quando', 'Exemplo'], rows: MUDANCA, b0: true, larg: [100] } });
+  sec({ sub: true, det: 'Severidade de incidentes', h: 'Severidade de incidentes', table: { head: ['Severidade', 'Descrição', 'Resposta'], rows: SEVERIDADE, b0: true, larg: [70] } });
+
+  // B8
+  const iM = p.alto ? 3 : 2;
+  sec({ id: 'B8', h: tituloSec('B8'), list: recsDe('aval', d).map(r => r.texto),
+    table: { head: ['Tipo', 'O que medir', p.alto ? 'Frequência (risco elevado ou crítico)' : 'Frequência (risco limitado ou moderado)'], rows: METRICAS.map(m => [m[0], m[1], m[iM]]), b0: true, larg: [80, 0, 120] },
+    pos: [TXT_B8_REF] });
+
+  // B9
+  sec({ id: 'B9', h: tituloSec('B9'), p: ['Critérios do guia para cada ponto de decisão, com os itens adicionais deste caso.'] });
+  [['Para a compra', [5, 6, 7]], ['Para a política', [1, 2, 3, 4, 8, 9]]].forEach(([grupo, ns]) => {
+    sec({ sub: true, h: grupo });
+    ns.forEach(n => {
+      const pd = PDS.find(z => z.n === n); if (!pd) return;
+      let ex = []; try { ex = extrasPD(n, ce, p) || []; } catch (e) { }
+      sec({ sub: true, det: tr('Ponto de decisão ' + n) + '. ' + tr(pd.titulo), h: tr('Ponto de decisão ' + n) + '. ' + tr(pd.titulo), p: [pd.pergunta],
+        list: pd.criterios.concat(ex.map(z => tr(z) + ' (' + tr('para este caso') + ')')), pos: [tr('Se não:') + ' ' + tr(pd.seNao)] });
+    });
+  });
+
+  // Referências
+  sec({ id: 'refs', h: TIT_PLANO.refs, list: [REFS_PLANO[0], tr(REFS_PLANO[1]) + ' ' + URL_TCO + ' ' + tr(REFS_PLANO[2])], pos: [TXT_VINCULO, TXT_ISENCAO] });
+  return S_;
+}
+
+// Tradução só dos campos de conteúdo (ids, tipos e alvos de navegação ficam como estão)
+function trSecao(s) {
+  const o = Object.assign({}, s);
+  ['h', 'det'].forEach(k => { if (o[k]) o[k] = tr(o[k]); });
+  ['p', 'list', 'pos'].forEach(k => { if (o[k]) o[k] = o[k].map(z => tr(z)); });
+  if (o.kv) o.kv = o.kv.map(([k, v]) => [tr(k), tr(v)]);
+  if (o.table) o.table = Object.assign({}, o.table, { head: o.table.head.map(z => tr(z)), rows: o.table.rows.map(r => r.map(z => tr(z))) });
+  return o;
+}
 
 // ----------------------------------------------------------- página
-function renderResumo() {
-  const c = S.caso, t = totaisCtx(), rec = recomendacao(), pl = planoAcao();
-  const arq = c.arquitetura;
-  let custo = null; if (custoPronto()) { try { custo = numerosCusto(); } catch (e) { } }
-  const data = new Date().toLocaleDateString(LOC());
-  const arr = (ARRANJO_ARQ[arq] || []).map(k => ARRANJOS.find(a => a[0] === k));
-  const tabArr = rows => `<div class="tw"><table><thead><tr><th>Arranjo</th><th>Tende a ser adequado quando</th><th>Exige atenção a</th><th>Capacidade pública crítica</th></tr></thead><tbody>${rows.map(a => `<tr><td><b>${esc(a[1])}</b></td><td>${esc(a[2])}</td><td>${esc(a[3])}</td><td>${esc(a[4])}</td></tr>`).join('')}</tbody></table></div>`;
-  const cats = CATS.map(cat => {
-    const cl = clausulasCaso().filter(x => x[0] === cat);
-    const lac = lacunasCat(cat);
-    const extra = cat === 'Dados' ? dadosReqCaso() : [];
-    if (!cl.length && !lac.length && !extra.length) return '';
-    return `<details class="cat${lac.length ? ' com-lacuna' : ''}" ${lac.length ? 'open' : ''}><summary><b>${esc(cat)}</b>${lac.length ? `<span class="tag ess">${esc(tr(lac.length === 1 ? '1 lacuna nas suas respostas' : lac.length + ' lacunas nas suas respostas'))}</span>` : '<span class="tag">sem lacunas nas respostas</span>'}<span class="small muted">${esc(tr((cl.length + extra.length) + ' requisitos'))}</span></summary>
-      <div class="cat-b">
-        ${lac.length ? `<div class="res-g"><span class="res-t ${lac.some(x => x[1] === 'crit') ? 'crit' : 'warn'}">Resolva antes de publicar o edital</span>${listaAcoes(lac, 8)}</div>` : ''}
-        <div><span class="res-t muted">Inclua no termo de referência e no contrato</span>
-        <ul class="req">${cl.map(x => `<li>${esc(x[1])}${x[2] ? ` <span class="tag gold">${esc({ alto: 'risco elevado', pessoas: 'afeta pessoas', consumo: 'cobrança por consumo' }[x[2]])}</span>` : ''}</li>`).join('')}
-        ${extra.map(d => `<li><b>${esc(d.h)}.</b> ${esc(d.t)}${d.prio ? ' <span class="tag ess">prioridade</span>' : ''}</li>`).join('')}</ul></div></div></details>`;
-  }).join('');
-  const p = perfil();
-  const forma = riscoPronto() ? FORMAS_SUP[formaSupervisao(c, p)] : null;
-  const afeta = (c.consequencias || []).some(k => k !== 'nenhuma');
-  const pacote = PACOTE.filter(x => !x[2] || (x[2] === 'rag' && arq === 'api'));
-  return `<section class="resumo" id="resumo">
+const linkP = s => esc(s).replace(/https?:\/\/[^\s<]+[^\s<.,;)]/g, u => `<a href="${u}" target="_blank" rel="noopener" style="overflow-wrap:anywhere">${u}</a>`);
+function celP(x, marca) {
+  const v = String(x == null ? '' : x);
+  if (v === tr('Resolver antes de contratar')) return `<span class="tag ess">${esc(v)}</span>`;
+  if (v === tr('Tratar no plano') || (marca && (v === tr('Alta') || v === tr('Prioridade')))) return `<span class="tag gold">${esc(v)}</span>`;
+  return linkP(v);
+}
+function htmlTabelaP(t) {
+  if (!t || !(t.rows || []).length) return '';
+  const num = t.num || [];
+  const rows = t.grupo ? t.rows.map((r, i) => i && r[0] === t.rows[i - 1][0] ? [''].concat(r.slice(1)) : r) : t.rows;
+  return `<div class="tw"><table><thead><tr>${t.head.map((h, j) => `<th${num.includes(j) ? ' class="n"' : ''}>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((r, i) =>
+    `<tr${(t.hl || []).includes(i) ? ' class="hl"' : ''}>${r.map((v, j) => `<td${num.includes(j) ? ' class="n"' : ''}>${(t.b0 || t.grupo) && j === 0 && v ? `<b>${celP(v)}</b>` : celP(v, (t.marca || []).includes(j))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function htmlCorpoP(s) {
+  let h = '';
+  if ((s.kv || []).length) {
+    h += s.kpis ? `<div class="kpis kpis3">${s.kv.map(([k, v]) => `<div class="kpi"><span class="v">${esc(v)}</span><span class="l">${esc(k)}</span></div>`).join('')}</div>`
+      : `<div class="tw"><table><tbody>${s.kv.map(([k, v]) => `<tr><th style="width:32%">${esc(k)}</th><td>${linkP(v)}</td></tr>`).join('')}</tbody></table></div>`;
+  }
+  (s.p || []).forEach(x => { h += `<p>${linkP(x)}</p>`; });
+  if ((s.list || []).length) h += `<ul class="req">${s.list.map(x => `<li>${linkP(x)}</li>`).join('')}</ul>`;
+  h += htmlTabelaP(s.table);
+  (s.pos || []).forEach(x => { h += `<p class="note">${linkP(x)}</p>`; });
+  return h;
+}
+function renderPlano() {
+  const secs = secoesPlano().map(trSecao);
+  const c = S.caso, data = new Date().toLocaleDateString(LOC());
+  let out = '', aberta = false;
+  const fecha = () => { if (aberta) { out += '</section>'; aberta = false; } };
+  secs.forEach(s => {
+    if (s.tipo === 'faltas') {
+      out += `<div class="parcial" id="plano-faltas"><p><b>${esc(s.p[0])}</b> ${esc(s.p[1] || '')}</p><ul class="req">${s.list.map((x, i) => `<li><span>${esc(x)}</span> ${s.irs[i] ? `<button type="button" class="link" data-ir="${esc(s.irs[i])}">${esc(tr('Responder'))}</button>` : ''}</li>`).join('')}</ul></div>`;
+      return;
+    }
+    if (s.tipo === 'bloco') { fecha(); out += `<div class="bloco-faixa" data-bloco="${s.id}" role="heading" aria-level="2">${esc(s.h)}</div>`; return; }
+    if (s.sub) {
+      if (s.det) out += `<details class="mais"><summary>${esc(s.det)}</summary>${htmlCorpoP(s)}</details>`;
+      else out += `<h4>${esc(s.h)}</h4>${htmlCorpoP(s)}`;
+      return;
+    }
+    fecha(); aberta = true;
+    const num = /^[AB]\d$/.test(s.id) ? s.id : '';
+    const tit = num ? s.h.replace(/^[AB]\d\.\s*/, '') : s.h;
+    out += `<section class="res-sec" id="plano-${s.id}" data-sec="${s.id}"><h3>${num ? `<span class="sn">${num}</span>` : ''}<span>${esc(tit)}</span></h3>${htmlCorpoP(s)}`;
+  });
+  fecha();
+  const exp = CAP.downloads ? `<button class="btn" type="button" data-act="exp-json">Exportar caso (.json)</button>` : `<button class="btn" type="button" data-act="copiar-json">Copiar dados do caso</button>`;
+  return `<section class="resumo plano" id="plano">
     <div class="res-topo">
-      <div><div class="eyebrow">Resumo e recomendações</div><h2>${esc(c.titulo || S.ctx.olhando || tr('Caso sem título'))}</h2>
-        <p class="muted">${[S.ctx.local, data].filter(Boolean).map(esc).join(' · ')}</p></div>
-      <div class="row"><button type="button" class="btn pri grande" data-act="pdf">Baixar PDF</button><button type="button" class="btn" data-act="voltar-fases">Voltar às fases</button></div>
+      <div><div class="eyebrow">Plano de contratação</div><h2>${esc(c.titulo || (S.ctx || {}).olhando || tr('Caso sem título'))}</h2>
+        <p class="muted">${[(S.ctx || {}).local, data].filter(Boolean).map(esc).join(' · ')}</p></div>
+      <div class="row"><button type="button" class="btn pri grande" data-act="pdf">Baixar PDF</button><button type="button" class="btn" data-act="voltar-percurso">Voltar ao percurso</button>
+        ${exp}<button class="btn" type="button" data-act="copiar">Copiar texto</button>
+        <label class="btn" for="imp-json-plano">Importar caso</label><input id="imp-json-plano" type="file" accept="application/json,.json" hidden></div>
     </div>
-
-    <div class="rec v-${rec.st} ${VEREDITOS[rec.st][1]}">
-      <span class="eyebrow">${esc(tr('Recomendação'))}</span>
-      <p class="rec-t">${esc(rec.texto)}</p>
-      ${rec.nota ? `<p class="small">${esc(rec.nota)}</p>` : ''}
-      <div class="vered">${FASES.map(f => { const v = veredito(f.id); return `<button type="button" class="vered-i" data-${pulada(f.id) ? 'act="avaliar-fase" data-f2' : 'fase'}="${f.id}"><span class="fase-n f${f.n}">${f.n}</span><span><small>${esc(PERG_FASE[f.id])}</small>${pillVeredito(v.st)}</span></button>`; }).join('')}</div>
-    </div>
-
-    <div class="kpis kpis4">
-      <div class="kpi"><span class="v">${t.alunos ? fmtInt(t.alunos) : '—'}</span><span class="l">Estudantes nas etapas atendidas</span></div>
-      <div class="kpi"><span class="v">${riscoPronto() ? esc(NIVEL_NOME[p.agregado]) : '—'}</span><span class="l">Perfil de risco</span></div>
-      <div class="kpi"><span class="v">${custo ? grande(custo.piloto) : '—'}</span><span class="l">Dotação do Ano 0 (piloto e implantação)</span></div>
-      <div class="kpi"><span class="v">${custo ? grande(custo.total) : '—'}</span><span class="l">Custo total do ciclo de vida</span></div></div>
-
-    <section class="res-sec"><h3><span class="sn">1</span>O que fazer antes da próxima decisão</h3>
-      ${pl.length ? pl.map(([f, v]) => `<div class="plano-f"><b>${esc(tr('Fase ' + f.n + ':') + ' ' + tr(f.nome))}</b>
-        ${listaAcoes([...v.bloq.map(it => [it, 'crit']), ...v.cond.map(it => [it, 'warn'])], 6)}</div>`).join('')
-        : `<p class="muted">Nenhuma ação pendente nas respostas dadas até agora.</p>`}
-    </section>
-
-    <section class="res-sec"><h3><span class="sn">2</span>Modelo de contratação</h3>
-      <p class="muted">O que a sua rede precisa definir para levar a necessidade ao mercado sem perder os controles: arranjo de aquisição, forma de aprender antes de se comprometer, requisitos e cláusulas, supervisão, saída e orçamento. O procedimento de contratação segue as regras jurídicas da sua jurisdição.</p>
-
-      <h4>2.1 Arranjo de aquisição</h4>
-      ${arr.length ? `<p>${esc(tr('Para a arquitetura informada'))} (<b>${esc(rotulo(OPC.arquitetura, arq))}</b>), ${esc(tr('o arranjo mais próximo é:'))}</p>${tabArr(arr)}<p class="note">${esc(NOTA_ARQ[arq])}</p>`
-        : `<div class="vazio"><b>A arquitetura ainda não foi definida.</b> ${irBtn('piloto:2a', tr('Responder no passo 2.1'))}</div>`}
-      <p class="small muted">Os arranjos são combináveis: uma aplicação própria pode usar um modelo por API e uma base de conhecimento compartilhada. O que importa é a clareza sobre quem controla cada componente e por quê.</p>
-      <details class="mais"><summary>Ver todos os arranjos</summary>${tabArr(ARRANJOS)}</details>
-
-      <h4>2.2 Aprender antes de se comprometer</h4>
-      <div class="tw"><table><thead><tr><th>Instrumento</th><th>Pergunta que responde</th><th>Condições</th></tr></thead><tbody>${APRENDIZAGEM.map(a => `<tr${a[0] === 'Piloto' ? ' class="hl"' : ''}><td><b>${esc(a[0])}</b></td><td>${esc(a[1])}</td><td>${esc(a[2])}</td></tr>`).join('')}</tbody></table></div>
-      <ul class="req">
-        <li>Mantenha separadas duas decisões: se vale a pena aprender sobre uma solução e se a evidência justifica a aquisição ou a expansão.</li>
-        <li>O desenho do teste deve explicitar que sucesso técnico não gera direito nem decisão automática de continuidade.</li>
-        <li>Contratar por etapas limita o compromisso inicial e permite avançar à medida que as hipóteses se confirmam: viabilidade, população restrita, expansão por critérios definidos previamente.</li>
-        ${c.pilotoGratuito ? '<li><b>Piloto gratuito:</b> registre antes os ativos que o piloto produzirá e o destino deles se o fornecedor não for escolhido.</li>' : ''}
-      </ul>
-
-      <h4>2.3 Requisitos do termo de referência e cláusulas do contrato</h4>
-      <p class="small muted">Checklist do Instrumento F do guia, filtrado pelas respostas deste caso. Grupos com lacunas aparecem abertos.</p>
-      <div class="cats">${cats}</div>
-
-      <h4>2.4 Supervisão humana e contestação</h4>
-      ${forma ? `<p><b><span>Forma indicada:</span> <span>${esc(forma[0])}</span>.</b> <span>${esc(forma[1])}</span></p>` : `<div class="vazio"><b>Responda os passos 2.1 e 2.2 para definir a forma de supervisão.</b> ${irBtn('piloto:2b', tr('Ir ao passo 2.2'))}</div>`}
-      ${afeta ? `<p class="small muted">Como a saída afeta pessoas, o contrato deve garantir registros e cooperação para a contestação. Um mecanismo efetivo reúne seis elementos:</p><ul class="req">${CONTESTACAO.map(x => `<li><b>${esc(x[0])}.</b> ${esc(x[1])}</li>`).join('')}</ul>` : ''}
-
-      <h4>2.5 Dependência e saída</h4>
-      ${LOCKIN[arq] ? `<ul class="req">${LOCKIN[arq].map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
-      <p class="small muted">A saída se prepara na entrada. Defina no contrato o pacote de transição:</p>
-      <ul class="req">${pacote.map(x => `<li><b>${esc(x[0])}.</b> ${esc(x[1])}</li>`).join('')}</ul>
-
-      <h4>2.6 Custo e orçamento para a contratação</h4>
-      ${custo ? `<div class="tw"><table><thead><tr><th>Exercício</th>${custo.av.r.anos.map(x => `<th class="n">${esc(tr('Ano ' + x))}</th>`).join('')}</tr></thead><tbody>
-        <tr><td><span>Dotação a solicitar</span> (${esc(unidMil())})</td>${custo.av.r.anos.map(x => `<td class="n">${mil(custo.orc.dot[x])}</td>`).join('')}</tr></tbody></table></div>
-        <p class="small muted"><span>${esc(tr('Por usuário ativo por ano:'))}</span> <b>${din(custo.porAluno, 2)}</b>. <span>Teste o orçamento sem condições promocionais e compare as propostas no mesmo horizonte, incluindo mudança e saída. Valores ilustrativos.</span></p>`
-        : `<div class="vazio"><b>Para estimar o custo, informe a arquitetura no passo 2.1.</b> ${irBtn('piloto:2a', tr('Ir ao passo 2.1'))}</div>`}
-
-      <h4>2.7 Documentos do dossiê a preparar</h4>
-      <div class="tw"><table><thead><tr><th>Doc.</th><th>Conteúdo</th><th>Instr.</th></tr></thead><tbody>${dossieCaso().map(d => `<tr><td><b>${d[0]}</b></td><td>${esc(d[1])}</td><td>${d[3] ? esc(tr('Instrumento ' + d[3])) : '—'}</td></tr>`).join('')}</tbody></table></div>
-    </section>
-
-    <section class="res-sec"><h3><span class="sn">3</span>Suas respostas</h3>
-      <details class="rel" data-resp-rel><summary>Ver todas as respostas</summary><div class="report">${relHTML(secoesFluxo().slice(1), false)}</div></details>
-    </section>
-
-    <section class="res-sec export"><h3><span class="sn">4</span>Exportar</h3>
-      <p class="small muted">O PDF reúne a recomendação, o plano de ação, o modelo de contratação e todas as respostas. As respostas também ficam salvas neste navegador.</p>
-      <div class="row">
-        <button class="btn pri" type="button" data-act="pdf">Baixar PDF</button>
-        ${CAP.downloads ? `<button class="btn" type="button" data-act="exp-json">Exportar caso (.json)</button><button class="btn" type="button" data-act="dl-csv">Custos (.csv)</button>` : `<button class="btn" type="button" data-act="copiar-json">Copiar dados do caso</button>`}
-        <button class="btn" type="button" data-act="copiar">Copiar relatório</button>
-        <label class="btn" for="imp-json">Importar caso</label><input id="imp-json" type="file" accept="application/json,.json" hidden>
-      </div></section>
+    <p class="note faixa-plano">${esc(FAIXA_PLANO)}</p>
+    ${out}
   </section>`;
 }
-
-// ----------------------------------------------------------- conteúdo do PDF
-function secoesResumo() {
-  const c = S.caso, t = totaisCtx(), rec = recomendacao(), p = perfil();
-  const arq = c.arquitetura;
-  let custo = null; if (custoPronto()) { try { custo = numerosCusto(); } catch (e) { } }
-  const secs = [];
-  secs.push({ h: 'Recomendação', p: [tr(rec.texto)].concat(rec.nota ? [tr(rec.nota)] : []),
-    table: { head: ['Fase', 'Pergunta', 'Resultado'], rows: FASES.map(f => [f.n + '. ' + tr(f.nome), tr(PERG_FASE[f.id]), tr(VEREDITOS[veredito(f.id).st][0])]) } });
-  secs.push({ h: 'Caso', kv: [['Nome', c.titulo || tr('Caso sem título')], ['Lugar ou rede', S.ctx.local || '—'], ['Estudantes nas etapas atendidas', t.alunos ? fmtInt(t.alunos) : '—'],
-    ['Perfil de risco', riscoPronto() ? tr(NIVEL_NOME[p.agregado]) : '—'], ['Arquitetura', rotulo(OPC.arquitetura, arq) || '—'],
-    ['Custo total do ciclo de vida', custo ? grande(custo.total) : '—'], ['Dotação do Ano 0 (piloto e implantação)', custo ? grande(custo.piloto) : '—']] });
-  const acoes = [];
-  planoAcao().forEach(([f, v]) => {
-    v.bloq.forEach(it => acoes.push([f.n + '. ' + tr(f.nome), tr('Impedimento'), tr(it.texto)]));
-    v.cond.forEach(it => acoes.push([f.n + '. ' + tr(f.nome), tr('Condição') + (it.resp === 'parcial' ? ' (' + tr('em parte') + ')' : ''), tr(it.texto)]));
-  });
-  secs.push({ h: '1. O que fazer antes da próxima decisão', p: acoes.length ? [] : ['Nenhuma ação pendente nas respostas dadas até agora.'], table: acoes.length ? { head: ['Fase', 'Tipo', 'Ação'], rows: acoes, grupo: true, larg: [92, 82] } : null });
-  // modelo de contratação
-  const arr = (ARRANJO_ARQ[arq] || []).map(k => ARRANJOS.find(a => a[0] === k));
-  secs.push({ h: '2. Modelo de contratação', p: ['O que a sua rede precisa definir para levar a necessidade ao mercado sem perder os controles: arranjo de aquisição, forma de aprender antes de se comprometer, requisitos e cláusulas, supervisão, saída e orçamento. O procedimento de contratação segue as regras jurídicas da sua jurisdição.'] });
-  secs.push({ h: '2.1 Arranjo de aquisição', sub: true, p: arr.length ? [tr('Para a arquitetura informada') + ' (' + tr(rotulo(OPC.arquitetura, arq)) + '), ' + tr('o arranjo mais próximo é:')] : ['A arquitetura ainda não foi definida.'],
-    table: arr.length ? { head: ['Arranjo', 'Tende a ser adequado quando', 'Exige atenção a', 'Capacidade pública crítica'], rows: arr.map(a => a.slice(1)) } : null,
-    pos: (arr.length ? [NOTA_ARQ[arq]] : []).concat(['Os arranjos são combináveis: uma aplicação própria pode usar um modelo por API e uma base de conhecimento compartilhada. O que importa é a clareza sobre quem controla cada componente e por quê.']) });
-  secs.push({ h: '2.2 Aprender antes de se comprometer', sub: true, table: { head: ['Instrumento', 'Pergunta que responde', 'Condições'], rows: APRENDIZAGEM },
-    list: ['Mantenha separadas duas decisões: se vale a pena aprender sobre uma solução e se a evidência justifica a aquisição ou a expansão.', 'O desenho do teste deve explicitar que sucesso técnico não gera direito nem decisão automática de continuidade.', 'Contratar por etapas limita o compromisso inicial e permite avançar à medida que as hipóteses se confirmam: viabilidade, população restrita, expansão por critérios definidos previamente.']
-      .concat(c.pilotoGratuito ? [tr('Piloto gratuito:') + ' ' + tr('registre antes os ativos que o piloto produzirá e o destino deles se o fornecedor não for escolhido.')] : []) });
-  const rows = [];
-  CATS.forEach(cat => {
-    lacunasCat(cat).forEach(([it, tipo]) => rows.push([tr(cat), tr(tipo === 'crit' ? 'Resolver antes do edital (impedimento)' : 'Resolver antes do edital'), tr(it.texto)]));
-    clausulasCaso().filter(x => x[0] === cat).forEach(x => rows.push([tr(cat), tr('Incluir no contrato'), tr(x[1]) + (x[2] ? ' (' + tr({ alto: 'risco elevado', pessoas: 'afeta pessoas', consumo: 'cobrança por consumo' }[x[2]]) + ')' : '')]));
-    if (cat === 'Dados') dadosReqCaso().forEach(d => rows.push([tr(cat), tr('Incluir no contrato'), tr(d.h) + ': ' + tr(d.t) + (d.prio ? ' (' + tr('prioridade') + ')' : '')]));
-  });
-  secs.push({ h: '2.3 Requisitos do termo de referência e cláusulas do contrato', sub: true, p: ['Checklist do Instrumento F do guia, filtrado pelas respostas deste caso.'], table: { head: ['Grupo', 'O que fazer', 'Requisito ou cláusula'], rows, grupo: true, larg: [74, 92] } });
-  const forma = riscoPronto() ? FORMAS_SUP[formaSupervisao(c, p)] : null;
-  const afeta = (c.consequencias || []).some(k => k !== 'nenhuma');
-  secs.push({ h: '2.4 Supervisão humana e contestação', sub: true, p: forma ? [tr('Forma indicada:') + ' ' + tr(forma[0]) + '. ' + tr(forma[1])] : ['Responda os passos 2.1 e 2.2 para definir a forma de supervisão.'],
-    list: afeta ? CONTESTACAO.map(x => tr(x[0]) + ': ' + tr(x[1])) : [] });
-  secs.push({ h: '2.5 Dependência e saída', sub: true, list: (LOCKIN[arq] || []).concat(PACOTE.filter(x => !x[2] || (x[2] === 'rag' && arq === 'api')).map(x => tr(x[0]) + ': ' + tr(x[1]))) });
-  if (custo) secs.push({ h: '2.6 Custo e orçamento para a contratação', sub: true,
-    table: { head: ['Exercício'].concat(custo.av.r.anos.map(x => tr('Ano ' + x))), rows: [[tr('Dotação a solicitar') + ' (' + unidMil() + ')'].concat(custo.av.r.anos.map(x => mil(custo.orc.dot[x])))] },
-    pos: [tr('Por usuário ativo por ano:') + ' ' + din(custo.porAluno, 2) + '. ' + tr('Teste o orçamento sem condições promocionais e compare as propostas no mesmo horizonte, incluindo mudança e saída. Valores ilustrativos.')] });
-  secs.push({ h: '2.7 Documentos do dossiê a preparar', sub: true, table: { head: ['Doc.', 'Conteúdo', 'Instr.'], rows: dossieCaso().map(d => [d[0], tr(d[1]), d[3] ? tr('Instrumento ' + d[3]) : '—']) } });
-  secs.push({ h: '3. Suas respostas' });
-  const fl = secoesFluxo().slice(1);
-  const nomes = (k, vs) => (vs || []).map(v => tr(rotulo(OPC[k], v) || v)).join('; ') || '—';
-  const r = (k, v) => respondido(k) ? tr(rotulo(OPC[k], v)) || '—' : '—';
-  fl.splice(2, 0, { h: 'Descrição do problema', kv: [['Problema', c.problema || '—'], ['Resultado esperado', c.resultado || '—'], ['Quem é afetado', c.populacao || '—'],
-    ['Existe linha de base medida?', r('linhaBase', c.linhaBase)], ['Alternativa sem IA comparada', c.alternativaSemIA ? tr('Sim') : tr('Não')]] });
-  fl.splice(4, 0, { h: 'Caso de uso (passos 2.1 e 2.2)', kv: [['O que a IA faz', nomes('classes', c.classes)], ['Grau de autonomia', r('autonomia', c.autonomia)], ['Arquitetura', r('arquitetura', c.arquitetura)],
-    ['Há oferta de piloto ou período gratuito', c.pilotoGratuito ? tr('Sim') : tr('Não')], ['Tamanho do piloto', [S.piloto.escolas ? tr(S.piloto.escolas + ' escolas') : '', S.piloto.participantes ? tr(fmtInt(S.piloto.participantes) + ' participantes') : '', S.piloto.meses ? tr(S.piloto.meses + ' meses') : ''].filter(Boolean).join(', ') || '—'],
-    ['Quem usa o sistema', nomes('usuarios', c.usuarios)], ['Quem é afetado pelas saídas', nomes('afetados', c.afetados)], ['Em que entra a saída do sistema', respondido('consequencias') ? nomes('consequencias', c.consequencias) : '—'],
-    ['Que dados são usados', respondido('dados') ? nomes('dados', c.dados) : '—'], ['Frequência de uso', r('frequencia', c.frequencia)], ['Se a saída estiver errada', r('reversibilidade', c.reversibilidade)],
-    ['Verificação das saídas', r('verificabilidade', c.verificabilidade)], ['Contestação', r('contestacao', c.contestacao)], ['Efeitos cumulativos', r('cumulativo', c.cumulativo)],
-    ['Pessoas que vão usar o sistema na rede', fmtInt(c.elegiveis)]] });
-  fl.forEach(x => secs.push(Object.assign({ sub: true }, x)));
-  if (riscoPronto()) secs.push({ h: 'Perfil de risco', sub: true, p: [tr('Nível de diligência:') + ' ' + tr(NIVEL_NOME[p.agregado]) + '. ' + tr(NIVEL_CRIT[p.agregado])],
-    table: { head: ['Dimensão', 'Nível', 'Justificativa'], rows: DIMENSOES.map(([k, n]) => [n, tr(NIVEL_NOME[p.P[k]]), p.J[k]]) } });
-  return secs;
+function abrirPlano() {
+  S.vista = 'plano'; S.boasVindas = false;
+  render();
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
+// importar caso pelo botão do plano (o botão do painel é tratado em app.js)
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (!el || el.id !== 'imp-json-plano' || !el.files || !el.files[0]) return;
+  const r = new FileReader(); r.onload = () => importarCaso(String(r.result)); r.readAsText(el.files[0]); el.value = '';
+});
 
 // ----------------------------------------------------------- PDF (jsPDF + autotable, fonte Helvetica)
-const PDF_TROCA = { '→': '->', '←': '<-', '≥': '>=', '≤': '<=', '✓': 'v', '✕': 'x', '−': '-', '≈': '~', ' ': ' ', ' ': ' ', '‑': '-', '‐': '-', '«': '«', '»': '»' };
+const PDF_TROCA = { '→': '->', '←': '<-', '≥': '>=', '≤': '<=', '✓': 'v', '✕': 'x', '−': '-', '≈': '~', 'ⓘ': '(i)', ' ': ' ', ' ': ' ', '‑': '-', '‐': '-', '«': '«', '»': '»' };
 const CP1252_EXTRA = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
 function pdfTxt(x) {
-  let s = String(x == null ? '' : x).replace(/[^\x00-\xFF]/g, ch => PDF_TROCA[ch] != null ? PDF_TROCA[ch] : CP1252_EXTRA.includes(ch) ? ch : (ch.normalize('NFKD').replace(/[^\x00-\xFF]/g, '') || ''));
-  return s;
+  return String(x == null ? '' : x).replace(/[^\x00-\xFF]/g, ch => PDF_TROCA[ch] != null ? PDF_TROCA[ch] : CP1252_EXTRA.includes(ch) ? ch : (ch.normalize('NFKD').replace(/[^\x00-\xFF]/g, '') || ''));
 }
 function gerarPDF() {
   const J = window.jspdf; if (!J || !J.jsPDF) throw new Error('jspdf');
   const doc = new J.jsPDF({ unit: 'pt', format: 'a4', compress: true });
   const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 46;
-  const AZUL = [12, 45, 77], MARCA = [0, 105, 180], CINZA = [88, 102, 116], TINTA = [23, 33, 43];
+  const AZUL = [12, 45, 77], MARCA = [0, 105, 180], CINZA = [88, 102, 116], TINTA = [23, 33, 43], FAIXA = [31, 111, 184], FUNDO = [238, 243, 248];
   let y = M;
   const novaPag = () => { doc.addPage(); y = M; };
   const cabe = h => { if (y + h > H - M - 20) novaPag(); };
+  const RE_URL = /https?:\/\/\S+[^\s.,;)]/;
   const texto = (s, o = {}) => {
-    doc.setFont('helvetica', o.b ? 'bold' : o.i ? 'italic' : 'normal'); doc.setFontSize(o.size || 10); doc.setTextColor(...(o.cor || TINTA));
-    const linhas = doc.splitTextToSize(pdfTxt(s), (o.w || (W - 2 * M)) - (o.ind || 0));
-    const lh = (o.size || 10) * 1.38;
-    linhas.forEach((l, i) => { cabe(lh); if (o.bullet && i === 0) doc.text('•', M + 2, y + (o.size || 10)); doc.text(l, M + (o.ind || 0), y + (o.size || 10)); y += lh; });
+    const size = o.size || 10, lh = size * 1.38, ind = o.ind || 0;
+    let str = String(s == null ? '' : s), url = '';
+    const m = str.match(RE_URL);
+    if (m) { url = m[0]; str = str.replace(url, '').replace(/\s{2,}/g, ' ').trim(); }
+    doc.setFont('helvetica', o.b ? 'bold' : o.i ? 'italic' : 'normal'); doc.setFontSize(size); doc.setTextColor(...(o.cor || TINTA));
+    const linhas = str ? doc.splitTextToSize(pdfTxt(str), (o.w || (W - 2 * M)) - ind) : [];
+    linhas.forEach((l, i) => { cabe(lh); if (o.bullet && i === 0) doc.text('•', M + 2, y + size); doc.text(l, M + ind, y + size); y += lh; });
+    if (url) {
+      cabe(lh); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MARCA);
+      if (o.bullet && !linhas.length) doc.text('•', M + 2, y + size);
+      doc.textWithLink(url, M + ind, y + size, { url }); y += lh;
+    }
     y += o.after == null ? 4 : o.after;
   };
-  // capa / cabeçalho
+  const faixa = (s, cor, corTxt, size, b) => {
+    doc.setFont('helvetica', b ? 'bold' : 'normal'); doc.setFontSize(size);
+    const linhas = doc.splitTextToSize(pdfTxt(s), W - 2 * M - 20);
+    const h = linhas.length * size * 1.38 + 14;
+    cabe(h + 8);
+    doc.setFillColor(...cor); doc.rect(M, y, W - 2 * M, h, 'F');
+    doc.setTextColor(...corTxt);
+    linhas.forEach((l, i) => doc.text(l, M + 10, y + 7 + size + i * size * 1.38));
+    y += h + 10;
+  };
+  // capa
   const imgs = [...document.querySelectorAll('.top .logo')].slice(0, 2);
   let x = M;
   imgs.forEach(im => { try { const r = im.naturalWidth / im.naturalHeight || 2; const h = 34; doc.addImage(im.src, 'PNG', x, y, h * r, h); x += h * r + 14; } catch (e) { } });
-  y += 50;
+  y += imgs.length ? 50 : 0;
   texto(NOME_FERRAMENTA, { b: true, size: 20, cor: AZUL, after: 2 });
-  texto(tr('Resumo e recomendações'), { size: 13, cor: MARCA, after: 10 });
-  texto(S.caso.titulo || S.ctx.olhando || tr('Caso sem título'), { b: true, size: 14, cor: TINTA, after: 2 });
-  texto([S.ctx.local, tr('Gerado em') + ' ' + new Date().toLocaleDateString(LOC())].filter(Boolean).join(' · '), { size: 10, cor: CINZA, after: 8 });
-  texto(tr('Documento de trabalho baseado no guia; valores ilustrativos.') + ' ' + tr(TXT_VINCULO), { size: 8.5, cor: CINZA, after: 10 });
-  doc.setDrawColor(...MARCA); doc.setLineWidth(1.2); doc.line(M, y, W - M, y); y += 14;
-  const secs = trFundo(secoesResumo());
-  const ALERTA = [tr('Impedimento'), tr('Resolver antes do edital (impedimento)')].map(pdfTxt);
-  const ATENCAO = [tr('Resolver antes do edital')].map(pdfTxt);
+  texto(tr('Plano de contratação'), { size: 14, cor: MARCA, after: 10 });
+  texto(S.caso.titulo || (S.ctx || {}).olhando || tr('Caso sem título'), { b: true, size: 14, cor: TINTA, after: 2 });
+  texto([(S.ctx || {}).local, tr('Gerado em') + ' ' + new Date().toLocaleDateString(LOC())].filter(Boolean).join(' · '), { size: 10, cor: CINZA, after: 8 });
+  faixa(tr(FAIXA_PLANO), FUNDO, AZUL, 10, false);
+  const secs = secoesPlano().map(trSecao);
+  const ALERTA = [tr('Resolver antes de contratar')].map(pdfTxt);
+  const ATENCAO = [tr('Tratar no plano')].map(pdfTxt), MARCAR = [tr('Alta'), tr('Prioridade')].map(pdfTxt);
   const tabela = (head, rows, opts = {}, t = {}) => {
     cabe(head ? 56 : 30);
     if (t.grupo) rows = rows.map((r, i) => i && r[0] === rows[i - 1][0] ? [''].concat(r.slice(1)) : r);
-    const cs = {}; (t.larg || []).forEach((wd, i) => { cs[i] = { cellWidth: wd }; });
+    const cs = {};
+    (t.larg || []).forEach((wd, i) => { if (wd) cs[i] = { cellWidth: wd }; });
+    (t.num || []).forEach(i => { cs[i] = Object.assign(cs[i] || {}, { halign: 'right' }); });
+    const hl = t.hl || [];
     doc.autoTable(Object.assign({ rowPageBreak: 'avoid', columnStyles: cs, startY: y,
-      didParseCell: d => { if (d.section !== 'body') return; const v = String(d.cell.raw || '');
-        if (ALERTA.includes(v)) { d.cell.styles.textColor = [176, 30, 30]; d.cell.styles.fontStyle = 'bold'; }
-        else if (ATENCAO.includes(v) || v.startsWith(pdfTxt(tr('Condição')))) { d.cell.styles.textColor = [138, 90, 0]; }
-        if (t.grupo && d.column.index === 0) d.cell.styles.fontStyle = 'bold'; },
-      startY: y, margin: { left: M, right: M, bottom: M + 14 }, head: head ? [head.map(pdfTxt)] : undefined, body: rows.map(r => r.map(pdfTxt)),
+      didParseCell: dd => {
+        if (dd.section !== 'body') return; const v = String(dd.cell.raw || '');
+        if (ALERTA.includes(v)) { dd.cell.styles.textColor = [176, 30, 30]; dd.cell.styles.fontStyle = 'bold'; }
+        else if (ATENCAO.includes(v) || ((t.marca || []).includes(dd.column.index) && MARCAR.includes(v))) { dd.cell.styles.textColor = [138, 90, 0]; dd.cell.styles.fontStyle = 'bold'; }
+        if (hl.includes(dd.row.index)) dd.cell.styles.fillColor = [229, 240, 250];
+        if ((t.grupo || t.b0) && dd.column.index === 0) dd.cell.styles.fontStyle = 'bold';
+      },
+      margin: { left: M, right: M, bottom: M + 14 }, head: head ? [head.map(pdfTxt)] : undefined, body: rows.map(r => r.map(pdfTxt)),
       styles: { font: 'helvetica', fontSize: 8.6, cellPadding: 4, textColor: TINTA, lineColor: [221, 227, 233], lineWidth: 0.5, overflow: 'linebreak', valign: 'top' },
-      headStyles: { fillColor: [238, 243, 248], textColor: AZUL, fontStyle: 'bold' }, alternateRowStyles: { fillColor: [250, 251, 253] }, theme: 'grid',
+      headStyles: { fillColor: FUNDO, textColor: AZUL, fontStyle: 'bold' }, alternateRowStyles: { fillColor: [250, 251, 253] }, theme: 'grid',
     }, opts));
     y = doc.lastAutoTable.finalY + 10;
   };
   secs.forEach(s => {
-    if (!s.sub) { cabe(60); if (y > M + 40) y += 6; } else cabe(40);
+    if (s.soPagina) return;
+    if (s.tipo === 'bloco') { cabe(120); y += 8; faixa(s.h, FAIXA, [255, 255, 255], 14, true); return; }
+    if (!s.sub) { cabe(70); if (y > M + 40) y += 6; } else cabe(44);
     texto(s.h, { b: true, size: s.sub ? 11.5 : 14, cor: s.sub ? MARCA : AZUL, after: 4 });
-    if ((s.kv || []).length) tabela(null, s.kv.map(([k, v]) => [k, v || '—']), { theme: 'plain', columnStyles: { 0: { cellWidth: 170, fontStyle: 'bold', textColor: CINZA } } });
-    (s.p || []).forEach(t => texto(t, { size: 10 }));
-    if ((s.list || []).length) s.list.forEach(t => texto(t, { size: 10, ind: 12, after: 2, bullet: true }));
-    if (s.table && s.table.rows.length) tabela(s.table.head, s.table.rows, {}, s.table);
-    (s.pos || []).forEach(t => texto(t, { i: true, size: 9, cor: CINZA }));
+    if ((s.kv || []).length) tabela(null, s.kv.map(([k, v]) => [k, v || '—']), { theme: 'plain', columnStyles: { 0: { cellWidth: 180, fontStyle: 'bold', textColor: CINZA } } });
+    (s.p || []).forEach(z => texto(z, { size: 10 }));
+    if ((s.list || []).length) s.list.forEach(z => texto(z, { size: 10, ind: 12, after: 2, bullet: true }));
+    if (s.table && (s.table.rows || []).length) tabela(s.table.head, s.table.rows, {}, s.table);
+    (s.pos || []).forEach(z => texto(z, { i: true, size: 9, cor: CINZA }));
   });
-  cabe(70); y += 6;
-  texto(tr(TXT_ISENCAO), { size: 8, cor: CINZA });
   // rodapé em todas as páginas
   const n = doc.getNumberOfPages();
   for (let i = 1; i <= n; i++) {
     doc.setPage(i); doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...CINZA);
-    doc.text(pdfTxt(NOME_FERRAMENTA + ' · ' + tr('Resumo e recomendações')), M, H - 24);
-    doc.text(pdfTxt(i + ' / ' + n), W - M, H - 24, { align: 'right' });
+    doc.text(pdfTxt(NOME_FERRAMENTA + ' · ' + tr('Plano de contratação')), M, H - 24);
+    doc.text(pdfTxt(tr('página ' + i + ' / ' + n)), W - M, H - 24, { align: 'right' });
   }
   return doc;
 }
 async function baixarPDF() {
   let doc;
   try { doc = gerarPDF(); } catch (e) { console.warn(e); toast(tr('Não foi possível gerar o PDF.')); return; }
-  const nome = nomeArq('pdf').replace('relatorio', 'resumo');
+  const nome = 'procurement-plan-' + slugPlano() + '.pdf';
   const blob = doc.output('blob');
   if (CAP.downloads) {
     try { await CAP.downloads.save({ filename: nome, data: blob }); toast(tr('Arquivo enviado para download.')); }

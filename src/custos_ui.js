@@ -10,7 +10,7 @@ function nomeMoeda(cod) {
 }
 function moedaInfo() {
   const cod = (S.moeda && S.moeda.cod) || 'USD';
-  const ov = (S.moeda && S.moeda.taxaDe === cod) ? parseFloat(String(S.moeda.taxa || '').replace(',', '.')) : NaN;
+  const ov = (S.moeda && S.moeda.taxaDe === cod) ? +lerNumero(S.moeda.taxa) : NaN;
   const f = ov > 0 ? ov : (MOEDAS.taxas[cod] || 1);
   let pre = cod;
   try { pre = new Intl.NumberFormat(LOC(), { style: 'currency', currency: cod, currencyDisplay: 'narrowSymbol' }).formatToParts(0).find(p => p.type === 'currency').value; } catch (e) { }
@@ -38,9 +38,12 @@ let SIM = null;      // resultado do Monte Carlo (não persiste)
 function garantirOpc(cfg) { cfg.opc = Object.assign({}, OPC_PADRAO, cfg.opc || {}); return cfg.opc; }
 
 // ----------------------------------------------------------- campos
+// campos numéricos da calculadora: formatados no idioma (inputNum, i18n.js), sem o ✓ dentro do valor
+const CASAS_CALC = 6;
 function inp(path, val, opts = {}) {
-  const v = opts.pct ? +(val * 100).toFixed(4) : val;
-  return `<input type="number" step="${opts.step || 'any'}" ${opts.cls ? `class="${opts.cls}"` : ''} data-cfg="${path}" ${opts.pct ? 'data-pct="1"' : ''} value="${v}" aria-label="${esc(opts.label || path)}">`;
+  const v = opts.pct ? +(+val * 100).toFixed(4) : val;
+  return inputNum({ valor: v === '' || v == null || isNaN(+v) ? '' : +v, casas: CASAS_CALC, cls: opts.cls, rotulo: opts.label || path, ok: false,
+    attrs: `data-cfg="${esc(path)}"${opts.pct ? ' data-pct="1"' : ''}` });
 }
 function campo(label, path, val, opts = {}) {
   if (opts.pct) label += ' (%)';
@@ -63,10 +66,11 @@ function renderCustos() {
   const mi = moedaInfo();
   const compat = !o.correcoes;
   const sp = t => '<span>' + esc(t) + '</span>';
+  const ce = sc.base === 'caso' ? casoAtual() : null;
   const origem = sc.base === 'caso' ? [sp(tr('Premissas montadas a partir do seu caso:')), sp(tr('arquitetura') + ' ' + tr(({ saas: 'SaaS', api: 'API + RAG', ow: 'pesos abertos' })[arq] || arq) + ','),
-      sp(tr(fmtInt(S.caso.elegiveis) + ' elegíveis') + ','), sp(tr('governança para perfil') + ' ' + tr(NIVEL_NOME[perfil().agregado]).toLowerCase() + '.'),
+      sp(tr(fmtInt(ce.elegiveis) + ' elegíveis') + ','), sp(tr('governança para perfil') + ' ' + tr(NIVEL_NOME[perfilFinal(ce).agregado]).toLowerCase() + '.'),
       sp(tr('Os demais valores vêm do Exemplo ' + cfg.origem + ' do guia e precisam ser substituídos por cotações e dados locais.')),
-      S.caso.arquitetura === 'indefinida' ? sp(tr('Como a arquitetura não foi definida, o modelo usa SaaS como ponto de partida.')) : ''].join(' ') :
+      ce.__arqPresumida ? sp(tr('Como a arquitetura não foi definida, o modelo usa SaaS como ponto de partida.')) : ''].join(' ') :
     sp(tr('Exemplo do Capítulo 12 do guia.')) + (compat ? ' ' + sp(tr('Modo de compatibilidade: reproduz os números da versão 1 do guia.')) : '');
   const codigos = Object.keys(MOEDAS.taxas).sort((a, b) => nomeMoeda(a).localeCompare(nomeMoeda(b), LOC()));
   const optsMoeda = ['USD', 'EUR', 'BRL', 'GBP', 'JPY', 'CNY', 'INR', 'MXN', 'ARS', 'ZAR'].map(c => `<option value="${c}" ${mi.cod === c ? 'selected' : ''}>${c} · ${esc(nomeMoeda(c))}</option>`).join('') +
@@ -149,7 +153,7 @@ function renderCustos() {
     <p class="small muted">${origem}</p>
     <div class="row small" style="align-items:flex-end">
       <div class="q" style="min-width:min(100%,300px)"><label for="moeda">Moeda de exibição</label><select class="f" id="moeda" data-moeda="cod">${optsMoeda}</select></div>
-      ${mi.cod !== 'USD' ? `<div class="q"><label for="taxa">${esc(mi.cod)} por US$ 1</label><input id="taxa" type="number" step="any" data-moeda="taxa" data-mcod="${esc(mi.cod)}" value="${esc(S.moeda.taxa || '')}" placeholder="${(MOEDAS.taxas[mi.cod] || '').toLocaleString(LOC())}" style="width:140px"></div>` : ''}
+      ${mi.cod !== 'USD' ? `<div class="q"><label for="taxa">${esc(mi.cod)} por US$ 1</label>${inputNum({ id: 'taxa', valor: lerNumero(S.moeda.taxa), casas: CASAS_CALC, ok: false, style: 'width:140px', ph: fmtEntrada(MOEDAS.taxas[mi.cod] || '', 4) || ' ', attrs: `data-moeda="taxa" data-mcod="${esc(mi.cod)}"` })}</div>` : ''}
       <div class="q"><span class="lbl">Conta exibida na árvore</span><div class="subtabs">${[['eco', 'Econômica'], ['fin', 'Orçamentária']].map(([k, n]) => `<button type="button" data-cconta="${k}" aria-pressed="${sc.conta === k}">${n}</button>`).join('')}</div></div>
       <label class="check" style="margin-left:auto"><input type="checkbox" data-cavanc ${sc.avancado ? 'checked' : ''}><span>Modo avançado</span></label>
     </div>
@@ -179,6 +183,11 @@ function renderCustos() {
       ${arq !== 'saas' ? campo('Multiplicador de preço de modelo ou GPU', 'mult.preco', (cfg.mult || {}).preco || 1, { step: '0.05' }) : ''}
       ${campo('Reserva de contingência', 'opc.contPct', o.contPct, { pct: true })}
     </div>
+    ${cfg.adaptacao ? `<h3>Adaptação ao contexto</h3>
+    <div class="prem">
+      ${campo('Adaptação: multiplicador de K3.1', 'adaptacao.fK31', cfg.adaptacao.fK31 == null ? 1 : cfg.adaptacao.fK31, { hint: 'Integração e desenvolvimento. 1 = nível de referência do exemplo do guia. Convenção ilustrativa da ferramenta.' })}
+      ${campo('Adaptação: multiplicador de K3.2', 'adaptacao.fK32', cfg.adaptacao.fK32 == null ? 1 : cfg.adaptacao.fK32, { hint: 'Conteúdo e configuração iniciais. 1 = nível de referência do exemplo do guia. Convenção ilustrativa da ferramenta.' })}
+    </div>` : ''}
     ${sc.avancado ? `<h3>Conta econômica (modo avançado)</h3>
     <div class="prem">
       ${campo('Taxa de desconto real', 'opc.r', o.r, { pct: true, hint: 'Use a taxa social oficial da jurisdição. 0 = sem desconto.' })}
@@ -386,7 +395,7 @@ function renderAvancado(cfg, r, av, ind) {
   const sc = S.custo, T = r.anos, H = r.H;
   const dirs = direcionadores(cfg);
   const faixas = `<div class="tw"><table><thead><tr><th>Direcionador</th><th class="n">Mínimo (×)</th><th class="n">Máximo (×)</th></tr></thead><tbody>
-    ${dirs.map((d, i) => `<tr><td>${esc(d.nome)}</td><td class="n"><input type="number" step="0.05" class="w-s" data-faixa="${d.id}" data-lado="min" value="${d.min}" aria-label="Mínimo ${esc(d.nome)}"></td><td class="n"><input type="number" step="0.05" class="w-s" data-faixa="${d.id}" data-lado="max" value="${d.max}" aria-label="Máximo ${esc(d.nome)}"></td></tr>`).join('')}</tbody></table></div>`;
+    ${dirs.map((d, i) => `<tr><td>${esc(d.nome)}</td><td class="n">${inputNum({ valor: d.min, casas: CASAS_CALC, cls: 'w-s', ok: false, rotulo: 'Mínimo ' + d.nome, attrs: `data-faixa="${d.id}" data-lado="min"` })}</td><td class="n">${inputNum({ valor: d.max, casas: CASAS_CALC, cls: 'w-s', ok: false, rotulo: 'Máximo ' + d.nome, attrs: `data-faixa="${d.id}" data-lado="max"` })}</td></tr>`).join('')}</tbody></table></div>`;
   const sim = SIM && SIM.chave === JSON.stringify(cfg) ? SIM.res : null;
   const simHtml = sim ? `<div class="tw"><table><thead><tr><th>Saída</th><th class="n">P10</th><th class="n">P50</th><th class="n">P90</th><th class="n">Custo em risco (P90 − P50)</th></tr></thead><tbody>
       <tr><td>Custo total do ciclo de vida (${unidMil()})</td><td class="n">${mil(sim.ct.p10)}</td><td class="n">${mil(sim.ct.p50)}</td><td class="n">${mil(sim.ct.p90)}</td><td class="n">${mil(sim.ct.p90 - sim.ct.p50)}</td></tr>
@@ -407,21 +416,21 @@ function renderAvancado(cfg, r, av, ind) {
   const alts = sc.alts || [];
   const lista = [{ nome: sc.base === 'caso' ? 'Seu caso' : 'Exemplo ' + sc.base, cfg, efeito: sc.efeitoCaso }].concat(alts.map(a => ({ nome: a.nome, cfg: cfgAlternativa(a, cfg), efeito: a.efeito })));
   let comp = null; try { if (alts.length) comp = comparar([lista[lista.length > 1 && sc.refAlt != null ? Math.min(sc.refAlt + 1, lista.length - 1) : 0]].concat(lista.filter((_, i) => i !== (sc.refAlt != null ? Math.min(sc.refAlt + 1, lista.length - 1) : 0)))); } catch (e) { comp = null; }
-  const lam = parseFloat(String(sc.lambda || '').replace(',', '.'));
+  const lam = +lerNumero(sc.lambda);
   const altsHtml = `<p class="small muted">Monte alternativas na mesma árvore, inclusive o status quo ou uma solução sem IA, e informe o efeito de cada uma, se houver estimativa, na mesma unidade (por exemplo, desvio-padrão em aprendizagem ou horas liberadas por usuário). A primeira linha da tabela é a referência.</p>
     <div class="tw"><table><thead><tr><th>Alternativa</th><th class="n">Implantação (US$)</th><th class="n">Custo anual (US$)</th><th class="n">FTE internos/ano</th><th class="n">Efeito</th><th>Referência</th><th></th></tr></thead><tbody>
-      <tr><td>${esc(lista[0].nome)} <span class="small muted">(premissas acima)</span></td><td></td><td></td><td></td><td class="n"><input type="number" step="any" class="w-s" data-alt="caso" data-campo="efeito" value="${esc(sc.efeitoCaso || '')}" aria-label="Efeito do caso"></td><td><input type="radio" name="refalt" data-refalt="-1" ${sc.refAlt == null ? 'checked' : ''} aria-label="Usar como referência"></td><td></td></tr>
-      ${alts.map((a, i) => `<tr><td><input type="text" class="w-l" data-alt="${i}" data-campo="nome" value="${esc(a.nome)}" aria-label="Nome"></td><td class="n"><input type="number" step="1000" class="w-m" data-alt="${i}" data-campo="impl" value="${a.impl}" aria-label="Implantação"></td><td class="n"><input type="number" step="1000" class="w-m" data-alt="${i}" data-campo="anual" value="${a.anual}" aria-label="Custo anual"></td><td class="n"><input type="number" step="0.1" class="w-s" data-alt="${i}" data-campo="fte" value="${a.fte}" aria-label="FTE"></td><td class="n"><input type="number" step="any" class="w-s" data-alt="${i}" data-campo="efeito" value="${esc(a.efeito)}" aria-label="Efeito"></td><td><input type="radio" name="refalt" data-refalt="${i}" ${sc.refAlt === i ? 'checked' : ''} aria-label="Usar como referência"></td><td><button class="btn" type="button" data-act="rm-alt" data-i="${i}" aria-label="Remover">×</button></td></tr>`).join('')}
+      <tr><td>${esc(lista[0].nome)} <span class="small muted">(premissas acima)</span></td><td></td><td></td><td></td><td class="n">${inputNum({ valor: lerNumero(sc.efeitoCaso), casas: CASAS_CALC, cls: 'w-s', ok: false, rotulo: 'Efeito do caso', attrs: 'data-alt="caso" data-campo="efeito"' })}</td><td><input type="radio" name="refalt" data-refalt="-1" ${sc.refAlt == null ? 'checked' : ''} aria-label="Usar como referência"></td><td></td></tr>
+      ${alts.map((a, i) => `<tr><td><input type="text" class="w-l" data-alt="${i}" data-campo="nome" value="${esc(a.nome)}" aria-label="Nome"></td><td class="n">${inputNum({ valor: lerNumero(a.impl), casas: CASAS_CALC, cls: 'w-m', ok: false, rotulo: 'Implantação', attrs: `data-alt="${i}" data-campo="impl"` })}</td><td class="n">${inputNum({ valor: lerNumero(a.anual), casas: CASAS_CALC, cls: 'w-m', ok: false, rotulo: 'Custo anual', attrs: `data-alt="${i}" data-campo="anual"` })}</td><td class="n">${inputNum({ valor: lerNumero(a.fte), casas: CASAS_CALC, cls: 'w-s', ok: false, rotulo: 'FTE', attrs: `data-alt="${i}" data-campo="fte"` })}</td><td class="n">${inputNum({ valor: lerNumero(a.efeito), casas: CASAS_CALC, cls: 'w-s', ok: false, rotulo: 'Efeito', attrs: `data-alt="${i}" data-campo="efeito"` })}</td><td><input type="radio" name="refalt" data-refalt="${i}" ${sc.refAlt === i ? 'checked' : ''} aria-label="Usar como referência"></td><td><button class="btn" type="button" data-act="rm-alt" data-i="${i}" aria-label="Remover">×</button></td></tr>`).join('')}
     </tbody></table></div>
     <div class="row"><button class="btn" type="button" data-act="add-alt">Adicionar alternativa sem IA ou status quo</button>
-      <label class="small" for="lambda">Quanto a rede aceita pagar por unidade de efeito (US$)</label><input id="lambda" type="number" step="any" data-clambda value="${esc(sc.lambda || '')}" style="width:140px"></div>
+      <label class="small" for="lambda">Quanto a rede aceita pagar por unidade de efeito (US$)</label>${inputNum({ id: 'lambda', valor: lerNumero(sc.lambda), casas: CASAS_CALC, ok: false, style: 'width:140px', attrs: 'data-clambda' })}</div>
     ${comp ? `<div class="tw"><table><thead><tr><th>Alternativa</th><th class="n">Custo total (${unidMil()})</th><th class="n">Diferença para a referência</th><th class="n">Efeito</th><th class="n">Razão custo-efetividade incremental</th><th>Situação</th><th class="n">Efeito mínimo para justificar</th></tr></thead><tbody>
       ${comp.map((x, i) => `<tr><td>${esc(x.nome)}${i === 0 ? ' <span class="tag">referência</span>' : ''}</td><td class="n">${mil(x.ct)}</td><td class="n">${i === 0 ? '–' : mil(x.dC)}</td><td class="n">${x.efeito == null ? '–' : x.efeito.toLocaleString(LOC())}</td><td class="n">${x.rcei != null ? din(x.rcei, 0) + ' por unidade' : '–'}</td><td>${x.dominada ? '<span class="pill n-elevado plain">dominada</span>' : (x.efeito != null ? 'não dominada' : 'sem efeito informado')}</td><td class="n">${i > 0 && lam > 0 ? (x.dC / lam).toLocaleString(LOC(), { maximumFractionDigits: 3 }) + (comp[0].efeito != null ? ' acima da referência' : '') : '–'}</td></tr>`).join('')}
     </tbody></table></div><p class="small muted">Dominada: mais cara e não mais efetiva que outra. A razão incremental compara cada alternativa não dominada com a anterior, ordenadas por custo. O efeito mínimo é a diferença de custo dividida pelo valor que a rede aceita pagar por unidade de efeito.</p>` : ''}`;
   // equidade
   const eq = equidade(cfg, sc.estratos, av);
   const eqHtml = `<div class="tw"><table><thead><tr><th>Estrato</th><th class="n">Participação dos usuários (%)</th><th class="n">Fator sobre K1 (base)</th><th class="n">Fator sobre K4 (operação e formação)</th><th class="n">Custo por usuário-ano</th><th class="n">Diferença para a média</th></tr></thead><tbody>
-    ${eq.map((z, i) => `<tr><td><input type="text" class="w-l" data-estr="${i}" data-campo="nome" value="${esc(z.nome)}" aria-label="Estrato"></td><td class="n"><input type="number" class="w-s" step="1" data-estr="${i}" data-campo="part" data-pct="1" value="${+(sc.estratos[i].part * 100).toFixed(2)}" aria-label="Participação"></td><td class="n"><input type="number" class="w-s" step="0.1" data-estr="${i}" data-campo="fK1" value="${sc.estratos[i].fK1}" aria-label="Fator K1"></td><td class="n"><input type="number" class="w-s" step="0.1" data-estr="${i}" data-campo="fK4" value="${sc.estratos[i].fK4}" aria-label="Fator K4"></td><td class="n">${din(z.icu, 2)}</td><td class="n">${din(z.delta, 2)}</td></tr>`).join('')}
+    ${eq.map((z, i) => `<tr><td><input type="text" class="w-l" data-estr="${i}" data-campo="nome" value="${esc(z.nome)}" aria-label="Estrato"></td><td class="n">${inputNum({ valor: +(sc.estratos[i].part * 100).toFixed(2), casas: CASAS_CALC, cls: 'w-s', ok: false, rotulo: 'Participação', attrs: `data-estr="${i}" data-campo="part" data-pct="1"` })}</td><td class="n">${inputNum({ valor: sc.estratos[i].fK1, casas: CASAS_CALC, cls: 'w-s', ok: false, rotulo: 'Fator K1', attrs: `data-estr="${i}" data-campo="fK1"` })}</td><td class="n">${inputNum({ valor: sc.estratos[i].fK4, casas: CASAS_CALC, cls: 'w-s', ok: false, rotulo: 'Fator K4', attrs: `data-estr="${i}" data-campo="fK4"` })}</td><td class="n">${din(z.icu, 2)}</td><td class="n">${din(z.delta, 2)}</td></tr>`).join('')}
   </tbody></table></div><p class="small muted">Os estratos e fatores são exemplos editáveis, não dados. Mostram quanto custa garantir uso onde há menos condições: mais suporte, formação e infraestrutura por usuário.${(ind.icuK.K1 || 0) === 0 ? ' Como não há custos de base (K1) nas premissas, só o fator sobre K4 tem efeito.' : ''}</p>`;
   const caeImpl = (cfg.implantacao || []).reduce((s, x) => s + x.valor, 0);
   return `<section class="box" style="border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:16px;display:grid;gap:14px">
@@ -471,16 +480,17 @@ function custosEvento(e) {
     if (el.dataset.cavanc != null && e.type === 'change') { sc.avancado = el.checked; render(); return true; }
     if (el.dataset.ccompat != null && e.type === 'change') { const cfg = cfgAtual(); cfg.opc = Object.assign({}, el.checked ? OPC_COMPAT : OPC_PADRAO, { H: opcoes(cfg).H }); editarCfg(); render(); return true; }
     if (el.dataset.copt && e.type === 'change') { const cfg = cfgAtual(); garantirOpc(cfg)[el.dataset.copt] = el.type === 'checkbox' ? el.checked : el.value; editarCfg(); renderCustosResultados(); atualizarLaterais(); return true; }
-    if (el.dataset.faixa && e.type === 'change') { const cfg = cfgAtual(); cfg.faixas = cfg.faixas || []; let f = cfg.faixas.find(x => x.id === el.dataset.faixa); if (!f) { const d = direcionadores(cfg).find(x => x.id === el.dataset.faixa); f = { id: d.id, min: d.min, max: d.max }; cfg.faixas.push(f); } f[el.dataset.lado] = +el.value || 1; editarCfg(); renderCustosResultados(); return true; }
+    if (el.dataset.faixa && e.type === 'change') { const cfg = cfgAtual(); cfg.faixas = cfg.faixas || []; let f = cfg.faixas.find(x => x.id === el.dataset.faixa); if (!f) { const d = direcionadores(cfg).find(x => x.id === el.dataset.faixa); f = { id: d.id, min: d.min, max: d.max }; cfg.faixas.push(f); } f[el.dataset.lado] = +lerNumero(el.value) || 1; editarCfg(); renderCustosResultados(); return true; }
     if (el.dataset.lmdi && e.type === 'change') { sc['lmdi' + el.dataset.lmdi] = +el.value; renderCustosResultados(); return true; }
     if (el.dataset.refalt && e.type === 'change') { const v = +el.dataset.refalt; sc.refAlt = v < 0 ? null : v; renderCustosResultados(); salvar(); return true; }
-    if (el.dataset.clambda != null && e.type === 'change') { sc.lambda = el.value; renderCustosResultados(); salvar(); return true; }
+    if (el.dataset.clambda != null && e.type === 'change') { sc.lambda = lerNumero(el.value); renderCustosResultados(); salvar(); return true; }
     if (el.dataset.alt && e.type === 'change') {
-      if (el.dataset.alt === 'caso') sc.efeitoCaso = el.value; else sc.alts[+el.dataset.alt][el.dataset.campo] = el.value;
+      const v = el.dataset.campo === 'nome' ? el.value : lerNumero(el.value);
+      if (el.dataset.alt === 'caso') sc.efeitoCaso = v; else sc.alts[+el.dataset.alt][el.dataset.campo] = v;
       renderCustosResultados(); salvar(); return true;
     }
-    if (el.dataset.estr && e.type === 'change') { let v = el.value; if (el.dataset.campo !== 'nome') { v = +v || 0; if (el.dataset.pct) v /= 100; } sc.estratos[+el.dataset.estr][el.dataset.campo] = v; renderCustosResultados(); salvar(); return true; }
-    if (el.dataset.cfg === 'opc.H' && e.type === 'change') { const cfg = cfgAtual(); garantirOpc(cfg).H = Math.max(1, Math.min(10, Math.round(+el.value || 3))); editarCfg(); render(); return true; }
+    if (el.dataset.estr && e.type === 'change') { let v = el.value; if (el.dataset.campo !== 'nome') { v = +lerNumero(v) || 0; if (el.dataset.pct) v /= 100; } sc.estratos[+el.dataset.estr][el.dataset.campo] = v; renderCustosResultados(); salvar(); return true; }
+    if (el.dataset.cfg === 'opc.H' && e.type === 'change') { const cfg = cfgAtual(); garantirOpc(cfg).H = Math.max(1, Math.min(10, Math.round(+lerNumero(el.value) || 3))); editarCfg(); render(); return true; }
   }
   return false;
 }

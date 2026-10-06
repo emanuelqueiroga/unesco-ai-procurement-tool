@@ -1,13 +1,27 @@
-# Percorre as fases em EN/ES/FR e lista textos que ficaram em português.
-import asyncio, json, re
+# Percorre as fases da v9 em EN/ES/FR e lista textos que ficaram em português
+# (percurso, ⓘ, details, calculadora, plano de contratação, Markdown do plano).
+# Rodar a partir de /home/claude/app depois de `bash build.sh`. Resultado em /tmp/claude-0/sobras.json.
+import asyncio, json, os, re
 from playwright.async_api import async_playwright
+os.makedirs('/tmp/claude-0', exist_ok=True)
 SK = '<!doctype html><html><head><meta charset=utf8></head><body>' + open('navegador.html').read() + '</body></html>'
 open('/tmp/claude-0/nav_lang.html','w').write(SK)
 PT = re.compile(r'ção|ções|ã|õ|\b(?:não|você|para o|do caso|também|custo|orçament|decisão)\b', re.I)
+IGNORAR = ('Cátedra', 'Desplugada', 'Tutor de matemática', 'São Tomé')
 COL = """(() => { const out = new Set(); const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
  let n; while ((n = w.nextNode())) { const p = n.parentElement; if (!p || p.closest('script,style,textarea,[data-notr],#txt-vinculo')) continue; const t = n.data.trim(); if (t) out.add(t); }
  document.querySelectorAll('[aria-label],[title],[placeholder]').forEach(e => ['aria-label','title','placeholder'].forEach(a => { const v = e.getAttribute(a); if (v) out.add(v); }));
  return [...out]; })()"""
+ABRIR = """(() => {
+  document.querySelectorAll('[data-info]').forEach(b => { const id = b.dataset.infoId || b.dataset.info; S.info[id] = true; });
+  render();
+  document.querySelectorAll('details').forEach(d => d.open = true);
+  const box = document.getElementById('custos-box');
+  if (box && !box.innerHTML && typeof renderCustos === 'function') { box.innerHTML = renderCustos(); renderCustosResultados(); }
+  document.querySelectorAll('details').forEach(d => d.open = true);
+})()"""
+FASES = ['contexto', 'piloto', 'custo']
+def resto(t): return PT.search(t) and not any(x in t for x in IGNORAR)
 async def main():
     res = {}
     async with async_playwright() as p:
@@ -20,26 +34,28 @@ async def main():
             sobra = set()
             async def col():
                 for t in await pg.evaluate(COL):
-                    if PT.search(t) and 'Cátedra' not in t and 'Desplugada' not in t and 'Tutor de matemática' not in t: sobra.add(t)
+                    if resto(t): sobra.add(t)
             await col()
-            for ex in ['novo','B','C']:
+            for ex in ['novo','A','B','C','D']:
                 await pg.evaluate(f"carregarExemplo('{ex}')"); await pg.wait_for_timeout(150)
-                for fase in ['contexto','piloto','implantacao','escala']:
+                for fase in FASES:
                     for pid in await pg.evaluate(f"PASSOS['{fase}'].map(p=>p[0])"):
-                        await pg.evaluate(f"(()=>{{S.boasVindas=false;S.calcAberta=true;S.fase='{fase}';S.passo='{pid}';render();}})()"); await pg.wait_for_timeout(100)
-                        await pg.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)"); await pg.wait_for_timeout(80)
+                        await pg.evaluate(f"(()=>{{S.boasVindas=false;S.calcAberta=true;S.vista='';S.fase='{fase}';S.passo='{pid}';render();}})()"); await pg.wait_for_timeout(100)
+                        await pg.evaluate(ABRIR); await pg.wait_for_timeout(80)
                         await col()
-                await pg.evaluate("(()=>{S.fase='';render();})()"); await pg.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)"); await pg.wait_for_timeout(200); await col()
-                for pul in ['{}', '{"implantacao":true,"escala":true}']:
-                    await pg.evaluate(f"(()=>{{S.pular={pul};abrirResumo();}})()"); await pg.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)"); await pg.wait_for_timeout(150); await col()
-                    for t in await pg.evaluate("JSON.stringify(trFundo(secoesResumo())).split('\",\"')"):
-                        if PT.search(t) and 'Cátedra' not in t and 'Tutor de matemática' not in t: sobra.add('PDF: ' + t[:200])
-                await pg.evaluate("(()=>{S.pular={};S.vista='';render();})()")
-            md = await pg.evaluate("relMD(dadosRelatorio())")
-            sobra_md = [l for l in md.split('\n') if PT.search(l) and 'Cátedra' not in l and 'Tutor de matemática' not in l][:20]
-            res[lang] = {'sobra': sorted(sobra), 'md': sobra_md, 'errs': errs}
+                # todas as fases fechadas, painel e chamada final
+                await pg.evaluate("(()=>{S.fase='';S.vista='';render();})()"); await pg.evaluate(ABRIR); await pg.wait_for_timeout(150); await col()
+                # plano de contratação (página e estrutura usada no PDF)
+                await pg.evaluate("abrirPlano()"); await pg.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)"); await pg.wait_for_timeout(200); await col()
+                for t in await pg.evaluate("JSON.stringify(trFundo(secoesPlano())).split('\",\"')"):
+                    if resto(t) and not re.match(r'^(contexto|piloto|custo):\w+:', t): sobra.add('PDF: ' + t[:200])
+                md = await pg.evaluate("relMD(dadosRelatorio())")
+                for l in md.split('\n'):
+                    if resto(l): sobra.add('MD: ' + l[:200])
+                await pg.evaluate("(()=>{S.vista='';render();})()")
+            res[lang] = {'sobra': sorted(sobra), 'errs': errs}
             await pg.close()
         await b.close()
     json.dump(res, open('/tmp/claude-0/sobras.json','w'), ensure_ascii=False, indent=1)
-    for l,v in res.items(): print(l, 'restos', len(v['sobra']), 'md', len(v['md']), 'erros', v['errs'])
+    for l,v in res.items(): print(l, 'restos', len(v['sobra']), 'erros', v['errs'][:3])
 asyncio.run(main())

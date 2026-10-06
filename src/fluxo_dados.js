@@ -1,13 +1,34 @@
 // =====================================================================
-// Fluxo em quatro fases: contexto → piloto → implantação → sustentabilidade e expansão
-// Camadas do custo de IA na educação (Krueger & Jackson, 2026, Figura 1).
+// Percurso em três fases: contexto → prova de conceito ou piloto → custo do ciclo de vida
+// Camadas do custo total (Krueger e Jackson, 2026, Figura 1, p. 11).
+// Todas as perguntas vêm do registro declarativo CAMPOS (renderizado em fluxo.js).
 // =====================================================================
 const FASES = [
-  { id: 'contexto', n: 1, nome: 'Contexto', sub: 'Contexto, problema e governança de IA na educação', pds: [1, 2] },
-  { id: 'piloto', n: 2, nome: 'Piloto', sub: 'Testar em poucos locais, com capacidade mínima', pds: [3, 4] },
-  { id: 'implantacao', n: 3, nome: 'Implantação', sub: 'Levar à rede, com todas as camadas', pds: [5, 6, 7, 8] },
-  { id: 'escala', n: 4, nome: 'Sustentabilidade e expansão', sub: 'Manter, ampliar e decidir a continuidade', pds: [9] },
+  { id: 'contexto', n: 1, nome: 'Contexto', sub: 'Onde e para quem, problema e impacto, governança de IA na educação',
+    abertura: 'Descreva a rede, o problema e a governança que já existe. Nada aqui é avaliado agora: o diagnóstico aparece só no plano de contratação.' },
+  { id: 'piloto', n: 2, nome: 'Prova de conceito ou piloto', sub: 'Aplicações, experiência de uso e adoção', info: 'c2',
+    abertura: 'Esta fase corresponde à camada 2 do custo total: o que a IA vai fazer (2.1 Aplicações), quem a usa e como (2.2 Experiência de uso) e o que é preciso para que o uso aconteça de fato, incluindo licenças e pagamento (2.3 Adoção).' },
+  { id: 'custo', n: 3, nome: 'Custo do ciclo de vida', sub: 'Escala, fonte de recursos e estimativa de custo', info: 'c37',
+    abertura: 'Quanto o caso custa depois do teste, ao longo dos anos de uso, distribuído pelas sete camadas do custo total. Os valores são ilustrativos.' },
 ];
+// Passos por fase. O passo '20' (pergunta 2.0) abre a fase 2 e fica sempre visível.
+const PASSOS = {
+  contexto: [['1a', 'Onde e para quem'], ['1b', 'Problema e impacto'], ['1c', 'Governança de IA na educação']],
+  piloto: [['20', 'Prova de conceito ou piloto'], ['2a', 'Aplicações'], ['2b', 'Experiência de uso'], ['2c', 'Adoção']],
+  custo: [['3a', 'Escala e horizonte'], ['3b', 'Fonte de recursos'], ['3c', 'Estimativa de custo']],
+};
+// Número exibido de cada passo, selo de camada e ⓘ
+const PASSO_INFO = {
+  '1a': { num: '1.1' }, '1b': { num: '1.2' },
+  '1c': { num: '1.3', selo: 'Camada 1 do custo total', info: 'c1', abertura: 'A governança é a camada que atravessa todas as fases: quem decide, com que regras e com que recursos. Responda sobre a rede como um todo, e não só sobre este caso.' },
+  '20': { num: '2.0' },
+  '2a': { num: '2.1', selo: 'Camada 2', info: 'c2', abertura: 'Descreva o que você quer que a IA faça no dia a dia da escola ou da rede, e não o produto.' },
+  '2b': { num: '2.2', selo: 'Camada 2', info: 'c2', abertura: 'Como as pessoas vão usar a ferramenta no dia a dia. As respostas vêm sugeridas pelas tarefas do passo 2.1; ajuste o que for diferente na sua rede.' },
+  '2c': { num: '2.3', selo: 'Camadas 2, 3 e 4', info: 'c234', abertura: 'O setup da prova de conceito ou do piloto: que tecnologia, como se paga, que licença, quanto adaptar e de que tamanho. Estas respostas definem as premissas de custo.' },
+  '3a': { num: '3.1', selo: 'Camadas 3 a 7' },
+  '3b': { num: '3.2', selo: 'Camadas 1 e 7' },
+  '3c': { num: '3.3', selo: 'Camadas 1 a 7', info: 'c37' },
+};
 const CAMADAS = [
   [1, 'Governança, políticas e planejamento do ciclo de vida'],
   [2, 'Aplicações de IA, experiência de uso e adoção'],
@@ -17,7 +38,26 @@ const CAMADAS = [
   [6, 'Formação e capacidade das equipes'],
   [7, 'Operação, suporte e sustentabilidade'],
 ];
-const CAMADAS_FASE = { contexto: [1], piloto: [1, 2, 3, 5, 6, 7], implantacao: [1, 2, 3, 4, 5, 6, 7], escala: [1, 2, 3, 4, 5, 6, 7] };
+// Passos que alimentam cada camada (anel externo da mandala)
+const CAMADA_PASSOS = { 1: ['1c'], 2: ['2a', '2b', '2c'], 3: ['2c', '3a'], 4: ['2c', '3a'], 5: ['3c'], 6: ['3c'], 7: ['3b', '3c'] };
+
+// Explicações das camadas (botão ⓘ) e referência comum ao documento de TCO
+const CAMADAS_INFO = {
+  c1: 'Camada 1 · Governança, políticas e planejamento do ciclo de vida. No quadro de custo total em camadas de Krueger e Jackson (2026, p. 11), esta camada reúne estruturas de governança, política, revisão ética, orientação de compras, rotinas de monitoramento, revisão jurídica e planejamento do ciclo de vida. Os autores observam que a governança passa a fazer parte da estrutura de custo da operação.',
+  c2: 'Camada 2 · Aplicações de IA, experiência de uso e adoção. É o que professores, estudantes e gestores veem e usam: as ferramentas e aplicações (o que a IA faz), a experiência de uso (quem usa e como) e a adoção (as condições para o uso acontecer, incluindo assinaturas e licenças). Segundo Krueger e Jackson (2026, p. 11), é a parte mais visível do investimento, mas só uma parte do custo do ciclo de vida.',
+  c234: 'As respostas sobre tecnologia, pagamento e licença alimentam a camada 2; as de dispositivos e internet, a camada 3 (infraestrutura e dispositivos); e o nível de adaptação, a camada 4 (integração de dados e sistemas). Krueger e Jackson (2026, p. 7–8) lembram que uma ferramenta gratuita ou doada não elimina os custos do ciclo de vida.',
+  c37: 'As sete camadas do quadro de Krueger e Jackson (2026, p. 11): 1 governança; 2 aplicações, experiência de uso e adoção; 3 infraestrutura e dispositivos; 4 integração de dados e sistemas; 5 cibersegurança, privacidade e conformidade; 6 formação e capacidade das equipes; 7 operação, suporte e sustentabilidade. A correspondência entre os componentes de custo da ferramenta (K1 a K6) e as camadas é uma convenção desta ferramenta.',
+};
+const REF_TCO = {
+  autores: 'Krueger, K. e Jackson, F. para CoSN (2026).',
+  titulo: 'Beyond the price tag: Rethinking total cost of ownership for AI in education systems.',
+  local: 'Paris: UNESCO.',
+  texto: 'Krueger, K. e Jackson, F. para CoSN (2026). Beyond the price tag: Rethinking total cost of ownership for AI in education systems. Paris: UNESCO.',
+  link: 'Abrir o documento na UNESDOC',
+  url: 'https://unesdoc.unesco.org/ark:/48223/pf0000399348',
+  nota: 'Documento encomendado pela UNESCO; as opiniões são dos autores.',
+};
+
 const NIVEIS_ADM = [['pais', 'País'], ['estado', 'Estado ou província'], ['municipio', 'Município ou cidade'], ['distrito', 'Distrito ou região escolar'], ['rede', 'Rede ou grupo de escolas'], ['outro', 'Outro']];
 const ETAPAS_ENS = [
   ['infantil', 'Educação infantil', 'Creche e pré-escola', ['Creche', 'Pré-escola']],
@@ -40,191 +80,68 @@ const DOMINIOS = [
     desc: 'Como cada pessoa se torna sujeito autônomo e responsável: autonomia, pensamento crítico, projeto de vida e bem-estar.',
     ex: ['Projeto de vida no ensino médio', 'Autonomia e autorregulação da aprendizagem', 'Bem-estar emocional dos estudantes'] },
 ];
-const RESP = [['sim', 'Sim'], ['parcial', 'Em parte'], ['nao', 'Não'], ['na', 'Não se aplica']];
 
-// Perguntas por fase e camada. quando(c, p): só aparece se a condição valer.
-const afeta = c => (c.consequencias || []).some(k => k !== 'nenhuma');
-const dadosPessoais = c => (c.dados || []).some(k => k !== 'nenhum');
-const temClasse = (c, ...ks) => (c.classes || []).some(k => ks.includes(k));
-const QUESTOES = [
-  // Fase 1: governança de IA na educação (camada 1, transversal)
-  { id: 'g-equipe', fase: 'contexto', c: 1, t: 'Há um departamento ou uma equipe designada para IA na educação?', h: 'Com responsável nomeado, atribuições e tempo dedicado.' },
-  { id: 'g-politica', fase: 'contexto', c: 1, t: 'Existe política ou estratégia de IA na educação?', h: 'Documento aprovado que define finalidades, usos permitidos e responsabilidades.' },
-  { id: 'g-legislacao', fase: 'contexto', c: 1, t: 'A legislação aplicável foi identificada?', h: 'Proteção de dados, regras de IA, direitos de crianças e adolescentes, compras públicas.' },
-  { id: 'g-dados', fase: 'contexto', c: 1, t: 'Há política de dados educacionais?', h: 'Quem pode acessar, compartilhar, guardar e excluir dados de estudantes e servidores.' },
-  { id: 'g-etica', fase: 'contexto', c: 1, t: 'Há normas de ética ou de uso responsável de IA?', h: 'Orientações para professores, estudantes e gestores, inclusive o que é proibido.' },
-  { id: 'g-comite', fase: 'contexto', c: 1, t: 'Existe uma instância de governança que reúne várias áreas?', h: 'Tecnologia, pedagogia, cibersegurança, jurídico, compras, operação e direção.' },
-  { id: 'g-compras', fase: 'contexto', c: 1, t: 'Há orientação para comprar e contratar IA?', h: 'Custo do ciclo de vida, diligência sobre fornecedores, cláusulas de dados e de saída.' },
-  { id: 'g-orcamento', fase: 'contexto', c: 1, t: 'O planejamento orçamentário vai além do piloto?', h: 'Fonte de recursos prevista para operar e manter a solução nos próximos anos.' },
-  { id: 'g-avaliacao', fase: 'contexto', c: 1, t: 'Há mecanismos de monitoramento e avaliação?', h: 'Indicadores, responsáveis e rotina para avaliar resultados e efeitos não desejados.' },
-  // Fase 2: regras do piloto (camada 1)
-  { id: 'r-autorizacao', fase: 'piloto', c: 1, g: 'regras', t: 'O piloto tem autorização formal e um responsável definido?' },
-  { id: 'r-baselegal', fase: 'piloto', c: 1, g: 'regras', t: 'Há base legal ou consentimento para usar os dados de estudantes e servidores?', quando: c => dadosPessoais(c) },
-  { id: 'r-acordo', fase: 'piloto', c: 1, g: 'regras', t: 'Há acordo de tratamento de dados com o fornecedor, sem uso para treinar modelos?', quando: c => dadosPessoais(c) },
-  { id: 'r-sucesso', fase: 'piloto', c: 1, g: 'regras', t: 'A linha de base e os critérios de sucesso foram definidos antes de começar?' },
-  { id: 'r-parada', fase: 'piloto', c: 1, g: 'regras', t: 'Há critérios de parada e um plano para encerrar o piloto?' },
-  { id: 'r-ativos', fase: 'piloto', c: 1, g: 'regras', t: 'Está definido o destino dos dados e dos materiais produzidos se o fornecedor não for escolhido?' },
-  { id: 'r-gratuito', fase: 'piloto', c: 1, g: 'regras', t: 'Os custos que a gratuidade adia foram registrados?', tag: 'piloto gratuito', quando: c => c.pilotoGratuito },
-  // Fase 2: capacidade mínima nos locais do piloto
-  { id: 'p-problema', fase: 'piloto', c: 2, t: 'A aplicação foi escolhida a partir do problema, e não o contrário?' },
-  { id: 'p-usuarios', fase: 'piloto', c: 2, t: 'Professores, estudantes ou servidores do piloto participaram da escolha e do teste?' },
-  { id: 'p-adocao', fase: 'piloto', c: 2, t: 'Há medidas de uso e adoção definidas para o piloto?' },
-  { id: 'p-idiomas', fase: 'piloto', c: 2, t: 'A aplicação funciona nos idiomas e contextos dos usuários do piloto?', quando: c => c.idiomas },
-  { id: 'p-conect', fase: 'piloto', c: 3, t: 'As escolas do piloto têm conectividade suficiente para o uso previsto?' },
-  { id: 'p-disp', fase: 'piloto', c: 3, t: 'Há dispositivos suficientes para os participantes do piloto?' },
-  { id: 'p-desplug', fase: 'piloto', c: 3, t: 'Há alternativa para escolas com pouca infraestrutura (uso sem conexão ou atividades desplugadas)?' },
-  { id: 'p-protecao', fase: 'piloto', c: 5, t: 'Os dados do piloto são mínimos e estão protegidos?', quando: c => dadosPessoais(c) },
-  { id: 'p-acessos', fase: 'piloto', c: 5, t: 'Contas e acessos dos participantes são controlados?' },
-  { id: 'p-incidente', fase: 'piloto', c: 5, t: 'Há canal para relatar problemas e incidentes durante o piloto?' },
-  { id: 'p-formacao', fase: 'piloto', c: 6, t: 'Os participantes recebem formação antes de começar?' },
-  { id: 'p-apoio', fase: 'piloto', c: 6, t: 'Há apoio pedagógico para os professores do piloto?' },
-  { id: 'p-suporte', fase: 'piloto', c: 7, t: 'Há suporte técnico definido nos locais do piloto?' },
-  { id: 'p-acomp', fase: 'piloto', c: 7, t: 'Há responsável por acompanhar o piloto e relatar os resultados?' },
-  // Fase 3: implantação, todas as camadas; 4 e 5 dependem da aplicação
-  { id: 'i-evidencia', fase: 'implantacao', c: 1, t: 'A decisão de implantar se baseia na evidência do piloto?' },
-  { id: 'i-contrato', fase: 'implantacao', c: 1, t: 'O contrato tem cláusulas de dados, mudança, desempenho e saída?' },
-  { id: 'i-supervisao', fase: 'implantacao', c: 1, t: 'A supervisão humana está definida, com autoridade para intervir?', tag: 'afeta pessoas', quando: c => afeta(c) },
-  { id: 'i-adocao', fase: 'implantacao', c: 2, t: 'Há plano de adoção para toda a rede, com metas por etapa de ensino?' },
-  { id: 'i-contestacao', fase: 'implantacao', c: 2, t: 'Quem é afetado pelas saídas pode contestar e ter o erro corrigido?', tag: 'afeta pessoas', quando: c => afeta(c) },
-  { id: 'i-acessib', fase: 'implantacao', c: 2, t: 'A aplicação é acessível para estudantes com deficiência e para todos os idiomas atendidos?' },
-  { id: 'i-infra', fase: 'implantacao', c: 3, t: 'Conectividade e dispositivos estão dimensionados para toda a rede?' },
-  { id: 'i-pico', fase: 'implantacao', c: 3, t: 'A capacidade de computação ou de consumo está dimensionada para o horário de pico?', quando: c => ['api', 'ow'].includes(c.arquitetura) },
-  { id: 'i-integra', fase: 'implantacao', c: 4, t: 'A integração com os sistemas da rede (identidade, matrícula, ambiente virtual) foi testada?' },
-  { id: 'i-base', fase: 'implantacao', c: 4, t: 'A base de conhecimento tem curadoria e responsável?', tag: 'base de conhecimento', quando: c => c.arquitetura === 'api' },
-  { id: 'i-finalidade', fase: 'implantacao', c: 4, t: 'Dados pessoais de estudantes só entram com finalidade definida e base legal?', tag: 'dados pessoais', quando: c => dadosPessoais(c) },
-  { id: 'i-rastreio', fase: 'implantacao', c: 4, t: 'As saídas que classificam ou preveem são registradas e rastreáveis?', tag: 'classificação ou previsão', quando: c => temClasse(c, 'classificacao', 'previsao') },
-  { id: 'i-portab', fase: 'implantacao', c: 4, t: 'Dados e configurações podem ser exportados em formato aberto?' },
-  { id: 'i-dpia', fase: 'implantacao', c: 5, t: 'A avaliação de impacto sobre a proteção de dados foi concluída?', tag: 'dados pessoais', quando: c => dadosPessoais(c) },
-  { id: 'i-identidade', fase: 'implantacao', c: 5, t: 'A gestão de identidades e acessos cobre toda a rede?' },
-  { id: 'i-adversarial', fase: 'implantacao', c: 5, t: 'Houve testes de segurança e testes adversariais antes de ampliar?', tag: 'risco elevado', quando: (c, p) => p.alto },
-  { id: 'i-geracao', fase: 'implantacao', c: 5, t: 'Há filtros e revisão para conteúdo gerado inadequado ou incorreto?', tag: 'geração de conteúdo', quando: c => temClasse(c, 'geracao', 'conversa') },
-  { id: 'i-fornecedor', fase: 'implantacao', c: 5, t: 'O fornecedor e seus subcontratados passaram por diligência?' },
-  { id: 'i-incidente', fase: 'implantacao', c: 5, t: 'Há plano de resposta a incidentes, com quem pode suspender o uso?' },
-  { id: 'i-formacao', fase: 'implantacao', c: 6, t: 'Há formação por perfil: professores, gestores e equipe técnica?' },
-  { id: 'i-rotatividade', fase: 'implantacao', c: 6, t: 'A formação considera a rotatividade das equipes?' },
-  { id: 'i-suporte', fase: 'implantacao', c: 7, t: 'O suporte aos usuários está dimensionado para toda a rede?' },
-  { id: 'i-monitor', fase: 'implantacao', c: 7, t: 'Desempenho, consumo e custo são monitorados, com gatilhos de ação?' },
-  { id: 'i-gestao', fase: 'implantacao', c: 7, t: 'Há responsáveis pela operação e pela gestão do contrato?' },
-  // Fase 4: sustentabilidade e expansão
-  { id: 's-continuidade', fase: 'escala', c: 1, t: 'A decisão de continuidade é revista periodicamente (manter, ajustar, ampliar, substituir ou encerrar)?' },
-  { id: 's-politica', fase: 'escala', c: 1, t: 'A política de IA na educação foi atualizada com o que se aprendeu?' },
-  { id: 's-evidencia', fase: 'escala', c: 2, t: 'Há evidência de resultado para as novas populações da expansão?' },
-  { id: 's-adocao', fase: 'escala', c: 2, t: 'A adoção é acompanhada por escola e por grupo de estudantes?' },
-  { id: 's-renovacao', fase: 'escala', c: 3, t: 'Há plano de renovação de dispositivos e infraestrutura?' },
-  { id: 's-interop', fase: 'escala', c: 4, t: 'A interoperabilidade foi revista para não depender de um único fornecedor?' },
-  { id: 's-qualidade', fase: 'escala', c: 4, t: 'A qualidade dos dados é monitorada?' },
-  { id: 's-revisao', fase: 'escala', c: 5, t: 'Segurança e privacidade são revisadas periodicamente?' },
-  { id: 's-mudanca', fase: 'escala', c: 5, t: 'Cada mudança relevante do sistema leva a uma nova avaliação?' },
-  { id: 's-formacao', fase: 'escala', c: 6, t: 'Há formação contínua e lideranças preparadas?' },
-  { id: 's-orcamento', fase: 'escala', c: 7, t: 'O orçamento recorrente está garantido nos próximos exercícios?' },
-  { id: 's-saida', fase: 'escala', c: 7, t: 'O custo de saída é conhecido e o plano de transição foi testado?' },
-  { id: 's-equidade', fase: 'escala', c: 7, t: 'Escolas com menos condições têm o mesmo acesso e o mesmo suporte?' },
+// Governança de IA na educação (passo 1.3, camada 1). Sem etiqueta "essencial" no percurso.
+const RESP_G = [['sim', 'Sim'], ['parcial', 'Em parte'], ['nao', 'Não'], ['nao_sei', 'Não sei']];
+const QUESTOES_G = [
+  { id: 'g-comite', n: '1.3.1', t: 'Sua rede tem uma equipe ou instância responsável por IA na educação, que reúna várias áreas?', h: 'Uma equipe nomeada que decide e acompanha o uso de IA, com tempo dedicado.', ex: 'Exemplo: um comitê com pedagogia, tecnologia, jurídico, compras, proteção de dados e direção, que se reúne todo mês e tem uma pessoa responsável.' },
+  { id: 'g-politica', n: '1.3.2', t: 'Você tem uma política ou estratégia de IA na educação?', h: 'Documento aprovado que diz para que a IA pode ser usada, por quem e com que responsabilidades.', ex: 'Exemplo: uma resolução da secretaria que lista os usos permitidos para professores e estudantes e quem responde por eles.' },
+  { id: 'g-legislacao', n: '1.3.3', t: 'Você já identificou as leis que se aplicam ao uso de IA nas escolas?', h: 'Proteção de dados, regras sobre IA, direitos de crianças e adolescentes e compras públicas.', ex: 'Exemplo: uma nota da assessoria jurídica que lista as leis aplicáveis e o que cada uma exige.' },
+  { id: 'g-dados', n: '1.3.4', t: 'Sua rede tem uma política de dados educacionais?', h: 'Quem pode acessar, compartilhar, guardar e excluir dados de estudantes e servidores.', ex: 'Exemplo: regras escritas que dizem por quanto tempo notas e frequência são guardadas e com quem podem ser compartilhadas.' },
+  { id: 'g-etica', n: '1.3.5', t: 'Você já publicou orientações de uso responsável de IA para professores, estudantes e gestores?', h: 'O que é permitido, o que é proibido e o que fazer em caso de dúvida.', ex: 'Exemplo: um guia curto para professores sobre uso de IA em tarefas e avaliações, com regras de integridade acadêmica.' },
+  { id: 'g-compras', n: '1.3.6', t: 'Sua rede tem regras ou orientações para comprar tecnologia com IA?', h: 'Custo do ciclo de vida, análise do fornecedor e cláusulas de dados e de saída.', ex: 'Exemplo: um modelo de termo de referência que exige o custo de uso por vários anos e a devolução dos dados ao final do contrato.' },
 ];
 
-const PASSOS = {
-  contexto: [['1a', 'Onde e para quem'], ['1b', 'Que problema você quer resolver'], ['1c', 'Governança de IA na educação']],
-  piloto: [['2a', 'O que a solução faz'], ['2b', 'Pessoas, dados e consequências'], ['2c', 'Perfil de risco'], ['2d', 'Regras do piloto'], ['2e', 'Capacidade mínima nos locais do piloto'], ['2f', 'Custo do piloto']],
-  implantacao: [['3a', 'Capacidade da rede, camada por camada'], ['3b', 'Contrato, dados e supervisão'], ['3c', 'Custo total e orçamento']],
-  escala: [['4a', 'Sustentabilidade e expansão, camada por camada'], ['4b', 'Sustentabilidade financeira'], ['4c', 'Decisão de continuidade']],
-};
-// O que fazer quando a resposta é "Não" ou "Em parte"
-const ACOES = {
-  'g-equipe': 'Designar uma equipe ou um responsável por IA na educação, com atribuições e tempo dedicado.',
-  'g-politica': 'Aprovar uma política ou estratégia de IA na educação, com finalidades, usos permitidos e responsabilidades.',
-  'g-legislacao': 'Mapear a legislação aplicável: proteção de dados, regras de IA, direitos de crianças e compras públicas.',
-  'g-dados': 'Definir a política de dados educacionais: acesso, compartilhamento, guarda e exclusão.',
-  'g-etica': 'Publicar orientações de uso responsável de IA para professores, estudantes e gestores.',
-  'g-comite': 'Criar uma instância de governança com tecnologia, pedagogia, jurídico, compras, segurança e direção.',
-  'g-compras': 'Adotar orientação de compras de IA com custo do ciclo de vida, diligência e cláusulas de dados e de saída.',
-  'g-orcamento': 'Prever a fonte de recursos para operar e manter a solução depois do piloto.',
-  'g-avaliacao': 'Definir indicadores, responsáveis e rotina de monitoramento e avaliação.',
-  'r-autorizacao': 'Formalizar a autorização do piloto e nomear um responsável.',
-  'r-baselegal': 'Confirmar a base legal ou obter consentimento para usar os dados.',
-  'r-acordo': 'Assinar acordo de tratamento de dados que proíba usar os dados para treinar modelos.',
-  'r-sucesso': 'Medir a linha de base e fixar os critérios de sucesso antes de começar.',
-  'r-parada': 'Definir critérios de parada e como encerrar o piloto.',
-  'r-ativos': 'Acordar o destino dos dados e dos materiais se o fornecedor não for escolhido.',
-  'r-gratuito': 'Registrar os custos que a gratuidade adia e o preço depois do piloto.',
-  'p-problema': 'Rever a escolha da aplicação a partir do problema definido na fase 1.',
-  'p-usuarios': 'Envolver professores, estudantes ou servidores na escolha e no teste.',
-  'p-adocao': 'Definir medidas de uso e adoção para acompanhar o piloto.',
-  'p-idiomas': 'Testar a aplicação nos idiomas e contextos dos usuários.',
-  'p-conect': 'Garantir conectividade nas escolas do piloto ou ajustar o uso previsto.',
-  'p-disp': 'Garantir dispositivos para os participantes do piloto.',
-  'p-desplug': 'Prever alternativa sem conexão ou atividades desplugadas para escolas com pouca infraestrutura.',
-  'p-protecao': 'Minimizar e proteger os dados do piloto.',
-  'p-acessos': 'Controlar contas e acessos dos participantes.',
-  'p-incidente': 'Abrir um canal para relatar problemas e incidentes.',
-  'p-formacao': 'Formar os participantes antes de começar.',
-  'p-apoio': 'Organizar apoio pedagógico aos professores do piloto.',
-  'p-suporte': 'Definir o suporte técnico nos locais do piloto.',
-  'p-acomp': 'Nomear quem acompanha o piloto e relata os resultados.',
-  'i-evidencia': 'Basear a decisão de implantar na evidência do piloto.',
-  'i-contrato': 'Incluir no contrato cláusulas de dados, mudança, desempenho e saída.',
-  'i-supervisao': 'Definir a supervisão humana, com autoridade para intervir.',
-  'i-adocao': 'Fazer um plano de adoção com metas por etapa de ensino.',
-  'i-contestacao': 'Criar um caminho para contestar saídas e corrigir erros.',
-  'i-acessib': 'Garantir acessibilidade e cobertura de idiomas.',
-  'i-infra': 'Dimensionar conectividade e dispositivos para toda a rede.',
-  'i-pico': 'Dimensionar a capacidade para o horário de pico.',
-  'i-integra': 'Testar a integração com identidade, matrícula e ambiente virtual.',
-  'i-base': 'Nomear responsável e rotina de curadoria da base de conhecimento.',
-  'i-finalidade': 'Limitar os dados pessoais de estudantes a finalidades definidas e com base legal.',
-  'i-rastreio': 'Registrar e tornar rastreáveis as saídas que classificam ou preveem.',
-  'i-portab': 'Garantir a exportação de dados e configurações em formato aberto.',
-  'i-dpia': 'Concluir a avaliação de impacto sobre a proteção de dados.',
-  'i-identidade': 'Estender a gestão de identidades e acessos a toda a rede.',
-  'i-adversarial': 'Fazer testes de segurança e testes adversariais antes de ampliar.',
-  'i-geracao': 'Instalar filtros e revisão para o conteúdo gerado.',
-  'i-fornecedor': 'Fazer diligência sobre o fornecedor e seus subcontratados.',
-  'i-incidente': 'Aprovar um plano de resposta a incidentes, com quem pode suspender o uso.',
-  'i-formacao': 'Planejar a formação por perfil.',
-  'i-rotatividade': 'Prever formação para quem entra nas equipes.',
-  'i-suporte': 'Dimensionar o suporte aos usuários para toda a rede.',
-  'i-monitor': 'Monitorar desempenho, consumo e custo, com gatilhos de ação.',
-  'i-gestao': 'Nomear responsáveis pela operação e pela gestão do contrato.',
-  's-continuidade': 'Marcar revisões periódicas da decisão de continuidade.',
-  's-politica': 'Atualizar a política de IA na educação com as lições aprendidas.',
-  's-evidencia': 'Produzir evidência de resultado para as novas populações.',
-  's-adocao': 'Acompanhar a adoção por escola e por grupo de estudantes.',
-  's-renovacao': 'Planejar a renovação de dispositivos e infraestrutura.',
-  's-interop': 'Rever a interoperabilidade para reduzir a dependência de um fornecedor.',
-  's-qualidade': 'Monitorar a qualidade dos dados.',
-  's-revisao': 'Agendar revisões periódicas de segurança e privacidade.',
-  's-mudanca': 'Reavaliar o sistema a cada mudança relevante.',
-  's-formacao': 'Manter formação contínua e preparar lideranças.',
-  's-orcamento': 'Garantir orçamento recorrente para os próximos exercícios.',
-  's-saida': 'Calcular o custo de saída e testar o plano de transição.',
-  's-equidade': 'Garantir o mesmo acesso e suporte às escolas com menos condições.',
-};
-// "Não" nestas perguntas impede avançar
-const ESSENCIAIS = new Set(['g-legislacao', 'g-dados', 'r-autorizacao', 'r-baselegal', 'r-acordo', 'r-sucesso', 'r-parada', 'p-problema', 'p-protecao', 'p-acessos', 'p-formacao',
-  'i-evidencia', 'i-contrato', 'i-supervisao', 'i-contestacao', 'i-finalidade', 'i-dpia', 'i-identidade', 'i-adversarial', 'i-incidente', 's-evidencia', 's-orcamento', 's-saida', 's-equidade']);
-// Respostas anteriores que ajudam a responder (evita perguntar duas vezes sem contexto)
-const REFS = {
-  'r-sucesso': ['1.2', c => (OPC.linhaBase.find(o => o[0] === c.linhaBase) || ['', ''])[1], 'linhaBase'],
-  'r-acordo': ['2.2', c => ({ nao: 'Não, está vedado por contrato', sim: 'Sim, ou depende de configuração', nao_sei: 'Não sabemos' })[c.treino], 'treino'],
-  'i-contestacao': ['2.2', c => (OPC.contestacao.find(o => o[0] === c.contestacao) || ['', ''])[1], 'contestacao'],
-};
-// Campos do caso que definem o perfil de risco
-const CAMPOS_RISCO = [['classes', 'O que a IA faz', '2a'], ['autonomia', 'Grau de autonomia', '2a'], ['usuarios', 'Quem usa o sistema', '2b'], ['afetados', 'Quem é afetado pelas saídas', '2b'],
-  ['consequencias', 'Em que entra a saída do sistema', '2b'], ['dados', 'Que dados são usados', '2b'], ['frequencia', 'Frequência de uso', '2b'], ['reversibilidade', 'Se a saída estiver errada', '2b'],
-  ['verificabilidade', 'Verificação das saídas', '2b'], ['contestacao', 'Contestação', '2b'], ['cumulativo', 'Efeitos cumulativos', '2b']];
-
-
-// Exemplos ilustrativos de contexto (coerentes com os casos A–D)
-const CTX_EX = {
-  A: { nivel: 'estado', local: 'Rede estadual (exemplo)', etapas: { fund2: { on: true, escolas: 420, alunos: 160000 }, medio: { on: true, escolas: 380, alunos: 140000 } }, dominio: 'qualificacao', comps: ['alfabetizacao', 'matematica', 'ciencias'], olhando: 'Professores dedicam muitas horas ao planejamento de aulas e à adaptação de materiais.' },
-  B: { nivel: 'estado', local: 'Rede estadual (exemplo)', etapas: { fund2: { on: true, escolas: 600, alunos: 150000, porAno: true, anos: [40000, 38000, 37000, 35000] } }, dominio: 'qualificacao', comps: ['matematica'], olhando: 'Estudantes chegam ao 9º ano com proficiência em matemática abaixo do esperado.' },
-  C: { nivel: 'estado', local: 'Rede estadual (exemplo)', etapas: { medio: { on: true, escolas: 300, alunos: 80000 } }, dominio: 'qualificacao', comps: ['outro'], compOutro: 'Permanência e conclusão do ensino médio', olhando: 'Alta taxa de abandono no 1º ano do ensino médio.' },
-  D: { nivel: 'municipio', local: 'Secretaria municipal (exemplo)', etapas: { infantil: { on: true, escolas: 120, alunos: 30000 }, fund1: { on: true, escolas: 150, alunos: 45000 } }, dominio: '', comps: [], olhando: 'Servidores das escolas esperam dias por respostas sobre normas e procedimentos.' },
-};
-const RESP_EX = {
-  B: { 'g-equipe': 'parcial', 'g-politica': 'nao', 'g-legislacao': 'sim', 'g-dados': 'parcial', 'g-etica': 'nao', 'g-comite': 'nao', 'g-compras': 'parcial', 'g-orcamento': 'nao', 'g-avaliacao': 'parcial',
-    'r-autorizacao': 'sim', 'r-baselegal': 'sim', 'r-acordo': 'parcial', 'r-sucesso': 'sim', 'r-parada': 'parcial', 'r-ativos': 'nao',
-    'p-problema': 'sim', 'p-usuarios': 'parcial', 'p-adocao': 'sim', 'p-conect': 'parcial', 'p-disp': 'nao', 'p-desplug': 'nao', 'p-protecao': 'sim', 'p-acessos': 'sim', 'p-incidente': 'parcial', 'p-formacao': 'sim', 'p-apoio': 'parcial', 'p-suporte': 'parcial', 'p-acomp': 'sim',
-    'i-evidencia': 'parcial', 'i-contrato': 'parcial', 'i-adocao': 'nao', 'i-infra': 'nao', 'i-integra': 'parcial', 'i-portab': 'nao', 'i-identidade': 'parcial', 'i-formacao': 'parcial', 'i-monitor': 'nao',
-    'p-idiomas': 'sim', 'i-supervisao': 'parcial', 'i-contestacao': 'nao', 'i-acessib': 'parcial', 'i-pico': 'sim', 'i-finalidade': 'sim', 'i-dpia': 'parcial', 'i-adversarial': 'parcial', 'i-geracao': 'parcial',
-    'i-fornecedor': 'sim', 'i-incidente': 'parcial', 'i-rotatividade': 'nao', 'i-suporte': 'parcial', 'i-gestao': 'sim' },
-};
-
+// ---------------------------------------------------------------------
+// Registro declarativo de todas as perguntas do percurso.
+// { passo, n, id, onde: 'ctx'|'caso'|'resp', tipo, opc, t, h, ex, ph, opcional, padrao, outro }
+// tipo: radio | chips | multi (cartões com subtexto) | seg | texto | area | num | grade | etapas | dom | comps | setup
+// opc: nome de lista em OPC (framework.js) ou a própria lista.
+// padrao: o campo tem valor padrão no caso em branco; só conta depois que a pessoa responde (S.respC).
+// outro: { v, id, t } abre um campo de texto quando a opção v está marcada.
+// ---------------------------------------------------------------------
+const CAMPOS = [
+  // 1.1 Onde e para quem
+  { passo: '1a', n: '1.1.1', id: 'nivel', onde: 'ctx', tipo: 'radio', opc: NIVEIS_ADM, cols: true, t: 'Em que nível administrativo a decisão será tomada?', h: 'O nível que decide e paga.', ex: 'Exemplo: secretaria estadual de educação.', outro: { v: 'outro', id: 'nivelOutro', t: 'Qual nível?' } },
+  { passo: '1a', n: '1.1.2', id: 'local', onde: 'ctx', tipo: 'texto', t: 'Qual é o nome do lugar ou da rede?', ph: 'Ex.: Rede estadual do Rio Grande do Sul, distrito escolar 3' },
+  { passo: '1a', n: '1.1.3', id: 'situacao', onde: 'caso', tipo: 'radio', opc: 'situacao', cols: true, padrao: true, t: 'Em que ponto você está?', h: 'Isso ajusta o plano de contratação.' },
+  { passo: '1a', n: '1.1.4', id: 'etapas', onde: 'ctx', tipo: 'etapas', t: 'Quais etapas de ensino serão atendidas?', h: 'Marque uma ou mais.' },
+  { passo: '1a', n: '1.1.5', id: 'grade', onde: 'ctx', tipo: 'grade', t: 'Quantas escolas e quantos estudantes há em cada etapa, por ano ou série?', h: 'Informe os estudantes de cada ano ou série; o total da etapa é calculado.', ex: 'Exemplo: 6º ano 40.000; 7º ano 38.000.' },
+  // 1.2 Problema e impacto
+  { passo: '1b', n: '1.2.1', id: 'dominio', onde: 'ctx', tipo: 'dom', t: 'Que tipo de problema educacional você quer resolver?' },
+  { passo: '1b', n: '1.2.2', id: 'comps', onde: 'ctx', tipo: 'comps', t: 'Quais componentes estão em jogo?' },
+  { passo: '1b', n: '1.2.3', id: 'olhando', onde: 'ctx', tipo: 'texto', t: 'Como a equipe descreve o problema, em poucas palavras?', h: 'Vira o título do caso se você não der outro nome.', ph: 'Ex.: estudantes chegam ao 9º ano abaixo do esperado em matemática' },
+  { passo: '1b', n: '1.2.4', id: 'problema', onde: 'caso', tipo: 'area', rows: 4, t: 'Descreva a situação atual sem citar tecnologia', h: 'Situação atual, quem é afetado e o que se sabe sobre as causas. Se, ao retirar a palavra "IA", o texto deixa de explicar o problema, reescreva.', ex: 'Exemplo: nas escolas da zona rural, metade dos estudantes do 5º ano não lê com fluência; as turmas são multisseriadas e não há reforço no contraturno.' },
+  { passo: '1b', n: '1.2.5', id: 'impactos', onde: 'caso', tipo: 'chips', opc: 'impactos', t: 'Que impacto você quer alcançar?', h: 'Marque um ou mais. O impacto orienta as tarefas sugeridas no passo 2.1.', outro: { v: 'outro', id: 'impactoOutro', t: 'Qual impacto?' } },
+  { passo: '1b', n: '1.2.6', id: 'resultado', onde: 'caso', tipo: 'area', rows: 2, opcional: true, t: 'Se quiser, detalhe o resultado esperado e como vai medi-lo', ex: 'Exemplo: reduzir de 50% para 35% os estudantes abaixo do nível adequado em leitura em dois anos.' },
+  { passo: '1b', n: '1.2.7', id: 'linhaBase', onde: 'caso', tipo: 'radio', opc: 'linhaBase', padrao: true, t: 'Você tem uma medida atual do problema (linha de base)?', ex: 'Exemplo: resultados da avaliação de leitura do ano passado, por escola.' },
+  { passo: '1b', n: '1.2.8', id: 'alternativa', onde: 'caso', tipo: 'radio', opc: 'simNao', t: 'Você já comparou ao menos uma alternativa sem IA?', ex: 'Exemplo: reforço escolar no contraturno, redesenho do processo ou um software convencional de exercícios.' },
+  // 1.3 Governança (camada 1)
+  ...QUESTOES_G.map(q => ({ passo: '1c', n: q.n, id: q.id, onde: 'resp', tipo: 'seg', opc: RESP_G, t: q.t, h: q.h, ex: q.ex })),
+  // 2.0 Prova de conceito ou piloto
+  { passo: '20', n: '2.0', id: 'teste', onde: 'caso', tipo: 'radio', opc: 'teste', cols: true, t: 'Você vai começar por uma prova de conceito ou por um piloto?', h: 'As duas servem para aprender antes de comprar. A diferença é com quem e em que condições se testa.' },
+  // 2.1 Aplicações
+  { passo: '2a', n: '2.1.1', id: 'tarefas', onde: 'caso', tipo: 'multi', opc: 'tarefas', t: 'O que você quer que a IA faça?', h: 'Escolha uma ou mais tarefas. Cada tarefa já sugere quem usa e quem é afetado no passo 2.2.', outro: { v: 'outra', id: 'tarefaOutra', t: 'Qual tarefa?' } },
+  { passo: '2a', n: '2.1.2', id: 'titulo', onde: 'caso', tipo: 'texto', opcional: true, t: 'Como você vai chamar esta aplicação?', h: 'Aparece no plano de contratação.' },
+  // 2.2 Experiência de uso
+  { passo: '2b', n: '2.2.1', id: 'usuarios', onde: 'caso', tipo: 'chips', opc: 'usuarios', sugere: true, t: 'Quem vai usar a ferramenta?', ex: 'Exemplo: professores do 6º ao 9º ano.' },
+  { passo: '2b', n: '2.2.2', id: 'afetados', onde: 'caso', tipo: 'chips', opc: 'afetados', sugere: true, t: 'Quem recebe ou é afetado pelo que a ferramenta produz?', ex: 'Exemplo: os estudantes que recebem as atividades preparadas pelo professor.' },
+  { passo: '2b', n: '2.2.3', id: 'consequencias', onde: 'caso', tipo: 'chips', opc: 'consequencias', sugere: true, padrao: true, t: 'O que as pessoas vão fazer com a resposta da ferramenta?', ex: 'Exemplo: o professor revisa o plano de aula e decide o que usar.' },
+  { passo: '2b', n: '2.2.4', id: 'frequencia', onde: 'caso', tipo: 'radio', opc: 'frequencia', cols: true, sugere: true, padrao: true, t: 'Com que frequência cada pessoa vai usar?' },
+  // 2.3 Adoção
+  { passo: '2c', n: '2.3.1', id: 'tipoTec', onde: 'caso', tipo: 'radio', opc: 'tipoTec', cols: true, t: 'Que tipo de tecnologia você pretende usar?', ex: 'Exemplo: uma plataforma do ministério (pública), um modelo aberto instalado numa nuvem contratada (aberta), a assinatura de um assistente para professores (paga).' },
+  { passo: '2c', n: '2.3.2', id: 'pagamento', onde: 'caso', tipo: 'radio', opc: 'pagamento', cols: true, t: 'Como vai ser o pagamento?', h: 'Pense no período da prova de conceito ou do piloto.', ex: 'Exemplo: um valor por professor por mês (por usuário); um valor anual fixo para todas as escolas (institucional).' },
+  { passo: '2c', n: '2.3.3', id: 'licenca', onde: 'caso', tipo: 'radio', opc: 'licenca', cols: true, t: 'Que tipo de licença?', ex: 'Exemplo: os termos aceitos ao criar uma conta gratuita são termos de uso padrão.' },
+  { passo: '2c', n: '2.3.4', id: 'adaptacao', onde: 'caso', tipo: 'radio', opc: 'adaptacao', cols: true, t: 'Quanto a ferramenta precisa ser adaptada ao seu contexto?', h: 'Cada nível inclui os anteriores. Mais adaptação aumenta o custo de implantação e de manutenção.', ex: 'Exemplo: traduzir para a língua local e alinhar as atividades ao currículo é adaptação de conteúdo e idioma.' },
+  { passo: '2c', n: '2.3.5', id: 'infra', onde: 'caso', tipo: 'radio', opc: 'infra', cols: true, t: 'As escolas da prova de conceito ou do piloto já têm os dispositivos e a internet que o uso exige?', ex: 'Exemplo: um computador ou tablet por estudante durante a aula e internet que aguente uma turma inteira conectada.' },
+  { passo: '2c', n: '2.3.6', id: 'piloto', onde: 'caso', tipo: 'setup',
+    t: 'De que tamanho e por quanto tempo será o piloto?', h: 'Participantes são as pessoas que usam a ferramenta.', ex: 'Exemplo: 20 escolas, 600 professores, 4 meses.',
+    tPoc: 'Quantas pessoas vão testar e por quanto tempo?', hPoc: 'Na prova de conceito testam a equipe e algumas pessoas convidadas, sem usuários reais.', exPoc: 'Exemplo: 15 pessoas, 2 meses.' },
+  // 3.1 Escala e horizonte
+  { passo: '3a', n: '3.1.1', id: 'elegiveis', onde: 'caso', tipo: 'num', t: 'Se der certo, quantas pessoas usariam a ferramenta em toda a rede?', h: 'Base da estimativa de custo depois do teste.', ex: 'Exemplo: 12.000 professores ou 150.000 estudantes.' },
+  { passo: '3a', n: '3.1.2', id: 'expansao', onde: 'caso', tipo: 'radio', opc: 'expansao', cols: true, padrao: true, t: 'Em quanto tempo você pretende chegar a todas essas pessoas?' },
+  { passo: '3a', n: '3.1.3', id: 'horizonte', onde: 'caso', tipo: 'radio', opc: 'horizonte', cols: true, padrao: true, t: 'Por quantos anos de uso você quer estimar o custo?', h: 'Além do Ano 0, que é o da prova de conceito ou do piloto.' },
+  // 3.2 Fonte de recursos
+  { passo: '3b', n: '3.2.1', id: 'pagaDepois', onde: 'caso', tipo: 'radio', opc: 'pagaDepois', cols: true, t: 'Quem vai pagar a tecnologia depois da prova de conceito ou do piloto?', ex: 'Exemplo: a própria secretaria, com recursos do tesouro estadual.' },
+  { passo: '3b', n: '3.2.2', id: 'fonte', onde: 'caso', tipo: 'radio', opc: 'fonte', cols: true, t: 'Você já tem fonte de recursos para manter a ferramenta nos próximos anos?', ex: 'Exemplo: uma linha no orçamento plurianual para tecnologia educacional.' },
+];

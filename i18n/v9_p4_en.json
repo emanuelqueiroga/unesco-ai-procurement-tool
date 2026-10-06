@@ -1,0 +1,19 @@
+{
+ "Plano copiado.": "Plan copied.",
+ "Dados do caso copiados.": "Case data copied.",
+ "Não foi possível copiar.": "Could not copy.",
+ "Caso da versão anterior convertido. Revise as respostas de adoção.": "Case from the previous version converted. Review the adoption answers.",
+ "Este arquivo não é um caso exportado pela ferramenta.": "This file is not a case exported by the tool.",
+ "Caso importado.": "Case imported.",
+ "Adaptação ao contexto": "Adaptation to the context",
+ "Adaptação: multiplicador de K3.1": "Adaptation: K3.1 multiplier",
+ "Adaptação: multiplicador de K3.2": "Adaptation: K3.2 multiplier",
+ "Integração e desenvolvimento. 1 = nível de referência do exemplo do guia. Convenção ilustrativa da ferramenta.": "Integration and development. 1 = reference level of the guide example. Illustrative convention of the tool.",
+ "Conteúdo e configuração iniciais. 1 = nível de referência do exemplo do guia. Convenção ilustrativa da ferramenta.": "Initial content and configuration. 1 = reference level of the guide example. Illustrative convention of the tool.",
+ "Plano de contratação": "Procurement plan",
+ "Documento de trabalho baseado no guia; valores ilustrativos.": "Working document based on the guide; illustrative values.",
+ "Perguntas que a descrição ainda não responde": "Questions the description does not yet answer",
+ "Como a arquitetura não foi definida, o modelo usa SaaS como ponto de partida.": "As the architecture has not been defined, the model uses SaaS as a starting point.",
+ "Mínimo": "Minimum",
+ "Máximo": "Maximum"
+}

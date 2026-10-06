@@ -19,10 +19,63 @@ const OPC = {
     ['nova', 'Iniciar uma nova iniciativa', 'Ainda não há solução escolhida nem fornecedor.'],
     ['proposta', 'Avaliar uma proposta já recebida', 'Um fornecedor, parceiro ou área interna já apresentou uma solução.'],
     ['renovar', 'Renovar ou ampliar um contrato', 'A solução está em uso e o contrato vence ou vai crescer.'],
-    ['incidente', 'Responder a um incidente', 'Algo deu errado com uma solução em operação.'],
     ['orcamento', 'Estimar o orçamento', 'É preciso saber quanto custará e quanto pedir por exercício.'],
-    ['testar', 'Testar antes de decidir', 'Prova de conceito, ambiente controlado ou piloto.'],
   ],
+  // v9: impacto desejado (1.2.5) — [id, texto, subtexto]
+  impactos: [
+    ['aprendizagem', 'Melhorar a aprendizagem dos estudantes', 'Ex.: proficiência em leitura ou em matemática'],
+    ['desigualdade', 'Reduzir diferenças de aprendizagem entre escolas ou grupos', ''],
+    ['tempo_docente', 'Liberar tempo dos professores para os estudantes', ''],
+    ['feedback', 'Dar retorno mais rápido aos estudantes', ''],
+    ['permanencia', 'Reduzir o abandono e melhorar a permanência', ''],
+    ['inclusao', 'Ampliar o acesso e a inclusão', 'Ex.: outros idiomas, deficiência'],
+    ['gestao', 'Responder mais rápido às escolas e às famílias', ''],
+    ['outro', 'Outro', 'Descreva no campo abaixo'],
+  ],
+  // v9: pergunta 2.0 (guia, cap. 14, "Instrumentos de aprendizagem")
+  teste: [
+    ['poc', 'Prova de conceito', 'Testa se a solução funciona tecnicamente, com a equipe e dados de teste, sem usuários reais.'],
+    ['piloto', 'Piloto', 'Testa o uso com professores ou estudantes reais, em poucas escolas e por tempo limitado.'],
+    ['recomendar', 'Não sei, recomende para mim', 'Responda às próximas perguntas como se fosse um piloto. O plano de contratação recomenda prova de conceito ou piloto e explica por quê.'],
+  ],
+  // tarefas (2.1.1): preenchido abaixo a partir de TAREFAS — [id, texto, exemplo]
+  tarefas: [],
+  // v9: adoção (2.3)
+  tipoTec: [
+    ['publica', 'Pública ou gratuita, oferecida por governo ou instituição pública'],
+    ['aberta', 'Aberta (código ou modelo aberto), operada pela rede ou por empresa contratada'],
+    ['paga', 'Produto ou serviço pago de uma empresa'],
+    ['nao_sei', 'Ainda não sei'],
+  ],
+  pagamento: [
+    ['usuario', 'Licença por usuário'],
+    ['institucional', 'Assinatura institucional (valor fixo para a rede)'],
+    ['consumo', 'Por consumo (paga pelo uso)'],
+    ['incluida', 'Incluída numa plataforma que a rede já paga'],
+    ['gratuito', 'Doação ou piloto gratuito'],
+  ],
+  licenca: [
+    ['assinatura', 'Licença de uso por prazo (assinatura)'],
+    ['aberta', 'Licença aberta (pode usar, modificar e hospedar)'],
+    ['termos', 'Termos de uso padrão, sem contrato negociado'],
+    ['nao_sei', 'Ainda não sei'],
+  ],
+  adaptacao: [
+    ['config', 'Nenhuma ou só configuração (contas, turmas, permissões)'],
+    ['conteudo', 'Adaptação de conteúdo e idioma (currículo, exemplos locais, língua)'],
+    ['integracao', 'Integração com sistemas da rede (login, matrícula, ambiente virtual)'],
+    ['sob_medida', 'Desenvolvimento sob medida (novas funções, aplicação própria)'],
+  ],
+  infra: [['sim', 'Sim'], ['complementar', 'Em parte: será preciso complementar'], ['nao_sei', 'Não sei']],
+  // v9: fase 3
+  expansao: [['ano1', 'No primeiro ano depois do teste'], ['ano2', 'Em dois anos'], ['ano3', 'Em três anos']],
+  horizonte: [[3, '3 anos'], [5, '5 anos']],
+  pagaDepois: [
+    ['rede', 'A própria rede'], ['governo', 'Outra esfera de governo ou programa público'],
+    ['parceiro', 'Parceiro privado ou doador'], ['indefinido', 'Ainda não definido'],
+  ],
+  fonte: [['sim', 'Sim, prevista no orçamento'], ['parcial', 'Em parte ou só para o primeiro ano'], ['nao', 'Não']],
+  simNao: [['sim', 'Sim'], ['nao', 'Ainda não']],
   classes: [
     ['geracao', 'Geração de conteúdo'], ['recomendacao', 'Recomendação'], ['classificacao', 'Classificação'],
     ['previsao', 'Previsão'], ['apoio', 'Apoio à decisão'], ['automacao', 'Automação'],
@@ -39,14 +92,15 @@ const OPC = {
   usuarios: [['professores', 'Professores'], ['estudantes', 'Estudantes'], ['gestores', 'Gestores escolares'], ['administrativo', 'Servidores administrativos'], ['familias', 'Famílias']],
   afetados: [['criancas', 'Crianças e adolescentes'], ['adultos_est', 'Estudantes adultos'], ['professores', 'Professores'], ['servidores', 'Servidores'], ['familias', 'Famílias']],
   consequencias: [
-    ['nenhuma', 'Apoio a uma tarefa, sem decisão sobre pessoas', 0],
-    ['organizacao', 'Organiza filas, comunicações ou rotinas', 0],
-    ['formativa', 'Feedback formativo a estudantes', 1],
-    ['apoio_est', 'Priorização de apoio a estudantes', 2],
-    ['nota', 'Nota ou avaliação somativa', 2],
-    ['acesso', 'Acesso, admissão ou nível de ensino', 2],
-    ['disciplina', 'Disciplina ou monitoramento em provas', 2],
-    ['recursos', 'Alocação de recursos entre escolas ou pessoas', 2],
+    // v9: textos em linguagem de uso (ids e pesos iguais aos da v8)
+    ['nenhuma', 'Usar como apoio na própria tarefa, sem decidir sobre pessoas', 0],
+    ['organizacao', 'Organizar filas, comunicados ou rotinas', 0],
+    ['formativa', 'Dar retorno formativo aos estudantes', 1],
+    ['apoio_est', 'Decidir quais estudantes recebem apoio primeiro', 2],
+    ['nota', 'Atribuir notas ou conceitos', 2],
+    ['acesso', 'Decidir acesso, matrícula ou nível de ensino', 2],
+    ['disciplina', 'Acompanhar comportamento ou provas', 2],
+    ['recursos', 'Distribuir recursos entre escolas ou pessoas', 2],
   ],
   dados: [
     ['nenhum', 'Sem dados pessoais'], ['pessoais_serv', 'Dados pessoais de servidores'], ['pessoais_est', 'Dados pessoais de estudantes'],
@@ -66,7 +120,7 @@ const OPC = {
     ['saas', 'Produto pronto (SaaS) por licença'], ['api', 'Aplicação própria ou contratada usando modelo por API, com base de conhecimento (RAG)'],
     ['ow', 'Modelo de pesos abertos em infraestrutura contratada'], ['indefinida', 'Ainda não definida'],
   ],
-  linhaBase: [['sim', 'Sim, medida'], ['parcial', 'Parcial ou estimada'], ['nao', 'Não existe']],
+  linhaBase: [['sim', 'Sim, medida'], ['parcial', 'Em parte ou estimada'], ['nao', 'Não']],
   capacidade: [
     ['finalidade', 'Definir a finalidade'], ['risco', 'Aceitar riscos'], ['evidencia', 'Interpretar evidências'],
     ['continuidade', 'Decidir sobre continuidade'], ['contas', 'Prestar contas'],
@@ -75,6 +129,161 @@ const OPC = {
     [1, 'Testar em ambiente controlado'], [2, 'Piloto limitado'], [3, 'Implantação em escala restrita'], [4, 'Ampliação para a rede'], [5, 'Afirmar efeito educacional'],
   ],
 };
+
+// ----------------------------------------------------------- v9: tarefas educacionais (2.1)
+// O que a pessoa quer que a IA faça, em linguagem de escola. As colunas técnicas (classes,
+// autonomia, dados, reversibilidade, efeito cumulativo) não aparecem no percurso: servem para
+// derivar o caso efetivo (casoEfetivo) e as sugestões do passo 2.2 (perfisSugeridos).
+const TAREFAS = [
+  { id: 'planos_aula', t: 'Preparar planos de aula', ex: 'Ex.: uma sequência de aulas de frações para o 5º ano',
+    classes: ['geracao'], autonomia: 2, usuarios: ['professores'], afetados: ['professores', 'criancas'], consequencias: ['nenhuma'],
+    dados: ['nenhum'], reversibilidade: 'antes', cumulativo: 'nao', frequencia: 'semanal' },
+  { id: 'materiais', t: 'Criar ou adaptar materiais e atividades', ex: 'Ex.: adaptar um texto para estudantes com dificuldade de leitura',
+    classes: ['geracao'], autonomia: 2, usuarios: ['professores'], afetados: ['professores', 'criancas'], consequencias: ['nenhuma'],
+    dados: ['nenhum'], reversibilidade: 'antes', cumulativo: 'nao', frequencia: 'semanal' },
+  { id: 'feedback_redacao', t: 'Dar retorno sobre redações e textos dos estudantes', ex: 'Ex.: comentários sobre coesão em textos do 9º ano, revisados pelo professor',
+    classes: ['avaliacao', 'geracao'], autonomia: 2, usuarios: ['professores'], afetados: ['criancas', 'professores'], consequencias: ['formativa'],
+    dados: ['pessoais_est'], reversibilidade: 'tempo', cumulativo: 'possivel', frequencia: 'semanal' },
+  { id: 'correcao', t: 'Corrigir ou pontuar tarefas e provas', ex: 'Ex.: pontuar questões abertas de uma avaliação bimestral',
+    classes: ['avaliacao', 'classificacao'], autonomia: 3, usuarios: ['professores'], afetados: ['criancas', 'familias'], consequencias: ['nota'],
+    dados: ['pessoais_est', 'sensiveis'], reversibilidade: 'lenta', cumulativo: 'sim', frequencia: 'semanal' },
+  { id: 'tutoria', t: 'Oferecer prática individual e tutoria aos estudantes', ex: 'Ex.: exercícios de matemática com dicas passo a passo',
+    classes: ['tutoria', 'geracao', 'recomendacao'], autonomia: 3, usuarios: ['estudantes', 'professores'], afetados: ['criancas', 'professores', 'familias'], consequencias: ['formativa'],
+    dados: ['pessoais_est', 'sensiveis'], reversibilidade: 'tempo', cumulativo: 'sim', frequencia: 'continua' },
+  { id: 'alerta_precoce', t: 'Identificar estudantes que precisam de apoio', ex: 'Ex.: sinalizar risco de abandono a partir de faltas e notas',
+    classes: ['previsao', 'apoio'], autonomia: 3, usuarios: ['gestores', 'professores'], afetados: ['criancas', 'familias'], consequencias: ['apoio_est'],
+    dados: ['pessoais_est', 'sensiveis'], reversibilidade: 'lenta', cumulativo: 'sim', frequencia: 'semanal' },
+  { id: 'duvidas', t: 'Responder dúvidas de escolas, servidores ou famílias', ex: 'Ex.: perguntas sobre normas de matrícula e prazos',
+    classes: ['geracao', 'classificacao'], autonomia: 2, usuarios: ['administrativo', 'gestores'], afetados: ['servidores'], consequencias: ['organizacao'],
+    dados: ['pessoais_serv'], reversibilidade: 'antes', cumulativo: 'nao', frequencia: 'diaria' },
+  { id: 'rotinas', t: 'Apoiar rotinas administrativas', ex: 'Ex.: organizar horários, convocações e comunicados',
+    classes: ['automacao', 'geracao'], autonomia: 4, usuarios: ['administrativo', 'gestores'], afetados: ['servidores', 'professores'], consequencias: ['organizacao'],
+    dados: ['pessoais_serv'], reversibilidade: 'antes', cumulativo: 'nao', frequencia: 'diaria' },
+  { id: 'acessibilidade', t: 'Traduzir conteúdos ou torná-los acessíveis', ex: 'Ex.: legendas, leitura em voz alta, versão na língua local',
+    classes: ['geracao'], autonomia: 2, usuarios: ['professores', 'estudantes'], afetados: ['criancas', 'familias'], consequencias: ['nenhuma'],
+    dados: ['nenhum'], reversibilidade: 'antes', cumulativo: 'nao', frequencia: 'semanal' },
+  { id: 'outra', t: 'Outra', ex: 'Descreva no campo abaixo',
+    classes: ['geracao'], autonomia: 2, usuarios: [], afetados: [], consequencias: ['nenhuma'],
+    dados: ['nenhum'], reversibilidade: 'tempo', cumulativo: 'possivel', frequencia: 'semanal' },
+];
+OPC.tarefas = TAREFAS.map(x => [x.id, x.t, x.ex]);
+// Tarefas ligadas a cada impacto (só para a etiqueta "sugerida pelo impacto" no 2.1; não pré-marcam)
+const IMPACTO_TAREFAS = {
+  aprendizagem: ['tutoria', 'feedback_redacao', 'materiais'],
+  desigualdade: ['tutoria', 'alerta_precoce', 'materiais'],
+  tempo_docente: ['planos_aula', 'materiais', 'correcao'],
+  feedback: ['feedback_redacao', 'correcao'],
+  permanencia: ['alerta_precoce'],
+  inclusao: ['acessibilidade', 'materiais'],
+  gestao: ['duvidas', 'rotinas'],
+  outro: [],
+};
+const ETAPAS_CRIANCAS = ['infantil', 'fund1', 'fund2', 'medio'];
+const ORDEM_FREQ = ['eventual', 'semanal', 'diaria', 'continua'];
+const ORDEM_REV = ['antes', 'tempo', 'lenta', 'dificil'];
+const ORDEM_CUM = ['nao', 'possivel', 'sim'];
+const tarefasDe = lista => (lista || []).map(id => TAREFAS.find(x => x.id === id)).filter(Boolean);
+// união preservando a ordem das opções em OPC
+const uniaoOrd = (opcs, valores) => { const s = new Set(valores); return opcs.map(o => o[0]).filter(id => s.has(id)); };
+const piorDe = (ordem, valores, padrao) => valores.length ? ordem[Math.max(...valores.map(v => Math.max(0, ordem.indexOf(v))))] : padrao;
+
+// Sugestões do passo 2.2 a partir das tarefas marcadas (2.1) e das etapas (1.1.4).
+// Se há etapas marcadas e nenhuma é de educação básica (só superior, EJA, profissional),
+// "criancas" vira "adultos_est". Sem etapas marcadas, mantém "criancas".
+function perfisSugeridos(tarefas, etapasIds) {
+  const T = tarefasDe(tarefas);
+  const et = etapasIds || [];
+  const adultos = et.length > 0 && !et.some(e => ETAPAS_CRIANCAS.includes(e));
+  const usuarios = uniaoOrd(OPC.usuarios, [].concat(...T.map(x => x.usuarios)));
+  let afetados = [].concat(...T.map(x => x.afetados));
+  if (adultos) afetados = afetados.map(a => a === 'criancas' ? 'adultos_est' : a);
+  afetados = uniaoOrd(OPC.afetados, afetados);
+  let consequencias = uniaoOrd(OPC.consequencias, [].concat(...T.map(x => x.consequencias)));
+  if (consequencias.length > 1) consequencias = consequencias.filter(k => k !== 'nenhuma');
+  if (!consequencias.length) consequencias = ['nenhuma'];
+  const frequencia = piorDe(ORDEM_FREQ, T.map(x => x.frequencia), 'semanal');
+  return { usuarios, afetados, consequencias, frequencia };
+}
+
+// Arquitetura presumida a partir das respostas de adoção (2.3). Devolve 'saas' | 'api' | 'ow'.
+// Com ignorarManual = true, devolve a arquitetura deduzida mesmo que haja escolha manual.
+function derivarArquitetura(c, ignorarManual) {
+  c = c || {};
+  if (!ignorarManual && ['saas', 'api', 'ow'].includes(c.arquiteturaManual)) return c.arquiteturaManual;
+  if (c.tipoTec === 'aberta' || c.licenca === 'aberta') return 'ow';
+  if (c.pagamento === 'consumo' || c.adaptacao === 'sob_medida') return 'api';
+  return 'saas';
+}
+
+// Caso efetivo: cópia do caso com os campos legados (classes, autonomia, dados, reversibilidade,
+// verificabilidade, contestação, arquitetura...) derivados das tarefas e da adoção. Não altera c.
+// tot = { alunos, escolas, etapas: [ids] } (totaisCtx()).
+function casoEfetivo(c, tot) {
+  const ce = JSON.parse(JSON.stringify(c || {}));
+  tot = tot || {};
+  const alunos = +tot.alunos || 0, escolas = +tot.escolas || 0;
+  const T = tarefasDe(ce.tarefas);
+  const us = ce.usuarios || [], af = ce.afetados || [];
+  ce.consequencias = Array.isArray(ce.consequencias) ? ce.consequencias : ['nenhuma'];
+  const cons = ce.consequencias;
+  ce.classes = uniaoOrd(OPC.classes, [].concat(...T.map(x => x.classes)));
+  ce.autonomia = T.length ? Math.max(...T.map(x => x.autonomia)) : 2;
+  // dados
+  const dd = [].concat(...T.map(x => x.dados));
+  if (us.includes('estudantes')) dd.push('pessoais_est');
+  if (us.some(u => ['professores', 'gestores', 'administrativo'].includes(u))) dd.push('pessoais_serv');
+  if (af.includes('criancas') && cons.some(k => ['nota', 'apoio_est', 'acesso', 'disciplina'].includes(k))) dd.push('sensiveis');
+  let dados = uniaoOrd(OPC.dados, dd);
+  if (dados.length > 1) dados = dados.filter(x => x !== 'nenhum');
+  ce.dados = dados.length ? dados : ['nenhum'];
+  ce.treino = 'nao_sei';  // premissa: o plano pede a cláusula de proibição
+  ce.reversibilidade = piorDe(ORDEM_REV, T.map(x => x.reversibilidade), 'tempo');
+  ce.cumulativo = piorDe(ORDEM_CUM, T.map(x => x.cumulativo), 'possivel');
+  ce.arquitetura = derivarArquitetura(ce);
+  ce.__arqPresumida = !['saas', 'api', 'ow'].includes(ce.arquiteturaManual) && ['', 'nao_sei', undefined, null].includes(ce.tipoTec);
+  ce.verificabilidade = ['api', 'ow'].includes(ce.arquitetura) ? 'sim' : ce.licenca === 'termos' ? 'nao' : 'parcial';
+  const pesoMax = Math.max(0, ...cons.map(k => (OPC.consequencias.find(x => x[0] === k) || [0, 0, 0])[2]));
+  ce.contestacao = pesoMax === 0 ? 'na' : 'formal';
+  ce.vulneraveis = false;
+  ce.idiomas = T.some(x => x.id === 'acessibilidade') || ['conteudo', 'integracao', 'sob_medida'].includes(ce.adaptacao);
+  if (+ce.elegiveis > 0) { ce.elegiveis = +ce.elegiveis; ce.__elegPadrao = false; }
+  else { ce.elegiveis = (us.includes('estudantes') && alunos > 0) ? alunos : 1000; ce.__elegPadrao = true; }
+  ce.alcance = (af.includes('criancas') || af.includes('adultos_est')) && alunos > 0 ? alunos : '';
+  ce.pilotoGratuito = ce.pagamento === 'gratuito';
+  ce.alternativaSemIA = ce.alternativa === 'sim';
+  ce.escolasRede = escolas;
+  ce.horizonte = +ce.horizonte || 3;
+  ce.piloto = Object.assign({ escolas: '', participantes: '', meses: '' }, ce.piloto || {});
+  return ce;
+}
+
+// Prova de conceito ou piloto? (guia, cap. 14, instrumentos de aprendizagem)
+// Devolve { modo: 'poc' | 'piloto', motivos: [frases em PT, chaves de i18n], ids: [códigos dos motivos] }.
+const MOTIVOS_TESTE = {
+  tecnologia: 'a tecnologia ainda não foi escolhida',
+  sob_medida: 'a solução exige desenvolvimento sob medida, cuja viabilidade técnica ainda não foi demonstrada',
+  outra: 'há uma tarefa fora da lista, sem referência de uso',
+  linha_base: 'sem linha de base, um piloto ainda não conseguiria medir mudança',
+  escolhida: 'a tecnologia está escolhida',
+  adapt_config: 'a adaptação se limita à configuração',
+  adapt_conteudo: 'a adaptação se limita a conteúdo e idioma',
+  adapt_integracao: 'a adaptação se limita à integração com sistemas da rede',
+  base_sim: 'há linha de base medida',
+  base_parcial: 'há linha de base parcial',
+};
+function recomendarTeste(ce) {
+  ce = ce || {};
+  const poc = [];
+  if (!ce.tipoTec || ce.tipoTec === 'nao_sei') poc.push('tecnologia');
+  if (ce.adaptacao === 'sob_medida') poc.push('sob_medida');
+  if ((ce.tarefas || []).includes('outra')) poc.push('outra');
+  if (ce.linhaBase === 'nao') poc.push('linha_base');
+  if (poc.length) return { modo: 'poc', ids: poc, motivos: poc.map(k => MOTIVOS_TESTE[k]) };
+  const ok = ['escolhida'];
+  if (['config', 'conteudo', 'integracao'].includes(ce.adaptacao)) ok.push('adapt_' + ce.adaptacao);
+  if (ce.linhaBase === 'sim' || ce.linhaBase === 'parcial') ok.push('base_' + ce.linhaBase);
+  return { modo: 'piloto', ids: ok, motivos: ok.map(k => MOTIVOS_TESTE[k]) };
+}
 
 // ----------------------------------------------------------- perfil de risco
 const DIMENSOES = [
@@ -444,22 +653,23 @@ function alertas(c, perfil) {
   if (c.linhaBase === 'nao') add('bloqueio', 'Não há linha de base. Sem ela não é possível avaliar mudança e o sucesso tende a ser redefinido depois.', 3);
   if (c.linhaBase === 'parcial') add('atencao', 'A linha de base é parcial. Registre a lacuna e como será medida antes da intervenção.', 3);
   if (!c.alternativaSemIA) add('atencao', 'Nenhuma alternativa sem IA foi comparada. Adotar uma alternativa sem IA é um resultado legítimo do Ponto de decisão 2.', 4);
-  const capFaltam = OPC.capacidade.filter(x => !(c.capacidade || []).includes(x[0])).map(x => x[1].toLowerCase());
-  if (capFaltam.length) add(capFaltam.length >= 3 ? 'bloqueio' : 'atencao', 'Funções que não podem ser terceirizadas e ainda não têm responsável interno: ' + capFaltam.join(', ') + '.', 2);
+  // v9: funções que não podem ser terceirizadas deixaram de ser pergunta (recomendação fixa no plano, B2)
   if (c.autonomia >= 5 && (c.consequencias || []).some(k => ['nota', 'acesso', 'disciplina', 'apoio_est', 'recursos'].includes(k)))
     add('bloqueio', 'Execução automática em decisão de consequência sobre pessoas. Considere transformar a execução em apoio à decisão antes de adicionar controles.', 6);
   if (c.autonomia === 6) add('atencao', 'Execução encadeada: defina que ações o sistema pode executar, que dados acessa e quando a pessoa intervém.', 5);
   if (perfil.P.contestacao === 'critico' || (c.contestacao === 'nao' && (c.consequencias || []).some(k => k !== 'nenhuma')))
     add('bloqueio', 'A saída afeta pessoas e não há caminho de contestação. Quando não há remediação plausível para uma consequência grave, o nível de risco aceitável diminui.', 6);
   if (c.treino === 'sim') add('bloqueio', 'Os dados podem ser usados pelo fornecedor para treinar ou melhorar modelos. Isso deve ser proibido ou condicionado como obrigação contratual, e não como configuração.', 7);
-  if (c.treino === 'nao_sei') add('atencao', 'Não se sabe se os dados serão usados para treinamento. A explicação sobre o destino dos dados não pode depender de afirmações genéricas do fornecedor.', 7);
+  const dadoPessoal = (c.dados || []).some(k => ['pessoais_serv', 'pessoais_est', 'sensiveis'].includes(k));
+  if (c.treino === 'nao_sei' && dadoPessoal) add('atencao', 'Não se sabe se os dados serão usados para treinamento. A explicação sobre o destino dos dados não pode depender de afirmações genéricas do fornecedor.', 7);
   if (c.pilotoGratuito) add('atencao', 'Piloto gratuito: o custo pode não estar na licença, mas na dependência criada durante a experimentação. Registre antes os ativos que o piloto produzirá e o destino deles se o fornecedor não for escolhido.', 14);
   if ((c.usuarios || []).includes('estudantes') && (c.afetados || []).includes('criancas') && (c.classes || []).some(k => ['geracao', 'tutoria'].includes(k)))
     add('atencao', 'Interação generativa direta com crianças: explicações e mecanismos de contestação precisam ser compreensíveis para elas, e a exposição pode durar anos.', 6);
   if ((c.classes || []).includes('previsao')) add('atencao', 'Previsão não é explicação causal: a associação não diz o que fazer. Defina a ação útil depois do alerta e quem a executa.', 4);
   if ((c.classes || []).includes('tutoria') || ((c.classes || []).length >= 3)) add('atencao', 'Rótulos como "tutor" ou "plataforma" escondem vários casos de uso. Preencha um canvas para cada função e aprove-as separadamente.', 5);
   if (c.verificabilidade === 'nao') add('atencao', 'A instituição não consegue verificar como as saídas são produzidas. Sem registro de versões e fontes, a evidência não pode ser vinculada à configuração em uso.', 9);
-  if (c.arquitetura === 'indefinida' && ['proposta', 'renovar', 'orcamento'].includes(c.situacao)) add('atencao', 'A arquitetura ainda não está definida. O custo e a dependência mudam muito entre SaaS, API e pesos abertos.', 9);
+  if ((c.__arqPresumida || c.arquitetura === 'indefinida') && ['proposta', 'renovar', 'orcamento'].includes(c.situacao))
+    add('atencao', 'A tecnologia ainda não foi escolhida. A estimativa usa um produto pago por licença como premissa; o custo e a dependência mudam muito entre as opções.', 9);
   if (perfil.alto && Math.max(+c.elegiveis || 0, +c.alcance || 0) >= 10000 && ['caso', 'critica'].includes(formaSupervisao(c, perfil)))
     add('atencao', 'Revisão humana caso a caso em grande volume: teste se há tempo real para revisar no volume previsto após a expansão.', 17);
   if (c.situacao === 'renovar') add('info', 'Renovar é uma nova decisão pública. Compare com as alternativas de hoje, não com a situação de antes da contratação.', 19);
@@ -503,7 +713,7 @@ function extrasPD(n, c, perfil) {
   }
   if (n === 6) {
     if (c.pilotoGratuito) X.push('Ativos produzidos pelo piloto gratuito e seu destino registrados antes do início');
-    if (c.situacao === 'testar') X.push('Teste com pergunta, critérios de parada e possibilidade real de não continuar');
+    if (c.situacao === 'testar' || c.teste) X.push('Teste com pergunta, critérios de parada e possibilidade real de não continuar');
   }
   if (n === 7) {
     if (alto) X.push('Notificação prévia de mudanças, direito de auditoria, suspensão de funcionalidade e saída assistida');
@@ -528,4 +738,4 @@ function instrumentosCaso(c, perfil) {
 // ----------------------------------------------------------- utilitários de formato
 function fmtInt(x) { return Math.round(+x || 0).toLocaleString(LOC()); }
 
-if (typeof module !== 'undefined') module.exports = { NIVEIS, NIVEL_NOME, NIVEL_CRIT, OPC, DIMENSOES, perfilAutomatico, perfilFinal, anexoIII, DILIGENCIA, PDS, DOSSIE, INSTRUMENTOS, CAPITULOS, ROTAS, ESCADA, SUPERVISAO, CONTESTACAO, FORMAS_SUP, DADOS_REQ, CONTRATO, MUDANCA, METRICAS, SEVERIDADE, PACOTE, LOCKIN, alertas, formaSupervisao, extrasPD, instrumentosCaso, fmtInt };
+if (typeof module !== 'undefined') module.exports = { TAREFAS, IMPACTO_TAREFAS, MOTIVOS_TESTE, perfisSugeridos, derivarArquitetura, casoEfetivo, recomendarTeste, NIVEIS, NIVEL_NOME, NIVEL_CRIT, OPC, DIMENSOES, perfilAutomatico, perfilFinal, anexoIII, DILIGENCIA, PDS, DOSSIE, INSTRUMENTOS, CAPITULOS, ROTAS, ESCADA, SUPERVISAO, CONTESTACAO, FORMAS_SUP, DADOS_REQ, CONTRATO, MUDANCA, METRICAS, SEVERIDADE, PACOTE, LOCKIN, alertas, formaSupervisao, extrasPD, instrumentosCaso, fmtInt };

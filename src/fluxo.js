@@ -1,646 +1,614 @@
 // =====================================================================
-// Fluxo em quatro fases: lógica, telas e eventos (dados em fluxo_dados.js)
+// Percurso em três fases: lógica, telas e eventos (dados em fluxo_dados.js)
+// Durante o percurso só há perguntas; diagnóstico e recomendações ficam no plano de contratação.
 // =====================================================================
+
+const CAMPO_POR_ID = {};
+CAMPOS.forEach(f => { CAMPO_POR_ID[f.id] = f; });
+const CAMPOS_SUGERIDOS = ['usuarios', 'afetados', 'consequencias', 'frequencia'];
+let ARQ_ABERTA = false;
 
 // ----------------------------------------------------------- estado
 function estadoFluxo() {
   S.ctx = Object.assign({ nivel: '', nivelOutro: '', local: '', etapas: {}, dominio: '', comps: [], compOutro: '', olhando: '' }, S.ctx || {});
+  if (!S.ctx.etapas || typeof S.ctx.etapas !== 'object') S.ctx.etapas = {};
   S.resp = S.resp || {};
   S.respC = S.respC || {};
-  if (S.fase == null) S.fase = 'contexto';
-  if (S.passo == null) S.passo = '1a';
   S.feitos = S.feitos || {};
-  S.pular = S.pular || {};
-  S.piloto = Object.assign({ escolas: '', participantes: '', meses: '' }, S.piloto || {});
-  // caso em branco: enquanto a pessoa não informar, usa o total de estudantes do contexto
-  if (S.exemplo === 'novo' && !S.respC.elegiveis && (S.caso.usuarios || []).includes('estudantes')) {
-    const t = totaisCtx(); if (t.alunos > 0 && +S.caso.elegiveis !== t.alunos) { S.caso.elegiveis = t.alunos; S.custo.editado = false; }
-  }
+  S.info = S.info || {};
+  if (S.caso && (!S.caso.piloto || typeof S.caso.piloto !== 'object')) S.caso.piloto = { escolas: '', participantes: '', meses: '' };
+  if (S.fase == null || (S.fase !== '' && !PASSOS[S.fase])) S.fase = 'contexto';
+  if (S.passo == null) S.passo = '';
+  if (S.fase && S.passo && !PASSOS[S.fase].some(p => p[0] === S.passo)) S.passo = PASSOS[S.fase][0][0];
+  if (S.vista && S.vista !== 'plano') S.vista = '';
   return S.ctx;
 }
 // Num caso em branco, um campo com valor padrão só conta depois que a pessoa responde.
 function respondido(campo) { return S.exemplo !== 'novo' || !!(S.respC || {})[campo]; }
 function aplicarExemploFluxo(k) {
-  S.ctx = clone(CTX_EX[k] || {}); S.resp = clone(RESP_EX[k] || {}); S.feitos = {}; S.respC = {}; S.pular = {}; S.vista = '';
-  S.piloto = k === 'novo' ? {} : { escolas: 20, participantes: Math.round((+S.caso.elegiveis || 1000) * 0.04), meses: 4 };
-  if (CTX_EX[k]) { S.ctx.local = tr(S.ctx.local); S.ctx.olhando = tr(S.ctx.olhando); if (S.ctx.compOutro) S.ctx.compOutro = tr(S.ctx.compOutro); }
+  const CX = typeof CTX_EX !== 'undefined' ? CTX_EX : {}, RX = typeof RESP_EX !== 'undefined' ? RESP_EX : {};
+  S.ctx = clone(CX[k] || {}); S.resp = clone(RX[k] || {}); S.feitos = {}; S.respC = {}; S.vista = ''; S.info = {};
+  // nos exemplos, as respostas de experiência de uso já estão confirmadas (as sugestões não as substituem)
+  if (k !== 'novo') CAMPOS_SUGERIDOS.forEach(c => { S.respC[c] = true; });
+  if (CX[k]) { ['local', 'olhando', 'compOutro'].forEach(c => { if (S.ctx[c]) S.ctx[c] = tr(S.ctx[c]); }); }
   S.fase = 'contexto'; S.passo = '1a';
   estadoFluxo();
 }
 
 // ----------------------------------------------------------- cálculos
-function etapasAtivas() { return ETAPAS_ENS.filter(e => ((S.ctx || {}).etapas[e[0]] || {}).on); }
+function etapasAtivas() { return ETAPAS_ENS.filter(e => (((S.ctx || {}).etapas || {})[e[0]] || {}).on); }
 function alunosEtapa(id) {
-  const e = S.ctx.etapas[id] || {};
-  if (e.porAno && Array.isArray(e.anos) && e.anos.some(x => +x > 0)) return e.anos.reduce((a, b) => a + (+b || 0), 0);
-  return +e.alunos || 0;
+  const e = ((S.ctx || {}).etapas || {})[id] || {};
+  const def = ETAPAS_ENS.find(x => x[0] === id);
+  const temAnos = def && def[3].length;
+  if (!temAnos || e.soTotal) return +e.alunos || 0;
+  return (Array.isArray(e.anos) ? e.anos : []).reduce((a, b) => a + (+b || 0), 0);
 }
 function totaisCtx() {
-  if (!S.ctx || !S.ctx.etapas) return { escolas: 0, alunos: 0, n: 0 };
+  if (!S.ctx || !S.ctx.etapas) return { escolas: 0, alunos: 0, n: 0, etapas: [] };
   const at = etapasAtivas();
-  return { escolas: at.reduce((a, e) => a + (+(S.ctx.etapas[e[0]] || {}).escolas || 0), 0), alunos: at.reduce((a, e) => a + alunosEtapa(e[0]), 0), n: at.length };
+  return { escolas: at.reduce((a, e) => a + (+(S.ctx.etapas[e[0]] || {}).escolas || 0), 0), alunos: at.reduce((a, e) => a + alunosEtapa(e[0]), 0), n: at.length, etapas: at.map(e => e[0]) };
 }
-function questoes(fase, camada) {
-  const c = S.caso, p = perfil();
-  return QUESTOES.filter(q => q.fase === fase && (camada == null || q.c === camada) && (!q.quando || q.quando(c, p)));
+function rotulo(lista, v) { return ((lista || []).find(o => String(o[0]) === String(v)) || ['', ''])[1]; }
+function listaOpc(f) { return typeof f.opc === 'string' ? ((typeof OPC !== 'undefined' && OPC[f.opc]) || []) : (f.opc || []); }
+function lerNum(v) {
+  if (typeof lerNumero === 'function') return lerNumero(v);
+  const s = String(v == null ? '' : v).replace(/[^\d.,-]/g, '').replace(/[.,](?=\d{3}(\D|$))/g, '').replace(',', '.');
+  return s === '' ? '' : (+s || 0);
 }
-function nota(qs) {
-  const val = qs.filter(q => S.resp[q.id] && S.resp[q.id] !== 'na');
-  const resp = qs.filter(q => S.resp[q.id]).length;
-  if (!val.length) return resp ? { v: 1, resp, total: qs.length } : null;
-  const s = val.reduce((a, q) => a + ({ sim: 1, parcial: 0.5 }[S.resp[q.id]] || 0), 0);
-  return { v: s / val.length, resp, total: qs.length };
+function valorCampo(f) {
+  if (f.onde === 'resp') return S.resp[f.id];
+  if (f.onde === 'ctx') return S.ctx[f.id];
+  return S.caso[f.id];
 }
-function qsPasso(id) {
-  if (id === '1c') return questoes('contexto');
-  if (id === '2d') return questoes('piloto').filter(q => q.g === 'regras');
-  if (id === '2e') return questoes('piloto').filter(q => q.g !== 'regras');
-  if (id === '3a') return questoes('implantacao');
-  if (id === '4a') return questoes('escala');
-  return null;
-}
-function passoDaQuestao(q) {
-  if (q.fase === 'contexto') return '1c';
-  if (q.fase === 'piloto') return q.g === 'regras' ? '2d' : '2e';
-  return q.fase === 'implantacao' ? '3a' : '4a';
-}
-function rotulo(lista, v) { return (lista.find(o => String(o[0]) === String(v)) || ['', ''])[1]; }
-// O que falta para concluir um passo (lista de rótulos)
-function faltas(id) {
-  const x = S.ctx, c = S.caso, F = [];
-  const campo = (ok, nome) => { if (!ok) F.push(nome); };
-  if (id === '1a') {
-    campo(!!x.nivel, 'Nível administrativo'); campo(!!(x.local || '').trim(), 'Nome do lugar ou da rede');
-    campo(respondido('situacao'), 'Em que ponto você está');
-    campo(etapasAtivas().length > 0, 'Etapas de ensino'); campo(totaisCtx().alunos > 0, 'Número de estudantes');
-  } else if (id === '1b') {
-    campo(!!x.dominio, 'Tipo de problema'); campo((x.comps || []).length > 0, 'Componentes em jogo');
-    campo(!!(c.problema || '').trim(), 'Descrição do problema');
-  } else if (id === '2a') {
-    campo((c.classes || []).length > 0, 'O que a IA faz'); campo(respondido('autonomia'), 'Grau de autonomia');
-    campo(respondido('arquitetura') && c.arquitetura !== 'indefinida', 'Arquitetura');
-  } else if (id === '2b') {
-    campo((c.usuarios || []).length > 0, 'Quem usa o sistema'); campo((c.afetados || []).length > 0, 'Quem é afetado pelas saídas');
-    campo(respondido('consequencias'), 'Em que entra a saída do sistema'); campo(respondido('dados'), 'Que dados são usados');
-    if (dadosPessoais(c)) campo(respondido('treino'), 'Uso dos dados pelo fornecedor');
-    ['frequencia', 'reversibilidade', 'verificabilidade', 'contestacao', 'cumulativo'].forEach(k => campo(respondido(k), (CAMPOS_RISCO.find(r => r[0] === k) || ['', k])[1]));
-  } else if (id === '2c') {
-    if (!riscoPronto()) F.push('Respostas dos passos 2.1 e 2.2');
-  } else {
-    const qs = qsPasso(id);
-    if (qs) { const n = qs.filter(q => !S.resp[q.id]).length; if (n) F.push(n === 1 ? tr('1 pergunta sem resposta') : tr(n + ' perguntas sem resposta')); }
+function vazio(v) { return v == null || v === '' || (Array.isArray(v) && !v.length); }
+function textoCampo(f) { return f.tPoc && S.caso.teste === 'poc' ? f.tPoc : f.t; }
+// Campo da experiência de uso pré-marcado pela tarefa e ainda não confirmado pela pessoa
+function sugerido(f) { return !!(f && f.sugere && !S.respC[f.id] && (S.caso.tarefas || []).length); }
+// A pergunta está respondida?
+function qOk(f) {
+  const x = S.ctx, c = S.caso, v = valorCampo(f);
+  switch (f.tipo) {
+    case 'seg': return !!S.resp[f.id];
+    case 'etapas': return etapasAtivas().length > 0;
+    case 'grade': { const at = etapasAtivas(); return at.length > 0 && at.every(e => +(x.etapas[e[0]] || {}).escolas > 0 && alunosEtapa(e[0]) > 0); }
+    case 'dom': return !!x.dominio;
+    case 'comps': return (x.comps || []).length > 0;
+    case 'texto': case 'area': return !!String(v || '').trim();
+    case 'num': return +v > 0;
+    case 'setup': { const p = c.piloto || {}; return +p.participantes > 0 && +p.meses > 0 && (c.teste === 'poc' || +p.escolas > 0); }
+    default:
+      if (vazio(v)) return false;
+      if (f.sugere && sugerido(f)) return false;
+      return f.padrao ? respondido(f.id) : true;
   }
-  return F;
 }
-const PASSOS_COM_FALTAS = ['1a', '1b', '1c', '2a', '2b', '2c', '2d', '2e', '3a', '4a'];
-function riscoPronto() { return !faltas('2a').length && !faltas('2b').length; }
-function passoFeito(id) { return !faltas(id).length && (PASSOS_COM_FALTAS.includes(id) || !!S.feitos[id]); }
-// Estado de um passo: ok, atencao, bloqueio ou aberto
+function camposPasso(id) { return CAMPOS.filter(f => f.passo === id); }
+// Perguntas obrigatórias ainda sem resposta num passo (objetos de CAMPOS)
+function faltas(id) { return camposPasso(id).filter(f => !f.opcional && !qOk(f)); }
+function passoFeito(id) { return id === '3c' ? !!S.feitos['3c'] : !faltas(id).length; }
 function estadoPasso(id) {
-  const qs = qsPasso(id);
-  if (qs) {
-    if (qs.some(q => S.resp[q.id] === 'nao' && ESSENCIAIS.has(q.id))) return 'bloqueio';
-    if (qs.some(q => ['nao', 'parcial'].includes(S.resp[q.id]))) return 'atencao';
-    return passoFeito(id) ? 'ok' : 'aberto';
-  }
-  if (id === '2c' && riscoPronto()) {
-    const al = alertas(S.caso, perfil());
-    if (al.some(a => a.nivel === 'bloqueio')) return 'bloqueio';
-    if (al.some(a => a.nivel === 'atencao')) return 'atencao';
-    return 'ok';
-  }
-  return passoFeito(id) ? 'ok' : 'aberto';
+  if (passoFeito(id)) return 'ok';
+  if (id !== '3c' && camposPasso(id).some(f => qOk(f))) return 'andamento';
+  return '';
 }
-const MARCA = { ok: '✓', atencao: '!', bloqueio: '✕' };
-function progressoFase(f) {
-  const ps = PASSOS[f]; const feitos = ps.filter(([id]) => passoFeito(id)).length;
-  return { feitos, total: ps.length, pct: feitos / ps.length };
+function fasePasso(id) { return Object.keys(PASSOS).find(f => PASSOS[f].some(p => p[0] === id)); }
+function numPasso(id) { return (PASSO_INFO[id] || {}).num || id; }
+function nomePasso(id) { const f = fasePasso(id); return f ? (PASSOS[f].find(p => p[0] === id) || ['', ''])[1] : ''; }
+function progressoFase(fid) {
+  const ps = PASSOS[fid]; const feitos = ps.filter(([id]) => passoFeito(id)).length;
+  return { feitos, total: ps.length, pct: feitos / ps.length, completa: feitos === ps.length };
 }
-
-// ----------------------------------------------------------- veredito por fase
-const PERG_FASE = {
-  contexto: 'O contexto está claro o bastante para planejar um piloto?',
-  piloto: 'Pode começar o piloto?',
-  implantacao: 'Pode implantar na rede?',
-  escala: 'Pode manter e ampliar?',
-};
-const VEREDITOS = { sim: ['Sim', 'v-ok'], cond: ['Sim, com condições', 'v-warn'], nao: ['Ainda não', 'v-crit'], falta: ['Faltam respostas', 'v-muted'], pulada: ['Não avaliada', 'v-off'] };
-const PULAVEIS = ['implantacao', 'escala'];
-function pulada(fid) { return PULAVEIS.includes(fid) && !!(S.pular || {})[fid]; }
-function fasesAvaliadas() { return FASES.filter(f => !pulada(f.id)); }
-function veredito(fid) {
-  if (pulada(fid)) return { st: 'pulada', bloq: [], cond: [], falt: 0 };
-  const qs = questoes(fid);
-  const bloq = [], cond = [];
-  qs.forEach(q => {
-    const v = S.resp[q.id];
-    const item = { q, texto: ACOES[q.id] || q.t, ir: fid + ':' + passoDaQuestao(q) + ':' + q.id, resp: v };
-    if (v === 'nao' && ESSENCIAIS.has(q.id)) bloq.push(item);
-    else if (v === 'nao' || v === 'parcial') cond.push(item);
-  });
-  if (fid === 'piloto' && riscoPronto()) {
-    alertas(S.caso, perfil()).forEach(a => {
-      const item = { texto: a.texto, ir: 'piloto:2c', alerta: true };
-      if (a.nivel === 'bloqueio') bloq.push(item); else if (a.nivel === 'atencao') cond.push(item);
-    });
-  }
-  let falt = qs.filter(q => !S.resp[q.id]).length;
-  const passosF = PASSOS[fid].map(p => p[0]).filter(id => !qsPasso(id) && id !== '2c');
-  passosF.forEach(id => { falt += faltas(id).length; });
-  const st = bloq.length ? 'nao' : falt ? 'falta' : cond.length ? 'cond' : 'sim';
-  return { st, bloq, cond, falt };
+function idQ(n) { return 'q-' + String(n).replace(/\./g, '-'); }
+// Todas as perguntas sem resposta, para o plano de contratação
+function faltasTodas() {
+  const out = [];
+  FASES.forEach(fa => PASSOS[fa.id].forEach(([pid]) => faltas(pid).forEach(f => out.push({ n: f.n, id: f.id, texto: textoCampo(f), passo: pid, ir: fa.id + ':' + pid + ':' + f.n.replace(/\./g, '-') }))));
+  return out;
 }
-function pillVeredito(st, curto) {
-  const [t, cls] = VEREDITOS[st];
-  return `<span class="vpill ${cls}">${curto && st === 'cond' ? esc('Com condições') : esc(t)}</span>`;
-}
-function itemAcao(it, tipo) {
-  return `<li class="acao ${tipo}"><span class="acao-t">${esc(it.texto)}${it.resp === 'parcial' ? ' <span class="tag">em parte</span>' : ''}</span>
-    <button type="button" class="ir" data-ir="${it.ir}">${esc(it.alerta ? 'Ver o perfil de risco' : 'Ir à pergunta')}</button></li>`;
-}
-function listaAcoes(arr, lim) {
-  if (!arr.length) return '';
-  const li = x => x.map(([it, t]) => itemAcao(it, t)).join('');
-  return `<ul class="acoes">${li(arr.slice(0, lim))}</ul>${arr.length > lim ? `<details class="mais"><summary>${esc(tr('Ver mais ' + (arr.length - lim)))}</summary><ul class="acoes">${li(arr.slice(lim))}</ul></details>` : ''}`;
-}
-// Depois do resultado: seguir para a próxima fase ou, a partir do piloto, pular as fases restantes
-function botoesSeguir(f) {
-  const resto = FASES.slice(FASES.indexOf(f) + 1).filter(z => PULAVEIS.includes(z.id));
-  const nf = FASES[FASES.indexOf(f) + 1];
-  const resumo = `<button type="button" class="btn${nf ? '' : ' pri'}" data-act="ir-resumo">${esc(tr('Ver resumo e recomendações'))}</button>`;
-  if (!nf) return resumo;
-  const seguir = `<button type="button" class="btn pri" data-act="avaliar-fase" data-f2="${nf.id}">${esc(tr('Avaliar a fase ' + nf.n + ': ' + nf.nome))}</button>`;
-  if (!resto.length || f.id === 'contexto') return seguir;
-  const txt = resto.length === 2 ? tr('Pular as fases 3 e 4 e ver o resumo') : tr('Pular a fase 4 e ver o resumo');
-  return `${seguir}<button type="button" class="btn" data-act="pular-resto" data-de="${f.id}">${esc(txt)}</button>`;
-}
-function cartaoResultado(fid) {
-  const v = veredito(fid), f = FASES.find(z => z.id === fid);
-  const resumoTxt = {
-    nao: 'Há pontos essenciais sem resposta positiva. Resolva-os antes de avançar.',
-    falta: 'Ainda há perguntas sem resposta nesta fase. O resultado muda conforme você responde.',
-    cond: 'Pode avançar, desde que as condições abaixo entrem no plano de ação, com responsável e prazo.',
-    sim: 'As respostas não indicam impedimentos nesta fase.',
-  }[v.st];
-  const lista = (arr, tipo) => listaAcoes(arr.map(it => [it, tipo]), 6);
-  return `<div class="resultado ${VEREDITOS[v.st][1]}" id="res-${fid}">
-    <div class="res-cab"><span class="eyebrow">Resultado da fase ${f.n}</span><b>${esc(PERG_FASE[fid])}</b>${pillVeredito(v.st)}</div>
-    <p>${esc(resumoTxt)}</p>
-    ${v.bloq.length ? `<div class="res-g"><span class="res-t crit">${esc(tr('Impedimentos (' + v.bloq.length + ')'))}</span>${lista(v.bloq, 'crit')}</div>` : ''}
-    ${v.cond.length ? `<div class="res-g"><span class="res-t warn">${esc(tr('Condições (' + v.cond.length + ')'))}</span>${lista(v.cond, 'warn')}</div>` : ''}
-    ${v.falt ? `<p class="res-t muted">${esc(v.falt === 1 ? tr('1 resposta pendente nesta fase') : tr(v.falt + ' respostas pendentes nesta fase'))}</p>` : ''}
-    <div class="passo-pe res-pe">${botoesSeguir(f)}</div>
-  </div>`;
-}
-
-// ----------------------------------------------------------- componentes
-function segResp(q) {
-  const v = S.resp[q.id];
-  const ref = REFS[q.id];
-  let refTxt = '';
-  if (ref && respondido(ref[2])) { const val = ref[1](S.caso); if (val) refTxt = `<span class="ref">${esc(tr('Você respondeu no passo ' + ref[0] + ':'))} <b>${esc(val)}</b></span>`; }
-  return `<div class="qc${v ? ' resp-' + v : ''}" id="q-${q.id}" data-q="${q.id}"><div class="qc-t"><span>${esc(q.t)}${ESSENCIAIS.has(q.id) ? ' <span class="tag ess">essencial</span>' : ''}${q.tag ? ` <span class="tag gold">${esc(q.tag)}</span>` : ''}</span>${q.h ? `<small>${esc(q.h)}</small>` : ''}${refTxt}</div>
-    <div class="seg" role="group" aria-label="${esc(q.t)}">${RESP.map(([k, n]) => `<button type="button" data-resp="${q.id}" data-v="${k}" aria-pressed="${v === k}">${n}</button>`).join('')}</div></div>`;
-}
-function blocoCamadas(fase, filtro) {
-  const cams = CAMADAS.filter(([n]) => CAMADAS_FASE[fase].includes(n));
-  const fn = FASES.find(f => f.id === fase).n;
-  return cams.map(([n, nome]) => {
-    const qs = questoes(fase, n).filter(q => !filtro || filtro(q));
-    if (!qs.length) return '';
-    const nt = nota(qs);
-    const dep = fase === 'implantacao' && (n === 4 || n === 5);
-    return `<div class="camada" id="cam-${fase}-${n}"><div class="camada-cab"><span class="cn" style="--cc:var(--f${fn}s)">${n}</span><b>${esc(nome)}</b>
-      ${dep ? '<span class="tag gold">depende da aplicação</span>' : ''}<span class="small muted num">${nt ? nt.resp + '/' + nt.total : '0/' + qs.length}</span></div>
-      ${dep ? `<p class="small muted dep"><span>Para este caso:</span> <span>${esc(tiposAplicacao())}</span></p>` : ''}
-      ${qs.map(segResp).join('')}</div>`;
-  }).join('');
-}
-function tiposAplicacao() {
-  const c = S.caso; const n = (c.classes || []).map(k => tr(rotulo(OPC.classes, k) || k));
-  return n.length ? n.join('; ') : tr('tipo de aplicação ainda não informado');
-}
-function numIn(path, val, opts = {}) {
-  return `<input type="number" min="0" step="${opts.step || 1}" id="${opts.id || 'n-' + path.replace(/\./g, '-')}" data-ctxn="${path}" value="${esc(val == null ? '' : val)}" aria-label="${esc(opts.label || '')}"${opts.ph ? ` placeholder="${esc(opts.ph)}"` : ''}>`;
-}
-function irBtn(alvo, txt) { return `<button type="button" class="link" data-ir="${alvo}">${esc(txt)}</button>`; }
+function questoesGov() { return QUESTOES_G; }
 function numerosCusto() {
   const cfg = cfgAtual(); garantirOpc(cfg);
   const av = avaliar(calcular(cfg)), ind = indicadores(cfg, av), orc = orcamento(cfg);
   const T = av.r.anos.filter(t => t > 0);
   const anual = T.length ? T.reduce((s, t) => s + (orc.dot[t] || 0), 0) / T.length : 0;
-  return { av, ind, orc, H: av.r.H, piloto: orc.dot[0] || 0, anual, porAluno: ind.icu, total: av.ctEco };
+  let camadas = null;
+  try { if (typeof somaPorCamada === 'function') camadas = somaPorCamada(av); } catch (e) { camadas = null; }
+  return { av, ind, orc, H: av.r.H, piloto: orc.dot[0] || 0, ano0: (av.ecoAno || [])[0] || 0, anual, porAluno: ind.icu, total: av.ctEco, camadas };
 }
-function custoPronto() { return respondido('arquitetura') && S.caso.arquitetura !== 'indefinida'; }
+// Pré-marca a experiência de uso a partir das tarefas, sem tocar nos campos já confirmados
+function aplicarSugestoes() {
+  const tarefas = S.caso.tarefas || [];
+  let sug = null;
+  if (tarefas.length && typeof perfisSugeridos === 'function') { try { sug = perfisSugeridos(tarefas, totaisCtx().etapas); } catch (e) { sug = null; } }
+  CAMPOS_SUGERIDOS.forEach(k => {
+    if (S.respC[k]) return;
+    if (sug && sug[k] != null) S.caso[k] = clone(sug[k]);
+    else if (!tarefas.length && typeof CASO_VAZIO !== 'undefined') S.caso[k] = clone(CASO_VAZIO[k]);
+  });
+}
 
-// ----------------------------------------------------------- passos da fase 1
-function passo1a() {
-  const x = S.ctx, t = totaisCtx();
-  const linhas = ETAPAS_ENS.map(([id, nome, sub, anos]) => {
+// ----------------------------------------------------------- componentes
+function nCampo(o) {
+  if (typeof inputNum === 'function') return inputNum(o);
+  const v = o.valor == null || o.valor === '' ? '' : (typeof fmtEntrada === 'function' ? fmtEntrada(o.valor, o.casas || 0) : o.valor);
+  return `<span class="campo"><input type="text" inputmode="numeric" data-num="int" autocomplete="off" id="${esc(o.id)}" ${o.attrs || ''} value="${esc(v)}" placeholder="${esc(o.ph || ' ')}"${o.rotulo ? ` aria-label="${esc(o.rotulo)}"` : ''}><span class="ok-in" aria-hidden="true">✓</span></span>`;
+}
+function tCampo(id, attrs, val, ph, rotulo) {
+  return `<span class="campo"><input id="${id}" type="text" ${attrs} value="${esc(val || '')}" placeholder="${esc(ph || ' ')}"${rotulo ? ` aria-label="${esc(rotulo)}"` : ''}><span class="ok-in" aria-hidden="true">✓</span></span>`;
+}
+function aCampo(id, attrs, val, rows, ph) {
+  return `<span class="campo area"><textarea id="${id}" ${attrs} rows="${rows || 3}" placeholder="${esc(ph || ' ')}">${esc(val || '')}</textarea><span class="ok-in" aria-hidden="true">✓</span></span>`;
+}
+function attrCampo(f, id) { return f.onde === 'ctx' ? `data-ctxt="${id || f.id}"` : `data-f="${id || f.id}"`; }
+function subOpc(o) { return o[2] && typeof o[2] === 'string' && !(typeof NIVEIS !== 'undefined' && NIVEIS.includes(o[2])) ? o[2] : ''; }
+function marcado(f, valOpc) {
+  const v = valorCampo(f);
+  const tem = Array.isArray(v) ? v.includes(valOpc) : String(v) === String(valOpc) && v !== '' && v != null;
+  if (!tem) return false;
+  if (f.onde === 'ctx' || f.onde === 'resp') return true;
+  return respondido(f.id) || sugerido(f) || !f.padrao;
+}
+function campoOutro(f) {
+  if (!f.outro) return '';
+  const v = valorCampo(f);
+  const on = Array.isArray(v) ? v.includes(f.outro.v) : v === f.outro.v;
+  if (!on) return '';
+  const val = f.onde === 'ctx' ? S.ctx[f.outro.id] : S.caso[f.outro.id];
+  return `<div class="outro">${tCampo('f-' + f.outro.id, attrCampo(f, f.outro.id), val, f.outro.t, f.outro.t)}</div>`;
+}
+function opRadio(f) {
+  const nome = f.id, attr = f.onde === 'ctx' ? 'data-ctx' : 'data-f';
+  return `<div class="opts${f.cols ? ' cols' : ''}" role="radiogroup" aria-labelledby="qt-${f.id}">${listaOpc(f).map(o => `<label class="opt"><input type="radio" name="${nome}" value="${esc(o[0])}" ${attr}="${nome}" ${marcado(f, o[0]) ? 'checked' : ''}><span><b>${esc(o[1])}</b>${subOpc(o) ? `<small>${esc(subOpc(o))}</small>` : ''}</span></label>`).join('')}</div>${campoOutro(f)}`;
+}
+function opChips(f) {
+  return `<div class="chips" role="group" aria-labelledby="qt-${f.id}">${listaOpc(f).map(o => `<label class="chip"><input type="checkbox" data-fm="${f.id}" value="${esc(o[0])}" ${marcado(f, o[0]) ? 'checked' : ''}><span>${esc(o[1])}${subOpc(o) ? ` <small>${esc(subOpc(o))}</small>` : ''}</span></label>`).join('')}</div>${campoOutro(f)}`;
+}
+// Tarefas: cartões com exemplo; as ligadas ao impacto escolhido recebem a etiqueta "sugerida pelo impacto"
+function opMulti(f) {
+  const imps = S.caso.impactos || [];
+  const IT = typeof IMPACTO_TAREFAS !== 'undefined' ? IMPACTO_TAREFAS : {};
+  const ligadas = new Set(imps.flatMap(i => IT[i] || []));
+  return `<div class="opts cols" role="group" aria-labelledby="qt-${f.id}">${listaOpc(f).map(o => `<label class="opt"><input type="checkbox" data-fm="${f.id}" value="${esc(o[0])}" ${marcado(f, o[0]) ? 'checked' : ''}><span><b>${esc(o[1])}</b>${subOpc(o) ? `<small>${esc(subOpc(o))}</small>` : ''}${ligadas.has(o[0]) ? '<span class="tag sug-imp">sugerida pelo impacto</span>' : ''}</span></label>`).join('')}</div>${campoOutro(f)}`;
+}
+function opSeg(f) {
+  const v = S.resp[f.id];
+  return `<div class="seg" role="group" aria-labelledby="qt-${f.id}">${RESP_G.map(([k, n]) => `<button type="button" data-resp="${f.id}" data-v="${k}" aria-pressed="${v === k}">${esc(n)}</button>`).join('')}</div>`;
+}
+function opEtapas() {
+  const x = S.ctx;
+  return `<div class="opts cols" role="group" aria-labelledby="qt-etapas">${ETAPAS_ENS.map(([id, nome, sub]) => `<label class="opt"><input type="checkbox" data-etapa="${id}" ${(x.etapas[id] || {}).on ? 'checked' : ''}><span><b>${esc(nome)}</b><small>${esc(sub)}</small></span></label>`).join('')}</div>`;
+}
+function opGrade() {
+  const x = S.ctx, at = etapasAtivas(), t = totaisCtx();
+  if (!at.length) return `<p class="hint vazio-g">Marque antes as etapas de ensino na pergunta 1.1.4.</p>`;
+  const linhas = at.map(([id, nome, , anos]) => {
     const e = x.etapas[id] || {};
-    const sel = `<label class="check etapa-chk"><input type="checkbox" data-etapa="${id}" ${e.on ? 'checked' : ''}><span><b>${esc(nome)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></label>`;
-    if (!e.on) return `<div class="etapa">${sel}</div>`;
-    const det = e.porAno && anos.length ? `<div class="anos">${anos.map((a, i) => `<label class="ano"><span>${esc(a)}</span>${numIn(`etapas.${id}.anos.${i}`, (e.anos || [])[i], { label: tr(nome) + ': ' + tr(a) })}</label>`).join('')}</div>` : '';
-    return `<div class="etapa on">${sel}
-      <div class="etapa-num">
-        <label><span>Escolas</span>${numIn(`etapas.${id}.escolas`, e.escolas, { label: tr(nome) + ': ' + tr('Escolas') })}</label>
-        <label><span>Estudantes</span>${e.porAno && anos.length ? `<output class="num" data-sum="${id}">${fmtInt(alunosEtapa(id))}</output>` : numIn(`etapas.${id}.alunos`, e.alunos, { label: tr(nome) + ': ' + tr('Estudantes') })}</label>
-        ${anos.length ? `<label class="check small"><input type="checkbox" data-porano="${id}" ${e.porAno ? 'checked' : ''}><span>Detalhar por ano</span></label>` : ''}
-      </div>${det}</div>`;
+    const porAno = anos.length && !e.soTotal;
+    const lab = (txt, path, val) => `<label class="g-c"><span>${esc(txt)}</span>${nCampo({ id: 'n-' + path.replace(/\./g, '-'), attrs: `data-ctxn="${path}"`, valor: val, casas: 0, rotulo: tr(nome) + ': ' + tr(txt), ph: ' ' })}</label>`;
+    const campos = [lab('Escolas', `etapas.${id}.escolas`, e.escolas)];
+    if (porAno) anos.forEach((a, i) => campos.push(lab(a, `etapas.${id}.anos.${i}`, (e.anos || [])[i])));
+    else campos.push(lab('Estudantes', `etapas.${id}.alunos`, e.alunos));
+    const alt = anos.length ? `<button type="button" class="link" data-sototal="${id}">${esc(porAno ? 'Informar só o total da etapa' : 'Detalhar por ano ou série')}</button>` : '';
+    return `<div class="g-etapa" data-g="${id}"><div class="g-cab"><b>${esc(nome)}</b>${porAno ? `<span class="g-tot"><span>Total da etapa:</span> <output class="num" data-sum="${id}">${fmtInt(alunosEtapa(id))}</output></span>` : ''}</div>
+      <div class="g-campos">${campos.join('')}</div>${alt ? `<div class="g-alt">${alt}</div>` : ''}</div>`;
   }).join('');
-  return `
-    <div class="q"><span class="lbl">Qual é o nível administrativo da decisão?</span>
-      <div class="opts cols">${NIVEIS_ADM.map(([k, n]) => `<label class="opt"><input type="radio" name="nivel" data-ctx="nivel" value="${k}" ${x.nivel === k ? 'checked' : ''}><span><b>${esc(n)}</b></span></label>`).join('')}</div></div>
-    <div class="grid2">
-      <div class="q"><label for="c-local">Nome do lugar ou da rede</label><input id="c-local" type="text" data-ctxt="local" value="${esc(x.local)}" placeholder="Ex.: Estado do Rio Grande do Sul, distrito escolar 3"></div>
-      ${x.nivel === 'outro' ? `<div class="q"><label for="c-nivel-outro">Qual nível?</label><input id="c-nivel-outro" type="text" data-ctxt="nivelOutro" value="${esc(x.nivelOutro)}"></div>` : ''}
-    </div>
-    <div class="q"><span class="lbl">Em que ponto você está?</span>${radios('situacao', OPC.situacao, S.caso.situacao, true)}</div>
-    <div class="q"><span class="lbl">Quais etapas de ensino a política atende?</span><div class="hint">Marque uma ou mais. Para cada etapa, informe escolas e estudantes; se puder, detalhe por ano.</div>
-      <div class="etapas">${linhas}</div>
-      <div class="totais"><span><span>Total:</span> <b class="num" data-tot="escolas">${fmtInt(t.escolas)}</b> <span>escolas</span></span><span><b class="num" data-tot="alunos">${fmtInt(t.alunos)}</b> <span>estudantes</span></span><span><b class="num">${t.n}</b> <span>etapas</span></span></div></div>`;
+  return `<div class="grade">${linhas}</div>
+    <div class="totais"><span><span>Total:</span> <b class="num" data-tot="escolas">${fmtInt(t.escolas)}</b> <span>escolas</span></span><span><b class="num" data-tot="alunos">${fmtInt(t.alunos)}</b> <span>estudantes</span></span><span><b class="num">${t.n}</b> <span>etapas</span></span></div>`;
 }
-function passo1b() {
-  const x = S.ctx, c = S.caso;
-  const dom = DOMINIOS.map(d => `<label class="dom${d.ativo ? '' : ' off'}${x.dominio === d.id ? ' sel' : ''}">
+function opDominio() {
+  const x = S.ctx;
+  return `<div class="doms" role="radiogroup" aria-labelledby="qt-dominio">${DOMINIOS.map(d => `<label class="dom${d.ativo ? '' : ' off'}${x.dominio === d.id ? ' sel' : ''}">
       <input type="radio" name="dominio" data-ctx="dominio" value="${d.id}" ${x.dominio === d.id ? 'checked' : ''} ${d.ativo ? '' : 'disabled'}>
-      <span class="dom-t"><b>${esc(d.nome)}</b><i>${esc(d.lema)}</i>${d.ativo ? '' : ' <span class="tag">em breve</span>'}</span>
+      <span class="dom-t"><b>${esc(d.lema)}</b><span class="dom-nome">${esc(d.nome)}</span>${d.ativo ? '' : '<span class="tag">em breve</span>'}</span>
       <span class="dom-d">${esc(d.desc)}</span>
-      <span class="dom-ex"><span class="eyebrow">Exemplos</span><ul>${d.ex.map(e => `<li>${esc(e)}</li>`).join('')}</ul></span></label>`).join('');
-  const d = DOMINIOS.find(z => z.id === x.dominio);
-  const comps = d && d.comps ? `<div class="q"><span class="lbl">Quais componentes estão em jogo?</span>
-      <div class="opts cols">${d.comps.map(([k, n, s]) => `<label class="opt"><input type="checkbox" data-comp="${k}" ${(x.comps || []).includes(k) ? 'checked' : ''}><span><b>${esc(n)}</b><small>${esc(s)}</small></span></label>`).join('')}</div>
-      ${(x.comps || []).includes('outro') ? `<input type="text" data-ctxt="compOutro" value="${esc(x.compOutro)}" aria-label="Outro componente" placeholder="Qual componente?">` : ''}</div>` : '';
-  return `
-    <p class="muted">A ferramenta parte do problema, e não da tecnologia. Nesta versão, o foco é a qualificação; socialização e subjetivação entram nas próximas.</p>
-    <div class="q"><span class="lbl">Que tipo de problema educacional você quer resolver?</span><div class="doms">${dom}</div></div>
-    ${comps}
-    <div class="q"><label for="c-olhando">Que problema você está olhando agora?</label><div class="hint">Em poucas palavras, do jeito que a equipe fala dele.</div>
-      <input id="c-olhando" type="text" data-ctxt="olhando" value="${esc(x.olhando)}"></div>
-    <div class="q"><label for="f-problema">Descreva o problema sem citar tecnologia</label>
-      <div class="hint">Situação atual, quem é afetado e o que se sabe sobre as causas. Se, ao retirar a palavra "IA", o texto deixa de explicar o problema, reescreva.</div>
-      <textarea id="f-problema" data-f="problema" rows="4">${esc(c.problema)}</textarea></div>
-    <div class="q"><label for="f-resultado">Que resultado se espera?</label><textarea id="f-resultado" data-f="resultado" rows="2">${esc(c.resultado)}</textarea></div>
-    <div class="grid2">
-      <div class="q"><label for="f-pop">Quem é afetado</label><input id="f-pop" type="text" data-f="populacao" value="${esc(c.populacao)}"></div>
-      <div class="q"><span class="lbl">Existe linha de base medida?</span>${radios('linhaBase', OPC.linhaBase, c.linhaBase)}</div>
-    </div>
-    <label class="check"><input type="checkbox" data-fb="alternativaSemIA" ${c.alternativaSemIA ? 'checked' : ''}><span>Já comparamos ao menos uma alternativa sem IA (redesenho de processo, software convencional ou não intervir).</span></label>
-    ${CAP.sample ? `<div class="ai" id="ia-box"><div class="row" style="justify-content:space-between"><div><b>Estruturar a descrição com Claude</b><div class="small muted">Lê o problema e o resultado, sugere respostas para a fase do piloto e aponta lacunas. Você revisa antes de aplicar.</div></div>
-      <button class="btn pri" type="button" data-act="ia" ${IA.estado === 'rodando' ? 'disabled' : ''}>${IA.estado === 'rodando' ? 'Analisando…' : 'Analisar descrição'}</button></div><div id="ia-out">${renderIA()}</div></div>` : ''}`;
+      <span class="dom-ex"><span class="eyebrow">Exemplos</span><ul>${d.ex.map(e => `<li>${esc(e)}</li>`).join('')}</ul></span></label>`).join('')}</div>`;
 }
-function passo1c() {
-  return `<p class="muted">A governança é a camada que atravessa todas as fases: quem decide, com que regras e com que recursos. Responda sobre a rede como um todo, e não só sobre este caso. As perguntas marcadas como essenciais impedem avançar quando a resposta é "Não".</p>
-    <div class="camada">${questoes('contexto').map(segResp).join('')}</div>
-    <div class="q"><span class="lbl">Quais funções que não podem ser terceirizadas já têm responsável interno?</span>${chips('capacidade', OPC.capacidade, S.caso.capacidade)}</div>`;
+function opComps() {
+  const x = S.ctx, d = DOMINIOS.find(z => z.id === x.dominio);
+  if (!d || !d.comps) return `<p class="hint vazio-g">Escolha antes o tipo de problema na pergunta 1.2.1.</p>`;
+  return `<div class="opts cols" role="group" aria-labelledby="qt-comps">${d.comps.map(([k, n, s]) => `<label class="opt"><input type="checkbox" data-comp="${k}" ${(x.comps || []).includes(k) ? 'checked' : ''}><span><b>${esc(n)}</b><small>${esc(s)}</small></span></label>`).join('')}</div>
+    ${(x.comps || []).includes('outro') ? `<div class="outro">${tCampo('c-compOutro', 'data-ctxt="compOutro"', x.compOutro, 'Qual componente?', 'Qual componente?')}</div>` : ''}`;
 }
-
-// ----------------------------------------------------------- passos da fase 2
-function passo2a() {
-  const c = S.caso, t = totaisCtx(), pl = S.piloto;
-  const pctRede = t.escolas && +pl.escolas ? Math.min(1, +pl.escolas / t.escolas) : 0;
-  return `
-    <p class="muted">Descreva o uso, e não o produto: o que a IA faz, com que autonomia e em que arquitetura.</p>
-    <div class="q"><span class="lbl">O que a IA faz? (uma ou mais classes)</span>${chips('classes', OPC.classes, c.classes)}</div>
-    <div class="q"><span class="lbl">Grau de autonomia</span><div class="hint">Mais autonomia não significa mais maturidade.</div>${radios('autonomia', OPC.autonomia, c.autonomia, true)}</div>
-    <div class="q"><span class="lbl">Arquitetura pretendida ou proposta</span><div class="hint">Define as premissas de custo.</div>${radios('arquitetura', OPC.arquitetura, c.arquitetura, true)}</div>
-    <label class="check"><input type="checkbox" data-fb="pilotoGratuito" ${c.pilotoGratuito ? 'checked' : ''}><span>Há oferta de piloto ou período gratuito.</span></label>
-    <div class="q"><span class="lbl">Tamanho do piloto</span>
-      <div class="grid3">
-        <label class="q"><span>Escolas no piloto</span>${numIn('piloto.escolas', pl.escolas, { id: 'pl-escolas', label: 'Escolas no piloto' })}</label>
-        <label class="q"><span>Participantes no piloto</span>${numIn('piloto.participantes', pl.participantes, { id: 'pl-part', label: 'Participantes no piloto' })}</label>
-        <label class="q"><span>Duração do piloto (meses)</span>${numIn('piloto.meses', pl.meses, { id: 'pl-meses', label: 'Duração do piloto (meses)' })}</label>
-      </div>
-      ${pctRede ? `<div class="hint"><span>Escolas do piloto em relação à rede:</span> <b class="num">${pct(pctRede)}</b></div>` : ''}</div>`;
+function opSetup() {
+  const c = S.caso, p = c.piloto || {}, poc = c.teste === 'poc', t = totaisCtx();
+  const lab = (txt, k) => `<label class="g-c"><span>${esc(txt)}</span>${nCampo({ id: 'pl-' + k, attrs: `data-fn="piloto.${k}"`, valor: p[k], casas: 0, rotulo: txt, ph: ' ' })}</label>`;
+  const pctRede = !poc && t.escolas && +p.escolas ? Math.min(1, +p.escolas / t.escolas) : 0;
+  return `<div class="g-campos setup">${poc ? '' : lab('Escolas', 'escolas')}${lab(poc ? 'Pessoas que vão testar' : 'Participantes', 'participantes')}${lab('Duração (meses)', 'meses')}</div>
+    <div class="hint" id="pct-rede"${pctRede ? '' : ' hidden'}><span>Escolas do piloto em relação à rede:</span> <b class="num">${pct(pctRede)}</b></div>`;
 }
-function passo2b() {
-  const c = S.caso, t = totaisCtx();
-  return `
-    <p class="muted">Quem usa, quem é afetado, que dados entram e o que acontece quando a saída está errada. Estas respostas definem o perfil de risco do próximo passo.</p>
-    <div class="grid2">
-      <div class="q"><span class="lbl">Quem usa o sistema</span>${chips('usuarios', OPC.usuarios, c.usuarios)}</div>
-      <div class="q"><span class="lbl">Quem é afetado pelas saídas</span>${chips('afetados', OPC.afetados, c.afetados)}</div>
-    </div>
-    <div class="q"><span class="lbl">Em que entra a saída do sistema?</span>${chips('consequencias', OPC.consequencias, c.consequencias)}</div>
-    <div class="q"><span class="lbl">Que dados são usados ou inferidos?</span>${chips('dados', OPC.dados, c.dados)}</div>
-    ${dadosPessoais(c) ? `<div class="q"><span class="lbl">O fornecedor pode usar os dados para treinar ou melhorar modelos?</span>${radios('treino', [['nao', 'Não, está vedado por contrato'], ['sim', 'Sim, ou depende de configuração'], ['nao_sei', 'Não sabemos']], c.treino, true)}</div>` : ''}
-    <div class="grid2">
-      <label class="check"><input type="checkbox" data-fb="vulneraveis" ${c.vulneraveis ? 'checked' : ''}><span>Há pessoas com menor capacidade de perceber e contestar erros (deficiência, idioma, dependência do serviço).</span></label>
-      <label class="check"><input type="checkbox" data-fb="idiomas" ${c.idiomas ? 'checked' : ''}><span>O sistema atende mais de um idioma ou variedade linguística.</span></label>
-    </div>
-    <div class="q"><span class="lbl">Frequência de uso</span>${radios('frequencia', OPC.frequencia, c.frequencia, true)}</div>
-    <div class="q"><span class="lbl">Se a saída estiver errada…</span>${radios('reversibilidade', OPC.reversibilidade, c.reversibilidade)}</div>
-    <div class="grid2">
-      <div class="q"><span class="lbl">A instituição consegue verificar como as saídas são produzidas?</span>${radios('verificabilidade', OPC.verificabilidade, c.verificabilidade)}</div>
-      <div class="q"><span class="lbl">Quem é afetado pode contestar?</span>${radios('contestacao', OPC.contestacao, c.contestacao)}</div>
-    </div>
-    <div class="q"><span class="lbl">Os efeitos se acumulam sobre o mesmo grupo?</span>${radios('cumulativo', OPC.cumulativo, c.cumulativo, true)}</div>
-    <div class="grid2">
-      <div class="q"><label for="f-eleg">Pessoas que vão usar o sistema na rede</label><input id="f-eleg" type="number" min="1" step="1" data-f="elegiveis" value="${esc(c.elegiveis)}">
-        <div class="hint">Base da estimativa de custo.${t.alunos && +c.elegiveis !== t.alunos ? ` <button type="button" class="link" data-act="usar-alunos">${esc(tr('Usar o total de estudantes do contexto (' + fmtInt(t.alunos) + ')'))}</button>` : ''}</div></div>
-      <div class="q"><label for="f-alc">Pessoas alcançadas pelas saídas, se diferente</label><input id="f-alc" type="number" min="0" step="1" data-f="alcance" value="${esc(c.alcance)}"></div>
-    </div>`;
-}
-function passo2c() {
-  if (!riscoPronto()) {
-    const fs = [...faltas('2a').map(x => ['2a', x]), ...faltas('2b').map(x => ['2b', x])];
-    return `<div class="vazio"><b>O perfil de risco aparece quando os passos 2.1 e 2.2 estiverem respondidos.</b>
-      <ul>${fs.map(([p, x]) => `<li><span>${esc(x)}</span> ${irBtn('piloto:' + p, tr('Responder no passo ' + (p === '2a' ? '2.1' : '2.2')))}</li>`).join('')}</ul></div>`;
+function controle(f) {
+  switch (f.tipo) {
+    case 'radio': return opRadio(f);
+    case 'chips': return opChips(f);
+    case 'multi': return opMulti(f);
+    case 'seg': return opSeg(f);
+    case 'etapas': return opEtapas();
+    case 'grade': return opGrade();
+    case 'dom': return opDominio();
+    case 'comps': return opComps();
+    case 'setup': return opSetup();
+    case 'texto': {
+      let ph = f.ph;
+      if (f.id === 'titulo') { const t0 = (S.caso.tarefas || [])[0]; ph = t0 ? (t0 === 'outra' ? (S.caso.tarefaOutra || '') : rotulo(listaOpc(CAMPO_POR_ID.tarefas), t0)) : ''; }
+      return tCampo('f-' + f.id, attrCampo(f), valorCampo(f), ph);
+    }
+    case 'area': return aCampo('f-' + f.id, attrCampo(f), valorCampo(f), f.rows, f.ph);
+    case 'num': return nCampo({ id: 'f-' + f.id, attrs: `data-fn="${f.id}"`, valor: valorCampo(f), casas: 0, rotulo: f.t, ph: ' ' });
   }
-  const c = S.caso, p = perfil(), al = alertas(c, p);
-  const dims = DIMENSOES.map(([k, nome, perg]) => {
-    const aj = (c.ajustes || {})[k] || {};
-    const det = p.determinantes.includes(k);
-    return `<details class="dimx${det ? ' det' : ''}" data-dim="${k}" ${(S.dimAberta || {})[k] ? 'open' : ''}><summary><span class="dn">${esc(nome)}</span>${pill(p.P[k])}${det ? '<span class="tag">define o nível</span>' : ''}</summary>
-      <div class="dimx-b"><p class="small muted">${esc(perg)}</p><p>${esc(p.J[k])}${p.origem[k] ? ' <span class="tag gold">ajuste manual</span>' : ''}</p>
-        <div class="row"><label class="small" for="aj-${k}">Ajustar o nível</label><select class="f" id="aj-${k}" data-aj="${k}" style="width:auto">${NIVEIS.map(n => `<option value="${n}" ${p.P[k] === n ? 'selected' : ''}>${NIVEL_NOME[n]}</option>`).join('')}</select></div>
-        ${p.P[k] !== p.auto[k] || aj.nivel ? `<input type="text" data-ajm="${k}" aria-label="Justificativa do ajuste" placeholder="${esc(tr('Justificativa do ajuste (sugestão automática: ' + NIVEL_NOME[p.auto[k]] + ')'))}" value="${esc(aj.motivo || '')}">` : ''}</div></details>`;
-  }).join('');
-  const forma = FORMAS_SUP[formaSupervisao(c, p)];
-  return `
-    <div class="nivel-card card"><div class="nivel-big n-${p.agregado}">${NIVEL_NOME[p.agregado]}</div>
-      <div style="display:grid;gap:6px"><b>Nível de diligência do caso de uso</b><p>${esc(NIVEL_CRIT[p.agregado])}</p>
-      <p class="small muted">Não há média: o nível é definido pela dimensão mais grave. Abra uma dimensão para ver os fatores e ajustar.</p></div></div>
-    ${al.length ? `<div style="display:grid;gap:8px">${al.map(a => `<div class="alert ${a.nivel}"><span class="ic">${esc({ bloqueio: 'Bloqueio', atencao: 'Atenção', info: 'Nota' }[a.nivel])}</span><span>${esc(a.texto)}</span><span class="cap">${esc(tr('Cap. ' + a.cap))}</span></div>`).join('')}</div>` : ''}
-    <div class="dimsx">${dims}</div>
-    <p class="note"><b><span>Supervisão humana indicada:</span> <span>${esc(forma[0])}</span>.</b> <span>${esc(forma[1])}</span></p>`;
+  return '';
 }
-function passo2f() {
-  if (!custoPronto()) return `<div class="vazio"><b>Para estimar o custo, informe a arquitetura no passo 2.1.</b> ${irBtn('piloto:2a', tr('Ir ao passo 2.1'))}</div>`;
-  let av;
-  try { av = avaliar(calcular(cfgAtual())); } catch (e) { return '<p class="muted">Não foi possível calcular com as premissas atuais.</p>'; }
-  const k0 = ARVORE.map(([k, n]) => [k, n, av.linhas.filter(l => l.k === k).reduce((s, l) => s + l.eco[0], 0)]);
-  const fin0 = av.finAno[0], tot0 = av.ecoAno[0];
-  const ced = av.linhas.filter(l => l.nat === 'O').reduce((s, l) => s + l.eco[0], 0);
-  const part = +S.piloto.participantes || 0;
-  return `<p class="muted">Custo do Ano 0 (implantação e piloto), com as premissas da calculadora. Os valores são ilustrativos; ajuste as premissas no passo 3.3.</p>
-    <div class="kpis kpis3"><div class="kpi"><span class="v">${grande(tot0)}</span><span class="l">Custo do piloto, com tempo das equipes</span></div>
-      <div class="kpi"><span class="v">${grande(fin0)}</span><span class="l">Desembolso no piloto</span></div>
-      ${part ? `<div class="kpi"><span class="v">${din(tot0 / part, 0)}</span><span class="l">Por participante do piloto</span></div>` : ced > 0 ? `<div class="kpi"><span class="v">${grande(ced)}</span><span class="l">Cedido sem custo pelo fornecedor</span></div>` : ''}</div>
-    <div class="tw"><table><thead><tr><th>Componente</th><th class="n">${esc(unidMil())}</th><th class="n">%</th></tr></thead><tbody>
-      ${k0.filter(r => r[2] > 0.5).map(([k, n, v]) => `<tr><td><i class="sw" style="background:${COR_K[k]}"></i>${k} <span>${esc(n)}</span></td><td class="n">${mil(v)}</td><td class="n">${pct(tot0 ? v / tot0 : 0)}</td></tr>`).join('')}
-      <tr class="tot"><td>Total do Ano 0</td><td class="n">${mil(tot0)}</td><td class="n">100%</td></tr></tbody></table></div>`;
+function renderQ(f) {
+  const ok = qOk(f), sug = sugerido(f) && !vazio(valorCampo(f));
+  const poc = S.caso.teste === 'poc' && f.tPoc;
+  const t = poc ? f.tPoc : f.t, h = poc ? f.hPoc : f.h, ex = poc ? f.exPoc : f.ex;
+  const rotTag = ['texto', 'area', 'num'].includes(f.tipo) ? `label for="f-${f.id}"` : 'div';
+  let extra = '';
+  if (f.id === 'elegiveis') {
+    const tt = totaisCtx();
+    if ((S.caso.usuarios || []).includes('estudantes') && tt.alunos > 0 && +S.caso.elegiveis !== tt.alunos) extra = `<div class="hint"><button type="button" class="link" data-act="usar-alunos">${esc(tr('Usar o total de estudantes do contexto (' + fmtInt(tt.alunos) + ')'))}</button></div>`;
+  }
+  return `<div class="q${ok ? ' ok' : ''}${sug ? ' sug' : ''}" id="${idQ(f.n)}" data-n="${f.n}" data-campo="${f.id}">
+    <${rotTag} class="q-t" id="qt-${f.id}"><span class="qn">${f.n}</span> <span class="qt">${esc(t)}</span>${f.opcional ? ' <span class="tag opc">opcional</span>' : ''}<span class="tag sug-tag">sugerido pela tarefa</span><span class="sr q-sr">${ok ? 'respondida' : ''}</span></${rotTag.split(' ')[0]}>
+    ${h ? `<div class="hint">${esc(h)}</div>` : ''}${ex ? `<div class="hint ex">${esc(ex)}</div>` : ''}
+    ${controle(f)}${extra}</div>`;
+}
+// Botão ⓘ e nota com a explicação da camada e a referência ao documento de Krueger e Jackson (2026)
+const INFO_ROT = { c1: 'Sobre a camada 1', c2: 'Sobre a camada 2', c234: 'Sobre as camadas 2, 3 e 4', c37: 'Sobre as sete camadas' };
+function botaoInfo(chave, id) {
+  return `<button type="button" class="info" data-info="${chave}" data-info-id="${id}" aria-expanded="${!!S.info[id]}" aria-controls="nota-${id}" aria-label="${esc(INFO_ROT[chave] || 'Sobre as camadas')}">ⓘ</button>`;
+}
+function notaInfo(chave, id) {
+  if (!S.info[id]) return '';
+  return `<div class="info-nota" id="nota-${id}"><p>${esc(CAMADAS_INFO[chave])}</p>
+    <p class="ref-tco"><span>${esc(REF_TCO.autores)}</span> <cite data-notr>${esc(REF_TCO.titulo)}</cite> <span>${esc(REF_TCO.local)}</span>
+      <a href="${REF_TCO.url}" target="_blank" rel="noopener">${esc(REF_TCO.link)}</a></p>
+    <p class="small muted">${esc(REF_TCO.nota)}</p></div>`;
 }
 
-// ----------------------------------------------------------- passos das fases 3 e 4
-function passo3a() {
-  return `<p class="muted">Na implantação entram todas as camadas. A integração de dados (4) e a cibersegurança e privacidade (5) dependem do tipo de aplicação: as perguntas mudam conforme o que a IA faz.</p>${blocoCamadas('implantacao')}`;
+// ----------------------------------------------------------- corpo dos passos
+function corpoPadrao(id) {
+  const pi = PASSO_INFO[id] || {};
+  let s = pi.abertura ? `<p class="abertura muted">${esc(pi.abertura)}</p>` : '';
+  s += camposPasso(id).map(renderQ).join('');
+  if (id === '1b' && typeof CAP !== 'undefined' && CAP.sample) {
+    s += `<div class="ai" id="ia-box"><div class="row" style="justify-content:space-between"><div><b>Estruturar a descrição com Claude</b><div class="small muted">Lê o problema e o resultado, sugere respostas para a fase 2 e aponta lacunas. Você revisa antes de aplicar.</div></div>
+      <button class="btn pri" type="button" data-act="ia" ${IA.estado === 'rodando' ? 'disabled' : ''}>${IA.estado === 'rodando' ? 'Analisando…' : 'Analisar descrição'}</button></div><div id="ia-out">${typeof renderIA === 'function' ? renderIA() : ''}</div></div>`;
+  }
+  if (id === '2c') s += detalheArquitetura();
+  return s;
+}
+function detalheArquitetura() {
+  const c = S.caso;
+  let presumida = '';
+  if (typeof derivarArquitetura === 'function') { try { presumida = derivarArquitetura(Object.assign({}, c, { arquiteturaManual: '' })); } catch (e) { presumida = ''; } }
+  const arqs = ((typeof OPC !== 'undefined' && OPC.arquitetura) || []).filter(o => o[0] !== 'indefinida');
+  const opcs = [['', 'Usar a arquitetura presumida'], ...arqs];
+  const atual = c.arquiteturaManual || '';
+  return `<details class="arq" data-arq ${ARQ_ABERTA ? 'open' : ''}><summary>Para equipes técnicas: arquitetura presumida</summary>
+    <div class="arq-in"><p class="hint">A ferramenta deduz a arquitetura das respostas acima para estimar o custo. Mude só se souber que é outra.</p>
+      <p><span>Arquitetura presumida:</span> <b>${esc(rotulo(arqs, presumida) || '—')}</b></p>
+      <div class="opts" role="radiogroup" aria-label="Arquitetura">${opcs.map(o => `<label class="opt"><input type="radio" name="arquiteturaManual" value="${esc(o[0])}" data-f="arquiteturaManual" ${atual === o[0] ? 'checked' : ''}><span><b>${esc(o[1])}</b></span></label>`).join('')}</div></div></details>`;
+}
+function seletorMoeda() {
+  if (typeof MOEDAS === 'undefined' || typeof moedaInfo !== 'function') return '';
+  const mi = moedaInfo();
+  const nm = c => (typeof nomeMoeda === 'function' ? nomeMoeda(c) : c);
+  const top = ['USD', 'EUR', 'BRL', 'GBP', 'JPY', 'CNY', 'INR', 'MXN', 'ARS', 'ZAR'];
+  const resto = Object.keys(MOEDAS.taxas || {}).filter(c => !top.includes(c)).sort((a, b) => nm(a).localeCompare(nm(b), LOC()));
+  const op = c => `<option value="${c}" ${mi.cod === c ? 'selected' : ''}>${c} · ${esc(nm(c))}</option>`;
+  return `<div class="moeda-est"><label for="moeda-est">Moeda de exibição</label><select class="f" id="moeda-est" data-moeda="cod">${top.map(op).join('')}<option disabled>──────────</option>${resto.map(op).join('')}</select></div>`;
 }
 function passo3c() {
-  if (!custoPronto()) return `<div class="vazio"><b>Para estimar o custo, informe a arquitetura no passo 2.1.</b> ${irBtn('piloto:2a', tr('Ir ao passo 2.1'))}</div>`;
   let n;
   try { n = numerosCusto(); } catch (e) { return '<p class="muted">Não foi possível calcular com as premissas atuais.</p>'; }
   const T = n.av.r.anos;
-  return `<div class="kpis kpis4">
+  const pend = ['2c', '3a', '3b'].some(id => faltas(id).length);
+  const cam = n.camadas;
+  const tabCam = cam ? (() => {
+    const tot = CAMADAS.reduce((s, [k]) => s + ((cam.total || {})[k] || 0), 0);
+    return `<h3 class="sub-h">Custo por camada</h3><div class="tw"><table><thead><tr><th>Camada</th><th class="n"><span>Ano 0</span> (${esc(unidMil())})</th><th class="n"><span>Total do ciclo</span> (${esc(unidMil())})</th><th class="n">%</th></tr></thead><tbody>
+      ${CAMADAS.map(([k, nome]) => `<tr><td><span class="cn-t">${k}</span> <span>${esc(nome)}</span></td><td class="n">${mil((cam.ano0 || {})[k] || 0)}</td><td class="n">${mil((cam.total || {})[k] || 0)}</td><td class="n">${pct(tot ? ((cam.total || {})[k] || 0) / tot : 0)}</td></tr>`).join('')}
+      <tr class="tot"><td>Total</td><td class="n">${mil(CAMADAS.reduce((s, [k]) => s + ((cam.ano0 || {})[k] || 0), 0))}</td><td class="n">${mil(tot)}</td><td class="n">100%</td></tr></tbody></table></div>`;
+  })() : '';
+  return `${seletorMoeda()}
+    ${pend ? '<p class="hint">Enquanto faltarem respostas nos passos 2.3, 3.1 e 3.2, a estimativa usa premissas padrão.</p>' : ''}
+    <div class="kpis kpis5">
+      <div class="kpi"><span class="v">${grande(n.ano0)}</span><span class="l">Custo do Ano 0 (prova de conceito ou piloto)</span></div>
       <div class="kpi"><span class="v">${grande(n.total)}</span><span class="l">Custo total do ciclo de vida</span></div>
       <div class="kpi"><span class="v">${grande(n.anual)}</span><span class="l">Dotação média por ano de operação</span></div>
       <div class="kpi"><span class="v">${din(n.porAluno, 2)}</span><span class="l">Por usuário ativo por ano</span></div>
-      <div class="kpi"><span class="v">${n.ind.anosParaSair.toLocaleString(LOC(), { maximumFractionDigits: 1 })}</span><span class="l">Custo de sair, em anos de custo recorrente</span></div></div>
-    <p class="small muted"><span>${esc(tr('Horizonte: Ano 0 (piloto e implantação) e ' + n.H + ' anos de operação.'))}</span> <span>Custo total em preços constantes, com tempo das equipes; dotação em preços correntes, só desembolso. Valores ilustrativos.</span></p>
+      <div class="kpi"><span class="v">${(n.ind.anosParaSair || 0).toLocaleString(LOC(), { maximumFractionDigits: (n.ind.anosParaSair || 0) < 1 ? 2 : 1 })}</span><span class="l">Custo de sair, em anos de custo recorrente</span></div></div>
+    ${tabCam}
+    <h3 class="sub-h">Dotação a solicitar por exercício</h3>
     <div class="tw"><table><thead><tr><th>Exercício</th>${T.map(x => `<th class="n">${esc(tr('Ano ' + x))}</th>`).join('')}</tr></thead><tbody>
       <tr><td><span>Dotação a solicitar</span> (${esc(unidMil())})</td>${T.map(x => `<td class="n">${mil(n.orc.dot[x])}</td>`).join('')}</tr></tbody></table></div>
+    <p class="note"><span>Valores ilustrativos. Substitua por cotações e dados locais.</span> <span>Custo total em preços constantes, com tempo das equipes; dotação em preços correntes, só desembolso.</span></p>
     <details class="calc" data-calc ${S.calcAberta ? 'open' : ''}><summary>Ajustar premissas, itens e cenários na calculadora completa</summary>
-      <div id="custos-box" class="embutido">${S.calcAberta ? renderCustos() : ''}</div></details>`;
+      <div id="custos-box" class="embutido">${S.calcAberta && typeof renderCustos === 'function' ? renderCustos() : ''}</div></details>`;
 }
-function passo4a() { return `<p class="muted">Para sustentar e ampliar, todas as camadas precisam funcionar sem as condições especiais do piloto.</p>${blocoCamadas('escala')}`; }
-function passo4b() {
-  if (!custoPronto()) return `<div class="vazio"><b>Para estimar o custo, informe a arquitetura no passo 2.1.</b> ${irBtn('piloto:2a', tr('Ir ao passo 2.1'))}</div>`;
-  let n, cs;
-  try { n = numerosCusto(); cs = cenarios(cfgAtual()); } catch (e) { return '<p class="muted">Não foi possível calcular com as premissas atuais.</p>'; }
-  const ind = n.ind;
-  const ca = Object.keys(cs).map(k => [k, avaliar(cs[k]).ctEco]);
-  const t = totaisCtx();
-  return `<div class="kpis">
-      <div class="kpi"><span class="v">${grande(ind.recorrenteFin)}</span><span class="l">Custo recorrente por ano de operação</span></div>
-      <div class="kpi"><span class="v">${din(ind.icu, 2)}</span><span class="l">Por usuário ativo por ano</span></div>
-      ${t.escolas ? `<div class="kpi"><span class="v">${grande(ind.recorrenteFin / t.escolas)}</span><span class="l">Custo recorrente por escola por ano</span></div>` : ''}</div>
-    <div class="tw"><table><thead><tr><th>Cenário</th><th class="n">Custo total do ciclo de vida</th></tr></thead><tbody>${ca.map(([k, v]) => `<tr><td>${esc(k)}</td><td class="n">${grande(v)}</td></tr>`).join('')}</tbody></table></div>
-    <p class="small muted">Valores ilustrativos da calculadora. A expansão é sustentável quando o custo recorrente cabe no orçamento sem condições promocionais, inclusive nas escolas com menos infraestrutura.</p>`;
-}
+function corpoPasso(id) { return id === '3c' ? passo3c() : corpoPadrao(id); }
 
-// ----------------------------------------------------------- render
-function corpoPasso(id) {
-  switch (id) {
-    case '1a': return passo1a();
-    case '1b': return passo1b();
-    case '1c': return passo1c();
-    case '2a': return passo2a();
-    case '2b': return passo2b();
-    case '2c': return passo2c();
-    case '2d': return `<p class="muted">Antes de começar, confirme que o piloto segue as regras da rede e da legislação.</p><div class="camada">${qsPasso('2d').map(segResp).join('')}</div>`;
-    case '2e': return `<p class="muted">No piloto, as camadas 2 e 3 precisam estar prontas, e as camadas 5, 6 e 7 em capacidade mínima, só nos locais do piloto.</p>${blocoCamadas('piloto', q => q.g !== 'regras')}`;
-    case '2f': return passo2f();
-    case '3a': return passo3a();
-    case '3b': return `<div class="embutido">${renderListas()}</div>`;
-    case '3c': return passo3c();
-    case '4a': return passo4a();
-    case '4b': return passo4b();
-    case '4c': return `<p class="muted">Renovar é uma nova decisão pública: volte à hipótese de valor, compare com a linha de base e com as alternativas disponíveis hoje e recalcule o custo para o novo horizonte.</p>${cardPD(9, true)}`;
-  }
-  return '';
-}
+// ----------------------------------------------------------- passos, rodapés e fases
 function resumoPasso(id) {
-  const x = S.ctx;
-  const fs = faltas(id);
-  if (id === '1a' && !fs.length) { const t = totaisCtx(); return [tr(rotulo(NIVEIS_ADM, x.nivel)), x.local, fmtInt(t.alunos) + ' ' + tr('estudantes')].filter(Boolean).join(' · '); }
-  if (id === '1b' && !fs.length) { const d = DOMINIOS.find(z => z.id === x.dominio); return [d ? tr(d.nome) : '', x.olhando].filter(Boolean).join(' · '); }
-  if (id === '2c' && riscoPronto()) return tr('Perfil de risco') + ': ' + tr(NIVEL_NOME[perfil().agregado]);
-  const qs = qsPasso(id);
-  if (qs) {
-    const r = qs.filter(q => S.resp[q.id]).length, b = qs.filter(q => S.resp[q.id] === 'nao' && ESSENCIAIS.has(q.id)).length;
-    return tr(r + ' de ' + qs.length + ' respondidas') + (b ? ' · ' + tr(b === 1 ? '1 impedimento' : b + ' impedimentos') : '');
-  }
-  if (fs.length) return tr('Falta:') + ' ' + fs.map(tr).join(', ');
-  return '';
+  const x = S.ctx, c = S.caso;
+  if (id === '1a' && passoFeito(id)) { const t = totaisCtx(); return [tr(rotulo(NIVEIS_ADM, x.nivel)), x.local, fmtInt(t.alunos) + ' ' + tr('estudantes')].filter(Boolean).join(' · '); }
+  if (id === '1b' && x.olhando) return x.olhando;
+  if (id === '2a' && (c.tarefas || []).length) return rotTarefas(3);
+  if (id === '20' && c.teste) return tr(rotulo(listaOpc(CAMPO_POR_ID.teste), c.teste));
+  if (id === '2c' && qOk(CAMPO_POR_ID.tipoTec)) return tr(rotulo(listaOpc(CAMPO_POR_ID.tipoTec), c.tipoTec));
+  if (id === '3c') return S.feitos['3c'] ? tr('Estimativa vista') : '';
+  const cs = camposPasso(id).filter(f => !f.opcional);
+  return tr(cs.filter(qOk).length + ' de ' + cs.length + ' respondidas');
 }
-// Rodapé do passo aberto: lista o que falta ou mostra o botão de continuar. Recalculado a cada resposta.
+function rotTarefas(lim) {
+  const c = S.caso, ts = (c.tarefas || []).map(k => k === 'outra' ? (c.tarefaOutra || tr('Outra')) : tr(rotulo(listaOpc(CAMPO_POR_ID.tarefas), k)));
+  return ts.slice(0, lim).join('; ') + (ts.length > lim ? ' +' + (ts.length - lim) : '');
+}
+function proximo(fid, id) {
+  const ps = PASSOS[fid], i = ps.findIndex(p => p[0] === id);
+  if (i < ps.length - 1) return { tipo: 'passo', id: ps[i + 1][0] };
+  const nf = FASES[FASES.findIndex(f => f.id === fid) + 1];
+  return nf ? { tipo: 'fase', fase: nf } : { tipo: 'plano' };
+}
+function botaoSeguir(fid, id, act) {
+  const p = proximo(fid, id);
+  if (p.tipo === 'plano') return `<button type="button" class="btn pri" data-act="gerar-plano">${esc(tr('Gerar plano de contratação'))}</button>`;
+  const txt = p.tipo === 'passo' ? tr('Continuar para ' + numPasso(p.id)) : tr('Continuar para a fase ' + p.fase.n + ': ' + p.fase.nome);
+  return `<button type="button" class="btn pri" data-act="${act || 'continuar'}"${act === 'ir-fase' ? ` data-f2="${p.fase.id}"` : ''} data-de="${id}">${esc(txt)}</button>`;
+}
 function rodapePasso(fid, id) {
-  const f = FASES.find(z => z.id === fid), ps = PASSOS[fid], i = ps.findIndex(p => p[0] === id);
-  const nf = FASES[FASES.indexOf(f) + 1];
-  const prox = i === ps.length - 1 ? (nf ? tr('Ver o resultado da fase ' + f.n) : tr('Ver o resumo do caso')) : tr('Continuar para ' + numPasso(fid, i + 1));
+  if (id === '3c') return `<div class="pe" id="pe-${id}"><div class="passo-pe">${botaoSeguir(fid, id)}</div></div>`;
   const fs = faltas(id);
-  return `<div class="pe" id="pe-${id}">${fs.length
-    ? `<div class="aviso"><b>${esc(tr('Ainda falta responder neste passo:'))}</b><ul>${fs.map(x => `<li>${esc(tr(x))}</li>`).join('')}</ul>
-        <div class="row"><button type="button" class="btn" data-act="continuar-forcar">${esc(tr('Continuar mesmo assim'))}</button><span class="small muted">${esc(tr('Você pode voltar depois. O resultado da fase considera o que faltar.'))}</span></div></div>`
-    : `<div class="passo-pe"><span class="ok-msg">${esc(tr('Passo completo.'))}</span><button type="button" class="btn pri" data-act="continuar">${esc(prox)}</button></div>`}</div>`;
+  const pend = fs.filter(f => !sugerido(f) || vazio(valorCampo(f)));
+  if (!fs.length) return `<div class="pe" id="pe-${id}"><div class="passo-pe"><span class="ok-msg">${esc(tr('Passo completo.'))}</span>${botaoSeguir(fid, id)}</div></div>`;
+  if (!pend.length) {
+    const p = proximo(fid, id);
+    return `<div class="pe" id="pe-${id}"><div class="passo-pe"><span class="muted">${esc(tr('Revise as respostas sugeridas pelas tarefas.'))}</span>
+      <button type="button" class="btn pri" data-act="continuar-confirmar" data-de="${id}">${esc(p.tipo === 'passo' ? tr('Confirmar e continuar para ' + numPasso(p.id)) : tr('Confirmar e continuar'))}</button></div></div>`;
+  }
+  return `<div class="pe" id="pe-${id}"><div class="aviso"><b>${esc(tr('Ainda falta responder neste passo:'))}</b>
+    <ul>${fs.map(f => `<li><button type="button" class="link" data-ir="${fid}:${id}:${f.n.replace(/\./g, '-')}"><span class="qn-l">${f.n}</span> <span>${esc(textoCampo(f))}</span></button></li>`).join('')}</ul>
+    <div class="row"><button type="button" class="btn" data-act="continuar-forcar" data-de="${id}">${esc(tr('Continuar mesmo assim'))}</button><span class="small muted">${esc(tr('Você pode voltar depois.'))}</span></div></div></div>`;
 }
-function numPasso(fid, i) { return FASES.find(f => f.id === fid).n + '.' + (i + 1); }
+function rodapeFase(f) {
+  const n = PASSOS[f.id].reduce((s, [id]) => s + (id === '3c' ? 0 : faltas(id).length), 0);
+  const ult = PASSOS[f.id][PASSOS[f.id].length - 1][0];
+  const completa = progressoFase(f.id).completa;
+  const msg = completa ? `<span class="ok-msg">${esc(tr('Fase ' + f.n + ' completa'))}</span>`
+    : `<span class="muted">${esc(n ? (n === 1 ? tr('Falta 1 resposta nesta fase. Você pode continuar e voltar depois.') : tr('Faltam ' + n + ' respostas nesta fase. Você pode continuar e voltar depois.')) : tr('Abra a estimativa de custo para concluir esta fase.'))}</span>`;
+  return `<div class="fase-pe" id="fpe-${f.id}">${msg}${botaoSeguir(f.id, ult, f.id === 'custo' ? '' : 'ir-fase')}</div>`;
+}
+function marcaPasso(id, st) {
+  return st === 'ok' ? `<span aria-hidden="true">✓</span><span class="sr">${numPasso(id)}</span>` : numPasso(id);
+}
+function renderPasso(f, id, nome) {
+  const fixo = id === '20';
+  const ab = fixo || S.passo === id, st = estadoPasso(id), pi = PASSO_INFO[id] || {};
+  const selo = pi.selo ? ` <span class="selo">${esc(pi.selo)}</span>` : '';
+  const info = pi.info ? botaoInfo(pi.info, 'p-' + id) : '';
+  const titulo = `<span class="pn">${marcaPasso(id, st)}</span><span class="pt"><b><span>${esc(nome)}</span>${selo}</b>${!ab ? `<small>${esc(resumoPasso(id))}</small>` : ''}</span>`;
+  const cab = fixo ? `<div class="passo-cab fixo">${titulo}</div>` : `<button type="button" class="passo-cab" data-passo="${id}" aria-expanded="${ab}">${titulo}<span class="chev" aria-hidden="true"></span></button>`;
+  return `<div class="passo st-${st || 'novo'}${ab ? ' aberto' : ''}${fixo ? ' fixo' : ''}" id="passo-${id}">
+    <div class="passo-topo">${cab}${info}</div>${pi.info ? notaInfo(pi.info, 'p-' + id) : ''}
+    ${ab ? `<div class="passo-corpo">${corpoPasso(id)}${rodapePasso(f.id, id)}</div>` : ''}</div>`;
+}
+function marcaFase(f, pr) { return pr.completa ? `<span aria-hidden="true">✓</span><span class="sr">${f.n}</span>` : f.n; }
 function renderFase(f) {
-  const aberta = S.fase === f.id;
-  const v = veredito(f.id);
+  const aberta = S.fase === f.id, pr = progressoFase(f.id);
   const cab = `<button type="button" class="fase-cab" data-fase="${f.id}" aria-expanded="${aberta}">
-      <span class="fase-n">${f.n}</span><span class="fase-t"><b>${esc(f.nome)}</b><small>${esc(f.sub)}</small></span>
-      <span class="fase-v">${pillVeredito(v.st, true)}</span><span class="chev" aria-hidden="true"></span></button>`;
-  if (!aberta) return `<section class="fase f${f.n}${pulada(f.id) ? ' pulada' : ''}" id="fase-${f.id}">${cab}</section>`;
-  if (pulada(f.id)) return `<section class="fase f${f.n} aberta pulada" id="fase-${f.id}">${cab}
-    <div class="fase-corpo"><div class="vazio"><b>${esc(tr('Você optou por não avaliar esta fase agora.'))}</b>
-      <span>${esc(tr('O resumo e as recomendações consideram só as fases avaliadas. Você pode avaliá-la a qualquer momento.'))}</span>
-      <div class="row"><button type="button" class="btn pri" data-act="avaliar-fase" data-f2="${f.id}">${esc(tr('Avaliar esta fase'))}</button></div></div></div></section>`;
-  const cams = CAMADAS_FASE[f.id];
-  const passos = PASSOS[f.id].map(([id, nome], i) => {
-    const ab = S.passo === id, st = estadoPasso(id);
-    const pe = ab ? rodapePasso(f.id, id) : '';
-    return `<div class="passo st-${st}${ab ? ' aberto' : ''}" id="passo-${id}">
-      <button type="button" class="passo-cab" data-passo="${id}" aria-expanded="${ab}"><span class="pn">${MARCA[st] ? `<span aria-hidden="true">${MARCA[st]}</span><span class="sr">${numPasso(f.id, i)}</span>` : numPasso(f.id, i)}</span><span class="pt"><b>${esc(nome)}</b>${!ab ? `<small>${esc(resumoPasso(id))}</small>` : ''}</span><span class="chev" aria-hidden="true"></span></button>
-      ${ab ? `<div class="passo-corpo">${corpoPasso(id)}${pe}</div>` : ''}</div>`;
-  }).join('');
-  return `<section class="fase f${f.n} aberta" id="fase-${f.id}">${cab}
-    <div class="fase-corpo">
-      <div class="fase-camadas"><span class="small muted">Camadas nesta fase</span>${CAMADAS.map(([n, nome]) => `<span class="cam-chip${cams.includes(n) ? '' : ' fora'}" title="${esc(tr(nome))}">${n}</span>`).join('')}</div>
-      ${PULAVEIS.includes(f.id) ? `<div class="pular-linha"><span class="small muted">${esc(tr('Ainda não vai decidir sobre esta fase?'))}</span><button type="button" class="link" data-act="pular-fase" data-f2="${f.id}">${esc(tr('Não avaliar esta fase agora'))}</button></div>` : ''}
-      ${passos}
-      ${cartaoResultado(f.id)}
-      ${f.id !== 'escala' ? `<details class="pds-fase"><summary>Pontos de decisão do guia nesta fase</summary><div class="pds-in">${f.pds.map(n => cardPD(n, false)).join('')}</div></details>` : ''}
+      <span class="fase-n">${marcaFase(f, pr)}</span><span class="fase-t"><b>${esc(f.nome)}</b><small>${esc(f.sub)}</small></span>
+      <span class="fase-st">${esc(tr(pr.feitos + ' de ' + pr.total + ' passos'))}</span><span class="chev" aria-hidden="true"></span></button>`;
+  if (!aberta) return `<section class="fase f${f.n}${pr.completa ? ' feita' : ''}" id="fase-${f.id}">${cab}</section>`;
+  const ab = `<p class="abertura"><span>${esc(f.abertura)}</span>${f.info ? ' ' + botaoInfo(f.info, 'f-' + f.id) : ''}</p>${f.info ? notaInfo(f.info, 'f-' + f.id) : ''}`;
+  return `<section class="fase f${f.n} aberta${pr.completa ? ' feita' : ''}" id="fase-${f.id}">${cab}
+    <div class="fase-corpo">${ab}
+      ${PASSOS[f.id].map(([id, nome]) => renderPasso(f, id, nome)).join('')}
+      ${rodapeFase(f)}
     </div></section>`;
 }
 function renderStepper() {
   const el = $('#stepper'); if (!el) return;
-  el.innerHTML = FASES.map(f => { const pr = progressoFase(f.id); const v = veredito(f.id); return `<button type="button" class="step-f f${f.n}${S.fase === f.id ? ' at' : ''}" data-fase="${f.id}" aria-current="${S.fase === f.id}">
-    <span class="sf-n">${f.n}</span><span class="sf-t">${esc(f.nome)}</span><span class="sf-v ${VEREDITOS[v.st][1]}" title="${esc(tr(VEREDITOS[v.st][0]))}"></span><span class="sf-bar"><i style="width:${Math.round(100 * pr.pct)}%"></i></span></button>`; }).join('')
-    + `<button type="button" class="step-r${S.vista === 'resumo' ? ' at' : ''}" data-act="ir-resumo" aria-current="${S.vista === 'resumo'}"><span class="sf-t">${esc(tr('Resumo'))}</span></button>`;
+  el.innerHTML = FASES.map(f => {
+    const pr = progressoFase(f.id), at = S.fase === f.id && S.vista !== 'plano';
+    return `<button type="button" class="step-f f${f.n}${at ? ' at' : ''}${pr.completa ? ' feita' : ''}" data-fase="${f.id}" aria-current="${at}">
+      <span class="sf-n">${marcaFase(f, pr)}</span><span class="sf-t">${esc(f.nome)}</span><span class="sf-bar"><i style="width:${Math.round(100 * pr.pct)}%"></i></span></button>`;
+  }).join('') + `<button type="button" class="step-r${S.vista === 'plano' ? ' at' : ''}" data-act="gerar-plano" aria-current="${S.vista === 'plano'}"><span class="sf-t">${esc(tr('Gerar plano de contratação'))}</span></button>`;
 }
 function boasVindas() {
   return `<section class="boas card" id="boas">
     <div class="eyebrow">Como funciona</div>
-    <h2>Do contexto à expansão, em quatro fases</h2>
-    <p>Você descreve a sua rede e o problema, responde perguntas curtas por camada e recebe, ao fim de cada fase, um resultado: pode avançar, pode avançar com condições ou ainda não. O custo é estimado com base nas suas respostas.</p>
+    <h2>Do contexto ao plano de contratação, em três fases</h2>
+    <p>Você descreve a sua rede, o problema e o que quer que a IA faça, escolhe entre prova de conceito e piloto e define como vai adotar e pagar a tecnologia. No fim, um clique gera o plano de contratação, com custo, compra e recomendações de política. Os valores são ilustrativos.</p>
     <ol class="boas-fases">${FASES.map(f => `<li class="f${f.n}"><span class="fase-n">${f.n}</span><span><b>${esc(f.nome)}</b><small>${esc(f.sub)}</small></span></li>`).join('')}</ol>
     <div class="row"><button type="button" class="btn pri grande" data-act="comecar">Começar um caso em branco</button><button type="button" class="btn grande" data-act="ver-exemplo">Ver um exemplo preenchido</button></div>
     <p class="small muted">As respostas ficam salvas só neste navegador. Você pode exportar o caso a qualquer momento.</p>
   </section>`;
 }
-function planoAcao() {
-  const ps = [];
-  fasesAvaliadas().forEach(f => { const v = veredito(f.id); if (v.bloq.length || v.cond.length) ps.push([f, v]); });
-  return ps;
+function chamadaFinal() {
+  return `<section class="cta-resumo card" id="fase-final"><div><div class="eyebrow">Ao terminar</div><h2>Plano de contratação</h2>
+    <p class="muted">Custo e compra primeiro, depois política e governança, com o diagnóstico e as recomendações do caso. Você pode gerar o plano a qualquer momento: ele lista o que ainda falta responder. Exporte em PDF.</p></div>
+    <button type="button" class="btn pri grande" data-act="gerar-plano">Gerar plano de contratação</button></section>`;
 }
-function chamadaResumo() {
-  return `<section class="cta-resumo card" id="fase-final"><div><div class="eyebrow">Ao terminar</div><h2>Resumo e recomendações</h2>
-    <p class="muted">Resultado de cada fase, o que fazer antes da próxima decisão e o que precisa entrar no modelo de contratação. Exporte em PDF.</p></div>
-    <button type="button" class="btn pri grande" data-act="ir-resumo">Ver resumo e recomendações</button></section>`;
-}
-function abrirResumo() { S.vista = 'resumo'; S.boasVindas = false; render(); window.scrollTo({ top: 0, behavior: 'instant' }); }
+
+// ----------------------------------------------------------- mandala
 function mandala() {
-  const W = 300, cx = 150, cy = 146, R = [0, 40, 70, 100, 128];
-  const ang = i => -Math.PI / 2 + i * 2 * Math.PI / 7;
+  const cx = 150, cy = 150;
   const pt = (r, a) => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
-  const setor = (r0, r1, a0, a1) => { const g = 0.012; const [x0, y0] = pt(r1, a0 + g), [x1, y1] = pt(r1, a1 - g), [x2, y2] = pt(r0, a1 - g), [x3, y3] = pt(r0, a0 + g);
-    return `M${x0.toFixed(1)},${y0.toFixed(1)} A${r1},${r1} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)} L${x2.toFixed(1)},${y2.toFixed(1)} A${r0},${r0} 0 0 0 ${x3.toFixed(1)},${y3.toFixed(1)}Z`; };
-  let s = `<svg class="mandala" viewBox="0 0 ${W} 292" role="img" aria-label="${esc(tr('Mandala: fases e camadas'))}">`;
-  const nc = nota(questoes('contexto'));
-  const temNao = qs => qs.some(q => S.resp[q.id] === 'nao');
-  s += `<a href="#" data-ir="contexto:1c" class="m-cel"><circle cx="${cx}" cy="${cy}" r="${R[1] - 2}" style="fill:var(--f1);fill-opacity:${nc ? (0.2 + 0.8 * nc.v).toFixed(2) : 0.12};stroke:${temNao(questoes('contexto')) ? 'var(--crit)' : 'var(--f1s)'};stroke-width:${temNao(questoes('contexto')) ? 2 : 1}"><title>${esc(tr('Fase 1:') + ' ' + tr('Contexto') + ' · ' + tr('Governança') + ' ' + (nc ? Math.round(100 * nc.v) + '%' : '–'))}</title></circle>`;
-  s += `<text x="${cx}" y="${cy + 4}" text-anchor="middle" class="m-c">${esc(tr('Contexto'))}</text></a>`;
-  ['piloto', 'implantacao', 'escala'].forEach((fid, j) => {
-    const f = FASES.find(z => z.id === fid);
-    CAMADAS.forEach(([n, nome], i) => {
-      const r0 = R[j + 1] + 1, r1 = R[j + 2] - 1, a0 = ang(i), a1 = ang(i + 1);
-      const aplic = CAMADAS_FASE[fid].includes(n) && !pulada(fid);
-      const qs = aplic ? questoes(fid, n) : [];
-      const nt = aplic ? nota(qs) : null;
-      const tit = esc(tr('Fase ' + f.n + ': ' + f.nome) + ' · ' + n + '. ' + tr(nome) + ' · ' + (aplic ? (nt && nt.resp ? Math.round(100 * nt.v) + '%' : tr('sem respostas')) : pulada(fid) ? tr('não avaliada') : tr('fora desta fase')));
-      if (!aplic) { s += `<path d="${setor(r0, r1, a0, a1)}" class="m-fora"><title>${tit}</title></path>`; return; }
-      const q0 = qs[0]; const alvo = q0 ? fid + ':' + passoDaQuestao(q0) + ':' + q0.id : fid + ':' + PASSOS[fid][0][0];
-      const nao = temNao(qs);
-      s += `<a href="#" data-ir="${alvo}" class="m-cel"><path d="${setor(r0, r1, a0, a1)}" style="fill:var(--f${f.n});fill-opacity:${nt && nt.resp ? (0.15 + 0.85 * nt.v).toFixed(2) : 0.07};stroke:${nao ? 'var(--crit)' : 'var(--f' + f.n + 's)'};stroke-width:${nao ? 2 : 1}"><title>${tit}</title></path></a>`;
+  const f1 = v => v.toFixed(1);
+  const setor = (r0, r1, a0, a1) => {
+    const g = r0 ? 0.012 : 0.02;
+    const [x0, y0] = pt(r1, a0 + g), [x1, y1] = pt(r1, a1 - g);
+    const larga = a1 - a0 > Math.PI ? 1 : 0;
+    if (!r0) return `M${cx},${cy} L${f1(x0)},${f1(y0)} A${r1},${r1} 0 ${larga} 1 ${f1(x1)},${f1(y1)}Z`;
+    const [x2, y2] = pt(r0, a1 - g), [x3, y3] = pt(r0, a0 + g);
+    return `M${f1(x0)},${f1(y0)} A${r1},${r1} 0 ${larga} 1 ${f1(x1)},${f1(y1)} L${f1(x2)},${f1(y2)} A${r0},${r0} 0 ${larga} 0 ${f1(x3)},${f1(y3)}Z`;
+  };
+  const ang = (i, n) => -Math.PI / 2 + i * 2 * Math.PI / n;
+  const ANEIS = { contexto: [0, 48], piloto: [52, 86], custo: [90, 118] };
+  const EST = { ok: ['m-ok', 'concluído'], andamento: ['m-and', 'em andamento'], '': ['m-vazio', 'ainda não iniciado'] };
+  let s = `<svg class="mandala" viewBox="-6 -6 312 312" role="img" aria-label="${esc(tr('Mandala: fases, passos e camadas'))}">`;
+  FASES.forEach(f => {
+    const [r0, r1] = ANEIS[f.id], ps = PASSOS[f.id];
+    ps.forEach(([id, nome], i) => {
+      const a0 = ang(i, ps.length), a1 = ang(i + 1, ps.length), st = estadoPasso(id), [cls, rot] = EST[st];
+      const at = S.vista !== 'plano' && S.fase === f.id && (S.passo === id);
+      const [tx, ty] = pt(r0 ? (r0 + r1) / 2 : 30, (a0 + a1) / 2);
+      s += `<a href="#" data-ir="${f.id}:${id}" data-setor="${id}" class="m-set f${f.n} ${cls}${at ? ' m-at' : ''}"><title>${esc(numPasso(id) + ' ' + tr(nome) + ' · ' + tr(rot))}</title><path d="${setor(r0, r1, a0, a1)}"/><text x="${f1(tx)}" y="${f1(ty + 4)}" text-anchor="middle">${numPasso(id)}</text></a>`;
     });
   });
-  CAMADAS.forEach(([n], i) => { const [x, y] = pt(R[4] + 10, (ang(i) + ang(i + 1)) / 2); s += `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" class="m-l">${n}</text>`; });
+  CAMADAS.forEach(([n, nome], i) => {
+    const a0 = ang(i, 7), a1 = ang(i + 1, 7);
+    const ok = CAMADA_PASSOS[n].every(passoFeito);
+    const alvo = CAMADA_PASSOS[n][0];
+    s += `<a href="#" data-ir="${fasePasso(alvo)}:${alvo}" data-camada="${n}" class="m-cam ${ok ? 'm-ok' : 'm-vazio'}"><title>${esc(tr('Camada') + ' ' + n + ' · ' + tr(nome) + ' · ' + tr(ok ? 'concluída' : 'ainda não concluída'))}</title><path d="${setor(124, 138, a0, a1)}"/></a>`;
+    const [x, y] = pt(147, (a0 + a1) / 2);
+    s += `<text x="${f1(x)}" y="${f1(y + 4)}" text-anchor="middle" class="m-l">${n}</text>`;
+  });
   return s + '</svg>';
 }
+
+// ----------------------------------------------------------- painel lateral
 function renderPainel() {
   const el = $('#painel'); if (!el) return;
-  const t = totaisCtx();
-  let custo = ''; if (custoPronto()) { try { const n = numerosCusto(); custo = grande(n.total); custo += ` <small>(${esc(tr(n.H + ' anos'))})</small>`; } catch (e) { } }
+  const t = totaisCtx(), c = S.caso;
+  const prog = FASES.map(f => { const pr = progressoFase(f.id); return `<li><button type="button" class="prog-f f${f.n}${pr.completa ? ' feita' : ''}" data-fase="${f.id}"><span class="fase-n">${marcaFase(f, pr)}</span><span class="vl-t">${esc(f.nome)}</span><span class="vl-n">${esc(tr(pr.feitos + ' de ' + pr.total + ' passos'))}</span></button></li>`; }).join('');
+  const teste = c.teste ? (c.teste === 'recomendar' ? tr('a recomendar') : tr(rotulo(listaOpc(CAMPO_POR_ID.teste), c.teste))) : '—';
+  const tec = c.tipoTec ? tr(rotulo(listaOpc(CAMPO_POR_ID.tipoTec), c.tipoTec)) : '—';
+  let est = '';
+  if (qOk(CAMPO_POR_ID.tarefas) && qOk(CAMPO_POR_ID.tipoTec)) {
+    try {
+      const n = numerosCusto();
+      est = `<div class="estim"><div class="eyebrow">Estimativa ilustrativa</div>
+        <div class="linha"><span>Ano 0 (prova de conceito ou piloto)</span><span class="num">${grande(n.ano0)}</span></div>
+        <div class="linha"><span><span>Custo total do ciclo</span> <small>(${esc(tr(n.H + ' anos'))})</small></span><span class="num">${grande(n.total)}</span></div>
+        <p class="small muted">Valores ilustrativos</p></div>`;
+    } catch (e) { est = ''; }
+  }
+  const exp = `<button type="button" class="link" data-act="exp-json">Exportar caso</button>`;
   el.innerHTML = `<div class="card painel-in">
-    <div class="eyebrow">Resultado por fase</div>
-    <ul class="vlist">${FASES.map(f => { const v = veredito(f.id); return `<li><button type="button" data-fase="${f.id}"><span class="fase-n f${f.n}">${f.n}</span><span class="vl-t">${esc(f.nome)}</span>${pillVeredito(v.st, true)}</button></li>`; }).join('')}</ul>
-    ${mandala()}
-    <p class="small muted">Centro: contexto e governança. Anéis, de dentro para fora: piloto, implantação, sustentabilidade e expansão. Fatias: as sete camadas. Quanto mais forte a cor, mais respostas "sim"; contorno vermelho indica alguma resposta "não". Clique para ir às perguntas.</p>
-    <ol class="leg">${CAMADAS.map(([n, nome]) => `<li><span class="cn">${n}</span>${esc(nome)}</li>`).join('')}</ol>
-    <div class="fatos">
-      <div class="linha"><span>Caso</span><span>${esc(S.caso.titulo || S.ctx.olhando || tr('Caso sem título'))}</span></div>
-      ${S.ctx.local ? `<div class="linha"><span>Lugar</span><span>${esc(S.ctx.local)}</span></div>` : ''}
+    <div class="prog"><div class="eyebrow">Seu progresso</div><ul class="vlist">${prog}</ul></div>
+    <div class="mand">${mandala()}
+      <p class="small muted leg-m"><span>Verde: concluído. Cor clara: em andamento. Contorno: ainda não iniciado. Centro: fase 1; anéis: fases 2 e 3; anel externo: as sete camadas do custo total.</span> ${botaoInfo('c37', 'm')}</p>${notaInfo('c37', 'm')}
+      <ol class="leg">${CAMADAS.map(([n, nome]) => `<li><span class="cn">${n}</span>${esc(nome)}</li>`).join('')}</ol></div>
+    <div class="fatos"><div class="eyebrow">Seu caso</div>
+      <div class="linha"><span>Lugar</span><span>${esc(S.ctx.local || '—')}</span></div>
       <div class="linha"><span>Estudantes</span><span class="num">${t.alunos ? fmtInt(t.alunos) : '—'}</span></div>
-      <div class="linha"><span>Perfil de risco</span><span>${riscoPronto() ? pill(perfil().agregado) : '—'}</span></div>
-      <div class="linha"><span>Custo total</span><span class="num">${custo || '—'}</span></div>
+      <div class="linha"><span>Aplicações</span><span>${esc((c.tarefas || []).length ? rotTarefas(3) : '—')}</span></div>
+      <div class="linha"><span>Teste</span><span>${esc(teste)}</span></div>
+      <div class="linha"><span>Tecnologia</span><span>${esc(tec)}</span></div>
     </div>
-    <div class="row painel-acoes"><button class="btn" type="button" data-act="ir-resumo">Resumo e recomendações</button><span class="small muted">Salvo neste navegador</span></div>
+    ${est}
+    <div class="painel-acoes"><button class="btn pri grande" type="button" data-act="gerar-plano">Gerar plano de contratação</button>
+      <span class="small muted">Salvo neste navegador</span>
+      <span class="row small">${exp}<button type="button" class="link" data-act="imp-json">Importar caso</button></span></div>
   </div>`;
 }
+
+// ----------------------------------------------------------- render
 function render() {
   estadoFluxo();
+  if (S.vista !== 'plano' && S.fase === 'custo' && S.passo === '3c') S.feitos['3c'] = true;
   const y = window.scrollY, foco = document.activeElement && document.activeElement.id;
+  const ex = ['A', 'B', 'C', 'D', 'editado'].includes(S.exemplo) && S.boasVindas === false;
+  const tituloEx = ['A', 'B', 'C', 'D'].includes(S.exemplo) && typeof CASOS !== 'undefined' && CASOS[S.exemplo] ? CASOS[S.exemplo].titulo : '';
+  let corpo;
+  if (S.vista === 'plano') corpo = typeof renderPlano === 'function' ? renderPlano() : `<section class="card" id="plano"><p class="muted">O plano de contratação ainda não está disponível.</p><button type="button" class="btn" data-act="voltar-percurso">Voltar ao percurso</button></section>`;
+  else corpo = FASES.map(renderFase).join('') + chamadaFinal();
   $('#main').innerHTML = `${S.boasVindas !== false ? '' : '<nav class="stepper" id="stepper" aria-label="Fases"></nav>'}
     ${S.boasVindas !== false ? boasVindas() : ''}
-    ${['A', 'B', 'C', 'D', 'editado'].includes(S.exemplo) && S.boasVindas === false ? `<div class="alert info"><span class="ic">Exemplo</span><span>${['A', 'B', 'C', 'D'].includes(S.exemplo) ? esc(tr('Você está vendo um caso ilustrativo do guia, com respostas fictícias:')) + ' <b>' + esc(tr(CASOS[S.exemplo].titulo)) + '</b>. ' : ''}<span>Edite as respostas ou comece um caso em branco.</span></span><button class="btn" type="button" data-act="limpar">Começar um caso em branco</button></div>` : ''}
-    ${S.vista === 'resumo' ? renderResumo() : FASES.map(renderFase).join('') + chamadaResumo()}`;
+    ${ex ? `<div class="alert info"><span class="ic">Exemplo</span><span>${tituloEx ? esc(tr('Você está vendo um caso ilustrativo do guia, com respostas fictícias:')) + ' <b>' + esc(tr(tituloEx)) + '</b>. ' : ''}<span>Edite as respostas ou comece um caso em branco.</span></span><button class="btn" type="button" data-act="limpar">Começar um caso em branco</button></div>` : ''}
+    ${S.boasVindas !== false && S.vista !== 'plano' ? '' : corpo}`;
   renderStepper(); renderPainel();
-  if (document.getElementById('cres')) renderCustosResultados();
+  if (document.getElementById('cres') && typeof renderCustosResultados === 'function') renderCustosResultados();
   if (foco) { const f = document.getElementById(foco); if (f) try { f.focus({ preventScroll: true }); } catch (e) { } }
   window.scrollTo(0, y);
   salvar();
 }
 function atualizarLaterais() { renderStepper(); renderPainel(); atualizarFaseViva(); salvar(); }
-// atualiza o cabeçalho e o resultado da fase aberta sem redesenhar a página
+// Atualiza marcas de respondida, passos, rodapés e cabeçalho da fase aberta sem redesenhar a página
 function atualizarFaseViva() {
-  const fid = S.fase; if (!fid) return;
+  document.querySelectorAll('.q[data-campo]').forEach(q => {
+    const f = CAMPO_POR_ID[q.dataset.campo]; if (!f) return;
+    const ok = qOk(f), sug = sugerido(f) && !vazio(valorCampo(f));
+    q.classList.toggle('ok', ok); q.classList.toggle('sug', sug);
+    const sr = q.querySelector('.q-sr'); if (sr && sr.dataset.v !== String(ok)) { sr.dataset.v = String(ok); sr.textContent = ok ? tr('respondida') : ''; }
+  });
+  const fid = S.fase; if (!fid || S.vista === 'plano') return;
   const sec = document.getElementById('fase-' + fid); if (!sec) return;
-  const v = veredito(fid);
-  const pv = sec.querySelector('.fase-v'); if (pv) pv.innerHTML = pillVeredito(v.st, true);
-  const res = document.getElementById('res-' + fid); if (res) res.outerHTML = cartaoResultado(fid);
-  PASSOS[fid].forEach(([id], i) => {
+  const f = FASES.find(z => z.id === fid), pr = progressoFase(fid);
+  sec.classList.toggle('feita', pr.completa);
+  const fn = sec.querySelector('.fase-cab .fase-n'); if (fn) { const h = String(marcaFase(f, pr)); if (fn.innerHTML !== h) fn.innerHTML = h; }
+  const fst = sec.querySelector('.fase-cab .fase-st'); if (fst) fst.textContent = tr(pr.feitos + ' de ' + pr.total + ' passos');
+  PASSOS[fid].forEach(([id]) => {
     const p = document.getElementById('passo-' + id); if (!p) return;
     const st = estadoPasso(id);
-    p.className = 'passo st-' + st + (S.passo === id ? ' aberto' : '');
-    const pn = p.querySelector('.pn'); if (pn) pn.innerHTML = MARCA[st] ? `<span aria-hidden="true">${MARCA[st]}</span><span class="sr">${numPasso(fid, i)}</span>` : numPasso(fid, i);
+    ['st-ok', 'st-andamento', 'st-novo'].forEach(c => p.classList.remove(c)); p.classList.add('st-' + (st || 'novo'));
+    const pn = p.querySelector('.pn'); if (pn) { const h = String(marcaPasso(id, st)); if (pn.innerHTML !== h) pn.innerHTML = h; }
     const sm = p.querySelector('.pt small'); if (sm) sm.textContent = resumoPasso(id);
   });
-  // rodapé do passo aberto (o que falta / continuar), sem perder o foco do campo em edição
-  const pe = S.passo && document.getElementById('pe-' + S.passo);
-  if (pe) { const novo = rodapePasso(fid, S.passo); if (pe.outerHTML !== novo) pe.outerHTML = novo; }
+  ['20', S.passo].filter(Boolean).forEach(id => {
+    const pe = document.getElementById('pe-' + id);
+    if (pe && PASSOS[fid].some(p => p[0] === id)) { const novo = rodapePasso(fid, id); if (pe.outerHTML !== novo) pe.outerHTML = novo; }
+  });
+  const fpe = document.getElementById('fpe-' + fid); if (fpe) { const novo = rodapeFase(f); if (fpe.outerHTML !== novo) fpe.outerHTML = novo; }
+}
+function alvoQ(alvo) {
+  if (!alvo) return '';
+  if (document.getElementById('q-' + alvo)) return 'q-' + alvo;
+  const f = CAMPO_POR_ID[alvo] || CAMPOS.find(x => x.n === alvo);
+  return f ? idQ(f.n) : 'q-' + alvo;
 }
 function irPara(id) {
   const el = document.getElementById(id); if (!el) return;
   const top = el.getBoundingClientRect().top + window.scrollY - (document.querySelector('.top') || { offsetHeight: 0 }).offsetHeight - 12;
   window.scrollTo({ top, behavior: 'smooth' });
-  if (el.classList.contains('qc')) { el.classList.add('pisca'); setTimeout(() => el.classList.remove('pisca'), 1600); }
+  if (el.classList.contains('q')) { el.classList.add('pisca'); setTimeout(() => el.classList.remove('pisca'), 1600); }
 }
 function abrirFase(fid, passo, alvo) {
+  if (!PASSOS[fid]) return;
+  if (alvo && !passo) { const f = CAMPO_POR_ID[alvo]; if (f) passo = f.passo; }
   S.fase = fid; S.passo = passo || PASSOS[fid][0][0]; S.boasVindas = false; S.vista = ''; render();
-  requestAnimationFrame(() => irPara(alvo ? 'q-' + alvo : 'passo-' + S.passo));
+  requestAnimationFrame(() => irPara(alvo ? alvoQ(alvo) : 'passo-' + S.passo));
 }
-function continuar(forcar) {
-  if (!forcar && faltas(S.passo).length) { render(); return; }
-  S.feitos[S.passo] = true;
-  const f = FASES.find(z => z.id === S.fase); const ps = PASSOS[f.id]; const i = ps.findIndex(p => p[0] === S.passo);
-  if (i < ps.length - 1) { S.passo = ps[i + 1][0]; render(); requestAnimationFrame(() => irPara('passo-' + S.passo)); return; }
-  // último passo: fecha os passos e mostra o resultado da fase
-  S.passo = ''; render(); requestAnimationFrame(() => irPara('res-' + f.id));
+function gerarPlano() {
+  S.boasVindas = false;
+  if (typeof abrirPlano === 'function') { abrirPlano(); return; }
+  S.vista = 'plano'; render(); window.scrollTo({ top: 0, behavior: 'instant' });
 }
-
-// ----------------------------------------------------------- exportar e importar
-function dadosCaso() { return { app: 'navegador-ia-educacao', versao: 4, salvo: new Date().toISOString(), exemplo: S.exemplo, caso: S.caso, ctx: S.ctx, resp: S.resp, respC: S.respC, pular: S.pular, piloto: S.piloto, feitos: S.feitos, checks: S.checks, custo: S.custo, moeda: S.moeda, lang: S.lang }; }
-function importarCaso(txt) {
-  try {
-    const o = JSON.parse(txt);
-    if (!o || o.app !== 'navegador-ia-educacao' || !o.caso) throw new Error('formato');
-    S.caso = Object.assign(clone(CASO_VAZIO), o.caso); S.ctx = o.ctx || {}; S.resp = o.resp || {}; S.piloto = o.piloto || {}; S.checks = o.checks || {};
-    S.respC = o.respC || {}; S.feitos = o.feitos || {}; S.pular = o.pular || {}; S.vista = '';
-    if (o.custo) S.custo = o.custo; if (o.moeda) S.moeda = o.moeda;
-    S.exemplo = o.exemplo === 'novo' ? 'novo' : 'editado'; S.fase = 'contexto'; S.passo = '1a'; S.boasVindas = false;
-    render(); window.scrollTo(0, 0); toast('Caso importado.');
-  } catch (e) { toast('Este arquivo não é um caso exportado pelo navegador.'); }
+function continuar(modo, de) {
+  const id = de || S.passo, fid = fasePasso(id); if (!fid) return;
+  if (modo === 'normal' && faltas(id).length) { render(); return; }
+  if (modo === 'confirmar') camposPasso(id).forEach(f => { if (sugerido(f) && !vazio(valorCampo(f))) S.respC[f.id] = true; });
+  S.feitos[id] = true;
+  const p = proximo(fid, id);
+  if (p.tipo === 'plano') { gerarPlano(); return; }
+  if (p.tipo === 'fase') { abrirFase(p.fase.id); return; }
+  S.fase = fid; S.passo = p.id; render(); requestAnimationFrame(() => irPara('passo-' + p.id));
 }
-
-// ----------------------------------------------------------- eventos do fluxo
+// Gancho chamado por app.js depois de gravar S.caso[campo] (ou um caminho como 'piloto.escolas').
+// Devolve true porque já atualizou a tela.
+function aoMudarCampo(campo) {
+  const f = CAMPO_POR_ID[campo];
+  if (campo === 'tarefas') aplicarSugestoes();
+  if (String(campo).startsWith('piloto') || campo === 'elegiveis') {
+    const c = S.caso, p = c.piloto || {}, t = totaisCtx(), el = document.getElementById('pct-rede');
+    const v = c.teste !== 'poc' && t.escolas && +p.escolas ? Math.min(1, +p.escolas / t.escolas) : 0;
+    if (el) { el.hidden = !v; const b = el.querySelector('b'); if (b) b.textContent = pct(v); }
+    atualizarLaterais(); return true;
+  }
+  if ((f && ['texto', 'area'].includes(f.tipo)) || ['tarefaOutra', 'impactoOutro', 'nivelOutro', 'titulo', 'problema', 'resultado'].includes(campo)) { atualizarLaterais(); return true; }
+  render(); return true;
+}
 function eventoFluxo(e) {
   const el = e.target;
   if (e.type === 'click') {
+    const inf = el.closest('[data-info]');
+    if (inf) { const id = inf.dataset.infoId || inf.dataset.info; S.info[id] = !S.info[id]; render(); return true; }
     const iz = el.closest('[data-ir]');
     if (iz) { e.preventDefault(); const [f, p, q] = iz.dataset.ir.split(':'); abrirFase(f, p, q); return true; }
     const fz = el.closest('[data-fase]');
-    if (fz) { const id = fz.dataset.fase; if (S.fase === id && fz.classList.contains('fase-cab')) { S.fase = ''; render(); } else abrirFase(id, S.fase === id ? S.passo : ''); return true; }
+    if (fz) { const id = fz.dataset.fase; if (S.fase === id && S.vista !== 'plano' && fz.classList.contains('fase-cab')) { S.fase = ''; render(); } else abrirFase(id, S.fase === id ? S.passo : ''); return true; }
     const pz = el.closest('[data-passo]');
     if (pz) { const id = pz.dataset.passo; S.passo = S.passo === id ? '' : id; render(); if (S.passo) requestAnimationFrame(() => irPara('passo-' + id)); return true; }
     const rz = el.closest('[data-resp]');
@@ -648,88 +616,67 @@ function eventoFluxo(e) {
       const id = rz.dataset.resp, v = rz.dataset.v;
       if (S.resp[id] === v) delete S.resp[id]; else S.resp[id] = v;
       if (S.exemplo !== 'novo') S.exemplo = 'editado';
-      const row = rz.closest('.qc');
-      row.className = 'qc' + (S.resp[id] ? ' resp-' + S.resp[id] : '');
-      row.querySelectorAll('[data-resp]').forEach(b => b.setAttribute('aria-pressed', S.resp[id] === b.dataset.v));
-      const cab = row.closest('.camada'); const num = cab && cab.querySelector('.camada-cab .num');
-      if (num) { const ids = [...cab.querySelectorAll('.qc')].map(x => x.dataset.q); num.textContent = ids.filter(k => S.resp[k]).length + '/' + ids.length; }
+      const grp = rz.closest('.seg');
+      if (grp) grp.querySelectorAll('[data-resp]').forEach(b => b.setAttribute('aria-pressed', String(S.resp[id] === b.dataset.v)));
       atualizarLaterais(); return true;
     }
+    const tz = el.closest('[data-sototal]');
+    if (tz) { const id = tz.dataset.sototal; const et = S.ctx.etapas[id] = S.ctx.etapas[id] || {}; et.soTotal = !et.soTotal; if (et.soTotal && !(+et.alunos > 0)) { const s = (et.anos || []).reduce((a, b) => a + (+b || 0), 0); if (s > 0) et.alunos = s; } render(); return true; }
     const a = el.closest('[data-act]'); if (!a) return false;
     const act = a.dataset.act;
-    if (act === 'continuar') { continuar(false); return true; }
-    if (act === 'continuar-forcar') { continuar(true); return true; }
+    if (act === 'continuar') { continuar('normal', a.dataset.de); return true; }
+    if (act === 'continuar-forcar') { continuar('forcar', a.dataset.de); return true; }
+    if (act === 'continuar-confirmar') { continuar('confirmar', a.dataset.de); return true; }
+    if (act === 'ir-fase') { const ult = PASSOS[S.fase] ? PASSOS[S.fase][PASSOS[S.fase].length - 1][0] : ''; if (ult && a.dataset.de === ult && passoFeito(ult)) S.feitos[ult] = true; abrirFase(a.dataset.f2); return true; }
     if (act === 'comecar') { S.boasVindas = false; carregarExemplo('novo'); S.boasVindas = false; abrirFase('contexto', '1a'); return true; }
     if (act === 'ver-exemplo') { carregarExemplo('B'); S.boasVindas = false; abrirFase('contexto', '1a'); return true; }
-    if (act === 'ir-final' || act === 'ir-resumo') { abrirResumo(); return true; }
-    if (act === 'voltar-fases') { S.vista = ''; render(); window.scrollTo({ top: 0, behavior: 'instant' }); return true; }
-    if (act === 'avaliar-fase') { const id = a.dataset.f2; S.pular[id] = false; S.vista = ''; abrirFase(id, PASSOS[id][0][0]); return true; }
-    if (act === 'pular-fase') { S.pular[a.dataset.f2] = true; if (a.dataset.f2 === 'implantacao') S.pular.escala = true; S.passo = ''; render(); toast(tr('Fase marcada como não avaliada.')); return true; }
-    if (act === 'pular-resto') { const i = FASES.findIndex(z => z.id === a.dataset.de); FASES.slice(i + 1).forEach(z => { if (PULAVEIS.includes(z.id)) S.pular[z.id] = true; }); abrirResumo(); return true; }
-    if (act === 'pdf') { baixarPDF(); return true; }
-    if (act === 'usar-alunos') { S.caso.elegiveis = totaisCtx().alunos; S.respC.elegiveis = true; S.custo.editado = false; render(); toast('Total de estudantes aplicado.'); return true; }
-    if (act === 'exp-json') { baixar(nomeArq('json').replace('relatorio', 'caso'), JSON.stringify(dadosCaso(), null, 1)); return true; }
-    if (act === 'copiar-json') { const t = JSON.stringify(dadosCaso()); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(() => toast('Dados do caso copiados.'), () => toast('Não foi possível copiar.')); return true; }
+    if (act === 'gerar-plano' || act === 'ir-resumo' || act === 'ir-final') { gerarPlano(); return true; }
+    if (act === 'voltar-percurso' || act === 'voltar-fases') { S.vista = ''; render(); window.scrollTo({ top: 0, behavior: 'instant' }); return true; }
+    if (act === 'pdf') { if (typeof baixarPDF === 'function') baixarPDF(); return true; }
+    if (act === 'usar-alunos') { S.caso.elegiveis = totaisCtx().alunos; S.respC.elegiveis = true; if (S.custo) S.custo.editado = false; if (S.exemplo !== 'novo') S.exemplo = 'editado'; render(); toast(tr('Total de estudantes aplicado.')); return true; }
     return false;
   }
   if (e.type === 'change') {
-    if (el.id === 'imp-json' && el.files && el.files[0]) { const r = new FileReader(); r.onload = () => importarCaso(String(r.result)); r.readAsText(el.files[0]); el.value = ''; return true; }
-    if (el.dataset.ctx) { S.ctx[el.dataset.ctx] = el.value; if (S.exemplo !== 'novo') S.exemplo = 'editado'; if (el.dataset.ctx === 'dominio') S.ctx.comps = []; render(); return true; }
-    if (el.dataset.etapa) { const id = el.dataset.etapa; S.ctx.etapas[id] = Object.assign(S.ctx.etapas[id] || {}, { on: el.checked }); render(); return true; }
-    if (el.dataset.porano) { const id = el.dataset.porano; S.ctx.etapas[id].porAno = el.checked; render(); return true; }
-    if (el.dataset.comp) { const s = new Set(S.ctx.comps || []); el.checked ? s.add(el.dataset.comp) : s.delete(el.dataset.comp); S.ctx.comps = [...s]; render(); return true; }
-    if (el.dataset.ctxn) {
-      const v = el.value === '' ? '' : Math.max(0, +el.value || 0);
-      const path = el.dataset.ctxn;
-      if (path.startsWith('piloto.')) setPath(S, path, v); else {
-        const ks = path.split('.'); // etapas.id.campo[.i]
-        const et = S.ctx.etapas[ks[1]] = S.ctx.etapas[ks[1]] || {};
-        if (ks[2] === 'anos') { et.anos = et.anos || []; et.anos[+ks[3]] = v; } else et[ks[2]] = v;
-        const s = document.querySelector(`[data-sum="${ks[1]}"]`); if (s) s.textContent = fmtInt(alunosEtapa(ks[1]));
-        const t = totaisCtx(); const te = document.querySelector('[data-tot="escolas"]'), ta = document.querySelector('[data-tot="alunos"]');
-        if (te) te.textContent = fmtInt(t.escolas); if (ta) ta.textContent = fmtInt(t.alunos);
-      }
-      estadoFluxo(); atualizarLaterais(); return true;
+    if (el.dataset.ctx) {
+      S.ctx[el.dataset.ctx] = el.value; if (S.exemplo !== 'novo') S.exemplo = 'editado';
+      if (el.dataset.ctx === 'dominio') S.ctx.comps = [];
+      render(); return true;
     }
-  }
-  if (e.type === 'input') {
+    if (el.dataset.etapa) {
+      const id = el.dataset.etapa; S.ctx.etapas[id] = Object.assign(S.ctx.etapas[id] || {}, { on: el.checked });
+      if (S.exemplo !== 'novo') S.exemplo = 'editado';
+      if ((S.caso.tarefas || []).length) aplicarSugestoes();
+      render(); return true;
+    }
+    if (el.dataset.comp) { const s = new Set(S.ctx.comps || []); el.checked ? s.add(el.dataset.comp) : s.delete(el.dataset.comp); S.ctx.comps = [...s]; if (S.exemplo !== 'novo') S.exemplo = 'editado'; render(); return true; }
+    if (el.dataset.ctxn) { gravarCtxn(el); return true; }
     if (el.dataset.ctxt) { S.ctx[el.dataset.ctxt] = el.value; atualizarLaterais(); return true; }
   }
+  if (e.type === 'input') {
+    if (el.dataset.ctxt) { S.ctx[el.dataset.ctxt] = el.value; if (S.exemplo !== 'novo') S.exemplo = 'editado'; atualizarLaterais(); return true; }
+    if (el.dataset.ctxn) { gravarCtxn(el); return true; }
+  }
   if (e.type === 'toggle' && el.dataset) {
-    if (el.dataset.dim) { S.dimAberta = S.dimAberta || {}; S.dimAberta[el.dataset.dim] = el.open; return false; }
+    if (el.dataset.arq != null) { ARQ_ABERTA = el.open; return false; }
     if (el.dataset.calc != null) {
       S.calcAberta = el.open;
       const box = document.getElementById('custos-box');
-      if (el.open && box && !box.innerHTML) { box.innerHTML = renderCustos(); renderCustosResultados(); }
+      if (el.open && box && !box.innerHTML && typeof renderCustos === 'function') { box.innerHTML = renderCustos(); renderCustosResultados(); }
       salvar(); return false;
     }
   }
   return false;
 }
-
-// ----------------------------------------------------------- relatório
-function secoesFluxo() {
-  const x = S.ctx || {}, t = totaisCtx();
-  const nv = rotulo(NIVEIS_ADM, x.nivel);
-  const rot = v => (RESP.find(r => r[0] === v) || ['', 'Sem resposta'])[1];
-  const secs = [];
-  // resumo executivo: veredito de cada fase e plano de ação
-  const res = FASES.map(f => { const v = veredito(f.id); return [tr('Fase ' + f.n + ':') + ' ' + tr(f.nome), tr(PERG_FASE[f.id]) + ' ' + tr(VEREDITOS[v.st][0]) + '.']; });
-  const acoes = [];
-  planoAcao().forEach(([f, v]) => {
-    v.bloq.forEach(it => acoes.push(tr('Fase ' + f.n + ':') + ' ' + tr('Impedimento') + '. ' + tr(it.texto)));
-    v.cond.forEach(it => acoes.push(tr('Fase ' + f.n + ':') + ' ' + tr('Condição') + '. ' + tr(it.texto)));
-  });
-  secs.push({ h: 'Resumo executivo', kv: res, p: acoes.length ? ['Plano de ação, em ordem de prioridade:'] : ['Nenhuma ação pendente nas respostas dadas até agora.'], list: acoes });
-  secs.push({ h: 'Contexto', kv: [['Nível administrativo', x.nivel === 'outro' ? (x.nivelOutro || nv) : nv], ['Lugar ou rede', x.local || ''], ['Escolas', fmtInt(t.escolas)], ['Estudantes', fmtInt(t.alunos)]],
-    table: t.n ? { head: ['Etapa de ensino', 'Escolas', 'Estudantes'], rows: etapasAtivas().map(([id, nome]) => [nome, fmtInt(+(x.etapas[id] || {}).escolas || 0), fmtInt(alunosEtapa(id))]) } : null });
-  const d = DOMINIOS.find(z => z.id === x.dominio);
-  secs.push({ h: 'Problema', kv: [['Tipo de problema', d ? tr(d.nome) + ' (' + tr(d.lema) + ')' : ''], ['Componentes', (x.comps || []).map(k => k === 'outro' ? (x.compOutro || tr('Outro componente')) : tr(((d && d.comps || []).find(cp => cp[0] === k) || [k, k])[1])).join('; ')], ['Problema que a equipe está olhando', x.olhando || '']] });
-  secs.push({ h: 'Governança de IA na educação', table: { head: ['Pergunta', 'Resposta'], rows: questoes('contexto').map(q => [q.t, rot(S.resp[q.id])]) } });
-  ['piloto', 'implantacao', 'escala'].forEach(fid => {
-    const f = FASES.find(z => z.id === fid);
-    if (pulada(fid)) { secs.push({ h: tr('Fase ' + f.n + ':') + ' ' + tr(f.nome), p: [tr('Você optou por não avaliar esta fase agora.')] }); return; }
-    secs.push({ h: tr('Fase ' + f.n + ':') + ' ' + tr(f.nome), table: { head: ['Camada', 'Pergunta', 'Resposta'], rows: questoes(fid).map(q => [q.g === 'regras' ? tr('Regras do piloto') : q.c + '. ' + tr(CAMADAS[q.c - 1][1]), q.t, rot(S.resp[q.id])]) } });
-  });
-  return secs;
+// Escolas e estudantes por etapa e ano (data-ctxn="etapas.<id>.<campo>[.<i>]")
+function gravarCtxn(el) {
+  const v = lerNum(el.value);
+  const val = v === '' ? '' : Math.max(0, Math.round(+v || 0));
+  const ks = el.dataset.ctxn.split('.');
+  const et = S.ctx.etapas[ks[1]] = S.ctx.etapas[ks[1]] || {};
+  if (ks[2] === 'anos') { et.anos = Array.isArray(et.anos) ? et.anos : []; et.anos[+ks[3]] = val; } else et[ks[2]] = val;
+  if (S.exemplo !== 'novo') S.exemplo = 'editado';
+  const s = document.querySelector(`[data-sum="${ks[1]}"]`); if (s) s.textContent = fmtInt(alunosEtapa(ks[1]));
+  const t = totaisCtx(); const te = document.querySelector('[data-tot="escolas"]'), ta = document.querySelector('[data-tot="alunos"]');
+  if (te) te.textContent = fmtInt(t.escolas); if (ta) ta.textContent = fmtInt(t.alunos);
+  atualizarLaterais();
 }

@@ -1,0 +1,498 @@
+{
+ "app": "navegador-ia-educacao",
+ "versao": 4,
+ "salvo": "2026-10-06T14:21:38.283Z",
+ "exemplo": "B",
+ "caso": {
+  "titulo": "Tutor de matemática para estudantes",
+  "situacao": "nova",
+  "problema": "Nos anos finais do ensino fundamental, a proporção de estudantes abaixo do nível adequado em matemática é alta e desigual entre escolas. Os professores não conseguem oferecer prática individualizada e retorno imediato a turmas numerosas.",
+  "resultado": "Aumentar a proficiência em matemática dos estudantes com maior defasagem, reduzindo a diferença entre escolas.",
+  "populacao": "Estudantes dos anos finais do ensino fundamental, a partir de 20 escolas piloto",
+  "linhaBase": "sim",
+  "alternativaSemIA": true,
+  "capacidade": [
+   "finalidade",
+   "risco",
+   "evidencia",
+   "continuidade",
+   "contas"
+  ],
+  "classes": [
+   "tutoria",
+   "geracao",
+   "recomendacao"
+  ],
+  "autonomia": 3,
+  "usuarios": [
+   "estudantes",
+   "professores"
+  ],
+  "afetados": [
+   "criancas",
+   "professores",
+   "familias"
+  ],
+  "vulneraveis": true,
+  "idiomas": true,
+  "consequencias": [
+   "formativa",
+   "apoio_est"
+  ],
+  "dados": [
+   "pessoais_est",
+   "sensiveis"
+  ],
+  "treino": "nao",
+  "elegiveis": 150000,
+  "alcance": "",
+  "frequencia": "continua",
+  "reversibilidade": "lenta",
+  "verificabilidade": "sim",
+  "contestacao": "formal",
+  "cumulativo": "sim",
+  "arquitetura": "ow",
+  "pilotoGratuito": false,
+  "degrau": 2,
+  "ajustes": {}
+ },
+ "ctx": {
+  "nivel": "estado",
+  "nivelOutro": "",
+  "local": "Rede estadual (exemplo)",
+  "etapas": {
+   "fund2": {
+    "on": true,
+    "escolas": 600,
+    "alunos": 150000,
+    "porAno": true,
+    "anos": [
+     40000,
+     38000,
+     37000,
+     35000
+    ]
+   }
+  },
+  "dominio": "qualificacao",
+  "comps": [
+   "matematica"
+  ],
+  "compOutro": "",
+  "olhando": "Estudantes chegam ao 9º ano com proficiência em matemática abaixo do esperado."
+ },
+ "resp": {
+  "g-equipe": "parcial",
+  "g-politica": "nao",
+  "g-legislacao": "sim",
+  "g-dados": "parcial",
+  "g-etica": "nao",
+  "g-comite": "nao",
+  "g-compras": "parcial",
+  "g-orcamento": "nao",
+  "g-avaliacao": "parcial",
+  "r-autorizacao": "sim",
+  "r-baselegal": "sim",
+  "r-acordo": "parcial",
+  "r-sucesso": "sim",
+  "r-parada": "parcial",
+  "r-ativos": "nao",
+  "p-problema": "sim",
+  "p-usuarios": "parcial",
+  "p-adocao": "sim",
+  "p-conect": "parcial",
+  "p-disp": "nao",
+  "p-desplug": "nao",
+  "p-protecao": "sim",
+  "p-acessos": "sim",
+  "p-incidente": "parcial",
+  "p-formacao": "sim",
+  "p-apoio": "parcial",
+  "p-suporte": "parcial",
+  "p-acomp": "sim",
+  "i-evidencia": "parcial",
+  "i-contrato": "parcial",
+  "i-adocao": "nao",
+  "i-infra": "nao",
+  "i-integra": "parcial",
+  "i-portab": "nao",
+  "i-identidade": "parcial",
+  "i-formacao": "parcial",
+  "i-monitor": "nao",
+  "p-idiomas": "sim",
+  "i-supervisao": "parcial",
+  "i-contestacao": "nao",
+  "i-acessib": "parcial",
+  "i-pico": "sim",
+  "i-finalidade": "sim",
+  "i-dpia": "parcial",
+  "i-adversarial": "parcial",
+  "i-geracao": "parcial",
+  "i-fornecedor": "sim",
+  "i-incidente": "parcial",
+  "i-rotatividade": "nao",
+  "i-suporte": "parcial",
+  "i-gestao": "sim"
+ },
+ "respC": {},
+ "pular": {},
+ "piloto": {
+  "escolas": 20,
+  "participantes": 6000,
+  "meses": 4
+ },
+ "feitos": {},
+ "checks": {},
+ "custo": {
+  "base": "caso",
+  "cfg": {
+   "nome": "Seu caso: Tutor de matemática para estudantes",
+   "arq": "ow",
+   "risco": "elevado",
+   "unidade": "usuário",
+   "unidadePl": "usuários",
+   "demanda": {
+    "E": [
+     7500,
+     150000,
+     150000,
+     150000
+    ],
+    "adocao": [
+     0.6,
+     0.45,
+     0.35,
+     0.4
+    ],
+    "s": 8,
+    "i": 10,
+    "meses": [
+     4,
+     9,
+     9,
+     9
+    ]
+   },
+   "ow": {
+    "ativo": true,
+    "Tin": 1800,
+    "Tout": 250,
+    "fPico": 0.7,
+    "hPicoMes": 177.77777777777777,
+    "phi": 2,
+    "theta": 600,
+    "u": 0.7,
+    "red": 1,
+    "minFora": 2,
+    "Pgpu": 1.32,
+    "Pseg": 0.53,
+    "nSeg": 2
+   },
+   "mensais": [
+    {
+     "cat": "Infraestrutura",
+     "s": "K2.5",
+     "nome": "Armazenamento, rede, registros e balanceamento",
+     "valor": 1500,
+     "mesesY0": 4,
+     "fx": true
+    }
+   ],
+   "implantacao": [
+    {
+     "cat": "Integração",
+     "nome": "Plataforma do tutor e integrações (implantação)",
+     "valor": 180000,
+     "manutPct": 0.15,
+     "nomeManut": "Manutenção da plataforma e integrações",
+     "s": "K3.1",
+     "sManut": "K6.1"
+    }
+   ],
+   "itens": [
+    {
+     "cat": "Dados",
+     "s": "K3.2",
+     "nome": "Alinhamento curricular, instruções e conjuntos de teste",
+     "nat": "D",
+     "v": [
+      20000,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "cat": "Privacidade e conformidade",
+     "s": "K3.3",
+     "nome": "Avaliação de impacto e proteção de crianças",
+     "nat": "D",
+     "v": [
+      15000,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "cat": "Formação e mudança",
+     "s": "K4.3",
+     "nome": "Formação de professores",
+     "nat": "D",
+     "v": [
+      10000,
+      15000,
+      15000,
+      15000
+     ]
+    },
+    {
+     "cat": "Avaliação",
+     "s": "K5.5",
+     "nome": "Avaliação de impacto com comparador",
+     "nat": "D",
+     "v": [
+      0,
+      60000,
+      60000,
+      0
+     ]
+    },
+    {
+     "cat": "Governança",
+     "s": "K5.4",
+     "nome": "Testes adversariais externos e auditoria anual",
+     "nat": "D",
+     "v": [
+      0,
+      45000,
+      45000,
+      45000
+     ]
+    },
+    {
+     "cat": "Mudança tecnológica",
+     "s": "K6.2",
+     "nome": "Reavaliação por mudança material, com testes por grupo",
+     "nat": "D",
+     "v": [
+      0,
+      10000,
+      10000,
+      10000
+     ]
+    }
+   ],
+   "pessoas": [
+    {
+     "cat": "Pessoas",
+     "s": "K4.1",
+     "nome": "Engenharia de ML e operação do modelo",
+     "nat": "D",
+     "tag": "opmodelo",
+     "partes": [
+      [
+       "eng_ml",
+       [
+        0.5,
+        1,
+        1,
+        1
+       ]
+      ]
+     ]
+    },
+    {
+     "cat": "Pessoas",
+     "s": "K4.1",
+     "nome": "Infraestrutura e confiabilidade",
+     "nat": "D",
+     "tag": "opmodelo",
+     "partes": [
+      [
+       "eng_integracao",
+       [
+        0.25,
+        0.5,
+        0.5,
+        0.5
+       ]
+      ]
+     ]
+    },
+    {
+     "cat": "Pessoas",
+     "s": "K4.1",
+     "nome": "Gestão do produto",
+     "nat": "C",
+     "partes": [
+      [
+       "gestor_produto",
+       [
+        0.25,
+        0.5,
+        0.5,
+        0.5
+       ]
+      ]
+     ]
+    },
+    {
+     "cat": "Governança",
+     "s": "K5.1",
+     "nome": "Gestão contratual e de fornecedor",
+     "nat": "C",
+     "partes": [
+      [
+       "gestor_contrato",
+       [
+        0,
+        0.15,
+        0.15,
+        0.15
+       ]
+      ]
+     ]
+    },
+    {
+     "cat": "Governança",
+     "s": "K5.2",
+     "nome": "Privacidade, segurança e conformidade",
+     "nat": "C",
+     "partes": [
+      [
+       "analista_privacidade",
+       [
+        0.15,
+        0.3,
+        0.3,
+        0.3
+       ]
+      ]
+     ]
+    },
+    {
+     "cat": "Monitoramento",
+     "s": "K5.3",
+     "nome": "Monitoramento e revisão de saídas",
+     "nat": "C",
+     "partes": [
+      [
+       "especialista_pedagogico",
+       [
+        0.5,
+        1,
+        1,
+        1
+       ]
+      ]
+     ]
+    }
+   ],
+   "suporte": {
+    "ativo": true,
+    "nome": "Suporte às escolas (escalonado)",
+    "sal": "suporte_n1",
+    "faixas": [
+     [
+      20000,
+      0.5
+     ],
+     [
+      60000,
+      1
+     ]
+    ],
+    "acima": 1.5,
+    "anos": [
+     0,
+     1,
+     2,
+     3
+    ]
+   },
+   "formacaoTempo": {
+    "ativo": true,
+    "nome": "Tempo docente em formação",
+    "modo": "razao",
+    "razao": 50,
+    "horas": 2,
+    "custoHora": 12,
+    "rot": 0
+   },
+   "comparaAPI": {
+    "armazenamento": 18000,
+    "pessoasAPI": [
+     [
+      "eng_ml",
+      0.3
+     ],
+     [
+      "eng_integracao",
+      0.1
+     ]
+    ],
+    "opcoes": [
+     {
+      "nome": "API, modelo pequeno (US$ 0,20 / 1,20 por milhão de tokens)",
+      "Pin": 0.2,
+      "Pout": 1.2
+     },
+     {
+      "nome": "API, modelo intermediário (US$ 2,00 / 10,00)",
+      "Pin": 2,
+      "Pout": 10
+     }
+    ]
+   },
+   "saida": {
+    "itens": [
+     {
+      "nome": "Transferência de conhecimento e documentação",
+      "valor": 25000
+     },
+     {
+      "nome": "Novo ciclo de testes e de segurança",
+      "valor": 30000
+     }
+    ],
+    "reconstrucaoPct": 0.25,
+    "mesesParalelo": 1,
+    "horasRetreino": 0,
+    "custoHora": 12,
+    "internos": [
+     [
+      "gestor_produto",
+      0.3
+     ],
+     [
+      "especialista_pedagogico",
+      0.2
+     ]
+    ]
+   },
+   "origem": "C",
+   "__base": "caso",
+   "opc": {
+    "H": 3,
+    "correcoes": true,
+    "pi": 0.025,
+    "dep": 0,
+    "r": 0,
+    "sigmaCap": 1,
+    "doados": true,
+    "pSaida": 1,
+    "fechamento": "saida",
+    "vidaUtil": 5,
+    "contPct": 0.05,
+    "delta": 0
+   }
+  },
+  "editado": false
+ },
+ "moeda": {
+  "cod": "USD",
+  "taxa": ""
+ },
+ "lang": "pt"
+}

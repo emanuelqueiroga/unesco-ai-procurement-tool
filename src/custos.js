@@ -54,6 +54,15 @@ function salario(cfg, chave) {
   const tab = (cfg.salarios || {});
   return tab[chave] != null ? tab[chave] : SAL[chave];
 }
+// v9: multiplicador de adaptação ao contexto (cfg.adaptacao = { fK31, fK32 }), neutro quando ausente.
+// Escala K3.1 (integração e desenvolvimento) e K3.2 (conteúdo e configuração iniciais).
+function fatorAdapt(cfg, s) {
+  const a = cfg && cfg.adaptacao;
+  if (!a) return 1;
+  if (s === 'K3.1') return a.fK31 != null ? +a.fK31 : 1;
+  if (s === 'K3.2') return a.fK32 != null ? +a.fK32 : 1;
+  return 1;
+}
 function arquitetura(cfg) {
   if (cfg.ow && cfg.ow.ativo) return 'ow';
   if (cfg.api && cfg.api.ativo) return 'api';
@@ -150,20 +159,25 @@ function calcular(cfg) {
     add({ nome: x.nome, s: x.s || MAPA_CAT[x.cat] || 'K2.5', cat: x.cat, moeda: x.fx === false ? 'LOC' : 'USD', comp: 'F', tag: 'mensal', un: 'mês',
       q: meses, p: T.map(() => x.valor), v: meses.map(mm => mm * x.valor) });
   });
-  // ---- implantação e manutenção
-  (cfg.implantacao || []).forEach(x => {
+  // ---- implantação e manutenção (com o fator de adaptação; a manutenção acompanha a implantação)
+  const impl = (cfg.implantacao || []).map(x => Object.assign({}, x, { valor: x.valor * fatorAdapt(cfg, x.s || 'K3.1') }));
+  impl.forEach(x => {
     add({ nome: x.nome, s: x.s || 'K3.1', cat: x.cat, moeda: x.moeda || 'LOC', orc: 'capital', comp: 'F', tag: 'implantacao', v: T.map(t => t === 0 ? x.valor : 0) });
     if (x.manutPct > 0) add({ nome: x.nomeManut || ('Manutenção: ' + x.nome.toLowerCase()), s: x.sManut || 'K6.1', cat: x.cat, moeda: x.moeda || 'LOC', comp: 'F', tag: 'manutencao',
       v: T.map(t => t === 0 ? 0 : x.valor * x.manutPct) });
   });
   // ---- itens por ano
-  (cfg.itens || []).forEach(x => add({ nome: x.nome, s: x.s || MAPA_CAT[x.cat] || 'K4.1', cat: x.cat, nat: x.nat || 'D', comp: x.comp || 'F', moeda: x.moeda || 'LOC', orc: x.orc || 'corrente',
-    prob: x.prob, v: T.map(t => ano(x.v, t)) }));
+  (cfg.itens || []).forEach(x => {
+    const s = x.s || MAPA_CAT[x.cat] || 'K4.1', fa = fatorAdapt(cfg, s);
+    add({ nome: x.nome, s, cat: x.cat, nat: x.nat || 'D', comp: x.comp || 'F', moeda: x.moeda || 'LOC', orc: x.orc || 'corrente',
+      prob: x.prob, v: T.map(t => ano(x.v, t) * fa) });
+  });
   // ---- pessoas
   (cfg.pessoas || []).forEach(pp => {
-    const fte = T.map(t => pp.partes.reduce((s, [sal, f]) => s + ano(f, t), 0));
-    const custo = T.map(t => pp.partes.reduce((s, [sal, f]) => s + salario(cfg, sal) * ano(f, t), 0) * m.pessoas);
-    add({ nome: pp.nome, s: pp.s || MAPA_CAT[pp.cat] || 'K4.1', cat: pp.cat || 'Pessoas', nat: pp.nat || 'C', comp: 'F', moeda: 'LOC', tag: pp.tag, un: 'FTE-ano',
+    const sp = pp.s || MAPA_CAT[pp.cat] || 'K4.1', fa = fatorAdapt(cfg, sp);
+    const fte = T.map(t => pp.partes.reduce((s, [sal, f]) => s + ano(f, t) * fa, 0));
+    const custo = T.map(t => pp.partes.reduce((s, [sal, f]) => s + salario(cfg, sal) * ano(f, t) * fa, 0) * m.pessoas);
+    add({ nome: pp.nome, s: sp, cat: pp.cat || 'Pessoas', nat: pp.nat || 'C', comp: 'F', moeda: 'LOC', tag: pp.tag, un: 'FTE-ano',
       q: fte, p: T.map(t => fte[t] ? custo[t] / fte[t] : 0), v: custo });
   });
   // ---- suporte escalonado
@@ -192,7 +206,7 @@ function calcular(cfg) {
   const sa = cfg.saida || {};
   const addS = (nome, nat, moeda, valor) => S.push({ nome, s: 'K6.3', k: 'K6', cat: 'Saída', nat, moeda, fx: moeda === 'USD', valor: (+valor || 0) * (moeda === 'USD' ? 1 : infl[H]) });
   (sa.itens || []).forEach(x => addS(x.nome, x.nat || 'D', x.moeda || 'LOC', x.valor));
-  const impl0 = (cfg.implantacao || [])[0];
+  const impl0 = impl[0];
   if (sa.reconstrucaoPct > 0 && impl0) addS('Reconstrução de integrações e aplicação (' + Math.round(sa.reconstrucaoPct * 100) + '% da implantação)', 'D', 'LOC', sa.reconstrucaoPct * impl0.valor);
   if (cfg.rag && cfg.rag.ativo && sa.reindexar) {
     const r = cfg.rag;
@@ -209,7 +223,26 @@ function calcular(cfg) {
   if (sa.horasRetreino > 0) addS('Tempo de retreinamento dos usuários', 'C', 'LOC', U[H] * sa.horasRetreino * sa.custoHora * m.pessoas);
   if (sa.internos && sa.internos.length) addS('Tempo interno de coordenação e validação', 'C', 'LOC', sa.internos.reduce((s, [sal, fte]) => s + salario(cfg, sal) * fte, 0) * m.pessoas);
 
-  return { cfg, opc: o, H, anos: T, U, I, E: T.map(t => ano(d.E, t)), linhas: L, saida: S, extra, fxT, infl };
+  // ---- v9: uso cedido sem custo (API e pesos abertos): parte do consumo, computação, dados e hospedagem
+  // paga por terceiro (doação, piloto gratuito, tecnologia pública ou outra esfera de governo).
+  // cfg.cedidoUso = [c0, c1 … cH], fração de 0 a 1 por ano. A parte cedida sai do desembolso e,
+  // no modo com doados, entra na conta econômica como linha "O" a valor de mercado.
+  // Aplicado depois da saída: a operação paralela na saída é valorada pelo custo integral da plataforma.
+  if (Array.isArray(cfg.cedidoUso) && cfg.cedidoUso.length) {
+    const fr = T.map(t => Math.min(1, Math.max(0, +ano(cfg.cedidoUso, t) || 0)));
+    const novas = [];
+    L.forEach(l => {
+      if (!['K2.2', 'K2.3', 'K2.4', 'K2.5'].includes(l.s) || l.nat !== 'D') return;
+      const vo = T.map(t => l.v[t] * fr[t]);
+      if (!vo.some(x => x > 0)) return;
+      l.v = T.map(t => l.v[t] - vo[t]);
+      if (o.doados) novas.push({ id: 'cedido: ' + l.id, nome: 'Uso cedido sem custo (valor de mercado)', s: l.s, k: l.k, cat: l.cat, nat: 'O', comp: l.comp, moeda: l.moeda,
+        orc: l.orc, pagador: 'terceiro', fonte: l.fonte, un: l.un, tag: 'doado', q: null, p: null, v: vo, fx: l.fx });
+    });
+    novas.forEach(x => L.push(x));
+  }
+
+  return { cfg, opc: o, H, anos: T, U, I, E: T.map(t => ano(d.E, t)), linhas: L, saida: S, extra, fxT, infl, impl };
 }
 
 // ---------------------------------------------------------------- resumo (compatível com a versão 1)
@@ -239,7 +272,7 @@ function avaliar(r) {
     const e = eco(l);
     return Object.assign({}, l, { eco: e, ecoVP: e.reduce((s, x, t) => s + x * disc[t], 0), fin: l.nat === 'D' ? l.v.slice() : T.map(() => 0) });
   });
-  const vr = (o.fechamento === 'continuidade') ? (r.cfg.implantacao || []).reduce((s, x) => s + x.valor * Math.max(0, (o.vidaUtil - H) / o.vidaUtil), 0) : 0;
+  const vr = (o.fechamento === 'continuidade') ? (r.impl || r.cfg.implantacao || []).reduce((s, x) => s + x.valor * Math.max(0, (o.vidaUtil - H) / o.vidaUtil), 0) : 0;
   const saida = r.saida.map(s => Object.assign({}, s, {
     eco: o.fechamento === 'continuidade' ? 0 : s.valor / defl[H] * (s.nat === 'C' ? o.sigmaCap : 1) * o.pSaida,
     ecoVP: o.fechamento === 'continuidade' ? 0 : s.valor / defl[H] * (s.nat === 'C' ? o.sigmaCap : 1) * o.pSaida * disc[H],
@@ -269,6 +302,35 @@ function avaliar(r) {
   };
   return { r, defl, disc, linhas, saida, ecoAno, finAno, ctEco, saidaEco, vr: vrVP, porS, porK, porSano, fac,
     saidaFin: r.saida.filter(x => x.nat === 'D').reduce((s, x) => s + x.valor, 0), saidaTotalNominal: r.saida.reduce((s, x) => s + x.valor, 0) };
+}
+
+// ---------------------------------------------------------------- v9: componentes de custo × sete camadas
+// Correspondência entre os subcomponentes da árvore (K1 a K6) e as sete camadas do quadro de custo total
+// em camadas de Krueger e Jackson (2026, p. 11). O documento não quantifica nem distribui custos por camada:
+// esta correspondência é uma convenção desta ferramenta (a saída, K6.3, não consta no documento).
+const CAMADA_DE_S = {
+  'K1.1': 3, 'K1.2': 3, 'K1.3': 5,
+  'K2.1': 2, 'K2.2': 2, 'K2.3': 3, 'K2.4': 4, 'K2.5': 3,
+  'K3.1': 4, 'K3.2': 2, 'K3.3': 1, 'K3.4': 7,
+  'K4.1': 7, 'K4.2': 7, 'K4.3': 6, 'K4.4': 6,
+  'K5.1': 7, 'K5.2': 5, 'K5.3': 7, 'K5.4': 5, 'K5.5': 7,
+  'K6.1': 7, 'K6.2': 7, 'K6.3': 7,
+};
+// Soma por camada a partir de avaliar(): ano0 e total na conta econômica (total em valor presente,
+// com a saída e o valor residual na camada 7); fin0 = desembolso do Ano 0; porAno = conta econômica por ano.
+function somaPorCamada(av) {
+  const zero = () => { const z = {}; for (let i = 1; i <= 7; i++) z[i] = 0; return z; };
+  const T = av.r.anos;
+  const ano0 = zero(), total = zero(), fin0 = zero(), porAno = {};
+  for (let i = 1; i <= 7; i++) porAno[i] = T.map(() => 0);
+  av.linhas.forEach(l => {
+    const c = CAMADA_DE_S[l.s] || 7;
+    ano0[c] += l.eco[0]; total[c] += l.ecoVP; fin0[c] += l.fin[0];
+    T.forEach(t => { porAno[c][t] += l.eco[t]; });
+  });
+  av.saida.forEach(x => { total[CAMADA_DE_S[x.s] || 7] += x.ecoVP; });
+  if (av.vr) total[7] -= av.vr;
+  return { ano0, total, fin0, porAno };
 }
 
 // ---------------------------------------------------------------- índices de custo unitário e indicadores
@@ -626,5 +688,5 @@ const PRESETS = {
 
 const API_CUSTOS = { ARVORE, NOME_K, NOME_S, K_DE_S, MAPA_CAT, SAL, SAL_NOME, OPC_COMPAT, OPC_PADRAO, clone, opcoes, ano, custoChamada, salario, arquitetura,
   calcular, resumo, avaliar, indicadores, cfgAltaAdocao, cfgEstresse, cenarios, direcionadores, tornado, sensibilidade, simular, orcamento, orcamentoDeLinhas,
-  lmdi, laspeyres, cae, comparar, equidade, compLicenca, compArquiteturas, PRESETS, quantil };
+  lmdi, laspeyres, cae, comparar, equidade, compLicenca, compArquiteturas, PRESETS, quantil, fatorAdapt, CAMADA_DE_S, somaPorCamada };
 if (typeof module !== 'undefined') module.exports = API_CUSTOS;
