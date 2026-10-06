@@ -5,7 +5,7 @@ const CHAVE = 'aiedu-procurement-v9';
 const CHAVE_V8 = 'navegador-ia-educacao-v4';
 function estadoInicial() {
   return {
-    versao: 9, caso: clone(CASO_VAZIO), ctx: {}, resp: {}, respC: {}, feitos: {}, exemplo: 'novo',
+    versao: 9, v10: true, caso: clone(CASO_VAZIO), ctx: {}, resp: {}, respC: {}, feitos: {}, exemplo: 'novo',
     fase: '', passo: '1a', vista: '', boasVindas: true, info: {},
     custo: { base: 'caso', cfg: null, editado: false }, moeda: { cod: 'USD', taxa: '' }, lang: '',
   };
@@ -14,6 +14,9 @@ let S = estadoInicial();
 let CAP = { sample: null, downloads: null };
 let IA = { estado: '', resposta: null, erro: '' };
 let MIGROU = false;
+// v10: caso salvo encontrado ao abrir a ferramenta; a tela de boas-vindas pergunta se a pessoa quer continuá-lo
+// ou começar em branco. Enquanto a escolha não é feita, o painel não mostra o caso. { nome, lugar, migrou }
+let SALVO = null;
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -27,6 +30,9 @@ function normalizarEstado() {
   S.caso = Object.assign(clone(CASO_VAZIO), S.caso || {});
   S.caso.piloto = Object.assign({ escolas: '', participantes: '', meses: '' }, S.caso.piloto || {});
   S.ctx = S.ctx || {}; S.resp = S.resp || {}; S.respC = S.respC || {}; S.feitos = S.feitos || {}; S.info = S.info || {};
+  // antes da v10, pagamento, licença, tamanho do teste e pessoas na rede só tinham valor quando respondidos:
+  // ficam confirmados, para que as sugestões geradas (fluxo.js, aplicarPadroes) não os substituam
+  if (!S.v10) { if (typeof confirmarGerados === 'function') confirmarGerados(S.caso, S.respC); S.v10 = true; }
   S.custo = S.custo || { base: 'caso', cfg: null, editado: false };
   S.moeda = S.moeda || { cod: 'USD', taxa: '' };
   if (!['contexto', 'piloto', 'custo', ''].includes(S.fase)) { S.fase = 'contexto'; S.passo = '1a'; }
@@ -46,6 +52,31 @@ function carregar() {
   if (o && o.caso) S = Object.assign(estadoInicial(), o);
   normalizarEstado();
   if (MIGROU) salvar();   // grava na chave nova; a chave antiga fica intacta
+  // v10: um caso salvo (desta versão, de uma sessão anterior ou convertido da v8) não abre preenchido sem a pessoa pedir
+  if (o && o.caso && temRespostas(S)) {
+    const ex = ['A', 'B', 'C', 'D'].includes(S.exemplo) && typeof CASOS !== 'undefined' && CASOS[S.exemplo] ? CASOS[S.exemplo].titulo : '';
+    SALVO = { nome: S.caso.titulo || (S.ctx && S.ctx.olhando) || '', exemplo: ex, lugar: (S.ctx && S.ctx.local) || '', migrou: MIGROU };
+    S.boasVindas = true; S.vista = '';
+  }
+}
+// O estado tem alguma resposta dada pela pessoa (ou é um exemplo)?
+function temRespostas(o) {
+  if (!o || !o.caso) return false;
+  if (o.exemplo && o.exemplo !== 'novo') return true;
+  if (Object.keys(o.respC || {}).some(k => o.respC[k])) return true;
+  if (Object.keys(o.resp || {}).some(k => o.resp[k])) return true;
+  const x = o.ctx || {}, c = o.caso;
+  if (x.nivel || x.local || x.dominio || x.olhando || (x.comps || []).length || Object.values(x.etapas || {}).some(e => e && e.on)) return true;
+  return ['titulo', 'problema', 'resultado', 'teste', 'tipoTec', 'pagamento', 'licenca', 'elegiveis'].some(k => c[k]) || ['tarefas', 'impactos', 'usuarios'].some(k => (c[k] || []).length);
+}
+// Boas-vindas: continuar o caso salvo, no passo em que a pessoa parou
+function continuarSalvo() {
+  const migrou = SALVO && SALVO.migrou;
+  SALVO = null; S.boasVindas = false; S.vista = '';
+  const f = PASSOS[S.fase] ? S.fase : 'contexto';
+  const p = PASSOS[f].some(x => x[0] === S.passo) ? S.passo : PASSOS[f][0][0];
+  abrirFase(f, p);
+  toast(tr(migrou ? 'Caso da versão anterior convertido. Revise as respostas de adoção.' : 'Caso salvo aberto.'));
 }
 // Converte um estado ou uma exportação da v8 (formato 4) para a v9 (plano, seção E.2).
 function migrarV8(o) {
@@ -109,8 +140,11 @@ function migrarV8(o) {
   if (resp8('situacao')) respC.teste = true;
   if (fonte) respC.fonte = true;
   if (['escolas', 'participantes', 'meses'].some(k => +p8[k] > 0)) respC.piloto = true;
+  ['escolas', 'participantes', 'meses'].forEach(k => { if (+p8[k] > 0) respC['piloto.' + k] = true; });
+  // exemplos da v8: as respostas do exemplo ficam confirmadas (as sugestões da v10 não as substituem)
+  if (ex8 !== 'novo' && typeof confirmarGerados === 'function') confirmarGerados(caso, respC);
   return {
-    versao: 9, caso, ctx, resp, respC, feitos: {},
+    versao: 9, v10: true, caso, ctx, resp, respC, feitos: {},
     exemplo: ex8 === 'novo' ? 'novo' : 'editado',
     fase: 'contexto', passo: '1a', vista: '', boasVindas: o.boasVindas === true, info: {},
     custo: { base: 'caso', cfg: null, editado: false },
@@ -276,7 +310,7 @@ function slugCaso() {
 function nomeArq(ext) { return 'procurement-plan-' + slugCaso() + '.' + ext; }
 function nomeArqCaso() { return 'ai-education-case-' + slugCaso() + '.json'; }
 function dadosCaso() {
-  return { app: 'ai-education-procurement-tool', formato: 9, salvo: new Date().toISOString(), exemplo: S.exemplo, caso: S.caso, ctx: S.ctx, resp: S.resp, respC: S.respC, revisar: S.revisar || [], feitos: S.feitos, custo: S.custo, moeda: S.moeda, lang: S.lang };
+  return { app: 'ai-education-procurement-tool', formato: 9, v10: true, salvo: new Date().toISOString(), exemplo: S.exemplo, caso: S.caso, ctx: S.ctx, resp: S.resp, respC: S.respC, revisar: S.revisar || [], feitos: S.feitos, custo: S.custo, moeda: S.moeda, lang: S.lang };
 }
 function aplicarImportado(o) {
   S.caso = Object.assign(clone(CASO_VAZIO), o.caso);
@@ -284,7 +318,8 @@ function aplicarImportado(o) {
   S.custo = o.custo || { base: 'caso', cfg: null, editado: false };
   if (o.moeda) S.moeda = o.moeda;
   S.exemplo = o.exemplo === 'novo' ? 'novo' : 'editado';
-  S.fase = 'contexto'; S.passo = '1a'; S.vista = ''; S.boasVindas = false;
+  S.fase = 'contexto'; S.passo = '1a'; S.vista = ''; S.boasVindas = false; S.v10 = !!o.v10;
+  SALVO = null; CONF_LIMPAR = false;
   IA = { estado: '', resposta: null, erro: '' };
   normalizarEstado();
 }
@@ -352,6 +387,7 @@ function textosExemplo() {
   const cx = CTX_EX[k]; if (cx && S.ctx) ['local', 'olhando', 'compOutro'].forEach(f => { if (cx[f]) S.ctx[f] = tr(cx[f]); });
 }
 function carregarExemplo(k) {
+  SALVO = null; CONF_LIMPAR = false;
   if (k === 'novo' || !CASOS[k]) { S.caso = clone(CASO_VAZIO); S.exemplo = 'novo'; k = 'novo'; }
   else { S.caso = clone(CASOS[k]); S.exemplo = k; textosExemplo(); }
   aplicarExemploFluxo(k);
@@ -484,7 +520,6 @@ observarIdioma();
 montarIdiomas();
 ligar();
 render();
-if (MIGROU) toast(tr('Caso da versão anterior convertido. Revise as respostas de adoção.'));
 (async () => {
   if (!window.claude || !window.claude.use) return;
   try { CAP.sample = await window.claude.use('sample'); } catch (e) { CAP.sample = null; }

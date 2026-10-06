@@ -15,7 +15,7 @@ const FASES = [
 const PASSOS = {
   contexto: [['1a', 'Onde e para quem'], ['1b', 'Problema e impacto'], ['1c', 'Governança de IA na educação']],
   piloto: [['20', 'Prova de conceito ou piloto'], ['2a', 'Aplicações'], ['2b', 'Experiência de uso'], ['2c', 'Adoção']],
-  custo: [['3a', 'Escala e horizonte'], ['3b', 'Fonte de recursos'], ['3c', 'Estimativa de custo']],
+  custo: [['3a', 'Escala e horizonte'], ['3b', 'Fonte de recursos'], ['3c', 'Estimativa de custo'], ['3d', 'Recomendações para o seu caso']],
 };
 // Número exibido de cada passo, selo de camada e ⓘ
 const PASSO_INFO = {
@@ -28,6 +28,7 @@ const PASSO_INFO = {
   '3a': { num: '3.1', selo: 'Camadas 3 a 7' },
   '3b': { num: '3.2', selo: 'Camadas 1 e 7' },
   '3c': { num: '3.3', selo: 'Camadas 1 a 7', info: 'c37' },
+  '3d': { num: '3.4' },
 };
 const CAMADAS = [
   [1, 'Governança, políticas e planejamento do ciclo de vida'],
@@ -99,6 +100,7 @@ const QUESTOES_G = [
 // opc: nome de lista em OPC (framework.js) ou a própria lista.
 // padrao: o campo tem valor padrão no caso em branco; só conta depois que a pessoa responde (S.respC).
 // outro: { v, id, t } abre um campo de texto quando a opção v está marcada.
+// sugDe: id da pergunta de origem; ao ser marcada, ela gera um valor sugerido para este campo (v10, fluxo.js, padroesGerados).
 // ---------------------------------------------------------------------
 const CAMPOS = [
   // 1.1 Onde e para quem
@@ -130,15 +132,15 @@ const CAMPOS = [
   { passo: '2b', n: '2.2.4', id: 'frequencia', onde: 'caso', tipo: 'radio', opc: 'frequencia', cols: true, sugere: true, padrao: true, t: 'Com que frequência cada pessoa vai usar?' },
   // 2.3 Adoção
   { passo: '2c', n: '2.3.1', id: 'tipoTec', onde: 'caso', tipo: 'radio', opc: 'tipoTec', cols: true, t: 'Que tipo de tecnologia você pretende usar?', ex: 'Exemplo: uma plataforma do ministério (pública), um modelo aberto instalado numa nuvem contratada (aberta), a assinatura de um assistente para professores (paga).' },
-  { passo: '2c', n: '2.3.2', id: 'pagamento', onde: 'caso', tipo: 'radio', opc: 'pagamento', cols: true, t: 'Como vai ser o pagamento?', h: 'Pense no período da prova de conceito ou do piloto.', ex: 'Exemplo: um valor por professor por mês (por usuário); um valor anual fixo para todas as escolas (institucional).' },
-  { passo: '2c', n: '2.3.3', id: 'licenca', onde: 'caso', tipo: 'radio', opc: 'licenca', cols: true, t: 'Que tipo de licença?', ex: 'Exemplo: os termos aceitos ao criar uma conta gratuita são termos de uso padrão.' },
+  { passo: '2c', n: '2.3.2', id: 'pagamento', onde: 'caso', tipo: 'radio', opc: 'pagamento', cols: true, sugDe: 'tipoTec', t: 'Como vai ser o pagamento?', h: 'Pense no período da prova de conceito ou do piloto.', ex: 'Exemplo: um valor por professor por mês (por usuário); um valor anual fixo para todas as escolas (institucional).' },
+  { passo: '2c', n: '2.3.3', id: 'licenca', onde: 'caso', tipo: 'radio', opc: 'licenca', cols: true, sugDe: 'tipoTec', t: 'Que tipo de licença?', ex: 'Exemplo: os termos aceitos ao criar uma conta gratuita são termos de uso padrão.' },
   { passo: '2c', n: '2.3.4', id: 'adaptacao', onde: 'caso', tipo: 'radio', opc: 'adaptacao', cols: true, t: 'Quanto a ferramenta precisa ser adaptada ao seu contexto?', h: 'Cada nível inclui os anteriores. Mais adaptação aumenta o custo de implantação e de manutenção.', ex: 'Exemplo: traduzir para a língua local e alinhar as atividades ao currículo é adaptação de conteúdo e idioma.' },
   { passo: '2c', n: '2.3.5', id: 'infra', onde: 'caso', tipo: 'radio', opc: 'infra', cols: true, t: 'As escolas da prova de conceito ou do piloto já têm os dispositivos e a internet que o uso exige?', ex: 'Exemplo: um computador ou tablet por estudante durante a aula e internet que aguente uma turma inteira conectada.' },
-  { passo: '2c', n: '2.3.6', id: 'piloto', onde: 'caso', tipo: 'setup',
+  { passo: '2c', n: '2.3.6', id: 'piloto', onde: 'caso', tipo: 'setup', sugDe: 'teste',
     t: 'De que tamanho e por quanto tempo será o piloto?', h: 'Participantes são as pessoas que usam a ferramenta.', ex: 'Exemplo: 20 escolas, 600 professores, 4 meses.',
     tPoc: 'Quantas pessoas vão testar e por quanto tempo?', hPoc: 'Na prova de conceito testam a equipe e algumas pessoas convidadas, sem usuários reais.', exPoc: 'Exemplo: 15 pessoas, 2 meses.' },
   // 3.1 Escala e horizonte
-  { passo: '3a', n: '3.1.1', id: 'elegiveis', onde: 'caso', tipo: 'num', t: 'Se der certo, quantas pessoas usariam a ferramenta em toda a rede?', h: 'Base da estimativa de custo depois do teste.', ex: 'Exemplo: 12.000 professores ou 150.000 estudantes.' },
+  { passo: '3a', n: '3.1.1', id: 'elegiveis', onde: 'caso', tipo: 'num', sugDe: 'usuarios', t: 'Se der certo, quantas pessoas usariam a ferramenta em toda a rede?', h: 'Base da estimativa de custo depois do teste.', ex: 'Exemplo: 12.000 professores ou 150.000 estudantes.' },
   { passo: '3a', n: '3.1.2', id: 'expansao', onde: 'caso', tipo: 'radio', opc: 'expansao', cols: true, padrao: true, t: 'Em quanto tempo você pretende chegar a todas essas pessoas?' },
   { passo: '3a', n: '3.1.3', id: 'horizonte', onde: 'caso', tipo: 'radio', opc: 'horizonte', cols: true, padrao: true, t: 'Por quantos anos de uso você quer estimar o custo?', h: 'Além do Ano 0, que é o da prova de conceito ou do piloto.' },
   // 3.2 Fonte de recursos

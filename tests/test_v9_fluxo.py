@@ -1,4 +1,6 @@
 # Teste do percurso da v9 (pacote P2): fases, passos, numeração, ✓, sugestões, mandala, ⓘ e estudantes por ano.
+# v10 (R1): nada marcado no caso em branco, escolha do caso salvo nas boas-vindas, "Começar em branco" no painel,
+# padrões gerados como "sugerido" (2.0 → 2.3.6, 2.3.1 → 2.3.2/2.3.3, 2.2.1 → 3.1.1), passo 3.4 e 3.3 recolhido.
 # Uso: python3 tests/test_v9_fluxo.py   (depois de bash build.sh). Capturas em /tmp/claude-0/v9_fx_*.png
 import asyncio, os, re, sys
 from playwright.async_api import async_playwright
@@ -9,7 +11,7 @@ SK = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content=
 ARQ = '/tmp/claude-0/v9_fx.html'
 open(ARQ, 'w').write(SK)
 URL_TCO = 'https://unesdoc.unesco.org/ark:/48223/pf0000399348'
-PASSOS = [('contexto', ['1a', '1b', '1c']), ('piloto', ['20', '2a', '2b', '2c']), ('custo', ['3a', '3b', '3c'])]
+PASSOS = [('contexto', ['1a', '1b', '1c']), ('piloto', ['20', '2a', '2b', '2c']), ('custo', ['3a', '3b', '3c', '3d'])]
 PROIBIDOS = ['.vpill', '.resultado', '.pds-fase', '[name=autonomia]', '[data-fm=dados]', '[data-fb=vulneraveis]', '[data-fb=idiomas]',
              '[name=verificabilidade]', '[name=contestacao]', '[data-fm=capacidade]', '[data-fm=classes]', '[name=arquitetura]',
              '.alert.bloqueio', '.alert.atencao', '.nivel-card', '#res-contexto', '#res-piloto', '#res-custo', '.tag.ess']
@@ -22,8 +24,9 @@ async def abrir(pg, lang):
     await pg.goto('file://' + ARQ); await pg.evaluate('localStorage.clear()'); await pg.reload(); await pg.wait_for_timeout(300)
     await pg.select_option('#sel-lang', lang); await pg.wait_for_timeout(150)
 
-async def percorrer(pg, tag, w, erros, fotos):
-    """Abre todos os passos de todas as fases e confere numeração, elementos removidos e rolagem horizontal."""
+async def percorrer(pg, tag, w, erros, fotos, branco=False):
+    """Abre todos os passos de todas as fases e confere numeração, elementos removidos e rolagem horizontal.
+    Com branco=True, confere também que nenhuma opção vem marcada (v10, decisão A)."""
     nums = []
     for fase, ps in PASSOS:
         for pid in ps:
@@ -33,6 +36,11 @@ async def percorrer(pg, tag, w, erros, fotos):
             if sw > w + 1: erros.append(f'{tag} rolagem horizontal no passo {pid}: {sw}')
             for sel in PROIBIDOS:
                 if await pg.locator(sel).count(): erros.append(f'{tag} elemento removido presente: {sel} ({pid})')
+            if branco:
+                mc = await pg.evaluate("[...document.querySelectorAll('#main input:checked, #main [aria-pressed=\"true\"]')].filter(e=>!e.closest('#custos-box')).map(e=>(e.name||e.dataset.fm||e.dataset.resp||'')+'='+(e.value||e.dataset.v||''))")
+                if mc: erros.append(f'{tag} caso em branco com opção marcada no passo {pid}: {mc}')
+                sg = await pg.evaluate("[...document.querySelectorAll('#main .q.sug')].map(q=>q.dataset.campo)")
+                if sg: erros.append(f'{tag} caso em branco com sugestão antes de qualquer resposta no passo {pid}: {sg}')
             qs = await pg.evaluate(f"[...document.querySelectorAll('#passo-{pid} .q')].filter(q=>!q.closest('#custos-box')).map(q=>[q.id,q.dataset.n,(q.querySelector('.qn')||{{}}).textContent||''])")
             for qid, n, qn in qs:
                 if not re.fullmatch(r'\d\.\d(\.\d+)?', qn.strip()): erros.append(f'{tag} .q sem número válido: {qid} "{qn}"')
@@ -58,7 +66,7 @@ async def main():
                 # caso em branco
                 await pg.click('[data-act="comecar"]'); await pg.wait_for_timeout(250)
                 ok(await pg.evaluate("S.fase==='contexto' && S.passo==='1a' && S.exemplo==='novo'"), f'{tag} caso em branco abre 1.1')
-                nums = await percorrer(pg, tag + '-branco', w, erros, False)
+                nums = await percorrer(pg, tag + '-branco', w, erros, False, branco=True)
                 todos = await pg.evaluate("CAMPOS.map(f=>f.n)")
                 ok(sorted(nums) == sorted(todos), f'{tag} todas as perguntas de CAMPOS aparecem com número ({len(nums)} de {len(todos)})')
                 ok(len(set(nums)) == len(nums), f'{tag} numeração única')
@@ -160,6 +168,102 @@ async def main():
                 await pg.screenshot(path=f'/tmp/claude-0/v9_fx_{tag}_plano.png')
                 await pg.evaluate("(()=>{S.vista='';render();})()"); await pg.wait_for_timeout(100)
                 ok(len(await pg.evaluate('faltasTodas()')) > 0, f'{tag} faltasTodas lista perguntas sem resposta no caso em branco')
+                # ---- v10: passo 3.4 e 3.3 recolhido
+                ok(await pg.evaluate("PASSOS.custo.map(p=>p[0]).join()==='3a,3b,3c,3d' && numPasso('3d')==='3.4'"), f'{tag} passo 3.4 na fase 3')
+                ok(await pg.locator('#passo-3c details[data-numdet] .tw table').count() >= 2 and await pg.locator('#passo-3c details[data-numdet] ul.prem-u').count() == 1, f'{tag} 3.3: tabelas e premissas dentro de "Ver os números detalhados"')
+                ok(await pg.locator('#passo-3c details[data-calc]').count() == 1, f'{tag} 3.3: calculadora completa no seu próprio <details>')
+                ordem = await pg.evaluate("(()=>{const c=document.querySelector('#passo-3c .passo-corpo'); const k=c.querySelector('.kpis'), d=c.querySelector('details[data-numdet]'), f=c.querySelector('.formula-box'); return [!!(k&&d&&(k.compareDocumentPosition(d)&4)), !f || !!(f.compareDocumentPosition(k)&4), typeof renderFormula==='function', !!f];})()")
+                ok(ordem[0] and ordem[1] and (ordem[2] == ordem[3]), f'{tag} 3.3: fórmula (se houver) antes dos indicadores, números detalhados depois {ordem}')
+                ok(await pg.locator('#pe-3c [data-act="continuar"]').count() == 1 and await pg.locator('#pe-3c [data-act="gerar-plano"]').count() == 0, f'{tag} rodapé do 3.3 continua para 3.4')
+                await pg.evaluate("abrirFase('custo','3d')"); await pg.wait_for_timeout(250)
+                ok(await pg.evaluate("passoFeito('3d') && document.querySelector('[data-setor=\"3d\"]').classList.contains('m-ok')"), f'{tag} 3.4 concluído ao ser aberto (mandala)')
+                ok(await pg.locator('#pe-3d [data-act="gerar-plano"]').count() == 1 and await pg.locator('#fpe-custo [data-act="gerar-plano"]').count() == 1, f'{tag} rodapés do 3.4 e da fase 3 com "Gerar plano de contratação"')
+                ok(await pg.evaluate("document.querySelector('#passo-3d .passo-corpo').textContent.trim().length>20"), f'{tag} 3.4 com conteúdo')
+                if lang == 'en' and w == 1400: await pg.screenshot(path=f'/tmp/claude-0/v10_fx_{tag}_3d.png', full_page=True)
+                # ---- v10: padrões gerados como "sugerido"
+                await pg.evaluate("carregarExemplo('novo')"); await pg.evaluate("(()=>{S.boasVindas=false; S.ctx.etapas={fund2:{on:true,escolas:600,soTotal:true,alunos:150000}}; abrirFase('piloto','2c');})()"); await pg.wait_for_timeout(200)
+                ok(await pg.evaluate("S.caso.piloto.participantes==='' && S.caso.pagamento==='' && S.caso.licenca==='' && S.caso.elegiveis===''"), f'{tag} sem padrões antes de marcar as origens')
+                ok(await pg.locator('#passo-2c input:checked').count() == 0 and await pg.locator('#passo-2c .q.sug').count() == 0, f'{tag} 2.3 sem opção marcada nem sugestão')
+                # 2.0 → 2.3.6
+                await pg.locator('[data-f="teste"][value="poc"]').click(); await pg.wait_for_timeout(200)
+                ok(await pg.evaluate("JSON.stringify(S.caso.piloto)") == '{"escolas":"","participantes":15,"meses":2}', f'{tag} PoC sugere 15 pessoas e 2 meses, sem escolas')
+                ok(await pg.locator('#q-2-3-6.sug .sug-tag').is_visible() and not await pg.evaluate("qOk(CAMPO_POR_ID.piloto)"), f'{tag} 2.3.6 "sugerido" e não conta como respondida')
+                tagt = await pg.evaluate("document.querySelector('#q-2-3-6 .sug-tag').textContent")
+                ok(tagt == ('sugerido pela resposta 2.0' if lang == 'pt' else 'suggested by answer 2.0'), f'{tag} etiqueta da 2.3.6: "{tagt}"')
+                await pg.locator('[data-f="teste"][value="piloto"]').click(); await pg.wait_for_timeout(200)
+                ok(await pg.evaluate("JSON.stringify(S.caso.piloto)") == '{"escolas":30,"participantes":7500,"meses":4}', f'{tag} piloto sugere 5% das escolas (máx. 30), 5% dos estudantes e 4 meses: {await pg.evaluate("JSON.stringify(S.caso.piloto)")}')
+                await pg.locator('#pl-meses').fill('6'); await pg.locator('#pl-meses').press('Tab'); await pg.wait_for_timeout(150)
+                await pg.locator('[data-f="teste"][value="poc"]').click(); await pg.wait_for_timeout(200)
+                ok(await pg.evaluate("S.caso.piloto.meses===6 && S.caso.piloto.participantes===15"), f'{tag} mudar 2.0 recalcula só o que não foi confirmado (meses 6 mantido)')
+                await pg.locator('[data-f="teste"][value="piloto"]').click(); await pg.wait_for_timeout(200)
+                # 2.3.1 → 2.3.2 e 2.3.3
+                await pg.locator('[data-f="tipoTec"][value="aberta"]').click(); await pg.wait_for_timeout(200)
+                ok(await pg.evaluate("S.caso.pagamento==='consumo' && S.caso.licenca==='aberta' && sugerido(CAMPO_POR_ID.pagamento) && sugerido(CAMPO_POR_ID.licenca)"), f'{tag} aberta sugere "por consumo" e "licença aberta"')
+                ok(await pg.locator('[data-f="pagamento"][value="consumo"]').is_checked() and await pg.locator('#q-2-3-2.sug .sug-tag').is_visible(), f'{tag} sugestão de pagamento marcada e com etiqueta')
+                await pg.locator('[data-f="pagamento"][value="usuario"]').click(); await pg.wait_for_timeout(150)
+                await pg.locator('[data-f="tipoTec"][value="paga"]').click(); await pg.wait_for_timeout(200)
+                ok(await pg.evaluate("S.caso.pagamento==='usuario' && S.caso.licenca==='assinatura'"), f'{tag} paga muda só a licença não confirmada (pagamento escolhido mantido)')
+                if lang == 'en': await pg.evaluate("irPara('q-2-3-1')"); await pg.wait_for_timeout(250); await pg.screenshot(path=f'/tmp/claude-0/v10_fx_{tag}_2c.png')
+                await pg.locator('[data-f="tipoTec"][value="publica"]').click(); await pg.wait_for_timeout(200)
+                ok(await pg.evaluate("S.caso.licenca==='termos' && S.caso.pagamento==='usuario'"), f'{tag} pública sugere termos de uso padrão')
+                await pg.locator('#q-2-3-3 [value="termos"]').click(); await pg.wait_for_timeout(150)
+                ok(await pg.evaluate("!!S.respC.licenca && !sugerido(CAMPO_POR_ID.licenca)"), f'{tag} clicar na opção sugerida confirma a sugestão')
+                await pg.locator('[data-f="tipoTec"][value="nao_sei"]').click(); await pg.wait_for_timeout(200)
+                ok(await pg.evaluate("S.caso.licenca==='termos' && S.caso.pagamento==='usuario'"), f'{tag} "Ainda não sei" não apaga respostas confirmadas')
+                # rodapé: só sugestões pendentes → "Confirmar e continuar"
+                await pg.evaluate("(()=>{S.caso.adaptacao='config'; S.caso.infra='sim'; S.respC.adaptacao=S.respC.infra=true; render();})()"); await pg.wait_for_timeout(150)
+                ok(await pg.locator('#passo-2c [data-act="continuar-confirmar"]').count() == 1, f'{tag} 2.3 com sugestões pendentes oferece "Confirmar e continuar"')
+                await pg.locator('#passo-2c [data-act="continuar-confirmar"]').click(); await pg.wait_for_timeout(250)
+                ok(await pg.evaluate("passoFeito('2c') && !!S.respC['piloto.escolas'] && !!S.respC['piloto.participantes']"), f'{tag} confirmar aceita as sugestões do 2.3')
+                # 2.2.1 → 3.1.1
+                ok(await pg.evaluate("S.caso.elegiveis===''"), f'{tag} 3.1.1 vazio enquanto 2.2.1 não foi marcada')
+                await pg.evaluate("abrirFase('piloto','2b')"); await pg.wait_for_timeout(150)
+                await pg.locator('#passo-2b [data-fm="usuarios"][value="professores"]').click(); await pg.wait_for_timeout(200)
+                ok(await pg.evaluate("S.caso.elegiveis===6000 && sugerido(CAMPO_POR_ID.elegiveis)"), f'{tag} só professores: 3.1.1 sugere 1 professor para cada 25 estudantes ({await pg.evaluate("S.caso.elegiveis")})')
+                await pg.evaluate("abrirFase('custo','3a')"); await pg.wait_for_timeout(200)
+                nota = await pg.evaluate("(document.querySelector('#q-3-1-1 .sug-nota')||{}).textContent||''")
+                ok('25' in nota and ('ilustrativa' in nota or 'llustrative' in nota), f'{tag} 3.1.1: nota marca a estimativa como ilustrativa: "{nota[:80]}"')
+                if lang == 'en': await pg.evaluate("irPara('q-3-1-1')"); await pg.wait_for_timeout(250); await pg.screenshot(path=f'/tmp/claude-0/v10_fx_{tag}_3a.png')
+                await pg.evaluate("abrirFase('piloto','2b')"); await pg.wait_for_timeout(150)
+                await pg.locator('#passo-2b [data-fm="usuarios"][value="estudantes"]').click(); await pg.wait_for_timeout(200)
+                ok(await pg.evaluate("S.caso.elegiveis===150000 && sugerido(CAMPO_POR_ID.elegiveis) && !qOk(CAMPO_POR_ID.elegiveis)"), f'{tag} com estudantes: 3.1.1 sugere o total de estudantes')
+                await pg.evaluate("abrirFase('custo','3a')"); await pg.wait_for_timeout(150)
+                await pg.locator('#f-elegiveis').fill('90000'); await pg.locator('#f-elegiveis').press('Tab'); await pg.wait_for_timeout(150)
+                await pg.evaluate("abrirFase('piloto','2b')"); await pg.wait_for_timeout(150)
+                await pg.locator('#passo-2b [data-fm="usuarios"][value="estudantes"]').click(); await pg.wait_for_timeout(200)
+                ok(await pg.evaluate("S.caso.elegiveis===90000 && qOk(CAMPO_POR_ID.elegiveis)"), f'{tag} 3.1.1 confirmado não é recalculado')
+                # ---- v10: "Começar em branco" no painel, com confirmação inline
+                ok(await pg.locator('#painel #btn-limpar').count() == 1, f'{tag} painel com "Começar em branco"')
+                await pg.locator('#painel #btn-limpar').click(); await pg.wait_for_timeout(150)
+                ok(await pg.locator('#conf-limpar').is_visible(), f'{tag} confirmação inline aparece')
+                await pg.locator('#conf-limpar [data-act="limpar-nao"]').click(); await pg.wait_for_timeout(150)
+                ok(await pg.evaluate("S.caso.elegiveis===90000") and await pg.locator('#conf-limpar').count() == 0, f'{tag} cancelar mantém as respostas')
+                await pg.locator('#painel #btn-limpar').click(); await pg.wait_for_timeout(150)
+                if lang == 'en': await pg.evaluate("document.getElementById('conf-limpar').scrollIntoView()"); await pg.wait_for_timeout(150); await pg.screenshot(path=f'/tmp/claude-0/v10_fx_{tag}_limpar.png')
+                await pg.locator('#conf-limpar [data-act="limpar-ok"]').click(); await pg.wait_for_timeout(250)
+                ok(await pg.evaluate("S.caso.elegiveis==='' && !temRespostas(S) && S.fase==='contexto'"), f'{tag} confirmar apaga e começa em branco')
+                # ---- v10: caso salvo não abre sozinho
+                await pg.evaluate("carregarExemplo('B')"); await pg.wait_for_timeout(150)
+                await pg.reload(); await pg.wait_for_timeout(400)
+                ok(await pg.evaluate("S.boasVindas===true && !!SALVO") and await pg.locator('#boas [data-act="continuar-salvo"]').count() == 1 and await pg.locator('#boas [data-act="comecar"]').count() == 1, f'{tag} caso salvo: boas-vindas oferecem continuar ou começar em branco')
+                nome = await pg.evaluate("document.querySelector('#boas .salvo-caso').textContent")
+                ok(('utor' in nome) and ('·' in nome) and ('Rede estadual' in nome or 'State school system' in nome), f'{tag} nome e lugar do caso salvo: "{nome}"')
+                ok(await pg.locator('#painel .fatos').count() == 0 and await pg.locator('#stepper').count() == 0 and await pg.locator('#main .fase').count() == 0, f'{tag} caso salvo não aparece antes da escolha')
+                if lang == 'en': await pg.screenshot(path=f'/tmp/claude-0/v10_fx_{tag}_salvo.png')
+                await pg.locator('#boas [data-act="continuar-salvo"]').click(); await pg.wait_for_timeout(250)
+                ok(await pg.evaluate("S.boasVindas===false && S.exemplo==='B' && !SALVO && S.caso.elegiveis===150000"), f'{tag} "Continuar o caso salvo" abre o caso')
+                await pg.reload(); await pg.wait_for_timeout(400)
+                await pg.locator('#boas [data-act="comecar"]').click(); await pg.wait_for_timeout(250)
+                ok(await pg.evaluate("S.exemplo==='novo' && !temRespostas(S) && !SALVO && S.boasVindas===false"), f'{tag} "Começar em branco" descarta o caso salvo')
+                await pg.reload(); await pg.wait_for_timeout(400)
+                ok(await pg.locator('#boas [data-act="continuar-salvo"]').count() == 0, f'{tag} caso em branco salvo não pede escolha')
+                # caso da v8 no localStorage: convertido, mas não abre sozinho
+                v8 = open(os.path.join(RAIZ, 'tests', 'fixtures', 'localStorage_v8_branco_parcial.json')).read()
+                await pg.evaluate("t => { localStorage.clear(); localStorage.setItem('navegador-ia-educacao-v4', t); }", v8); await pg.reload(); await pg.wait_for_timeout(400)
+                ok(await pg.locator('#boas [data-act="continuar-salvo"]').count() == 1 and await pg.evaluate("SALVO && SALVO.migrou===true"), f'{tag} caso da v8 oferecido nas boas-vindas')
+                await pg.locator('#boas [data-act="continuar-salvo"]').click(); await pg.wait_for_timeout(250)
+                ok(await pg.evaluate("JSON.stringify(S.caso.piloto)") == '{"escolas":5,"participantes":300,"meses":3}', f'{tag} caso da v8: tamanho do piloto mantido (não vira sugestão)')
+                await pg.evaluate("localStorage.clear()"); await pg.select_option('#sel-lang', lang); await pg.wait_for_timeout(150)
                 # exemplos preenchidos: todos os passos, capturas
                 for ex in ['A', 'B', 'C', 'D']:
                     await pg.evaluate(f"carregarExemplo('{ex}')"); await pg.wait_for_timeout(150)

@@ -7,6 +7,8 @@
 #  - C (teste "recomendar") mostra a recomendação de prova de conceito com motivo;
 #  - caso em branco mostra "Plano parcial" com a lista numerada e botões "Responder";
 #  - A3 tem 7 linhas de camada e o link da UNESDOC;
+#  - v10: seção "Recomendações para o seu caso" (data-sec="recs") depois do resumo e antes do bloco A;
+#    A2 traz "Como o custo é calculado" (formula.js) quando a fórmula está no build;
 #  - sem erro de console e sem rolagem horizontal (1400 e 400 px);
 #  - PDF em EN (pdftotext): "Procurement plan", "Cost and procurement", "Policy and governance", a URL,
 #    nome procurement-plan-<slug>.pdf e nenhuma palavra em português da lista do test_idiomas.py.
@@ -16,7 +18,8 @@ from playwright.async_api import async_playwright
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TMP = '/tmp/claude-0/v9_plano'
 os.makedirs(TMP, exist_ok=True)
-SK = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"></head><body>' + open(os.path.join(RAIZ, 'navegador.html')).read() + '</body></html>'
+NAV = os.environ.get('NAV', os.path.join(RAIZ, 'navegador.html'))   # NAV=<arquivo> testa outro build
+SK = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"></head><body>' + open(NAV).read() + '</body></html>'
 open(f'{TMP}/nav.html', 'w').write(SK)
 URL_TCO = 'https://unesdoc.unesco.org/ark:/48223/pf0000399348'
 PT = re.compile(r'ção|ções|ã|õ|\b(?:não|você|para o|do caso|também|custo|orçament|decisão)\b', re.I)
@@ -51,7 +54,8 @@ async def main():
                   const a3 = P.querySelector('[data-sec="A3"] table tbody');
                   return { vista: S.vista, ordem, blocos, texto: P.innerText,
                     a3linhas: a3 ? a3.rows.length : 0, a3link: !!P.querySelector('[data-sec="A3"] a[href="%s"]'),
-                    a1: (P.querySelector('[data-sec="A1"]') || {}).innerText || '',
+                    a1: (P.querySelector('[data-sec="A1"]') || {}).innerText || '', a2: (P.querySelector('[data-sec="A2"]') || {}).innerText || '',
+                    formula: typeof secaoFormula === 'function',
                     parcial: (P.querySelector('.parcial') || {}).innerText || '', nResp: P.querySelectorAll('.parcial [data-ir]').length,
                     sw: document.documentElement.scrollWidth }; })()""" % URL_TCO)
                 ok(r is not None and r['vista'] == 'plano', f'{tag} {ex}: #plano aberto pelo botão')
@@ -61,6 +65,8 @@ async def main():
                 ok(r['blocos'][:2] == ['A. Custo e compra', 'B. Política e governança'], f'{tag} {ex}: nomes dos blocos {r["blocos"][:2]}')
                 ok([s for s in o if s in SECOES] == SECOES, f'{tag} {ex}: seções A1–A8 e B1–B9 em ordem')
                 ok(all(o.index(s) > o.index('[A]') for s in SECOES[:8]) and all(o.index(s) > o.index('[B]') for s in SECOES[8:]), f'{tag} {ex}: seções dentro dos blocos')
+                ok('recs' in o and 'resumo' in o and o.index('resumo') < o.index('recs') < o.index('[A]'), f'{tag} {ex}: recomendações do caso depois do resumo e antes do bloco A')
+                if r['formula']: ok('Como o custo é calculado' in r['a2'] and 'As contas de cada ano' in r['a2'], f'{tag} {ex}: A2 com a fórmula do custo')
                 ok('Suas respostas' not in r['texto'], f'{tag} {ex}: sem "Suas respostas"')
                 ok(r['a3linhas'] == 7 and r['a3link'], f'{tag} {ex}: A3 com 7 camadas ({r["a3linhas"]}) e link UNESDOC')
                 ok('não da UNESCO' in r['texto'], f'{tag} {ex}: faixa de isenção')
@@ -73,7 +79,9 @@ async def main():
                 await pg.screenshot(path=f'{TMP}/plano_{tag}_{ex}.png')
             # P1-4 / P2-6: "recomende para mim" com setup de piloto; P2-2: ponto de equilíbrio só com licença institucional
             await pg.evaluate("""(()=>{carregarExemplo('novo'); S.boasVindas=false; S.caso.teste='recomendar'; S.respC.teste=true;
-              S.caso.piloto={escolas:20, participantes:1200, meses:4}; S.caso.tipoTec='paga'; S.caso.pagamento='usuario'; S.custo.editado=false; S.vista=''; render();})()""")
+              S.caso.piloto={escolas:20, participantes:1200, meses:4}; S.caso.tipoTec='paga'; S.caso.pagamento='usuario';
+              ['piloto','piloto.escolas','piloto.participantes','piloto.meses','tipoTec','pagamento'].forEach(k=>{S.respC[k]=true;});
+              S.custo.editado=false; S.vista=''; render();})()""")
             await pg.locator('[data-act="gerar-plano"]:visible').first.click(); await pg.wait_for_timeout(250)
             r = await pg.evaluate("""(()=>{const P=document.getElementById('plano'); const tr=[...P.querySelectorAll('[data-sec=resumo] tr')].find(t=>/Escolas no teste/.test(t.innerText));
               return {esc: tr ? tr.querySelector('td').innerText : '', a1: P.querySelector('[data-sec=A1]').innerText, a3: P.querySelector('[data-sec=A3]').parentElement.innerText,
@@ -82,7 +90,8 @@ async def main():
             ok('descreve um piloto' in r['a1'] and '2.3.6' in r['a1'], f'{tag} A1 avisa que o setup descreve um piloto')
             ok('licença institucional só compensa' not in r['a3'], f'{tag} A3 sem ponto de equilíbrio com licença por usuário')
             ok('premissas padrão' in r['a2'], f'{tag} A2 rotula estimativa com premissas padrão')
-            ok('Preço da licença por usuário por mês' in r['prem'] and 'Premissas de partida' in r['prem'], f'{tag} A2 lista preço da licença e exemplo de origem')
+            # v10: com a fórmula (formula.js), preço e origem ficam em "De onde vêm os números"
+            ok(('Preço da licença por usuário por mês' in r['prem'] and 'Premissas de partida' in r['prem']) or ('Preço da licença:' in r['prem'] and 'Preços e quantidades de partida' in r['prem']), f'{tag} A2 lista preço da licença e exemplo de origem')
             # Responder leva de volta à pergunta
             if tag == 'd':
                 await pg.locator('.parcial [data-ir]').first.click(); await pg.wait_for_timeout(200)
@@ -101,7 +110,7 @@ async def main():
                         txt = subprocess.run(['pdftotext', '-layout', arq, '-'], capture_output=True, text=True).stdout
                         plano = re.sub(r'\s+', ' ', txt)
                         if lang == 'en':
-                            for s in ['Procurement plan', 'Cost and procurement', 'Policy and governance', URL_TCO]:
+                            for s in ['Procurement plan', 'Recommendations for your case', 'Cost and procurement', 'Policy and governance', URL_TCO]:
                                 ok(s in plano, f'pdf en {ex}: contém "{s}"')
                             ok('Cost and procurement' in plano and 'Policy and governance' in plano and plano.index('Cost and procurement') < plano.index('Policy and governance'), f'pdf en {ex}: bloco A antes do B')
                             resto = [l.strip() for l in txt.split('\n') if PT.search(l) and 'Cátedra' not in l and 'Desplugada' not in l]

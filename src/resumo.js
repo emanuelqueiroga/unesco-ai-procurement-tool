@@ -1,7 +1,7 @@
 // =====================================================================
 // Plano de contratação: página final e PDF, gerados por um único botão.
-// Estrutura: respostas que faltam, resumo do caso, bloco A (custo e compra),
-// bloco B (política e governança) e referências.
+// Estrutura: respostas que faltam, resumo do caso, recomendações para o seu caso
+// (v10, recomendacoes.js), bloco A (custo e compra), bloco B (política e governança) e referências.
 // Conteúdo de contratação tirado do guia (caps. 11–16; Instrumento F) e do
 // quadro de custo total em camadas de Krueger e Jackson (2026, p. 11).
 // Textos fixos e recomendações: src/plano_dados.js.
@@ -89,6 +89,7 @@ function dadosPlano() {
 
 // ----------------------------------------------------------- seções (PDF, Markdown, HTML e página)
 // Cada item: { tipo: 'faltas' | 'bloco', id, h, sub, kv, kpis, p, list, table, pos, det, soPagina, irs }
+// table: { head, rows, num, grupo, b0, hl, marca, larg, negrito (linhas em negrito na coluna 2, PDF) }
 function secoesPlano() {
   const d = dadosPlano();
   const { c, x, t, ce, p, rec, custo, arq } = d;
@@ -149,6 +150,11 @@ function secoesPlano() {
   ] });
   if (linhasEt.length) sec({ sub: true, h: 'Etapas, escolas e estudantes', table: { head: ['Etapa de ensino', 'Escolas', 'Estudantes por ano ou série', 'Estudantes'], rows: linhasEt, num: [1, 3] } });
 
+  // Recomendações para o seu caso (v10, recomendacoes.js): primeira seção depois do resumo, antes dos blocos A e B
+  if (typeof secaoRecomendacoes === 'function') {
+    try { sec(secaoRecomendacoes()); } catch (e) { console.warn(e); }
+  }
+
   // ================= Bloco A
   sec({ tipo: 'bloco', id: 'A', h: 'A. ' + tr(TIT_PLANO.A) });
 
@@ -192,9 +198,17 @@ function secoesPlano() {
     const anos = custo.av.r.anos;
     const prem = [];
     prem.push(tr('Arquitetura considerada:') + ' ' + tr(rotP(OPC.arquitetura, arq)) + (ce.__arqPresumida ? ' (' + tr('deduzida das respostas; mude no passo 2.3 se souber que é outra') + ')' : '') + '.');
+    // v10: "Como o custo é calculado" (formula.js, R3). Com a fórmula, quantidades e preços unitários ficam em
+    // "De onde vêm os números" e saem desta lista de premissas (eram redundantes).
+    let formula = [];
+    if (typeof secaoFormula === 'function') {
+      try { const f = secaoFormula(); formula = (Array.isArray(f) ? f : f ? [f] : []).filter(Boolean); } catch (e) { console.warn(e); formula = []; }
+    }
     let unit = [];
-    try { unit = premissasUnitarias(); } catch (e) { console.warn(e); }
-    if (unit.length) unit.forEach(z => prem.push(z)); else prem.push(tr('Premissas de partida:') + ' ' + tr(PRESET_ARQ[arq]) + '.');
+    if (!formula.length) {
+      try { unit = premissasUnitarias(); } catch (e) { console.warn(e); }
+      if (unit.length) unit.forEach(z => prem.push(z)); else prem.push(tr('Premissas de partida:') + ' ' + tr(PRESET_ARQ[arq]) + '.');
+    }
     if (c.adaptacao) {
       let f = { fK31: 1, fK32: 1 };
       try { f = fatoresAdaptacao(c.adaptacao, { saas: 'A', api: 'B', ow: 'C' }[arq]) || f; } catch (e) { }
@@ -213,6 +227,7 @@ function secoesPlano() {
     prem.push('Todas as premissas são ilustrativas e podem ser ajustadas na calculadora completa (passo 3.3).');
     const padrao = d.faltas.length > 8;
     sec({ id: 'A2', h: tituloSec('A2'), pre: padrao ? ['Estimativa baseada em premissas padrão: ' + d.faltas.length + ' perguntas ainda sem resposta.'] : null, kv, kpis: true, pos: ['Valores ilustrativos. Substitua por cotações e dados locais.'] });
+    formula.forEach(f => sec(Object.assign({}, f, { sub: true, id: undefined })));
     sec({ sub: true, h: 'Custo por camada', table: { head: ['Camada', tr('Ano 0') + ' (' + unidMil() + ')', tr('Total do ciclo') + ' (' + unidMil() + ')', '%'],
       rows: [1, 2, 3, 4, 5, 6, 7].map(n => [rotuloCamada(n), mil(cam.ano0[n] || 0), mil(cam.total[n] || 0), pct(tot ? (cam.total[n] || 0) / tot : 0)])
         .concat([[tr('Total'), mil(tot0), mil(tot), pct(1)]]), num: [1, 2, 3] },
@@ -442,6 +457,12 @@ function renderPlano() {
       return;
     }
     fecha(); aberta = true;
+    if (s.id === 'recs' && typeof htmlRecs === 'function' && typeof recomendacoesCaso === 'function') {
+      // na página, a lista com "Ir à pergunta" (a tabela da seção serve ao PDF e às exportações)
+      let R = null;
+      try { R = recomendacoesCaso(); } catch (e) { console.warn(e); }
+      if (R) { out += `<section class="res-sec" id="plano-recs" data-sec="recs"><h3><span>${esc(s.h)}</span></h3>${htmlRecs(R, { intro: R.length ? TXT_REC.introPlano : '' })}`; return; }
+    }
     const num = /^[AB]\d$/.test(s.id) ? s.id : '';
     const tit = num ? s.h.replace(/^[AB]\d\.\s*/, '') : s.h;
     out += `<section class="res-sec" id="plano-${s.id}" data-sec="${s.id}"><h3>${num ? `<span class="sn">${num}</span>` : ''}<span>${esc(tit)}</span></h3>${htmlCorpoP(s)}`;
@@ -539,6 +560,7 @@ function gerarPDF() {
         else if (ATENCAO.includes(v) || ((t.marca || []).includes(dd.column.index) && MARCAR.includes(v))) { dd.cell.styles.textColor = [138, 90, 0]; dd.cell.styles.fontStyle = 'bold'; }
         if (hl.includes(dd.row.index)) dd.cell.styles.fillColor = [229, 240, 250];
         if ((t.grupo || t.b0) && dd.column.index === 0) dd.cell.styles.fontStyle = 'bold';
+        if ((t.negrito || []).includes(dd.row.index) && dd.column.index === 1) dd.cell.styles.fontStyle = 'bold';
       },
       margin: { left: M, right: M, bottom: M + 14 }, head: head ? [head.map(pdfTxt)] : undefined, body: rows.map(r => r.map(pdfTxt)),
       styles: { font: 'helvetica', fontSize: 8.6, cellPadding: 4, textColor: TINTA, lineColor: [221, 227, 233], lineWidth: 0.5, overflow: 'linebreak', valign: 'top' },

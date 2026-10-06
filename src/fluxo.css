@@ -328,3 +328,24 @@ details.mais > summary { cursor: pointer; color: var(--brand); font-size: .9rem;
   table.pilha td.n::before { display: inline; text-align: left; font-weight: 600; }
   .tw:has(> table.pilha) { background: var(--surface); }
 }
+
+/* v10: caso salvo nas boas-vindas, "Começar em branco" com confirmação, notas das sugestões e 3.3 recolhido */
+.salvo { display: grid; gap: 10px; padding: 16px 18px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surface-3); }
+.salvo h3 { margin: 0; font-size: 1.1rem; color: var(--head); }
+.salvo .salvo-caso { font-size: 1.05rem; overflow-wrap: anywhere; }
+.salvo .row, .boas .row { flex-wrap: wrap; }
+.conf-limpar { display: grid; gap: 10px; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--warn); background: var(--warn-bg); }
+.conf-limpar p { margin: 0; }
+.conf-limpar .row { flex-wrap: wrap; gap: 8px; }
+.painel-acoes .conf-limpar .btn { width: auto; flex: 1 1 auto; }
+.q .sug-nota { border-left: 3px solid var(--pd-ink); padding-left: 10px; color: var(--ink-2); }
+.q:not(.sug) .sug-nota { display: none; }
+.formula-box { display: grid; gap: 12px; }
+details.numeros > summary { color: var(--brand); }
+.det-num { display: grid; gap: 14px; padding-top: 4px; }
+.det-num > .sub-h:first-child { margin-top: 0; }
+/* valor sugerido ainda não confirmado: contorno tracejado na cor da etiqueta, sem o ✓ de resposta dada */
+.q.sug .campo .ok-in { display: none !important; }
+.q.sug .opt input:checked + span b::before, .q.sug .chip input:checked + span::before { content: none; }
+.q.sug .opt:has(input:checked), .q.sug .chip:has(input:checked) { border-style: dashed; border-color: var(--pd-ink); background: var(--pd-bg); box-shadow: none; }
+.q.sug .campo input:not(:placeholder-shown) { border-style: dashed; border-color: var(--pd-ink); }

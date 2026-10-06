@@ -7,6 +7,8 @@ const CAMPO_POR_ID = {};
 CAMPOS.forEach(f => { CAMPO_POR_ID[f.id] = f; });
 const CAMPOS_SUGERIDOS = ['usuarios', 'afetados', 'consequencias', 'frequencia'];
 let ARQ_ABERTA = false;
+let NUM_ABERTO = false;   // <details> "Ver os números detalhados" do 3.3
+let CONF_LIMPAR = false;  // confirmação inline de "Começar em branco" no painel
 
 // ----------------------------------------------------------- estado
 function estadoFluxo() {
@@ -29,7 +31,8 @@ function aplicarExemploFluxo(k) {
   const CX = typeof CTX_EX !== 'undefined' ? CTX_EX : {}, RX = typeof RESP_EX !== 'undefined' ? RESP_EX : {};
   S.ctx = clone(CX[k] || {}); S.resp = clone(RX[k] || {}); S.feitos = {}; S.respC = {}; S.vista = ''; S.info = {}; S.revisar = [];
   // nos exemplos, as respostas de experiência de uso já estão confirmadas (as sugestões não as substituem)
-  if (k !== 'novo') CAMPOS_SUGERIDOS.forEach(c => { S.respC[c] = true; });
+  if (k !== 'novo') { CAMPOS_SUGERIDOS.forEach(c => { S.respC[c] = true; }); confirmarGerados(S.caso, S.respC); }
+  S.v10 = true;
   if (CX[k]) { ['local', 'olhando', 'compOutro'].forEach(c => { if (S.ctx[c]) S.ctx[c] = tr(S.ctx[c]); }); }
   S.fase = 'contexto'; S.passo = '1a';
   estadoFluxo();
@@ -63,10 +66,99 @@ function valorCampo(f) {
 }
 function vazio(v) { return v == null || v === '' || (Array.isArray(v) && !v.length); }
 function textoCampo(f) { return f.tPoc && S.caso.teste === 'poc' ? f.tPoc : f.t; }
-// Campo da experiência de uso pré-marcado pela tarefa e ainda não confirmado pela pessoa
-function sugerido(f) { return !!(f && f.sugere && !S.respC[f.id] && (S.caso.tarefas || []).length); }
-// A pergunta está respondida?
-function qOk(f) {
+
+// ----------------------------------------------------------- padrões gerados (v10)
+// Nada vem marcado antes de a pessoa agir. Quando ela marca uma resposta de origem, os campos que dependem
+// dela recebem um valor sugerido ("sugerido"), que só conta depois de confirmado (S.respC), como no passo 2.2.
+// Mudar a origem recalcula só as sugestões ainda não confirmadas.
+//   2.0 teste → 2.3.6 tamanho e duração; 2.3.1 tipo de tecnologia → 2.3.2 pagamento e 2.3.3 licença;
+//   2.2.1 usuários (confirmados) → 3.1.1 pessoas na rede.
+const SUB_PILOTO = ['escolas', 'participantes', 'meses'];
+const PAG_LIC = { publica: ['gratuito', 'termos'], aberta: ['consumo', 'aberta'], paga: ['institucional', 'assinatura'] };
+const ALUNOS_POR_PROF = 25;   // premissa ilustrativa: 1 professor para cada 25 estudantes
+// Usuários de 2.2.1 já confirmados pela pessoa (uma sugestão das tarefas ainda não conta)
+function usuariosMarcados() { return S.respC.usuarios || S.exemplo !== 'novo' ? (S.caso.usuarios || []) : []; }
+// Base de pessoas para as sugestões: estudantes das etapas ou, se só professores usam, a estimativa de professores
+function basePessoas() {
+  const u = usuariosMarcados(), al = totaisCtx().alunos;
+  if (!(al > 0)) return { n: 0, prof: false };
+  if (!u.length || u.includes('estudantes')) return { n: al, prof: false };
+  if (u.includes('professores')) return { n: Math.max(1, Math.round(al / ALUNOS_POR_PROF)), prof: true };
+  return { n: 0, prof: false };
+}
+function padroesGerados() {
+  const c = S.caso, t = totaisCtx(), g = {};
+  if (c.teste === 'poc') g.piloto = { escolas: '', participantes: 15, meses: 2 };
+  else if (c.teste === 'piloto' || c.teste === 'recomendar') {
+    const b = basePessoas();
+    g.piloto = {
+      escolas: t.escolas > 0 ? Math.min(t.escolas, Math.max(3, Math.min(30, Math.round(0.05 * t.escolas)))) : '',
+      participantes: b.n > 0 ? Math.max(1, Math.round(0.05 * b.n)) : '',
+      meses: 4,
+    };
+  }
+  const pl = PAG_LIC[c.tipoTec];
+  if (pl) { g.pagamento = pl[0]; g.licenca = pl[1]; }
+  const u = usuariosMarcados();
+  if (u.length) { const b = basePessoas(); if (b.n > 0) g.elegiveis = b.n; }
+  return g;
+}
+function aplicarPadroes() {
+  if (!S.caso) return false;
+  const c = S.caso, g = padroesGerados();
+  let mudou = false;
+  ['pagamento', 'licenca', 'elegiveis'].forEach(k => {
+    if (S.respC[k]) return;
+    const v = g[k] != null ? g[k] : '';
+    if (c[k] !== v) { c[k] = v; mudou = true; }
+  });
+  c.piloto = c.piloto && typeof c.piloto === 'object' ? c.piloto : { escolas: '', participantes: '', meses: '' };
+  SUB_PILOTO.forEach(k => {
+    if (S.respC['piloto.' + k]) return;
+    const v = g.piloto && g.piloto[k] != null ? g.piloto[k] : '';
+    if (c.piloto[k] !== v) { c.piloto[k] = v; mudou = true; }
+  });
+  if (mudou && S.custo) S.custo.editado = false;
+  return mudou;
+}
+// Marca como confirmados os valores já preenchidos dos campos gerados (exemplos e estados anteriores à v10)
+function confirmarGerados(caso, respC) {
+  ['pagamento', 'licenca', 'elegiveis'].forEach(k => { if (!vazio(caso[k])) respC[k] = true; });
+  const p = caso.piloto || {};
+  SUB_PILOTO.forEach(k => { if (!vazio(p[k])) respC['piloto.' + k] = true; });
+}
+// Confirma a sugestão de um campo (rodapé "Confirmar e continuar" ou clique na opção sugerida)
+function confirmarSugestao(f) {
+  if (f.id === 'piloto') SUB_PILOTO.forEach(k => { S.respC['piloto.' + k] = true; });
+  S.respC[f.id] = true;
+}
+// O campo mostra um valor gerado ainda não confirmado pela pessoa?
+function sugerido(f) {
+  if (!f) return false;
+  if (f.sugere) return !S.respC[f.id] && (S.caso.tarefas || []).length > 0;
+  if (!f.sugDe) return false;
+  if (f.id === 'piloto') { const p = S.caso.piloto || {}; return SUB_PILOTO.some(k => !S.respC['piloto.' + k] && !vazio(p[k])); }
+  return !S.respC[f.id] && !vazio(valorCampo(f));
+}
+function textoSugerido(f) {
+  if (f.sugere) return 'sugerido pela tarefa';
+  return { teste: 'sugerido pela resposta 2.0', tipoTec: 'sugerido pela resposta 2.3.1', usuarios: 'sugerido pela resposta 2.2.1' }[f.sugDe] || 'sugerido';
+}
+// Nota que explica de onde vem o valor sugerido (só aparece enquanto a sugestão não é confirmada)
+function notaSugerido(f) {
+  const L = [];
+  if (f.id === 'piloto' && S.caso.teste === 'poc') L.push('Sugestão para uma prova de conceito: 15 pessoas por 2 meses, sem escolas. Ajuste ao seu teste.');
+  else if (f.id === 'piloto') {
+    L.push('Sugestão: cerca de 5% das escolas da rede (no mínimo 3 e no máximo 30), 5% das pessoas que usariam e 4 meses. Ajuste ao seu piloto.');
+    if (basePessoas().prof) L.push('Participantes estimados com uma premissa ilustrativa de 1 professor para cada 25 estudantes, e não com um dado da sua rede.');
+  } else if (f.id === 'elegiveis') {
+    L.push(basePessoas().prof ? 'Sugestão ilustrativa: 1 professor para cada 25 estudantes das etapas marcadas. É uma premissa desta ferramenta, e não um dado da sua rede; informe o número real se souber.'
+      : 'Sugestão: o total de estudantes das etapas marcadas no passo 1.1. Confirme ou informe outro número.');
+  } else if (f.id === 'pagamento' || f.id === 'licenca') L.push('Sugestão a partir do tipo de tecnologia. Confirme ou escolha outra opção.');
+  return L.length ? `<div class="hint sug-nota">${L.map(x => `<span>${esc(x)}</span>`).join(' ')}</div>` : '';
+}
+// A pergunta está respondida? Com semSug, considera as sugestões como se estivessem confirmadas.
+function qOk(f, semSug) {
   const x = S.ctx, c = S.caso, v = valorCampo(f);
   switch (f.tipo) {
     case 'seg': return !!S.resp[f.id];
@@ -75,21 +167,23 @@ function qOk(f) {
     case 'dom': return !!x.dominio;
     case 'comps': return (x.comps || []).length > 0;
     case 'texto': case 'area': return !!String(v || '').trim();
-    case 'num': return +v > 0;
-    case 'setup': { const p = c.piloto || {}; return +p.participantes > 0 && +p.meses > 0 && (c.teste === 'poc' || +p.escolas > 0); }
+    case 'num': return +v > 0 && (semSug || !sugerido(f));
+    case 'setup': { const p = c.piloto || {}; return +p.participantes > 0 && +p.meses > 0 && (c.teste === 'poc' || +p.escolas > 0) && (semSug || !sugerido(f)); }
     default:
       if (vazio(v)) return false;
-      if (f.sugere && sugerido(f)) return false;
-      return f.padrao ? respondido(f.id) : true;
+      if (!semSug && sugerido(f)) return false;
+      return f.padrao ? respondido(f.id) || (semSug && sugerido(f)) : true;
   }
 }
 function camposPasso(id) { return CAMPOS.filter(f => f.passo === id); }
 // Perguntas obrigatórias ainda sem resposta num passo (objetos de CAMPOS)
 function faltas(id) { return camposPasso(id).filter(f => !f.opcional && !qOk(f)); }
-function passoFeito(id) { return id === '3c' ? !!S.feitos['3c'] : !faltas(id).length; }
+// Passos sem perguntas (3.3 estimativa, 3.4 recomendações): concluídos quando abertos
+const PASSOS_VER = ['3c', '3d'];
+function passoFeito(id) { return PASSOS_VER.includes(id) ? !!S.feitos[id] : !faltas(id).length; }
 function estadoPasso(id) {
   if (passoFeito(id)) return 'ok';
-  if (id !== '3c' && camposPasso(id).some(f => qOk(f))) return 'andamento';
+  if (!PASSOS_VER.includes(id) && camposPasso(id).some(f => qOk(f))) return 'andamento';
   return '';
 }
 function fasePasso(id) { return Object.keys(PASSOS).find(f => PASSOS[f].some(p => p[0] === id)); }
@@ -323,9 +417,9 @@ function renderQ(f) {
     if ((S.caso.usuarios || []).includes('estudantes') && tt.alunos > 0 && +S.caso.elegiveis !== tt.alunos) extra = `<div class="hint"><button type="button" class="link" data-act="usar-alunos">${esc(tr('Usar o total de estudantes do contexto (' + fmtInt(tt.alunos) + ')'))}</button></div>`;
   }
   return `<div class="q${ok ? ' ok' : ''}${sug ? ' sug' : ''}" id="${idQ(f.n)}" data-n="${f.n}" data-campo="${f.id}">
-    <${rotTag} class="q-t" id="qt-${f.id}"><span class="qn">${f.n}</span> <span class="qt">${esc(t)}</span>${f.opcional ? ' <span class="tag opc">opcional</span>' : ''}<span class="tag sug-tag">sugerido pela tarefa</span><span class="sr q-sr">${ok ? 'respondida' : ''}</span></${rotTag.split(' ')[0]}>
+    <${rotTag} class="q-t" id="qt-${f.id}"><span class="qn">${f.n}</span> <span class="qt">${esc(t)}</span>${f.opcional ? ' <span class="tag opc">opcional</span>' : ''}${f.sugere || f.sugDe ? `<span class="tag sug-tag">${esc(textoSugerido(f))}</span>` : ''}<span class="sr q-sr">${ok ? 'respondida' : ''}</span></${rotTag.split(' ')[0]}>
     ${h ? `<div class="hint">${esc(h)}</div>` : ''}${ex ? `<div class="hint ex">${esc(ex)}</div>` : ''}
-    ${controle(f)}${extra}</div>`;
+    ${controle(f)}${sug ? notaSugerido(f) : ''}${extra}</div>`;
 }
 // Botão ⓘ e nota com a explicação da camada e a referência ao documento de Krueger e Jackson (2026)
 const INFO_ROT = { c1: 'Sobre a camada 1', c2: 'Sobre a camada 2', c234: 'Sobre as camadas 2, 3 e 4', c37: 'Sobre as sete camadas' };
@@ -361,10 +455,12 @@ function detalheArquitetura() {
   const arqs = ((typeof OPC !== 'undefined' && OPC.arquitetura) || []).filter(o => o[0] !== 'indefinida');
   const opcs = [['', 'Usar a arquitetura presumida'], ...arqs];
   const atual = c.arquiteturaManual || '';
+  // v10: nenhuma opção vem marcada; "Usar a arquitetura presumida" só aparece marcada se a pessoa a escolheu
+  const marcada = v => atual === v && (v !== '' || !!S.respC.arquiteturaManual);
   return `<details class="arq" data-arq ${ARQ_ABERTA ? 'open' : ''}><summary>Para equipes técnicas: arquitetura presumida</summary>
     <div class="arq-in"><p class="hint">A ferramenta deduz a arquitetura das respostas acima para estimar o custo. Mude só se souber que é outra.</p>
       <p><span>Arquitetura presumida:</span> <b>${esc(rotulo(arqs, presumida) || '—')}</b></p>
-      <div class="opts" role="radiogroup" aria-label="Arquitetura">${opcs.map(o => `<label class="opt"><input type="radio" name="arquiteturaManual" value="${esc(o[0])}" data-f="arquiteturaManual" ${atual === o[0] ? 'checked' : ''}><span><b>${esc(o[1])}</b></span></label>`).join('')}</div></div></details>`;
+      <div class="opts" role="radiogroup" aria-label="Arquitetura">${opcs.map(o => `<label class="opt"><input type="radio" name="arquiteturaManual" value="${esc(o[0])}" data-f="arquiteturaManual" ${marcada(o[0]) ? 'checked' : ''}><span><b>${esc(o[1])}</b></span></label>`).join('')}</div></div></details>`;
 }
 function seletorMoeda() {
   if (typeof MOEDAS === 'undefined' || typeof moedaInfo !== 'function') return '';
@@ -392,8 +488,12 @@ function passo3c() {
       ${CAMADAS.map(([k, nome]) => `<tr><td data-th="${esc(thC[0])}"><span class="cn-t">${k}</span> <span>${esc(nome)}</span></td><td class="n" data-th="${esc(thC[1])}">${mil((cam.ano0 || {})[k] || 0)}</td><td class="n" data-th="${esc(thC[2])}">${mil((cam.total || {})[k] || 0)}</td><td class="n" data-th="%">${pct(tot ? ((cam.total || {})[k] || 0) / tot : 0)}</td></tr>`).join('')}
       <tr class="tot"><td data-th="${esc(thC[0])}">Total</td><td class="n" data-th="${esc(thC[1])}">${mil(CAMADAS.reduce((s, [k]) => s + ((cam.ano0 || {})[k] || 0), 0))}</td><td class="n" data-th="${esc(thC[2])}">${mil(tot)}</td><td class="n" data-th="%">100%</td></tr></tbody></table></div>`;
   })() : '';
+  // v10: "Como o custo é calculado" (R3) no topo, depois os indicadores; tabelas e premissas recolhidas
+  let formula = '';
+  if (typeof renderFormula === 'function') { try { formula = renderFormula(); } catch (e) { console.error(e); formula = ''; } }
   return `${seletorMoeda()}
     ${pend ? '<p class="hint">Enquanto faltarem respostas nos passos 2.3, 3.1 e 3.2, a estimativa usa premissas padrão.</p>' : ''}
+    ${formula ? `<div class="formula-box">${formula}</div>` : ''}
     <div class="kpis kpis5">
       <div class="kpi"><span class="v">${grande(n.ano0)}</span><span class="l">Custo do Ano 0 (prova de conceito ou piloto)</span></div>
       <div class="kpi"><span class="v">${grande(n.total)}</span><span class="l">Custo total do ciclo de vida</span></div>
@@ -401,18 +501,28 @@ function passo3c() {
       <div class="kpi"><span class="v">${din(n.porAluno, 2)}</span><span class="l">Por usuário ativo por ano</span></div>
       <div class="kpi"><span class="v">${(n.ind.anosParaSair || 0).toLocaleString(LOC(), { maximumFractionDigits: (n.ind.anosParaSair || 0) < 1 ? 2 : 1 })}</span><span class="l">Custo de sair, em anos de custo recorrente</span></div></div>
     ${linhaAdapt}
+    <p class="note"><span>Valores ilustrativos. Substitua por cotações e dados locais.</span> <span>Custo total em preços constantes, com tempo das equipes; dotação em preços correntes, só desembolso.</span></p>
+    <details class="calc numeros" data-numdet ${NUM_ABERTO ? 'open' : ''}><summary>Ver os números detalhados</summary>
+      <div class="embutido det-num">
     ${tabCam}
     <h3 class="sub-h">Dotação a solicitar por exercício</h3>
     <div class="tw"><table class="pilha"><thead><tr><th>Exercício</th>${T.map(x => `<th class="n">${esc(tr('Ano ' + x))}</th>`).join('')}</tr></thead><tbody>
       <tr><td data-th="${esc(tr('Exercício'))}"><span>Dotação a solicitar</span> (${esc(unidMil())})</td>${T.map(x => `<td class="n" data-th="${esc(tr('Ano ' + x))}">${mil(n.orc.dot[x])}</td>`).join('')}</tr></tbody></table></div>
-    <p class="note"><span>Valores ilustrativos. Substitua por cotações e dados locais.</span> <span>Custo total em preços constantes, com tempo das equipes; dotação em preços correntes, só desembolso.</span></p>
     <h3 class="sub-h">Premissas desta estimativa</h3>
     <ul class="req prem-u">${prem.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
     <p class="note">Premissas ilustrativas. Ajuste preços, quantidades e itens na calculadora completa, logo abaixo.</p>
+      </div></details>
     <details class="calc" data-calc ${S.calcAberta ? 'open' : ''}><summary>Ajustar premissas, itens e cenários na calculadora completa</summary>
       <div id="custos-box" class="embutido">${S.calcAberta && typeof renderCustos === 'function' ? renderCustos() : ''}</div></details>`;
 }
-function corpoPasso(id) { return id === '3c' ? passo3c() : corpoPadrao(id); }
+// Passo 3.4: recomendações de ação para o caso (R2, recomendacoes.js)
+function passo3d() {
+  if (typeof renderRecomendacoes === 'function') {
+    try { return renderRecomendacoes(); } catch (e) { console.error(e); return '<p class="muted">Não foi possível montar as recomendações com as respostas atuais.</p>'; }
+  }
+  return '<p class="muted">As recomendações para o seu caso ainda não estão disponíveis nesta versão da ferramenta.</p>';
+}
+function corpoPasso(id) { return id === '3c' ? passo3c() : id === '3d' ? passo3d() : corpoPadrao(id); }
 
 // ----------------------------------------------------------- passos, rodapés e fases
 function resumoPasso(id) {
@@ -423,6 +533,7 @@ function resumoPasso(id) {
   if (id === '20' && c.teste) return tr(rotulo(listaOpc(CAMPO_POR_ID.teste), c.teste));
   if (id === '2c' && qOk(CAMPO_POR_ID.tipoTec)) return tr(rotulo(listaOpc(CAMPO_POR_ID.tipoTec), c.tipoTec));
   if (id === '3c') return S.feitos['3c'] ? tr('Estimativa vista') : '';
+  if (id === '3d') return S.feitos['3d'] ? tr('Recomendações vistas') : '';
   const cs = camposPasso(id).filter(f => !f.opcional);
   return tr(cs.filter(qOk).length + ' de ' + cs.length + ' respondidas');
 }
@@ -443,13 +554,14 @@ function botaoSeguir(fid, id, act) {
   return `<button type="button" class="btn pri" data-act="${act || 'continuar'}"${act === 'ir-fase' ? ` data-f2="${p.fase.id}"` : ''} data-de="${id}">${esc(txt)}</button>`;
 }
 function rodapePasso(fid, id) {
-  if (id === '3c') return `<div class="pe" id="pe-${id}"><div class="passo-pe">${botaoSeguir(fid, id)}</div></div>`;
+  if (PASSOS_VER.includes(id)) return `<div class="pe" id="pe-${id}"><div class="passo-pe">${botaoSeguir(fid, id)}</div></div>`;
   const fs = faltas(id);
-  const pend = fs.filter(f => !sugerido(f) || vazio(valorCampo(f)));
+  // pendentes de verdade: sem resposta mesmo considerando as sugestões como confirmadas
+  const pend = fs.filter(f => !qOk(f, true));
   if (!fs.length) return `<div class="pe" id="pe-${id}"><div class="passo-pe"><span class="ok-msg">${esc(tr('Passo completo.'))}</span>${botaoSeguir(fid, id)}</div></div>`;
   if (!pend.length) {
     const p = proximo(fid, id);
-    return `<div class="pe" id="pe-${id}"><div class="passo-pe"><span class="muted">${esc(tr('Revise as respostas sugeridas pelas tarefas.'))}</span>
+    return `<div class="pe" id="pe-${id}"><div class="passo-pe"><span class="muted">${esc(tr(id === '2b' ? 'Revise as respostas sugeridas pelas tarefas.' : 'Revise as respostas sugeridas.'))}</span>
       <button type="button" class="btn pri" data-act="continuar-confirmar" data-de="${id}">${esc(p.tipo === 'passo' ? tr('Confirmar e continuar para ' + numPasso(p.id)) : tr('Confirmar e continuar'))}</button></div></div>`;
   }
   return `<div class="pe" id="pe-${id}"><div class="aviso"><b>${esc(tr('Ainda falta responder neste passo:'))}</b>
@@ -457,11 +569,12 @@ function rodapePasso(fid, id) {
     <div class="row"><button type="button" class="btn" data-act="continuar-forcar" data-de="${id}">${esc(tr('Continuar mesmo assim'))}</button><span class="small muted">${esc(tr('Você pode voltar depois.'))}</span></div></div></div>`;
 }
 function rodapeFase(f) {
-  const n = PASSOS[f.id].reduce((s, [id]) => s + (id === '3c' ? 0 : faltas(id).length), 0);
+  const n = PASSOS[f.id].reduce((s, [id]) => s + (PASSOS_VER.includes(id) ? 0 : faltas(id).length), 0);
+  const naoVistos = PASSOS[f.id].filter(([id]) => PASSOS_VER.includes(id) && !S.feitos[id]).map(([id]) => id);
   const ult = PASSOS[f.id][PASSOS[f.id].length - 1][0];
   const completa = progressoFase(f.id).completa;
   const msg = completa ? `<span class="ok-msg">${esc(tr('Fase ' + f.n + ' completa'))}</span>`
-    : `<span class="muted">${esc(n ? (n === 1 ? tr('Falta 1 resposta nesta fase. Você pode continuar e voltar depois.') : tr('Faltam ' + n + ' respostas nesta fase. Você pode continuar e voltar depois.')) : tr('Abra a estimativa de custo para concluir esta fase.'))}</span>`;
+    : `<span class="muted">${esc(n ? (n === 1 ? tr('Falta 1 resposta nesta fase. Você pode continuar e voltar depois.') : tr('Faltam ' + n + ' respostas nesta fase. Você pode continuar e voltar depois.')) : tr(naoVistos.includes('3c') ? 'Abra a estimativa de custo para concluir esta fase.' : 'Abra as recomendações para o seu caso (3.4) para concluir esta fase.'))}</span>`;
   return `<div class="fase-pe" id="fpe-${f.id}">${msg}${botaoSeguir(f.id, ult, f.id === 'custo' ? '' : 'ir-fase')}</div>`;
 }
 function marcaPasso(id, st) {
@@ -501,12 +614,22 @@ function renderStepper() {
   }).join('') + `<button type="button" class="step-r${S.vista === 'plano' ? ' at' : ''}" data-act="gerar-plano" aria-current="${S.vista === 'plano'}"><span class="sf-t">${esc(tr('Gerar plano de contratação'))}</span></button>`;
 }
 function boasVindas() {
-  return `<section class="boas card" id="boas">
+  const sv = typeof SALVO !== 'undefined' ? SALVO : null;
+  const nome = sv ? (sv.nome || (sv.exemplo ? tr(sv.exemplo) : '')) : '';
+  const escolha = sv ? `<div class="salvo" role="group" aria-labelledby="salvo-t">
+      <h3 id="salvo-t">Há um caso salvo neste navegador</h3>
+      <p class="salvo-caso">${nome ? `<b data-notr>${esc(nome)}</b>` : '<b>Caso sem nome</b>'}${sv.lugar ? ` <span class="muted">·</span> <span data-notr>${esc(sv.lugar)}</span>` : ''}${sv.exemplo && !sv.nome ? ' <span class="tag">exemplo</span>' : ''}</p>
+      ${sv.migrou ? '<p class="small muted">Convertido da versão anterior da ferramenta. Revise as respostas de adoção.</p>' : ''}
+      <div class="row"><button type="button" class="btn pri grande" data-act="continuar-salvo">Continuar o caso salvo</button><button type="button" class="btn grande" data-act="comecar">Começar em branco</button></div>
+      <p class="small muted">Começar em branco ou abrir um exemplo apaga o caso salvo. Para guardá-lo, continue o caso e use "Exportar caso" no painel.</p>
+    </div>` : '';
+  return `<section class="boas card" id="boas">${escolha}
     <div class="eyebrow">Como funciona</div>
     <h2>Do contexto ao plano de contratação, em três fases</h2>
     <p>Você descreve a sua rede, o problema e o que quer que a IA faça, escolhe entre prova de conceito e piloto e define como vai adotar e pagar a tecnologia. No fim, um clique gera o plano de contratação, com custo, compra e recomendações de política. Os valores são ilustrativos.</p>
     <ol class="boas-fases">${FASES.map(f => `<li class="f${f.n}"><span class="fase-n">${f.n}</span><span><b>${esc(f.nome)}</b><small>${esc(f.sub)}</small></span></li>`).join('')}</ol>
-    <div class="row"><button type="button" class="btn pri grande" data-act="comecar">Começar um caso em branco</button><button type="button" class="btn grande" data-act="ver-exemplo">Ver um exemplo preenchido</button></div>
+    ${sv ? '' : '<div class="row"><button type="button" class="btn pri grande" data-act="comecar">Começar um caso em branco</button><button type="button" class="btn grande" data-act="ver-exemplo">Ver um exemplo preenchido</button></div>'}
+    ${sv ? '<div class="row"><button type="button" class="link" data-act="ver-exemplo">Ver um exemplo preenchido</button></div>' : ''}
     <p class="small muted">As respostas ficam salvas só neste navegador. Você pode exportar o caso a qualquer momento.</p>
   </section>`;
 }
@@ -556,6 +679,12 @@ function mandala() {
 // ----------------------------------------------------------- painel lateral
 function renderPainel() {
   const el = $('#painel'); if (!el) return;
+  // escolha pendente entre o caso salvo e um caso em branco: o painel não mostra o caso salvo
+  if (typeof SALVO !== 'undefined' && SALVO && S.boasVindas !== false) {
+    el.innerHTML = `<div class="card painel-in"><div class="prog"><div class="eyebrow">Seu progresso</div>
+      <p class="small muted">Escolha se quer continuar o caso salvo ou começar em branco.</p></div></div>`;
+    return;
+  }
   const t = totaisCtx(), c = S.caso;
   const prog = FASES.map(f => { const pr = progressoFase(f.id); return `<li><button type="button" class="prog-f f${f.n}${pr.completa ? ' feita' : ''}" data-fase="${f.id}"><span class="fase-n">${marcaFase(f, pr)}</span><span class="vl-t">${esc(f.nome)}</span><span class="vl-n">${esc(tr(pr.feitos + ' de ' + pr.total + ' passos'))}</span></button></li>`; }).join('');
   const teste = c.teste ? (c.teste === 'recomendar' ? tr('a recomendar') : tr(rotulo(listaOpc(CAMPO_POR_ID.teste), c.teste))) : '—';
@@ -593,14 +722,23 @@ function renderPainel() {
     ${est}
     <div class="painel-acoes"><button class="btn pri grande" type="button" data-act="gerar-plano">Gerar plano de contratação</button>
       <span class="small muted">Salvo neste navegador</span>
-      <span class="row small">${exp}<button type="button" class="link" data-act="imp-json">Importar caso</button></span></div>
+      <span class="row small">${exp}<button type="button" class="link" data-act="imp-json">Importar caso</button>${temRespostas(S) && !CONF_LIMPAR ? '<button type="button" class="link" id="btn-limpar" data-act="limpar-pedir">Começar em branco</button>' : ''}</span>
+      ${CONF_LIMPAR ? confLimpar() : ''}</div>
   </div>`;
+}
+
+// Confirmação inline de "Começar em branco" (sem caixas de diálogo do navegador)
+function confLimpar() {
+  return `<div class="conf-limpar" id="conf-limpar" role="group" aria-labelledby="conf-limpar-t">
+    <p id="conf-limpar-t"><b>Começar em branco?</b> <span>As respostas atuais serão apagadas deste navegador. Para guardá-las, exporte o caso antes.</span></p>
+    <div class="row"><button type="button" class="btn pri" data-act="limpar-ok">Apagar e começar em branco</button><button type="button" class="btn" data-act="limpar-nao">Cancelar</button></div></div>`;
 }
 
 // ----------------------------------------------------------- render
 function render() {
   estadoFluxo();
-  if (S.vista !== 'plano' && S.fase === 'custo' && S.passo === '3c') S.feitos['3c'] = true;
+  if (S.vista !== 'plano' && S.fase === 'custo' && PASSOS_VER.includes(S.passo)) S.feitos[S.passo] = true;
+  aplicarPadroes();
   const y = window.scrollY, foco = document.activeElement && document.activeElement.id;
   const ex = ['A', 'B', 'C', 'D', 'editado'].includes(S.exemplo) && S.boasVindas === false;
   const tituloEx = ['A', 'B', 'C', 'D'].includes(S.exemplo) && typeof CASOS !== 'undefined' && CASOS[S.exemplo] ? CASOS[S.exemplo].titulo : '';
@@ -617,7 +755,7 @@ function render() {
   window.scrollTo(0, y);
   salvar();
 }
-function atualizarLaterais() { renderStepper(); renderPainel(); atualizarFaseViva(); salvar(); }
+function atualizarLaterais() { aplicarPadroes(); renderStepper(); renderPainel(); atualizarFaseViva(); salvar(); }
 // Atualiza marcas de respondida, passos, rodapés e cabeçalho da fase aberta sem redesenhar a página
 function atualizarFaseViva() {
   document.querySelectorAll('.q[data-campo]').forEach(q => {
@@ -672,7 +810,7 @@ function continuar(modo, de) {
   const id = de || S.passo, fid = fasePasso(id); if (!fid) return;
   if (modo === 'normal' && faltas(id).length) { render(); return; }
   if (modo === 'confirmar') {
-    camposPasso(id).forEach(f => { if (sugerido(f) && !vazio(valorCampo(f))) S.respC[f.id] = true; });
+    camposPasso(id).forEach(f => { if (sugerido(f) && !vazio(valorCampo(f))) confirmarSugestao(f); });
     S.revisar = (S.revisar || []).filter(k => !S.respC[k]);
   }
   S.feitos[id] = true;
@@ -717,8 +855,18 @@ function eventoFluxo(e) {
     }
     const tz = el.closest('[data-sototal]');
     if (tz) { const id = tz.dataset.sototal; const et = S.ctx.etapas[id] = S.ctx.etapas[id] || {}; et.soTotal = !et.soTotal; if (et.soTotal && !(+et.alunos > 0)) { const s = (et.anos || []).reduce((a, b) => a + (+b || 0), 0); if (s > 0) et.alunos = s; } render(); return true; }
+    // clique na opção já marcada por sugestão: confirma a sugestão (o navegador não dispara "change")
+    if (el.matches && el.matches('input[type=radio][data-f]')) {
+      const f = CAMPO_POR_ID[el.dataset.f];
+      if (f && sugerido(f) && String(S.caso[f.id]) === el.value) { confirmarSugestao(f); S.revisar = (S.revisar || []).filter(k => k !== f.id); atualizarLaterais(); return true; }
+      return false;
+    }
     const a = el.closest('[data-act]'); if (!a) return false;
     const act = a.dataset.act;
+    if (act === 'continuar-salvo') { continuarSalvo(); return true; }
+    if (act === 'limpar-pedir') { CONF_LIMPAR = true; renderPainel(); requestAnimationFrame(() => { const b = document.querySelector('#conf-limpar [data-act="limpar-nao"]'); if (b) b.focus(); }); return true; }
+    if (act === 'limpar-nao') { CONF_LIMPAR = false; renderPainel(); requestAnimationFrame(() => { const b = document.getElementById('btn-limpar'); if (b) b.focus(); }); return true; }
+    if (act === 'limpar-ok') { CONF_LIMPAR = false; carregarExemplo('novo'); S.boasVindas = false; abrirFase('contexto', '1a'); return true; }
     if (act === 'continuar') { continuar('normal', a.dataset.de); return true; }
     if (act === 'continuar-forcar') { continuar('forcar', a.dataset.de); return true; }
     if (act === 'continuar-confirmar') { continuar('confirmar', a.dataset.de); return true; }
@@ -753,6 +901,7 @@ function eventoFluxo(e) {
   }
   if (e.type === 'toggle' && el.dataset) {
     if (el.dataset.arq != null) { ARQ_ABERTA = el.open; return false; }
+    if (el.dataset.numdet != null) { NUM_ABERTO = el.open; return false; }
     if (el.dataset.calc != null) {
       S.calcAberta = el.open;
       const box = document.getElementById('custos-box');
