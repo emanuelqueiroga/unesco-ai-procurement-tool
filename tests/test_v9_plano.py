@@ -13,6 +13,12 @@
 #    nada de fonte de recursos; Figura 1 (Krueger e Jackson, 2026, p. 11) em A3 com legenda e crédito;
 #    A2 traz "Como o custo é calculado" (formula.js) quando a fórmula está no build;
 #  - sem erro de console e sem rolagem horizontal (1400 e 400 px);
+#  - v12: relatório com capa (recomendação principal e isenção), "Em resumo" (data-sec="resumo": 4 KPIs, gráfico de barras
+#    por camada com 7 barras e gráfico de colunas por exercício, fatos do caso), "Recomendações para você" (até 5 cartões de
+#    prioridade alta e a lista completa com "Ir à pergunta"), "Perfil do caso" (data-sec="perfil", cartões por área com os
+#    campos v11), blocos A e B com faixa colorida, respostas que faltam no fim; painel lateral escondido; índice com a seção
+#    atual; barra de ações fixa (Baixar PDF, Voltar, Copiar texto, Exportar/Importar); nenhum texto abaixo de .86rem;
+#    figura de A3 em miniatura com "Ampliar a figura" e visualizador (Esc, fundo, Fechar; foco preso e devolvido);
 #  - PDF em EN (pdftotext): "Procurement plan", "Recommendations for you", "Cost and procurement", "Policy and governance", a URL,
 #    a Figura 1 numa página própria (imagem JPEG 900×1225 e crédito CC BY-SA 3.0 IGO na mesma página),
 #    nome procurement-plan-<slug>.pdf e nenhuma palavra em português da lista do test_idiomas.py.
@@ -65,7 +71,15 @@ async def main():
                     a3linhas: a3 ? a3.rows.length : 0, a3link: !!P.querySelector('[data-sec="A3"] a[href="%s"]'),
                     a1: (P.querySelector('[data-sec="A1"]') || {}).innerText || '', a2: (P.querySelector('[data-sec="A2"]') || {}).innerText || '',
                     formula: typeof secaoFormula === 'function',
-                    resumo: (P.querySelector('[data-sec="resumo"]') || {}).innerText || '', recsH: (P.querySelector('[data-sec="recs"] h3') || {}).innerText || '',
+                    resumo: (P.querySelector('[data-sec="perfil"]') || {}).innerText || '', recsH: (P.querySelector('[data-sec="recs"] h3') || {}).innerText || '',
+                    capa: (P.querySelector('.rp-capa') || {}).textContent || '', kpis: P.querySelectorAll('[data-sec="resumo"] .rp-kpi').length,
+                    barras: P.querySelectorAll('[data-sec="resumo"] .rp-bar svg').length, cols: P.querySelectorAll('[data-sec="resumo"] .rp-col svg').length,
+                    cartoes: P.querySelectorAll('[data-sec="perfil"] .rp-card').length, topo: P.querySelectorAll('[data-sec="recs"] .rp-tc').length,
+                    altas: P.querySelectorAll('[data-sec="recs"] .rc-item[data-prio="alta"]').length,
+                    painel: getComputedStyle(document.getElementById('painel')).display, indice: P.querySelectorAll('.rp-indice a[data-toc-l]').length,
+                    barra: [...P.querySelectorAll('.rp-barra [data-act]')].map(b => b.dataset.act),
+                    faltasFim: (() => { const f = P.querySelector('[data-sec="faltas"]'); const r = P.querySelector('[data-sec="refs"]'); return !f || (r && (r.compareDocumentPosition(f) & 4) > 0); })(),
+                    minFonte: (() => { let m = 99, q = ''; P.querySelectorAll('*').forEach(e => { if (!e.childNodes.length || ![...e.childNodes].some(n => n.nodeType === 3 && n.data.trim())) return; const r = e.getBoundingClientRect(); if (!r.width) return; const f = parseFloat(getComputedStyle(e).fontSize); if (f < m) { m = f; q = e.className + ' ' + e.textContent.slice(0, 30); } }); return [m, q]; })(),
                     fig: (() => { const f = P.querySelector('[data-sec="A3"] figure img, [data-sec="A3"] ~ figure img, #plano-fig-tco img'); const sec = f && f.closest('section'); return f ? { ok: f.complete && f.naturalWidth === 900 && f.naturalHeight === 1225, w: f.getBoundingClientRect().width, sec: sec ? sec.dataset.sec : '', cap: (f.closest('figure').querySelector('figcaption') || {}).innerText || '' } : null; })(),
                     temFig: typeof FIG_TCO !== 'undefined',
                     parcial: (P.querySelector('.parcial') || {}).innerText || '', nResp: P.querySelectorAll('.parcial [data-ir]').length,
@@ -74,7 +88,7 @@ async def main():
                 if not r: continue
                 o = r['ordem']
                 ok(o.index('[A]') < o.index('[B]') if '[A]' in o and '[B]' in o else False, f'{tag} {ex}: bloco A antes do bloco B')
-                ok(r['blocos'][:2] == ['A. Custo e compra', 'B. Política e governança'], f'{tag} {ex}: nomes dos blocos {r["blocos"][:2]}')
+                ok([re.sub(r'^[AB]\.?\s*', '', re.sub(r'^([AB])\1', r'\1', b)) for b in r['blocos'][:2]] == ['Custo e compra', 'Política e governança'], f'{tag} {ex}: nomes dos blocos {r["blocos"][:2]}')
                 ok([s for s in o if s in SECOES] == SECOES and 'A8' not in o, f'{tag} {ex}: seções A1–A7 e B1–B9 em ordem')
                 ok(all(o.index(s) > o.index('[A]') for s in SECOES[:7]) and all(o.index(s) > o.index('[B]') for s in SECOES[7:]), f'{tag} {ex}: seções dentro dos blocos')
                 ok('Fonte de recursos' not in r['texto'] and 'Quem paga depois do teste' not in r['texto'], f'{tag} {ex}: sem fonte de recursos')
@@ -86,7 +100,15 @@ async def main():
                     ok(r['fig'] is not None and r['fig']['cap'] == CREDITO, f'{tag} {ex}: legenda e crédito da Figura 1')
                     ok(r['fig'] is not None and r['fig']['w'] <= w - 20, f'{tag} {ex}: figura cabe na largura ({r["fig"] and r["fig"]["w"]})')
                 else: ok(False, f'{tag} {ex}: FIG_TCO no build')
-                ok('recs' in o and 'resumo' in o and o.index('resumo') < o.index('recs') < o.index('[A]'), f'{tag} {ex}: recomendações do caso depois do resumo e antes do bloco A')
+                ok('recs' in o and 'resumo' in o and o.index('resumo') < o.index('recs') < o.index('perfil') < o.index('[A]'), f'{tag} {ex}: Em resumo, recomendações e perfil do caso antes do bloco A ({o[:4]})')
+                ok('Recomendação principal' in r['capa'] and 'não da UNESCO' in r['capa'] and 'Plano de contratação' in r['capa'], f'{tag} {ex}: capa com recomendação principal e isenção')
+                ok(r['kpis'] == 4 and r['barras'] == 7 and r['cols'] >= 4, f'{tag} {ex}: Em resumo com 4 KPIs, 7 barras e colunas por exercício ({r["kpis"]}, {r["barras"]}, {r["cols"]})')
+                ok(r['cartoes'] >= 7, f'{tag} {ex}: perfil do caso em cartões ({r["cartoes"]})')
+                ok(r['topo'] == min(5, r['altas']), f'{tag} {ex}: {r["topo"]} cartões de prioridade alta ({r["altas"]} altas)')
+                ok(r['painel'] == 'none', f'{tag} {ex}: painel lateral escondido na vista do plano')
+                ok(r['indice'] >= 6 and r['barra'][:2] == ['pdf', 'voltar-percurso'] and 'copiar' in r['barra'] and 'imp-json' in r['barra'], f'{tag} {ex}: índice ({r["indice"]}) e barra de ações {r["barra"]}')
+                ok(r['faltasFim'], f'{tag} {ex}: respostas que faltam no fim')
+                ok(r['minFonte'][0] >= 13.75, f'{tag} {ex}: nenhum texto abaixo de .86rem ({r["minFonte"]})')
                 if r['formula']: ok('Como o custo é calculado' in r['a2'] and 'As contas de cada ano' in r['a2'], f'{tag} {ex}: A2 com a fórmula do custo')
                 ok('Suas respostas' not in r['texto'], f'{tag} {ex}: sem "Suas respostas"')
                 ok(r['a3linhas'] == 7 and r['a3link'], f'{tag} {ex}: A3 com 7 camadas ({r["a3linhas"]}) e link UNESDOC')
@@ -104,15 +126,34 @@ async def main():
               ['piloto','piloto.escolas','piloto.participantes','piloto.meses','setup','tipoTec','pagamento'].forEach(k=>{S.respC[k]=true;});
               S.custo.editado=false; S.vista=''; render();})()""")
             await pg.locator('[data-act="gerar-plano"]:visible').first.click(); await pg.wait_for_timeout(250)
-            r = await pg.evaluate("""(()=>{const P=document.getElementById('plano'); const tr=[...P.querySelectorAll('[data-sec=resumo] tr')].find(t=>/^Piloto: escolas/.test(t.innerText));
-              return {esc: tr ? tr.querySelector('td').innerText : '', a1: P.querySelector('[data-sec=A1]').innerText, a3: P.querySelector('[data-sec=A3]').parentElement.innerText,
-                a2: (P.querySelector('[data-sec=A2] .kpi-nota')||{}).innerText||'', prem: P.querySelector('[data-sec=A2]').innerText}})()""")
+            r = await pg.evaluate("""(()=>{const P=document.getElementById('plano'); const tr=[...P.querySelectorAll('[data-sec=perfil] .rp-kv')].find(t=>/^Piloto: escolas/.test(t.querySelector('dt').innerText));
+              return {esc: tr ? tr.querySelector('dd').innerText : '', a1: P.querySelector('[data-sec=A1]').innerText, a3: P.querySelector('[data-sec=A3]').parentElement.innerText,
+                a2: (P.querySelector('[data-sec=A2] .kpi-nota')||{}).innerText||'', prem: P.querySelector('[data-sec=A2]').textContent}})()""")
             ok(r['esc'].startswith('20 escolas'), f'{tag} resumo mostra as escolas digitadas com "recomende" ({r["esc"]})')
             ok('descreve um piloto' in r['a1'] and '2.3.8' in r['a1'] if 'prova de conceito.' in r['a1'] else True, f'{tag} A1 avisa que o setup descreve um piloto quando recomenda só a prova de conceito')
             ok('licença institucional só compensa' not in r['a3'], f'{tag} A3 sem ponto de equilíbrio com licença por usuário')
             ok('premissas padrão' in r['a2'], f'{tag} A2 rotula estimativa com premissas padrão')
             # v10: com a fórmula (formula.js), preço e origem ficam em "De onde vêm os números"
             ok(('Preço da licença por usuário por mês' in r['prem'] and 'Premissas de partida' in r['prem']) or ('Preço da licença:' in r['prem'] and 'Preços e quantidades de partida' in r['prem']), f'{tag} A2 lista preço da licença e exemplo de origem')
+            # v12: figura de A3 em miniatura e visualizador sobre a página
+            v = await pg.evaluate("""(()=>{const f=document.querySelector('#plano-fig-tco'); const b=f && f.parentElement.querySelector('.fig-amp');
+              return {img: f ? f.querySelector('img').getBoundingClientRect().width : 0, btn: !!b, velho: document.querySelectorAll('#plano [data-fig]').length};})()""")
+            ok(v['btn'] and 0 < v['img'] <= 462 and v['velho'] == 0, f'{tag} A3: miniatura até 460 px com "Ampliar a figura" ({v})')
+            await pg.locator('#plano .fig-amp').scroll_into_view_if_needed(); await pg.locator('#plano .fig-amp').click(); await pg.wait_for_timeout(200)
+            v = await pg.evaluate("""(()=>{const d=document.getElementById('visor-fig'); const i=d && d.querySelector('img'); const r=i && i.getBoundingClientRect();
+              return {open: !!(d && d.open), role: d && d.getAttribute('role'), modal: d && d.getAttribute('aria-modal'), foco: !!(document.activeElement && document.activeElement.closest('#visor-fig')),
+                w: r ? r.width : 0, cap: (d.querySelector('.visor-leg')||{}).innerText||'', sw: document.documentElement.scrollWidth};})()""")
+            ok(v['open'] and v['role'] == 'dialog' and v['modal'] == 'true' and v['foco'] and v['w'] <= w and 'CC BY-SA 3.0 IGO' in v['cap'] and v['sw'] <= w + 1, f'{tag} visualizador aberto, modal, com foco e legenda ({v})')
+            for _ in range(4): await pg.keyboard.press('Tab')
+            ok(await pg.evaluate("!!document.activeElement.closest('#visor-fig')"), f'{tag} visualizador: foco preso')
+            await pg.keyboard.press('Escape'); await pg.wait_for_timeout(150)
+            ok(await pg.evaluate("!document.getElementById('visor-fig').open && document.activeElement.classList.contains('fig-amp')"), f'{tag} visualizador: Esc fecha e devolve o foco ao botão')
+            await pg.locator('#plano-fig-tco img').click(); await pg.wait_for_timeout(150)
+            await pg.mouse.click(3, h - 3); await pg.wait_for_timeout(150)
+            ok(await pg.evaluate("!document.getElementById('visor-fig').open"), f'{tag} visualizador: clique no fundo fecha')
+            await pg.locator('#plano .fig-amp').click(); await pg.wait_for_timeout(150)
+            await pg.locator('#visor-fig [data-visor-fechar]').click(); await pg.wait_for_timeout(150)
+            ok(await pg.evaluate("!document.getElementById('visor-fig').open"), f'{tag} visualizador: "Fechar" fecha')
             # Responder leva de volta à pergunta
             if tag == 'd':
                 await pg.locator('.parcial [data-ir]').first.click(); await pg.wait_for_timeout(200)

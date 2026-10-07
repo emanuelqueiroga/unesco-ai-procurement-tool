@@ -15,7 +15,7 @@ const CAMPOS_SUGERIDOS = ['usuarios', 'afetados', 'consequencias', 'frequencia']
 const PASSOS_VER = ['4b', '4c'];
 let NUM_ABERTO = false;   // <details> "Ver os números detalhados" do 4.2
 let CONF_LIMPAR = false;  // confirmação inline de "Começar em branco" no painel
-const FIG_ABERTA = {};    // figura das sete camadas aberta, por nota ⓘ
+const FIG_ABERTA = {};    // (v11) figura aberta por nota ⓘ; desde a v12 a figura aparece sempre e nada lê este objeto
 
 // ----------------------------------------------------------- estado
 const SUB_OBJ = { piloto: ['escolas', 'participantes', 'meses'], poc: ['participantes', 'meses'], implantacao: ['escolas', 'pessoas'] };
@@ -576,19 +576,64 @@ const INFO_ROT = { c1: 'Sobre a camada 1', c2: 'Sobre a camada 2', c24: 'Sobre a
 function botaoInfo(chave, id) {
   return `<button type="button" class="info" data-info="${chave}" data-info-id="${id}" aria-expanded="${!!S.info[id]}" aria-controls="nota-${id}" aria-label="${esc(INFO_ROT[chave] || 'Sobre as camadas')}">ⓘ</button>`;
 }
-function figuraCamadas(id) {
+// v12: a figura aparece logo, em miniatura (até ~460 px) com legenda e crédito; "Ampliar a figura" ou um clique
+// na miniatura abrem o visualizador sobre a página (abrirVisor), sem nova janela. O plano (A3) usa os mesmos.
+function figuraMini(o) {
   if (typeof FIG_TCO === 'undefined' || !FIG_TCO) return '';
-  const ab = !!FIG_ABERTA[id];
-  return `<div class="fig-in"><button type="button" class="btn fig-btn" data-fig="${id}" aria-expanded="${ab}" aria-controls="fig-${id}">${esc(ab ? FIG_INFO.fechar : FIG_INFO.botao)}</button>
-    ${ab ? `<figure class="fig-tco" id="fig-${id}"><img src="${FIG_TCO}" alt="${esc(FIG_INFO.alt)}" width="900" height="1225" decoding="async">
-      <figcaption>${esc(FIG_INFO.legenda)}</figcaption></figure>` : ''}</div>`;
+  return `<div class="fig-box"><figure class="fig-tco fig-mini" id="${o.id}">${o.titulo ? `<h4 class="fig-h">${esc(o.titulo)}</h4>` : ''}
+    <img src="${FIG_TCO}" alt="${esc(o.alt || '')}" width="900" height="1225" decoding="async" data-visor title="Ampliar a figura">
+    <figcaption>${esc(o.legenda || '')}</figcaption></figure>
+    <button type="button" class="btn fig-amp" data-visor aria-haspopup="dialog"><svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 16 16"><path d="M6.5 1a5.5 5.5 0 0 1 4.38 8.82l3.65 3.65-1.06 1.06-3.65-3.65A5.5 5.5 0 1 1 6.5 1Zm0 1.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM7.25 4v1.75H9v1.5H7.25V9h-1.5V7.25H4v-1.5h1.75V4h1.5Z" fill="currentColor"/></svg><span>Ampliar a figura</span></button></div>`;
+}
+function figuraCamadas(id) {
+  return figuraMini({ id: 'fig-' + id, alt: FIG_INFO.alt, legenda: FIG_INFO.legenda });
 }
 function notaInfo(chave, id) {
   if (!S.info[id]) return '';
-  return `<div class="info-nota" id="nota-${id}"><p>${esc(CAMADAS_INFO[chave])}</p>
+  const fig = figuraCamadas(id);
+  return `<div class="info-nota${fig ? ' com-fig' : ''}" id="nota-${id}"><div class="info-grade"><div class="info-txt"><p>${esc(CAMADAS_INFO[chave])}</p>
     <p class="ref-tco"><span>${esc(REF_TCO.autores)}</span> <cite data-notr>${esc(REF_TCO.titulo)}</cite> <span>${esc(REF_TCO.local)}</span>
       <a href="${REF_TCO.url}" target="_blank" rel="noopener">${esc(REF_TCO.link)}</a></p>
-    <p class="small muted">${esc(REF_TCO.nota)}</p>${figuraCamadas(id)}</div>`;
+    <p class="small muted">${esc(REF_TCO.nota)}</p></div>${fig}</div></div>`;
+}
+// Visualizador da figura: <dialog> modal (role="dialog", aria-modal), fundo escurecido, imagem ajustada à largura
+// com rolagem; fecha com Esc, clique no fundo ou "Fechar"; foco preso no visualizador e devolvido a quem o abriu.
+let VISOR_VOLTA = null;
+function abrirVisor(volta) {
+  if (typeof FIG_TCO === 'undefined' || !FIG_TCO) return;
+  let d = document.getElementById('visor-fig');
+  if (!d) {
+    d = document.createElement('dialog'); d.id = 'visor-fig'; d.className = 'visor';
+    d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-labelledby', 'visor-t');
+    d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-visor-fechar]')) { e.stopPropagation(); fecharVisor(); } });
+    d.addEventListener('cancel', e => { e.preventDefault(); fecharVisor(); });
+    d.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { e.preventDefault(); fecharVisor(); return; }
+      if (e.key !== 'Tab') return;
+      const f = [...d.querySelectorAll('button, a[href], [tabindex="0"]')];
+      if (!f.length) return;
+      const i = f.indexOf(document.activeElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
+    });
+    document.body.appendChild(d);
+  }
+  VISOR_VOLTA = volta || document.activeElement;
+  d.innerHTML = `<div class="visor-in">
+    <div class="visor-cab"><h2 id="visor-t">${esc(typeof FIG_TITULO !== 'undefined' ? FIG_TITULO : 'Quadro de custo total em camadas')}</h2>
+      <button type="button" class="btn visor-x" data-visor-fechar><span aria-hidden="true">✕</span> <span>Fechar</span></button></div>
+    <div class="visor-corpo" tabindex="0" role="region" aria-labelledby="visor-t"><img src="${FIG_TCO}" alt="${esc(FIG_INFO.alt)}" width="900" height="1225" decoding="async"></div>
+    <p class="visor-leg">${esc(FIG_INFO.legenda)}</p></div>`;
+  document.documentElement.classList.add('visor-aberto');
+  try { d.showModal(); } catch (e) { d.setAttribute('open', ''); }
+  const x = d.querySelector('[data-visor-fechar]'); if (x) x.focus();
+}
+function fecharVisor() {
+  const d = document.getElementById('visor-fig'); if (!d) return;
+  try { d.close(); } catch (e) { d.removeAttribute('open'); }
+  document.documentElement.classList.remove('visor-aberto');
+  const v = VISOR_VOLTA; VISOR_VOLTA = null;
+  if (v && v.isConnected) { try { v.focus({ preventScroll: true }); } catch (e) { } }
 }
 
 // ----------------------------------------------------------- corpo dos passos
@@ -896,6 +941,9 @@ function render() {
     ${ex ? `<div class="alert info"><span class="ic">Exemplo</span><span>${tituloEx ? esc(tr('Você está vendo um caso ilustrativo do guia, com respostas fictícias:')) + ' <b>' + esc(tr(tituloEx)) + '</b>. ' : ''}<span>Edite as respostas ou comece um caso em branco.</span></span><button class="btn" type="button" data-act="limpar">Começar um caso em branco</button></div>` : ''}
     ${S.boasVindas !== false && S.vista !== 'plano' ? '' : corpo}`;
   renderStepper(); renderPainel();
+  // v12: na vista do plano o painel lateral sai e o relatório usa a largura toda (fluxo.css: body.vista-plano)
+  document.body.classList.toggle('vista-plano', S.vista === 'plano');
+  if (S.vista === 'plano' && typeof montarPlano === 'function') { try { montarPlano(); } catch (e) { console.warn(e); } }
   if (document.getElementById('cres') && typeof renderCustosResultados === 'function') renderCustosResultados();
   if (foco) { const f = document.getElementById(foco); if (f) try { f.focus({ preventScroll: true }); } catch (e) { } }
   window.scrollTo(0, y);
@@ -1012,11 +1060,11 @@ function eventoFluxo(e) {
   if (e.type === 'click') {
     const inf = el.closest('[data-info]');
     if (inf) { const id = inf.dataset.infoId || inf.dataset.info; S.info[id] = !S.info[id]; render(); return true; }
-    const fg = el.closest('[data-fig]');
-    if (fg) {
-      const id = fg.dataset.fig; FIG_ABERTA[id] = !FIG_ABERTA[id]; render();
-      requestAnimationFrame(() => { const b = document.querySelector(`[data-fig="${id}"]`); if (b) b.focus({ preventScroll: true }); });
-      return true;
+    const vz = el.closest('[data-visor]');
+    if (vz) {
+      // clique na miniatura: o foco volta depois ao botão "Ampliar a figura" da mesma figura
+      const b = vz.tagName === 'BUTTON' ? vz : ((vz.closest('.fig-box') || document).querySelector('button[data-visor]'));
+      abrirVisor(b); return true;
     }
     const iz = el.closest('[data-ir]');
     if (iz) { e.preventDefault(); const [f, p, q] = iz.dataset.ir.split(':'); abrirFase(f, p, q); return true; }
