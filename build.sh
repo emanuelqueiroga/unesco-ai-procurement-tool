@@ -22,7 +22,7 @@ JS=$JS_OK
   echo -n 'const I18N = {'; for l in en es fr; do echo -n "\"$l\": "; python3 -c "
 import json, sys, os, glob
 l = '$l'; d = {}
-for f in ['i18n/%s.json' % l, 'i18n/extra_%s.json' % l] + sorted(glob.glob('i18n/v9_*_%s.json' % l)) + sorted(glob.glob('i18n/v10_*_%s.json' % l)) + sorted(glob.glob('i18n/v11_*_%s.json' % l)):
+for f in ['i18n/%s.json' % l, 'i18n/extra_%s.json' % l] + sorted(glob.glob('i18n/v9_*_%s.json' % l)) + sorted(glob.glob('i18n/v10_*_%s.json' % l)) + sorted(glob.glob('i18n/v11_*_%s.json' % l)) + sorted(glob.glob('i18n/v12_*_%s.json' % l)):
     if os.path.exists(f): d.update(json.load(open(f)))
 sys.stdout.write(json.dumps(d, ensure_ascii=False))"; echo ','; done; echo '};';
   # %%FIG_TCO%% num script vira a mesma data URI (FIG_TCO já está definido acima)
