@@ -3,7 +3,7 @@ cd /home/claude/app
 out=navegador.html
 L1=$(base64 -w0 assets/iaedu.png); L2=$(base64 -w0 assets/catedra.png)
 # ordem dos scripts (plano_dados.js logo depois de fluxo_dados.js; v10: formula.js e recomendacoes.js antes de resumo.js)
-JS="src/i18n.js src/custos.js src/framework.js src/casos.js src/custos_ui.js src/fluxo_dados.js src/plano_dados.js src/formula.js src/recomendacoes.js src/fluxo.js src/resumo.js src/app.js"
+JS="src/i18n.js src/custos.js src/framework.js src/casos.js src/custos_ui.js src/fluxo_dados.js src/plano_dados.js src/formula.js src/recomendacoes.js src/fluxo.js src/resumo.js src/plano_pdf.js src/app.js"
 # opcionais enquanto os pacotes R2 e R3 da v10 não chegam: avisam e ficam de fora; os demais são obrigatórios
 OPCIONAIS=" src/formula.js src/recomendacoes.js "
 JS_OK=""

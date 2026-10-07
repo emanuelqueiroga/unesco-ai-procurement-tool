@@ -7282,6 +7282,9 @@ function abrirPlano() {
 }
 // importar caso: os botões do plano e do painel abrem o mesmo diálogo (arquivo ou dados colados; app.js)
 
+// =====================================================================
+// PDF do plano de contratação (jsPDF + autotable). Separado de resumo.js na v12.
+// =====================================================================
 // ----------------------------------------------------------- PDF (jsPDF + autotable, fonte Helvetica)
 const PDF_TROCA = { '→': '->', '←': '<-', '≥': '>=', '≤': '<=', '✓': 'v', '✕': 'x', '−': '-', '≈': '~', 'ⓘ': '(i)', ' ': ' ', ' ': ' ', '‑': '-', '‐': '-', '«': '«', '»': '»' };
 const CP1252_EXTRA = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
@@ -7418,6 +7421,7 @@ async function baixarPDF() {
   }
   try { doc.save(nome); } catch (e) { toast(tr('Não foi possível baixar agora.')); }
 }
+
 
 // =====================================================================
 // Estado, entradas, exportação, relatório e eventos gerais (v9; v11: quatro fases e migração v10 → v11)
