@@ -8,6 +8,9 @@
 // Conteúdo de contratação tirado do guia (caps. 11–16; Instrumento F) e do
 // quadro de custo total em camadas de Krueger e Jackson (2026, p. 11).
 // Textos fixos e recomendações: src/plano_dados.js.
+// v13 (pacote B3): perfil com prioridades, problemas, subcategorias, objetivos (aviso de lacunas), linha de base com
+// problemas e medida, governança com "Qual?" e "O que falta?"; seção "matriz" (camadas × fases, src/matriz.js) logo
+// depois de "Em resumo" na página, no Markdown/HTML e no PDF.
 // =====================================================================
 const NOME_FERRAMENTA = 'AI in Education Procurement Tool';
 
@@ -42,7 +45,10 @@ const PRESET_ARQ = { saas: 'Exemplo A do guia (cap. 12): produto pronto por lice
 // v12: áreas do perfil do caso (cartões da página; rótulos = as chaves PT de linhasResumo) e camada de cada área
 const AREAS_PERFIL = [
   ['contexto', 'Contexto', '', ['Nível administrativo', 'Lugar ou rede', 'Situação']],
-  ['problema', 'Problema e impacto', '', ['Como a equipe descreve o problema', 'Situação atual', 'Impacto desejado', 'Resultado esperado e como medir', 'Linha de base', 'Alternativa sem IA comparada']],
+  // v13: "Problema e impacto" passou a "Prioridade e impacto" (RQ-04), com prioridades, problemas e subcategorias
+  ['problema', 'Prioridade e impacto', '', ['Prioridades', 'Problemas marcados', 'Outro problema', 'Como a equipe descreve o problema', 'Situação atual', 'Impacto desejado', 'Resultado esperado e como medir', 'Linha de base', 'Alternativa sem IA comparada']],
+  // v13: governança (1.3.x) com o detalhe "Qual?" e "O que falta?" (RQ-11)
+  ['governanca', 'Governança de IA na educação', '1', ['Equipe ou instância responsável', 'Política ou estratégia de IA na educação', 'Regulamentação identificada', 'Política de dados educacionais', 'Orientações de uso responsável', 'Regras para a contratação de IA']],
   ['aplicacoes', 'Aplicações e experiência de uso', '2', ['Aplicações', 'Quem usa', 'Quem é afetado', 'O que se faz com a resposta', 'Frequência de uso']],
   ['adocao', 'Adoção e ferramentas', '2 4', ['Quantas ferramentas', 'Ferramentas já escolhidas', 'Tipo de tecnologia (ferramenta principal)', 'Pagamento (ferramenta principal)', 'Licença', 'Adaptação ao contexto', 'Arquitetura considerada']],
   ['infra', 'Infraestrutura e dispositivos', '3', ['Internet adequada nas escolas', 'Modelo de uso dos dispositivos', 'Os dispositivos já existem']],
@@ -52,6 +58,78 @@ const AREAS_PERFIL = [
 ];
 // Cores das camadas (Figura 1 de Krueger e Jackson, 2026, p. 11), na ordem 1–7; usadas na página e no PDF
 const COR_CAMADA = ['#0C1D53', '#0666B3', '#096C72', '#547D1D', '#5E3C86', '#D9741A', '#1B2A55'];
+
+// ----------------------------------------------------------- v13: prioridades, problemas, detalhes e matriz do caso
+// Estado do passo 1.2 (S.ctx.prioridades, problemas, subs, problemaOutro), detalhe da linha de base (S.caso.linhaBase*)
+// e das 1.3.x (S.respDet[id].qual|falta). Leitura defensiva: casos antigos não têm esses campos.
+const ROT_GOV = { 'g-comite': 'Equipe ou instância responsável', 'g-politica': 'Política ou estratégia de IA na educação', 'g-legislacao': 'Regulamentação identificada',
+  'g-dados': 'Política de dados educacionais', 'g-etica': 'Orientações de uso responsável', 'g-compras': 'Regras para a contratação de IA' };
+const AVISO_LACUNA_P = 'Há lacunas (__) a completar com os dados da rede.';
+const ROT_ESTADO = { ok: 'Respondido', andamento: 'Em andamento', pendente: 'Pendente', orientacao: 'Orientação', na: 'Não se aplica' };
+const TXT_MATRIZ = {
+  intro: 'O que cada camada do custo total exige em cada fase, com o estado das respostas deste caso e, quando a estimativa está completa, o custo de cada célula.',
+  perguntas: 'Perguntas', soma: 'Soma das células de custo (igual ao custo total do ciclo):',
+  semCusto: 'Sem custo por célula: a estimativa ainda depende de respostas pendentes (passo 4.2).',
+  legenda: 'Estado das respostas', camada: 'Camada',
+};
+const semPontoP = s => String(s || '').trim().replace(/\.$/, '');
+function prioridadesCaso(x) {
+  const ids = (x || {}).prioridades || [];
+  return typeof PRIORIDADES === 'undefined' ? [] : PRIORIDADES.filter(p => ids.includes(p.id));
+}
+function problemasCaso(x) { return typeof problemasMarcados === 'function' ? problemasMarcados(x || {}) : []; }
+// "Problema (subcategoria; subcategoria)." por problema marcado, já traduzido
+function problemasCasoTxt(x) {
+  const subs = new Set((x || {}).subs || []);
+  return problemasCaso(x).map(q => {
+    const ss = (q.sub || []).filter(([id]) => subs.has(id)).map(([, t]) => tr(t));
+    return semPontoP(tr(q.t)) + (ss.length ? ' (' + ss.join('; ') + ')' : '') + '.';
+  });
+}
+function detalheGov(id) {
+  const d = ((typeof S !== 'undefined' && S.respDet) || {})[id] || {};
+  return { qual: String(d.qual || '').trim(), falta: String(d.falta || '').trim() };
+}
+// Resposta de uma 1.3.x com o detalhe ("Qual?" com Sim ou Em parte; "O que falta?" com Em parte), em linhas
+function govValorP(id) {
+  const v = (S.resp || {})[id];
+  if (!v) return '—';
+  const d = detalheGov(id), L = [tr(RESP_G_NOME[v] || v)];
+  if (['sim', 'parcial'].includes(v) && d.qual) L.push(tr('Qual:') + ' ' + d.qual);
+  if (v === 'parcial' && d.falta) L.push(tr('O que falta:') + ' ' + d.falta);
+  return L.join('\n');
+}
+// Linha de base (1.2.7) com os problemas e a medida informados
+function linhaBaseP(c, x) {
+  const r = respP('linhaBase', tr(rotP(OPC.linhaBase, c.linhaBase)) || '—');
+  if (r === '—' || !['sim', 'parcial'].includes(c.linhaBase)) return r;
+  const ids = c.linhaBaseProblemas || [];
+  const ps = problemasCaso(x).filter(q => ids.includes(q.id)).map(q => semPontoP(tr(q.t)));
+  const para = ps.length ? ps.join('; ') : String(c.linhaBaseProblemaTxt || '').trim();
+  const med = String(c.linhaBaseMedida || '').trim();
+  return [r, para ? tr('Para quais problemas:') + ' ' + para : '', tr('Medida:') + ' ' + (med || tr('não informada'))].filter(Boolean).join('\n');
+}
+// Matriz do caso (RQ-03, RQ-20): camadas × fases com texto, perguntas, estado e custo; soma das células = total do ciclo
+function secaoMatriz() {
+  if (typeof matrizCaso !== 'function' || typeof FASES_MATRIZ === 'undefined') return null;
+  let M = null;
+  try { M = matrizCaso(); } catch (e) { console.warn(e); return null; }
+  const fases = FASES_MATRIZ.map((f, i) => { const z = (typeof FASES !== 'undefined' ? FASES : []).find(y => y.id === f) || {}; return { id: f, n: z.n || i + 1, nome: z.nome || f }; });
+  const linhas = [1, 2, 3, 4, 5, 6, 7].map(k => ({ n: k, nome: nomeCamada(k), cel: fases.map(f => Object.assign({ fase: f.id }, M.celulas[k][f.id])) }));
+  const somas = fases.map(f => M.custo && f.id !== 'contexto' ? linhas.reduce((s, l) => s + (+l.cel.find(c => c.fase === f.id).custo || 0), 0) : null);
+  const total = M.custo ? somas.reduce((s, v) => s + (v || 0), 0) : null;
+  const celTxt = c => {
+    if (c.na) return tr(c.t);
+    const extra = [c.n.length ? tr(TXT_MATRIZ.perguntas) + ' ' + c.n.join(', ') : '', tr(ROT_ESTADO[c.estado] || c.estado), c.custo != null ? grande(c.custo) : ''].filter(Boolean);
+    return tr(c.t) + ' (' + extra.join(' · ') + ')';
+  };
+  const rows = linhas.map(l => [rotuloCamada(l.n)].concat(l.cel.map(celTxt)));
+  if (M.custo) rows.push([tr('Total')].concat(somas.map(v => v == null ? '—' : grande(v))));
+  const pos = (M.custo ? [NOTA_MATRIZ_CUSTO, tr(TXT_MATRIZ.soma) + ' ' + grande(total) + '.'] : [TXT_MATRIZ.semCusto]).concat([CREDITO_MATRIZ]);
+  return { id: 'matriz', h: TIT_MATRIZ, p: [TXT_MATRIZ.intro], intro: TXT_MATRIZ.intro,
+    table: { head: [TXT_MATRIZ.camada].concat(fases.map(f => f.n + '. ' + tr(f.nome))), rows, b0: true },
+    pos, mx: { fases, linhas, custo: !!M.custo, somas, total } };
+}
 
 // ----------------------------------------------------------- utilitários
 const rotP = (lista, v) => ((lista || []).find(o => String(o[0]) === String(v)) || ['', ''])[1];
@@ -175,19 +253,29 @@ function secoesPlano() {
     ['Nível administrativo', nivel || '—'],
     ['Lugar ou rede', x.local || '—'],
     ['Situação', respP('situacao', tr(rotP(OPC.situacao, c.situacao)) || '—')],
+    // v13: prioridades, problemas marcados (com subcategorias) e "Outro problema" (passo 1.2)
+    ['Prioridades', prioridadesCaso(x).map(z => tr(z.nome)).join('; ') || '—'],
+    ['Problemas marcados', problemasCasoTxt(x).join('\n') || '—'],
+  ];
+  if (String(x.problemaOutro || '').trim()) linhasResumo.push(['Outro problema', String(x.problemaOutro).trim()]);
+  linhasResumo.push(
     ['Como a equipe descreve o problema', x.olhando || '—'],
     ['Situação atual', c.problema || '—'],
     ['Impacto desejado', impactos || '—'],
-    ['Resultado esperado e como medir', c.resultado || '—'],
-    ['Linha de base', respP('linhaBase', tr(rotP(OPC.linhaBase, c.linhaBase)) || '—')],
+    // objetivos sugeridos pelos problemas podem ter lacunas "__": aviso discreto
+    ['Resultado esperado e como medir', c.resultado ? c.resultado + (typeof temLacuna === 'function' && temLacuna(c.resultado) ? '\n(' + tr(AVISO_LACUNA_P) + ')' : '') : '—'],
+    ['Linha de base', linhaBaseP(c, x)],
     ['Alternativa sem IA comparada', tr(rotP(OPC.simNao, c.alternativa)) || '—'],
+  );
+  govQuestoes().forEach(q => { if (ROT_GOV[q.id]) linhasResumo.push([ROT_GOV[q.id], govValorP(q.id)]); });
+  linhasResumo.push(
     ['Aplicações', tarefas || '—'],
     ['Quem usa', nomesP(OPC.usuarios, c.usuarios) || '—'],
     ['Quem é afetado', nomesP(OPC.afetados, c.afetados) || '—'],
     ['O que se faz com a resposta', respP('consequencias', nomesP(OPC.consequencias, c.consequencias) || '—')],
     ['Frequência de uso', respP('frequencia', tr(rotP(OPC.frequencia, c.frequencia)) || '—')],
     ['Prova de conceito ou piloto', nomesC('testes', testes) || '—'],
-  ];
+  );
   if (temPoc) linhasResumo.push(['Prova de conceito: participantes e duração', setupTxt(pocDados)]);
   if (temPil) linhasResumo.push(['Piloto: escolas, participantes e duração', setupTxt(pl, true)]);
   linhasResumo.push(
@@ -244,6 +332,10 @@ function secoesPlano() {
   sec({ id: 'resumo', h: TIT_PLANO.resumo, kv: linhasResumo, cartoes, fatos });
   if (tabFerr) sec({ sub: true, h: 'Ferramentas', table: tabFerr });
   if (tabEt) sec({ sub: true, h: 'Etapas, escolas e estudantes', table: tabEt });
+
+  // v13: matriz do caso (camadas × fases), logo depois de "Em resumo" (RQ-03, RQ-20)
+  const sMx = secaoMatriz();
+  if (sMx) sec(sMx);
 
   // Recomendações para o seu caso (v10, recomendacoes.js): primeira seção depois do resumo, antes dos blocos A e B
   if (typeof secaoRecomendacoes === 'function') {
@@ -431,7 +523,11 @@ function secoesPlano() {
   // B1
   const rowsG = gq.map(q => {
     const v = resp[q.id];
-    const fazer = ['nao', 'parcial', 'nao_sei'].includes(v) ? ACOES_G[q.id] || '' : v === 'sim' ? 'Manter e revisar periodicamente.' : 'Responder no passo 1.3.';
+    let fazer = ['nao', 'parcial', 'nao_sei'].includes(v) ? ACOES_G[q.id] || '' : v === 'sim' ? 'Manter e revisar periodicamente.' : 'Responder no passo 1.3.';
+    // v13: o detalhe "Qual?" / "O que falta?" (RQ-11) entra junto da ação, já traduzido
+    const dg = detalheGov(q.id);
+    const det = [['sim', 'parcial'].includes(v) && dg.qual ? tr('Qual:') + ' ' + semPontoP(dg.qual) + '.' : '', v === 'parcial' && dg.falta ? tr('O que falta:') + ' ' + semPontoP(dg.falta) + '.' : ''].filter(Boolean);
+    if (det.length) fazer = [tr(fazer)].concat(det).join(' ');
     const prio = v === 'sim' ? '—' : PRIORIDADE_G[q.id] === 'alta' ? 'Alta' : 'Normal';
     return [q.n || '', q.t, v ? RESP_G_NOME[v] || v : '—', fazer, prio];
   });
@@ -444,7 +540,8 @@ function secoesPlano() {
   const b3 = recsDe('regras', d).map(r => (d.poc && r.dadosReais ? tr('Se usar dados reais:') + ' ' + tr(textoRec(r, d)) : textoRec(r, d)));
   const iSuc = recsDe('regras', d).findIndex(r => r.id === 'r-sucesso');
   if (iSuc >= 0) {
-    const extra = [tr('Linha de base informada:') + ' ' + (tr(rotP(OPC.linhaBase, c.linhaBase)) || '—') + '.'];
+    const med = ['sim', 'parcial'].includes(c.linhaBase) ? String(c.linhaBaseMedida || '').trim() : '';
+    const extra = [tr('Linha de base informada:') + ' ' + (tr(rotP(OPC.linhaBase, c.linhaBase)) || '—') + (med ? ' (' + med + ')' : '') + '.'];
     if (impactos) extra.push(tr('Impacto desejado:') + ' ' + impactos + '.');
     b3[iSuc] = tr(b3[iSuc]) + ' ' + extra.join(' ');
   }
@@ -673,13 +770,86 @@ function htmlRecsP(R) {
 function htmlPerfilP(cartoes) {
   const cor = z => z.camada ? corCamada(z.camada.split(' ')[0]) : z.id === 'implantacao' ? 'var(--f4)' : '#0C2D4D';
   const cam = z => !z.camada ? '' : z.camada.includes(' ') ? tr('Camadas ' + z.camada.split(' ').join(' e ')) : tr('Camada ' + z.camada);
-  return `<div class="rp-perfil">${cartoes.map(z => `<article class="rp-card${z.table || ['problema', 'implantacao'].includes(z.id) ? ' largo' : ''}" data-area="${z.id}" style="--cor:${cor(z)}" aria-labelledby="rp-a-${z.id}">
+  // v13: valores em várias linhas (problemas, linha de base, detalhes das 1.3.x); o aviso de lacunas fica discreto
+  const aviso = '(' + tr(AVISO_LACUNA_P) + ')';
+  const val = v => String(v).split('\n').map(l => l === aviso ? `<span class="rp-lac">${esc(l)}</span>` : `<span class="rp-ln">${linkP(l)}</span>`).join('');
+  return `<div class="rp-perfil">${cartoes.map(z => `<article class="rp-card${z.table || ['problema', 'governanca', 'implantacao'].includes(z.id) ? ' largo' : ''}" data-area="${z.id}" style="--cor:${cor(z)}" aria-labelledby="rp-a-${z.id}">
     <h4 id="rp-a-${z.id}"><span>${esc(z.h)}</span>${z.camada ? `<span class="rp-cam">${esc(cam(z))}</span>` : ''}</h4>
-    <dl class="rp-dl">${z.kv.map(([k, v]) => `<div class="rp-kv"><dt>${esc(k)}</dt><dd${v === '—' ? ' class="sem"' : ''}>${linkP(v)}</dd></div>`).join('')}</dl>
+    <dl class="rp-dl">${z.kv.map(([k, v]) => `<div class="rp-kv"><dt>${esc(k)}</dt><dd${v === '—' ? ' class="sem"' : ''}>${String(v).includes('\n') ? val(v) : linkP(v)}</dd></div>`).join('')}</dl>
     ${z.table ? `<p class="rp-tt">${esc(z.hTable)}</p>${htmlTabelaP(z.table)}` : ''}</article>`).join('')}</div>`;
+}
+// v13: matriz do caso na página. Com o pacote B2, a tabela é renderMatrizTabela({ caso: true }) (traz a nota de custo
+// e o crédito); sem ela, uma tabela equivalente desenhada aqui a partir de matrizCaso() (secaoMatriz().mx).
+function htmlMatrizP(s) {
+  if (!s) return '';
+  let h = '';
+  if (typeof renderMatrizTabela === 'function') { try { h = renderMatrizTabela({ caso: true }) || ''; } catch (e) { console.warn(e); h = ''; } }
+  if (h) {
+    const m = s.mx || {};
+    return h + (m.custo ? `<p class="rp-mx-soma">${esc(tr(TXT_MATRIZ.soma))} <b>${esc(grande(m.total))}</b></p>` : `<p class="note">${esc(tr(TXT_MATRIZ.semCusto))}</p>`);
+  }
+  return htmlMatrizTabelaP(s) + (s.pos || []).map(z => `<p class="note">${linkP(z)}</p>`).join('');
+}
+function htmlMatrizTabelaP(s) {
+  const m = s.mx;
+  if (!m) return htmlTabelaP(s.table);
+  const fc = i => 'f' + (i + 1);
+  const cel = c => c.na ? `<td class="rp-mx-na">${esc(tr(c.t))}</td>`
+    : `<td><p class="rp-mx-t">${esc(tr(c.t))}</p>${c.n.length ? `<p class="rp-mx-q">${esc(tr(TXT_MATRIZ.perguntas))} ${c.n.map(esc).join(' · ')}</p>` : ''}<p class="rp-mx-pe"><span class="rp-mx-st" data-st="${esc(c.estado)}">${esc(tr(ROT_ESTADO[c.estado] || c.estado))}</span>${c.custo != null ? `<b class="rp-mx-v">${esc(grande(c.custo))}</b>` : ''}</p></td>`;
+  const head = `<thead><tr><th scope="col" class="rp-mx-c0">${esc(tr(TXT_MATRIZ.camada))}</th>${m.fases.map((f, i) => `<th scope="col" style="--fc:var(--${fc(i)}s)"><span class="rp-mx-fn" style="background:var(--${fc(i)});color:var(--${fc(i)}-ink)">${esc(f.n)}</span> ${esc(tr(f.nome))}</th>`).join('')}</tr></thead>`;
+  const body = `<tbody>${m.linhas.map(l => `<tr><th scope="row" class="rp-mx-c0" style="--cor:${corCamada(l.n)}"><span class="rp-mx-cn" aria-hidden="true">${l.n}</span><span><span class="sr">${esc(tr('Camada ' + l.n))}: </span>${esc(tr(l.nome))}</span></th>${l.cel.map(cel).join('')}</tr>`).join('')}</tbody>`;
+  const pe = m.custo ? `<tfoot><tr><th scope="row" class="rp-mx-c0">${esc(tr('Total'))}</th>${m.somas.map(v => `<td>${v == null ? '—' : `<b class="rp-mx-v">${esc(grande(v))}</b>`}</td>`).join('')}</tr></tfoot>` : '';
+  return `<div class="rp-mx-w" role="region" tabindex="0" aria-label="${esc(tr(s.h))}"><table class="rp-mx"><caption class="sr">${esc(tr(s.h))}</caption>${head}${body}${pe}</table></div>`;
+}
+const CSS_PLANO_V13 = `
+.rp-mx-w { overflow-x: auto; border: 1px solid var(--rp-line); border-radius: 10px; background: #fff; }
+.rp-mx-w:focus-visible { outline: 3px solid var(--rp-brand); outline-offset: 2px; }
+.rp-mx { width: 100%; min-width: 820px; border-collapse: separate; border-spacing: 0; font-size: .9rem; line-height: 1.4; color: var(--rp-ink); }
+.rp-mx th, .rp-mx td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rp-line); }
+.rp-mx td + td, .rp-mx th + td { border-left: 1px solid var(--rp-line); }
+.rp-mx thead th { background: var(--rp-th); color: var(--rp-head); font-weight: 700; border-top: 4px solid var(--fc, var(--rp-head)); white-space: nowrap; }
+.rp-mx thead th.rp-mx-c0 { border-top-color: var(--rp-head); }
+.rp-mx-fn { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; margin-right: 4px; border-radius: 50%; font-variant-numeric: tabular-nums; }
+.rp-mx .rp-mx-c0 { position: sticky; left: 0; z-index: 1; width: 180px; min-width: 150px; background: #fff; }
+.rp-mx thead .rp-mx-c0 { background: var(--rp-th); z-index: 2; }
+.rp-mx tbody th { display: table-cell; color: var(--rp-head); font-weight: 700; box-shadow: inset 4px 0 0 var(--cor); padding-left: 14px; }
+.rp-mx tbody th > span:last-child { display: block; }
+.rp-mx-cn { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; margin-bottom: 4px; border-radius: 5px; background: var(--cor); color: #fff; font-variant-numeric: tabular-nums; }
+.rp-mx p { margin: 0; }
+.rp-mx-t { color: var(--rp-ink); }
+.rp-mx-q { margin-top: 4px !important; font-size: .86rem; color: var(--rp-muted); font-variant-numeric: tabular-nums; }
+.rp-mx-pe { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; margin-top: 8px !important; }
+.rp-mx-st { display: inline-block; font-size: .86rem; font-weight: 600; line-height: 1.4; padding: 1px 9px; border-radius: 999px; border: 1px solid; }
+.rp-mx-st[data-st="ok"] { background: #E8F4EC; border-color: #BBDCC6; color: #1E6B3A; }
+.rp-mx-st[data-st="andamento"] { background: #FFF6E5; border-color: #F0D9A8; color: var(--rp-media); }
+.rp-mx-st[data-st="pendente"] { background: #FBECEB; border-color: #EFC6C3; color: var(--rp-alta); }
+.rp-mx-st[data-st="orientacao"] { background: var(--rp-th); border-color: var(--rp-line); color: var(--rp-head); }
+.rp-mx-v { color: var(--rp-head); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rp-mx td.rp-mx-na { background: var(--rp-bg); color: var(--rp-muted); font-style: italic; }
+.rp-mx tfoot th, .rp-mx tfoot td { background: var(--rp-bg); border-bottom: 0; }
+.rp-mx tfoot .rp-mx-c0 { background: var(--rp-bg); }
+.rp-mx-soma { margin: 0; color: var(--rp-head); }
+.rp-kv dd .rp-ln { display: block; }
+.rp-kv dd .rp-ln + .rp-ln { margin-top: 4px; }
+.rp-kv dd .rp-lac { display: block; margin-top: 4px; font-size: .86rem; color: var(--rp-media); }
+@media (max-width: 640px) {
+  .rp-mx { min-width: 0; width: max-content; }
+  .rp-mx .rp-mx-c0 { width: 132px; min-width: 132px; max-width: 132px; overflow-wrap: anywhere; hyphens: auto; }
+  .rp-mx td, .rp-mx thead th:not(.rp-mx-c0) { width: 210px; min-width: 210px; }
+  .rp-mx thead th { white-space: normal; }
+}
+@media print { .rp-mx-w { overflow: visible; } .rp-mx { min-width: 0; } .rp-mx .rp-mx-c0 { position: static; } }
+`;
+function cssPlanoV13() {
+  try {
+    if (typeof document === 'undefined' || document.getElementById('css-plano-v13')) return;
+    const st = document.createElement('style'); st.id = 'css-plano-v13'; st.textContent = CSS_PLANO_V13;
+    (document.head || document.documentElement).appendChild(st);
+  } catch (e) { }
 }
 function renderPlano() {
   if (typeof fxCss === 'function') fxCss();
+  cssPlanoV13();
   const secs = secoesPlano().map(trSecao);
   const P = painelPlano(secs);
   const c = S.caso, x = S.ctx || {};
@@ -707,9 +877,13 @@ function renderPlano() {
 
   let out = '';
   out += secP('resumo', '1', tr('Em resumo'), tr('Os números-chave da estimativa ilustrativa e os fatos que a definem.'), htmlEmResumoP(P));
+  // v13: matriz do caso logo depois de "Em resumo"
+  const sMx = secs.find(z => z.id === 'matriz' && !z.sub);
+  let nS = 1;
+  if (sMx) out += secP('matriz', String(++nS), sMx.h, tr(sMx.intro), htmlMatrizP(sMx), 'rp-matriz');
   const sRecs = secs.find(z => z.id === 'recs');
-  out += secP('recs', '2', sRecs ? sRecs.h : tr(TIT_REC), tr(P.recs.length ? TXT_REC.introPlano : ''), htmlRecsP(P.recs), 'rp-recs');
-  out += secP('perfil', '3', tr('Perfil do caso'), tr('As respostas deste caso, por área. Um traço indica uma pergunta ainda sem resposta.'), htmlPerfilP(P.cartoes));
+  out += secP('recs', String(++nS), sRecs ? sRecs.h : tr(TIT_REC), tr(P.recs.length ? TXT_REC.introPlano : ''), htmlRecsP(P.recs), 'rp-recs');
+  out += secP('perfil', String(++nS), tr('Perfil do caso'), tr('As respostas deste caso, por área. Um traço indica uma pergunta ainda sem resposta.'), htmlPerfilP(P.cartoes));
 
   // blocos A e B (conteúdo de secoesPlano, sem duplicar regras)
   let aberta = false, bloco = '', pular = false;
@@ -717,7 +891,7 @@ function renderPlano() {
   const fechaBloco = () => { fecha(); if (bloco) { out += '</div>'; bloco = ''; } };
   const ABRE_BLOCO = { A: 'Quanto custa, como comprar e o que exigir no contrato.', B: 'Regras, responsabilidades, dados, riscos e acompanhamento.' };
   secs.forEach(s => {
-    if (!s.sub && ['faltas', 'resumo', 'recs'].includes(s.id)) { pular = true; return; }
+    if (!s.sub && ['faltas', 'resumo', 'matriz', 'recs'].includes(s.id)) { pular = true; return; }
     if (s.sub && pular) return;
     pular = false;
     if (s.tipo === 'bloco') {

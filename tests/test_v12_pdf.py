@@ -13,12 +13,14 @@
 #  - Figura 1 (JPEG 900×1225) numa página própria entre A3 e A4, com o crédito;
 #  - cabeçalho com título corrido e rodapé "n / N" em todas as páginas internas;
 #  - nenhum tamanho de fonte abaixo de 8 pt;
-#  - EN: nenhuma palavra em português (mesma expressão do test_idiomas.py) nem magnitude "mil/mi/bi".
+#  - v13: matriz do caso em duas páginas retrato entre "Em resumo" e as recomendações, com o crédito, e no índice da capa;
+#  - EN: nenhuma palavra em português (mesma expressão do test_idiomas.py) nem magnitude "mil/mi/bi" (páginas da
+#    matriz fora da busca enquanto os textos de src/matriz.js não tiverem tradução).
 import asyncio, os, re, subprocess, sys
 from playwright.async_api import async_playwright
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TMP = '/tmp/claude-0/v12_pdf'
+TMP = '/tmp/claude-0/v13_b3/v12_pdf'
 os.makedirs(TMP, exist_ok=True)
 NAV = os.environ.get('NAV', os.path.join(RAIZ, 'navegador.html'))
 SK = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"></head><body>' + open(NAV).read() + '</body></html>'
@@ -28,6 +30,9 @@ MAG_PT = re.compile(r'(?:\d|\b[A-Z]{3})[\s  ](?:mil|mi|bi)\b')
 SECOES = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9']
 CASOS = [('en', ['A', 'B', 'C', 'D', 'novo']), ('pt', ['B', 'novo']), ('fr', ['C'])]
 falhas = []
+# v13: textos de src/matriz.js ainda sem tradução (são traduzidos por outro pacote); enquanto houver, as páginas
+# da matriz do caso ficam fora da busca por português (o teste avisa)
+PEND_MATRIZ = "(() => LANG === 'pt' || typeof MATRIZ === 'undefined' ? [] : [TIT_MATRIZ, CREDITO_MATRIZ, NOTA_MATRIZ_CUSTO].concat(...Object.values(MATRIZ).map(r => Object.values(r).map(c => c.t))).filter(s => tr(s) === s))()"
 
 def ok(cond, msg):
     print(('ok   ' if cond else 'FALHA ') + msg)
@@ -66,7 +71,7 @@ JS = r"""(() => {
     dot: n.av.r.anos.map(a => mil(n.orc.dot[a] || 0)), barras, tamanhos,
     nome: S.caso.titulo || (S.ctx || {}).olhando || tr('Caso sem título'), faltas: (faltasTodas() || []).length,
     t: { ferr: NOME_FERRAMENTA, sub: tr('Plano de contratação'), rec: tr('Recomendação principal'), resumo: tr('Em resumo'), recs: tr('Recomendações para você'),
-      perfil: tr('Perfil do caso'), A: 'A. ' + tr(TIT_PLANO.A), B: 'B. ' + tr(TIT_PLANO.B), indice: tr('Neste plano'), fatos: tr('Fatos do caso'),
+      perfil: tr('Perfil do caso'), matriz: tr(TIT_MATRIZ), credito: tr(CREDITO_MATRIZ), A: 'A. ' + tr(TIT_PLANO.A), B: 'B. ' + tr(TIT_PLANO.B), indice: tr('Neste plano'), fatos: tr('Fatos do caso'),
       barras: tr('Custo por camada'), colunas: tr('Dotação por exercício'), faltas: tr(TIT_PLANO.faltas), refs: tr(TIT_PLANO.refs),
       parcial: n ? tr('Plano parcial: {0} respostas pendentes.'.replace('{0}', (faltasTodas() || []).length)) : '' } };
 })()"""
@@ -119,10 +124,13 @@ async def main():
                 ok(P[pA - 1].count(T['sub'].upper()) >= 1 and P[pB - 1].count(T['sub'].upper()) >= 1, f'{tag}: faixas dos blocos com o sobretítulo')
                 ps = [pag_de(P, s + '. ', pA - 1) for s in SECOES]
                 ok(all(ps) and ps == sorted(ps) and all(x >= pB for x in ps[7:]) and all(pA <= x < pB for x in ps[:7]), f'{tag}: faixas A1–A7 e B1–B9 em ordem {ps}')
+                # v13: matriz do caso em duas páginas retrato, entre "Em resumo" e as recomendações, com o crédito
+                pM = pag_de(P, T['matriz'], 1)
+                ok(2 < pM and pM + 1 < pR and T['matriz'] in P[pM] and T['credito'] in P[pM - 1] and T['credito'] in P[pM], f'{tag}: matriz do caso nas p. {pM}–{pM + 1}, antes das recomendações (p. {pR}), com o crédito')
                 pP = pag_de(P, T['perfil'])
                 ok(pR <= pP < pA, f'{tag}: perfil do caso (p. {pP}) entre recomendações e bloco A')
                 # índice da capa aponta para as páginas certas
-                for nome, pag in [(T['resumo'], 2), (T['recs'], pR), (T['A'], pA), (T['B'], pB)]:
+                for nome, pag in [(T['resumo'], 2), (T['matriz'], pM), (T['recs'], pR), (T['A'], pA), (T['B'], pB)]:
                     ok(re.search(re.escape(nome) + r' (\d+)', c) is not None and int(re.search(re.escape(nome) + r' (\d+)', c).group(1)) == pag, f'{tag}: índice "{nome}" -> p. {pag}')
                 # Figura 1 numa página própria entre A3 e A4
                 imgs = subprocess.run(['pdfimages', '-list', arq], capture_output=True, text=True).stdout.split('\n')[2:]
@@ -139,6 +147,11 @@ async def main():
                 ok(min(E['tamanhos']) >= 8, f'{tag}: menor fonte {min(E["tamanhos"])} pt')
                 if lang == 'en':
                     txt = subprocess.run(['pdftotext', '-layout', arq, '-'], capture_output=True, text=True).stdout
+                    pend = await pg.evaluate(PEND_MATRIZ)
+                    if pend:
+                        print(f'aviso {tag}: {len(pend)} textos de src/matriz.js sem tradução; páginas da matriz fora da busca')
+                        tm = norm(await pg.evaluate("tr(TIT_MATRIZ)"))
+                        txt = '\n'.join(subprocess.run(['pdftotext', '-layout', '-f', str(i + 1), '-l', str(i + 1), arq, '-'], capture_output=True, text=True).stdout for i in range(N) if tm not in P[i])
                     resto = [l.strip() for l in txt.split('\n') if (PT.search(l) or MAG_PT.search(l)) and 'Cátedra' not in l and 'Desplugada' not in l]
                     ok(not resto, f'{tag}: sem português ({len(resto)}) {resto[:5]}')
         ok(not errs, f'sem erros de console {errs[:5]}')
