@@ -4,6 +4,14 @@ Fonte: "Documento sem título 5.pdf" (16 out. 2026), com notas e uma captura de 
 
 Prioridade: **P1** = indispensável na v13; **P2** = importante, pode vir em seguida; **P3** = depende de confirmação.
 
+**Decisões do usuário (16 out. 2026), já incorporadas abaixo**
+
+- As quatro categorias não recebem referência por enquanto.
+- A pessoa pode marcar várias prioridades.
+- O "mínimo no piloto" vale para a **camada 2** (passos 2.1, 2.2 e 2.3).
+- O catálogo de problemas é redigido por mim: está no Anexo A, `catalogo_prioridades_v13.md`, e você revisa.
+- Ainda não há revisão nativa das traduções. A própria plataforma avisa que a linguagem precisa ser revisada (RQ-18).
+
 ---
 
 ## 1. Página inicial
@@ -97,13 +105,13 @@ Prioridade: **P1** = indispensável na v13; **P2** = importante, pode vir em seg
     - Educar com a IA (Educating with AI);
     - Educar para a era da IA (Educating for the Age of AI);
   - cada cartão mostra o nome, uma descrição de uma linha e o botão ⓘ (RQ-07);
-  - por proposta, a pessoa pode marcar mais de uma prioridade (ver Q2).
+  - a pessoa pode marcar uma ou mais prioridades (caixas de marcar, não rádio). Os problemas aparecem agrupados por prioridade marcada.
 - **Aceite:**
   - não há mais a etiqueta "em breve";
   - a escolha alimenta o catálogo de problemas (RQ-06);
   - os casos salvos com `dominio` são migrados (RQ-19).
 - **Onde:** `fluxo_dados.js` (`DOMINIOS` → `PRIORIDADES`), `fluxo.js` (render `dom`, validação, linha 243), `casos.js`, `recomendacoes.js`, `resumo.js`.
-- **Crédito:** a origem das quatro categorias deve ser confirmada antes de citá-la (Q1). Até lá, nenhuma referência é escrita.
+- **Crédito:** por decisão do usuário, nenhuma referência é escrita para as quatro categorias nesta versão, nem na ferramenta, nem no plano, nem no PDF.
 
 ### RQ-06 · Catálogo de problemas e objetivos pré-preenchidos — P1
 - **Origem:** "para cada um tem que trazer uns 10 problemas e objetivos que venham preenchidos … cada problema pode ter subcategorias."
@@ -117,9 +125,10 @@ Prioridade: **P1** = indispensável na v13; **P2** = importante, pode vir em seg
     - os impactos sugeridos para o 1.2.5;
   - estrutura de dados: `PRIORIDADES[{ id, nome, desc, exemplos[], problemas[{ id, problema, objetivo, sub[{ id, t }], tarefas[], impactos[] }] }]`.
 - **Conteúdo:**
-  - eu redijo uma primeira versão a partir do guia, em linguagem simples, sem números nem referências inventadas;
-  - você valida antes da implementação (Q3);
-  - os problemas de "Educar com a IA" absorvem os exemplos e componentes atuais (alfabetização, matemática, ciências, letramento digital).
+  - a primeira versão está no **Anexo A** (`catalogo_prioridades_v13.md`): 4 prioridades × 10 problemas, com objetivo, subcategorias, tarefas e impactos;
+  - os problemas de "Educar com a IA" absorvem os exemplos e componentes atuais (alfabetização, matemática, ciências);
+  - o anexo propõe três impactos novos (`letramento_ia`, `uso_responsavel`, `competencias`) e uma tarefa nova (`pratica_ia`), que seguem as mesmas regras de tradução e de motor das existentes;
+  - o anexo prevê também o aviso para problemas que não pedem ferramenta de IA.
 - **Aceite:** 4 prioridades × aproximadamente 10 problemas, cada um com objetivo; subcategorias onde fizer sentido; tudo traduzido nos 9 idiomas.
 - **Onde:** novo `src/prioridades.js` (dados), `build.sh`, i18n.
 
@@ -142,7 +151,7 @@ Prioridade: **P1** = indispensável na v13; **P2** = importante, pode vir em seg
   - ao marcar um problema, as subcategorias aparecem abaixo dele, recolhidas por padrão, e podem ser marcadas;
   - há um campo "Outro problema", em texto livre;
   - um contador mostra quantos problemas estão marcados.
-  - Esta lista substitui a pergunta 1.2.2 (componentes): as subcategorias cumprem esse papel (Q4).
+  - Esta lista substitui a pergunta 1.2.2 (componentes): as subcategorias cumprem esse papel (Q1).
 - **Aceite:**
   - marcar ou desmarcar todos não apaga o texto de "Outro";
   - a validação considera o passo respondido com ao menos um problema ou um "Outro" preenchido;
@@ -201,54 +210,56 @@ Prioridade: **P1** = indispensável na v13; **P2** = importante, pode vir em seg
 - **Requisito:** aplicar o mesmo campo de detalhe em:
   - 1.2.8 ("Qual alternativa sem IA foi comparada?");
   - 2.3.2 (já existe a lista de ferramentas).
-- **Aceite:** só se confirmado (Q6).
+- **Aceite:** só se confirmado (Q2).
 
 ---
 
-## 5. Fase 2 enxuta no piloto
+## 5. Camada 2 enxuta no piloto
 
-### RQ-13 · No piloto, só o mínimo — P1
-- **Origem:** "quando for pilot tem que vir só o minimo na cama[da] 2 … nem tudo que esta ali é de pilot."
+### RQ-13 · No piloto, só o mínimo da camada 2 — P1
+- **Origem:** "quando for pilot tem que vir só o minimo na cama[da] 2 … nem tudo que esta ali é de pilot." Por decisão do usuário, trata-se da **camada 2**: aplicações de IA, experiência de uso e adoção, ou seja, os passos 2.1, 2.2 e 2.3.
 - **Requisito:**
-  - quando o 2.0 for "Piloto" ou "Prova de conceito", a fase 2 mostra só as perguntas essenciais para o teste;
-  - as demais vão para a fase em que são decididas (Implantação ou Expansão), conforme a `MATRIZ`;
-  - essas perguntas não ficam escondidas sem aviso: no fim de cada passo há a linha "Estas perguntas ficam para a implantação" com um link para abri-las.
-- **Proposta de classificação** (para validar, Q5):
+  - quando o 2.0 for "Piloto", "Prova de conceito" ou os dois, os passos 2.1–2.3 mostram só as perguntas necessárias para o teste;
+  - as demais perguntas da camada 2 descem para a implantação (fase 3), onde são decididas;
+  - no fim de cada passo, uma linha recolhida avisa "Para a implantação (pode responder agora ou depois)" e abre essas perguntas;
+  - no passo 3.1 aparece um cartão "Perguntas da camada 2 que ficaram para a implantação", com link para cada uma;
+  - os passos 2.4, 2.5 e 2.6 (camadas 3, 6 e 7) não mudam neste requisito.
+- **Classificação** (derivada da `MATRIZ`, RQ-02):
 
-| Passo | Fica no piloto | Vai para a implantação (3) ou a expansão (4) |
-|---|---|---|
-| 2.1 Aplicações | 2.1.1 tarefas, 2.1.2 título | — |
-| 2.2 Experiência de uso | 2.2.1 quem usa, 2.2.2 quem é afetado, 2.2.3 o que fazem com a resposta | 2.2.4 frequência (o piloto usa a sugestão) |
-| 2.3 Adoção | 2.3.1–2.3.3 ferramentas, 2.3.4 tecnologia, 2.3.5 pagamento no teste, 2.3.8 tamanho do teste | 2.3.6 licença e 2.3.7 adaptação → 3 |
-| 2.4 Infraestrutura | versão curta: "As escolas do piloto têm internet e dispositivos para o teste?" | 2.4.1–2.4.4 para a rede toda → 3 |
-| 2.5 Formação | versão curta: quem participa do teste e horas | tipo, formato e quem paga → 3 |
-| 2.6 Operação e suporte | 2.6.3 acompanhamento (avaliar o teste) | 2.6.1 e 2.6.2 suporte → 3 |
+| Passo (camada 2) | Fica no piloto | Desce para a implantação | Na prova de conceito |
+|---|---|---|---|
+| 2.1 Aplicações | 2.1.1 tarefas; 2.1.2 título (opcional) | — | igual ao piloto |
+| 2.2 Experiência de uso | 2.2.1 quem usa; 2.2.2 quem é afetado; 2.2.3 o que fazem com a resposta | 2.2.4 frequência (o custo do teste usa a sugestão) | só 2.2.1 (quem testa); 2.2.2–2.2.4 descem |
+| 2.3 Adoção | 2.3.1–2.3.3 quantas e quais ferramentas; 2.3.4 tecnologia; 2.3.5 pagamento no teste; 2.3.8 tamanho do teste | 2.3.6 licença; 2.3.7 adaptação | igual ao piloto |
 
-- Na prova de conceito, que não tem usuários reais, a fase 2 fica ainda menor: 2.1, 2.3.1–2.3.4 e 2.3.8.
 - **Aceite:**
-  - com "Piloto", o número de perguntas visíveis na fase 2 cai pelo menos pela metade;
-  - a estimativa de custo continua completa, com sugestões para o que ficou para depois;
-  - a mandala e o contador de passos refletem as perguntas visíveis;
-  - nenhuma resposta já dada se perde ao trocar o 2.0.
-- **Onde:** `MATRIZ` (RQ-02), `fluxo_dados.js` (condição `se` derivada da matriz), `fluxo.js` (contagem, validação, mandala), `custos_ui.js` (`cfgDoCaso`, valores padrão), testes.
+  - com "Piloto", a camada 2 passa de 14 para 11 perguntas visíveis;
+  - com "Prova de conceito", passa para 9;
+  - a estimativa de custo continua completa, usando as sugestões para o que desceu;
+  - a mandala, o contador e a validação contam só as perguntas visíveis em cada fase;
+  - nenhuma resposta já dada se perde ao trocar o 2.0;
+  - sem resposta no 2.0, todas as perguntas aparecem, como na v12.
+- **Onde:** `MATRIZ` (RQ-02), `fluxo_dados.js` (condição `se`, nova propriedade `fasePiloto`), `fluxo.js` (contagem, validação, mandala, cartão no 3.1), `custos_ui.js` (`cfgDoCaso`, valores padrão), testes.
 
-### RQ-14 · Recomendações já marcadas no piloto — P1
+### RQ-14 · Recomendações já marcadas na camada 2 do piloto — P1
 - **Origem:** "e trazer marcado as recomendações."
 - **Requisito:**
-  - quando o 2.0 for respondido, as perguntas que ficam no piloto vêm com a resposta recomendada marcada como "sugerido";
-  - exemplos:
-    - pagamento "Doação ou piloto gratuito" ou "Por usuário";
-    - formação curta para os participantes;
-    - acompanhamento intensivo;
-    - suporte do fornecedor;
-  - cada sugestão mostra uma linha "Por que esta sugestão", com a regra em linguagem simples.
-  - Isso mantém a regra da v10: nada vem marcado antes de a pessoa responder a pergunta de origem, que aqui é o 2.0.
+  - quando o 2.0 for respondido, as perguntas da camada 2 que ficam no teste vêm com a resposta recomendada marcada como "sugerido";
+  - cada sugestão mostra uma linha "Por que esta sugestão", com a regra em linguagem simples;
+  - as sugestões são:
+    - 2.2.1, quem usa: vem das tarefas, como já ocorre; na prova de conceito, "equipe da rede";
+    - 2.3.1, quantas ferramentas: "uma" no teste, porque testar uma ferramenta por vez permite saber o que funcionou;
+    - 2.3.4, tecnologia: não é sugerida, pois depende do mercado;
+    - 2.3.5, pagamento no teste: "Doação ou piloto gratuito" quando a tecnologia é paga, com a recomendação de prever em contrato o preço depois do teste;
+    - 2.3.8, tamanho do teste: os padrões da v10 (prova de conceito com 15 pessoas e 2 meses; piloto com cerca de 5% das escolas e 4 meses);
+    - as perguntas que desceram para a implantação também recebem sugestão, usada no custo até a pessoa responder.
+  - Mantém a regra da v10: nada vem marcado antes de a pessoa responder a pergunta de origem.
 - **Aceite:**
   - num caso em branco nada vem marcado;
-  - depois de escolher "Piloto", os campos do piloto aparecem como "sugerido";
+  - depois do 2.0, os campos da camada 2 que ficam no teste aparecem como "sugerido", menos a tecnologia;
   - ao confirmar ou editar, a etiqueta some;
   - trocar o 2.0 recalcula só o que não foi confirmado.
-- **Onde:** `fluxo.js` (`padroesGerados`), `fluxo_dados.js` (`sugDe: 'testes'`), `custos_ui.js`.
+- **Onde:** `fluxo.js` (`padroesGerados`), `fluxo_dados.js` (`sugDe`), `custos_ui.js`.
 
 ### RQ-15 · O que a fase 1 já responde — P1
 - **Origem:** "entender o que do 1 já ajuda a responder isso."
@@ -318,12 +329,19 @@ Prioridade: **P1** = indispensável na v13; **P2** = importante, pode vir em seg
     - formatação por idioma com `Intl.NumberFormat`;
     - sufixos de grandeza (`grande`/`unidMil`) definidos para cada idioma.
   - **Seletor:** nomes de cada idioma na própria escrita.
-- **Qualidade da tradução:**
+- **Qualidade da tradução e aviso na plataforma:**
   - eu produzo as traduções a partir do EN, com um glossário fixo (camadas, fases, "system", "procurement plan", "proof of concept", "pilot");
-  - para o bambara, zulu e suaíli, a terminologia técnica de compras e de IA é escassa, e a revisão por falante nativo é indispensável;
-  - por proposta, cada um desses idiomas mostra no rodapé "Tradução preliminar, em revisão" até a revisão (Q7).
+  - ainda não há revisão por falantes nativos;
+  - nos cinco idiomas novos, a plataforma mostra um aviso fixo, escrito no próprio idioma e repetido em inglês: "A linguagem desta versão é uma tradução preliminar e ainda precisa ser revisada por falantes nativos.";
+  - o aviso aparece em quatro lugares:
+    - (a) logo abaixo do seletor de idioma, ao escolher o idioma;
+    - (b) numa faixa discreta no topo da página;
+    - (c) no rodapé do plano de contratação;
+    - (d) na capa e no rodapé do PDF;
+  - o aviso sai por idioma, com uma marca `revisado: true` no dicionário, sem mexer no código.
 - **Aceite:**
   - `test_idiomas.py` com 0 restos nos 9 idiomas;
+  - o aviso de tradução preliminar aparece nos cinco idiomas novos, em todos os lugares listados, e não aparece em PT, EN, ES e FR;
   - o PDF gerado em `ar` e `zh-Hans` não tem caracteres trocados por "?" e o árabe sai ligado e na ordem certa;
   - a página a 400 px em `ar` não tem rolagem horizontal.
 - **Onde:** `i18n.js`, `build.sh`, `i18n/v13_*_{ar,zh,bm,zu,sw}.json`, `fluxo.css`, `plano_pdf.js`, `custos_ui.js` (formatação), `shell.html`.
@@ -354,18 +372,7 @@ Prioridade: **P1** = indispensável na v13; **P2** = importante, pode vir em seg
   - `test_v9_plano.py`, `test_v10_recs.py` e `test_v12_pdf.py` atualizados e verdes;
   - o PDF de exemplo é regerado.
 
-### RQ-21 · Caso "Canadá: projeto de US$ 3 milhões só de infraestrutura" — P3
-- **Origem:** "projeto de 3 milhoes de dols para o canada só sobre infra."
-- **Interpretação a confirmar (Q8):**
-  - (a) um novo exemplo preenchido, em que a contratação é só de infraestrutura (internet e dispositivos, camada 3), sem ferramenta de IA nova;
-  - (b) apenas uma nota de contexto, que não entra na ferramenta.
-- **Requisito, se for (a):**
-  - permitir um caso cujo foco é só infraestrutura: o 2.1–2.3 vira opcional e a estimativa concentra-se nas camadas 3, 6 e 7;
-  - incluir o exemplo com valores ilustrativos e o total na ordem de US$ 3 milhões;
-  - não usar dados reais do projeto sem que você os forneça.
-- **Aceite:** só depois da confirmação.
-
-### RQ-22 · Testes e regras de sempre — P1
+### RQ-21 · Testes e regras de sempre — P1
 - **Requisito:** continuam verdes:
   - `node tests/test_custos_v2.js`;
   - `node tests/test_v9_motor.js`;
@@ -394,7 +401,7 @@ Prioridade: **P1** = indispensável na v13; **P2** = importante, pode vir em seg
 
 ## 8. Ordem de execução proposta
 
-1. **Decisões de conteúdo:** respostas às perguntas da seção 9; redação e validação do catálogo de problemas (RQ-06) e da classificação do piloto (RQ-13).
+1. **Conteúdo:** sua revisão do catálogo (Anexo A) e da classificação da camada 2 no piloto (RQ-13).
 2. **Modelo:**
    - `MATRIZ` (RQ-02);
    - `PRIORIDADES` (RQ-05 e RQ-06);
@@ -419,14 +426,11 @@ As etapas 2 a 5 podem ser divididas em pacotes paralelos com arquivos exclusivos
 
 ## 9. Perguntas em aberto
 
-| # | Pergunta | Proposta enquanto não houver resposta |
+As decisões de 16 out. estão no início do documento. Restam estas, e enquanto não houver resposta vale a proposta:
+
+| # | Pergunta | Proposta |
 |---|---|---|
-| Q1 | De onde vêm as quatro categorias (Governing AI in Education; Educating about AI; Educating with AI; Educating for the Age of AI)? Há uma referência a citar? | Não citar nenhuma fonte até você indicar. |
-| Q2 | A pessoa escolhe uma prioridade ou várias? | Várias. |
-| Q3 | Você quer redigir os ~40 problemas e objetivos, ou que eu redija e você revise? | Eu redijo, você revisa antes de entrar. |
-| Q4 | A antiga pergunta 1.2.2 (componentes) sai e as subcategorias tomam o lugar dela? | Sim. |
-| Q5 | "Cama 2" é a fase 2 (prova de conceito ou piloto) ou a camada 2 (aplicações, experiência de uso e adoção)? A classificação do RQ-13 está certa? | Fase 2 inteira, com a tabela do RQ-13. |
-| Q6 | O padrão "Qual?" vale também para o 1.2.8 e outras perguntas Sim/Não? | Só 1.2.7 e 1.3.x. |
-| Q7 | Haverá revisores nativos para árabe, mandarim, bambara, zulu e suaíli? Mostrar o aviso "tradução preliminar"? | Sim, mostrar o aviso. |
-| Q8 | O projeto de US$ 3 milhões do Canadá vira um exemplo na ferramenta ou é só uma nota? | Só nota, até você confirmar. |
-| Q9 | A página inicial mantém os logos atuais (IA.EDU, UNESCO/Cátedra)? | Manter os da v12. |
+| Q1 | A antiga pergunta 1.2.2 (componentes) sai e as subcategorias tomam o lugar dela? | Sim. |
+| Q2 | O padrão "Qual?" vale também para o 1.2.8 (alternativa sem IA)? | Só 1.2.7 e 1.3.x. |
+| Q3 | A página inicial mantém os logos da v12? | Sim. |
+| Q4 | Os itens novos do catálogo (três impactos e a tarefa `pratica_ia`) podem entrar? | Sim. |
