@@ -12,6 +12,8 @@
 // suporte, acompanhamento, prova de conceito e piloto juntos, implantação, arquitetura e expansão.
 // Páginas citadas: Krueger e Jackson (2026), só as já usadas no plano (ver plano/2_tco_unesco.md).
 // O texto em português é a chave de tradução (i18n/v10_r2_*.json e i18n/v11_s3_*.json).
+// v13 (pacote B3, i18n/v13_b3_*.json): plano de formação, problemas sem tarefa de IA, metas com lacunas, linha de base
+// sem medida e, nas 1.3.x "Em parte", a ação cita o "O que falta?" (S.respDet).
 // =====================================================================
 
 const QUANDO_REC = [['antes_teste', 'Antes do teste'], ['antes_contratar', 'Antes de contratar'], ['manter', 'Para manter e ampliar']];
@@ -33,13 +35,22 @@ const recTxt = id => ((typeof RECS !== 'undefined' ? RECS : []).find(r => r.id =
 // Regras do caso. se(k): condição; campo: pergunta que originou a ação; vals(k): respostas a citar.
 // quando, prioridade e texto podem ser funções de k.
 const REGRAS_REC = [
-  // 1.2 Problema e impacto
+  // 1.2 Prioridade e impacto
   { id: 'linha-base', campo: 'linhaBase', tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('linhaBase') === 'nao',
     texto: 'Medir o problema antes do teste, por escola ou turma: sem linha de base, não há como saber se a IA ajudou.' },
   { id: 'linha-base-parcial', campo: 'linhaBase', tipo: 'politica', quando: 'antes_teste', prioridade: 'media', se: k => k.v('linhaBase') === 'parcial',
     texto: 'Completar a linha de base com dados medidos nas escolas do teste antes de começar.' },
   { id: 'alternativa', campo: 'alternativa', tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.v('alternativa') === 'nao',
     texto: 'Comparar ao menos uma alternativa sem IA, em custo e resultado esperado, antes de decidir a compra.' },
+  // v13: regras que nascem das prioridades, dos problemas e dos detalhes do passo 1.2 (RQ-09, RQ-10, RQ-20)
+  { id: 'formacao-plano', campo: k => k.formacaoDe.campo, vals: k => k.formacaoDe.vals, tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => !!(k.sp && k.sp.formacao),
+    texto: 'Montar um plano de formação antes do teste, com público, conteúdo, horas e responsáveis: os problemas marcados dependem de formar pessoas (camada 6).' },
+  { id: 'sem-ferramenta', campo: 'problemas', vals: k => k.probs.map(q => q.t), tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => !!(k.sp && k.sp.semFerramenta),
+    texto: 'Considerar resolver os problemas marcados com regras e processos antes de comprar uma ferramenta de IA: eles não dependem de uma tarefa feita pela IA.' },
+  { id: 'metas-lacunas', campo: 'resultado', vals: () => ['Com lacunas a completar'], tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.metasLacuna,
+    texto: 'Completar as metas com os números da rede (valores atuais, metas e prazos) antes do teste: sem eles, não há critério de sucesso.' },
+  { id: 'linha-base-medida', campo: 'linhaBase', tipo: 'politica', quando: 'antes_teste', prioridade: 'media', se: k => ['sim', 'parcial'].includes(k.v('linhaBase')) && !k.medidaBase,
+    texto: 'Registrar qual medida serve de linha de base (instrumento, ano e turmas): sem ela, não há como comparar o resultado do teste.' },
   // 2.0 Prova de conceito e/ou piloto (recomendarTeste, guia cap. 14)
   { id: 'teste-recomendado', campo: 'testes', vals: k => k.testes, tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.teste === 'recomendar',
     texto: k => k.rec.modo === 'poc' ? 'Começar por uma prova de conceito, como indicam as respostas, antes de envolver escolas e estudantes.'
@@ -190,9 +201,14 @@ function recValor(id) {
   if (f && f.padrao && typeof respondido === 'function' && !respondido(id)) return '';
   return v;
 }
+// v13: perguntas 1.2.1 e 1.2.2 (criadas no percurso pelo pacote B1); enquanto não estiverem em CAMPOS, estes dados bastam
+const REC_CAMPO_V13 = {
+  prioridades: { passo: '1b', n: '1.2.1', id: 'prioridades', onde: 'ctx', t: 'Qual é a prioridade da sua rede para a IA na educação?' },
+  problemas: { passo: '1b', n: '1.2.2', id: 'problemas', onde: 'ctx', t: 'Quais problemas você quer resolver?' },
+};
 function recCampo(id) {
   const ach = x => (typeof CAMPO_POR_ID !== 'undefined' && CAMPO_POR_ID[x]) || (typeof CAMPOS !== 'undefined' ? CAMPOS.find(f => f.id === x) : null);
-  return ach(id) || (id === 'testes' ? ach('teste') : null);
+  return ach(id) || (id === 'testes' ? ach('teste') : null) || REC_CAMPO_V13[id] || null;
 }
 function recOpcoes(f, id) {
   if (!f) return (typeof OPC !== 'undefined' && id && OPC[id]) || [];
@@ -292,10 +308,21 @@ function recContexto() {
   const valImpl = implE ? tr('{0} escolas e {1} pessoas'.replace('{0}', fmtR(implE)).replace('{1}', fmtR(implP))) : implP ? tr('{0} pessoas'.replace('{0}', fmtR(implP))) : '';
   const implTudo = implP > 0 && eleg > 0 && implP >= 0.8 * eleg;
   const valEleg = eleg ? tr('{0} pessoas'.replace('{0}', fmtR(eleg))) : '';
+  // v13: prioridades e problemas do passo 1.2 (S.ctx.prioridades, S.ctx.problemas; leitura defensiva)
+  const x = S.ctx || {};
+  const probs = typeof problemasMarcados === 'function' ? problemasMarcados(x) : [];
+  let sp = null;
+  try { sp = typeof sugestoesProblemas === 'function' ? sugestoesProblemas(x) : null; } catch (e) { console.warn(e); }
+  // formação: vem dos problemas marcados que a pedem ou de uma prioridade marcada que a pede
+  const pForm = probs.filter(q => q.formacao);
+  const prForm = typeof PRIORIDADES !== 'undefined' ? PRIORIDADES.filter(z => z.formacao && (x.prioridades || []).includes(z.id)) : [];
+  const formacaoDe = pForm.length ? { campo: 'problemas', vals: pForm.map(q => q.t) } : { campo: 'prioridades', vals: prForm.map(z => z.nome) };
+  const metasLacuna = typeof temLacuna === 'function' && temLacuna(c.resultado);
+  const medidaBase = String(c.linhaBaseMedida || '').trim();
   return { c, ce, rec, v, arr, p, alto: !!(p && p.alto), testes, teste, poc: modo === 'poc',
     gratis: v('pagamento') === 'gratuito' || v('tipoTec') === 'publica',
     consDecide, pesoMax, dadosEst, campoDados, valsDados, eleg, ferr, variasFerr, sobrepostas, semPreco,
-    valsInternet, valHoras, implP, implTudo, valImpl, valEleg };
+    valsInternet, valHoras, implP, implTudo, valImpl, valEleg, probs, sp, formacaoDe, metasLacuna, medidaBase };
 }
 const recF = (x, k) => (typeof x === 'function' ? x(k) : x);
 const ORD_PRIO = { alta: 0, media: 1 };
@@ -317,8 +344,10 @@ function recomendacoesCaso() {
     if (!['nao', 'parcial', 'nao_sei'].includes(resp) || !(typeof ACOES_G !== 'undefined' && ACOES_G[q.id])) return;
     const alta = typeof PRIORIDADE_G !== 'undefined' && PRIORIDADE_G[q.id] === 'alta';
     const cedo = ['g-legislacao', 'g-dados'].includes(q.id) && k.dadosEst && !k.poc;
+    // v13 (RQ-11): com "Em parte" e o "O que falta?" preenchido, a ação cita o que falta (texto já traduzido)
+    const falta = resp === 'parcial' ? String((((S.respDet || {})[q.id]) || {}).falta || '').trim().replace(/\.$/, '') : '';
     add({ id: q.id, quando: cedo ? 'antes_teste' : 'antes_contratar', tipo: q.id === 'g-compras' ? 'custo' : 'politica', prioridade: alta ? 'alta' : 'media',
-      texto: ACOES_G[q.id], porque: recPorque(q.id, [resp]), ir: recIr(recCampo(q.id)) });
+      texto: falta ? tr(ACOES_G[q.id]) + ' ' + tr('O que falta:') + ' ' + falta + '.' : ACOES_G[q.id], porque: recPorque(q.id, [resp]), ir: recIr(recCampo(q.id)) });
   });
   REGRAS_REC.forEach(r => {
     let ok = false;

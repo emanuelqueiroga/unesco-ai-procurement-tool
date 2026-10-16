@@ -19,7 +19,7 @@ from playwright.async_api import async_playwright
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NAV = os.environ.get('NAV', os.path.join(RAIZ, 'navegador.html'))
-TMP = '/tmp/claude-0/v10_recs'
+TMP = '/tmp/claude-0/v13_b3/v10_recs'
 os.makedirs(TMP, exist_ok=True)
 SK = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"></head><body>' + open(NAV).read() + '</body></html>'
 open(f'{TMP}/nav.html', 'w').write(SK)

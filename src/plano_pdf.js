@@ -9,6 +9,7 @@
 //   Figura 1 em página própria; referências; respostas pendentes no fim.
 // Páginas internas com cabeçalho (fio + título corrido) e rodapé "n / N". Corpo 10 pt, tabelas 8,6 pt,
 // 8 pt só em rodapé e legendas. Fonte de dados: secoesPlano(), numerosCusto(), recomendacoesCaso().
+// v13 (pacote B3): matriz do caso em duas páginas retrato logo depois de "Em resumo"; perfil com governança.
 // =====================================================================
 const PDF_TROCA = { '→': '->', '←': '<-', '≥': '>=', '≤': '<=', '✓': 'v', '✕': 'x', '−': '-', '≈': '~', 'ⓘ': '(i)', ' ': ' ', ' ': ' ', '‑': '-', '‐': '-', '«': '«', '»': '»', '☐': '', '·': '·' };
 const CP1252_EXTRA = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
@@ -28,7 +29,8 @@ const PDF_COR = {
 // Áreas do perfil do caso: chaves (em português) das linhas do resumo do caso em secoesPlano()
 const PDF_AREAS = [
   ['Contexto', ['Nível administrativo', 'Lugar ou rede', 'Situação']],
-  ['Problema e impacto', ['Como a equipe descreve o problema', 'Situação atual', 'Impacto desejado', 'Resultado esperado e como medir', 'Linha de base', 'Alternativa sem IA comparada']],
+  ['Prioridade e impacto', ['Prioridades', 'Problemas marcados', 'Outro problema', 'Como a equipe descreve o problema', 'Situação atual', 'Impacto desejado', 'Resultado esperado e como medir', 'Linha de base', 'Alternativa sem IA comparada']],
+  ['Governança de IA na educação', ['Equipe ou instância responsável', 'Política ou estratégia de IA na educação', 'Regulamentação identificada', 'Política de dados educacionais', 'Orientações de uso responsável', 'Regras para a contratação de IA']],
   ['Aplicações e experiência de uso', ['Aplicações', 'Quem usa', 'Quem é afetado', 'O que se faz com a resposta', 'Frequência de uso']],
   ['Adoção e ferramentas', ['Quantas ferramentas', 'Ferramentas já escolhidas', 'Tipo de tecnologia (ferramenta principal)', 'Pagamento (ferramenta principal)', 'Licença', 'Adaptação ao contexto', 'Arquitetura considerada']],
   ['Infraestrutura e dispositivos', ['Internet adequada nas escolas', 'Modelo de uso dos dispositivos', 'Os dispositivos já existem']],
@@ -400,6 +402,100 @@ function gerarPDF() {
     y += nL * (hF + g) - g + 6;
   };
 
+  // ---------------------------------------------------------------- Matriz do caso (v13, RQ-03 e RQ-20)
+  // Duas páginas retrato (fases 1 e 2; fases 3 e 4), sem corte de texto: cada célula traz o texto, os números das
+  // perguntas, o estado das respostas e, com a estimativa completa, o custo (soma das células = total do ciclo).
+  // Corpo 8,6 pt; números das perguntas 8 pt. Crédito e nota de custo ao pé das páginas.
+  const ESTADO_COR = { ok: [[232, 244, 236], [30, 107, 58]], andamento: [C.ambar, C.media], pendente: [[251, 236, 235], C.alta], orientacao: [C.cab, C.titulo], na: [C.fundo, C.muted] };
+  const matriz = () => {
+    const sM = raw.find(s => s.id === 'matriz' && !s.sub);
+    if (!sM || !sM.mx) return;
+    const m = sM.mx, TM = typeof TXT_MATRIZ !== 'undefined' ? TXT_MATRIZ : { perguntas: 'Perguntas', camada: 'Camada', legenda: 'Estado das respostas', soma: '', semCusto: '' };
+    const ROT = typeof ROT_ESTADO !== 'undefined' ? ROT_ESTADO : {};
+    const FS = 8.6, FQ = 8, LT = 10.6, LQ = 9.8, HB = 14, pad = 5.5, lhA = FS * 1.15;
+    const w0 = 112, wF = (LW - w0) / 2;
+    const layout = c => {
+      const iw = wF - 2 * pad;
+      const Lt = quebra(tr(c.t), FS, iw, c.na ? 'italic' : 'normal');
+      const Lq = !c.na && c.n.length ? quebra(tr(TM.perguntas) + ' ' + c.n.join(', '), FQ, iw) : [];
+      const badge = !c.na;
+      return { Lt, Lq, badge, h: Lt.length * LT + (Lq.length ? 3 + Lq.length * LQ : 0) + (badge ? 5 + HB : 0) };
+    };
+    const legenda = () => {
+      fonte(8.6, 'bold', C.muted);
+      const t0 = pdfTxt(tr(TM.legenda) + ':'); doc.text(t0, M, y + 10.5);
+      let x = M + doc.getTextWidth(t0) + 8;
+      ['ok', 'andamento', 'pendente', 'orientacao', 'na'].forEach(k => { x += etiqueta(x, y, tr(ROT[k] || k), ESTADO_COR[k][0], ESTADO_COR[k][1], 8) + 5; });
+      y += 24;
+    };
+    [[0, 1], [2, 3]].forEach((par, gi) => {
+      novaPag();
+      if (!gi) INDICE.push([tr(sM.h), doc.getNumberOfPages()]);
+      tituloSec(tr(sM.h) + (gi ? ' (' + tr('continuação') + ')' : ''), gi ? '' : tr(sM.intro || ''));
+      legenda();
+      const fases = par.map(i => Object.assign({ i }, m.fases[i]));
+      const head = [[tr(TM.camada)].concat(fases.map(f => f.n + '. ' + tr(f.nome)))].map(r => r.map(pdfTxt));
+      const body = m.linhas.map(l => [{ content: pdfTxt(l.n + '. ' + tr(l.nome)), camada: l.n }].concat(par.map(i => {
+        const c = l.cel[i], L = layout(c);
+        return { content: '', styles: { minCellHeight: Math.ceil(L.h + 2 * pad) }, mx: c, L };
+      })));
+      if (m.custo) body.push([pdfTxt(tr('Total'))].concat(par.map(i => pdfTxt(m.somas[i] == null ? '—' : grande(m.somas[i])))));
+      // notas ao pé; se a tabela e as notas não couberem juntas, as notas vêm antes da tabela (nenhuma página quase vazia)
+      const notas = (gi ? [m.custo ? tr(NOTA_MATRIZ_CUSTO) : tr(TM.semCusto)] : []).concat([tr(CREDITO_MATRIZ)]);
+      const soma = gi && m.custo;
+      const hNotas = (soma ? 22 : 0) + notas.reduce((a, z) => a + altTexto(z, 8.6, LW, 'italic') + 2, 0) + 12;
+      const hTab = 9 + 6 + 2 * LH(9.4) + body.reduce((a, r) => a + 2 * pad + Math.max(...r.map((z, j) => {
+        if (z && z.L) return Math.ceil(z.L.h + 2 * pad) - 2 * pad;
+        return quebra(typeof z === 'object' ? z.content : z, j ? FS : 9.4, (j ? wF : w0) - (j ? 2 * pad : pad + 14), 'bold').length * lhA;
+      })), 0);
+      const notasAntes = y + hTab + hNotas > BASE && y + hTab <= BASE;
+      const fazNotas = () => {
+        if (soma) {
+          const t1 = pdfTxt(tr(TM.soma)), t2 = pdfTxt(grande(m.total));
+          cabe(20); fonte(10, 'normal', C.tinta); doc.text(t1, M, y + 10);
+          const w1 = doc.getTextWidth(t1);
+          fonte(10, 'bold', C.titulo); doc.text(t2, M + w1 + 4, y + 10);
+          y += 22;
+        }
+        notas.forEach(z => texto(z, { i: true, size: 8.6, cor: C.muted, after: 2 }));
+      };
+      if (notasAntes) { fazNotas(); y += 6; }
+      doc.autoTable({
+        startY: y, rowPageBreak: 'avoid', theme: 'plain', margin: { left: M, right: M, top: TOP, bottom: H - BASE },
+        head, body,
+        styles: { font: 'helvetica', fontSize: FS, cellPadding: pad, textColor: C.tinta, lineColor: C.linha, lineWidth: { bottom: 0.5 }, overflow: 'linebreak', valign: 'top' },
+        headStyles: { fillColor: C.cab, textColor: C.titulo, fontStyle: 'bold', fontSize: 9.4, cellPadding: { top: 9, bottom: 6, left: pad, right: pad }, lineWidth: { bottom: 0.9 }, lineColor: C.marca },
+        columnStyles: { 0: { cellWidth: w0, fontStyle: 'bold', textColor: C.titulo, cellPadding: { top: pad, bottom: pad, left: 14, right: pad } }, 1: { cellWidth: wF }, 2: { cellWidth: wF } },
+        didParseCell: dd => {
+          const r = dd.cell.raw;
+          if (dd.section === 'body' && r && r.mx && r.mx.na) dd.cell.styles.fillColor = C.fundo;
+          if (dd.section === 'body' && m.custo && dd.row.index === body.length - 1) { dd.cell.styles.fontStyle = 'bold'; dd.cell.styles.fillColor = C.fundo; dd.cell.styles.textColor = C.titulo; dd.cell.styles.fontSize = 9.4; }
+        },
+        didDrawCell: dd => {
+          const r = dd.cell.raw, x = dd.cell.x, yy = dd.cell.y;
+          if (dd.section === 'head' && dd.column.index > 0) { doc.setFillColor(...C.fasesS[fases[dd.column.index - 1].i]); doc.rect(x, yy, dd.cell.width - 3, 3, 'F'); return; }
+          if (dd.section !== 'body' || !r || typeof r !== 'object') return;
+          if (r.camada) { doc.setFillColor(...C.camadas[r.camada]); doc.rect(x, yy + 0.5, 4.5, dd.cell.height - 1, 'F'); return; }
+          if (!r.mx) return;
+          const c = r.mx, L = r.L, x0 = x + pad, iw = dd.cell.width - 2 * pad;
+          if (dd.column.index > 1) { doc.setDrawColor(...C.linha); doc.setLineWidth(0.5); doc.line(x, yy, x, yy + dd.cell.height); }
+          let z = yy + pad;
+          fonte(FS, c.na ? 'italic' : 'normal', c.na ? C.muted : C.tinta);
+          L.Lt.forEach(l => { doc.text(l, x0, z + FS); z += LT; });
+          if (L.Lq.length) { z += 3; fonte(FQ, 'normal', C.muted); L.Lq.forEach(l => { doc.text(l, x0, z + FQ); z += LQ; }); }
+          if (L.badge) {
+            z += 5;
+            const [bg, fg] = ESTADO_COR[c.estado] || ESTADO_COR.orientacao;
+            etiqueta(x0, z, tr(ROT[c.estado] || c.estado), bg, fg, 8);
+            if (c.custo != null) { fonte(9.4, 'bold', C.titulo); doc.text(pdfTxt(grande(c.custo)), x0 + iw, z + 10.5, { align: 'right' }); }
+          }
+        },
+      });
+      y = doc.lastAutoTable.finalY + 12;
+      if (!notasAntes) fazNotas();
+    });
+  };
+
   // ---------------------------------------------------------------- Recomendações para você
   const recomendacoes = () => {
     const sR = secs.find(s => s.id === 'recs');
@@ -644,6 +740,7 @@ function gerarPDF() {
   doc.setProperties({ title: pdfTxt(NOME_FERRAMENTA + ' - ' + tP('sub') + ' - ' + nomeCaso), subject: pdfTxt(tP('sub')), creator: NOME_FERRAMENTA });
   capa();
   emResumo();
+  matriz();
   recomendacoes();
   perfil();
   const i0 = secs.findIndex(s => s.tipo === 'bloco');

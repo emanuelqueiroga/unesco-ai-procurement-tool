@@ -13,6 +13,8 @@
 #    nada de fonte de recursos; Figura 1 (Krueger e Jackson, 2026, p. 11) em A3 com legenda e crédito;
 #    A2 traz "Como o custo é calculado" (formula.js) quando a fórmula está no build;
 #  - sem erro de console e sem rolagem horizontal (1400 e 400 px);
+#  - v13: seção "matriz" (camadas × fases) entre "Em resumo" e as recomendações; cartão "Prioridade e impacto";
+#    EN: enquanto os textos de src/matriz.js não tiverem tradução, as páginas da matriz ficam fora da busca por português;
 #  - v12: relatório com capa (recomendação principal e isenção), "Em resumo" (data-sec="resumo": 4 KPIs, gráfico de barras
 #    por camada com 7 barras e gráfico de colunas por exercício, fatos do caso), "Recomendações para você" (até 5 cartões de
 #    prioridade alta e a lista completa com "Ir à pergunta"), "Perfil do caso" (data-sec="perfil", cartões por área com os
@@ -26,7 +28,7 @@ import asyncio, os, re, subprocess, sys
 from playwright.async_api import async_playwright
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TMP = '/tmp/claude-0/v9_plano'
+TMP = '/tmp/claude-0/v13_b3/v9_plano'
 os.makedirs(TMP, exist_ok=True)
 NAV = os.environ.get('NAV', os.path.join(RAIZ, 'navegador.html'))   # NAV=<arquivo> testa outro build
 SK = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"></head><body>' + open(NAV).read() + '</body></html>'
@@ -37,6 +39,13 @@ SECOES = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'B1', 'B2', 'B3', 'B4', 'B5'
 RESUMO_V11 = ['Prova de conceito ou piloto', 'Quantas ferramentas', 'Internet adequada nas escolas', 'Modelo de uso dos dispositivos', 'Os dispositivos já existem',
   'Quem será formado', 'Formato da formação', 'Horas de formação por pessoa', 'Quem paga a formação', 'Quem dá suporte aos usuários', 'Nível de suporte',
   'Nível de acompanhamento do uso', 'Primeira etapa da implantação', 'Arquitetura considerada', 'Tempo para chegar a todos depois da implantação']
+# v13: textos de src/matriz.js ainda sem tradução (são traduzidos por outro pacote); enquanto houver, as páginas
+# da matriz do caso ficam fora da busca por português (o teste avisa)
+PEND_MATRIZ = "(() => LANG === 'pt' || typeof MATRIZ === 'undefined' ? [] : [TIT_MATRIZ, CREDITO_MATRIZ, NOTA_MATRIZ_CUSTO].concat(...Object.values(MATRIZ).map(r => Object.values(r).map(c => c.t))).filter(s => tr(s) === s))()"
+def sem_matriz(arq, tit):
+    n = int(re.search(r'Pages:\s+(\d+)', subprocess.run(['pdfinfo', arq], capture_output=True, text=True).stdout).group(1))
+    ps = [subprocess.run(['pdftotext', '-layout', '-f', str(i), '-l', str(i), arq, '-'], capture_output=True, text=True).stdout for i in range(1, n + 1)]
+    return '\n'.join(t for t in ps if tit not in re.sub(r'\s+', ' ', t))
 CREDITO = 'Figura 1 de Krueger, K. e Jackson, F. para CoSN (2026), Beyond the price tag, p. 11. © UNESCO 2026, licença CC BY-SA 3.0 IGO; reproduzida sem alterações.'
 falhas = []
 
@@ -101,6 +110,9 @@ async def main():
                     ok(r['fig'] is not None and r['fig']['w'] <= w - 20, f'{tag} {ex}: figura cabe na largura ({r["fig"] and r["fig"]["w"]})')
                 else: ok(False, f'{tag} {ex}: FIG_TCO no build')
                 ok('recs' in o and 'resumo' in o and o.index('resumo') < o.index('recs') < o.index('perfil') < o.index('[A]'), f'{tag} {ex}: Em resumo, recomendações e perfil do caso antes do bloco A ({o[:4]})')
+                # v13: matriz do caso logo depois de "Em resumo"; cartão "Prioridade e impacto" (antes "Problema e impacto")
+                ok('matriz' in o and o.index('resumo') < o.index('matriz') < o.index('recs'), f'{tag} {ex}: matriz do caso entre "Em resumo" e as recomendações')
+                ok('Prioridade e impacto' in r['resumo'] and 'Problema e impacto' not in r['resumo'], f'{tag} {ex}: cartão "Prioridade e impacto"')
                 ok('Recomendação principal' in r['capa'] and 'não da UNESCO' in r['capa'] and 'Plano de contratação' in r['capa'], f'{tag} {ex}: capa com recomendação principal e isenção')
                 ok(r['kpis'] == 4 and r['barras'] == 7 and r['cols'] >= 4, f'{tag} {ex}: Em resumo com 4 KPIs, 7 barras e colunas por exercício ({r["kpis"]}, {r["barras"]}, {r["cols"]})')
                 ok(r['cartoes'] >= 7, f'{tag} {ex}: perfil do caso em cartões ({r["cartoes"]})')
@@ -187,7 +199,10 @@ async def main():
                                 antes = subprocess.run(['pdftotext', '-layout', '-f', '1', '-l', str(pag - 1), arq, '-'], capture_output=True, text=True).stdout
                                 ok('A3.' in antes and 'A4.' not in antes, f'pdf en {ex}: figura logo depois de A3')
                             ok('Cost and procurement' in plano and 'Policy and governance' in plano and plano.index('Cost and procurement') < plano.index('Policy and governance'), f'pdf en {ex}: bloco A antes do B')
-                            resto = [l.strip() for l in txt.split('\n') if PT.search(l) and 'Cátedra' not in l and 'Desplugada' not in l]
+                            pend = await pg.evaluate(PEND_MATRIZ)
+                            if pend: print(f'aviso pdf en {ex}: {len(pend)} textos de src/matriz.js sem tradução; páginas da matriz fora da busca')
+                            txtPT = sem_matriz(arq, await pg.evaluate("tr(TIT_MATRIZ)")) if pend else txt
+                            resto = [l.strip() for l in txtPT.split('\n') if PT.search(l) and 'Cátedra' not in l and 'Desplugada' not in l]
                             ok(not resto, f'pdf en {ex}: sem português ({len(resto)}) {resto[:5]}')
                         else:
                             ok('Plano de contratação' in plano and 'Custo e compra' in plano and URL_TCO in plano, f'pdf pt {ex}: título, bloco A e URL')
