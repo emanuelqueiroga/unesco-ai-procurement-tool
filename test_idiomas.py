@@ -64,7 +64,7 @@ async def main():
                 await pg.evaluate("(()=>{S.fase='';S.vista='';render();})()"); await pg.evaluate(ABRIR); await pg.wait_for_timeout(150); await col()
                 # plano de contratação (página e estrutura usada no PDF)
                 await pg.evaluate("abrirPlano()"); await pg.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)"); await pg.wait_for_timeout(200); await col()
-                for t in await pg.evaluate("JSON.stringify(trFundo(secoesPlano())).split('\",\"')"):
+                for t in await pg.evaluate("(()=>{const out=[];const w=x=>{if(typeof x==='string')out.push(x);else if(Array.isArray(x))x.forEach(w);else if(x&&typeof x==='object')Object.values(x).forEach(w);};w(trFundo(secoesPlano()));return out;})()"):
                     if resto(t) and not re.match(r'^(contexto|piloto|custo):\w+:', t): sobra.add('PDF: ' + t[:200])
                 md = await pg.evaluate("relMD(dadosRelatorio())")
                 for l in md.split('\n'):

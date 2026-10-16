@@ -116,7 +116,7 @@ async def main():
             if not nome.startswith('caso_v8_'): continue
             txt = open(os.path.join(FIX, nome)).read()
             r = await pg.evaluate("t => { const ok = importarCaso(t); return { ok, v: S.versao, caso: S.caso, ctx: S.ctx, resp: S.resp, respC: S.respC }; }", txt)
-            chk(r['ok'] and r['v'] == 11, f'{nome}: importado e convertido para a versão 11')
+            chk(r['ok'] and r['v'] == 13, f'{nome}: importado e convertido para a versão 11')
             chk('g-equipe' not in r['resp'] and not any(re.match(r'[rpis]-', k) for k in r['resp']), f'{nome}: resp sem g-equipe nem r-/p-/i-/s-')
             chk(all(k not in r['caso'] for k in ['classes', 'autonomia', 'dados', 'populacao', 'capacidade', 'pilotoGratuito', 'pagaDepois', 'fonte', 'infra', 'arquiteturaManual', 'teste']), f'{nome}: campos legados retirados do caso')
             chk(r['caso'].get('arquitetura', '') in ('', 'saas', 'api', 'ow', 'nao_sei'), f'{nome}: arquitetura v11 válida ({r["caso"].get("arquitetura")!r})')
@@ -144,7 +144,7 @@ async def main():
             # exportar e reimportar dá o mesmo caso
             ida = await pg.evaluate("() => { const a = JSON.stringify(S.caso); const d = JSON.stringify(dadosCaso()); importarCaso(d); return [a, JSON.stringify(S.caso), JSON.parse(d)]; }")
             chk(ida[0] == ida[1], f'{nome}: exportar e reimportar preserva o caso')
-            chk(ida[2].get('app') == 'ai-education-procurement-tool' and ida[2].get('formato') == 11, f'{nome}: exportação no formato 11')
+            chk(ida[2].get('app') == 'ai-education-procurement-tool' and ida[2].get('formato') == 13, f'{nome}: exportação no formato 11')
             # o plano é gerado sem erro
             try:
                 await pg.evaluate("secoesPlano().length")
@@ -159,7 +159,7 @@ async def main():
         await pg.evaluate("t => { localStorage.clear(); localStorage.setItem('navegador-ia-educacao-v4', t); }", txt)
         await pg.reload(); await pg.wait_for_timeout(400)
         r = await pg.evaluate("({ v: S.versao, caso: S.caso, ctx: S.ctx, resp: S.resp, nova: !!localStorage.getItem('aiedu-procurement-v9'), velha: !!localStorage.getItem('navegador-ia-educacao-v4') })")
-        chk(r['v'] == 11, 'localStorage v8: S.versao === 11')
+        chk(r['v'] == 13, 'localStorage v8: S.versao === 13')
         chk(r['caso']['tarefas'] == ['alerta_precoce'] and 'fonte' not in r['caso'] and r['caso']['testes'] == ['recomendar'], 'localStorage v8: tarefas e testes convertidos, sem fonte')
         chk(r['ctx']['etapas']['fund1'].get('soTotal') is True, 'localStorage v8: fund1.soTotal === true')
         chk('g-equipe' not in r['resp'], 'localStorage v8: resp sem g-equipe')
@@ -174,7 +174,7 @@ async def main():
             impl: c.implantacao, implC: !!rc['implantacao.pessoas'], eleg: c.elegiveis, pag: c.pagamento, pagSug: sugerido(CAMPO_POR_ID.pagamento),
             fase: S.fase, passo: S.passo, feitos: Object.keys(S.feitos).sort(), v: S.versao, ce: casoAtual().teste }; })()"""
         def conferir_v10(r, nome):
-            chk(r['v'] == 11, f'{nome}: versão 11')
+            chk(r['v'] == 13, f'{nome}: versão 11')
             chk(r['testes'] == ['poc'] and r['ce'] == 'poc', f'{nome}: teste poc → testes [poc] (casoEfetivo: {r["ce"]!r})')
             chk(r['poc'] == {'participantes': 20, 'meses': 3} and r['piloto']['participantes'] == '', f'{nome}: tamanho da PoC da v10 → caso.poc ({r["poc"]}, {r["piloto"]})')
             chk(r['internet'] == 'parcial' and r['disp'] == 'parcial', f'{nome}: infra complementar → internet e dispositivos parciais')
@@ -188,7 +188,7 @@ async def main():
         conferir_v10(r, 'exportação v10')
         chk(r['fase'] == 'contexto', 'exportação v10: importação abre o 1.1')
         ida = await pg.evaluate("() => { const d = JSON.stringify(dadosCaso()); importarCaso(d); return [JSON.parse(d).formato, " + V10_OK + "]; }")
-        chk(ida[0] == 11 and ida[1]['poc'] == {'participantes': 20, 'meses': 3} and ida[1]['impl']['pessoas'] == 5000, 'exportação v11 reimportada sem nova migração')
+        chk(ida[0] == 13 and ida[1]['poc'] == {'participantes': 20, 'meses': 3} and ida[1]['impl']['pessoas'] == 5000, 'exportação v11 reimportada sem nova migração')
         txt = open(os.path.join(FIX, 'localStorage_v10_poc.json')).read()
         await pg.evaluate("t => { localStorage.clear(); localStorage.setItem('aiedu-procurement-v9', t); }", txt)
         await pg.reload(); await pg.wait_for_timeout(400)
@@ -197,7 +197,7 @@ async def main():
         r = await pg.evaluate(V10_OK)
         conferir_v10(r, 'localStorage v10')
         chk(r['fase'] == 'expansao' and r['passo'] == '4b' and r['feitos'] == ['2a', '4b', '4c'], f'localStorage v10: passo 3.3 → 4.2, feitos 3.3/3.4 → 4.2/4.3 (2.1 mantido) ({r["fase"]}, {r["passo"]}, {r["feitos"]})')
-        chk(await pg.evaluate("JSON.parse(localStorage.getItem('aiedu-procurement-v9')).versao") == 11, 'localStorage v10: estado regravado na versão 11')
+        chk(await pg.evaluate("JSON.parse(localStorage.getItem('aiedu-procurement-v9')).versao") == 13, 'localStorage v10: estado regravado na versão 11')
 
         # ---- v11: campos numéricos novos formatados enquanto se digita
         NOVOS = [('#f-escolasInternet', "(()=>{S.caso.internet='parcial'; S.respC.internet=true; abrirFase('piloto','2d');})()", 'S.caso.escolasInternet', '12345', 12345),

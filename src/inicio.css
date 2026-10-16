@@ -270,3 +270,13 @@
   .mt-tab thead th, .mt-tab tbody th { position: static; }
   .mt-tab, .mt-fh, .mt-cn, .mt-selo, .mt-td.na { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* integração v13: seta ao lado do texto no botão principal; no plano (largura de leitura) a matriz cabe sem rolagem */
+.ini-cta { display: inline-flex; flex-direction: row; align-items: center; white-space: nowrap; }
+@media (min-width: 900px) {
+  body.vista-plano .mt-tab { min-width: 0; }
+  body.vista-plano .mt-c0 { width: 160px; }
+  body.vista-plano .mt-td { padding: 12px; }
+  body.vista-plano .mt-tab thead th { padding: 10px 12px; }
+  body.vista-plano .mt-fn { float: none; margin: 0 0 4px; }
+}
