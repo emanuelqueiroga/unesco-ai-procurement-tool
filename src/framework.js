@@ -30,6 +30,10 @@ const OPC = {
     ['permanencia', 'Reduzir o abandono e melhorar a permanência', ''],
     ['inclusao', 'Ampliar o acesso e a inclusão', 'Ex.: outros idiomas, deficiência'],
     ['gestao', 'Responder mais rápido às escolas e às famílias', ''],
+    // v13: impactos das prioridades "Governar", "Educar sobre" e "Educar para a era da IA" (plano/9_catalogo_prioridades.md)
+    ['letramento_ia', 'Desenvolver o letramento em IA', 'Ex.: entender como a IA funciona, erra e influencia decisões'],
+    ['uso_responsavel', 'Garantir o uso seguro e responsável da IA', 'Ex.: regras de uso, proteção de dados, integridade acadêmica'],
+    ['competencias', 'Desenvolver competências para a era da IA', 'Ex.: pensamento crítico, criatividade, resolução de problemas'],
     ['outro', 'Outro', 'Descreva no campo abaixo'],
   ],
   // v9: pergunta 2.0 (guia, cap. 14, "Instrumentos de aprendizagem")
@@ -215,6 +219,10 @@ const TAREFAS = [
   { id: 'rotinas', t: 'Apoiar rotinas administrativas', ex: 'Ex.: organizar horários, convocações e comunicados',
     classes: ['automacao', 'geracao'], autonomia: 4, usuarios: ['administrativo', 'gestores'], afetados: ['servidores', 'professores'], consequencias: ['organizacao'],
     dados: ['pessoais_serv'], reversibilidade: 'antes', cumulativo: 'nao', frequencia: 'diaria' },
+  // v13: prática orientada de letramento em IA (prioridade "Educar sobre a IA"); no motor, perfil próximo ao de tutoria
+  { id: 'pratica_ia', t: 'Praticar o uso crítico de ferramentas de IA em atividades orientadas', ex: 'Ex.: estudantes comparam respostas de um chatbot com fontes confiáveis',
+    classes: ['geracao', 'tutoria'], autonomia: 2, usuarios: ['estudantes', 'professores'], afetados: ['criancas', 'professores'], consequencias: ['formativa'],
+    dados: ['pessoais_est'], reversibilidade: 'antes', cumulativo: 'nao', frequencia: 'semanal' },
   { id: 'acessibilidade', t: 'Traduzir conteúdos ou torná-los acessíveis', ex: 'Ex.: legendas, leitura em voz alta, versão na língua local',
     classes: ['geracao'], autonomia: 2, usuarios: ['professores', 'estudantes'], afetados: ['criancas', 'familias'], consequencias: ['nenhuma'],
     dados: ['nenhum'], reversibilidade: 'antes', cumulativo: 'nao', frequencia: 'semanal' },
@@ -235,6 +243,9 @@ const IMPACTO_TAREFAS = {
   permanencia: ['alerta_precoce'],
   inclusao: ['acessibilidade', 'materiais'],
   gestao: ['duvidas', 'rotinas'],
+  letramento_ia: ['pratica_ia', 'materiais'],
+  uso_responsavel: ['duvidas'],
+  competencias: ['planos_aula', 'materiais', 'tutoria'],
   outro: [],
 };
 const ETAPAS_CRIANCAS = ['infantil', 'fund1', 'fund2', 'medio'];
