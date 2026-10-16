@@ -33,7 +33,7 @@ async def main():
     res = {}
     async with async_playwright() as p:
         b = await p.chromium.launch()
-        for lang in ['en','es','fr']:
+        for lang in (os.environ.get('IDIOMAS') or 'en,es,fr,ar,zh,bm,zu,sw').split(','):
             pg = await b.new_page(viewport={'width':1360,'height':900}); errs=[]
             pg.on('pageerror', lambda e: errs.append(str(e)))
             await pg.goto('file:///tmp/claude-0/nav_lang.html'); await pg.evaluate('localStorage.clear()'); await pg.reload(); await pg.wait_for_timeout(300)

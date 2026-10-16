@@ -1017,8 +1017,10 @@ function quebrarCJK(s, w, larg) {
 const RE_MARCAS_BIDI = /[​‎‏؜‪-‮⁦-⁩﻿]/g;
 function ajustarTextoPDF(x) {
   const F = PDF_FONTE;
-  const s = String(x == null ? '' : x).replace(RE_MARCAS_BIDI, '');
+  let s = String(x == null ? '' : x).replace(RE_MARCAS_BIDI, '');
   if (!F) return s;
+  // árabe: o motor bidi do jsPDF não espelha parênteses; num par cujo conteúdo é árabe, troca-se a abertura pelo fechamento
+  if (LANG === 'ar' && /[\u0600-\u06FF]/.test(s)) s = s.replace(/\(([^()]*[\u0600-\u06FF][^()]*)\)/g, ')$1(');
   return s.replace(/[^\x00-\x7e]/gu, ch => {
     if (F.cobre.has(ch)) return ch;
     if (PDF_TROCA[ch] != null) return PDF_TROCA[ch];

@@ -62,6 +62,8 @@ function unidadesParaPT(s) {
 }
 function normalizar(s) {
   const nums = [];
+  // marcas bidi que o Intl põe nas datas e números em árabe (3‏/10‏/2026) não fazem parte da chave
+  s = s.replace(/[\u200e\u200f\u061c]/g, '');
   const chave = s.replace(RE_NUM, m => { nums.push(m); return '{' + (nums.length - 1) + '}'; }).replace(/\s+/g, ' ').trim();
   return { chave, nums };
 }

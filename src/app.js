@@ -321,7 +321,7 @@ Descrição fornecida pelo gestor:
 - Situação atual: ${c.problema}
 - Resultado esperado: ${c.resultado || '(não informado)'}
 
-Responda APENAS com um objeto JSON, escrito em ${({ pt: 'português do Brasil', en: 'inglês', es: 'espanhol', fr: 'francês' })[LANG] || 'português do Brasil'} (os identificadores permitidos das sugestões ficam exatamente como estão), com estas chaves:
+Responda APENAS com um objeto JSON, escrito em ${({ pt: 'português do Brasil', en: 'inglês', es: 'espanhol', fr: 'francês', ar: 'árabe', zh: 'chinês simplificado', bm: 'bambara', zu: 'zulu', sw: 'suaíli' })[LANG] || 'português do Brasil'} (os identificadores permitidos das sugestões ficam exatamente como estão), com estas chaves:
 - "problemaReformulado": a situação atual reescrita sem nenhuma referência a tecnologia, IA, produto ou fornecedor (2 a 4 frases, sem inventar dados que não estejam na descrição);
 - "resultadoReformulado": o resultado desejado, mensurável, sem citar tecnologia (1 frase);
 - "lacunas": lista de 3 a 6 perguntas objetivas que a descrição ainda não responde e que o gestor precisa responder antes de avançar;

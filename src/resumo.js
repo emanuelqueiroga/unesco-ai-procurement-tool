@@ -943,7 +943,7 @@ function renderPlano() {
       <div class="rp-barra-t"><span class="rp-be">${esc(tr('Plano de contratação'))}</span><span class="rp-bc">${esc(titulo)}</span></div>
       <div class="rp-acoes"><button type="button" class="btn pri" data-act="pdf"><span aria-hidden="true" class="rp-ic">↓</span> Baixar PDF</button><button type="button" class="btn" data-act="voltar-percurso"><span aria-hidden="true" class="rp-ic">←</span> Voltar ao percurso</button><button class="btn" type="button" data-act="copiar">Copiar texto</button>${exp}<button class="btn" type="button" data-act="imp-json">Importar caso</button></div>
     </div>
-    <div class="rp-grade">${indice}<div class="rp-corpo">${capa}${out}</div></div>
+    <div class="rp-grade">${indice}<div class="rp-corpo">${capa}${out}${typeof avisoTradHTML === 'function' ? avisoTradHTML('rp-aviso-trad') : ''}</div></div>
   </section>`;
 }
 // Depois de cada render da vista do plano (fluxo.js): alturas das barras fixas e seção atual no índice

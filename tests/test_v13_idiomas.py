@@ -103,7 +103,9 @@ async def main():
                 if l != 'en': ok(a['loc'] != AVISO_EN, f'{l}: aviso traduzido ({a["loc"][:40]}…)')
                 # fallback EN: chave que o inglês tem e o idioma não
                 fb = await pg.evaluate("""(() => { const k = Object.keys(I18N.en).find(k => !(k in (I18N[LANG] || {})) && /\\p{L}{4}/u.test(k) && !/[{}]/.test(k) && I18N.en[k] !== k);
-                  return k ? [k, tr(k), I18N.en[k], tr('Texto que não existe em nenhum dicionário xyz')] : null; })()""")
+                  if (k) return [k, tr(k), I18N.en[k], tr('Texto que não existe em nenhum dicionário xyz')];
+                  const k2 = 'Chave só do inglês para testar o fallback'; I18N.en[k2] = 'English-only key to test the fallback'; if (typeof DIC_FALLBACK !== 'undefined') delete DIC_FALLBACK[LANG];
+                  const r = [k2, tr(k2), I18N.en[k2], tr('Texto que não existe em nenhum dicionário xyz')]; delete I18N.en[k2]; if (typeof DIC_FALLBACK !== 'undefined') delete DIC_FALLBACK[LANG]; return r; })()""")
                 ok(fb is not None and fb[1] == fb[2], f'{l}: chave ausente usa o inglês ({fb and fb[0][:30]!r} → {fb and fb[1][:30]!r})')
             else:
                 ok(not a['faixa'] and not a['sel'] and a['loc'] is None, f'{l}: sem aviso de tradução')
