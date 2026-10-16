@@ -4,6 +4,8 @@
 // =====================================================================
 const CASO_VAZIO = {
   titulo: '', situacao: 'nova', problema: '', resultado: '', linhaBase: 'nao', alternativa: '',
+  // v13 · 1.2.7 "Sim" ou "Em parte": para quais problemas (ids do 1.2.2 ou texto livre) e qual medida
+  linhaBaseProblemas: [], linhaBaseMedida: '', linhaBaseProblemaTxt: '',
   impactos: [], impactoOutro: '',
   // 2.0 (múltipla): ⊂ {'poc','piloto'} ou ['recomendar']; casoEfetivo deriva teste ('poc'|'piloto'|'ambos'|'recomendar'|'')
   testes: [], tarefas: [], tarefaOutra: '',
@@ -38,6 +40,7 @@ const CASOS = {
     problema: 'Professores do ensino fundamental relatam gastar parte relevante da semana preparando atividades e materiais adaptados, tempo que deixa de ir para o acompanhamento dos estudantes. A secretaria não sabe quanto tempo é gasto, em que tarefas, nem se a carga é igual entre escolas.',
     resultado: 'Reduzir o tempo de preparação de materiais sem perda de qualidade pedagógica, liberando tempo para acompanhamento individual.',
     impactos: ['tempo_docente'], linhaBase: 'parcial', alternativa: 'sim',
+    linhaBaseProblemas: ['C4'], linhaBaseMedida: 'Levantamento do tempo de planejamento numa amostra de escolas (exemplo)',
     testes: ['piloto'], tarefas: ['planos_aula', 'materiais'],
     usuarios: ['professores'], afetados: ['professores', 'criancas'], consequencias: ['nenhuma'], frequencia: 'semanal',
     nFerramentas: '1', conheceFerramentas: 'sim',
@@ -55,6 +58,7 @@ const CASOS = {
     problema: 'Nos anos finais do ensino fundamental, a proporção de estudantes abaixo do nível adequado em matemática é alta e desigual entre escolas. Os professores não conseguem oferecer prática individualizada e retorno imediato a turmas numerosas.',
     resultado: 'Aumentar a proficiência em matemática dos estudantes com maior defasagem, reduzindo a diferença entre escolas.',
     impactos: ['aprendizagem', 'desigualdade'], linhaBase: 'sim', alternativa: 'sim',
+    linhaBaseProblemas: ['C2'], linhaBaseMedida: 'Avaliação de matemática da rede no 9º ano (exemplo)',
     testes: ['piloto'], tarefas: ['tutoria'],
     usuarios: ['estudantes', 'professores'], afetados: ['criancas', 'professores', 'familias'], consequencias: ['formativa', 'apoio_est'], frequencia: 'continua',
     nFerramentas: '1', conheceFerramentas: 'sim',
@@ -72,6 +76,7 @@ const CASOS = {
     problema: 'A taxa de abandono no ensino médio está concentrada em algumas escolas e grupos. As equipes identificam estudantes em risco tarde, quando as faltas já se acumularam, e não há critério comum para priorizar o apoio.',
     resultado: 'Identificar mais cedo os estudantes que se beneficiariam de apoio e reduzir o abandono, sem gerar estigmatização.',
     impactos: ['permanencia'], linhaBase: 'sim', alternativa: 'nao',
+    linhaBaseProblemas: ['C7'], linhaBaseMedida: 'Taxa de abandono por escola no 1º ano do ensino médio (exemplo)',
     testes: ['recomendar'], tarefas: ['alerta_precoce'],
     usuarios: ['gestores', 'professores'], afetados: ['criancas', 'familias'], consequencias: ['apoio_est', 'recursos'], frequencia: 'semanal',
     nFerramentas: 'nao_sei', conheceFerramentas: 'nao', ferramentas: [],
@@ -88,6 +93,7 @@ const CASOS = {
     problema: 'As escolas enviam milhares de solicitações por mês à secretaria sobre normas, prazos e procedimentos. Respostas demoram, variam entre servidores e parte das dúvidas se repete.',
     resultado: 'Reduzir o tempo de resposta e a variação entre respostas, mantendo a correção normativa.',
     impactos: ['gestao'], linhaBase: 'parcial', alternativa: 'sim',
+    linhaBaseProblemas: ['C9'], linhaBaseMedida: 'Registro das solicitações das escolas e dos prazos de resposta (exemplo)',
     testes: ['poc'], tarefas: ['duvidas'],
     usuarios: ['administrativo', 'gestores'], afetados: ['servidores'], consequencias: ['organizacao'], frequencia: 'diaria',
     nFerramentas: '1', conheceFerramentas: 'sim',
@@ -103,21 +109,23 @@ const CASOS = {
 };
 
 // Exemplos ilustrativos de contexto (coerentes com os casos A–D); estudantes por ano ou série.
+// v13: prioridade "Educar com a IA" e os problemas de PROBLEMAS_EXEMPLO (prioridades.js), com subcategorias; sem domínio
+// nem componentes. Os ids ficam escritos aqui porque casos.js também é carregado sem prioridades.js (testes do motor).
 const CTX_EX = {
   A: { nivel: 'estado', local: 'Rede estadual (exemplo)', etapas: {
     fund2: { on: true, escolas: 420, anos: [41000, 40000, 40000, 39000], alunos: 160000, soTotal: false },
     medio: { on: true, escolas: 380, anos: [48000, 47000, 45000], alunos: 140000, soTotal: false } },
-    dominio: 'qualificacao', comps: ['alfabetizacao', 'matematica', 'ciencias'], olhando: 'Professores dedicam muitas horas ao planejamento de aulas e à adaptação de materiais.' },
+    prioridades: ['com'], problemas: ['C4'], subs: ['C4a', 'C4b'], problemaOutro: '', olhando: 'Professores dedicam muitas horas ao planejamento de aulas e à adaptação de materiais.' },
   B: { nivel: 'estado', local: 'Rede estadual (exemplo)', etapas: {
     fund2: { on: true, escolas: 600, anos: [40000, 38000, 37000, 35000], alunos: 150000, soTotal: false } },
-    dominio: 'qualificacao', comps: ['matematica'], olhando: 'Estudantes chegam ao 9º ano com proficiência em matemática abaixo do esperado.' },
+    prioridades: ['com'], problemas: ['C2'], subs: ['C2b'], problemaOutro: '', olhando: 'Estudantes chegam ao 9º ano com proficiência em matemática abaixo do esperado.' },
   C: { nivel: 'estado', local: 'Rede estadual (exemplo)', etapas: {
     medio: { on: true, escolas: 300, anos: [28000, 27000, 25000], alunos: 80000, soTotal: false } },
-    dominio: 'qualificacao', comps: ['outro'], compOutro: 'Permanência e conclusão do ensino médio', olhando: 'Alta taxa de abandono no 1º ano do ensino médio.' },
+    prioridades: ['com'], problemas: ['C7'], subs: ['C7a', 'C7c'], problemaOutro: '', olhando: 'Alta taxa de abandono no 1º ano do ensino médio.' },
   D: { nivel: 'municipio', local: 'Secretaria municipal (exemplo)', etapas: {
     infantil: { on: true, escolas: 120, anos: [12000, 18000], alunos: 30000, soTotal: false },
     fund1: { on: true, escolas: 150, anos: [9000, 9000, 9000, 9000, 9000], alunos: 45000, soTotal: false } },
-    dominio: 'qualificacao', comps: ['outro'], compOutro: 'Gestão escolar: normas, prazos e procedimentos', olhando: 'Servidores das escolas esperam dias por respostas sobre normas e procedimentos.' },
+    prioridades: ['com'], problemas: ['C9'], subs: ['C9a'], problemaOutro: '', olhando: 'Servidores das escolas esperam dias por respostas sobre normas e procedimentos.' },
 };
 // Respostas de governança (1.3) dos exemplos
 const RESP_EX = {
