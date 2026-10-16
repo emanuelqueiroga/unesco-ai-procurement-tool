@@ -1,18 +1,51 @@
 // =====================================================================
-// Idiomas: PT (origem), EN, ES, FR
+// Idiomas: PT (origem), EN, ES, FR e, na v13 (RQ-18), AR, ZH, BM, ZU e SW
 // O texto-fonte em português é a chave. Números viram marcadores {0}, {1}…
 // para que o mesmo modelo sirva a qualquer valor ("Ano 2" → "Year {0}").
-// I18N é injetado no build a partir de i18n/{en,es,fr}.json.
+// I18N é injetado no build a partir de i18n/<l>.json (en es fr ar zh bm zu sw).
 // =====================================================================
-const IDIOMAS = [['pt', 'Português', 'pt-BR'], ['en', 'English', 'en'], ['es', 'Español', 'es'], ['fr', 'Français', 'fr']];
+// [código, nome na própria língua, locale do Intl, lang do <html>, direção]
+const IDIOMAS = [['pt', 'Português', 'pt-BR'], ['en', 'English', 'en'], ['es', 'Español', 'es'], ['fr', 'Français', 'fr'],
+  ['ar', 'العربية', 'ar-u-nu-latn', 'ar', 'rtl'], ['zh', '中文', 'zh-CN', 'zh-Hans'], ['bm', 'Bamanankan', 'fr-ML', 'bm'],
+  ['zu', 'isiZulu', 'zu-ZA', 'zu'], ['sw', 'Kiswahili', 'sw', 'sw']];
+// v13: idiomas traduzidos sem revisão nativa. Neles, a chave que falta usa o inglês (I18N.en), e não o português,
+// e a plataforma mostra o aviso de tradução preliminar até o idioma ser marcado como revisado
+// (aqui, com true, ou no dicionário, com "__revisado": true em i18n/<l>.json ou i18n/v13_*_<l>.json).
+const IDIOMAS_NOVOS = ['ar', 'zh', 'bm', 'zu', 'sw'];
+const IDIOMAS_REVISADOS = { ar: false, zh: false, bm: false, zu: false, sw: false };
+// Locales do Intl: o primeiro que o navegador suporta (números, datas, nomes de moeda).
+//  ar: algarismos ocidentais (-u-nu-latn), como nos dicionários.
+//  bm: o Chromium não traz o CLDR do bambara; fr-ML (francês do Mali) em todos os navegadores, para que os
+//      separadores sejam os mesmos (1 234 567,8) e as datas saiam em francês, língua de trabalho no Mali.
+//  zu: zu-ZA quando houver (Firefox); senão en (os mesmos separadores, 1,234.5; datas em inglês).
+const LOC_CANDIDATOS = { ar: ['ar-u-nu-latn'], zh: ['zh-CN', 'zh'], bm: ['fr-ML', 'fr'], zu: ['zu-ZA', 'zu', 'en'], sw: ['sw', 'sw-KE', 'en'] };
+const LOC_RESOLVIDO = {};
 let LANG = 'pt';
-function LOC() { const x = IDIOMAS.find(i => i[0] === LANG); return x ? x[2] : 'pt-BR'; }
+function LOC() {
+  const x = IDIOMAS.find(i => i[0] === LANG);
+  if (!x) return 'pt-BR';
+  const c = LOC_CANDIDATOS[LANG];
+  if (!c) return x[2];
+  if (!LOC_RESOLVIDO[LANG]) {
+    let r = c[c.length - 1];
+    try { r = c.find(l => Intl.NumberFormat.supportedLocalesOf([l]).length && Intl.DateTimeFormat.supportedLocalesOf([l]).length) || r; } catch (e) { }
+    LOC_RESOLVIDO[LANG] = r;
+  }
+  return LOC_RESOLVIDO[LANG];
+}
+function idiomaInfo(l) { const x = IDIOMAS.find(i => i[0] === (l || LANG)) || IDIOMAS[0]; return { cod: x[0], nome: x[1], loc: x[2], lang: x[3] || x[2], dir: x[4] || 'ltr' }; }
 
 const RE_NUM = /(?<![\p{L}\d.,])[-−+]?\d+(?:[.,  ]\d+)*/gu;
 // Magnitudes abreviadas (milhar, milhão, bilhão) e unidade "milhares de <moeda>" por idioma.
 // Usadas por grande() e unidMil() (custos_ui.js). Em inglês, "162 mil" se leria como 162 milhões.
-const MAGNITUDES = { pt: ['mil', 'mi', 'bi'], en: ['k', 'M', 'bn'], es: ['mil', 'M', 'mil M'], fr: ['k', 'M', 'Md'] };
-const UNID_MIL = { pt: c => c + ' mil', en: c => c + ' thousand', es: c => 'miles de ' + c, fr: c => 'milliers de ' + c };
+// v13: ar k/M/bn (o árabe não tem abreviação corrente; os valores ficam isolados da esquerda para a direita
+// na página e no PDF, e uma palavra árabe dentro deles inverteria a leitura: "US$ 2.65 M" e não "US$ 2.65 مليون");
+// zh 千/百万/十亿 (grande() divide por 10³, 10⁶ e 10⁹, por isso não 万/亿); bm k/M/Md (formas francesas,
+// correntes no Mali); zu k/M/bn (as da África do Sul); sw k/M/B (as da imprensa do Quênia e da Tanzânia).
+const MAGNITUDES = { pt: ['mil', 'mi', 'bi'], en: ['k', 'M', 'bn'], es: ['mil', 'M', 'mil M'], fr: ['k', 'M', 'Md'],
+  ar: ['k', 'M', 'bn'], zh: ['千', '百万', '十亿'], bm: ['k', 'M', 'Md'], zu: ['k', 'M', 'bn'], sw: ['k', 'M', 'B'] };
+const UNID_MIL = { pt: c => c + ' mil', en: c => c + ' thousand', es: c => 'miles de ' + c, fr: c => 'milliers de ' + c,
+  ar: c => 'آلاف ' + c, zh: c => '千' + c, bm: c => c + ' ×1000', zu: c => 'izinkulungwane ze-' + c, sw: c => 'maelfu ya ' + c };
 function magnitudes(l) { return MAGNITUDES[l || LANG] || MAGNITUDES.pt; }
 function unidMilDe(cod, l) { return (UNID_MIL[l || LANG] || UNID_MIL.pt)(cod); }
 // Devolve valores e unidades do idioma exibido à forma em português (a forma das chaves do dicionário):
@@ -32,11 +65,24 @@ function normalizar(s) {
   const chave = s.replace(RE_NUM, m => { nums.push(m); return '{' + (nums.length - 1) + '}'; }).replace(/\s+/g, ' ').trim();
   return { chave, nums };
 }
+// Dicionário do idioma exibido. Nos idiomas novos, o que falta vem do inglês (nunca do português).
+const DIC_FALLBACK = {};
+function dicionario(l) {
+  l = l || LANG;
+  if (typeof I18N === 'undefined') return {};
+  const d = I18N[l] || {};
+  if (!IDIOMAS_NOVOS.includes(l)) return d;
+  const en = I18N.en || {}, c = DIC_FALLBACK[l];
+  if (c && c.d === d && c.en === en) return c.m;
+  const m = Object.assign({}, en, d);
+  DIC_FALLBACK[l] = { d, en, m };
+  return m;
+}
 function tr(s) {
   if (LANG === 'pt' || s == null) return s;
   const str = String(s);
   if (!/\p{L}/u.test(str)) return str;
-  const dic = (typeof I18N !== 'undefined' && I18N[LANG]) || {};
+  const dic = dicionario();
   const pre = str.match(/^\s*\[[ x]\] /);
   if (pre) return pre[0] + tr(str.slice(pre[0].length));
   const m = str.match(/^(\s*)([\s\S]*?)(\s*)$/);
@@ -92,10 +138,12 @@ function trTexto(n) {
   const reg = ORIG.get(n);
   let orig = n.data;
   if (reg && n.data === reg.out) orig = reg.orig;
-  const out = tr(orig);
+  const out = setasRTL(tr(orig));
   ORIG.set(n, { orig, out });
   if (n.data !== out) n.data = out;
 }
+// v13: em árabe (rtl), as setas do texto apontam para o outro lado ("Continuar →" → "… ←")
+function setasRTL(s) { return LANG === 'ar' && typeof s === 'string' && /[→←]/.test(s) ? s.replace(/[→←]/g, c => (c === '→' ? '←' : '→')) : s; }
 function trAttrs(el) {
   ATTRS.forEach(a => {
     if (!el.hasAttribute(a)) return;
@@ -130,7 +178,11 @@ function observarIdioma() {
 }
 function aplicarIdioma(l) {
   LANG = IDIOMAS.some(i => i[0] === l) ? l : 'pt';
-  document.documentElement.lang = LOC();
+  const inf = idiomaInfo();
+  document.documentElement.lang = inf.lang;
+  document.documentElement.dir = inf.dir;   // v13: árabe da direita para a esquerda (idiomas.css)
+  carregarFonteIdioma(LANG);
+  atualizarAvisoTrad();
   traduzirArvore(document.body);
   const t = document.querySelector('title'); if (t) { if (!t.dataset.orig) t.dataset.orig = t.textContent; t.textContent = tr(t.dataset.orig); }
 }
@@ -155,12 +207,13 @@ function sepNum() {
   return SEP_CACHE[loc];
 }
 const ESPACOS_NUM = /[\s    ]/g;
+const MARCAS_BIDI = /[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069]/g;   // v13: o Intl em árabe põe marcas de direção ("\u061c-5")
 // "160.000" (pt) → 160000; "0,5" (pt) → 0.5; "160,000" (en) → 160000; "" → ''
 function lerNumero(s) {
   if (typeof s === 'number') return isFinite(s) ? s : '';
   if (s == null) return '';
   const { grupo, decimal } = sepNum();
-  let t = String(s).replace(ESPACOS_NUM, '').replace(/[−–]/g, '-');
+  let t = String(s).replace(ESPACOS_NUM, '').replace(MARCAS_BIDI, '').replace(/[−–]/g, '-');
   if (!t) return '';
   const outro = decimal === ',' ? '.' : ',';
   if (!t.includes(decimal)) {
@@ -259,7 +312,96 @@ const TXT_VINCULO = 'Projeto vinculado à Cátedra UNESCO UNITWIN de Inteligênc
 const TXT_ISENCAO = 'As designações empregadas e a apresentação do material nesta ferramenta não implicam a expressão de qualquer opinião da UNESCO. Os autores são responsáveis pela escolha e pela apresentação dos fatos e pelas opiniões expressas, que não são necessariamente as da UNESCO e não comprometem a Organização.';
 function montarIdiomas() {
   const sel = document.getElementById('sel-lang');
-  if (sel) { sel.innerHTML = IDIOMAS.map(([c, n]) => `<option value="${c}" ${c === LANG ? 'selected' : ''}>${n}</option>`).join(''); }
+  if (sel) {
+    sel.innerHTML = IDIOMAS.map(([c, n]) => { const f = idiomaInfo(c); return `<option value="${c}" lang="${f.lang}" dir="${f.dir}" ${c === LANG ? 'selected' : ''}>${n}</option>`; }).join('');
+    // v13: aviso de tradução preliminar logo abaixo do seletor, quando se escolhe um idioma novo
+    if (!sel.dataset.avisoTrad) { sel.dataset.avisoTrad = '1'; sel.addEventListener('change', () => mostrarAvisoLang(sel.value)); }
+  }
   const v = document.getElementById('txt-vinculo'); if (v) v.textContent = TXT_VINCULO;
   const i = document.getElementById('txt-isencao'); if (i) i.textContent = TXT_ISENCAO;
+}
+
+// ---------------------------------------------------------- v13 (RQ-18): fontes dos idiomas novos na página
+// Google Fonts é a única origem externa de CSS. Árabe: Noto Sans Arabic (interface) e Noto Naskh Arabic (títulos);
+// chinês: Noto Sans SC e Noto Serif SC (o Google entrega só as fatias usadas, por unicode-range); bambara: o
+// Source Sans 3 cobre ɛ ɔ ɲ ŋ, mas não as maiúsculas Ɛ Ɔ Ɲ (que text-transform: uppercase produz) — Noto Sans e
+// Noto Serif entram na pilha (idiomas.css) só para essas letras (parâmetro text=, poucos KB).
+const FONTES_IDIOMA = {
+  ar: 'https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@500;600;700&family=Noto+Sans+Arabic:wght@400;600;700&display=swap',
+  zh: 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700&family=Noto+Serif+SC:wght@600;700&display=swap',
+  bm: 'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Noto+Serif:wght@600;700&display=swap&text=' + encodeURIComponent('ƐƆƝŊɛɔɲŋ\u0300\u0301\u030c'),
+};
+function carregarFonteIdioma(l) {
+  const url = FONTES_IDIOMA[l];
+  if (!url || typeof document === 'undefined' || document.getElementById('fonte-' + l)) return;
+  try {
+    const k = document.createElement('link');
+    k.id = 'fonte-' + l; k.rel = 'stylesheet'; k.href = url;
+    (document.head || document.documentElement).appendChild(k);
+  } catch (e) { }
+}
+
+// ---------------------------------------------------------- v13 (RQ-18): aviso de tradução preliminar
+// Nos idiomas novos ainda não revisados: no idioma e em inglês, (a) abaixo do seletor ao escolher o idioma,
+// (b) numa faixa no topo da página, (c) no pé do plano de contratação e (d) na capa e no rodapé do PDF
+// (avisoTradPDF, plano_pdf.js). Textos em i18n/v13_idiomas_<l>.json.
+const AVISO_TRAD = 'A linguagem desta versão é uma tradução preliminar e ainda precisa ser revisada por falantes nativos.';
+const AVISO_TRAD_EN = 'The language of this version is a preliminary translation and still needs to be reviewed by native speakers.';
+function idiomaRevisado(l) {
+  if (IDIOMAS_REVISADOS[l]) return true;
+  const d = typeof I18N !== 'undefined' && I18N[l];
+  return !!(d && (d.__revisado === true || d.__revisado === 'true'));
+}
+function avisoTraducao(l) {
+  l = l || LANG;
+  if (!IDIOMAS_NOVOS.includes(l) || idiomaRevisado(l)) return null;
+  const I = typeof I18N !== 'undefined' ? I18N : {};
+  const en = (I.en || {})[AVISO_TRAD] || AVISO_TRAD_EN;
+  const f = idiomaInfo(l);
+  return { local: (I[l] || {})[AVISO_TRAD] || en, en, lang: f.lang, dir: f.dir };
+}
+function escAviso(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]); }
+// HTML do aviso (data-notr: o tradutor do DOM não toca nele)
+function avisoTradHTML(cls, l) {
+  const a = avisoTraducao(l);
+  if (!a) return '';
+  const en = a.en !== a.local ? ` <span class="aviso-trad-en" lang="en" dir="ltr">${escAviso(a.en)}</span>` : '';
+  return `<p class="aviso-trad${cls ? ' ' + cls : ''}" role="note" data-notr data-aviso-trad="${escAviso(l || LANG)}"><span class="aviso-trad-ic" aria-hidden="true">!</span><span class="aviso-trad-tx"><span lang="${a.lang}" dir="${a.dir}">${escAviso(a.local)}</span>${en}</span></p>`;
+}
+// (a) abaixo do seletor de idioma: aparece ao escolher um idioma novo; fecha no ×, com Esc ou ao voltar a PT/EN/ES/FR
+function mostrarAvisoLang(l) {
+  const box = document.getElementById('aviso-lang');
+  if (!box) return;
+  const h = avisoTradHTML('aviso-lang-tx', l);
+  if (!h) { box.hidden = true; box.innerHTML = ''; return; }
+  box.innerHTML = h + `<button type="button" class="aviso-lang-x" data-notr aria-label="${escAviso((dicionario(l) || {})['Fechar'] || 'Close')}">×</button>`;
+  box.hidden = false;
+  const fechar = () => { box.hidden = true; document.removeEventListener('keydown', esc, true); };
+  const esc = e => { if (e.key === 'Escape') fechar(); };
+  box.querySelector('.aviso-lang-x').addEventListener('click', fechar);
+  document.addEventListener('keydown', esc, true);
+}
+// (b) faixa no topo e (c) pé do plano; o plano é redesenhado a cada render, por isso um observador recoloca o aviso
+let OBS_AVISO = null;
+function avisoNoPlano() {
+  const corpo = document.querySelector('#plano .rp-corpo');
+  if (!corpo) return;
+  const atual = corpo.querySelector(':scope > .rp-aviso-trad');
+  const a = avisoTraducao();
+  if (!a) { if (atual) atual.remove(); return; }
+  if (atual && atual.dataset.avisoTrad === LANG) return;
+  if (atual) atual.remove();
+  corpo.insertAdjacentHTML('beforeend', avisoTradHTML('rp-aviso-trad'));
+}
+function atualizarAvisoTrad() {
+  if (typeof document === 'undefined') return;
+  const f = document.getElementById('faixa-trad');
+  if (f) { const h = avisoTradHTML('faixa-trad-tx'); f.innerHTML = h; f.hidden = !h; }
+  const box = document.getElementById('aviso-lang');
+  if (box && !avisoTraducao()) { box.hidden = true; box.innerHTML = ''; }
+  avisoNoPlano();
+  if (!OBS_AVISO && document.body && typeof MutationObserver !== 'undefined') {
+    OBS_AVISO = new MutationObserver(() => avisoNoPlano());
+    OBS_AVISO.observe(document.body, { childList: true, subtree: true });
+  }
 }

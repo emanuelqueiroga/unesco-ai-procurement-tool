@@ -1,0 +1,196 @@
+/* =====================================================================
+   v13 (RQ-18, pacote L): idiomas novos (ar, zh, bm, zu, sw).
+   1. Aviso de tradução preliminar (faixa no topo, aviso abaixo do seletor, pé do plano).
+   2. Fontes por idioma (:lang): árabe, chinês e bambara. Nenhum tamanho reduzido.
+   3. Árabe da direita para a esquerda ([dir=rtl]): o grid e o flex já se espelham com dir=rtl; aqui ficam as
+      propriedades físicas (left/right, bordas de destaque, cantos, setas, posições) das folhas da página
+      (shell.html, fluxo.css, inicio.css, CSS_FORMULA e CSS_PLANO_V13). Valores, números e códigos ficam
+      isolados da esquerda para a direita. A mandala e os gráficos (SVG) não se espelham.
+   Nada aqui muda o layout LTR: as regras de direção só valem com [dir=rtl], e as de fonte só com :lang().
+   ===================================================================== */
+
+/* ---------- 1. aviso de tradução preliminar */
+.faixa-trad { background: var(--warn-bg); color: var(--ink); border-bottom: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
+.faixa-trad[hidden], .aviso-lang[hidden] { display: none; }
+.aviso-trad { display: flex; gap: 10px; align-items: flex-start; margin: 0; font-size: .86rem; line-height: 1.45; color: var(--ink-2); }
+.aviso-trad-ic { flex: none; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-top: 1px; border-radius: 50%;
+  background: var(--warn); color: #fff; font-weight: 800; font-size: .74rem; line-height: 1; }
+.aviso-trad-tx { display: flex; flex-wrap: wrap; gap: 2px 12px; min-width: 0; }
+.aviso-trad-tx > span { min-width: 0; overflow-wrap: anywhere; }
+.aviso-trad-en { color: var(--muted); }
+.faixa-trad .aviso-trad { max-width: 1400px; margin: 0 auto; padding: 6px 24px; }
+/* (a) abaixo do seletor de idioma: sobre o conteúdo, sem mudar a altura do cabeçalho */
+.ctrls { position: relative; }
+.aviso-lang { position: absolute; top: calc(100% + 8px); inset-inline-start: 0; z-index: 30; width: min(26rem, calc(100vw - 32px));
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 10px 10px 10px 12px;
+  background: var(--warn-bg); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); border-radius: var(--r-card); box-shadow: var(--shadow); }
+.aviso-lang .aviso-trad-tx { flex-direction: column; }
+.aviso-lang-x { flex: none; width: 28px; height: 28px; display: inline-grid; place-items: center; border: 1px solid var(--line-2); border-radius: var(--r);
+  background: var(--surface); color: var(--ink); cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0; }
+.aviso-lang-x:hover { border-color: var(--line-3); }
+/* (c) pé do plano de contratação */
+.rp-aviso-trad { margin-top: 28px; padding: 12px 16px; border-radius: 8px; background: var(--warn-bg); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
+@media (max-width: 900px) {
+  .faixa-trad .aviso-trad { padding: 6px 16px; }
+}
+@media print { .aviso-lang { display: none; } }
+
+/* ---------- 2. fontes por idioma (as folhas do Google Fonts entram por carregarFonteIdioma, i18n.js) */
+/* árabe: o latim (inglês do fallback, siglas, números) continua no Source Sans 3; as letras árabes vêm da Noto */
+:root:lang(ar) {
+  --f-ui: "Source Sans 3", "Noto Sans Arabic", "Source Sans Pro", -apple-system, "Segoe UI", Tahoma, "Noto Sans", system-ui, sans-serif;
+  --f-head: "Source Serif 4", "Noto Naskh Arabic", "Noto Sans Arabic", "Source Serif Pro", Georgia, serif;
+}
+:root:lang(zh) {
+  --f-ui: "Source Sans 3", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Source Sans Pro", -apple-system, "Segoe UI", "Noto Sans CJK SC", system-ui, sans-serif;
+  --f-head: "Source Serif 4", "Noto Serif SC", "Noto Sans SC", "Source Serif Pro", "Songti SC", Georgia, serif;
+}
+/* bambara: Noto Sans/Serif só para as letras que o Source Sans 3 / Source Serif 4 não têm (Ɛ Ɔ Ɲ) */
+:root:lang(bm) {
+  --f-ui: "Source Sans 3", "Noto Sans", "Source Sans Pro", -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+  --f-head: "Source Serif 4", "Noto Serif", "Source Serif Pro", Charter, Georgia, serif;
+}
+/* árabe e chinês não têm itálico nem espaçamento entre letras (no árabe, ele quebra a ligação das letras) */
+:root:is(:lang(ar), :lang(zh)) :is(body, body *) { font-style: normal !important; }
+:root:lang(ar) body * { letter-spacing: 0 !important; }
+:root:lang(ar) body { line-height: 1.6; }
+
+/* ---------- 3. árabe: da direita para a esquerda */
+/* textos em inglês (fallback) num bloco árabe: cada parágrafo toma a direção do próprio texto (pontuação no lugar)
+   e continua alinhado à direita */
+[dir=rtl] :is(p, li, h1, h2, h3, h4, h5, dt, dd, label, summary, caption, legend, small, blockquote, figcaption, span, b, strong, a, button, td, th, option, div, .lbl) { unicode-bidi: plaintext; }
+[dir=rtl] :is(p, li, h1, h2, h3, h4, h5, dt, dd, caption, figcaption, blockquote) { text-align: right; }
+/* valores, números e códigos: isolados e da esquerda para a direita */
+[dir=rtl] :is(.num, td.n, .kpi .v, .resumo .linha span:last-child, .rp-bar-v, .rp-col-v, .rp-cont b, .rp-in, .ini-pn, .qn, .yr .small, .mt-v b, .fx-r, .cap, .ct, .ix, .dot, .pdnum, .sf-n, .fase-n, .ini-f-n, .mt-fn, .rp-tn, .rp-n) { unicode-bidi: isolate; direction: ltr; }
+[dir=rtl] td.n, [dir=rtl] th.n { text-align: left; }
+[dir=rtl] input.num, [dir=rtl] input[data-num], [dir=rtl] input[type=number] { direction: ltr; unicode-bidi: isolate; text-align: right; }
+[dir=rtl] td.n input, [dir=rtl] .g-c input, [dir=rtl] .fe-c input, [dir=rtl] .horas .campo input, [dir=rtl] .yr input { text-align: left; }
+/* SVG (mandala, gráficos, ícones): sem espelhamento e com as âncoras de texto como no LTR */
+[dir=rtl] svg { direction: ltr; }
+[dir=rtl] .mandala, [dir=rtl] .chart { transform: none; }
+/* setas desenhadas em SVG: apontam para a esquerda (o texto das setas → ← é trocado em i18n.js) */
+[dir=rtl] .ini-cta .ico { transform: scaleX(-1); }
+[dir=rtl] .ini-cta:hover .ico { transform: scaleX(-1) translateX(3px); }
+
+/* cabeçalho e rodapé */
+[dir=rtl] .brand { padding-left: 0; border-left: 0; padding-right: 20px; border-right: 1px solid var(--line); }
+[dir=rtl] .logos .logo + .logo, [dir=rtl] .rodape-logos .logo + .logo, [dir=rtl] .rp-logos .rp-logo + .rp-logo { padding-left: 0; border-left: 0; padding-right: 12px; border-right: 1px solid var(--plate-line); }
+[dir=rtl] .rp-logos .rp-logo + .rp-logo { padding-right: 14px; border-right-color: var(--rp-line); }
+[dir=rtl] .top { background-position: right top; }
+[dir=rtl] .aviso-lang { padding: 10px 12px 10px 10px; }
+
+/* painel lateral e abas */
+[dir=rtl] nav.tabs button { text-align: right; padding: 9px 14px 9px 12px; }
+[dir=rtl] nav.tabs button .ct { margin-left: 0; margin-right: auto; }
+[dir=rtl] nav.tabs button[aria-current="true"] { box-shadow: var(--shadow-sm), inset -3px 0 0 var(--tab-ind), 0 0 0 1px var(--line); }
+[dir=rtl] .resumo .linha span:last-child, [dir=rtl] .fatos .linha > span:last-child, [dir=rtl] .estim .linha > span:last-child { text-align: left; }
+
+/* tabelas */
+[dir=rtl] th, [dir=rtl] td { text-align: right; }
+[dir=rtl] tr.sub td:first-child { padding-left: 12px; padding-right: 24px; }
+[dir=rtl] .sw { margin: 0 4px 0 5px; }
+[dir=rtl] .legend i { margin-right: 0; margin-left: 6px; }
+
+/* bordas de destaque (início do texto) */
+[dir=rtl] .alert { border-left: 1px solid transparent; border-right: 3px solid; }
+[dir=rtl] .alert.bloqueio { border-left-color: color-mix(in srgb, var(--crit) 22%, transparent); border-right-color: var(--crit); }
+[dir=rtl] .alert.atencao { border-left-color: color-mix(in srgb, var(--warn) 22%, transparent); border-right-color: var(--warn); }
+[dir=rtl] .alert.info { border-left-color: color-mix(in srgb, var(--info) 18%, transparent); border-right-color: var(--info); }
+[dir=rtl] .note { border-left: 0; padding-left: 0; border-right: 3px solid var(--line-2); padding-right: 12px; }
+[dir=rtl] .ai { border-left: 1px solid var(--line); border-right: 3px solid var(--acc-cyan); }
+[dir=rtl] .senao { border-left: 0; border-right: 3px solid var(--crit); }
+[dir=rtl] .disc { border-left: 0; border-right: 3px solid var(--info); }
+[dir=rtl] .info-nota { border-left: 0; border-right: 3px solid var(--info); }
+[dir=rtl] .aviso.rev, [dir=rtl] .aviso.sem-ferr { border-left: 1px solid color-mix(in srgb, var(--info) 30%, transparent); border-right: 3px solid var(--info); }
+[dir=rtl] .q .sug-nota { border-left: 0; padding-left: 0; border-right: 3px solid var(--pd-ink); padding-right: 10px; }
+[dir=rtl] .q-det-in { border-left: 0; border-right: 3px solid var(--brand); border-radius: 8px 0 0 8px; }
+[dir=rtl] .desc-bloco { border-left: 1px solid var(--line); border-right: 3px solid var(--f2); }
+[dir=rtl] .ini-salvo { border-left: 1px solid var(--line-2); border-right: 5px solid var(--brand); }
+[dir=rtl] .ini-f-res { border-left: 0; border-right: 4px solid var(--fs); }
+[dir=rtl] .ini-cel { border-left: 1px solid var(--ini-line); border-right: 5px solid var(--cam); }
+[dir=rtl] .ini-cel.na { border-right-color: #B8C2CC; }
+[dir=rtl] .rp-princ { border-left: 0; border-right: 5px solid var(--rp-brand); }
+[dir=rtl] .rp-tc { border-left: 1px solid var(--rp-line); border-right: 5px solid var(--rp-alta); padding: 18px 16px 18px 20px; }
+[dir=rtl] .fx-leitura { border-left: 1px solid var(--line, #DDE3E9); border-right: 5px solid var(--f3, #1F6FB8); }
+
+/* listas */
+[dir=rtl] :is(.aviso, .vazio, .parcial, .pri-nota, .disc, .report, .fx-origem, .fx-leitura) :is(ul, ol), [dir=rtl] .req { padding-left: 0; padding-right: 20px; }
+[dir=rtl] .dom-ex ul { padding-left: 0; padding-right: 18px; }
+[dir=rtl] .rp ul.req { padding-left: 0; padding-right: 22px; }
+[dir=rtl] .estim ul.req { padding-right: 0; }
+
+/* percurso: stepper, fases, passos e perguntas */
+[dir=rtl] .step-f, [dir=rtl] .fase-cab, [dir=rtl] .passo-cab, [dir=rtl] .ini-f-b, [dir=rtl] button.link, [dir=rtl] label.link { text-align: right; }
+[dir=rtl] .step-f:first-child { border-radius: 0 8px 8px 0; }
+[dir=rtl] .step-r { border-radius: 8px 0 0 8px; }
+[dir=rtl] .fase.f1 .fase-cab { background: linear-gradient(270deg, var(--f1), color-mix(in srgb, var(--f1) 55%, #fff)); }
+[dir=rtl] .fase.f2 .fase-cab { background: linear-gradient(270deg, var(--f2), color-mix(in srgb, var(--f2) 60%, var(--f1))); }
+[dir=rtl] .fase.f3 .fase-cab { background: linear-gradient(270deg, var(--f3), color-mix(in srgb, var(--f3) 65%, var(--f2))); }
+[dir=rtl] .fase.f4 .fase-cab { background: linear-gradient(270deg, var(--f4), color-mix(in srgb, var(--f4) 70%, var(--f3))); }
+[dir=rtl] .passo-topo > button.info { margin-right: 0; margin-left: 14px; }
+[dir=rtl] .selo { margin-left: 0; margin-right: 6px; }
+[dir=rtl] .qn { margin-right: 0; margin-left: 4px; }
+[dir=rtl] .q .tag.opc, [dir=rtl] .q-det-c .tag.opc { margin-left: 0; margin-right: 4px; }
+[dir=rtl] .q .sug-tag, [dir=rtl] .clist li.extra .tag { margin-left: 0; margin-right: 6px; }
+[dir=rtl] .cn-t { margin-right: 0; margin-left: 4px; }
+[dir=rtl] .leg-m button.info { margin-left: 0; margin-right: 2px; }
+[dir=rtl] .cat > summary .small { margin-left: 0; margin-right: auto; }
+[dir=rtl] details.prob-sub { margin-left: 0; margin-right: 27px; }
+[dir=rtl] .campo > input, [dir=rtl] .campo > textarea { padding-right: 10px; padding-left: 30px; }
+[dir=rtl] .campo .ok-in { right: auto; left: 10px; }
+[dir=rtl] .dom input { right: auto; left: 14px; }
+[dir=rtl] .dom-t b { padding-right: 0; padding-left: 24px; }
+[dir=rtl] .seg button { border-left: 0; border-right: 1px solid var(--line-2); }
+[dir=rtl] .seg button:first-child { border-right: 0; }
+[dir=rtl] .fe-nome input { text-align: right; }
+[dir=rtl] .step::before { left: auto; right: 22px; }
+[dir=rtl] .pdbody { padding: 4px 66px 18px 16px; }
+[dir=rtl] .pdprog { text-align: left; }
+[dir=rtl] .rp-cont b { margin-right: 0; margin-left: 2px; }
+[dir=rtl] .rp-meta .rp-pq { margin-left: 0; margin-right: 4px; }
+[dir=rtl] .fx-tabs button small, [dir=rtl] .fx-li .fx-tp { margin-left: 0; margin-right: 4px; }
+[dir=rtl] .fx-li .fx-r { text-align: left; }
+[dir=rtl] .fx-outros > .fx-li { padding-left: 0; padding-right: 28px; }
+/* chevrons de <details> (apontam para o lado do texto quando fechados) */
+[dir=rtl] details.box > summary::before { margin-right: 0; margin-left: 2px; transform: rotate(135deg); }
+[dir=rtl] details.box[open] > summary::before, [dir=rtl] .rp details.mais[open] > summary::before { transform: rotate(45deg); }
+[dir=rtl] .rp details.mais > summary::before { transform: rotate(135deg); }
+
+/* página inicial: setas entre as fases e tabela da matriz */
+[dir=rtl] .ini-f:not(.f4) .ini-f-b::after { right: auto; left: -12px; border-width: 13px 12px 13px 0; border-color: transparent var(--fc) transparent transparent; }
+[dir=rtl] .mt-tab caption, [dir=rtl] .mt-tab th, [dir=rtl] .mt-tab td { text-align: right; }
+[dir=rtl] .mt-tab th, [dir=rtl] .mt-tab td { border-right: 0; border-left: 1px solid var(--ini-line); }
+[dir=rtl] .mt-tab tr > :last-child { border-left: 0; }
+[dir=rtl] .mt-tab thead .mt-cc { left: auto; right: 0; }
+[dir=rtl] .mt-tab tbody th { left: auto; right: 0; padding: 14px 16px 14px 14px; box-shadow: inset -5px 0 0 var(--cam); }
+[dir=rtl] .mt-fn { margin-right: 0; margin-left: 10px; float: right; }
+[dir=rtl] .mt-tab tbody th .mt-cn { float: right; margin: 1px 2px 0 10px; }
+
+/* plano de contratação (página) */
+[dir=rtl] .rp-indice { padding-right: 0; padding-left: 4px; }
+[dir=rtl] .rp-ind-t { padding-left: 0; padding-right: 12px; }
+[dir=rtl] .rp-indice ol ol { margin: 2px 14px 6px 0; padding-left: 0; padding-right: 8px; border-left: 0; border-right: 1px solid var(--rp-line); }
+[dir=rtl] .rp-indice a { border-left: 0; border-right: 3px solid transparent; border-radius: 6px 0 0 6px; }
+[dir=rtl] .rp-indice a.on { border-right-color: var(--rp-brand); }
+[dir=rtl] .rp-bar-v span { text-align: left; }
+[dir=rtl] .rp-bar-s { transform: scaleX(-1); }   /* barra horizontal (SVG sem texto) cresce da direita */
+[dir=rtl] .rp td.n, [dir=rtl] .rp th.n { text-align: left; }
+[dir=rtl] .rp-mx th, [dir=rtl] .rp-mx td { text-align: right; }
+[dir=rtl] .rp-mx td + td, [dir=rtl] .rp-mx th + td { border-left: 0; border-right: 1px solid var(--rp-line); }
+[dir=rtl] .rp-mx-fn { margin-right: 0; margin-left: 4px; }
+[dir=rtl] .rp-mx .rp-mx-c0 { left: auto; right: 0; }
+[dir=rtl] .rp-mx tbody th { box-shadow: inset -4px 0 0 var(--cor); padding-left: 12px; padding-right: 14px; }
+
+@media (max-width: 900px) {
+  [dir=rtl] .brand { padding-right: 0; border-right: 0; }
+  [dir=rtl] .pdbody { padding-right: 16px; }
+  [dir=rtl] nav.tabs button[aria-current="true"] { box-shadow: var(--shadow-sm), inset 0 -3px 0 var(--tab-ind), 0 0 0 1px var(--line); }
+  [dir=rtl] details.prob-sub { margin-right: 0; }
+}
+@media (max-width: 640px) {
+  [dir=rtl] table.pilha td { text-align: right; }
+  [dir=rtl] table.pilha td.n { text-align: left; }
+  [dir=rtl] table.pilha td.n::before { text-align: right; }
+  [dir=rtl] .fx-li .fx-r { text-align: right; }
+  [dir=rtl] .fx-outros > .fx-li { padding-left: 0; padding-right: 20px; }
+}

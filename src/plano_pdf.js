@@ -14,6 +14,7 @@
 const PDF_TROCA = { '→': '->', '←': '<-', '≥': '>=', '≤': '<=', '✓': 'v', '✕': 'x', '−': '-', '≈': '~', 'ⓘ': '(i)', ' ': ' ', ' ': ' ', '‑': '-', '‐': '-', '«': '«', '»': '»', '☐': '', '·': '·' };
 const CP1252_EXTRA = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
 function pdfTxt(x) {
+  if (PDF_FONTE) return ajustarTextoPDF(x);   // v13: árabe, chinês e bambara (fonte embutida)
   return String(x == null ? '' : x).replace(/[^\x00-\xFF]/g, ch => PDF_TROCA[ch] != null ? PDF_TROCA[ch] : CP1252_EXTRA.includes(ch) ? ch : (ch.normalize('NFKD').replace(/[^\x00-\xFF]/g, '') || ''));
 }
 // Paleta do relatório (plano/7_relatorio_design.md)
@@ -60,6 +61,7 @@ const tPn = (k, n) => tr(PDF_TXT[k].replace('{0}', String(n))).replace('{0}', St
 function gerarPDF() {
   const J = window.jspdf; if (!J || !J.jsPDF) throw new Error('jspdf');
   const doc = new J.jsPDF({ unit: 'pt', format: 'a4', compress: true });
+  fontePDF(doc);   // v13: fonte embutida nos idiomas fora do WinAnsi (sem efeito em PT/EN/ES/FR)
   const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 46;
   const TOP = 60, BASE = H - 54, LW = W - 2 * M;   // área útil das páginas internas
   const C = PDF_COR;
@@ -763,6 +765,7 @@ function gerarPDF() {
 
   // cabeçalho e rodapé das páginas internas
   const n = doc.getNumberOfPages();
+  const pe = typeof avisoTraducao === 'function' && avisoTraducao() ? 12 : 0;   // v13: rodapé sobe para o aviso de tradução
   for (let i = 2; i <= n; i++) {
     doc.setPage(i);
     {
@@ -774,11 +777,12 @@ function gerarPDF() {
       doc.setDrawColor(...C.linha); doc.setLineWidth(0.6); doc.line(M, 38, W - M, 38);
       doc.setFillColor(...C.marca); doc.rect(M, 37.2, 34, 1.6, 'F');
     }
-    doc.setDrawColor(...C.linha); doc.setLineWidth(0.6); doc.line(M, H - 36, W - M, H - 36);
+    doc.setDrawColor(...C.linha); doc.setLineWidth(0.6); doc.line(M, H - 36 - pe, W - M, H - 36 - pe);
     fonte(8, 'normal', C.muted);
-    doc.text(pdfTxt(tP('ilustr')), M, H - 24);
-    fonte(8, 'bold', C.titulo); doc.text(i + ' / ' + n, W - M, H - 24, { align: 'right' });
+    doc.text(pdfTxt(tP('ilustr')), M, H - 24 - pe);
+    fonte(8, 'bold', C.titulo); doc.text(i + ' / ' + n, W - M, H - 24 - pe, { align: 'right' });
   }
+  avisoTradPDF(doc, { W, H, M, LW });   // v13: aviso de tradução preliminar (capa e rodapé), só nos idiomas novos
   return doc;
 }
 async function baixarPDF() {
@@ -792,4 +796,260 @@ async function baixarPDF() {
     return;
   }
   try { doc.save(nome); } catch (e) { toast(tr('Não foi possível baixar agora.')); }
+}
+
+// =====================================================================
+// v13 (RQ-18, pacote L): fontes embutidas para árabe, chinês e bambara, que não cabem no WinAnsi da Helvetica.
+// FONTES_PDF (injetado no build por tools/subset_fonts.py) traz subconjuntos TrueType comprimidos (deflate) em
+// base64, só com os caracteres dos dicionários do idioma, do inglês, ASCII e Latin-1.
+//   fontePDF(doc)      registra a fonte do idioma e faz 'helvetica' apontar para ela (texto e autotable);
+//                      itálico vira regular; sem peso bold (chinês), o negrito é simulado com contorno.
+//   ajustarTextoPDF(s) substitui pdfTxt nesses idiomas: mantém tudo o que a fonte cobre e só troca o resto.
+//   avisoTradPDF(...)  aviso de tradução preliminar na capa e no rodapé (idiomas novos não revisados).
+// Árabe: o jsPDF liga as letras (processArabic: formas de apresentação) e reordena cada linha (motor bidi);
+// números e "US$" ficam da esquerda para a direita dentro da linha.
+// PT/EN/ES/FR (e zu/sw, que cabem no WinAnsi) continuam com Helvetica e pdfTxt, sem nenhuma mudança.
+// =====================================================================
+let PDF_FONTE = null;          // família ativa no PDF em geração (null = Helvetica)
+const PDF_FONTE_BIN = {};      // arquivo → TTF (string binária), descomprimido uma vez por sessão
+const PDF_FONTE_COBRE = {};    // família → Set dos caracteres cobertos
+function familiaPDF(l) {
+  if (typeof FONTES_PDF === 'undefined' || !FONTES_PDF) return null;
+  for (const k in FONTES_PDF) if ((FONTES_PDF[k].idiomas || []).includes(l) && FONTES_PDF[k].regular) return Object.assign({ chave: k }, FONTES_PDF[k]);
+  return null;
+}
+// DEFLATE bruto (RFC 1951), síncrono: gerarPDF() é síncrono e o navegador só descomprime de forma assíncrona
+function inflarPDF(src) {
+  let pos = 0, buf = 0, cnt = 0, out = new Uint8Array(src.length * 3 + 1024), n = 0;
+  const cabe = k => { if (n + k > out.length) { const o = new Uint8Array(Math.max(out.length * 2, n + k)); o.set(out.subarray(0, n)); out = o; } };
+  const bits = k => { while (cnt < k) { if (pos >= src.length) throw new Error('inflar: fim dos dados'); buf |= src[pos++] << cnt; cnt += 8; } const v = buf & ((1 << k) - 1); buf >>>= k; cnt -= k; return v; };
+  const tabela = (lens, m) => {
+    const count = new Uint16Array(16), offs = new Uint16Array(16), sym = new Uint16Array(m);
+    for (let i = 0; i < m; i++) count[lens[i]]++;
+    count[0] = 0;
+    for (let i = 1; i < 16; i++) offs[i] = offs[i - 1] + count[i - 1];
+    for (let i = 0; i < m; i++) if (lens[i]) sym[offs[lens[i]]++] = i;
+    return { count, sym };
+  };
+  const decod = h => {
+    let code = 0, first = 0, index = 0;
+    for (let len = 1; len < 16; len++) {
+      code |= bits(1);
+      const c = h.count[len];
+      if (code - c < first) return h.sym[index + (code - first)];
+      index += c; first += c; first <<= 1; code <<= 1;
+    }
+    throw new Error('inflar: código inválido');
+  };
+  const LB = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258];
+  const LE = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0];
+  const DB = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577];
+  const DE = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13];
+  const ORD = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
+  let fixL = null, fixD = null, fim = 0;
+  while (!fim) {
+    fim = bits(1);
+    const tipo = bits(2);
+    if (tipo === 0) {
+      buf = 0; cnt = 0;
+      if (pos + 4 > src.length) throw new Error('inflar: bloco curto');
+      const len = src[pos] | (src[pos + 1] << 8); pos += 4;
+      cabe(len); out.set(src.subarray(pos, pos + len), n); n += len; pos += len;
+      continue;
+    }
+    let hl, hd;
+    if (tipo === 1) {
+      if (!fixL) {
+        const l = new Uint8Array(288); l.fill(8, 0, 144); l.fill(9, 144, 256); l.fill(7, 256, 280); l.fill(8, 280, 288);
+        fixL = tabela(l, 288); fixD = tabela(new Uint8Array(30).fill(5), 30);
+      }
+      hl = fixL; hd = fixD;
+    } else if (tipo === 2) {
+      const nl = bits(5) + 257, nd = bits(5) + 1, nc = bits(4) + 4;
+      const cl = new Uint8Array(19);
+      for (let i = 0; i < nc; i++) cl[ORD[i]] = bits(3);
+      const hc = tabela(cl, 19), lens = new Uint8Array(nl + nd);
+      for (let i = 0; i < nl + nd;) {
+        const s = decod(hc);
+        if (s < 16) lens[i++] = s;
+        else {
+          let rep = 0, v = 0;
+          if (s === 16) { if (!i) throw new Error('inflar: repetição sem valor'); v = lens[i - 1]; rep = 3 + bits(2); }
+          else if (s === 17) rep = 3 + bits(3);
+          else rep = 11 + bits(7);
+          while (rep--) lens[i++] = v;
+        }
+      }
+      hl = tabela(lens.subarray(0, nl), nl); hd = tabela(lens.subarray(nl), nd);
+    } else throw new Error('inflar: bloco inválido');
+    for (;;) {
+      const s = decod(hl);
+      if (s < 256) { cabe(1); out[n++] = s; }
+      else if (s === 256) break;
+      else {
+        const li = s - 257, len = LB[li] + bits(LE[li]);
+        const di = decod(hd), d = DB[di] + bits(DE[di]);
+        if (d > n) throw new Error('inflar: distância');
+        cabe(len);
+        for (let k = 0; k < len; k++, n++) out[n] = out[n - d];
+      }
+    }
+  }
+  return out.subarray(0, n);
+}
+function binFontePDF(b64) {
+  const z = atob(b64), u = new Uint8Array(z.length);
+  for (let i = 0; i < z.length; i++) u[i] = z.charCodeAt(i);
+  const b = inflarPDF(u);
+  let s = '';
+  for (let i = 0; i < b.length; i += 8192) s += String.fromCharCode.apply(null, b.subarray(i, i + 8192));
+  return s;
+}
+// Registra a fonte do idioma no documento (no começo de gerarPDF). Sem fonte para o idioma: Helvetica, como antes.
+function fontePDF(doc) {
+  PDF_FONTE = null;
+  const F = familiaPDF(typeof LANG === 'undefined' ? 'pt' : LANG);
+  if (!F || !doc || typeof doc.addFont !== 'function') return null;
+  const pesos = {};
+  try {
+    ['regular', 'bold'].forEach(p => {
+      if (!F[p]) return;
+      const arq = F.nome + '-' + p + '.ttf';
+      if (!PDF_FONTE_BIN[arq]) PDF_FONTE_BIN[arq] = binFontePDF(F[p]);
+      doc.addFileToVFS(arq, PDF_FONTE_BIN[arq]);
+      doc.addFont(arq, F.nome, p === 'bold' ? 'bold' : 'normal');
+      pesos[p] = true;
+    });
+  } catch (e) { console.warn('fonte do PDF', e); return null; }
+  if (!PDF_FONTE_COBRE[F.chave]) PDF_FONTE_COBRE[F.chave] = new Set(Array.from(F.cobre || ''));
+  const info = { nome: F.nome, chave: F.chave, negrito: !!pesos.bold, cobre: PDF_FONTE_COBRE[F.chave], rtl: F.chave === 'ar' };
+  const setFont0 = doc.setFont, text0 = doc.text;
+  let falso = false;   // negrito simulado no próximo texto
+  doc.setFont = function (nome, estilo, peso) {
+    if (String(nome || '').toLowerCase() === 'helvetica' || nome === info.nome) {
+      const b = /bold/i.test(String(estilo || '')) || peso === 700 || peso === 'bold';
+      falso = b && !info.negrito;
+      return setFont0.call(this, info.nome, b && info.negrito ? 'bold' : 'normal');
+    }
+    falso = false;
+    return setFont0.apply(this, arguments);
+  };
+  if (!info.negrito) {
+    // negrito sem arquivo próprio: preenchimento + contorno fino na cor do texto
+    doc.text = function (t, x, y, o) {
+      if (!falso) return text0.apply(this, arguments);
+      const lw = this.getLineWidth(), dc = this.getDrawColor();
+      this.setLineWidth(Math.max(0.25, this.getFontSize() * 0.032)); this.setDrawColor(this.getTextColor());
+      const op = Object.assign({}, o && typeof o === 'object' && !Array.isArray(o) ? o : {}, { renderingMode: 'fillThenStroke' });
+      try { return text0.call(this, t, x, y, op); } finally { this.setLineWidth(lw); this.setDrawColor(dc); }
+    };
+  }
+  // chinês: quebra de linha por caractere (o splitTextToSize do jsPDF só quebra em espaços); palavras latinas
+  // ficam inteiras; pontuação de fechamento não começa linha
+  const split0 = doc.splitTextToSize;
+  if (info.chave === 'zh') {
+    doc.splitTextToSize = function (t, w, o) {
+      if (Array.isArray(t)) return [].concat(...t.map(z => this.splitTextToSize(z, w, o)));
+      const fs = (o && o.fontSize) || this.getFontSize(), k = this.internal.scaleFactor;
+      const larg = s => this.getStringUnitWidth(s) * fs / k;
+      return quebrarCJK(String(t == null ? '' : t), w, larg);
+    };
+  }
+  // árabe: as linhas quebradas por splitTextToSize (parágrafos, cartões, células) ficam alinhadas à direita da
+  // caixa em que foram quebradas (x + largura); o jsPDF liga as letras e põe cada linha na ordem visual
+  if (info.rtl) {
+    const RE_AR = /[\u0600-\u06ff\u0750-\u077f\ufb50-\ufdff\ufe70-\ufeff]/;
+    const larguras = new Map();
+    doc.splitTextToSize = function (t, w, o) {
+      const r = split0.apply(this, arguments);
+      (Array.isArray(r) ? r : [r]).forEach(l => { if (typeof l === 'string' && RE_AR.test(l)) larguras.set(l, w); });
+      return r;
+    };
+    // texto posicionado à mão (largura medida antes de desenhar: índice, etiquetas) fica onde o código o pôs
+    const largura0 = doc.getTextWidth;
+    doc.getTextWidth = function (s) { if (typeof s === 'string') larguras.delete(s); return largura0.apply(this, arguments); };
+    const textoBase = doc.text;
+    doc.text = function (t, x, y, o) {
+      const op = o && typeof o === 'object' && !Array.isArray(o) ? o : null;
+      const L = Array.isArray(t) ? t : [t];
+      if ((!op || !op.align || op.align === 'left') && L.length && L.every(l => typeof l === 'string' && larguras.has(l))) {
+        const w = Math.max(...L.map(l => larguras.get(l)));
+        return textoBase.call(this, t, x + w, y, Object.assign({}, op || {}, { align: 'right' }));
+      }
+      return textoBase.apply(this, arguments);
+    };
+  }
+  doc.setFont('helvetica', 'normal');
+  PDF_FONTE = info;
+  return info;
+}
+// Quebra de linha para chinês: cada ideograma é um ponto de quebra; sequências latinas ficam inteiras
+// (e só se partem se não couberem numa linha); pontuação de fechamento fica no fim da linha anterior.
+const RE_CJK = /[\u2e80-\u9fff\uf900-\ufaff\ufe30-\ufe4f\uff00-\uffef\u3000-\u303f]/;
+const CJK_FECHA = '，。、：；？！）》」』】〉’”…·%,.;:!?)]}';
+function quebrarCJK(s, w, larg) {
+  const out = [];
+  s.split(/\r?\n/).forEach(par => {
+    const tk = par.match(/[\u2e80-\u9fff\uf900-\ufaff\ufe30-\ufe4f\uff00-\uffef\u3000-\u303f]|\s+|[^\s\u2e80-\u9fff\uf900-\ufaff\ufe30-\ufe4f\uff00-\uffef\u3000-\u303f]+/g) || [''];
+    let lin = '';
+    const fecha = () => { out.push(lin.replace(/\s+$/, '')); lin = ''; };
+    tk.forEach(z => {
+      if (/^\s+$/.test(z)) { if (lin) lin += ' '; return; }
+      if (larg(lin + z) <= w || !lin.trim()) {
+        if (larg(z) > w && !RE_CJK.test(z)) {
+          // palavra latina maior que a linha: parte por caractere
+          for (const ch of z) { if (lin && larg(lin + ch) > w) fecha(); lin += ch; }
+        } else lin += z;
+        return;
+      }
+      // não começa linha com pontuação de fechamento: ela fica (pendurada) no fim desta linha
+      if (z.length === 1 && CJK_FECHA.includes(z)) { lin += z; return; }
+      fecha();
+      if (larg(z) > w && !RE_CJK.test(z)) { for (const ch of z) { if (lin && larg(lin + ch) > w) fecha(); lin += ch; } }
+      else lin = z;
+    });
+    out.push(lin.replace(/\s+$/, ''));
+  });
+  return out;
+}
+// Texto para a fonte embutida: marcas bidi invisíveis saem; o que a fonte não cobre passa pela troca de pdfTxt
+// (setas, ✓, ≥…); o resto fica como está (sem "?").
+const RE_MARCAS_BIDI = /[​‎‏؜‪-‮⁦-⁩﻿]/g;
+function ajustarTextoPDF(x) {
+  const F = PDF_FONTE;
+  const s = String(x == null ? '' : x).replace(RE_MARCAS_BIDI, '');
+  if (!F) return s;
+  return s.replace(/[^\x00-\x7e]/gu, ch => {
+    if (F.cobre.has(ch)) return ch;
+    if (PDF_TROCA[ch] != null) return PDF_TROCA[ch];
+    const d = ch.normalize('NFKD');
+    if (d !== ch && Array.from(d).every(c => c < '\x7f' || F.cobre.has(c))) return d;
+    return ch;
+  });
+}
+// Aviso de tradução preliminar (idioma do PDF + inglês): faixa escura no pé da capa colorida e duas linhas
+// a mais no rodapé das páginas internas (o rodapé sobe 12 pt; o corpo termina 6 pt acima do fio).
+function avisoTradPDF(doc, o) {
+  if (typeof avisoTraducao !== 'function') return;
+  const av = avisoTraducao();
+  if (!av) return;
+  const { W, H, M, LW } = o, n = doc.getNumberOfPages();
+  const lin = s => doc.splitTextToSize(pdfTxt(s), LW - 16);
+  // capa: faixa sobre a base da faixa colorida (abaixo dos logos)
+  doc.setPage(1);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+  const L = lin(av.local).concat(av.en && av.en !== av.local ? lin(av.en) : []);
+  const h = L.length * 10.4 + 8, y0 = Math.max(100, 128 - 4 - h);
+  doc.setFillColor(12, 45, 77); doc.roundedRect(M, y0, LW, h, 4, 4, 'F');
+  doc.setTextColor(255, 255, 255);
+  L.forEach((l, i) => doc.text(l, M + 8, y0 + 12.6 + i * 10.4));
+  // rodapé das páginas internas: aviso no idioma e em inglês, abaixo de "Valores ilustrativos"
+  doc.setFontSize(8);
+  for (let i = 2; i <= n; i++) {
+    doc.setPage(i);
+    doc.setTextColor(88, 102, 116);
+    const a = doc.splitTextToSize(pdfTxt(av.local), LW)[0], b = av.en && av.en !== av.local ? doc.splitTextToSize(pdfTxt(av.en), LW)[0] : '';
+    doc.text(a, M, H - 25.5);
+    if (b) doc.text(b, M, H - 15);
+  }
 }

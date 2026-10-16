@@ -1,6 +1,7 @@
 #!/bin/bash
 cd "$(dirname "$0")"
 out=navegador.html
+NOVOS="ar zh bm zu sw"   # v13 (RQ-18): idiomas novos
 L1=$(base64 -w0 assets/iaedu.png); L2=$(base64 -w0 assets/catedra.png)
 # ordem dos scripts (plano_dados.js logo depois de fluxo_dados.js; v10: formula.js e recomendacoes.js antes de resumo.js)
 # v13: prioridades.js (catálogo do 1.2) depois de framework.js; matriz.js depois de fluxo_dados.js; inicio.js (página inicial e matriz) depois de fluxo.js
@@ -20,12 +21,21 @@ JS=$JS_OK
   # v11: Figura 1 (p. 11) de Krueger e Jackson (2026), sem alteração, como data URI
   echo -n "const FIG_TCO = 'data:image/jpeg;base64,"; base64 -w0 assets/fig1_tco.jpg; echo "';";
   # i18n: <l>.json, depois extra_<l>.json, depois i18n/v9_*_<l>.json, i18n/v10_*_<l>.json e i18n/v11_*_<l>.json em ordem alfabética (as últimas prevalecem)
-  echo -n 'const I18N = {'; for l in en es fr; do echo -n "\"$l\": "; python3 -c "
+  # v13 (RQ-18): idiomas novos (ar zh bm zu sw): i18n/<l>.json (dicionário completo, quando existir) e depois
+  # i18n/v13_*_<l>.json. Sem i18n/<l>.json o build não falha: o que falta usa o inglês (tr(), i18n.js).
+  # I18N_TESTE=<pasta> (só em testes) acrescenta <pasta>/<l>.json logo depois de i18n/<l>.json.
+  echo -n 'const I18N = {'; for l in en es fr $NOVOS; do echo -n "\"$l\": "; python3 -c "
 import json, sys, os, glob
 l = '$l'; d = {}
-for f in ['i18n/%s.json' % l, 'i18n/extra_%s.json' % l] + sorted(glob.glob('i18n/v9_*_%s.json' % l)) + sorted(glob.glob('i18n/v10_*_%s.json' % l)) + sorted(glob.glob('i18n/v11_*_%s.json' % l)) + sorted(glob.glob('i18n/v12_*_%s.json' % l)) + sorted(glob.glob('i18n/v13_*_%s.json' % l)):
+if l in '$NOVOS'.split():
+    arqs = ['i18n/%s.json' % l] + ([os.path.join(os.environ['I18N_TESTE'], l + '.json')] if os.environ.get('I18N_TESTE') else []) + sorted(glob.glob('i18n/v13_*_%s.json' % l))
+else:
+    arqs = ['i18n/%s.json' % l, 'i18n/extra_%s.json' % l] + sorted(glob.glob('i18n/v9_*_%s.json' % l)) + sorted(glob.glob('i18n/v10_*_%s.json' % l)) + sorted(glob.glob('i18n/v11_*_%s.json' % l)) + sorted(glob.glob('i18n/v12_*_%s.json' % l)) + sorted(glob.glob('i18n/v13_*_%s.json' % l))
+for f in arqs:
     if os.path.exists(f): d.update(json.load(open(f)))
 sys.stdout.write(json.dumps(d, ensure_ascii=False))"; echo ','; done; echo '};';
+  # v13 (RQ-18): fontes do PDF para ar, zh e bm (subconjuntos TrueType em base64; SEM_FONTES=1 deixa de fora)
+  if [ -z "$SEM_FONTES" ]; then python3 tools/subset_fonts.py --relatorio || exit 1; else echo 'const FONTES_PDF = null;'; fi
   # %%FIG_TCO%% num script vira a mesma data URI (FIG_TCO já está definido acima)
   # module.exports (também em várias linhas) só serve aos testes em node: fica de fora da página
   python3 -c "
