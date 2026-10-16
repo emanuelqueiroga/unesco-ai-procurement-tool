@@ -17,7 +17,7 @@ done
 JS=$JS_OK
 { sed -e "s#%%LOGO_IAEDU%%#data:image/png;base64,$L1#g" -e "s#%%LOGO_CATEDRA%%#data:image/png;base64,$L2#g" src/shell.html | python3 -c "import sys; t=sys.stdin.read(); sys.stdout.write(t.replace('/*%%FLUXO_CSS%%*/', open('src/fluxo.css').read() + ''.join(open(f).read() for f in ['src/inicio.css', 'src/idiomas.css'] if __import__('os').path.exists(f))))"; echo '<script>';
   cat vendor/jspdf.umd.min.js; echo; cat vendor/jspdf.plugin.autotable.min.js; echo; echo '</script><script>';
-  echo -n 'const MOEDAS = '; cat /home/claude/guia/custos2/moedas.json; echo ';';
+  echo -n 'const MOEDAS = '; cat data/moedas.json; echo ';';
   # v11: Figura 1 (p. 11) de Krueger e Jackson (2026), sem alteração, como data URI
   echo -n "const FIG_TCO = 'data:image/jpeg;base64,"; base64 -w0 assets/fig1_tco.jpg; echo "';";
   # i18n: <l>.json, depois extra_<l>.json, depois i18n/v9_*_<l>.json, i18n/v10_*_<l>.json e i18n/v11_*_<l>.json em ordem alfabética (as últimas prevalecem)
