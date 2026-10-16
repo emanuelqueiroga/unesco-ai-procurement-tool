@@ -1,11 +1,12 @@
 // =====================================================================
-// Estado, entradas, exportação, relatório e eventos gerais (v9; v11: quatro fases e migração v10 → v11)
+// Estado, entradas, exportação, relatório e eventos gerais (v9; v11: quatro fases e migração v10 → v11;
+// v13: prioridades e problemas no 1.2, detalhes de "Sim" e "Em parte" (S.respDet) e migração v12 → v13)
 // =====================================================================
 const CHAVE = 'aiedu-procurement-v9';
 const CHAVE_V8 = 'navegador-ia-educacao-v4';
 function estadoInicial() {
   return {
-    versao: 11, v10: true, caso: clone(CASO_VAZIO), ctx: {}, resp: {}, respC: {}, feitos: {}, exemplo: 'novo',
+    versao: 13, v10: true, caso: clone(CASO_VAZIO), ctx: {}, resp: {}, respC: {}, respDet: {}, feitos: {}, exemplo: 'novo',
     fase: '', passo: '1a', vista: '', boasVindas: true, info: {},
     custo: { base: 'caso', cfg: null, editado: false }, moeda: { cod: 'USD', taxa: '' }, lang: '',
   };
@@ -24,14 +25,15 @@ const pill = n => `<span class="pill n-${n}">${NIVEL_NOME[n]}</span>`;
 
 // ----------------------------------------------------------- salvar, carregar e migrar
 function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(S)); } catch (e) { } }
-// completa o estado com os valores padrão e retira o que não existe mais (v9 → v10 → v11)
+// completa o estado com os valores padrão e retira o que não existe mais (v9 → v10 → v11 → v13)
 function normalizarEstado() {
   // antes da v10, pagamento, licença, tamanho do teste e pessoas na rede só tinham valor quando respondidos:
   // ficam confirmados, para que as sugestões geradas (fluxo.js, aplicarPadroes) não os substituam
   S.caso = S.caso || {}; S.respC = S.respC || {};
   if (!S.v10) { if (typeof confirmarGerados === 'function') confirmarGerados(S.caso, S.respC); S.v10 = true; }
-  if (+S.versao !== 11) migrarEstadoV11(S);
-  S.versao = 11;
+  if (!(+S.versao >= 11)) migrarEstadoV11(S);
+  if (+S.versao < 13) migrarEstadoV13(S);
+  S.versao = 13;
   S.caso = Object.assign(clone(CASO_VAZIO), S.caso || {});
   S.caso.piloto = Object.assign({ escolas: '', participantes: '', meses: '' }, S.caso.piloto || {});
   S.caso.poc = Object.assign({ participantes: '', meses: '' }, S.caso.poc || {});
@@ -39,7 +41,11 @@ function normalizarEstado() {
   if (!Array.isArray(S.caso.testes)) S.caso.testes = [];
   if (!Array.isArray(S.caso.ferramentas)) S.caso.ferramentas = [];
   ['pagaDepois', 'fonte', 'infra', 'arquiteturaManual'].forEach(k => { delete S.caso[k]; });
+  if (!Array.isArray(S.caso.linhaBaseProblemas)) S.caso.linhaBaseProblemas = [];
   S.ctx = S.ctx || {}; S.resp = S.resp || {}; S.feitos = S.feitos || {}; S.info = S.info || {};
+  S.respDet = S.respDet && typeof S.respDet === 'object' ? S.respDet : {};
+  ['prioridades', 'problemas', 'subs'].forEach(k => { if (!Array.isArray(S.ctx[k])) S.ctx[k] = []; });
+  if (S.ctx.problemaOutro == null) S.ctx.problemaOutro = '';
   S.custo = S.custo || { base: 'caso', cfg: null, editado: false };
   S.moeda = S.moeda || { cod: 'USD', taxa: '' };
   if (!(S.fase === '' || (typeof PASSOS !== 'undefined' && PASSOS[S.fase]))) { S.fase = 'contexto'; S.passo = '1a'; }
@@ -73,8 +79,9 @@ function temRespostas(o) {
   if (Object.keys(o.respC || {}).some(k => o.respC[k])) return true;
   if (Object.keys(o.resp || {}).some(k => o.resp[k])) return true;
   const x = o.ctx || {}, c = o.caso;
-  if (x.nivel || x.local || x.dominio || x.olhando || (x.comps || []).length || Object.values(x.etapas || {}).some(e => e && e.on)) return true;
-  return ['titulo', 'problema', 'resultado', 'teste', 'tipoTec', 'pagamento', 'licenca', 'elegiveis', 'nFerramentas', 'conheceFerramentas', 'internet', 'modeloDisp', 'formacaoFormato', 'formacaoPaga', 'suporteQuem', 'suporteNivel', 'acompanhamento', 'arquitetura'].some(k => c[k]) || ['tarefas', 'impactos', 'usuarios', 'testes', 'ferramentas', 'formados', 'formacaoTipo'].some(k => (c[k] || []).length);
+  if (x.nivel || x.local || x.olhando || x.problemaOutro || ['prioridades', 'problemas', 'subs'].some(k => (x[k] || []).length) || Object.values(x.etapas || {}).some(e => e && e.on)) return true;
+  if (Object.values(o.respDet || {}).some(d => d && (String(d.qual || '').trim() || String(d.falta || '').trim()))) return true;
+  return ['titulo', 'problema', 'resultado', 'linhaBaseMedida', 'linhaBaseProblemaTxt', 'teste', 'tipoTec', 'pagamento', 'licenca', 'elegiveis', 'nFerramentas', 'conheceFerramentas', 'internet', 'modeloDisp', 'formacaoFormato', 'formacaoPaga', 'suporteQuem', 'suporteNivel', 'acompanhamento', 'arquitetura'].some(k => c[k]) || ['tarefas', 'impactos', 'usuarios', 'testes', 'ferramentas', 'formados', 'formacaoTipo', 'linhaBaseProblemas'].some(k => (c[k] || []).length);
 }
 // Boas-vindas: continuar o caso salvo, no passo em que a pessoa parou
 function continuarSalvo() {
@@ -130,6 +137,40 @@ function migrarEstadoV11(o) {
   o.feitos = novoFe;
   if (o.fase === 'custo') { o.fase = 'expansao'; o.passo = ({ '3a': '4a', '3b': '4a', '3c': '4b', '3d': '4c' })[o.passo] || '4a'; }
   o.versao = 11;
+  return o;
+}
+// ----------------------------------------------------------- migração v12 → v13 (plano/10_v13_contrato.md, RQ-19)
+// Contexto: domínio e componentes → prioridades e problemas (MIGRA_DOMINIO, MIGRA_COMPS); componente "outro" →
+// "Outro problema"; "Letramento digital e em IA" → prioridade "Educar sobre a IA", problema A1. Caso: campos novos do
+// 1.2.7 vazios. S.respDet = {}. Os valores já preenchidos dos campos que a v13 passa a sugerir (1.2.3–1.2.6, 2.1.1 e
+// 2.3.1) ficam confirmados: as sugestões novas não os substituem.
+function migrarEstadoV13(o) {
+  const x = o.ctx = o.ctx || {};
+  const MD = typeof MIGRA_DOMINIO !== 'undefined' ? MIGRA_DOMINIO : {}, MC = typeof MIGRA_COMPS !== 'undefined' ? MIGRA_COMPS : {};
+  const PP = typeof PRIORIDADE_DO_PROBLEMA !== 'undefined' ? PRIORIDADE_DO_PROBLEMA : {};
+  const pr = new Set(Array.isArray(x.prioridades) ? x.prioridades : []), pb = new Set(Array.isArray(x.problemas) ? x.problemas : []);
+  if (x.dominio && MD[x.dominio]) pr.add(MD[x.dominio]);
+  (Array.isArray(x.comps) ? x.comps : []).forEach(k => {
+    if (MC[k]) pb.add(MC[k]);
+    else if (k === 'digital') { pr.add('sobre'); pb.add('A1'); }
+  });
+  pb.forEach(id => { if (PP[id]) pr.add(PP[id]); });
+  if ((x.comps || []).includes('outro') && String(x.compOutro || '').trim() && !String(x.problemaOutro || '').trim()) x.problemaOutro = x.compOutro;
+  const ordP = typeof PRIORIDADES !== 'undefined' ? PRIORIDADES.map(p => p.id) : [...pr];
+  x.prioridades = ordP.filter(id => pr.has(id));
+  x.problemas = typeof ordemProblemas === 'function' ? ordemProblemas([...pb]) : [...pb];
+  x.subs = Array.isArray(x.subs) ? x.subs : [];
+  if (x.problemaOutro == null) x.problemaOutro = '';
+  delete x.dominio; delete x.comps; delete x.compOutro;
+  const c = o.caso = o.caso || {}, rc = o.respC = o.respC || {};
+  if (!Array.isArray(c.linhaBaseProblemas)) c.linhaBaseProblemas = [];
+  ['linhaBaseMedida', 'linhaBaseProblemaTxt'].forEach(k => { if (c[k] == null) c[k] = ''; });
+  if (!o.respDet || typeof o.respDet !== 'object') o.respDet = {};
+  const cheio = v => !(v == null || v === '' || (Array.isArray(v) && !v.length));
+  if (cheio(x.olhando)) rc.olhando = true;
+  ['problema', 'impactos', 'resultado', 'tarefas', 'nFerramentas'].forEach(k => { if (cheio(c[k])) rc[k] = true; });
+  if (o.info) Object.keys(o.info).forEach(k => { if (/^pr-/.test(k)) delete o.info[k]; });
+  o.versao = 13;
   return o;
 }
 // Converte um estado ou uma exportação da v8 (formato 4) para a v9 (plano, seção E.2).
@@ -365,16 +406,17 @@ function slugCaso() {
 function nomeArq(ext) { return 'procurement-plan-' + slugCaso() + '.' + ext; }
 function nomeArqCaso() { return 'ai-education-case-' + slugCaso() + '.json'; }
 function dadosCaso() {
-  return { app: 'ai-education-procurement-tool', formato: 11, versao: 11, v10: true, salvo: new Date().toISOString(), exemplo: S.exemplo, caso: S.caso, ctx: S.ctx, resp: S.resp, respC: S.respC, revisar: S.revisar || [], feitos: S.feitos, custo: S.custo, moeda: S.moeda, lang: S.lang };
+  return { app: 'ai-education-procurement-tool', formato: 13, versao: 13, v10: true, salvo: new Date().toISOString(), exemplo: S.exemplo, caso: S.caso, ctx: S.ctx, resp: S.resp, respC: S.respC, respDet: S.respDet || {}, revisar: S.revisar || [], feitos: S.feitos, custo: S.custo, moeda: S.moeda, lang: S.lang };
 }
 function aplicarImportado(o) {
   S.caso = clone(o.caso);   // normalizarEstado migra (v10 → v11) e completa com CASO_VAZIO
-  S.ctx = o.ctx || {}; S.resp = o.resp || {}; S.respC = o.respC || {}; S.feitos = o.feitos || {}; S.revisar = Array.isArray(o.revisar) ? o.revisar : [];
+  S.ctx = o.ctx || {}; S.resp = o.resp || {}; S.respC = o.respC || {}; S.respDet = o.respDet && typeof o.respDet === 'object' ? o.respDet : {}; S.feitos = o.feitos || {}; S.revisar = Array.isArray(o.revisar) ? o.revisar : [];
   S.custo = o.custo || { base: 'caso', cfg: null, editado: false };
   if (o.moeda) S.moeda = o.moeda;
   S.exemplo = o.exemplo === 'novo' ? 'novo' : 'editado';
   S.fase = 'contexto'; S.passo = '1a'; S.vista = ''; S.boasVindas = false; S.v10 = !!o.v10;
-  S.versao = +o.formato === 11 || +o.versao === 11 ? 11 : 9;   // formato 9 (v9 e v10) passa pela migração v10 → v11
+  // formato 9 (v9 e v10) passa pela migração v10 → v11; formatos 9 e 11 (v11 e v12) passam pela migração v12 → v13
+  S.versao = +o.formato === 13 ? 13 : +o.formato === 11 || +o.versao === 11 ? 11 : 9;
   SALVO = null; CONF_LIMPAR = false;
   IA = { estado: '', resposta: null, erro: '' };
   normalizarEstado();
@@ -382,7 +424,7 @@ function aplicarImportado(o) {
 function importarCaso(txt) {
   let o = null;
   try { o = JSON.parse(txt); } catch (e) { o = null; }
-  if (o && o.app === 'ai-education-procurement-tool' && [9, 11].includes(+o.formato) && o.caso) {
+  if (o && o.app === 'ai-education-procurement-tool' && [9, 11, 13].includes(+o.formato) && o.caso) {
     aplicarImportado(o); render(); window.scrollTo(0, 0); toast(tr('Caso importado.')); return true;
   }
   if (o && o.app === 'navegador-ia-educacao' && o.caso) {
@@ -439,10 +481,10 @@ function editarCfg() {
 }
 function textosExemplo() {
   const k = S.exemplo; if (!CASOS[k]) return;
-  ['titulo', 'problema', 'resultado'].forEach(f => { if (CASOS[k][f]) S.caso[f] = tr(CASOS[k][f]); });
+  ['titulo', 'problema', 'resultado', 'linhaBaseMedida'].forEach(f => { if (CASOS[k][f]) S.caso[f] = tr(CASOS[k][f]); });
   (CASOS[k].ferramentas || []).forEach((fe, i) => { if (fe && fe.nome && S.caso.ferramentas && S.caso.ferramentas[i]) S.caso.ferramentas[i].nome = tr(fe.nome); });
   ['tarefaOutra', 'impactoOutro'].forEach(f => { if (CASOS[k][f]) S.caso[f] = tr(CASOS[k][f]); });
-  const cx = CTX_EX[k]; if (cx && S.ctx) ['local', 'olhando', 'compOutro'].forEach(f => { if (cx[f]) S.ctx[f] = tr(cx[f]); });
+  const cx = CTX_EX[k]; if (cx && S.ctx) ['local', 'olhando', 'problemaOutro'].forEach(f => { if (cx[f]) S.ctx[f] = tr(cx[f]); });
 }
 function carregarExemplo(k) {
   SALVO = null; CONF_LIMPAR = false;

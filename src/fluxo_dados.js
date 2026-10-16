@@ -4,7 +4,7 @@
 // Todas as perguntas vêm do registro declarativo CAMPOS (renderizado em fluxo.js).
 // =====================================================================
 const FASES = [
-  { id: 'contexto', n: 1, nome: 'Contexto', sub: 'Onde e para quem, problema e impacto, governança de IA na educação',
+  { id: 'contexto', n: 1, nome: 'Contexto', sub: 'Onde e para quem, prioridade e impacto, governança de IA na educação',
     abertura: 'Descreva a rede, o problema e a governança que já existe. Nada aqui é avaliado agora: o diagnóstico aparece só no plano de contratação.' },
   { id: 'piloto', n: 2, nome: 'Prova de conceito ou piloto', sub: 'Aplicações, experiência de uso, adoção, infraestrutura, formação e suporte', info: 'c2',
     abertura: 'O teste antes da compra e tudo o que ele exige: o que a IA vai fazer (2.1), quem a usa e como (2.2), que ferramentas e como se pagam (2.3), internet e dispositivos (2.4), formação das equipes (2.5) e suporte (2.6). Cada passo corresponde a uma camada do custo total.' },
@@ -15,7 +15,7 @@ const FASES = [
 ];
 // Passos por fase. O passo '20' (pergunta 2.0) abre a fase 2 e fica sempre visível.
 const PASSOS = {
-  contexto: [['1a', 'Onde e para quem'], ['1b', 'Problema e impacto'], ['1c', 'Governança de IA na educação']],
+  contexto: [['1a', 'Onde e para quem'], ['1b', 'Prioridade e impacto'], ['1c', 'Governança de IA na educação']],
   piloto: [['20', 'Prova de conceito ou piloto'], ['2a', 'Aplicações'], ['2b', 'Experiência de uso'], ['2c', 'Adoção'],
     ['2d', 'Infraestrutura e dispositivos'], ['2e', 'Formação e capacidade das equipes'], ['2f', 'Operação e suporte']],
   implantacao: [['3a', 'Primeira etapa da implantação'], ['3b', 'Arquitetura e integração']],
@@ -89,36 +89,26 @@ const ETAPAS_ENS = [
   ['eja', 'Educação de jovens e adultos', 'Escolarização de quem não concluiu na idade prevista', []],
   ['profissional', 'Educação profissional e técnica', 'Cursos técnicos e de qualificação', []],
 ];
-const DOMINIOS = [
-  { id: 'qualificacao', nome: 'Qualificação', lema: 'Aprender a conhecer e a fazer', ativo: true,
-    desc: 'Conhecimentos, habilidades e competências que permitem fazer algo: ler e escrever, calcular, compreender o mundo natural, usar tecnologias.',
-    ex: ['Estudantes do 5º ano abaixo do nível esperado em leitura', 'Baixa proficiência em matemática ao fim do ensino fundamental', 'Pouca prática de investigação nas aulas de ciências'],
-    comps: [['alfabetizacao', 'Alfabetização e linguagem', 'Leitura, escrita, oralidade e outras línguas'], ['matematica', 'Matemática', 'Numeracia, raciocínio e resolução de problemas'], ['ciencias', 'Ciências', 'Ciências da natureza e investigação científica'], ['digital', 'Letramento digital e em IA', 'Uso crítico de tecnologias, inclusive de IA'], ['outro', 'Outro componente', 'Descreva no campo abaixo']] },
-  { id: 'socializacao', nome: 'Socialização', lema: 'Aprender a pertencer e a conviver', ativo: false,
-    desc: 'Como as pessoas passam a fazer parte de comunidades, culturas e tradições: convivência, cidadania, valores e pertencimento à escola.',
-    ex: ['Abandono ligado à falta de pertencimento', 'Conflitos e violência na escola', 'Acolhimento de estudantes migrantes'] },
-  { id: 'subjetivacao', nome: 'Subjetivação', lema: 'Aprender a ser', ativo: false,
-    desc: 'Como cada pessoa se torna sujeito autônomo e responsável: autonomia, pensamento crítico, projeto de vida e bem-estar.',
-    ex: ['Projeto de vida no ensino médio', 'Autonomia e autorregulação da aprendizagem', 'Bem-estar emocional dos estudantes'] },
-];
+// v13: os três domínios da v12 (DOMINIOS) deram lugar às quatro prioridades de src/prioridades.js (PRIORIDADES).
 
 // Governança de IA na educação (passo 1.3, camada 1). Sem etiqueta "essencial" no percurso.
 const RESP_G = [['sim', 'Sim'], ['parcial', 'Em parte'], ['nao', 'Não'], ['nao_sei', 'Não sei']];
 const QUESTOES_G = [
-  { id: 'g-comite', n: '1.3.1', t: 'Sua rede tem uma equipe ou instância responsável por IA na educação, que reúna várias áreas?', h: 'Uma equipe nomeada que decide e acompanha o uso de IA, com tempo dedicado.', ex: 'Exemplo: um comitê com pedagogia, tecnologia, jurídico, compras, proteção de dados e direção, que se reúne todo mês e tem uma pessoa responsável.' },
-  { id: 'g-politica', n: '1.3.2', t: 'Você tem uma política ou estratégia de IA na educação?', h: 'Documento aprovado que diz para que a IA pode ser usada, por quem e com que responsabilidades.', ex: 'Exemplo: uma resolução da secretaria que lista os usos permitidos para professores e estudantes e quem responde por eles.' },
+  { id: 'g-comite', detalhe: 'Qual equipe ou instância? Quem participa?', n: '1.3.1', t: 'Sua rede tem uma equipe ou instância responsável por IA na educação, que reúna várias áreas?', h: 'Uma equipe nomeada que decide e acompanha o uso de IA, com tempo dedicado.', ex: 'Exemplo: um comitê com pedagogia, tecnologia, jurídico, compras, proteção de dados e direção, que se reúne todo mês e tem uma pessoa responsável.' },
+  { id: 'g-politica', detalhe: 'Qual documento? (nome, data ou link)', n: '1.3.2', t: 'Você tem uma política ou estratégia de IA na educação?', h: 'Documento aprovado que diz para que a IA pode ser usada, por quem e com que responsabilidades.', ex: 'Exemplo: uma resolução da secretaria que lista os usos permitidos para professores e estudantes e quem responde por eles.' },
   // v11 (ajuste 1): "leis" → "regulamentação"
-  { id: 'g-legislacao', n: '1.3.3', t: 'Você já identificou a regulamentação que se aplica ao uso de IA nas escolas?', h: 'Proteção de dados, regras sobre IA, direitos de crianças e adolescentes e compras públicas.', ex: 'Exemplo: uma nota da assessoria jurídica que lista as normas aplicáveis e o que cada uma exige.' },
-  { id: 'g-dados', n: '1.3.4', t: 'Sua rede tem uma política de dados educacionais?', h: 'Quem pode acessar, compartilhar, guardar e excluir dados de estudantes e servidores.', ex: 'Exemplo: regras escritas que dizem por quanto tempo notas e frequência são guardadas e com quem podem ser compartilhadas.' },
-  { id: 'g-etica', n: '1.3.5', t: 'Você já publicou orientações de uso responsável de IA para professores, estudantes e gestores?', h: 'O que é permitido, o que é proibido e o que fazer em caso de dúvida.', ex: 'Exemplo: um guia curto para professores sobre uso de IA em tarefas e avaliações, com regras de integridade acadêmica.' },
+  { id: 'g-legislacao', detalhe: 'Quais normas já foram identificadas?', n: '1.3.3', t: 'Você já identificou a regulamentação que se aplica ao uso de IA nas escolas?', h: 'Proteção de dados, regras sobre IA, direitos de crianças e adolescentes e compras públicas.', ex: 'Exemplo: uma nota da assessoria jurídica que lista as normas aplicáveis e o que cada uma exige.' },
+  { id: 'g-dados', detalhe: 'Qual política ou norma de dados?', n: '1.3.4', t: 'Sua rede tem uma política de dados educacionais?', h: 'Quem pode acessar, compartilhar, guardar e excluir dados de estudantes e servidores.', ex: 'Exemplo: regras escritas que dizem por quanto tempo notas e frequência são guardadas e com quem podem ser compartilhadas.' },
+  { id: 'g-etica', detalhe: 'Quais orientações? Para quem?', n: '1.3.5', t: 'Você já publicou orientações de uso responsável de IA para professores, estudantes e gestores?', h: 'O que é permitido, o que é proibido e o que fazer em caso de dúvida.', ex: 'Exemplo: um guia curto para professores sobre uso de IA em tarefas e avaliações, com regras de integridade acadêmica.' },
   // v11 (ajuste 3): "para a contratação de IA"
-  { id: 'g-compras', n: '1.3.6', t: 'Sua rede tem regras ou orientações para a contratação de IA?', h: 'Custo do ciclo de vida, análise do fornecedor e cláusulas de dados e de saída.', ex: 'Exemplo: um modelo de termo de referência que exige o custo de uso por vários anos e a devolução dos dados ao final do contrato.' },
+  { id: 'g-compras', detalhe: 'Quais regras ou modelos?', n: '1.3.6', t: 'Sua rede tem regras ou orientações para a contratação de IA?', h: 'Custo do ciclo de vida, análise do fornecedor e cláusulas de dados e de saída.', ex: 'Exemplo: um modelo de termo de referência que exige o custo de uso por vários anos e a devolução dos dados ao final do contrato.' },
 ];
 
 // ---------------------------------------------------------------------
 // Registro declarativo de todas as perguntas do percurso.
 // { passo, n, id, onde: 'ctx'|'caso'|'resp', tipo, opc, t, h, ex, ph, opcional, padrao, outro, se }
-// tipo: radio | chips | multi (cartões com subtexto) | seg | texto | area | num | grade | etapas | dom | comps
+// tipo: radio | chips | multi (cartões com subtexto) | seg | texto | area | num | grade | etapas
+//       | prior (1.2.1, cartões de prioridade, várias) | problemas (1.2.2, problemas por prioridade, subcategorias e "Outro")
 //       | testes (2.0, múltipla com opção exclusiva) | ferramentas (lista 2.3.3) | setup (tamanho do teste)
 //       | implant (3.1.1) | horas (2.5.4, com "Usar uma estimativa") | arq (3.2.1)
 // opc: nome de lista em OPC (framework.js) ou a própria lista.
@@ -127,6 +117,10 @@ const QUESTOES_G = [
 // outro: { v, id, t } abre um campo de texto quando a opção v está marcada.
 // sugDe: id da pergunta de origem; ao ser marcada, ela gera um valor sugerido para este campo (fluxo.js, padroesGerados).
 // se: c => bool; a pergunta só aparece (e só conta) quando a condição vale.
+// detalhe (v13): campo de detalhe quando a resposta é "Sim" ou "Em parte" (1.2.7 e 1.3.x; opcional, nunca bloqueia o passo).
+//   1.3.x: { qual, falta } → S.respDet[id].qual|falta; 1.2.7: { v, problemas, medida, exMedida } → caso.linhaBaseProblemas,
+//   caso.linhaBaseProblemaTxt e caso.linhaBaseMedida.
+// sugDe 'problemas' (v13): sugestão que nasce dos problemas marcados no 1.2 (sugestoesProblemas, prioridades.js).
 // ---------------------------------------------------------------------
 const CAMPOS = [
   // 1.1 Onde e para quem
@@ -135,21 +129,22 @@ const CAMPOS = [
   { passo: '1a', n: '1.1.3', id: 'situacao', onde: 'caso', tipo: 'radio', opc: 'situacao', cols: true, padrao: true, t: 'Em que ponto você está?', h: 'Isso ajusta o plano de contratação.' },
   { passo: '1a', n: '1.1.4', id: 'etapas', onde: 'ctx', tipo: 'etapas', t: 'Quais etapas de ensino serão atendidas?', h: 'Marque uma ou mais.' },
   { passo: '1a', n: '1.1.5', id: 'grade', onde: 'ctx', tipo: 'grade', t: 'Quantas escolas e quantos estudantes há em cada etapa, por ano ou série?', h: 'Informe os estudantes de cada ano ou série; o total da etapa é calculado.', ex: 'Exemplo: 6º ano 40.000; 7º ano 38.000.' },
-  // 1.2 Problema e impacto
-  { passo: '1b', n: '1.2.1', id: 'dominio', onde: 'ctx', tipo: 'dom', t: 'Que tipo de problema educacional você quer resolver?' },
-  { passo: '1b', n: '1.2.2', id: 'comps', onde: 'ctx', tipo: 'comps', t: 'Quais componentes estão em jogo?' },
-  { passo: '1b', n: '1.2.3', id: 'olhando', onde: 'ctx', tipo: 'texto', t: 'Como a equipe descreve o problema, em poucas palavras?', h: 'Vira o título do caso se você não der outro nome.', ph: 'Ex.: estudantes chegam ao 9º ano abaixo do esperado em matemática' },
-  { passo: '1b', n: '1.2.4', id: 'problema', onde: 'caso', tipo: 'area', rows: 4, t: 'Descreva a situação atual sem citar tecnologia', h: 'Situação atual, quem é afetado e o que se sabe sobre as causas. Se, ao retirar a palavra "IA", o texto deixa de explicar o problema, reescreva.', ex: 'Exemplo: nas escolas da zona rural, metade dos estudantes do 5º ano não lê com fluência; as turmas são multisseriadas e não há reforço no contraturno.' },
-  { passo: '1b', n: '1.2.5', id: 'impactos', onde: 'caso', tipo: 'chips', opc: 'impactos', t: 'Que impacto você quer alcançar?', h: 'Marque um ou mais. O impacto orienta as tarefas sugeridas no passo 2.1.', outro: { v: 'outro', id: 'impactoOutro', t: 'Qual impacto?' } },
-  { passo: '1b', n: '1.2.6', id: 'resultado', onde: 'caso', tipo: 'area', rows: 2, opcional: true, t: 'Se quiser, detalhe o resultado esperado e como vai medi-lo', ex: 'Exemplo: reduzir de 50% para 35% os estudantes abaixo do nível adequado em leitura em dois anos.' },
-  { passo: '1b', n: '1.2.7', id: 'linhaBase', onde: 'caso', tipo: 'radio', opc: 'linhaBase', padrao: true, t: 'Você tem uma medida atual do problema (linha de base)?', ex: 'Exemplo: resultados da avaliação de leitura do ano passado, por escola.' },
+  // 1.2 Prioridade e impacto (v13: prioridades e problemas no lugar de domínio e componentes)
+  { passo: '1b', n: '1.2.1', id: 'prioridades', onde: 'ctx', tipo: 'prior', t: 'Qual é a prioridade da sua rede para a IA na educação?', h: 'Marque uma ou mais.' },
+  { passo: '1b', n: '1.2.2', id: 'problemas', onde: 'ctx', tipo: 'problemas', t: 'Quais problemas você quer resolver?', h: 'Marque um ou mais, ou todos de uma prioridade. Os objetivos já vêm escritos; você completa os números da sua rede.' },
+  { passo: '1b', n: '1.2.3', id: 'olhando', onde: 'ctx', tipo: 'texto', sugDe: 'problemas', t: 'Como a equipe descreve o problema, em poucas palavras?', h: 'Vira o título do caso se você não der outro nome.', ph: 'Ex.: estudantes chegam ao 9º ano abaixo do esperado em matemática' },
+  { passo: '1b', n: '1.2.4', id: 'problema', onde: 'caso', tipo: 'area', rows: 4, sugDe: 'problemas', t: 'Descreva a situação atual sem citar tecnologia', h: 'Situação atual, quem é afetado e o que se sabe sobre as causas. Se, ao retirar a palavra "IA", o texto deixa de explicar o problema, reescreva.', ex: 'Exemplo: nas escolas da zona rural, metade dos estudantes do 5º ano não lê com fluência; as turmas são multisseriadas e não há reforço no contraturno.' },
+  { passo: '1b', n: '1.2.5', id: 'impactos', onde: 'caso', tipo: 'chips', opc: 'impactos', sugDe: 'problemas', t: 'Que impacto você quer alcançar?', h: 'Marque um ou mais. O impacto orienta as tarefas sugeridas no passo 2.1.', outro: { v: 'outro', id: 'impactoOutro', t: 'Qual impacto?' } },
+  { passo: '1b', n: '1.2.6', id: 'resultado', onde: 'caso', tipo: 'area', rows: 3, opcional: true, sugDe: 'problemas', t: 'Se quiser, detalhe o resultado esperado e como vai medi-lo', ex: 'Exemplo: reduzir de 50% para 35% os estudantes abaixo do nível adequado em leitura em dois anos.' },
+  { passo: '1b', n: '1.2.7', id: 'linhaBase', onde: 'caso', tipo: 'radio', opc: 'linhaBase', padrao: true,
+    detalhe: { v: ['sim', 'parcial'], problemas: 'Para quais problemas?', medida: 'Qual medida?', exMedida: 'Ex.: avaliação estadual de leitura do 5º ano, 2025' }, t: 'Você tem uma medida atual do problema (linha de base)?', ex: 'Exemplo: resultados da avaliação de leitura do ano passado, por escola.' },
   { passo: '1b', n: '1.2.8', id: 'alternativa', onde: 'caso', tipo: 'radio', opc: 'simNao', t: 'Você já comparou ao menos uma alternativa sem IA?', ex: 'Exemplo: reforço escolar no contraturno, redesenho do processo ou um software convencional de exercícios.' },
   // 1.3 Governança (camada 1)
-  ...QUESTOES_G.map(q => ({ passo: '1c', n: q.n, id: q.id, onde: 'resp', tipo: 'seg', opc: RESP_G, t: q.t, h: q.h, ex: q.ex })),
+  ...QUESTOES_G.map(q => ({ passo: '1c', n: q.n, id: q.id, onde: 'resp', tipo: 'seg', opc: RESP_G, t: q.t, h: q.h, ex: q.ex, detalhe: { qual: q.detalhe, falta: 'O que falta?' } })),
   // 2.0 Prova de conceito ou piloto (múltipla: as duas podem ser marcadas; "Não sei, recomende para mim" é exclusiva)
   { passo: '20', n: '2.0', id: 'testes', onde: 'caso', tipo: 'testes', opc: 'teste', cols: true, t: 'Você vai começar por uma prova de conceito, por um piloto ou pelos dois?', h: 'As duas servem para aprender antes de comprar. A diferença é com quem e em que condições se testa. Você pode marcar as duas: primeiro a prova de conceito, depois o piloto.' },
   // 2.1 Aplicações
-  { passo: '2a', n: '2.1.1', id: 'tarefas', onde: 'caso', tipo: 'multi', opc: 'tarefas', t: 'O que você quer que a IA faça?', h: 'Escolha uma ou mais tarefas. Cada tarefa já sugere quem usa e quem é afetado no passo 2.2.', outro: { v: 'outra', id: 'tarefaOutra', t: 'Qual tarefa?' } },
+  { passo: '2a', n: '2.1.1', id: 'tarefas', onde: 'caso', tipo: 'multi', opc: 'tarefas', sugDe: 'problemas', t: 'O que você quer que a IA faça?', h: 'Escolha uma ou mais tarefas. Cada tarefa já sugere quem usa e quem é afetado no passo 2.2.', outro: { v: 'outra', id: 'tarefaOutra', t: 'Qual tarefa?' } },
   { passo: '2a', n: '2.1.2', id: 'titulo', onde: 'caso', tipo: 'texto', opcional: true, t: 'Como você vai chamar esta aplicação?', h: 'Aparece no plano de contratação.' },
   // 2.2 Experiência de uso
   { passo: '2b', n: '2.2.1', id: 'usuarios', onde: 'caso', tipo: 'chips', opc: 'usuarios', sugere: true, t: 'Quem vai usar a ferramenta?', ex: 'Exemplo: professores do 6º ao 9º ano.' },
@@ -157,7 +152,7 @@ const CAMPOS = [
   { passo: '2b', n: '2.2.3', id: 'consequencias', onde: 'caso', tipo: 'chips', opc: 'consequencias', sugere: true, padrao: true, t: 'O que as pessoas vão fazer com a resposta da ferramenta?', ex: 'Exemplo: o professor revisa o plano de aula e decide o que usar.' },
   { passo: '2b', n: '2.2.4', id: 'frequencia', onde: 'caso', tipo: 'radio', opc: 'frequencia', cols: true, sugere: true, padrao: true, t: 'Com que frequência cada pessoa vai usar?' },
   // 2.3 Adoção (ferramentas; as perguntas 2.3.4 a 2.3.7 valem para a ferramenta principal, a primeira da lista)
-  { passo: '2c', n: '2.3.1', id: 'nFerramentas', onde: 'caso', tipo: 'radio', opc: 'nFerramentas', cols: true, t: 'Quantas ferramentas você pretende usar?', h: 'Conte as ferramentas de IA que as pessoas vão usar neste caso.', ex: 'Exemplo: um assistente para planejar aulas e outra ferramenta para corrigir redações são duas ferramentas.' },
+  { passo: '2c', n: '2.3.1', id: 'nFerramentas', onde: 'caso', tipo: 'radio', opc: 'nFerramentas', cols: true, sugDe: 'testes', t: 'Quantas ferramentas você pretende usar?', h: 'Conte as ferramentas de IA que as pessoas vão usar neste caso.', ex: 'Exemplo: um assistente para planejar aulas e outra ferramenta para corrigir redações são duas ferramentas.' },
   { passo: '2c', n: '2.3.2', id: 'conheceFerramentas', onde: 'caso', tipo: 'radio', opc: 'conheceFerramentas', cols: true, t: 'Você já sabe quais?' },
   { passo: '2c', n: '2.3.3', id: 'ferramentas', onde: 'caso', tipo: 'ferramentas', se: c => c.conheceFerramentas === 'sim', t: 'Quais ferramentas?', h: 'A primeira da lista é a ferramenta principal: as perguntas 2.3.4 a 2.3.7 se referem a ela. O preço é opcional; sem ele, a estimativa usa um preço ilustrativo.' },
   { passo: '2c', n: '2.3.4', id: 'tipoTec', onde: 'caso', tipo: 'radio', opc: 'tipoTec', cols: true, t: 'Que tipo de tecnologia é a ferramenta principal?', ex: 'Exemplo: uma plataforma do ministério (pública), um modelo aberto instalado numa nuvem contratada (aberta), a assinatura de um assistente para professores (paga).' },

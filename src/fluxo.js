@@ -11,6 +11,10 @@ if (typeof CASO_VAZIO !== 'undefined') CAMPOS.forEach(f => {
   if (f.onde === 'caso' && !f.padrao && ['radio', 'chips', 'multi'].includes(f.tipo) && !(v == null || v === '' || (Array.isArray(v) && !v.length))) f.padrao = true;
 });
 const CAMPOS_SUGERIDOS = ['usuarios', 'afetados', 'consequencias', 'frequencia'];
+// v13: campos sugeridos pelos problemas marcados no passo 1.2 (sugestoesProblemas, prioridades.js); olhando fica em S.ctx
+const CAMPOS_PROB = ['olhando', 'problema', 'impactos', 'resultado', 'tarefas'];
+// v13: <details> abertos (só na tela): subcategorias por problema e "Para a implantação" por passo
+const SUB_ABERTO = {}, DESC_ABERTO = {};
 // Passos sem perguntas (4.2 estimativa, 4.3 recomendações): concluídos quando abertos
 const PASSOS_VER = ['4b', '4c'];
 let NUM_ABERTO = false;   // <details> "Ver os números detalhados" do 4.2
@@ -21,8 +25,10 @@ const FIG_ABERTA = {};    // (v11) figura aberta por nota ⓘ; desde a v12 a fig
 const SUB_OBJ = { piloto: ['escolas', 'participantes', 'meses'], poc: ['participantes', 'meses'], implantacao: ['escolas', 'pessoas'] };
 function objVazio(k) { const o = {}; SUB_OBJ[k].forEach(x => { o[x] = ''; }); return o; }
 function estadoFluxo() {
-  S.ctx = Object.assign({ nivel: '', nivelOutro: '', local: '', etapas: {}, dominio: '', comps: [], compOutro: '', olhando: '' }, S.ctx || {});
+  S.ctx = Object.assign({ nivel: '', nivelOutro: '', local: '', etapas: {}, prioridades: [], problemas: [], subs: [], problemaOutro: '', olhando: '' }, S.ctx || {});
   if (!S.ctx.etapas || typeof S.ctx.etapas !== 'object') S.ctx.etapas = {};
+  ['prioridades', 'problemas', 'subs'].forEach(k => { if (!Array.isArray(S.ctx[k])) S.ctx[k] = []; });
+  S.respDet = S.respDet && typeof S.respDet === 'object' ? S.respDet : {};
   S.resp = S.resp || {};
   S.respC = S.respC || {};
   S.feitos = S.feitos || {};
@@ -31,6 +37,7 @@ function estadoFluxo() {
     Object.keys(SUB_OBJ).forEach(k => { if (!S.caso[k] || typeof S.caso[k] !== 'object') S.caso[k] = objVazio(k); });
     if (!Array.isArray(S.caso.testes)) S.caso.testes = [];
     if (!Array.isArray(S.caso.ferramentas)) S.caso.ferramentas = [];
+    if (!Array.isArray(S.caso.linhaBaseProblemas)) S.caso.linhaBaseProblemas = [];
   }
   if (S.fase == null || (S.fase !== '' && !PASSOS[S.fase])) S.fase = 'contexto';
   if (S.passo == null) S.passo = '';
@@ -52,13 +59,19 @@ function modoTeste(c) {
   if (t.includes('poc') && t.includes('piloto')) return 'ambos';
   return t[0] || '';
 }
+// v13 (RQ-13): com prova de conceito ou piloto no 2.0, as perguntas da camada 2 de camposDescidos (matriz.js)
+// saem dos passos 2.2 e 2.3 e passam a contar no passo 3.1; em 2.2 e 2.3 continuam num <details> "Para a implantação".
+function descidos() { return typeof camposDescidos === 'function' ? camposDescidos(S.caso || {}) : []; }
+function passoDe(f) { return f && descidos().includes(f.id) ? '3a' : f ? f.passo : ''; }
+// Destino de "Ir à pergunta" (fase:passo:número), na distribuição atual dos passos
+function irCampo(f) { const p = passoDe(f); return fasePasso(p) + ':' + p + ':' + f.n.replace(/\./g, '-'); }
 // A pergunta aparece? (condição "se" do registro CAMPOS)
 function visivel(f) { try { return !f.se || !!f.se(S.caso || {}); } catch (e) { return true; } }
 // Num caso em branco, um campo com valor padrão só conta depois que a pessoa responde.
 function respondido(campo) { return S.exemplo !== 'novo' || !!(S.respC || {})[campo]; }
 function aplicarExemploFluxo(k) {
   const CX = typeof CTX_EX !== 'undefined' ? CTX_EX : {}, RX = typeof RESP_EX !== 'undefined' ? RESP_EX : {};
-  S.ctx = clone(CX[k] || {}); S.resp = clone(RX[k] || {}); S.feitos = {}; S.respC = {}; S.vista = ''; S.info = {}; S.revisar = [];
+  S.ctx = clone(CX[k] || {}); S.resp = clone(RX[k] || {}); S.feitos = {}; S.respC = {}; S.vista = ''; S.info = {}; S.revisar = []; S.respDet = {};
   // nos exemplos, as respostas de experiência de uso já estão confirmadas (as sugestões não as substituem)
   if (k !== 'novo') {
     // v11: nos exemplos, horas de formação "estimadas" aparecem com o número da estimativa e a arquitetura
@@ -66,9 +79,11 @@ function aplicarExemploFluxo(k) {
     if (S.caso.formacaoEstimativa && vazio(S.caso.formacaoHoras)) S.caso.formacaoHoras = horasEstimativa();
     if (!S.caso.arquitetura) S.caso.arquitetura = 'nao_sei';
     CAMPOS_SUGERIDOS.forEach(c => { S.respC[c] = true; }); confirmarGerados(S.caso, S.respC);
+    // v13: nenhuma sugestão dos problemas (1.2) nem do 2.0 (2.3.1) substitui os valores dos exemplos
+    CAMPOS_PROB.concat(['nFerramentas']).forEach(c => { S.respC[c] = true; });
   }
   S.v10 = true;
-  if (CX[k]) { ['local', 'olhando', 'compOutro'].forEach(c => { if (S.ctx[c]) S.ctx[c] = tr(S.ctx[c]); }); }
+  if (CX[k]) { ['local', 'olhando', 'problemaOutro'].forEach(c => { if (S.ctx[c]) S.ctx[c] = tr(S.ctx[c]); }); }
   S.fase = 'contexto'; S.passo = '1a';
   estadoFluxo();
 }
@@ -109,11 +124,12 @@ function textoCampo(f) { const m = modoTeste(); return m === 'poc' && f.tPoc ? f
 //   2.0 testes → 2.3.8 tamanho e duração (PoC, piloto ou os dois); 2.3.4 tipo de tecnologia → 2.3.5 pagamento e 2.3.6 licença;
 //   2.4.3 dispositivos próprios → 2.4.4 "já existem"; 2.2.1 usuários (confirmados) → 4.1.1 pessoas na rede;
 //   4.1.1 pessoas na rede (ou as etapas do 1.1) → 3.1.1 primeira etapa (1/3); botão "Usar uma estimativa" → 2.5.4 horas.
+// v13: 2.0 respondida → 2.3.1 "Uma" ferramenta; problemas marcados no 1.2 → 1.2.3, 1.2.4, 1.2.5, 1.2.6 e 2.1.1 (CAMPOS_PROB).
 const PAG_LIC = { publica: ['gratuito', 'termos'], aberta: ['consumo', 'aberta'], paga: ['institucional', 'assinatura'] };
 const ALUNOS_POR_PROF = 25;   // premissa ilustrativa: 1 professor para cada 25 estudantes
 // premissa ilustrativa (casos.js, PREMISSAS_V11): a primeira etapa da implantação alcança 1/3 das pessoas e das escolas
 const FRACAO_IMPLANT = typeof PREMISSAS_V11 !== 'undefined' && +PREMISSAS_V11.implantacaoFracao > 0 ? +PREMISSAS_V11.implantacaoFracao : 1 / 3;
-const CAMPOS_GERADOS = ['pagamento', 'licenca', 'elegiveis', 'dispExistem'];
+const CAMPOS_GERADOS = ['pagamento', 'licenca', 'elegiveis', 'dispExistem', 'nFerramentas'];
 // Horas de formação por pessoa da estimativa ilustrativa (premissa do motor, se houver)
 function horasEstimativa() {
   if (typeof horasFormacaoEstimada === 'function') { try { const h = +horasFormacaoEstimada(S.caso); if (h > 0) return h; } catch (e) { } }
@@ -146,6 +162,7 @@ function padroesGerados() {
   }
   const pl = PAG_LIC[c.tipoTec];
   if (pl) { g.pagamento = pl[0]; g.licenca = pl[1]; }
+  if (testesDe(c).length) g.nFerramentas = '1';
   const u = usuariosMarcados();
   if (u.length) { const b = basePessoas(); if (b.n > 0) g.elegiveis = b.n; }
   if (c.modeloDisp === 'proprio') g.dispExistem = 'sim';
@@ -173,9 +190,26 @@ function aplicarPadroes() {
       if (c[o][k] !== v) { c[o][k] = v; mudou = true; }
     });
   });
+  if (aplicarProblemas()) mudou = true;
   // a primeira ferramenta da lista é a principal: tecnologia e pagamento são os das perguntas 2.3.4 e 2.3.5
   const f0 = (c.ferramentas || [])[0];
   if (f0) { if (f0.tipoTec !== (c.tipoTec || '')) { f0.tipoTec = c.tipoTec || ''; mudou = true; } if (f0.pagamento !== (c.pagamento || '')) { f0.pagamento = c.pagamento || ''; mudou = true; } }
+  if (mudou && S.custo) S.custo.editado = false;
+  return mudou;
+}
+// v13: sugestões dos problemas marcados no passo 1.2 (só nos campos ainda não confirmados). As tarefas sugeridas
+// também sugerem o passo 2.2 (aplicarSugestoes). Devolve true se algum valor mudou.
+function sugProblemas() { return typeof sugestoesProblemas === 'function' ? sugestoesProblemas(S.ctx || {}, tr) : null; }
+function aplicarProblemas() {
+  const sp = sugProblemas(); if (!sp || !S.caso) return false;
+  let mudou = false, tarefas = false;
+  CAMPOS_PROB.forEach(k => {
+    if (S.respC[k]) return;
+    const alvo = k === 'olhando' ? S.ctx : S.caso;
+    const v = Array.isArray(sp[k]) ? sp[k].slice() : (sp[k] || '');
+    if (JSON.stringify(alvo[k] == null ? (Array.isArray(v) ? [] : '') : alvo[k]) !== JSON.stringify(v)) { alvo[k] = v; mudou = true; if (k === 'tarefas') tarefas = true; }
+  });
+  if (tarefas) aplicarSugestoes();
   if (mudou && S.custo) S.custo.editado = false;
   return mudou;
 }
@@ -204,6 +238,7 @@ function sugerido(f) {
   if (f.sugere) return !S.respC[f.id] && (S.caso.tarefas || []).length > 0;
   if (f.tipo === 'horas') return !S.respC[f.id] && !!S.caso.formacaoEstimativa && !vazio(S.caso[f.id]);
   if (!f.sugDe) return false;
+  if (f.sugDe === 'problemas' && (S.respC[f.id] || !((sugProblemas() || {}).n > 0))) return false;
   if (f.tipo === 'setup' || f.tipo === 'implant') return subcampos(f).some(([o, k]) => !S.respC[o + '.' + k] && !vazio((S.caso[o] || {})[k]));
   return !S.respC[f.id] && !vazio(valorCampo(f));
 }
@@ -211,7 +246,7 @@ function textoSugerido(f) {
   if (f.sugere) return 'sugerido pela tarefa';
   if (f.tipo === 'horas') return 'estimativa ilustrativa';
   if (f.id === 'implantacao') return origemImplantacao() === 'eleg' ? 'sugerido pela resposta 4.1.1' : 'sugerido pelas etapas do passo 1.1';
-  return { testes: 'sugerido pela resposta 2.0', tipoTec: 'sugerido pela resposta 2.3.4', usuarios: 'sugerido pela resposta 2.2.1', modeloDisp: 'sugerido pela resposta 2.4.3' }[f.sugDe] || 'sugerido';
+  return { problemas: 'sugerido pelos problemas do passo 1.2', testes: 'sugerido pela resposta 2.0', tipoTec: 'sugerido pela resposta 2.3.4', usuarios: 'sugerido pela resposta 2.2.1', modeloDisp: 'sugerido pela resposta 2.4.3' }[f.sugDe] || 'sugerido';
 }
 // Nota que explica de onde vem o valor sugerido (só aparece enquanto a sugestão não é confirmada)
 function notaSugerido(f) {
@@ -228,7 +263,10 @@ function notaSugerido(f) {
   } else if (f.id === 'implantacao') {
     L.push(origemImplantacao() === 'eleg' ? 'Sugestão ilustrativa: um terço das pessoas da resposta 4.1.1 e um terço das escolas da rede. Confirme ou informe os números da sua primeira etapa.'
       : 'Sugestão ilustrativa: um terço dos estudantes e das escolas das etapas marcadas no passo 1.1. Confirme ou informe os números da sua primeira etapa.');
-  } else if (f.id === 'pagamento' || f.id === 'licenca') L.push('Sugestão a partir do tipo de tecnologia. Confirme ou escolha outra opção.');
+  } else if (f.sugere) L.push('Sugestão a partir das tarefas marcadas no passo 2.1. Confirme ou ajuste.');
+  else if (f.sugDe === 'problemas') L.push('Sugestão a partir dos problemas marcados no passo 1.2. Confirme ou ajuste.');
+  else if (f.id === 'nFerramentas') L.push('Testar uma ferramenta por vez permite saber o que funcionou. Confirme ou escolha outra opção.');
+  else if (f.id === 'pagamento' || f.id === 'licenca') L.push('Sugestão a partir do tipo de tecnologia. Confirme ou escolha outra opção.');
   else if (f.id === 'dispExistem') L.push('Sugestão: com dispositivos próprios das pessoas, a rede não precisa comprar equipamentos. Confirme ou escolha outra opção.');
   else if (f.id === 'formacaoHoras') L.push('Estimativa ilustrativa: ' + horasEstimativa() + ' horas por pessoa. É uma premissa desta ferramenta, e não um dado da sua rede; confirme ou informe as horas do seu plano de formação.');
   return L.length ? `<div class="hint sug-nota">${L.map(x => `<span>${esc(x)}</span>`).join(' ')}</div>` : '';
@@ -240,9 +278,10 @@ function qOk(f, semSug) {
     case 'seg': return !!S.resp[f.id];
     case 'etapas': return etapasAtivas().length > 0;
     case 'grade': { const at = etapasAtivas(); return at.length > 0 && at.every(e => +(x.etapas[e[0]] || {}).escolas > 0 && alunosEtapa(e[0]) > 0); }
-    case 'dom': return !!x.dominio;
-    case 'comps': return (x.comps || []).length > 0;
-    case 'texto': case 'area': return !!String(v || '').trim();
+    case 'prior': return (x.prioridades || []).length > 0;
+    case 'problemas': return (typeof problemasMarcados === 'function' && problemasMarcados(x).length > 0) || !!String(x.problemaOutro || '').trim();
+    // v13: texto com lacunas "__" (objetivos e modelos sugeridos) não conta como respondido
+    case 'texto': case 'area': return !!String(v || '').trim() && !temLac(v) && (semSug || !sugerido(f));
     case 'num': case 'horas': return +v > 0 && (semSug || !sugerido(f));
     case 'testes': return testesDe(c).length > 0;
     case 'ferramentas': { const L = c.ferramentas || []; return L.length > 0 && L.every(t => !!String(t.nome || '').trim()); }
@@ -257,7 +296,15 @@ function qOk(f, semSug) {
       return f.padrao ? respondido(f.id) || (semSug && sugerido(f)) : true;
   }
 }
-function camposPasso(id) { return CAMPOS.filter(f => f.passo === id && visivel(f)); }
+function temLac(v) { return typeof temLacuna === 'function' ? temLacuna(v) : String(v || '').includes('__'); }
+// Perguntas de um passo na distribuição atual: no 3.1, depois das próprias, as da camada 2 que desceram (RQ-13)
+function camposPasso(id) {
+  const d = descidos();
+  const L = CAMPOS.filter(f => f.passo === id && !d.includes(f.id) && visivel(f));
+  return id === '3a' && d.length ? L.concat(CAMPOS.filter(f => d.includes(f.id) && visivel(f))) : L;
+}
+// Perguntas da camada 2 que desceram para a implantação e que nasceram neste passo (2.2 ou 2.3)
+function camposDescidosPasso(id) { const d = descidos(); return CAMPOS.filter(f => f.passo === id && d.includes(f.id) && visivel(f)); }
 // Perguntas obrigatórias ainda sem resposta num passo (objetos de CAMPOS)
 function faltas(id) { return camposPasso(id).filter(f => !f.opcional && !qOk(f)); }
 function passoFeito(id) { return PASSOS_VER.includes(id) ? !!S.feitos[id] : !faltas(id).length; }
@@ -330,7 +377,7 @@ function avisoRevisar(id) {
   const fs = camposRevisar(); if (!fs.length) return '';
   if (id === '2a') return `<div class="aviso rev" role="status"><b>As tarefas mudaram as respostas sugeridas do passo 2.2.</b> <button type="button" class="link" data-ir="piloto:2b">Revisar o passo 2.2</button></div>`;
   return `<div class="aviso rev" role="status" id="aviso-rev"><b>As tarefas mudaram. Revise estas respostas.</b>
-    <ul>${fs.map(f => `<li><button type="button" class="link" data-ir="piloto:2b:${f.n.replace(/\./g, '-')}"><span class="qn-l">${f.n}</span> <span>${esc(textoCampo(f))}</span></button></li>`).join('')}</ul></div>`;
+    <ul>${fs.map(f => `<li><button type="button" class="link" data-ir="${irCampo(f)}"><span class="qn-l">${f.n}</span> <span>${esc(textoCampo(f))}</span></button></li>`).join('')}</ul></div>`;
 }
 
 // Premissas unitárias da estimativa, tiradas de cfgAtual(): exemplo de origem, pessoas, adoção, preço da
@@ -446,20 +493,65 @@ function opGrade() {
   return `<div class="grade">${linhas}</div>
     <div class="totais"><span><span>Total:</span> <b class="num" data-tot="escolas">${fmtInt(t.escolas)}</b> <span>escolas</span></span><span><b class="num" data-tot="alunos">${fmtInt(t.alunos)}</b> <span>estudantes</span></span><span><b class="num">${t.n}</b> <span>etapas</span></span></div>`;
 }
-function opDominio() {
-  const x = S.ctx;
-  return `<div class="doms" role="radiogroup" aria-labelledby="qt-dominio">${DOMINIOS.map(d => `<label class="dom${d.ativo ? '' : ' off'}${x.dominio === d.id ? ' sel' : ''}">
-      <input type="radio" name="dominio" data-ctx="dominio" value="${d.id}" ${x.dominio === d.id ? 'checked' : ''} ${d.ativo ? '' : 'disabled'}>
-      <span class="dom-t"><b>${esc(d.lema)}</b><span class="dom-nome">${esc(d.nome)}</span>${d.ativo ? '' : '<span class="tag">em breve</span>'}</span>
-      <span class="dom-d">${esc(d.desc)}</span>
-      <span class="dom-ex"><span class="eyebrow">Exemplos</span><ul>${d.ex.map(e => `<li>${esc(e)}</li>`).join('')}</ul></span></label>`).join('')}</div>`;
+// v13 · 1.2.1 prioridades: quatro cartões com caixa de marcar (várias) e ⓘ próprio com os exemplos (S.info['pr-<id>'])
+function opPrior() {
+  const x = S.ctx, sel = new Set(x.prioridades || []);
+  const L = typeof PRIORIDADES !== 'undefined' ? PRIORIDADES : [];
+  return `<div class="prios" role="group" aria-labelledby="qt-prioridades">${L.map(p => {
+    const on = sel.has(p.id), aberta = !!S.info['pr-' + p.id];
+    return `<div class="pri${on ? ' sel' : ''}">
+      <div class="pri-topo"><label class="pri-lab" for="pr-${p.id}"><input type="checkbox" id="pr-${p.id}" data-prior="${p.id}" ${on ? 'checked' : ''}>
+        <span class="pri-tx"><b>${esc(p.nome)}</b><span class="pri-d">${esc(p.desc)}</span></span></label>
+        <button type="button" class="info" id="bi-pr-${p.id}" data-info="pr" data-info-id="pr-${p.id}" aria-expanded="${aberta}" aria-controls="nota-pr-${p.id}" aria-label="${esc(tr('Exemplos') + ': ' + tr(p.nome))}">ⓘ</button></div>
+      ${aberta ? `<div class="info-nota pri-nota" id="nota-pr-${p.id}"><p class="eyebrow">Exemplos</p><ul>${(p.ex || []).map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>` : ''}</div>`;
+  }).join('')}</div>`;
 }
-function opComps() {
-  const x = S.ctx, d = DOMINIOS.find(z => z.id === x.dominio);
-  if (!d || !d.comps) return `<p class="hint vazio-g">Escolha antes o tipo de problema na pergunta 1.2.1.</p>`;
-  return `<div class="opts cols" role="group" aria-labelledby="qt-comps">${d.comps.map(([k, n, s]) => `<label class="opt"><input type="checkbox" data-comp="${k}" ${(x.comps || []).includes(k) ? 'checked' : ''}><span><b>${esc(n)}</b><small>${esc(s)}</small></span></label>`).join('')}</div>
-    ${(x.comps || []).includes('outro') ? `<div class="outro">${tCampo('c-compOutro', 'data-ctxt="compOutro"', x.compOutro, 'Qual componente?', 'Qual componente?')}</div>` : ''}`;
+// v13 · 1.2.2 problemas das prioridades marcadas: contador, "Marcar todos" e "Desmarcar todos", objetivo em letra menor,
+// subcategorias recolhidas sob cada problema marcado e, no fim, "Outro problema" (texto livre)
+function opProblemas() {
+  const x = S.ctx, prs = new Set(x.prioridades || []), ps = new Set(x.problemas || []), ss = new Set(x.subs || []);
+  const L = (typeof PRIORIDADES !== 'undefined' ? PRIORIDADES : []).filter(p => prs.has(p.id));
+  const grupos = L.map(p => {
+    const n = p.problemas.filter(q => ps.has(q.id)).length;
+    const itens = p.problemas.map(q => {
+      const on = ps.has(q.id), nSub = (q.sub || []).filter(([k]) => ss.has(k)).length;
+      const sub = on && (q.sub || []).length ? `<details class="prob-sub" data-subdet="${q.id}" ${SUB_ABERTO[q.id] ? 'open' : ''}><summary><span>Subcategorias (opcional)</span>${nSub ? ` <span class="prob-sn">(${nSub})</span>` : ''}</summary>
+        <div class="chips" role="group" aria-label="${esc(tr('Subcategorias (opcional)'))}">${q.sub.map(([k, t]) => `<label class="chip"><input type="checkbox" id="sb-${k}" data-sub="${k}" ${ss.has(k) ? 'checked' : ''}><span>${esc(t)}</span></label>`).join('')}</div></details>` : '';
+      return `<li class="prob${on ? ' sel' : ''}"><label class="prob-lab" for="pb-${q.id}"><input type="checkbox" id="pb-${q.id}" data-prob="${q.id}" ${on ? 'checked' : ''}>
+        <span class="prob-tx"><span class="prob-t">${esc(q.t)}</span><small class="prob-obj"><span class="prob-ol">Objetivo:</span> <span>${esc(q.obj)}</span></small></span></label>${sub}</li>`;
+    }).join('');
+    return `<section class="prob-grupo" aria-labelledby="pg-t-${p.id}"><div class="pg-cab"><h4 class="pg-t" id="pg-t-${p.id}">${esc(p.nome)}</h4>
+      <span class="pg-n">${esc(tr(n + ' de ' + p.problemas.length + ' marcados'))}</span>
+      <span class="pg-acoes"><button type="button" class="btn" id="pt-${p.id}" data-prob-todos="${p.id}" ${n === p.problemas.length ? 'disabled' : ''}>Marcar todos</button><button type="button" class="btn" id="pn-${p.id}" data-prob-nenhum="${p.id}" ${n ? '' : 'disabled'}>Desmarcar todos</button></span></div>
+      <ul class="prob-lista">${itens}</ul></section>`;
+  }).join('');
+  return `${grupos || '<p class="hint vazio-g">Marque antes uma ou mais prioridades na pergunta 1.2.1.</p>'}
+    <div class="outro prob-outro"><label class="g-c" for="c-problemaOutro"><span>Outro problema</span></label>${tCampo('c-problemaOutro', 'data-ctxt="problemaOutro"', x.problemaOutro, ' ')}</div>`;
 }
+// v13 · detalhe de "Sim" e "Em parte" (RQ-10, RQ-11). Opcional: nunca bloqueia o passo. O contêiner existe sempre,
+// para ser trocado no lugar quando a resposta muda (sem redesenhar a página).
+function detalheResp(f) {
+  const d = f.detalhe || {}, v = S.resp[f.id], det = S.respDet[f.id] || {};
+  const on = v === 'sim' || v === 'parcial';
+  const campo = (k, rot) => `<label class="g-c q-det-c" for="dt-${f.id}-${k}"><span>${esc(rot)}</span> <span class="tag opc">opcional</span></label>${tCampo('dt-' + f.id + '-' + k, `data-det="${f.id}.${k}"`, det[k], ' ')}`;
+  return `<div class="q-det" id="det-${f.id}">${on ? `<div class="q-det-in">${campo('qual', d.qual)}${v === 'parcial' ? campo('falta', d.falta || 'O que falta?') : ''}</div>` : ''}</div>`;
+}
+function detalheLinhaBase(f) {
+  f = f || CAMPO_POR_ID.linhaBase;
+  const d = f.detalhe || {}, c = S.caso, v = c.linhaBase;
+  const on = d.v.includes(v) && marcado(f, v);
+  let corpo = '';
+  if (on) {
+    const ps = typeof problemasMarcados === 'function' ? problemasMarcados(S.ctx) : [], sel = new Set(c.linhaBaseProblemas || []);
+    const opc = ' <span class="tag opc">opcional</span>';
+    const probs = ps.length ? `<div class="g-c q-det-c" id="dt-lb-p"><span>${esc(d.problemas)}</span>${opc}</div>
+        <div class="opts det-ops" role="group" aria-labelledby="dt-lb-p">${ps.map(q => `<label class="opt" for="lb-${q.id}"><input type="checkbox" id="lb-${q.id}" data-fm="linhaBaseProblemas" value="${q.id}" ${sel.has(q.id) ? 'checked' : ''}><span>${esc(q.t)}</span></label>`).join('')}</div>`
+      : `<label class="g-c q-det-c" for="f-linhaBaseProblemaTxt"><span>${esc(d.problemas)}</span>${opc}</label>${tCampo('f-linhaBaseProblemaTxt', 'data-f="linhaBaseProblemaTxt"', c.linhaBaseProblemaTxt, ' ')}`;
+    corpo = `<div class="q-det-in">${probs}<label class="g-c q-det-c" for="f-linhaBaseMedida"><span>${esc(d.medida)}</span>${opc}</label>${tCampo('f-linhaBaseMedida', 'data-f="linhaBaseMedida"', c.linhaBaseMedida, d.exMedida)}</div>`;
+  }
+  return `<div class="q-det" id="det-${f.id}">${corpo}</div>`;
+}
+function detalheCampo(f) { return !f.detalhe ? '' : f.onde === 'resp' ? detalheResp(f) : f.id === 'linhaBase' ? detalheLinhaBase(f) : ''; }
 // 2.3.8 tamanho e duração: campos da prova de conceito (caso.poc), do piloto (caso.piloto) ou dos dois
 function opSetup() {
   const c = S.caso, m = modoTeste(), t = totaisCtx();
@@ -534,8 +626,8 @@ function controle(f) {
     case 'seg': return opSeg(f);
     case 'etapas': return opEtapas();
     case 'grade': return opGrade();
-    case 'dom': return opDominio();
-    case 'comps': return opComps();
+    case 'prior': return opPrior();
+    case 'problemas': return opProblemas();
     case 'setup': return opSetup();
     case 'testes': return opTestes(f);
     case 'ferramentas': return opFerramentas();
@@ -547,7 +639,11 @@ function controle(f) {
       if (f.id === 'titulo') { const t0 = (S.caso.tarefas || [])[0]; ph = t0 ? (t0 === 'outra' ? (S.caso.tarefaOutra || '') : rotulo(listaOpc(CAMPO_POR_ID.tarefas), t0)) : ''; }
       return tCampo('f-' + f.id, attrCampo(f), valorCampo(f), ph);
     }
-    case 'area': return aCampo('f-' + f.id, attrCampo(f), valorCampo(f), f.rows, f.ph);
+    case 'area': {
+      // v13: textos sugeridos pelos problemas podem ter várias linhas (um objetivo por problema)
+      const v = String(valorCampo(f) || ''), rows = f.sugDe === 'problemas' ? Math.min(10, Math.max(f.rows || 3, v.split('\n').reduce((n, l) => n + Math.ceil((l.length || 1) / 80), 0))) : f.rows;
+      return aCampo('f-' + f.id, attrCampo(f), valorCampo(f), rows, f.ph);
+    }
     case 'num': return nCampo({ id: 'f-' + f.id, attrs: `data-fn="${f.id}"`, valor: valorCampo(f), casas: 0, rotulo: f.t, ph: ' ' });
   }
   return '';
@@ -565,7 +661,11 @@ function renderQ(f) {
   }
   if (f.id === 'escolasInternet') { const tt = totaisCtx(); if (tt.escolas > 0) extra = `<div class="hint"><span>Escolas da rede, segundo o passo 1.1:</span> <b class="num">${fmtInt(tt.escolas)}</b></div>`; }
   const temTag = f.sugere || f.sugDe || f.tipo === 'horas';
-  return `<div class="q${ok ? ' ok' : ''}${sug ? ' sug' : ''}" id="${idQ(f.n)}" data-n="${f.n}" data-campo="${f.id}">
+  // v13: dica das lacunas "__" (sempre no HTML; a classe .lacuna a mostra enquanto houver lacunas)
+  const lac = f.sugDe === 'problemas' && ['texto', 'area'].includes(f.tipo);
+  if (lac) extra += `<div class="hint lacuna-dica">Complete as lacunas marcadas com __ com os dados da sua rede.</div>`;
+  if (f.detalhe) extra += detalheCampo(f);
+  return `<div class="q${ok ? ' ok' : ''}${sug ? ' sug' : ''}${lac && temLac(valorCampo(f)) ? ' lacuna' : ''}" id="${idQ(f.n)}" data-n="${f.n}" data-campo="${f.id}">
     <${rotTag} class="q-t" id="qt-${f.id}"><span class="qn">${f.n}</span> <span class="qt">${esc(t)}</span>${f.opcional ? ' <span class="tag opc">opcional</span>' : ''}${temTag ? `<span class="tag sug-tag">${esc(textoSugerido(f))}</span>` : ''}<span class="sr q-sr">${ok ? 'respondida' : ''}</span></${rotTag.split(' ')[0]}>
     ${h ? `<div class="hint">${esc(h)}</div>` : ''}${ex ? `<div class="hint ex">${esc(ex)}</div>` : ''}
     ${controle(f)}${sug ? notaSugerido(f) : ''}${extra}</div>`;
@@ -574,7 +674,7 @@ function renderQ(f) {
 // e o botão que abre a Figura 1 (p. 11) sem alteração, com legenda e crédito.
 const INFO_ROT = { c1: 'Sobre a camada 1', c2: 'Sobre a camada 2', c24: 'Sobre as camadas 2 e 4', c3: 'Sobre a camada 3', c6: 'Sobre a camada 6', c7: 'Sobre a camada 7', c45: 'Sobre as camadas 4 e 5', c37: 'Sobre as sete camadas' };
 function botaoInfo(chave, id) {
-  return `<button type="button" class="info" data-info="${chave}" data-info-id="${id}" aria-expanded="${!!S.info[id]}" aria-controls="nota-${id}" aria-label="${esc(INFO_ROT[chave] || 'Sobre as camadas')}">ⓘ</button>`;
+  return `<button type="button" class="info" id="bi-${id}" data-info="${chave}" data-info-id="${id}" aria-expanded="${!!S.info[id]}" aria-controls="nota-${id}" aria-label="${esc(INFO_ROT[chave] || 'Sobre as camadas')}">ⓘ</button>`;
 }
 // v12: a figura aparece logo, em miniatura (até ~460 px) com legenda e crédito; "Ampliar a figura" ou um clique
 // na miniatura abrem o visualizador sobre a página (abrirVisor), sem nova janela. O plano (A3) usa os mesmos.
@@ -594,7 +694,7 @@ function notaInfo(chave, id) {
   return `<div class="info-nota${fig ? ' com-fig' : ''}" id="nota-${id}"><div class="info-grade"><div class="info-txt"><p>${esc(CAMADAS_INFO[chave])}</p>
     <p class="ref-tco"><span>${esc(REF_TCO.autores)}</span> <cite data-notr>${esc(REF_TCO.titulo)}</cite> <span>${esc(REF_TCO.local)}</span>
       <a href="${REF_TCO.url}" target="_blank" rel="noopener">${esc(REF_TCO.link)}</a></p>
-    <p class="small muted">${esc(REF_TCO.nota)}</p></div>${fig}</div></div>`;
+    <p class="small muted">${esc(REF_TCO.nota)}</p>${chave === 'c37' && typeof eventoInicio === 'function' ? '<p><button type="button" class="btn" data-act="ver-matriz">Ver a matriz camadas × fases</button></p>' : ''}</div>${fig}</div></div>`;
 }
 // Visualizador da figura: <dialog> modal (role="dialog", aria-modal), fundo escurecido, imagem ajustada à largura
 // com rolagem; fecha com Esc, clique no fundo ou "Fechar"; foco preso no visualizador e devolvido a quem o abriu.
@@ -641,7 +741,19 @@ function corpoPadrao(id) {
   const pi = PASSO_INFO[id] || {};
   let s = pi.abertura ? `<p class="abertura muted">${esc(pi.abertura)}</p>` : '';
   if (id === '2b') s += avisoRevisar(id);
-  s += camposPasso(id).map(renderQ).join('');
+  // v13: aviso do 2.1 quando todos os problemas marcados se resolvem sem uma ferramenta de IA
+  if (id === '2a' && typeof AVISO_SEM_FERRAMENTA !== 'undefined' && (sugProblemas() || {}).semFerramenta) s += `<div class="aviso sem-ferr" role="note"><span>${esc(AVISO_SEM_FERRAMENTA)}</span></div>`;
+  const d = descidos();
+  const proprias = camposPasso(id).filter(f => !(id === '3a' && d.includes(f.id)));
+  s += proprias.map(renderQ).join('');
+  // v13 (RQ-13): no 3.1, as perguntas da camada 2 que ficaram para a implantação; em 2.2 e 2.3, as mesmas num <details>
+  if (id === '3a' && d.length) {
+    const L = camposPasso(id).filter(f => d.includes(f.id));
+    if (L.length) s += `<div class="desc-bloco" id="desc-3a"><h3 class="sub-h">Da camada 2: decisões que ficaram para a implantação</h3>${L.map(renderQ).join('')}</div>`;
+  }
+  const dp = camposDescidosPasso(id);
+  if (dp.length) s += `<details class="desc-imp" data-desc="${id}" ${DESC_ABERTO[id] ? 'open' : ''}><summary>Para a implantação (pode responder agora ou depois)</summary>
+    <div class="desc-in"><p class="hint">Estas perguntas também aparecem no passo 3.1.</p>${dp.map(renderQ).join('')}</div></details>`;
   if (id === '2a') s += avisoRevisar(id);
   if (id === '1b' && typeof CAP !== 'undefined' && CAP.sample) {
     s += `<div class="ai" id="ia-box"><div class="row" style="justify-content:space-between"><div><b>Estruturar a descrição com Claude</b><div class="small muted">Lê o problema e o resultado, sugere respostas para a fase 2 e aponta lacunas. Você revisa antes de aplicar.</div></div>
@@ -805,6 +917,8 @@ function renderStepper() {
 }
 function boasVindas() {
   const sv = typeof SALVO !== 'undefined' ? SALVO : null;
+  // v13: página inicial do pacote B2 (inicio.js); o restante fica como reserva
+  if (typeof paginaInicial === 'function') return paginaInicial(sv);
   const nome = sv ? (sv.nome || (sv.exemplo ? tr(sv.exemplo) : '')) : '';
   const escolha = sv ? `<div class="salvo" role="group" aria-labelledby="salvo-t">
       <h3 id="salvo-t">Há um caso salvo neste navegador</h3>
@@ -895,7 +1009,7 @@ function renderPainel() {
   } else {
     est = `<div class="estim"><div class="eyebrow">Estimativa ilustrativa</div>
       <p class="small muted">${esc(tr('A estimativa de custo aparece depois destas respostas:'))}</p>
-      <ul class="req small">${fe.map(f => `<li><button type="button" class="link" data-ir="${fasePasso(f.passo)}:${f.passo}:${f.n.replace(/\./g, '-')}"><span class="qn-l">${f.n}</span> <span>${esc(textoCampo(f))}</span></button></li>`).join('')}</ul></div>`;
+      <ul class="req small">${fe.map(f => `<li><button type="button" class="link" data-ir="${irCampo(f)}"><span class="qn-l">${f.n}</span> <span>${esc(textoCampo(f))}</span></button></li>`).join('')}</ul></div>`;
   }
   const exp = `<button type="button" class="link" data-act="exp-json">${CAP.downloads ? 'Exportar caso' : 'Copiar dados do caso'}</button>`;
   el.innerHTML = `<div class="card painel-in">
@@ -956,6 +1070,7 @@ function atualizarFaseViva() {
     const f = CAMPO_POR_ID[q.dataset.campo]; if (!f) return;
     const ok = qOk(f), sug = sugerido(f) && !vazio(valorCampo(f));
     q.classList.toggle('ok', ok); q.classList.toggle('sug', sug);
+    if (f.sugDe === 'problemas' && ['texto', 'area'].includes(f.tipo)) q.classList.toggle('lacuna', temLac(valorCampo(f)));
     const sr = q.querySelector('.q-sr'); if (sr && sr.dataset.v !== String(ok)) { sr.dataset.v = String(ok); sr.textContent = ok ? tr('respondida') : ''; }
   });
   const fid = S.fase; if (!fid || S.vista === 'plano') return;
@@ -985,13 +1100,15 @@ function alvoQ(alvo) {
 }
 function irPara(id) {
   const el = document.getElementById(id); if (!el) return;
+  // v13: a pergunta pode estar num <details> recolhido ("Para a implantação", subcategorias): abre antes de rolar
+  for (let d = el.closest('details'); d; d = d.parentElement && d.parentElement.closest('details')) { if (!d.open) d.open = true; }
   const top = el.getBoundingClientRect().top + window.scrollY - (document.querySelector('.top') || { offsetHeight: 0 }).offsetHeight - 12;
   window.scrollTo({ top, behavior: 'smooth' });
   if (el.classList.contains('q')) { el.classList.add('pisca'); setTimeout(() => el.classList.remove('pisca'), 1600); }
 }
 function abrirFase(fid, passo, alvo) {
   if (!PASSOS[fid]) return;
-  if (alvo && !passo) { const f = CAMPO_POR_ID[alvo]; if (f) passo = f.passo; }
+  if (alvo && !passo) { const f = CAMPO_POR_ID[alvo]; if (f) passo = passoDe(f); }
   S.fase = fid; S.passo = passo || PASSOS[fid][0][0]; S.boasVindas = false; S.vista = ''; render();
   requestAnimationFrame(() => irPara(alvo ? alvoQ(alvo) : 'passo-' + S.passo));
 }
@@ -1031,7 +1148,9 @@ function aoMudarCampo(campo) {
     if (el) { el.hidden = !v; const b = el.querySelector('b'); if (b) b.textContent = pct(v); }
     atualizarLaterais(); return true;
   }
-  if ((f && ['texto', 'area'].includes(f.tipo)) || ['tarefaOutra', 'impactoOutro', 'nivelOutro', 'titulo', 'problema', 'resultado'].includes(campo)) { atualizarLaterais(); return true; }
+  // v13: 1.2.7 "Sim" ou "Em parte" abre o detalhe no lugar
+  if (campo === 'linhaBase') { const d = document.getElementById('det-linhaBase'); if (d) d.outerHTML = detalheLinhaBase(); atualizarLaterais(); return true; }
+  if ((f && ['texto', 'area'].includes(f.tipo)) || ['tarefaOutra', 'impactoOutro', 'nivelOutro', 'titulo', 'problema', 'resultado', 'linhaBaseProblemas', 'linhaBaseMedida', 'linhaBaseProblemaTxt'].includes(campo)) { atualizarLaterais(); return true; }
   render(); return true;
 }
 function novaFerramenta() { return { nome: '', tarefas: [], tipoTec: '', pagamento: '', preco: '' }; }
@@ -1057,6 +1176,8 @@ function gravarFerramenta(el, final) {
 }
 function eventoFluxo(e) {
   const el = e.target;
+  // v13: página inicial e matriz (pacote B2, inicio.js)
+  if (typeof eventoInicio === 'function' && eventoInicio(e)) return true;
   if (e.type === 'click') {
     const inf = el.closest('[data-info]');
     if (inf) { const id = inf.dataset.infoId || inf.dataset.info; S.info[id] = !S.info[id]; render(); return true; }
@@ -1079,7 +1200,23 @@ function eventoFluxo(e) {
       if (S.exemplo !== 'novo') S.exemplo = 'editado';
       const grp = rz.closest('.seg');
       if (grp) grp.querySelectorAll('[data-resp]').forEach(b => b.setAttribute('aria-pressed', String(S.resp[id] === b.dataset.v)));
+      // v13: o detalhe de "Sim" e "Em parte" aparece ou some no lugar, sem redesenhar a página (o foco fica no botão)
+      const det = document.getElementById('det-' + id), fq = CAMPO_POR_ID[id];
+      if (det && fq && fq.detalhe) det.outerHTML = detalheCampo(fq);
       atualizarLaterais(); return true;
+    }
+    // v13: "Marcar todos" e "Desmarcar todos" os problemas de uma prioridade (o texto de "Outro problema" fica)
+    const mt = el.closest('[data-prob-todos],[data-prob-nenhum]');
+    if (mt) {
+      const pid = mt.dataset.probTodos || mt.dataset.probNenhum, todos = mt.dataset.probTodos != null;
+      const p = (typeof PRIORIDADES !== 'undefined' ? PRIORIDADES : []).find(z => z.id === pid); if (!p) return true;
+      const ids = p.problemas.map(q => q.id), s = new Set(S.ctx.problemas || []);
+      ids.forEach(k => { if (todos) s.add(k); else s.delete(k); });
+      S.ctx.problemas = ordemProblemas([...s]); if (S.exemplo !== 'novo') S.exemplo = 'editado';
+      render();
+      // o botão usado fica desativado: o foco passa para o outro botão do mesmo grupo
+      requestAnimationFrame(() => { const b = document.getElementById((todos ? 'pn-' : 'pt-') + pid); if (b && !b.disabled) b.focus({ preventScroll: true }); });
+      return true;
     }
     const tz = el.closest('[data-sototal]');
     if (tz) { const id = tz.dataset.sototal; const et = S.ctx.etapas[id] = S.ctx.etapas[id] || {}; et.soTotal = !et.soTotal; if (et.soTotal && !(+et.alunos > 0)) { const s = (et.anos || []).reduce((a, b) => a + (+b || 0), 0); if (s > 0) et.alunos = s; } render(); return true; }
@@ -1134,7 +1271,15 @@ function eventoFluxo(e) {
   if (e.type === 'change') {
     if (el.dataset.ctx) {
       S.ctx[el.dataset.ctx] = el.value; if (S.exemplo !== 'novo') S.exemplo = 'editado';
-      if (el.dataset.ctx === 'dominio') S.ctx.comps = [];
+      render(); return true;
+    }
+    // v13: 1.2.1 prioridades, 1.2.2 problemas e subcategorias (desmarcar uma prioridade não apaga os problemas dela)
+    if (el.dataset.prior || el.dataset.prob || el.dataset.sub) {
+      const k = el.dataset.prior ? 'prioridades' : el.dataset.prob ? 'problemas' : 'subs', v = el.dataset.prior || el.dataset.prob || el.dataset.sub;
+      const s = new Set(S.ctx[k] || []); el.checked ? s.add(v) : s.delete(v);
+      S.ctx[k] = k === 'prioridades' ? PRIORIDADES.map(p => p.id).filter(id => s.has(id)) : k === 'problemas' ? ordemProblemas([...s]) : [...s];
+      if (S.exemplo !== 'novo') S.exemplo = 'editado';
+      if (k === 'subs') { const det = el.closest('details'), sn = det && det.querySelector('summary'); if (sn) { const n = sn.querySelector('.prob-sn'), q = PROBLEMA_POR_ID[det.dataset.subdet]; const m = q ? q.sub.filter(([id]) => s.has(id)).length : 0; if (n) n.textContent = m ? '(' + m + ')' : ''; else if (m) sn.insertAdjacentHTML('beforeend', ` <span class="prob-sn">(${m})</span>`); } atualizarLaterais(); return true; }
       render(); return true;
     }
     if (el.dataset.etapa) {
@@ -1143,16 +1288,24 @@ function eventoFluxo(e) {
       if ((S.caso.tarefas || []).length) aplicarSugestoes();
       render(); return true;
     }
-    if (el.dataset.comp) { const s = new Set(S.ctx.comps || []); el.checked ? s.add(el.dataset.comp) : s.delete(el.dataset.comp); S.ctx.comps = [...s]; if (S.exemplo !== 'novo') S.exemplo = 'editado'; render(); return true; }
     if (el.dataset.ctxn) { gravarCtxn(el); return true; }
-    if (el.dataset.ctxt) { S.ctx[el.dataset.ctxt] = el.value; atualizarLaterais(); return true; }
+    if (el.dataset.ctxt) {
+      gravarCtxt(el);
+      // "Outro problema" muda as sugestões do 1.2: redesenha ao sair do campo
+      if (el.dataset.ctxt === 'problemaOutro') render(); else atualizarLaterais();
+      return true;
+    }
+    if (el.dataset.det) { gravarDet(el); return true; }
   }
   if (e.type === 'input') {
-    if (el.dataset.ctxt) { S.ctx[el.dataset.ctxt] = el.value; if (S.exemplo !== 'novo') S.exemplo = 'editado'; atualizarLaterais(); return true; }
+    if (el.dataset.ctxt) { gravarCtxt(el); atualizarLaterais(); return true; }
+    if (el.dataset.det) { gravarDet(el); return true; }
     if (el.dataset.ctxn) { gravarCtxn(el); return true; }
   }
   if (e.type === 'toggle' && el.dataset) {
     if (el.dataset.numdet != null) { NUM_ABERTO = el.open; return false; }
+    if (el.dataset.subdet != null) { SUB_ABERTO[el.dataset.subdet] = el.open; return false; }
+    if (el.dataset.desc != null) { DESC_ABERTO[el.dataset.desc] = el.open; return false; }
     if (el.dataset.calc != null) {
       S.calcAberta = el.open;
       const box = document.getElementById('custos-box');
@@ -1161,6 +1314,27 @@ function eventoFluxo(e) {
     }
   }
   return false;
+}
+// v13: problemas na ordem do catálogo
+function ordemProblemas(ids) { const s = new Set(ids); const out = []; (typeof PRIORIDADES !== 'undefined' ? PRIORIDADES : []).forEach(p => p.problemas.forEach(q => { if (s.has(q.id)) out.push(q.id); })); return out.concat(ids.filter(k => !out.includes(k))); }
+// v13: subcategorias marcadas dos problemas que contam (problemasMarcados), na ordem do catálogo
+function subsMarcadas(x) {
+  x = x || S.ctx || {}; const ss = new Set(x.subs || []);
+  return (typeof problemasMarcados === 'function' ? problemasMarcados(x) : []).flatMap(q => (q.sub || []).filter(([k]) => ss.has(k)).map(([k, t]) => ({ id: k, t, problema: q.id })));
+}
+// Texto de contexto (data-ctxt); digitar no 1.2.3 confirma a sugestão dos problemas
+function gravarCtxt(el) {
+  const k = el.dataset.ctxt; S.ctx[k] = el.value;
+  if (CAMPOS_PROB.includes(k)) S.respC[k] = true;
+  if (S.exemplo !== 'novo') S.exemplo = 'editado';
+}
+// Detalhe das perguntas 1.3.x (data-det="<id>.qual|falta") em S.respDet
+function gravarDet(el) {
+  const [id, k] = el.dataset.det.split('.');
+  const d = S.respDet[id] = Object.assign({ qual: '', falta: '' }, S.respDet[id] || {});
+  d[k] = el.value;
+  if (S.exemplo !== 'novo') S.exemplo = 'editado';
+  salvar();
 }
 // Escolas e estudantes por etapa e ano (data-ctxn="etapas.<id>.<campo>[.<i>]")
 function gravarCtxn(el) {

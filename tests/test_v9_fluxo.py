@@ -5,14 +5,17 @@
 # exclusiva; lista de ferramentas (2.3.3) sem diálogos do navegador; 2.4 internet e dispositivos; 2.5 formação com
 # "Usar uma estimativa"; 2.6 suporte; 3.1 primeira etapa sugerida; 3.2 arquitetura; 4.2 estimativa; 4.3 recomendações;
 # figura das sete camadas no ⓘ; "system" em vez de "network" em EN. Números de pergunta da v11 (2.3.8, 4.1.1...).
-# Uso: python3 tests/test_v9_fluxo.py   (depois de bash build.sh). Capturas em /tmp/claude-0/v9_fx_*.png
+# v13 (B1): 1.2.1 com prioridades no lugar dos domínios; com prova de conceito ou piloto, 2.3.6 e 2.3.7 ficam em "Para a
+# implantação" (aberto pelo teste); versão 13; figura da v12 já aberta na nota ⓘ, com "Ampliar a figura" (visualizador).
+# Uso: python3 tests/test_v9_fluxo.py   (depois de bash build.sh). Capturas em /tmp/claude-0/v13_b1/v9_fx_*.png
 import asyncio, os, re, sys
 from playwright.async_api import async_playwright
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.makedirs('/tmp/claude-0', exist_ok=True)
 SK = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"></head><body>' + open(os.path.join(RAIZ, 'navegador.html')).read() + '</body></html>'
-ARQ = '/tmp/claude-0/v9_fx.html'
+os.makedirs('/tmp/claude-0/v13_b1', exist_ok=True)
+ARQ = '/tmp/claude-0/v13_b1/v9_fx.html'
 open(ARQ, 'w').write(SK)
 URL_TCO = 'https://unesdoc.unesco.org/ark:/48223/pf0000399348'
 PASSOS = [('contexto', ['1a', '1b', '1c']), ('piloto', ['20', '2a', '2b', '2c', '2d', '2e', '2f']), ('implantacao', ['3a', '3b']), ('expansao', ['4a', '4b', '4c'])]
@@ -53,7 +56,7 @@ async def percorrer(pg, tag, w, erros, fotos, branco=False):
                 nums.append(qn.strip())
             if fotos:
                 await pg.evaluate(f"irPara('passo-{pid}')"); await pg.wait_for_timeout(200)
-                await pg.screenshot(path=f'/tmp/claude-0/v9_fx_{tag}_{pid}.png')
+                await pg.screenshot(path=f'/tmp/claude-0/v13_b1/v9_fx_{tag}_{pid}.png')
     return nums
 
 async def main():
@@ -68,7 +71,7 @@ async def main():
                 pg.on('pageerror', lambda e, t=tag: erros.append(f'{t} pageerror: {e}'))
                 pg.on('console', lambda m, t=tag: erros.append(f'{t} console: {m.text}') if m.type == 'error' and 'ERR_TUNNEL' not in m.text and 'fonts.g' not in m.text else None)
                 await abrir(pg, lang)
-                await pg.screenshot(path=f'/tmp/claude-0/v9_fx_{tag}_boas.png')
+                await pg.screenshot(path=f'/tmp/claude-0/v13_b1/v9_fx_{tag}_boas.png')
                 # caso em branco
                 await pg.click('[data-act="comecar"]'); await pg.wait_for_timeout(250)
                 ok(await pg.evaluate("S.fase==='contexto' && S.passo==='1a' && S.exemplo==='novo'"), f'{tag} caso em branco abre 1.1')
@@ -177,23 +180,24 @@ async def main():
                     ok(len(exs) == 6 and all(t.startswith('Example:') for t in exs), f'{tag} toda pergunta 1.3 tem "Example:"')
                     ok(await pg.evaluate("document.querySelector('#q-1-3-2 .qt').textContent") == 'Do you have an AI in education policy or strategy?', f'{tag} g-politica em EN')
                 ok(await pg.locator('#passo-1c .q').count() == 6 and await pg.locator('[data-resp="g-equipe"]').count() == 0, f'{tag} 1.3 com seis perguntas, sem g-equipe')
-                # domínio: lema em <b>
+                # v13: 1.2.1 com as quatro prioridades (cartões com caixa de marcar), no lugar dos domínios da v12
                 await pg.evaluate("abrirFase('contexto','1b')"); await pg.wait_for_timeout(150)
-                lema = await pg.evaluate("document.querySelector('.dom .dom-t b').textContent")
-                ok(lema == ('Aprender a conhecer e a fazer' if lang == 'pt' else 'Learning to know and to do'), f'{tag} cartão de domínio com o lema em <b> ({lema})')
-                # figura das sete camadas no ⓘ (abre e fecha pelo teclado)
+                ok(await pg.locator('#q-1-2-1 .pri input[type=checkbox][data-prior]').count() == 4 and await pg.locator('.dom, [data-ctx=dominio]').count() == 0, f'{tag} 1.2.1: quatro prioridades com caixa de marcar, sem domínios')
+                if lang == 'pt': ok(await pg.evaluate("document.querySelector('.pri .pri-tx b').textContent") == 'Governar a IA na educação', f'{tag} primeiro cartão: Governar a IA na educação')
+                # v12: figura das sete camadas já aberta na nota ⓘ, com "Ampliar a figura" (visualizador pelo teclado)
+                await pg.evaluate("abrirFase('contexto','1c')"); await pg.wait_for_timeout(150)
                 await pg.locator('#passo-1c button.info').click(); await pg.wait_for_timeout(150)
-                fb = pg.locator('#nota-p-1c [data-fig]')
-                ok(await fb.count() == 1 and (await fb.text_content()).strip() == ('Ver a figura das sete camadas' if lang == 'pt' else 'See the figure of the seven layers'), f'{tag} ⓘ com o botão da figura')
-                await fb.focus(); await pg.keyboard.press('Enter'); await pg.wait_for_timeout(250)
-                fig = await pg.evaluate("(()=>{const f=document.querySelector('#nota-p-1c figure.fig-tco'); if(!f) return null; const i=f.querySelector('img'); const r=i.getBoundingClientRect(); return {src:i.src.slice(0,23), alt:i.alt.length, w:r.width, cap:f.querySelector('figcaption').textContent, foco:document.activeElement.dataset.fig||'', exp:document.activeElement.getAttribute('aria-expanded')};})()")
-                ok(fig and fig['src'] == 'data:image/jpeg;base64,' and fig['alt'] > 100, f'{tag} figura aberta pelo teclado, com imagem embutida e texto alternativo')
+                fig = await pg.evaluate("(()=>{const f=document.querySelector('#nota-p-1c figure.fig-tco'); if(!f) return null; const i=f.querySelector('img'); const r=i.getBoundingClientRect(); return {src:i.src.slice(0,23), alt:i.alt.length, w:r.width, cap:f.querySelector('figcaption').textContent};})()")
+                ok(fig and fig['src'] == 'data:image/jpeg;base64,' and fig['alt'] > 100, f'{tag} figura na nota ⓘ, com imagem embutida e texto alternativo')
                 ok(fig and ('CC BY-SA 3.0 IGO' in fig['cap']) and ('Krueger' in fig['cap']) and ('p. 11' in fig['cap']), f'{tag} legenda e crédito da figura')
-                ok(fig and fig['foco'] == 'p-1c' and fig['exp'] == 'true', f'{tag} foco fica no botão da figura (aria-expanded)')
-                ok(fig and fig['w'] <= w and fig['w'] > (w * 0.6 if w < 500 else 400), f'{tag} figura ocupa a largura da nota sem passar da tela ({fig and fig["w"]})')
-                if lang == 'en': await pg.evaluate("document.querySelector('#nota-p-1c figure').scrollIntoView()"); await pg.wait_for_timeout(150); await pg.screenshot(path=f'/tmp/claude-0/v11_fx_{tag}_fig.png')
-                await pg.keyboard.press('Enter'); await pg.wait_for_timeout(200)
-                ok(await pg.locator('#nota-p-1c figure').count() == 0, f'{tag} Enter de novo fecha a figura')
+                ok(fig and fig['w'] <= w and fig['w'] > (w * 0.5 if w < 500 else 300), f'{tag} figura cabe na nota sem passar da tela ({fig and fig["w"]})')
+                amp = pg.locator('#nota-p-1c button.fig-amp')
+                ok(await amp.count() == 1 and (await amp.text_content()).strip() == ('Ampliar a figura' if lang == 'pt' else 'Enlarge the figure'), f'{tag} botão "Ampliar a figura"')
+                await amp.focus(); await pg.keyboard.press('Enter'); await pg.wait_for_timeout(250)
+                ok(await pg.evaluate("(()=>{const d=document.getElementById('visor-fig'); return !!d && d.open && d.getAttribute('aria-modal')==='true';})()"), f'{tag} Enter abre o visualizador (modal)')
+                if lang == 'en': await pg.screenshot(path=f'/tmp/claude-0/v13_b1/v11_fx_{tag}_fig.png')
+                await pg.keyboard.press('Escape'); await pg.wait_for_timeout(200)
+                ok(await pg.evaluate("!document.getElementById('visor-fig').open && document.activeElement.classList.contains('fig-amp')"), f'{tag} Esc fecha o visualizador e devolve o foco')
                 await pg.locator('#passo-1c button.info').click(); await pg.wait_for_timeout(100)
                 # botão gerar plano em painel, stepper, rodapé da fase 4 e chamada final
                 await pg.evaluate("abrirFase('expansao','4b')"); await pg.wait_for_timeout(300)
@@ -207,7 +211,7 @@ async def main():
                 ok(('5.000' in pe or '5,000' in pe) and await pg.locator('#painel .estim .linha').count() == 2, f'{tag} painel com estimativa e premissa de pessoas: "{pe}"')
                 await pg.locator('#painel [data-act="gerar-plano"]').click(); await pg.wait_for_timeout(300)
                 ok(await pg.evaluate("S.vista==='plano'") and await pg.locator('#plano').count() == 1, f'{tag} clique mostra #plano')
-                await pg.screenshot(path=f'/tmp/claude-0/v9_fx_{tag}_plano.png')
+                await pg.screenshot(path=f'/tmp/claude-0/v13_b1/v9_fx_{tag}_plano.png')
                 await pg.evaluate("(()=>{S.vista='';render();})()"); await pg.wait_for_timeout(100)
                 ok(len(await pg.evaluate('faltasTodas()')) > 0, f'{tag} faltasTodas lista perguntas sem resposta no caso em branco')
                 # ---- passos 4.2 (estimativa) e 4.3 (recomendações para você)
@@ -223,7 +227,7 @@ async def main():
                 ok(await pg.evaluate("document.querySelector('#passo-4c .passo-corpo').textContent.trim().length>20"), f'{tag} 4.3 com conteúdo')
                 t43 = await pg.evaluate("document.querySelector('#passo-4c .pt b span').textContent")
                 ok(t43 == ('Recomendações para você' if lang == 'pt' else 'Recommendations for you'), f'{tag} nome do 4.3: "{t43}"')
-                if lang == 'en' and w == 1400: await pg.screenshot(path=f'/tmp/claude-0/v11_fx_{tag}_4c.png', full_page=True)
+                if lang == 'en' and w == 1400: await pg.screenshot(path=f'/tmp/claude-0/v13_b1/v11_fx_{tag}_4c.png', full_page=True)
                 # ---- v10/v11: padrões gerados como "sugerido"
                 await pg.evaluate("carregarExemplo('novo')"); await pg.evaluate("(()=>{S.boasVindas=false; S.ctx.etapas={fund2:{on:true,escolas:600,soTotal:true,alunos:150000}}; S.caso.tarefas=['tutoria','materiais']; S.respC.tarefas=true; abrirFase('piloto','2c');})()"); await pg.wait_for_timeout(200)
                 ok(await pg.evaluate("S.caso.piloto.participantes==='' && S.caso.poc.participantes==='' && S.caso.pagamento==='' && S.caso.licenca==='' && S.caso.elegiveis==='' && S.caso.implantacao.pessoas!==undefined"), f'{tag} sem padrões de teste, pagamento e licença antes de marcar as origens')
@@ -250,7 +254,10 @@ async def main():
                 ok(await pg.evaluate("S.caso.piloto.meses===6 && S.caso.piloto.participantes===7500 && S.caso.poc.participantes===''"), f'{tag} desmarcar a PoC recalcula só o que não foi confirmado (meses 6 mantido)')
                 await pg.locator('[data-fm="testes"][value="poc"]').click(); await pg.wait_for_timeout(200)
                 await pg.evaluate("abrirFase('piloto','2c')"); await pg.wait_for_timeout(150)
-                if lang == 'en': await pg.evaluate("irPara('q-2-3-8')"); await pg.wait_for_timeout(250); await pg.screenshot(path=f'/tmp/claude-0/v11_fx_{tag}_setup.png')
+                if lang == 'en': await pg.evaluate("irPara('q-2-3-8')"); await pg.wait_for_timeout(250); await pg.screenshot(path=f'/tmp/claude-0/v13_b1/v11_fx_{tag}_setup.png')
+                # v13: com prova de conceito ou piloto, 2.3.6 e 2.3.7 descem para o 3.1 e ficam em "Para a implantação" (aberto aqui)
+                ok(await pg.locator('#passo-2c details.desc-imp[data-desc="2c"] #q-2-3-6').count() == 1, f'{tag} v13: 2.3.6 em "Para a implantação" no 2.3')
+                await pg.evaluate("document.querySelectorAll('details[data-desc]').forEach(d=>d.open=true)"); await pg.wait_for_timeout(150)
                 # 2.3.1–2.3.3 ferramentas: lista com adicionar e remover, sem caixas de diálogo do navegador
                 await pg.locator('[data-f="nFerramentas"][value="2"]').click(); await pg.wait_for_timeout(150)
                 ok(await pg.locator('#q-2-3-3').count() == 0, f'{tag} 2.3.3 oculta antes de "Você já sabe quais?"')
@@ -278,7 +285,7 @@ async def main():
                 await pg.locator('[data-f="pagamento"][value="usuario"]').click(); await pg.wait_for_timeout(150)
                 await pg.locator('[data-f="tipoTec"][value="paga"]').click(); await pg.wait_for_timeout(200)
                 ok(await pg.evaluate("S.caso.pagamento==='usuario' && S.caso.licenca==='assinatura'"), f'{tag} paga muda só a licença não confirmada (pagamento escolhido mantido)')
-                if lang == 'en': await pg.evaluate("irPara('q-2-3-3')"); await pg.wait_for_timeout(250); await pg.screenshot(path=f'/tmp/claude-0/v11_fx_{tag}_2c.png')
+                if lang == 'en': await pg.evaluate("irPara('q-2-3-3')"); await pg.wait_for_timeout(250); await pg.screenshot(path=f'/tmp/claude-0/v13_b1/v11_fx_{tag}_2c.png')
                 await pg.locator('[data-f="tipoTec"][value="publica"]').click(); await pg.wait_for_timeout(200)
                 ok(await pg.evaluate("S.caso.licenca==='termos' && S.caso.pagamento==='usuario'"), f'{tag} pública sugere termos de uso padrão')
                 await pg.locator('#q-2-3-6 [value="termos"]').click(); await pg.wait_for_timeout(150)
@@ -308,7 +315,7 @@ async def main():
                 h = await pg.evaluate("[S.caso.formacaoHoras, S.caso.formacaoEstimativa, sugerido(CAMPO_POR_ID.formacaoHoras), qOk(CAMPO_POR_ID.formacaoHoras)]")
                 ok(h[0] > 0 and h[1] is True and h[2] is True and h[3] is False, f'{tag} "Usar uma estimativa" preenche as horas como sugerido {h}')
                 ok(await pg.locator('#q-2-5-4.sug .sug-nota').is_visible(), f'{tag} nota da estimativa ilustrativa visível')
-                if lang == 'en': await pg.evaluate("irPara('q-2-5-4')"); await pg.wait_for_timeout(250); await pg.screenshot(path=f'/tmp/claude-0/v11_fx_{tag}_2e.png')
+                if lang == 'en': await pg.evaluate("irPara('q-2-5-4')"); await pg.wait_for_timeout(250); await pg.screenshot(path=f'/tmp/claude-0/v13_b1/v11_fx_{tag}_2e.png')
                 await pg.locator('#f-formacaoHoras').fill('12'); await pg.locator('#f-formacaoHoras').press('Tab'); await pg.wait_for_timeout(150)
                 ok(await pg.evaluate("S.caso.formacaoHoras===12 && S.caso.formacaoEstimativa===false && qOk(CAMPO_POR_ID.formacaoHoras)"), f'{tag} horas digitadas deixam de ser estimativa')
                 # 2.6 operação e suporte: três perguntas
@@ -331,7 +338,7 @@ async def main():
                 await pg.locator('#f-elegiveis').fill('90000'); await pg.locator('#f-elegiveis').press('Tab'); await pg.wait_for_timeout(150)
                 await pg.evaluate("abrirFase('implantacao','3a')"); await pg.wait_for_timeout(200)
                 ok(await pg.evaluate("S.caso.implantacao.pessoas===30000 && sugerido(CAMPO_POR_ID.implantacao)") and await pg.locator('#q-3-1-1.sug .sug-tag').is_visible(), f'{tag} 3.1.1 recalculada pela resposta 4.1.1 e marcada "sugerido"')
-                if lang == 'en': await pg.evaluate("irPara('q-3-1-1')"); await pg.wait_for_timeout(250); await pg.screenshot(path=f'/tmp/claude-0/v11_fx_{tag}_3a.png')
+                if lang == 'en': await pg.evaluate("irPara('q-3-1-1')"); await pg.wait_for_timeout(250); await pg.screenshot(path=f'/tmp/claude-0/v13_b1/v11_fx_{tag}_3a.png')
                 await pg.locator('#im-pessoas').fill('5000'); await pg.locator('#im-pessoas').press('Tab'); await pg.wait_for_timeout(150)
                 await pg.locator('#pe-3a [data-act="continuar-confirmar"]').click(); await pg.wait_for_timeout(250)
                 ok(await pg.evaluate("JSON.stringify(S.caso.implantacao)==='{\"escolas\":200,\"pessoas\":5000}' && passoFeito('3a') && S.passo==='3b'"), f'{tag} 3.1: número digitado mantido e escolas confirmadas')
@@ -342,7 +349,7 @@ async def main():
                 ok(await pg.locator('#passo-3b .abertura').count() == 1, f'{tag} 3.2 com explicação simples')
                 await pg.locator('#passo-3b [name=arquitetura][value=nao_sei]').click(); await pg.wait_for_timeout(150)
                 ok(await pg.evaluate("S.caso.arquitetura==='nao_sei' && passoFeito('3b')"), f'{tag} "Ainda não sei" responde 3.2.1')
-                if lang == 'en': await pg.evaluate("irPara('passo-3b')"); await pg.wait_for_timeout(250); await pg.screenshot(path=f'/tmp/claude-0/v11_fx_{tag}_3b.png')
+                if lang == 'en': await pg.evaluate("irPara('passo-3b')"); await pg.wait_for_timeout(250); await pg.screenshot(path=f'/tmp/claude-0/v13_b1/v11_fx_{tag}_3b.png')
                 await pg.evaluate("abrirFase('piloto','2b')"); await pg.wait_for_timeout(150)
                 await pg.locator('#passo-2b [data-fm="usuarios"][value="estudantes"]').click(); await pg.wait_for_timeout(200)
                 ok(await pg.evaluate("S.caso.elegiveis===90000 && qOk(CAMPO_POR_ID.elegiveis)"), f'{tag} 4.1.1 confirmado não é recalculado')
@@ -354,7 +361,7 @@ async def main():
                 await pg.locator('#conf-limpar [data-act="limpar-nao"]').click(); await pg.wait_for_timeout(150)
                 ok(await pg.evaluate("S.caso.elegiveis===90000") and await pg.locator('#conf-limpar').count() == 0, f'{tag} cancelar mantém as respostas')
                 await pg.locator('#painel #btn-limpar').click(); await pg.wait_for_timeout(150)
-                if lang == 'en': await pg.evaluate("document.getElementById('conf-limpar').scrollIntoView()"); await pg.wait_for_timeout(150); await pg.screenshot(path=f'/tmp/claude-0/v10_fx_{tag}_limpar.png')
+                if lang == 'en': await pg.evaluate("document.getElementById('conf-limpar').scrollIntoView()"); await pg.wait_for_timeout(150); await pg.screenshot(path=f'/tmp/claude-0/v13_b1/v10_fx_{tag}_limpar.png')
                 await pg.locator('#conf-limpar [data-act="limpar-ok"]').click(); await pg.wait_for_timeout(250)
                 ok(await pg.evaluate("S.caso.elegiveis==='' && !temRespostas(S) && S.fase==='contexto'"), f'{tag} confirmar apaga e começa em branco')
                 # ---- v10: caso salvo não abre sozinho
@@ -364,9 +371,9 @@ async def main():
                 nome = await pg.evaluate("document.querySelector('#boas .salvo-caso').textContent")
                 ok(('utor' in nome) and ('·' in nome) and ('Rede estadual' in nome or 'State school system' in nome), f'{tag} nome e lugar do caso salvo: "{nome}"')
                 ok(await pg.locator('#painel .fatos').count() == 0 and await pg.locator('#stepper').count() == 0 and await pg.locator('#main .fase').count() == 0, f'{tag} caso salvo não aparece antes da escolha')
-                if lang == 'en': await pg.screenshot(path=f'/tmp/claude-0/v10_fx_{tag}_salvo.png')
+                if lang == 'en': await pg.screenshot(path=f'/tmp/claude-0/v13_b1/v10_fx_{tag}_salvo.png')
                 await pg.locator('#boas [data-act="continuar-salvo"]').click(); await pg.wait_for_timeout(250)
-                ok(await pg.evaluate("S.boasVindas===false && S.exemplo==='B' && !SALVO && S.caso.elegiveis===150000 && S.versao===11"), f'{tag} "Continuar o caso salvo" abre o caso')
+                ok(await pg.evaluate("S.boasVindas===false && S.exemplo==='B' && !SALVO && S.caso.elegiveis===150000 && S.versao===13"), f'{tag} "Continuar o caso salvo" abre o caso')
                 await pg.reload(); await pg.wait_for_timeout(400)
                 await pg.locator('#boas [data-act="comecar"]').click(); await pg.wait_for_timeout(250)
                 ok(await pg.evaluate("S.exemplo==='novo' && !temRespostas(S) && !SALVO && S.boasVindas===false"), f'{tag} "Começar em branco" descarta o caso salvo')
@@ -387,7 +394,7 @@ async def main():
                     ok(await pg.locator('.q.sug').count() == 0, f'{tag} exemplo {ex}: experiência de uso sem "sugerido"')
                 await pg.evaluate("carregarExemplo('B')"); await pg.evaluate("abrirFase('piloto','2a')"); await pg.wait_for_timeout(200)
                 await pg.evaluate("window.scrollTo(0,0)"); await pg.wait_for_timeout(100)
-                await pg.screenshot(path=f'/tmp/claude-0/v9_fx_{tag}_painel.png', full_page=True)
+                await pg.screenshot(path=f'/tmp/claude-0/v13_b1/v9_fx_{tag}_painel.png', full_page=True)
                 ok(not erros, f'{tag} sem erros de console nem rolagem horizontal' + ('' if not erros else ': ' + '; '.join(erros[:6])))
                 await pg.close()
         await b.close()
