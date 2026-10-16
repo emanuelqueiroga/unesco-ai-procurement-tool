@@ -555,8 +555,11 @@ chk('sem alerta de tecnologia quando escolhida (A)', !alertas(RES.A.ce, RES.A.p)
 {
   const RE_NUM = /(?<![\p{L}\d.,])[-−+]?\d+(?:[.,  ]\d+)*/gu;
   const norm = s => { let i = 0; return s.replace(RE_NUM, () => '{' + (i++) + '}').replace(/\s+/g, ' ').trim(); };
-  const dic = l => Object.assign({}, ...[l + '.json', 'extra_' + l + '.json', 'v9_p1_' + l + '.json', 'v11_s1_' + l + '.json'].map(f => {
-    const p = path.join(__dirname, '..', 'i18n', f); return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : {};
+  // mesmos arquivos que o build.sh junta: <l>.json, extra_<l>.json e i18n/v9_… a v13_…_<l>.json
+  const dirI18n = path.join(__dirname, '..', 'i18n');
+  const versoes = l => ['v9_', 'v10_', 'v11_', 'v12_', 'v13_'].flatMap(v => fs.readdirSync(dirI18n).filter(f => f.startsWith(v) && f.endsWith('_' + l + '.json')).sort());
+  const dic = l => Object.assign({}, ...[l + '.json', 'extra_' + l + '.json', ...versoes(l)].map(f => {
+    const p = path.join(dirI18n, f); return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : {};
   }));
   const txt = new Set();
   ['situacao', 'consequencias', 'linhaBase', 'impactos', 'teste', 'testeEfetivo', 'tarefas', 'tipoTec', 'pagamento', 'licenca', 'adaptacao', 'expansao', 'horizonte', 'simNao',
