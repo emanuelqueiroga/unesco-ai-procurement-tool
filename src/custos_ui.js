@@ -56,7 +56,28 @@ function inp(path, val, opts = {}) {
 }
 function campo(label, path, val, opts = {}) {
   if (opts.pct) label += ' (%)';
-  return `<div class="q"><label>${esc(label)}</label>${inp(path, val, Object.assign({ label }, opts))}${opts.hint ? `<div class="hint">${esc(opts.hint)}</div>` : ''}</div>`;
+  return `<div class="q"><label>${esc(label)}</label>${inp(path, val, Object.assign({ label }, opts))}${seloFaixa(path, opts)}${opts.hint ? `<div class="hint">${esc(opts.hint)}</div>` : ''}</div>`;
+}
+// v14 (BL4.3): "seu valor · faixa de referência" ao lado de cada custo com linha na base de referências (pais.js, faixaDoCampo).
+// Valor fora de [baixo, alto] é sinalizado; linha sem faixa (baixo = alto) mostra só o valor da base e não sinaliza.
+function fmtRef(x) { const a = Math.abs(x); return (+x).toLocaleString(LOC(), { maximumFractionDigits: a >= 1000 ? 0 : a >= 100 ? 1 : a >= 1 ? 2 : 4 }); }
+function seloFaixa(path, opts = {}, bruto) {
+  if (typeof faixaDoCampo !== 'function') return '';
+  let f;
+  try { f = faixaDoCampo(cfgAtual(), path, S.custo && S.custo.base === 'caso' ? S.caso : null, bruto); } catch (e) { return ''; }
+  if (!f) return '';
+  const k = opts.pct ? 100 : 1;
+  const dica = (f.linha.unidade ? tr(f.linha.unidade) + ' · ' : '') + dicaOrigem(f);
+  const txt = f.semFaixa ? `seu valor ${fmtRef((bruto === undefined ? lerCaminho(cfgAtual(), path) : bruto) * k)} · sem faixa de referência (valor da base ${fmtRef(f.linha.valor * k)})`
+    : `seu valor ${fmtRef((bruto === undefined ? lerCaminho(cfgAtual(), path) : bruto) * k)} · faixa de referência ${fmtRef(f.baixo * k)} a ${fmtRef(f.alto * k)}`;
+  return `<span class="rf${f.fora ? ' fora' : ''}" data-rf-path="${esc(path)}" title="${esc(dica)}"><span>${esc(txt)}</span> <span class="rf-g">grau ${esc(f.grau)}</span>${f.fora ? ' <span class="rf-fora">fora da faixa</span>' : ''}</span>`;
+}
+// atualiza o selo de um campo do painel quando o valor muda (live: durante a digitação, sem gravar)
+function atualizarSeloFaixa(el, live) {
+  const path = el && el.dataset && el.dataset.cfg; if (!path) return;
+  const raiz = el.closest('td,.q'); const rf = raiz && raiz.querySelector('[data-rf-path="' + path.replace(/"/g, '\\"') + '"]'); if (!rf) return;
+  let b; if (live) { b = lerNumero(el.value); b = b === '' ? 0 : (el.dataset.pct ? b / 100 : b); }
+  rf.outerHTML = seloFaixa(path, { pct: !!el.dataset.pct }, b);
 }
 function anosC(label, path, arr, H, opts = {}) {
   if (opts.pct) label += ' (%)';
@@ -85,7 +106,7 @@ function renderCustos() {
   const optsMoeda = ['USD', 'EUR', 'BRL', 'GBP', 'JPY', 'CNY', 'INR', 'MXN', 'ARS', 'ZAR'].map(c => `<option value="${c}" ${mi.cod === c ? 'selected' : ''}>${c} · ${esc(nomeMoeda(c))}</option>`).join('') +
     `<option disabled>──────────</option>` + codigos.map(c => `<option value="${c}" ${mi.cod === c ? 'selected' : ''}>${c} · ${esc(nomeMoeda(c))}</option>`).join('');
 
-  const salarios = Object.keys(SAL).map(k => `<tr><td>${esc(SAL_NOME[k])}</td><td class="n">${inp('salarios.' + k, salario(cfg, k), { cls: 'w-m', label: SAL_NOME[k] })}</td></tr>`).join('');
+  const salarios = Object.keys(SAL).map(k => `<tr><td>${esc(SAL_NOME[k])}</td><td class="n">${inp('salarios.' + k, salario(cfg, k), { cls: 'w-m', label: SAL_NOME[k] })}${seloFaixa('salarios.' + k)}</td></tr>`).join('');
   const optsSal = k => Object.keys(SAL).map(s => `<option value="${s}" ${s === k ? 'selected' : ''}>${esc(SAL_NOME[s])}</option>`).join('');
   const yrHead = Array.from({ length: H + 1 }, (_, t) => `<th class="n">Ano ${t}</th>`).join('');
   const pessoas = (cfg.pessoas || []).map((pp, i) => pp.partes.map((pt, j) => `<tr>
@@ -98,14 +119,14 @@ function renderCustos() {
   const itens = (cfg.itens || []).map((x, i) => `<tr><td><input type="text" class="w-l" data-cfgs="itens.${i}.nome" value="${esc(x.nome)}" aria-label="Item">${x.aEstimar ? ' <span class="tag gold">a estimar</span>' : ''}</td>
       <td>${selS(`itens.${i}.s`, x.s || MAPA_CAT[x.cat] || 'K4.1')}</td>
       <td><select data-cfgs="itens.${i}.moeda" aria-label="Moeda"><option value="LOC" ${x.moeda !== 'USD' ? 'selected' : ''}>Local</option><option value="USD" ${x.moeda === 'USD' ? 'selected' : ''}>US$</option></select></td>
-      ${Array.from({ length: H + 1 }, (_, t) => `<td class="n">${inp(`itens.${i}.v.${t}`, ano(x.v, t), { cls: 'w-m', step: '1000', label: 'Ano ' + t })}</td>`).join('')}
+      ${Array.from({ length: H + 1 }, (_, t) => `<td class="n">${inp(`itens.${i}.v.${t}`, ano(x.v, t), { cls: 'w-m', step: '1000', label: 'Ano ' + t })}${seloFaixa(`itens.${i}.v.${t}`)}</td>`).join('')}
       <td><button class="btn" type="button" data-act="rm" data-arr="itens" data-i="${i}" aria-label="Remover">×</button></td></tr>`).join('');
   const impl = (cfg.implantacao || []).map((x, i) => `<tr><td><input type="text" class="w-l" data-cfgs="implantacao.${i}.nome" value="${esc(x.nome)}" aria-label="Implantação"></td>
-      <td class="n">${inp(`implantacao.${i}.valor`, x.valor, { cls: 'w-m', step: '1000', label: 'Valor' })}</td><td class="n">${inp(`implantacao.${i}.manutPct`, x.manutPct, { cls: 'w-s', pct: true, label: 'Manutenção %' })}</td></tr>`).join('');
+      <td class="n">${inp(`implantacao.${i}.valor`, x.valor, { cls: 'w-m', step: '1000', label: 'Valor' })}${seloFaixa(`implantacao.${i}.valor`)}</td><td class="n">${inp(`implantacao.${i}.manutPct`, x.manutPct, { cls: 'w-s', pct: true, label: 'Manutenção %' })}${seloFaixa(`implantacao.${i}.manutPct`, { pct: true })}</td></tr>`).join('');
   const mensais = (cfg.mensais || []).map((x, i) => `<tr><td><input type="text" class="w-l" data-cfgs="mensais.${i}.nome" value="${esc(x.nome)}" aria-label="Item mensal"></td><td>${selS(`mensais.${i}.s`, x.s || MAPA_CAT[x.cat] || 'K2.5')}</td>
-      <td class="n">${inp(`mensais.${i}.valor`, x.valor, { cls: 'w-m', label: 'Valor mensal' })}</td><td class="n">${inp(`mensais.${i}.mesesY0`, x.mesesY0, { cls: 'w-s', label: 'Meses no ano 0' })}</td>
+      <td class="n">${inp(`mensais.${i}.valor`, x.valor, { cls: 'w-m', label: 'Valor mensal' })}${seloFaixa(`mensais.${i}.valor`)}</td><td class="n">${inp(`mensais.${i}.mesesY0`, x.mesesY0, { cls: 'w-s', label: 'Meses no ano 0' })}</td>
       <td><button class="btn" type="button" data-act="rm" data-arr="mensais" data-i="${i}" aria-label="Remover">×</button></td></tr>`).join('');
-  const saidaItens = ((cfg.saida || {}).itens || []).map((x, i) => `<tr><td><input type="text" class="w-l" data-cfgs="saida.itens.${i}.nome" value="${esc(x.nome)}" aria-label="Item de saída"></td><td class="n">${inp(`saida.itens.${i}.valor`, x.valor, { cls: 'w-m', step: '1000', label: 'Valor' })}</td>
+  const saidaItens = ((cfg.saida || {}).itens || []).map((x, i) => `<tr><td><input type="text" class="w-l" data-cfgs="saida.itens.${i}.nome" value="${esc(x.nome)}" aria-label="Item de saída"></td><td class="n">${inp(`saida.itens.${i}.valor`, x.valor, { cls: 'w-m', step: '1000', label: 'Valor' })}${seloFaixa(`saida.itens.${i}.valor`)}</td>
       <td><button class="btn" type="button" data-act="rm" data-arr="saida.itens" data-i="${i}" aria-label="Remover">×</button></td></tr>`).join('');
 
   let arqBloco = '';

@@ -757,6 +757,7 @@ function fecharVisor() {
 function corpoPadrao(id) {
   const pi = PASSO_INFO[id] || {};
   let s = pi.abertura ? `<p class="abertura muted">${esc(pi.abertura)}</p>` : '';
+  if (id === '1a' && typeof blocoPais === 'function') s += blocoPais();   // v14 (BL1.1): o passo 1.1 começa pelo país
   if (id === '2b') s += avisoRevisar(id);
   // v13: aviso do 2.1 quando todos os problemas marcados se resolvem sem uma ferramenta de IA
   if (id === '2a' && typeof AVISO_SEM_FERRAMENTA !== 'undefined' && (sugProblemas() || {}).semFerramenta) s += `<div class="aviso sem-ferr" role="note"><span>${esc(AVISO_SEM_FERRAMENTA)}</span></div>`;
@@ -786,6 +787,82 @@ function seletorMoeda() {
   const resto = Object.keys(MOEDAS.taxas || {}).filter(c => !top.includes(c)).sort((a, b) => nm(a).localeCompare(nm(b), LOC()));
   const op = c => `<option value="${c}" ${mi.cod === c ? 'selected' : ''}>${c} · ${esc(nm(c))}</option>`;
   return `<div class="moeda-est"><label for="moeda-est">Moeda de exibição</label><select class="f" id="moeda-est" data-moeda="cod">${top.map(op).join('')}<option disabled>──────────</option>${resto.map(op).join('')}</select></div>`;
+}
+// ----------------------------------------------------------- v14 (BL1.1, BL1.3, BL1.5): país e origem dos valores
+// O país define a moeda, a taxa de câmbio e os dados de referência (data/paises.json). Cada valor preenchido ou padrão leva um marcador
+// com a origem (dos dados do país, editado por você, estimado pela região, valor ilustrativo) e, na dica, a fonte, o ano e o grau.
+let PAIS_ABERTO = null;   // <details> "Dados do país": null = aberto quando há país escolhido
+function marcadorOrigem(info) {
+  const dica = dicaOrigem(info);
+  return `<span class="marc marc-${info.origem}" tabindex="0" title="${esc(dica)}" data-origem="${info.origem}">${esc(tr(ORIGEM_ROTULO[info.origem]))}<span class="sr"> (${esc(dica)})</span></span>`;
+}
+function campoPais(def) {
+  const c = S.caso, e = valorEfetivoCampo(c, def.id), rot = tr(def.rotulo);
+  const val = e ? valorParaTexto(def, e.valor) : '';
+  const ctrl = def.tipo === 'lista'
+    ? tCampo('pc-' + def.id, `data-pc="${def.id}" autocomplete="off"`, val, 'pt, es', rot)
+    : nCampo({ id: 'pc-' + def.id, attrs: `data-pc="${def.id}"`, valor: val, casas: def.tipo === 'frac' || def.tipo === 'pct100' ? 1 : 0, rotulo: rot, ph: ' ' });
+  let marc = '<span class="muted">sem dado</span>';
+  if (e) {
+    marc = marcadorOrigem(e);
+    if (e.origem === 'usuario') marc += e.padrao != null && e.padrao !== ''
+      ? ` <button type="button" class="link" data-pc-rest="${def.id}" aria-label="${esc(tr('restaurar') + ': ' + rot)}">restaurar</button>`
+      : ` <button type="button" class="link" data-pc-rest="${def.id}" aria-label="${esc(tr('apagar') + ': ' + rot)}">apagar</button>`;
+  }
+  return `<div class="pc" data-pc-l="${def.id}"><label for="pc-${def.id}">${esc(rot)}</label>${ctrl}<div class="pc-marc">${marc}</div></div>`;
+}
+function blocoPais() {
+  const c = S.caso, p = paisDoCaso(c);
+  const ops = listaPaises().slice().sort((a, b) => tr(a.nome).localeCompare(tr(b.nome), LOC()))
+    .map(x => `<option value="${x.iso3}" ${c.pais === x.iso3 ? 'selected' : ''}>${esc(tr(x.nome))}</option>`).join('');
+  let nota = '';
+  if (p && typeof moedaInfo === 'function') {
+    const mi = moedaInfo(), nm = typeof nomeMoeda === 'function' ? nomeMoeda(p.moeda) : p.moeda;
+    const f = (typeof MOEDAS !== 'undefined' && MOEDAS.taxas && MOEDAS.taxas[mi.cod]) ? mi.f : null;
+    nota = `<div class="pais-nota" role="status"><span>Moeda do país:</span> <b>${esc(p.moeda)} · ${esc(nm)}</b>${f ? `. <span>1 US$ =</span> <b class="num">${esc(f.toLocaleString(LOC(), { maximumFractionDigits: f < 10 ? 4 : 2 }))} ${esc(mi.cod)}</b>` : ''}.
+      <span>Região:</span> <b>${esc(tr(nomeRegiao(p.regiao)))}</b>${p.grupoRenda ? `. <span>Grupo de renda:</span> <b>${esc(tr(NOME_RENDA[p.grupoRenda.valor] || p.grupoRenda.valor))}</b> <span class="muted">(${esc(tr(p.grupoRenda.fonte))})</span>` : ''}.</div>`;
+  } else if (c.pais === OUTRO_PAIS) nota = `<div class="pais-nota" role="status"><span>Sem dados de país: valem os valores ilustrativos da ferramenta. Informe os números da sua rede nas perguntas abaixo.</span></div>`;
+  const aberto = PAIS_ABERTO == null ? !!c.pais : PAIS_ABERTO;
+  return `<div class="q pais-q" id="q-1-1-0" data-n="1.1.0" data-pais-bloco>
+    <label class="q-t" for="f-pais"><span class="qn">1.1.0</span> <span class="qt">Em que país fica a rede?</span> <span class="tag opc">opcional</span></label>
+    <div class="hint">O país define a moeda, a taxa de câmbio e os dados de referência que já vêm preenchidos. Você pode alterar qualquer valor.</div>
+    <select class="f" id="f-pais" data-pais="sel"><option value="" ${c.pais ? '' : 'selected'}>Escolha o país</option>${ops}<option value="${OUTRO_PAIS}" ${c.pais === OUTRO_PAIS ? 'selected' : ''}>Outro país ou não listado</option></select>
+    ${nota}
+    <details class="pais-dados" data-paisdet ${aberto ? 'open' : ''}><summary>Dados do país (opcional)</summary>
+      <p class="hint">Cada valor mostra de onde veio. Se você mudar um valor, ele passa a valer como seu; “restaurar” volta ao valor da base de dados. Entram na estimativa de custo, quando têm valor: inflação, taxa de desconto, salário do professor, escolas com internet e número de escolas.</p>
+      <div class="pc-grade">${PAIS_CAMPOS.map(campoPais).join('')}</div></details></div>`;
+}
+const NOME_RENDA = { baixa: 'renda baixa', 'media-baixa': 'renda média-baixa', 'media-alta': 'renda média-alta', alta: 'renda alta' };
+// eventos do bloco do país (chamado por eventoFluxo)
+function eventoPais(e) {
+  const el = e.target; if (!el || !el.dataset) return false;
+  const muda = () => { if (S.custo) S.custo.editado = false; if (S.exemplo !== 'novo') S.exemplo = 'editado'; };
+  if (e.type === 'click') {
+    const b = el.closest('[data-pc-rest]'); if (!b) return false;
+    // tira o foco antes: o navegador dispara 'change' no campo focado quando a tela é redesenhada, o que regravaria o valor antigo
+    const ativo = document.activeElement; if (ativo && ativo.dataset && ativo.dataset.pc && ativo.blur) ativo.blur();
+    const id = b.dataset.pcRest; restaurarCampoPais(S.caso, id); muda(); render();
+    requestAnimationFrame(() => { const i = document.getElementById('pc-' + id); if (i) i.focus({ preventScroll: true }); });
+    return true;
+  }
+  if (e.type === 'change' && el.dataset.pais === 'sel') {
+    const ativo = document.activeElement; if (ativo && ativo.dataset && ativo.dataset.pc && ativo.blur) ativo.blur(); // grava a edição pendente antes de trocar de país (que a descarta)
+    const p = escolherPais(S.caso, el.value); muda();
+    if (p && typeof MOEDAS !== 'undefined' && MOEDAS.taxas && MOEDAS.taxas[p.moeda]) { S.moeda = { cod: p.moeda, taxa: '' }; toast(tr('Moeda ajustada para') + ' ' + p.moeda + '.'); }
+    render(); return true;
+  }
+  if (el.dataset.pc && (e.type === 'input' || e.type === 'change')) {
+    const def = PAIS_CAMPO_POR_ID[el.dataset.pc]; if (!def) return false;
+    if (e.type === 'input' && el.dataset.num != null && e.isComposing) return true;
+    editarCampoPais(S.caso, def.id, lerValorCampo(def, el.value)); muda();
+    if (e.type === 'change') { render(); return true; }
+    // enquanto digita, só o marcador muda (o foco fica no campo)
+    const ef = valorEfetivoCampo(S.caso, def.id), cx = el.closest('.pc'), mc = cx && cx.querySelector('.pc-marc');
+    if (mc) mc.innerHTML = ef ? marcadorOrigem(ef) + (ef.origem === 'usuario' ? ` <button type="button" class="link" data-pc-rest="${def.id}">${ef.padrao != null && ef.padrao !== '' ? 'restaurar' : 'apagar'}</button>` : '') : '<span class="muted">sem dado</span>';
+    atualizarLaterais(); return true;
+  }
+  if (e.type === 'toggle' && el.dataset.paisdet != null) { PAIS_ABERTO = el.open; return true; }
+  return false;
 }
 // v14 (BL3.1, BL3.7, BL5.4): custo por fase (pagamento único × recorrente, pessoas alcançadas) e indicadores do custo total.
 // Lê av.fases e av.tco (custos.js); o relatório lê os mesmos campos.
@@ -1265,6 +1342,7 @@ function eventoFluxo(e) {
   const el = e.target;
   // v13: página inicial e matriz (pacote B2, inicio.js)
   if (typeof eventoInicio === 'function' && eventoInicio(e)) return true;
+  if (typeof eventoPais === 'function' && eventoPais(e)) return true;
   if (e.type === 'click') {
     const inf = el.closest('[data-info]');
     if (inf) { const id = inf.dataset.infoId || inf.dataset.info; S.info[id] = !S.info[id]; render(); return true; }

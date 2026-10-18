@@ -53,7 +53,7 @@ async def percorrer(pg, tag, w, erros, fotos, branco=False):
             for qid, n, qn in qs:
                 if not re.fullmatch(r'\d\.\d(\.\d+)?', qn.strip()): erros.append(f'{tag} .q sem número válido: {qid} "{qn}"')
                 if n != qn.strip(): erros.append(f'{tag} data-n difere de .qn: {qid}')
-                nums.append(qn.strip())
+                if qid != 'q-1-1-0': nums.append(qn.strip())  # 1.1.0 (país) não é um CAMPOS
             if fotos:
                 await pg.evaluate(f"irPara('passo-{pid}')"); await pg.wait_for_timeout(200)
                 await pg.screenshot(path=f'/tmp/claude-0/v13_b1/v9_fx_{tag}_{pid}.png')

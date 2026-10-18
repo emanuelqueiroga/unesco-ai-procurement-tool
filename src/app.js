@@ -270,7 +270,7 @@ function cfgAtual() {
   return S.custo.cfg;
 }
 // campos cuja mudança refaz as premissas de custo montadas a partir do caso
-const CAMPOS_CUSTO = ['tarefas', 'usuarios', 'afetados', 'consequencias', 'testes', 'tipoTec', 'pagamento', 'licenca', 'adaptacao', 'piloto', 'poc',
+const CAMPOS_CUSTO = ['pais', 'editados', 'tarefas', 'usuarios', 'afetados', 'consequencias', 'testes', 'tipoTec', 'pagamento', 'licenca', 'adaptacao', 'piloto', 'poc',
   'nFerramentas', 'conheceFerramentas', 'ferramentas', 'internet', 'escolasInternet', 'modeloDisp', 'dispExistem', 'formados', 'formacaoTipo', 'formacaoFormato',
   'formacaoHoras', 'formacaoPaga', 'suporteQuem', 'suporteNivel', 'acompanhamento', 'implantacao', 'arquitetura', 'elegiveis', 'expansao', 'horizonte', 'curva', 'ondas', 'reposicaoDisp', 'rotacaoFormacao'];
 function marcarCampo(campo) {
@@ -553,6 +553,8 @@ function ligar() {
     else if (act === 'dl-csv') baixar('costs-' + slugCaso() + '.csv', csvCustos());
     else if (act === 'dl-json') baixar(nomeArqCaso(), JSON.stringify(dadosCaso(), null, 1));
   });
+  // "restaurar" não tira o foco do campo: sem isso, o 'change' redesenha a tela antes do clique chegar ao botão
+  document.addEventListener('mousedown', e => { if (e.target && e.target.closest && e.target.closest('[data-pc-rest]')) e.preventDefault(); });
   document.addEventListener('toggle', e => {
     eventoFluxo(e);
     const d = e.target; if (d.dataset && d.dataset.det === 'prem') S.custo.abrirPrem = d.open;
@@ -564,6 +566,7 @@ function ligar() {
     if (el.dataset.num != null && (el.dataset.fn || el.dataset.f)) { gravarNumCaso(el, el.dataset.fn || el.dataset.f); atualizarLaterais(); return; }
     if (el.dataset.f && (el.tagName === 'TEXTAREA' || el.type === 'text')) { S.caso[el.dataset.f] = el.value; marcarCampo(el.dataset.f); atualizarLaterais(); return; }
     if (el.dataset.cfgs) { setPath(cfgAtual(), el.dataset.cfgs, el.value); editarCfg(); salvar(); }
+    if (el.dataset.cfg && typeof atualizarSeloFaixa === 'function') atualizarSeloFaixa(el, true);   // v14 (BL4.3): a faixa de referência acompanha a digitação
   });
   document.addEventListener('change', e => {
     const el = e.target;
@@ -599,7 +602,9 @@ function ligar() {
     if (el.dataset.cfg) {
       let v = lerNumero(el.value); if (v === '') v = 0;
       if (el.dataset.pct) v = v / 100;
-      setPath(cfgAtual(), el.dataset.cfg, v); editarCfg(); renderCustosResultados(); atualizarLaterais(); return;
+      setPath(cfgAtual(), el.dataset.cfg, v); editarCfg(); renderCustosResultados(); atualizarLaterais();
+      if (typeof atualizarSeloFaixa === 'function') atualizarSeloFaixa(el, false);
+      return;
     }
     if (el.dataset.cfgs) { setPath(cfgAtual(), el.dataset.cfgs, el.value); editarCfg(); renderCustosResultados(); atualizarLaterais(); return; }
     if (el.dataset.moeda) {

@@ -1,11 +1,13 @@
 #!/bin/bash
 cd "$(dirname "$0")"
 out=navegador.html
+# v14 (BL4.5): valida data/referencias.json e data/paises.json; se houver erro, o build para aqui
+python3 tools/checar_referencias.py || { echo 'build interrompido: corrija os dados em data/' >&2; exit 1; }
 NOVOS="ar zh bm zu sw"   # v13 (RQ-18): idiomas novos
 L1=$(base64 -w0 assets/iaedu.png); L2=$(base64 -w0 assets/catedra.png)
 # ordem dos scripts (plano_dados.js logo depois de fluxo_dados.js; v10: formula.js e recomendacoes.js antes de resumo.js)
 # v13: prioridades.js (catálogo do 1.2) depois de framework.js; matriz.js depois de fluxo_dados.js; inicio.js (página inicial e matriz) depois de fluxo.js
-JS="src/i18n.js src/custos.js src/framework.js src/prioridades.js src/casos.js src/custos_ui.js src/fluxo_dados.js src/glossario.js src/matriz.js src/plano_dados.js src/formula.js src/recomendacoes.js src/fluxo.js src/inicio.js src/resumo.js src/plano_pdf.js src/app.js"
+JS="src/i18n.js src/custos.js src/framework.js src/prioridades.js src/casos.js src/pais.js src/custos_ui.js src/fluxo_dados.js src/glossario.js src/matriz.js src/plano_dados.js src/formula.js src/recomendacoes.js src/fluxo.js src/inicio.js src/resumo.js src/plano_pdf.js src/app.js"
 # opcionais enquanto os pacotes R2 e R3 da v10 não chegam: avisam e ficam de fora; os demais são obrigatórios
 OPCIONAIS=" src/formula.js src/recomendacoes.js src/inicio.js "
 JS_OK=""
@@ -18,6 +20,9 @@ JS=$JS_OK
 { sed -e "s#%%LOGO_IAEDU%%#data:image/png;base64,$L1#g" -e "s#%%LOGO_CATEDRA%%#data:image/png;base64,$L2#g" src/shell.html | python3 -c "import sys; t=sys.stdin.read(); sys.stdout.write(t.replace('/*%%FLUXO_CSS%%*/', open('src/fluxo.css').read() + ''.join(open(f).read() for f in ['src/inicio.css', 'src/idiomas.css'] if __import__('os').path.exists(f))))"; echo '<script>';
   cat vendor/jspdf.umd.min.js; echo; cat vendor/jspdf.plugin.autotable.min.js; echo; echo '</script><script>';
   echo -n 'const MOEDAS = '; cat data/moedas.json; echo ';';
+  # v14 (BL4.1, BL1): base de referências e perfis de país, embutidos para funcionar sem rede (custos.js e pais.js os leem)
+  echo -n 'const REFERENCIAS = '; cat data/referencias.json; echo ';';
+  echo -n 'const PAISES = '; cat data/paises.json; echo ';';
   # v11: Figura 1 (p. 11) de Krueger e Jackson (2026), sem alteração, como data URI
   echo -n "const FIG_TCO = 'data:image/jpeg;base64,"; base64 -w0 assets/fig1_tco.jpg; echo "';";
   # i18n: <l>.json, depois extra_<l>.json, depois i18n/v9_*_<l>.json, i18n/v10_*_<l>.json e i18n/v11_*_<l>.json em ordem alfabética (as últimas prevalecem)

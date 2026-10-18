@@ -2,7 +2,11 @@
 // Modelo do caso (v11), exemplos ilustrativos (A–D), migração de casos da v10
 // e conversão do caso efetivo em premissas de custo (cfgDoCaso).
 // =====================================================================
+// v14 (BL1, BL4): pais = ISO3 de um perfil de data/paises.json, 'outro' (país não listado) ou '' (não respondido); editados = valores do
+// perfil do país que a pessoa alterou, por campo (pais.js). O que não está em editados vem dos dados do país, da região ou do valor ilustrativo.
+const _refValor = typeof refValor === 'function' ? refValor : require('./custos.js').refValor;
 const CASO_VAZIO = {
+  pais: '', editados: {},
   titulo: '', situacao: 'nova', problema: '', resultado: '', linhaBase: 'nao', alternativa: '',
   // v13 · 1.2.7 "Sim" ou "Em parte": para quais problemas (ids do 1.2.2 ou texto livre) e qual medida
   linhaBaseProblemas: [], linhaBaseMedida: '', linhaBaseProblemaTxt: '',
@@ -167,7 +171,9 @@ function fatoresAdaptacao(nivel, base) {
 // Condições de base (K1): preço de referência de um dispositivo (moeda local, valores em US$ do Ano 0) e
 // custo anual de conexão adequada por escola. CONVENÇÃO EDITORIAL ILUSTRATIVA, NÃO EVIDÊNCIA: substitua
 // por dados locais. (fracaoSemDispositivo ficou da v9–v10 e não é mais usada pelo cálculo.)
-const PREMISSAS_K1 = { fracaoSemDispositivo: 0.25, precoDispositivo: 300, conectEscolaAno: 600 };
+// v14 (BL4.1): os custos unitários vêm da base de referências (data/referencias.json); premissasK1(esc) usa a cadeia de escopos do país.
+const PREMISSAS_K1 = { fracaoSemDispositivo: 0.25, precoDispositivo: _refValor('k1.dispositivo'), conectEscolaAno: _refValor('k1.conectividade') };
+function premissasK1(esc) { return Object.assign({}, PREMISSAS_K1, { precoDispositivo: _refValor('k1.dispositivo', esc), conectEscolaAno: _refValor('k1.conectividade', esc) }); }
 
 // v11: premissas das perguntas novas (2.0, 2.4, 2.5, 2.6, 3.1). TODAS SÃO CONVENÇÕES EDITORIAIS ILUSTRATIVAS
 // DESTA FERRAMENTA, NÃO EVIDÊNCIA nem valores do guia ou de Krueger e Jackson (2026): só ordenam as respostas
@@ -187,8 +193,8 @@ const PREMISSAS_V11 = {
   dispositivosPorEscolaRotativo: 30,              // carrinho ou laboratório
   lacunaDisp: { sim: 0, parcial: 0.5, nao: 1 },   // parte dos dispositivos necessários que falta
   // K4.4 e K4.3 formação (2.5)
-  horasFormacao: 3,                               // estimativa de horas por pessoa quando a arquitetura é desconhecida (exemplo A do guia)
-  horasFormacaoPorArq: { saas: 3, api: 1.5, ow: 2 }, // horas dos exemplos A, B e C do guia (cap. 12)
+  horasFormacao: _refValor('formacao.horas.padrao'), // estimativa de horas por pessoa quando a arquitetura é desconhecida (exemplo A do guia)
+  horasFormacaoPorArq: { saas: _refValor('formacao.horas.saas'), api: _refValor('formacao.horas.api'), ow: _refValor('formacao.horas.ow') }, // horas dos exemplos A, B e C do guia (cap. 12)
   formadosPorEscola: { gestores: 2, administrativo: 1, professores: 20 }, // papéis que não são usuários
   equipeTecnicaMin: 3, escolasPorTecnico: 50,     // equipe técnica: no mínimo 3, mais 1 a cada 50 escolas
   rotacaoFormacao: 0.10,                          // reposição anual de pessoas formadas (v14: editável no 4.1.7; este é o padrão)
@@ -197,17 +203,27 @@ const PREMISSAS_V11 = {
   // K4.2 suporte (2.6.1–2.6.2)
   fatorSuporte: { basico: 0.5, ampliado: 1, dedicado: 2 },  // × pessoas em tempo integral do exemplo
   internoComFornecedor: 0.25, internoComAmbos: 0.6,        // parte interna quando o fornecedor atende
-  taxaFornecedor: { basico: 0, ampliado: 2, dedicado: 5 },  // US$ por usuário ativo por ano
+  taxaFornecedor: { basico: _refValor('v11.fornecedor.basico'), ampliado: _refValor('v11.fornecedor.ampliado'), dedicado: _refValor('v11.fornecedor.dedicado') },  // US$ por usuário ativo por ano
   fracaoTaxaAmbos: 0.5,
   // K4.1 e K5.3 acompanhamento (2.6.3)
   fatorAcompanhamento: { leve: 0.5, regular: 1, intensivo: 1.5 },
 };
 // Horas de formação por pessoa estimadas (botão "Usar uma estimativa"): as do exemplo do guia da arquitetura.
 // Aceita um caso (efetivo ou não) ou uma arquitetura ('saas' | 'api' | 'ow').
+// v14: premissasV11(esc) refaz as premissas de custo com a cadeia de escopos do país (pais.js); sem país, é PREMISSAS_V11
+function premissasV11(esc) {
+  if (!esc) return PREMISSAS_V11;
+  return Object.assign({}, PREMISSAS_V11, {
+    horasFormacao: _refValor('formacao.horas.padrao', esc),
+    horasFormacaoPorArq: { saas: _refValor('formacao.horas.saas', esc), api: _refValor('formacao.horas.api', esc), ow: _refValor('formacao.horas.ow', esc) },
+    taxaFornecedor: { basico: _refValor('v11.fornecedor.basico', esc), ampliado: _refValor('v11.fornecedor.ampliado', esc), dedicado: _refValor('v11.fornecedor.dedicado', esc) } });
+}
+function escoposDe(ce) { return typeof escoposDeCaso === 'function' ? escoposDeCaso(ce) : null; }
 function horasFormacaoEstimada(x) {
+  const PV = premissasV11(x && typeof x === 'object' ? escoposDe(x) : null);
   let arq = typeof x === 'string' ? x : '';
   if (x && typeof x === 'object') arq = ['saas', 'api', 'ow'].includes(x.arquitetura) ? x.arquitetura : (typeof derivarArquitetura === 'function' ? derivarArquitetura(x) : 'saas');
-  return PREMISSAS_V11.horasFormacaoPorArq[arq] || PREMISSAS_V11.horasFormacao;
+  return PV.horasFormacaoPorArq[arq] || PV.horasFormacao;
 }
 
 // ---------------------------------------------------------------------
@@ -251,7 +267,8 @@ function migrarCasoV10(c) {
 // ---------------------------------------------------------------------
 // Governança proporcional ao risco (Tab. 11.x) em linhas de custo
 // ---------------------------------------------------------------------
-function governancaPorRisco(cfg, nivel) {
+function governancaPorRisco(cfg, nivel, esc) {
+  const R = id => _refValor(id, esc);
   const alto = nivel === 'elevado' || nivel === 'critico';
   const mod = nivel === 'moderado';
   // remove as linhas de governança (K5), testes de aceitação (K3.4) e reavaliação (K6.2) do exemplo de origem
@@ -264,15 +281,15 @@ function governancaPorRisco(cfg, nivel) {
   cfg.pessoas.push({ cat: 'Governança', s: 'K5.2', nome: 'Privacidade, segurança e conformidade', nat: 'C', partes: [['analista_privacidade', fte(alto ? 0.15 : 0.05, alto ? 0.3 : mod ? 0.1 : 0.05)]] });
   if (alto || mod) cfg.pessoas.push({ cat: 'Monitoramento', s: 'K5.3', nome: 'Monitoramento e revisão de saídas', nat: 'C', partes: [['especialista_pedagogico', fte(alto ? 0.5 : 0, alto ? 1.0 : 0.2)]] });
   if (alto) {
-    cfg.itens.push({ cat: 'Avaliação', s: 'K5.5', nome: 'Avaliação de impacto com comparador', nat: 'D', v: [0, 60000, 60000, 0] });
-    cfg.itens.push({ cat: 'Governança', s: 'K5.4', nome: 'Testes adversariais externos e auditoria anual', nat: 'D', v: [0, 45000, 45000, 45000] });
-    cfg.itens.push({ cat: 'Mudança tecnológica', s: 'K6.2', nome: 'Reavaliação por mudança material, com testes por grupo', nat: 'D', v: [0, 10000, 10000, 10000] });
+    cfg.itens.push({ cat: 'Avaliação', s: 'K5.5', nome: 'Avaliação de impacto com comparador', nat: 'D', v: [0, R('gov.avaliacaoImpacto'), R('gov.avaliacaoImpacto'), 0], refs: [null, 'gov.avaliacaoImpacto', 'gov.avaliacaoImpacto', null] });
+    cfg.itens.push({ cat: 'Governança', s: 'K5.4', nome: 'Testes adversariais externos e auditoria anual', nat: 'D', v: [0, R('gov.testesAdversariais'), R('gov.testesAdversariais'), R('gov.testesAdversariais')], refs: [null, 'gov.testesAdversariais', 'gov.testesAdversariais', 'gov.testesAdversariais'] });
+    cfg.itens.push({ cat: 'Mudança tecnológica', s: 'K6.2', nome: 'Reavaliação por mudança material, com testes por grupo', nat: 'D', v: [0, R('gov.reavaliacao.alto'), R('gov.reavaliacao.alto'), R('gov.reavaliacao.alto')], refs: [null, 'gov.reavaliacao.alto', 'gov.reavaliacao.alto', 'gov.reavaliacao.alto'] });
   } else if (mod) {
-    cfg.itens.push({ cat: 'Avaliação', s: 'K5.5', nome: 'Avaliação externa na expansão', nat: 'D', v: [0, 25000, 0, 20000] });
+    cfg.itens.push({ cat: 'Avaliação', s: 'K5.5', nome: 'Avaliação externa na expansão', nat: 'D', v: [0, R('gov.avaliacaoExterna.ano1'), 0, R('gov.avaliacaoExterna.ano3')], refs: [null, 'gov.avaliacaoExterna.ano1', null, 'gov.avaliacaoExterna.ano3'] });
     cfg.itens.push({ cat: 'Governança', s: 'K5.4', nome: 'Auditoria pontual (valor a estimar)', nat: 'D', v: [0, 0, 0, 0], aEstimar: true });
   } else {
-    cfg.itens.push({ cat: 'Avaliação', s: 'K3.4', nome: 'Teste local e conjunto de avaliação', nat: 'D', v: [12000, 0, 0, 0] });
-    cfg.itens.push({ cat: 'Mudança tecnológica', s: 'K6.2', nome: 'Reexecução dos testes a cada versão', nat: 'D', v: [0, 6000, 6000, 6000] });
+    cfg.itens.push({ cat: 'Avaliação', s: 'K3.4', nome: 'Teste local e conjunto de avaliação', nat: 'D', v: [R('gov.testeLocal'), 0, 0, 0], refs: ['gov.testeLocal', null, null, null] });
+    cfg.itens.push({ cat: 'Mudança tecnológica', s: 'K6.2', nome: 'Reexecução dos testes a cada versão', nat: 'D', v: [0, R('gov.reexecucaoTestes'), R('gov.reexecucaoTestes'), R('gov.reexecucaoTestes')], refs: [null, 'gov.reexecucaoTestes', 'gov.reexecucaoTestes', 'gov.reexecucaoTestes'] });
   }
   return cfg;
 }
@@ -326,11 +343,15 @@ function trajetoriaPessoas(tipo, e0, P1, E, nExp, ondas, H) {
 
 function cfgDoCaso(ce, perfil) {
   ce = ce || {};
-  const P = PREMISSAS_V11;
+  // v14 (BL1, BL4): cadeia de escopos do país (['BRA', 'LAC', 'global']); sem país, null e tudo como na v13
+  const escop = escoposDe(ce);
+  const P = premissasV11(escop), K1 = escop ? premissasK1(escop) : PREMISSAS_K1;
+  const PR = escop ? construirPresets(escop) : PRESETS;
+  const vp = id => (typeof valorEfetivoCampo === 'function' && (ce.pais || (ce.editados && ce.editados[id] != null)) ? valorEfetivoCampo(ce, id) : null);
   let arq = ce.arquitetura;
   if (!['saas', 'api', 'ow'].includes(arq)) arq = (arq === 'indefinida' || typeof derivarArquitetura !== 'function') ? 'saas' : derivarArquitetura(ce);
   const base = { saas: 'A', api: 'B', ow: 'C' }[arq];
-  const cfg = clone(PRESETS[base]);
+  const cfg = clone(PR[base]);
   const agregado = (perfil && perfil.agregado) || cfg.risco;
   cfg.nome = 'Seu caso' + (ce.titulo ? ': ' + ce.titulo : '');
   cfg.origem = base;
@@ -340,6 +361,21 @@ function cfgDoCaso(ce, perfil) {
   // 2. horizonte
   const H = Math.max(1, Math.round(+ce.horizonte || 3));
   cfg.opc = { H };
+  if (escop) {
+    cfg.escopos = escop;
+    const sal = salariosPara(escop);
+    if (PAPEIS_SAL.some(k => sal[k] !== SAL[k])) cfg.salarios = sal;
+  }
+  // valores do país que o motor usa: inflação (opc.pi), taxa de desconto (opc.r) e o salário do professor (custo da hora de formação)
+  const vInfl = vp('inflacao'), vDesc = vp('taxaDesconto'), vSal = vp('salarioProfessor'), vInt = vp('pctEscolasInternet'), vEsc = vp('escolas');
+  if (vInfl && vInfl.origem !== 'ilustrativo' && Number.isFinite(+vInfl.valor)) cfg.opc.pi = +vInfl.valor;
+  if (vDesc && vDesc.origem !== 'ilustrativo' && Number.isFinite(+vDesc.valor)) cfg.opc.r = +vDesc.valor;
+  if (vSal && Number.isFinite(+vSal.valor) && +vSal.valor > 0) {
+    const ch = +vSal.valor / _refValor('conv.horasAno', escop);
+    if (cfg.formacaoTempo) cfg.formacaoTempo.custoHora = ch;
+    if (cfg.saida) cfg.saida.custoHora = ch;
+    meta.salarioProfessor = { valor: +vSal.valor, custoHora: ch };
+  }
   const T = Array.from({ length: H + 1 }, (_, t) => t);
   // 3. demanda. Ano 0 = teste (PoC, piloto ou os dois); Ano 1 = primeira etapa da implantação (3.1);
   //    depois, chega a todas as pessoas (E) em 'expansao' anos, em passos iguais.
@@ -374,7 +410,7 @@ function cfgDoCaso(ce, perfil) {
   Object.assign(meta, { teste, E, E0, m0, implantacao: P1, implantacaoPadrao: !(+imp.pessoas > 0), anosExpansao: nExp, curva: curva === 'ondas' && !ondasValidas(ce.ondas).length ? 'linear' : curva,
     ondas: curva === 'ondas' ? ondasValidas(ce.ondas) : [] });
   // escolas no escopo de cada ano: teste (escolas do piloto; PoC sem escolas), Ano 1 (3.1) e proporcionais depois
-  const escRede = +ce.escolasRede || 0;
+  const escRede = +ce.escolasRede > 0 ? +ce.escolasRede : (vEsc && +vEsc.valor > 0 ? Math.round(+vEsc.valor) : 0);
   const escDe = n => escRede > 0 ? Math.min(escRede, Math.max(1, Math.round(escRede * n / E))) : Math.max(1, Math.ceil(n / P.pessoasPorEscola));
   const esc = T.map(t => {
     if (t === 0) return soPoc ? 0 : (+pil.escolas > 0 ? Math.round(+pil.escolas) : escDe(E0));
@@ -398,7 +434,7 @@ function cfgDoCaso(ce, perfil) {
     const s = cfg.saas;
     s.mesesCobr = T.map(t => t === 0 ? m0 : ano(s.mesesCobr, t));
     if (ce.pagamento === 'usuario') {
-      s.preco = s.precoNominal;
+      s.preco = s.precoNominal; s.refPreco = 'saas.precoNominal';
       s.qtd = T.map(t => Math.ceil(Et[t] * adoc[t] * s.fatorNominal));
     } else s.qtd = Et.slice();
     // v11: preço informado para a ferramenta principal (US$ por usuário por mês)
@@ -416,22 +452,23 @@ function cfgDoCaso(ce, perfil) {
   cfg.itens = cfg.itens || [];
   // 7. K1.1 internet: escolas do escopo sem internet adequada × custo anual por escola
   {
-    const K = PREMISSAS_K1;
+    const K = K1;
     let sem = 0;
     if (ce.internet === 'nao') sem = 1;
     else if (ce.internet === 'parcial') {
       const comNet = ce.escolasInternet === '' || ce.escolasInternet == null ? NaN : +ce.escolasInternet;
-      sem = (escRede > 0 && Number.isFinite(comNet) && comNet >= 0) ? Math.min(1, Math.max(0, 1 - comNet / escRede)) : P.semInternetParcial;
+      const pctNet = vInt && +vInt.valor >= 0 && +vInt.valor <= 100 ? +vInt.valor : NaN;
+      sem = (escRede > 0 && Number.isFinite(comNet) && comNet >= 0) ? Math.min(1, Math.max(0, 1 - comNet / escRede)) : Number.isFinite(pctNet) ? 1 - pctNet / 100 : P.semInternetParcial;
     }
     const q = esc.map(n => Math.round(n * sem));
     meta.internet = { resposta: ce.internet || '', fracaoSem: sem, escolasSemInternet: q.slice(), conectEscolaAno: K.conectEscolaAno };
     if (q.some(n => n > 0))
       cfg.itens.push({ cat: 'Condições de base', s: 'K1.1', nome: 'Conexão das escolas sem internet adequada (ilustrativo)', nat: 'D', moeda: 'LOC',
-        q, p: T.map(() => K.conectEscolaAno), un: 'escola', v: q.map(n => n * K.conectEscolaAno) });
+        q, p: T.map(() => K.conectEscolaAno), un: 'escola', v: q.map(n => n * K.conectEscolaAno), refP: 'k1.conectividade' });
   }
   // 8. K1.2 dispositivos: necessários pelo modelo de uso × lacuna, só os novos de cada ano, × preço
   {
-    const K = PREMISSAS_K1;
+    const K = K1;
     const lac = P.lacunaDisp[ce.dispExistem] || 0;
     const modelo = ce.modeloDisp || (usaEst ? 'compartilhado' : 'um_por_usuario');
     const nec = T.map(t => {
@@ -450,7 +487,7 @@ function cfgDoCaso(ce, perfil) {
     meta.dispositivos = { modelo, resposta: ce.modeloDisp || '', existem: ce.dispExistem || '', lacuna: lac, necessarios: nec, comprados: q.slice(), precoDisp: K.precoDispositivo };
     if (q.some(n => n > 0))
       cfg.itens.push({ cat: 'Condições de base', s: 'K1.2', nome: 'Dispositivos a comprar (ilustrativo)', nat: 'D', orc: 'capital', moeda: 'LOC', tag: 'dispositivo',
-        q, p: T.map(() => K.precoDispositivo), un: 'dispositivo', v: q.map(n => n * K.precoDispositivo) });
+        q, p: T.map(() => K.precoDispositivo), un: 'dispositivo', v: q.map(n => n * K.precoDispositivo), refP: 'k1.dispositivo' });
     // v14 (BL3.5): reposição dos dispositivos comprados a cada 3, 4 ou 5 anos (4.1.6); sem resposta ou "Não repor", como na v13
     const ciclo = ['3', '4', '5'].includes(String(ce.reposicaoDisp)) ? +ce.reposicaoDisp : 0;
     if (ciclo) cfg.reposicao = { ciclo };
@@ -521,12 +558,12 @@ function cfgDoCaso(ce, perfil) {
     if (taxa > 0) {
       const q = U.map(u => Math.round(u));
       cfg.itens.push({ cat: 'Pessoas', s: 'K4.2', nome: 'Suporte do fornecedor', nat: 'D', moeda: 'USD', comp: 'V', un: 'usuário ativo por ano',
-        q, p: T.map(() => taxa), v: q.map((n, t) => n * taxa * (t === 0 ? m0 / 12 : 1)) });
+        q, p: T.map(() => taxa), v: q.map((n, t) => n * taxa * (t === 0 ? m0 / 12 : 1)), refP: 'v11.fornecedor.' + nivel, refEscala: ce.suporteQuem === 'ambos' ? P.fracaoTaxaAmbos : 1 });
     }
   }
   // 11. ferramentas adicionais pagas (2.3.3, a partir da segunda): licenças em K2.1 com o nome da ferramenta
   {
-    const sp = PRESETS.A.saas;
+    const sp = PR.A.saas;
     meta.ferramentas = [];
     (ce.ferramentas || []).slice(1).forEach((fe, i) => {
       if (!fe || ['publica', 'aberta'].includes(fe.tipoTec) || !['usuario', 'institucional'].includes(fe.pagamento)) return;
@@ -540,11 +577,11 @@ function cfgDoCaso(ce, perfil) {
       const nome = 'Licenças: ' + ((fe.nome || '').trim() || ('ferramenta ' + (i + 2)));
       meta.ferramentas.push({ nome, preco, precoInformado: +fe.preco > 0, porUsuario, licencas: lic });
       cfg.itens.push({ cat: 'Acesso comercial', s: 'K2.1', nome, nat: 'D', moeda: 'USD', tag: 'licenca_extra', un: 'licença-mês',
-        q, p: T.map(() => preco), v: q.map(n => n * preco) });
+        q, p: T.map(() => preco), v: q.map(n => n * preco), refP: porUsuario ? 'saas.precoNominal' : 'saas.preco' });
     });
   }
   // 12. governança proporcional ao risco
-  governancaPorRisco(cfg, agregado);
+  governancaPorRisco(cfg, agregado, escop);
   // 13. K4.1 e K5.3 (gestão e monitoramento) × nível de acompanhamento; a operação técnica do modelo não muda
   {
     const fA = P.fatorAcompanhamento[ce.acompanhamento] || 1;
@@ -557,4 +594,4 @@ function cfgDoCaso(ce, perfil) {
   return cfg;
 }
 
-if (typeof module !== 'undefined') module.exports = { CASO_VAZIO, FERRAMENTA_VAZIA, CASOS, CTX_EX, RESP_EX, ADAPTACAO, fatoresAdaptacao, PREMISSAS_K1, PREMISSAS_V11, horasFormacaoEstimada, migrarCasoV10, cfgDoCaso, governancaPorRisco, trajetoriaPessoas, ondasValidas };
+if (typeof module !== 'undefined') module.exports = { premissasK1, premissasV11, CASO_VAZIO, FERRAMENTA_VAZIA, CASOS, CTX_EX, RESP_EX, ADAPTACAO, fatoresAdaptacao, PREMISSAS_K1, PREMISSAS_V11, horasFormacaoEstimada, migrarCasoV10, cfgDoCaso, governancaPorRisco, trajetoriaPessoas, ondasValidas };

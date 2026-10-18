@@ -377,7 +377,7 @@ Object.keys(CENAS).forEach(nome => {
   };
   const I18N = { en: dic('en'), es: dic('es'), fr: dic('fr') };
   const ctx = vm.createContext({ console, Intl, Math, JSON, Number, String, Array, Object, Set, Map, Date, isFinite, isNaN, parseFloat });
-  vm.runInContext(`const I18N = ${JSON.stringify(I18N)}; const MOEDAS = { taxas: { USD: 1, BRL: 5.4, EUR: 0.92 } };
+  vm.runInContext(`const I18N = ${JSON.stringify(I18N)}; const MOEDAS = { taxas: { USD: 1, BRL: 5.4, EUR: 0.92 } }; const REFERENCIAS = ${JSON.stringify(json('data/referencias.json'))};
     var S = { moeda: { cod: 'USD', taxa: '' } }; var CFG = null; function cfgAtual() { return CFG; }
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));`, ctx);
   ['src/i18n.js', 'src/custos.js', 'src/framework.js', 'src/casos.js', 'src/custos_ui.js', 'src/fluxo_dados.js', 'src/formula.js'].forEach(f => vm.runInContext(ler(f), ctx, { filename: f }));
