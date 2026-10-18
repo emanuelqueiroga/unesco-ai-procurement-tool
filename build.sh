@@ -7,7 +7,7 @@ NOVOS="ar zh bm zu sw"   # v13 (RQ-18): idiomas novos
 L1=$(base64 -w0 assets/iaedu.png); L2=$(base64 -w0 assets/catedra.png)
 # ordem dos scripts (plano_dados.js logo depois de fluxo_dados.js; v10: formula.js e recomendacoes.js antes de resumo.js)
 # v13: prioridades.js (catálogo do 1.2) depois de framework.js; matriz.js depois de fluxo_dados.js; inicio.js (página inicial e matriz) depois de fluxo.js
-JS="src/i18n.js src/custos.js src/framework.js src/prioridades.js src/casos.js src/pais.js src/custos_ui.js src/fluxo_dados.js src/glossario.js src/matriz.js src/plano_dados.js src/formula.js src/recomendacoes.js src/fluxo.js src/inicio.js src/resumo.js src/plano_pdf.js src/app.js"
+JS="src/i18n.js src/custos.js src/framework.js src/prioridades.js src/casos.js src/pais.js src/custos_ui.js src/fluxo_dados.js src/glossario.js src/matriz.js src/plano_dados.js src/formula.js src/recomendacoes.js src/relatorio.js src/fluxo.js src/inicio.js src/resumo.js src/plano_pdf.js src/app.js"
 # opcionais enquanto os pacotes R2 e R3 da v10 não chegam: avisam e ficam de fora; os demais são obrigatórios
 OPCIONAIS=" src/formula.js src/recomendacoes.js src/inicio.js "
 JS_OK=""

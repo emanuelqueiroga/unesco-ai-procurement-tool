@@ -364,10 +364,12 @@ function aplicarIA(soTexto) {
 // ----------------------------------------------------------- relatório e exportação
 const dadosRelatorio = () => secoesPlano();
 function tituloPlano() { return S.caso.titulo || (S.ctx && S.ctx.olhando) || tr('Plano de contratação'); }
+// v14: título de seção nas exportações (corpo: "1. pergunta: achado"; anexos: "Anexo A. título")
+const tituloRel = s => s.rotulo ? s.num + '. ' + s.rotulo + ': ' + s.h : s.letra ? tr('Anexo {0}').replace('{0}', s.letra) + '. ' + s.h : s.h;
 function relHTML(secs, completo) {
   secs = trFundo(secs);
   const e = esc;
-  const body = secs.map(s => `<h3>${e(s.h)}</h3>
+  const body = secs.map(s => `${tituloRel(s) ? `<h3>${e(tituloRel(s))}</h3>` : ''}
     ${(s.pre || []).map(x => `<p><b>${e(x)}</b></p>`).join('')}
     ${(s.kv || []).length ? `<div class="tw"><table><tbody>${s.kv.map(([k, v]) => `<tr><th style="width:28%">${e(k)}</th><td>${e(v)}</td></tr>`).join('')}</tbody></table></div>` : ''}
     ${(s.p || []).map(x => `<p>${e(x)}</p>`).join('')}
@@ -383,7 +385,7 @@ function relMD(secs) {
   secs = trFundo(secs);
   const L = ['# ' + tituloPlano(), '', '_' + NOME_FERRAMENTA + ' · ' + tr('Plano de contratação') + ' · ' + tr('Gerado em') + ' ' + new Date().toLocaleDateString(LOC()) + '. ' + tr('Documento de trabalho baseado no guia; valores ilustrativos.') + '_', '', tr(TXT_VINCULO), '', '_' + tr(TXT_ISENCAO) + '_', ''];
   secs.forEach(s => {
-    L.push('## ' + s.h, '');
+    if (tituloRel(s)) L.push('## ' + tituloRel(s), '');
     (s.pre || []).forEach(x => L.push('**' + x + '**', ''));
     (s.kv || []).forEach(([k, v]) => L.push('- **' + k + ':** ' + (v || '')));
     if ((s.kv || []).length) L.push('');

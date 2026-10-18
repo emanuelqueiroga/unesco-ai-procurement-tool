@@ -612,13 +612,15 @@ function secoesPlano() {
 
   // Referências
   sec({ id: 'refs', h: TIT_PLANO.refs, list: [REFS_PLANO[0], tr(REFS_PLANO[1]) + ' ' + URL_TCO + ' ' + tr(REFS_PLANO[2])], pos: [TXT_VINCULO, TXT_ISENCAO] });
-  return S_;
+  // v14 (BL6): ordem de decisão — resumo, corpo em cinco seções e anexos (relatorio.js)
+  return typeof relComporPlano === 'function' ? relComporPlano(S_, d) : S_;
 }
 
 // Tradução só dos campos de conteúdo (ids, tipos e alvos de navegação ficam como estão)
 function trSecao(s) {
+  if (s.pronto) return s;   // v14: itens de relatorio.js já saem traduzidos (traduzir de novo estraga valores como "US$ 4.68 M")
   const o = Object.assign({}, s);
-  ['h', 'det', 'alt'].forEach(k => { if (o[k]) o[k] = tr(o[k]); });
+  ['h', 'det', 'alt', 'rotulo'].forEach(k => { if (o[k]) o[k] = tr(o[k]); });
   ['pre', 'p', 'list', 'pos'].forEach(k => { if (o[k]) o[k] = o[k].map(z => tr(z)); });
   if (o.kv) o.kv = o.kv.map(([k, v]) => [tr(k), tr(v)]);
   if (o.fatos) o.fatos = o.fatos.map(([k, v]) => [tr(k), tr(v)]);
@@ -678,86 +680,50 @@ function htmlFiguraP(s) {
   return `<figure class="fig-tco fig-mini" id="plano-fig-tco"><h4>${esc(s.h)}</h4><img src="${FIG_TCO}" alt="${esc(s.alt || '')}" width="900" height="1225" decoding="async"><figcaption>${linkP((s.pos || [])[0] || '')}</figcaption></figure>`;
 }
 
-// Dados do painel ("Em resumo", capa e perfil), tirados das seções já traduzidas; o PDF pode usar com typeof
+// Dados do painel (capa e perfil), tirados das seções já traduzidas
 function painelPlano(secs) {
   secs = secs || secoesPlano().map(trSecao);
-  const by = id => secs.find(z => z.id === id && !z.sub) || {};
-  const res = by('resumo'), a1 = by('A1'), a2 = by('A2');
+  const by = id => secs.find(z => z.id === id);
+  const res = by('resumo') || {}, sin = by('sintese') || {};
   let R = [];
   try { R = typeof recomendacoesCaso === 'function' ? recomendacoesCaso() : []; } catch (e) { console.warn(e); }
-  return { kpis: a2.graf ? (a2.kv || []).slice(0, 4) : [], graf: a2.graf || null, semCusto: !a2.graf ? (a2.p || [])[0] || '' : '',
-    fatos: res.fatos || [], cartoes: res.cartoes || [], principal: a1.principal || '', recs: R, nAlta: R.filter(r => r.prioridade === 'alta').length,
-    faltas: by('faltas').tipo ? by('faltas') : null };
+  return { fatos: res.fatos || [], cartoes: res.cartoes || [], principal: sin.principal || '', recs: R, nAlta: R.filter(r => r.prioridade === 'alta').length,
+    faltas: (by('faltas') || {}).tipo ? by('faltas') : null };
 }
 function perfilCasoCartoes() { return painelPlano().cartoes; }
 
 const corCamada = n => COR_CAMADA[(+n || 1) - 1] || COR_CAMADA[0];
-// Gráfico de barras horizontais: custo do ciclo por camada, nas cores da Figura 1
-function grafCamadasP(g) {
-  const vals = g.camadas.total, max = Math.max(0, ...vals), tot = g.totCamadas || vals.reduce((a, b) => a + b, 0);
-  return `<figure class="rp-graf" aria-labelledby="rp-g1-t">
-    <figcaption><span class="rp-graf-t" id="rp-g1-t">${esc(tr('Custo por camada'))}</span> <span class="rp-graf-s">${esc(tr('Total do ciclo'))} · ${esc(tr('Ano 0'))}–${esc(tr('Ano ' + g.H))}</span></figcaption>
-    <ol class="rp-barras">${vals.map((v, i) => {
-      const n = i + 1, cor = corCamada(n), w = max ? Math.max(v > 0 ? .8 : 0, 100 * v / max) : 0, pc = pct(tot ? v / tot : 0);
-      return `<li class="rp-bar"><span class="rp-bar-l"><span class="rp-cn" style="background:${cor}" aria-hidden="true">${n}</span><span><span class="sr">${esc(tr('Camada ' + n))}: </span>${esc(tr(nomeCamada(n)))}</span></span>
-        <svg class="rp-bar-s" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><title>${esc(rotuloCamada(n) + ': ' + grande(v) + ' (' + pc + ')')}</title><rect width="100" height="10" fill="#EEF3F8"/><rect width="${w.toFixed(2)}" height="10" fill="${cor}"/></svg>
-        <span class="rp-bar-v"><b>${esc(grande(v))}</b> <span>${esc(pc)}</span></span></li>`;
-    }).join('')}</ol></figure>`;
-}
-// Gráfico de colunas: dotação a solicitar por exercício (Ano 0 = teste)
-function grafExerciciosP(g) {
-  const max = Math.max(0, ...g.dot), H = 150;
-  return `<figure class="rp-graf" aria-labelledby="rp-g2-t">
-    <figcaption><span class="rp-graf-t" id="rp-g2-t">${esc(tr('Dotação a solicitar por exercício'))}</span>
-      <span class="rp-leg"><span><i style="background:var(--f2)"></i>${esc(tr('Ano 0 (prova de conceito ou piloto)'))}</span><span><i style="background:var(--f3)"></i>${esc(tr('Anos de operação'))}</span></span></figcaption>
-    <div class="rp-cols" style="--n:${g.anos.length}">${g.anos.map((a, i) => {
-      const v = g.dot[i], hh = max ? Math.max(v > 0 ? 3 : 1, H * v / max) : 1;
-      return `<div class="rp-col${a === 0 ? ' t0' : ''}"><span class="rp-col-v">${esc(grande(v))}</span>
-        <svg class="rp-col-s" viewBox="0 0 10 10" preserveAspectRatio="none" style="height:${hh.toFixed(1)}px" aria-hidden="true" focusable="false"><title>${esc(tr('Ano ' + a) + ': ' + grande(v))}</title><rect width="10" height="10" fill="${a === 0 ? 'var(--f2)' : 'var(--f3)'}"/></svg>
-        <span class="rp-col-a">${esc(tr('Ano ' + a))}</span></div>`;
-    }).join('')}</div></figure>`;
-}
 // Valor de KPI com moeda e magnitude menores ("US$ 336,2 mil" → US$ | 336,2 | mil), sem quebrar o número
 function valorKpiP(v) {
   const m = String(v).match(/^(\D*?)\s*([-−]?\d[\d.,\s\u00a0\u202f]*\d|\d)\s*(\D*)$/);
   if (!m) return esc(v);
   return `${m[1] ? `<span class="u">${esc(m[1].trim())}</span> ` : ''}<span class="n">${esc(m[2])}</span>${m[3] ? ` <span class="u">${esc(m[3].trim())}</span>` : ''}`;
 }
-// Cabeçalho das seções principais: número grande, título e frase de abertura
-const cabP = (num, h, abre, id) => `<header class="rp-cab">${num ? `<span class="rp-num" aria-hidden="true">${esc(num)}</span>` : ''}<div class="rp-cab-t"><h3 id="${id}-t">${esc(h)}</h3>${abre ? `<p class="rp-abre">${esc(abre)}</p>` : ''}</div></header>`;
-function htmlEmResumoP(P) {
-  let h = '';
-  if (P.faltas) { const nf = (P.faltas.list || []).length; h += `<p class="rp-aviso"><span class="rp-aviso-i" aria-hidden="true">!</span><span><b>${esc(tr(nf === 1 ? 'Plano parcial: 1 resposta pendente.' : 'Plano parcial: ' + nf + ' respostas pendentes.'))}</b> <a href="#plano-faltas">${esc(tr('Ver a lista'))}</a></span></p>`; }
-  if (P.graf) {
-    h += `<div class="rp-kpis">${P.kpis.map(([k, v], i) => `<div class="rp-kpi" data-k="${i}"><span class="rp-kpi-v">${valorKpiP(v)}</span><span class="rp-kpi-l">${esc(k)}</span></div>`).join('')}</div>`;
-    h += `<div class="rp-grafs">${grafCamadasP(P.graf)}${grafExerciciosP(P.graf)}</div>`;
-    h += `<p class="note">${esc(tr('Valores ilustrativos. Substitua por cotações e dados locais.'))}</p>`;
-  } else if (P.semCusto) h += `<p class="rp-vazio">${esc(P.semCusto)}</p>`;
-  if (P.fatos.length) h += `<div class="rp-fatos-b"><h4>${esc(tr('Fatos do caso'))}</h4><ul class="rp-fatos">${P.fatos.map(([k, v]) => `<li><span class="rp-fl">${esc(k)}</span><span class="rp-fv">${esc(v)}</span></li>`).join('')}</ul></div>`;
-  return h;
-}
+// Cabeçalho das seções principais: número grande, pergunta, título (o achado) e frase de abertura
+const cabP = (num, h, abre, id, rot) => `<header class="rp-cab">${num ? `<span class="rp-num" aria-hidden="true">${esc(num)}</span>` : ''}<div class="rp-cab-t">${rot ? `<p class="rp-rot">${esc(rot)}</p>` : ''}<h3 id="${id}-t">${esc(h)}</h3>${abre ? `<p class="rp-abre">${esc(abre)}</p>` : ''}</div></header>`;
 // Recomendações: as 5 primeiras de prioridade alta em cartões; depois a lista completa por momento, como checklist
-function htmlRecsP(R) {
-  if (!R.length) return `<p class="rp-vazio">${esc(tr(TXT_REC.vazio))}</p>`;
+function htmlRecsP(R, o = {}) {
+  if (!(o.todas || R).length) return `<p class="rp-vazio">${esc(tr(TXT_REC.vazio))}</p>`;
   const top = R.filter(r => r.prioridade === 'alta').slice(0, 5);
   const nTop = new Map(top.map((r, i) => [r, i + 1]));
   const quandoNome = q => tr((QUANDO_REC.find(z => z[0] === q) || ['', q])[1]);
   const tags = r => `<span class="rp-tag" data-tipo="${esc(r.tipo)}">${esc(tr(TIPO_REC[r.tipo] || r.tipo))}</span>`;
   const pq = r => { const t = recPorqueTexto(r); return t ? `<p class="rp-pq"><span class="rp-pq-l">${esc(tr(TXT_REC.porque))}</span> ${esc(t)}</p>` : ''; };
   const pqIn = r => { const t = recPorqueTexto(r); return t ? `<span class="rp-pq"><span class="rp-pq-l">${esc(tr(TXT_REC.porque))}</span> ${esc(t)}</span>` : ''; };
-  const n = recContagem(R);
-  let h = `<p class="rp-cont"><span><b>${R.length}</b> ${esc(tr('ações no total'))}</span><span><b>${n.custo || 0}</b> ${esc(tr(TIPO_REC.custo))}</span><span><b>${n.politica || 0}</b> ${esc(tr(TIPO_REC.politica))}</span><span class="rp-cont-a"><b>${R.filter(r => r.prioridade === 'alta').length}</b> ${esc(tr('de prioridade alta'))}</span></p>`;
-  if (top.length) {
+  const n = recContagem(o.todas || R), nT = (o.todas || R).length;
+  let h = `<p class="rp-cont"><span><b>${nT}</b> ${esc(tr('ações no total'))}</span><span><b>${n.custo || 0}</b> ${esc(tr(TIPO_REC.custo))}</span><span><b>${n.politica || 0}</b> ${esc(tr(TIPO_REC.politica))}</span><span class="rp-cont-a"><b>${(o.todas || R).filter(r => r.prioridade === 'alta').length}</b> ${esc(tr('de prioridade alta'))}</span></p>`;
+  if (top.length && !o.semTop) {
     h += `<h4 class="rp-sub">${esc(tr('Comece por estas'))}</h4><ol class="rp-top">${top.map((r, i) => `<li class="rp-tc"><span class="rp-tn" aria-hidden="true">${i + 1}</span><div class="rp-tc-c">
       <p class="rp-tc-a">${esc(tr(r.texto))}</p>${pq(r)}<p class="rp-tags">${tags(r)}<span class="rp-tag rp-q">${esc(quandoNome(r.quando))}</span></p></div></li>`).join('')}</ol>`;
   }
-  h += `<h4 class="rp-sub">${esc(tr('Todas as recomendações, por momento'))}</h4>`;
+  if (!R.length) return h;
+  if (!o.semTop) h += `<h4 class="rp-sub">${esc(tr('Todas as recomendações, por momento'))}</h4>`;
   h += QUANDO_REC.map(([q, nome]) => {
     const L = R.filter(r => r.quando === q);
     if (!L.length) return '';
     return `<div class="rp-grupo" data-quando="${q}"><h5 class="rp-gt"><span>${esc(tr(nome))}</span> <span class="rp-gn">${L.length}</span></h5>
       <ul class="rp-lista">${L.map(r => {
-        const alta = r.prioridade === 'alta', k = nTop.get(r);
+        const alta = r.prioridade === 'alta', k = o.semTop ? 0 : nTop.get(r);
         return `<li class="rc-item rp-li${alta ? ' alta' : ''}" data-rec="${esc(r.id)}" data-tipo="${esc(r.tipo)}" data-prio="${esc(r.prioridade)}"><span class="rp-box" aria-hidden="true"></span>
           <div class="rp-li-c"><p class="rp-li-a">${k ? `<span class="rp-ref" title="${esc(tr('Comece por estas'))}">${k}</span> ` : ''}${esc(tr(r.texto))}</p>
           <p class="rp-meta"><span class="rp-tag rp-prio${alta ? ' alta' : ''}">${esc(tr('Prioridade'))}: ${esc(tr(PRIO_REC[r.prioridade] || r.prioridade))}</span>${tags(r)}${pqIn(r)}</p></div>
@@ -847,9 +813,37 @@ function cssPlanoV13() {
     (document.head || document.documentElement).appendChild(st);
   } catch (e) { }
 }
+// Resumo da primeira página: TCO com a faixa P10 a P90, três indicadores, os três maiores direcionadores e as cinco ações
+function htmlSinteseP(s) {
+  const d = s.d;
+  let h = '';
+  if (!d) h += `<p class="rp-vazio">${esc(s.semCusto)}</p>`;
+  else {
+    const w = Math.max(d.hi - d.lo, d.central * 0.02), a = d.lo - 0.5 * w, b = d.hi + 0.5 * w;
+    const pos = v => (100 * (v - a) / (b - a)).toFixed(2);
+    h += `<div class="rs-topo"><div class="rs-tco" data-k="tco"><span class="rs-tco-l">${esc(tr(TXT_REL.kTco))}</span><span class="rs-tco-v">${valorKpiP(d.centralTxt)}</span>
+      <span class="rs-tco-f">${esc(d.faixaTxt)}</span>
+      <div class="rs-faixa" role="img" aria-label="${esc(d.faixaTxt + '; ' + tr(TXT_REL.kCentral) + ': ' + d.centralTxt)}"><i style="left:${pos(d.lo)}%;width:${(pos(d.hi) - pos(d.lo)).toFixed(2)}%"></i><b style="left:${pos(d.central)}%"></b></div>
+      <p class="rs-nota">${esc(d.nota)}</p></div>
+      <div class="rs-kpis">${d.kpis.map(k => `<div class="rp-kpi" data-k="${k.id}"><span class="rp-kpi-v">${valorKpiP(k.v)}</span><span class="rp-kpi-l">${esc(k.l)}</span>${k.nota ? `<span class="rp-kpi-n">${esc(k.nota)}</span>` : ''}</div>`).join('')}</div></div>`;
+    h += `<h4 class="rp-sub">${esc(tr(TXT_REL.direcionadores))}</h4><ol class="rs-dir" data-k="direcionadores">${d.drivers.map(x => `<li><b>${esc(x.nome)}</b> <span>${esc(x.faixa)}</span><span class="rs-d-b" style="width:${Math.max(2, 100 * x.w).toFixed(1)}%" aria-hidden="true"></span><span>${esc(x.txt)}</span></li>`).join('')}</ol>`;
+  }
+  h += `<h4 class="rp-sub">${esc(tr(TXT_REL.acoes5))}</h4>`;
+  if (!s.recs.length) h += `<p class="rp-vazio">${esc(tr(TXT_REL.semAcoes))}</p>`;
+  else h += `<ol class="rp-top" data-k="acoes">${s.recs.map(r => `<li class="rp-tc" data-rec="${esc(r.id)}"><span class="rp-tn" aria-hidden="true">${r.n}</span><div class="rp-tc-c">
+    <p class="rp-tc-a">${esc(r.texto)}</p>${r.quem ? `<p class="rs-quem"><b>${esc(tr(TXT_REL.quemAge))}</b> ${esc(r.quem)}</p>` : ''}
+    <p class="rp-tags"><span class="rp-tag" data-tipo="${esc(r.tipo)}">${esc(r.tipo)}</span><span class="rp-tag rp-q">${esc(r.quando)}</span></p></div>${r.ir ? `<button type="button" class="link rc-ir" data-ir="${esc(r.ir)}">${esc(tr(TXT_REC.ir))}</button>` : ''}</li>`).join('')}</ol>`;
+  return h;
+}
+// Respostas que faltam: lista curta perto do topo (curta) ou completa no anexo A
+function htmlFaltasP(s) {
+  const n = s.total || (s.list || []).length;
+  return `<div class="parcial" id="plano-faltas-lista"><p><b>${esc(s.p[0])}</b> ${esc(s.p[1] || '')}</p><ul class="req">${s.list.map((z, i) => `<li><span>${esc(z)}</span> ${s.irs[i] ? `<button type="button" class="link" data-ir="${esc(s.irs[i])}">${esc(tr('Responder'))}</button>` : ''}</li>`).join('')}</ul>${s.curta && n > s.list.length ? `<p><a href="#plano-anexo-a">${esc(tr(TXT_REL.faltasLink))}</a></p>` : ''}</div>`;
+}
 function renderPlano() {
   if (typeof fxCss === 'function') fxCss();
   cssPlanoV13();
+  if (typeof cssRelatorio === 'function') cssRelatorio();
   const secs = secoesPlano().map(trSecao);
   const P = painelPlano(secs);
   const c = S.caso, x = S.ctx || {};
@@ -862,8 +856,8 @@ function renderPlano() {
   // capa
   let logos = '';
   try { logos = [...document.querySelectorAll('.top .logo')].map(i => `<img class="rp-logo" src="${i.getAttribute('src')}" alt="${esc(i.getAttribute('alt') || '')}" width="${i.getAttribute('width') || ''}" height="${i.getAttribute('height') || ''}">`).join(''); } catch (e) { }
-  const acaoAlta = P.nAlta ? `<a href="#plano-recs">${esc(tr(P.nAlta === 1 ? '1 ação de prioridade alta' : P.nAlta + ' ações de prioridade alta'))}</a>`
-    : P.recs.length ? `<a href="#plano-recs">${esc(tr('Ver as recomendações'))}</a>` : '';
+  const acaoAlta = P.nAlta ? `<a href="#plano-sintese">${esc(tr(P.nAlta === 1 ? '1 ação de prioridade alta' : P.nAlta + ' ações de prioridade alta'))}</a>`
+    : P.recs.length ? `<a href="#plano-sintese">${esc(tr('Ver as recomendações'))}</a>` : '';
   const capa = `<header class="rp-capa" id="plano-capa">
     <div class="rp-capa-faixa" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
     <div class="rp-capa-in">
@@ -876,64 +870,54 @@ function renderPlano() {
     </div></header>`;
 
   let out = '';
-  out += secP('resumo', '1', tr('Em resumo'), tr('Os números-chave da estimativa ilustrativa e os fatos que a definem.'), htmlEmResumoP(P));
-  // v13: matriz do caso logo depois de "Em resumo"
-  const sMx = secs.find(z => z.id === 'matriz' && !z.sub);
-  let nS = 1;
-  if (sMx) out += secP('matriz', String(++nS), sMx.h, tr(sMx.intro), htmlMatrizP(sMx), 'rp-matriz');
-  const sRecs = secs.find(z => z.id === 'recs');
-  out += secP('recs', String(++nS), sRecs ? sRecs.h : tr(TIT_REC), tr(P.recs.length ? TXT_REC.introPlano : ''), htmlRecsP(P.recs), 'rp-recs');
-  out += secP('perfil', String(++nS), tr('Perfil do caso'), tr('As respostas deste caso, por área. Um traço indica uma pergunta ainda sem resposta.'), htmlPerfilP(P.cartoes));
-
-  // blocos A e B (conteúdo de secoesPlano, sem duplicar regras)
-  let aberta = false, bloco = '', pular = false;
-  const fecha = () => { if (aberta) { out += '</section>'; aberta = false; } };
-  const fechaBloco = () => { fecha(); if (bloco) { out += '</div>'; bloco = ''; } };
-  const ABRE_BLOCO = { A: 'Quanto custa, como comprar e o que exigir no contrato.', B: 'Regras, responsabilidades, dados, riscos e acompanhamento.' };
-  secs.forEach(s => {
-    if (!s.sub && ['faltas', 'resumo', 'matriz', 'recs'].includes(s.id)) { pular = true; return; }
-    if (s.sub && pular) return;
-    pular = false;
-    if (s.tipo === 'bloco') {
-      fechaBloco(); bloco = s.id;
-      const nome = s.h.replace(/^[AB]\.\s*/, '');
-      toc.push(['bloco-' + s.id, nome, s.id, '']);
-      out += `<div class="rp-bloco" data-b="${s.id}"><div class="rp-faixa" id="plano-bloco-${s.id}" data-toc="bloco-${s.id}"><div class="bloco-faixa" data-bloco="${s.id}" role="heading" aria-level="2"><span class="rp-letra" aria-hidden="true">${s.id}</span><span class="sr">${s.id}. </span><span>${esc(nome)}</span></div><p class="rp-faixa-p">${esc(tr(ABRE_BLOCO[s.id] || ''))}</p></div>`;
-      return;
-    }
-    if (s.tipo === 'figura') { out += htmlFiguraP(s); return; }
-    if (s.sub) {
-      // na página, tabelas e listas longas ficam recolhidas (o PDF e as exportações mostram tudo)
-      const longa = !s.det && !s.eq && (((s.table || {}).rows || []).length > 14 || (s.list || []).length > 10);
-      if (s.det || longa) out += `<details class="mais"><summary>${esc(s.det || s.h)}${longa ? ` <span class="rp-n">${(((s.table || {}).rows || []).length || (s.list || []).length)}</span>` : ''}</summary><div class="mais-in">${htmlCorpoP(s)}</div></details>`;
-      else out += `<h4>${esc(s.h)}</h4>${htmlCorpoP(s)}`;
-      return;
-    }
-    if (s.id === 'refs') {
-      fechaBloco();
-      toc.push(['refs', tr('Referências e créditos'), '', '']);
+  const itemP = s => {
+    const idA = s.id ? ` id="plano-${s.id}" data-sec="${s.id}"` : '';
+    const wrap = body => `<div class="rp-item"${idA}>${body}</div>`;
+    if (s.tipo === 'figura') return htmlFiguraP(s);
+    if (['fases', 'camadas', 'adocao', 'cenarios', 'tornado'].includes(s.tipo)) return htmlGrafP(s);
+    if (s.tipo === 'fatos') return wrap(`<h4>${esc(s.h)}</h4><ul class="rp-fatos">${s.fatos.map(([k, v]) => `<li><span class="rp-fl">${esc(k)}</span><span class="rp-fv">${esc(v)}</span></li>`).join('')}</ul>`);
+    if (s.tipo === 'nota') return wrap((s.p || []).map(z => `<p class="note">${linkP(z)}</p>`).join(''));
+    if (s.tipo === 'perfil') return wrap(`<h4>${esc(s.h)}</h4>${htmlPerfilP(s.cartoes)}`);
+    if (s.tipo === 'faltas') return wrap(`<h4>${esc(s.h)}</h4>${htmlFaltasP(s)}`);
+    if (s.tipo === 'matriz') return wrap(`<h4>${esc(s.h)}</h4>${(s.p || []).map(z => `<p>${esc(z)}</p>`).join('')}${htmlMatrizP(s)}`);
+    if (s.tipo === 'recs') return wrap(`<h4>${esc(s.h)}</h4><p>${esc((s.p || [])[0] || '')}</p>${htmlRecsP(P.recs.slice(s.resto || 0), { semTop: true, todas: P.recs })}`);
+    if (s.tipo === 'refs') {
       const cred = typeof FIG_LEGENDA !== 'undefined' && typeof FIG_TCO !== 'undefined' && FIG_TCO ? `<p class="rp-cred"><b>${esc(tr('Figura'))}:</b> ${esc(tr(FIG_LEGENDA))}</p>` : '';
-      out += `<section class="rp-sec rp-refs" id="plano-refs" data-sec="refs" data-toc="refs" aria-labelledby="plano-refs-t">${cabP('', tr('Referências e créditos'), '', 'plano-refs')}${htmlCorpoP(Object.assign({}, s, { pos: null }))}${cred}${(s.pos || []).map(z => `<p class="note">${linkP(z)}</p>`).join('')}`;
-      aberta = true;
-      return;
+      return wrap(`${htmlCorpoP(Object.assign({}, s, { pos: null }))}${cred}${(s.pos || []).map(z => `<p class="note">${linkP(z)}</p>`).join('')}`);
     }
-    fecha(); aberta = true;
-    const num = /^[AB]\d$/.test(s.id) ? s.id : '';
-    const tit = num ? s.h.replace(/^[AB]\d\.\s*/, '') : s.h;
-    if (num) toc.push([s.id, tit, num, bloco]);
-    out += `<section class="res-sec rp-s" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}"><h3>${num ? `<span class="sn">${num}</span>` : ''}<span>${esc(tit)}</span></h3>${htmlCorpoP(s)}`;
+    // na página, tabelas e listas longas ficam recolhidas (o PDF e as exportações mostram tudo); premissas e glossário ficam abertos
+    const longa = !s.det && !s.eq && !s.aberto && (((s.table || {}).rows || []).length > 14 || (s.list || []).length > 10);
+    if (s.det || longa) return wrap(`<details class="mais"><summary>${esc(s.det || s.h)}${longa ? ` <span class="rp-n">${(((s.table || {}).rows || []).length || (s.list || []).length)}</span>` : ''}</summary><div class="mais-in">${htmlCorpoP(s)}</div></details>`);
+    return wrap(`${s.h ? `<h4>${esc(s.h)}</h4>` : ''}${htmlCorpoP(s)}`);
+  };
+  let aberta = false, anexos = false;
+  const fecha = () => { if (aberta) { out += '</section>'; aberta = false; } };
+  secs.forEach(s => {
+    if (s.tipo === 'sintese') {
+      toc.push(['sintese', s.h, '', '']);
+      out += `<section class="rp-sec rp-sintese" id="plano-sintese" data-sec="sintese" data-toc="sintese" aria-labelledby="plano-sintese-t">${cabP('', s.h, (s.p || [])[0], 'plano-sintese')}${htmlSinteseP(s)}</section>`;
+    } else if (s.tipo === 'caixa') {
+      out += `<aside class="rp-comoler" id="plano-comoler" data-sec="comoler" aria-labelledby="plano-comoler-t"><h3 id="plano-comoler-t">${esc(s.h)}</h3><ul>${s.list.map(z => `<li>${esc(z)}</li>`).join('')}</ul></aside>`;
+    } else if (s.tipo === 'faltas' && s.curta) {
+      out += `<div class="rp-item" id="plano-faltas" data-sec="faltas" data-toc="faltas">${htmlFaltasP(s)}</div>`;
+    } else if (s.tipo === 'princ') {
+      fecha(); toc.push([s.id, s.rotulo, s.num, '']);
+      out += `<section class="rp-sec rp-princ-sec" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}" aria-labelledby="plano-${s.id}-t">${cabP(s.num, s.h, '', 'plano-' + s.id, s.rotulo)}`; aberta = true;
+    } else if (s.tipo === 'anexos') {
+      fecha(); anexos = true; toc.push(['anexos', s.h, '', '']);
+      out += `<div class="rp-anexos" id="plano-anexos" data-sec="anexos" data-toc="anexos"><header class="rp-cab"><div class="rp-cab-t"><h3 id="plano-anexos-t">${esc(s.h)}</h3><p class="rp-abre">${esc((s.p || [])[0] || '')}</p></div></header>`;
+    } else if (s.tipo === 'anexo') {
+      fecha(); toc.push([s.id, s.h, s.letra, 'anexos']);
+      out += `<section class="rp-sec rp-anexo" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}" data-pai="anexos" aria-labelledby="plano-${s.id}-t"><header class="rp-cab"><span class="rp-num" aria-hidden="true">${esc(s.letra)}</span><div class="rp-cab-t"><p class="rp-rot">${esc(tr('Anexo {0}').replace('{0}', s.letra))}</p><h3 id="plano-${s.id}-t">${esc(s.h)}</h3></div></header>`; aberta = true;
+    } else out += itemP(s);
   });
-  fechaBloco();
-  // respostas que faltam, no fim, com "Responder"
-  if (P.faltas) {
-    const s = P.faltas;
-    out += secP('faltas', '', s.h, '', `<div class="parcial" id="plano-faltas-lista"><p><b>${esc(s.p[0])}</b> ${esc(s.p[1] || '')}</p><ul class="req">${s.list.map((z, i) => `<li><span>${esc(z)}</span> ${s.irs[i] ? `<button type="button" class="link" data-ir="${esc(s.irs[i])}">${esc(tr('Responder'))}</button>` : ''}</li>`).join('')}</ul></div>`, 'rp-faltas');
-  }
+  fecha();
+  if (anexos) out += '</div>';
 
   // índice (coluna fixa a partir de 1100 px; faixa de fichas em telas menores)
   const tops = toc.filter(z => !z[3]);
   const indice = `<nav class="rp-indice" aria-label="${esc(tr('Seções do plano'))}"><p class="rp-ind-t">${esc(tr('Neste plano'))}</p><ol>${tops.map(([id, h, num]) => {
-    const filhos = toc.filter(z => z[3] && 'bloco-' + z[3] === id);
+    const filhos = toc.filter(z => z[3] && z[3] === id);
     return `<li data-toc-li="${id}"><a href="#plano-${id}" data-toc-l="${id}">${num ? `<span class="rp-in">${esc(num)}</span>` : ''}<span class="rp-il">${esc(h)}</span></a>${filhos.length ? `<ol>${filhos.map(([fid, fh, fn]) => `<li><a href="#plano-${fid}" data-toc-l="${fid}"><span class="rp-in">${esc(fn)}</span><span class="rp-il">${esc(fh)}</span></a></li>`).join('')}</ol>` : ''}</li>`;
   }).join('')}</ol></nav>`;
 
@@ -970,7 +954,8 @@ function montarPlano() {
     }
     if (atual.id === id) return;
     atual.id = id;
-    const pai = (/^[AB]\d$/.test(id) ? 'bloco-' + id[0] : id);
+    const elAtual = alvos.find(a => a.dataset.toc === id);
+    const pai = (elAtual && elAtual.dataset.pai) || id;
     links.forEach(l => { const on = l.dataset.tocL === id || l.dataset.tocL === pai; l.classList.toggle('on', on); if (l.dataset.tocL === id) l.setAttribute('aria-current', 'location'); else l.removeAttribute('aria-current'); });
     P.querySelectorAll('[data-toc-li]').forEach(li => li.classList.toggle('aberto', li.dataset.tocLi === pai));
     // faixa de fichas: mantém a ficha atual visível sem mexer na rolagem vertical

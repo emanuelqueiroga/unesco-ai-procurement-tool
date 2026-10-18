@@ -1,4 +1,5 @@
 # Plano de contratação (v9, pacote P3): página e PDF.
+# v14 (BL6): as asserções de estrutura seguem a ordem de decisão (resumo, "Como ler", seções 1 a 5, anexos A a I); ver tests/test_v14_relatorio.py.
 # Uso: python3 tests/test_v9_plano.py   (depois de bash build.sh)
 # Verifica, para os exemplos A–D e um caso em branco:
 #  - o botão [data-act="gerar-plano"] abre #plano;
@@ -77,17 +78,18 @@ async def main():
                   const blocos = [...P.querySelectorAll('[data-bloco]')].map(e => e.textContent.trim());
                   const a3 = P.querySelector('[data-sec="A3"] table tbody');
                   return { vista: S.vista, ordem, blocos, texto: P.innerText,
+                    perguntas: [...P.querySelectorAll('.rp-princ-sec .rp-rot')].map(e => e.textContent.trim()),
                     a3linhas: a3 ? a3.rows.length : 0, a3link: !!P.querySelector('[data-sec="A3"] a[href="%s"]'),
-                    a1: (P.querySelector('[data-sec="A1"]') || {}).innerText || '', a2: (P.querySelector('[data-sec="A2"]') || {}).innerText || '',
+                    a1: (P.querySelector('[data-sec="A1"]') || {}).innerText || '', a2: (P.querySelector('[data-sec="anexo-d"]') || {}).innerText || '',
                     formula: typeof secaoFormula === 'function',
-                    resumo: (P.querySelector('[data-sec="perfil"]') || {}).innerText || '', recsH: (P.querySelector('[data-sec="recs"] h3') || {}).innerText || '',
-                    capa: (P.querySelector('.rp-capa') || {}).textContent || '', kpis: P.querySelectorAll('[data-sec="resumo"] .rp-kpi').length,
-                    barras: P.querySelectorAll('[data-sec="resumo"] .rp-bar svg').length, cols: P.querySelectorAll('[data-sec="resumo"] .rp-col svg').length,
-                    cartoes: P.querySelectorAll('[data-sec="perfil"] .rp-card').length, topo: P.querySelectorAll('[data-sec="recs"] .rp-tc').length,
-                    altas: P.querySelectorAll('[data-sec="recs"] .rc-item[data-prio="alta"]').length,
+                    resumo: (P.querySelector('[data-sec="resumo"]') || {}).innerText || '', recsH: (P.querySelector('[data-sec="anexo-c"] h3') || {}).innerText || '',
+                    capa: (P.querySelector('.rp-capa') || {}).textContent || '', kpis: P.querySelectorAll('[data-sec="sintese"] .rp-kpi').length,
+                    barras: P.querySelectorAll('[data-grafico="camadas"] .rp-bar').length, cols: P.querySelectorAll('[data-grafico="fases"] .rg-col').length,
+                    cartoes: P.querySelectorAll('[data-sec="resumo"] .rp-card').length, topo: P.querySelectorAll('[data-sec="sintese"] .rp-tc').length,
+                    altas: P.querySelectorAll('[data-sec="recs"] .rc-item[data-prio="alta"]').length, nRecs: P.querySelectorAll('[data-sec="recs"] .rc-item').length,
                     painel: getComputedStyle(document.getElementById('painel')).display, indice: P.querySelectorAll('.rp-indice a[data-toc-l]').length,
                     barra: [...P.querySelectorAll('.rp-barra [data-act]')].map(b => b.dataset.act),
-                    faltasFim: (() => { const f = P.querySelector('[data-sec="faltas"]'); const r = P.querySelector('[data-sec="refs"]'); return !f || (r && (r.compareDocumentPosition(f) & 4) > 0); })(),
+                    faltasFim: (() => { const f = [...P.querySelectorAll('[data-sec="faltas"]')]; const a = P.querySelector('[data-sec="anexo-a"]'); const s1 = P.querySelector('[data-sec="s1"]'); return !f.length || (f.length === 2 && (s1.compareDocumentPosition(f[0]) & 2) > 0 && !!a && a.contains(f[1])); })(),
                     minFonte: (() => { let m = 99, q = ''; P.querySelectorAll('*').forEach(e => { if (!e.childNodes.length || ![...e.childNodes].some(n => n.nodeType === 3 && n.data.trim())) return; const r = e.getBoundingClientRect(); if (!r.width) return; const f = parseFloat(getComputedStyle(e).fontSize); if (f < m) { m = f; q = e.className + ' ' + e.textContent.slice(0, 30); } }); return [m, q]; })(),
                     fig: (() => { const f = P.querySelector('[data-sec="A3"] figure img, [data-sec="A3"] ~ figure img, #plano-fig-tco img'); const sec = f && f.closest('section'); return f ? { ok: f.complete && f.naturalWidth === 900 && f.naturalHeight === 1225, w: f.getBoundingClientRect().width, sec: sec ? sec.dataset.sec : '', cap: (f.closest('figure').querySelector('figcaption') || {}).innerText || '' } : null; })(),
                     temFig: typeof FIG_TCO !== 'undefined',
@@ -96,30 +98,30 @@ async def main():
                 ok(r is not None and r['vista'] == 'plano', f'{tag} {ex}: #plano aberto pelo botão')
                 if not r: continue
                 o = r['ordem']
-                ok(o.index('[A]') < o.index('[B]') if '[A]' in o and '[B]' in o else False, f'{tag} {ex}: bloco A antes do bloco B')
-                ok([re.sub(r'^[AB]\.?\s*', '', re.sub(r'^([AB])\1', r'\1', b)) for b in r['blocos'][:2]] == ['Custo e compra', 'Política e governança'], f'{tag} {ex}: nomes dos blocos {r["blocos"][:2]}')
-                ok([s for s in o if s in SECOES] == SECOES and 'A8' not in o, f'{tag} {ex}: seções A1–A7 e B1–B9 em ordem')
-                ok(all(o.index(s) > o.index('[A]') for s in SECOES[:7]) and all(o.index(s) > o.index('[B]') for s in SECOES[7:]), f'{tag} {ex}: seções dentro dos blocos')
+                ok(['sintese', 'comoler', 's1', 's2', 's3', 's4', 's5', 'anexos', 'anexo-a'] == [x for x in o if x in ('sintese', 'comoler', 's1', 's2', 's3', 's4', 's5', 'anexos', 'anexo-a')], f'{tag} {ex}: resumo, "Como ler", seções 1 a 5 e anexos em ordem de decisão')
+                ok(r['perguntas'] == ['O que se compra', 'O que custa e quando', 'O que pode mudar o custo', 'O que exigir na contratação', 'Que governança é necessária'], f'{tag} {ex}: perguntas das cinco seções {r["perguntas"]}')
+                ok(sorted(x for x in o if x in SECOES) == sorted(SECOES) and 'A8' not in o, f'{tag} {ex}: o conteúdo de A1–A7 e B1–B9 continua presente (no corpo ou nos anexos)')
+                ok(all(o.index(x) < o.index('anexos') for x in ['A1', 'A4', 'A5', 'A6', 'B1', 'B2', 'B3', 'B5', 'B6', 'B8']) and all(o.index(x) > o.index('anexos') for x in ['A2', 'A3', 'A7', 'B4', 'B7', 'B9']), f'{tag} {ex}: o essencial no corpo e o detalhe nos anexos')
                 ok('Fonte de recursos' not in r['texto'] and 'Quem paga depois do teste' not in r['texto'], f'{tag} {ex}: sem fonte de recursos')
-                faltam = [k for k in RESUMO_V11 if k not in r['resumo']]
+                faltam = [k for k in RESUMO_V11 if k not in r['resumo']] if ex != 'novo' else []   # v14: o que não foi respondido está na lista de respostas que faltam, não nos cartões
                 ok(not faltam, f'{tag} {ex}: resumo com os campos v11 (faltam {faltam})')
-                ok(r['recsH'] == 'Recomendações para você', f'{tag} {ex}: título "Recomendações para você" ({r["recsH"]})')
+                ok(r['recsH'] == 'Recomendações, por momento', f'{tag} {ex}: anexo C "Recomendações, por momento" ({r["recsH"]})')
                 if r['temFig']:
-                    ok(r['fig'] is not None and r['fig']['sec'] == 'A3' and r['fig']['ok'], f'{tag} {ex}: Figura 1 na seção A3 ({r["fig"] and {k: v for k, v in r["fig"].items() if k != "cap"}})')
+                    ok(r['fig'] is not None and r['fig']['sec'] == 'anexo-e' and r['fig']['ok'], f'{tag} {ex}: Figura 1 no anexo E (antes seção A3) ({r["fig"] and {k: v for k, v in r["fig"].items() if k != "cap"}})')
                     ok(r['fig'] is not None and r['fig']['cap'] == CREDITO, f'{tag} {ex}: legenda e crédito da Figura 1')
                     ok(r['fig'] is not None and r['fig']['w'] <= w - 20, f'{tag} {ex}: figura cabe na largura ({r["fig"] and r["fig"]["w"]})')
                 else: ok(False, f'{tag} {ex}: FIG_TCO no build')
-                ok('recs' in o and 'resumo' in o and o.index('resumo') < o.index('recs') < o.index('perfil') < o.index('[A]'), f'{tag} {ex}: Em resumo, recomendações e perfil do caso antes do bloco A ({o[:4]})')
+                ok('recs' in o and 'resumo' in o and 'matriz' in o and o.index('anexo-a') < o.index('resumo') < o.index('anexo-b') < o.index('matriz') < o.index('anexo-c') < o.index('recs'), f'{tag} {ex}: perfil do caso (anexo A), matriz (B) e recomendações (C) nos anexos ({o[-12:]})')
                 # v13: matriz do caso logo depois de "Em resumo"; cartão "Prioridade e impacto" (antes "Problema e impacto")
-                ok('matriz' in o and o.index('resumo') < o.index('matriz') < o.index('recs'), f'{tag} {ex}: matriz do caso entre "Em resumo" e as recomendações')
-                ok('Prioridade e impacto' in r['resumo'] and 'Problema e impacto' not in r['resumo'], f'{tag} {ex}: cartão "Prioridade e impacto"')
+                ok(o[0] == 'sintese' and o.index('sintese') < o.index('s1') and 'matriz' in o, f'{tag} {ex}: "Em resumo" abre o relatório e a matriz do caso está no anexo B')
+                ok(('Prioridade e impacto' in r['resumo'] or ex == 'novo') and 'Problema e impacto' not in r['resumo'], f'{tag} {ex}: cartão "Prioridade e impacto"')
                 ok('Recomendação principal' in r['capa'] and 'não da UNESCO' in r['capa'] and 'Plano de contratação' in r['capa'], f'{tag} {ex}: capa com recomendação principal e isenção')
-                ok(r['kpis'] == 4 and r['barras'] == 7 and r['cols'] >= 4, f'{tag} {ex}: Em resumo com 4 KPIs, 7 barras e colunas por exercício ({r["kpis"]}, {r["barras"]}, {r["cols"]})')
-                ok(r['cartoes'] >= 7, f'{tag} {ex}: perfil do caso em cartões ({r["cartoes"]})')
-                ok(r['topo'] == min(5, r['altas']), f'{tag} {ex}: {r["topo"]} cartões de prioridade alta ({r["altas"]} altas)')
+                ok(r['kpis'] == 3 and r['barras'] == 7 and r['cols'] >= 4, f'{tag} {ex}: Em resumo com 3 indicadores (o TCO tem cartão próprio), gráfico de 7 camadas e colunas por ano ({r["kpis"]}, {r["barras"]}, {r["cols"]})')
+                ok(r['cartoes'] >= 7 or ex == 'novo', f'{tag} {ex}: perfil do caso em cartões ({r["cartoes"]})')
+                ok(r['topo'] == min(5, r['nRecs']), f'{tag} {ex}: {r["topo"]} cartões das cinco ações mais importantes ({r["nRecs"]} ações)')
                 ok(r['painel'] == 'none', f'{tag} {ex}: painel lateral escondido na vista do plano')
-                ok(r['indice'] >= 6 and r['barra'][:2] == ['pdf', 'voltar-percurso'] and 'copiar' in r['barra'] and 'imp-json' in r['barra'], f'{tag} {ex}: índice ({r["indice"]}) e barra de ações {r["barra"]}')
-                ok(r['faltasFim'], f'{tag} {ex}: respostas que faltam no fim')
+                ok(r['indice'] >= 14 and r['barra'][:2] == ['pdf', 'voltar-percurso'] and 'copiar' in r['barra'] and 'imp-json' in r['barra'], f'{tag} {ex}: índice ({r["indice"]}) e barra de ações {r["barra"]}')
+                ok(r['faltasFim'], f'{tag} {ex}: respostas que faltam: lista curta antes da seção 1 e lista completa no anexo A')
                 ok(r['minFonte'][0] >= 13.75, f'{tag} {ex}: nenhum texto abaixo de .86rem ({r["minFonte"]})')
                 if r['formula']: ok('Como o custo é calculado' in r['a2'] and 'As contas de cada ano' in r['a2'], f'{tag} {ex}: A2 com a fórmula do custo')
                 ok('Suas respostas' not in r['texto'], f'{tag} {ex}: sem "Suas respostas"')
@@ -138,15 +140,15 @@ async def main():
               ['piloto','piloto.escolas','piloto.participantes','piloto.meses','setup','tipoTec','pagamento'].forEach(k=>{S.respC[k]=true;});
               S.custo.editado=false; S.vista=''; render();})()""")
             await pg.locator('[data-act="gerar-plano"]:visible').first.click(); await pg.wait_for_timeout(250)
-            r = await pg.evaluate("""(()=>{const P=document.getElementById('plano'); const tr=[...P.querySelectorAll('[data-sec=perfil] .rp-kv')].find(t=>/^Piloto: escolas/.test(t.querySelector('dt').innerText));
+            r = await pg.evaluate("""(()=>{const P=document.getElementById('plano'); const tr=[...P.querySelectorAll('[data-sec=resumo] .rp-kv')].find(t=>/^Piloto: escolas/.test(t.querySelector('dt').innerText));
               return {esc: tr ? tr.querySelector('dd').innerText : '', a1: P.querySelector('[data-sec=A1]').innerText, a3: P.querySelector('[data-sec=A3]').parentElement.innerText,
-                a2: (P.querySelector('[data-sec=A2] .kpi-nota')||{}).innerText||'', prem: P.querySelector('[data-sec=A2]').textContent}})()""")
+                a2: (P.querySelector('[data-sec=A2]')||{}).innerText||'', prem: P.querySelector('[data-sec=anexo-g]').textContent}})()""")
             ok(r['esc'].startswith('20 escolas'), f'{tag} resumo mostra as escolas digitadas com "recomende" ({r["esc"]})')
             ok('descreve um piloto' in r['a1'] and '2.3.8' in r['a1'] if 'prova de conceito.' in r['a1'] else True, f'{tag} A1 avisa que o setup descreve um piloto quando recomenda só a prova de conceito')
             ok('licença institucional só compensa' not in r['a3'], f'{tag} A3 sem ponto de equilíbrio com licença por usuário')
             ok('premissas padrão' in r['a2'], f'{tag} A2 rotula estimativa com premissas padrão')
             # v10: com a fórmula (formula.js), preço e origem ficam em "De onde vêm os números"
-            ok(('Preço da licença por usuário por mês' in r['prem'] and 'Premissas de partida' in r['prem']) or ('Preço da licença:' in r['prem'] and 'Preços e quantidades de partida' in r['prem']), f'{tag} A2 lista preço da licença e exemplo de origem')
+            ok('Preço da licença' in r['prem'] and 'Fonte e ano' in r['prem'], f'{tag} anexo G (premissas) lista o preço da licença com a origem')
             # v12: figura de A3 em miniatura e visualizador sobre a página
             v = await pg.evaluate("""(()=>{const f=document.querySelector('#plano-fig-tco'); const b=f && f.parentElement.querySelector('.fig-amp');
               return {img: f ? f.querySelector('img').getBoundingClientRect().width : 0, btn: !!b, velho: document.querySelectorAll('#plano [data-fig]').length};})()""")
@@ -184,7 +186,7 @@ async def main():
                         txt = subprocess.run(['pdftotext', '-layout', arq, '-'], capture_output=True, text=True).stdout
                         plano = re.sub(r'\s+', ' ', txt)
                         if lang == 'en':
-                            for s in ['Procurement plan', 'Recommendations for you', 'Cost and procurement', 'Policy and governance', URL_TCO]:
+                            for s in ['Procurement plan', 'Recommendations, by moment', 'What to require in the procurement', 'What governance is needed', 'Annex E', URL_TCO]:
                                 ok(s in plano, f'pdf en {ex}: contém "{s}"')
                             ok('Recommendations for your case' not in plano and 'Funding source' not in plano and 'Source of funds' not in plano, f'pdf en {ex}: sem título antigo nem fonte de recursos')
                             # Figura 1 numa página própria: JPEG 900×1225 sozinho na página, com o crédito na mesma página
@@ -196,16 +198,16 @@ async def main():
                                 tp = subprocess.run(['pdftotext', '-layout', '-f', str(pag), '-l', str(pag), arq, '-'], capture_output=True, text=True).stdout
                                 ok('CC BY-SA 3.0 IGO' in tp and 'Figure 1' in tp and 'reproduced without changes' in tp, f'pdf en {ex}: crédito da figura na página {pag}')
                                 ok(len([l for l in tp.split('\n') if l.strip()]) <= 8, f'pdf en {ex}: página da figura só com título, figura, legenda e rodapé')
-                                antes = subprocess.run(['pdftotext', '-layout', '-f', '1', '-l', str(pag - 1), arq, '-'], capture_output=True, text=True).stdout
-                                ok('A3.' in antes and 'A4.' not in antes, f'pdf en {ex}: figura logo depois de A3')
-                            ok('Cost and procurement' in plano and 'Policy and governance' in plano and plano.index('Cost and procurement') < plano.index('Policy and governance'), f'pdf en {ex}: bloco A antes do B')
+                                antes = subprocess.run(['pdftotext', '-layout', '-f', '3', '-l', str(pag - 1), arq, '-'], capture_output=True, text=True).stdout
+                                ok('ANNEX E' in antes.upper() and 'ANNEX F' not in antes.upper(), f'pdf en {ex}: figura no anexo E, antes do anexo F')
+                            ok('What to require in the procurement' in plano and 'What governance is needed' in plano and plano.index('What to require in the procurement') < plano.index('What governance is needed'), f'pdf en {ex}: seção 4 (contratação) antes da seção 5 (governança)')
                             pend = await pg.evaluate(PEND_MATRIZ)
                             if pend: print(f'aviso pdf en {ex}: {len(pend)} textos de src/matriz.js sem tradução; páginas da matriz fora da busca')
                             txtPT = sem_matriz(arq, await pg.evaluate("tr(TIT_MATRIZ)")) if pend else txt
                             resto = [l.strip() for l in txtPT.split('\n') if PT.search(l) and 'Cátedra' not in l and 'Desplugada' not in l]
                             ok(not resto, f'pdf en {ex}: sem português ({len(resto)}) {resto[:5]}')
                         else:
-                            ok('Plano de contratação' in plano and 'Custo e compra' in plano and URL_TCO in plano, f'pdf pt {ex}: título, bloco A e URL')
+                            ok('Plano de contratação' in plano and 'O que exigir na contratação' in plano and URL_TCO in plano, f'pdf pt {ex}: título, seção 4 e URL')
             ok(not errs, f'{tag}: sem erros de console {errs[:5]}')
             await ctx.close()
         await b.close()

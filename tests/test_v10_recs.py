@@ -184,13 +184,13 @@ async def main():
             r = await pg.evaluate("""(()=>{const P=document.getElementById('plano'); if(!P) return null;
               const o=[...P.querySelectorAll('[data-bloco], [data-sec]')].map(e=>e.dataset.bloco ? '['+e.dataset.bloco+']' : e.dataset.sec);
               const R=P.querySelector('[data-sec="recs"]');
-              return {o, itens: R ? R.querySelectorAll('.rc-item').length : -1, irs: R ? R.querySelectorAll('[data-ir]').length : -1, txt: R ? R.innerText : ''};})()""")
+              return {o, irsTopo: P.querySelectorAll('[data-sec="sintese"] .rp-tc [data-ir]').length, topo: P.querySelectorAll('[data-sec="sintese"] .rp-tc').length, itens: R ? R.querySelectorAll('.rc-item').length : -1, irs: R ? R.querySelectorAll('[data-ir]').length : -1, txt: R ? R.innerText : ''};})()""")
             o = r['o'] if r else []
-            ok('recs' in o and 'resumo' in o and '[A]' in o and o.index('resumo') < o.index('recs') < o.index('[A]'), f'plano {ex}: seção de recomendações depois do resumo e antes do bloco A')
-            ok(r and r['itens'] == n and r['irs'] == n, f'plano {ex}: {r and r["itens"]} itens com "Ir à pergunta" ({n})')
+            ok('recs' in o and 'sintese' in o and 'anexo-c' in o and o.index('sintese') < o.index('anexo-c') < o.index('recs') and r['topo'] == min(5, n), f'plano {ex}: cinco ações no resumo ({r["topo"]}) e lista completa no anexo C')
+            ok(r and r['itens'] == max(0, n - 5) and r['irs'] == r['itens'] and r['irsTopo'] == min(5, n), f'plano {ex}: {r and r["itens"]} itens no anexo C e {r and r["irsTopo"]} no resumo, cada um com "Ir à pergunta" ({n} no total)')
             if ex == 'novo': ok('Ainda não há respostas suficientes' in r['txt'], 'plano novo: mensagem de lista vazia')
             md = await pg.evaluate("relMD(dadosRelatorio())")
-            ok('## Recomendações para você' in md and md.index('## Recomendações para você') < md.index('## A. Custo e compra'), f'plano {ex}: Markdown com a seção antes do bloco A')
+            ok('## Anexo C. Recomendações, por momento' in md and md.index('## Em resumo') < md.index('## 1. O que se compra') < md.index('## Anexo C.') < md.index('## Anexo D.') and '## undefined' not in md, f'plano {ex}: Markdown com resumo, seções 1 a 5 e anexo C')
             if ex == 'D':
                 await pg.screenshot(path=f'{TMP}/plano_D.png')
                 await pg.locator('[data-sec="recs"] [data-ir]').first.click(); await pg.wait_for_timeout(250)
@@ -207,7 +207,7 @@ async def main():
             ok(not re.search(r'\bnetwork', t34, re.I), f'en {ex}: 4.3 sem "network"')
             await abrir_plano(pg)
             tp = await pg.evaluate("(document.querySelector('#plano [data-sec=recs]')||{}).innerText||''")
-            ok('Recommendations for you' in tp and 'for your case' not in tp and not resto_pt(tp), f'en {ex}: seção do plano em inglês {resto_pt(tp)[:3]}')
+            ok('Recommendations for you' in tp and 'for your case' not in tp and not resto_pt(tp), f'en {ex}: anexo C do plano em inglês {resto_pt(tp)[:3]}')
             ok(not re.search(r'\bnetwork', tp, re.I), f'en {ex}: seção do plano sem "network"')
             async with pg.expect_download() as dl:
                 await pg.click('#plano .res-topo [data-act="pdf"]')
@@ -215,10 +215,10 @@ async def main():
             arq = f'{TMP}/recs_en_{ex}.pdf'; await d.save_as(arq)
             txt = subprocess.run(['pdftotext', '-layout', arq, '-'], capture_output=True, text=True).stdout
             plano = re.sub(r'\s+', ' ', txt)
-            ok('Recommendations for you' in plano and 'Cost and procurement' in plano and plano.index('Recommendations for you') < plano.index('Cost and procurement'), f'pdf en {ex}: seção antes do bloco A')
+            ok('Recommendations, by moment' in plano and 'What governance is needed' in plano and plano.rindex('Recommendations, by moment') > plano.index('What governance is needed'), f'pdf en {ex}: lista completa no anexo C, depois do corpo')
             ok('Before the test' in plano or 'Before contracting' in plano, f'pdf en {ex}: grupos por momento')
             # português: só no trecho da seção (o PDF inteiro é verificado por test_v9_plano.py)
-            i0 = txt.find('Recommendations for you'); i1 = txt.find('Cost and procurement', i0)
+            i0 = txt.rfind('Recommendations, by moment'); i1 = txt.find('ANNEX D', i0)
             trecho = txt[i0:i1] if i0 >= 0 and i1 > i0 else txt
             ok(not resto_pt(trecho), f'pdf en {ex}: seção sem português {resto_pt(trecho)[:3]}')
             if ex == 'D': ok('free period ends' in plano, 'pdf en D: ação do fim do período gratuito')

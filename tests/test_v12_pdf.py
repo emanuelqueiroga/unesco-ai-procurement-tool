@@ -1,19 +1,16 @@
-# PDF do plano de contratação com design próprio (v12, pacote G2: src/plano_pdf.js).
+# PDF do plano de contratação com design próprio (v12, pacote G2: src/plano_pdf.js; v14, BL6: ordem de decisão).
 # Uso: python3 tests/test_v12_pdf.py   (depois de bash build.sh)
 # Para os exemplos A–D e um caso em branco em EN, B e o caso em branco em PT e C em FR, baixa o PDF pelo botão
 # do plano (expect_download) e verifica:
-#  - nome procurement-plan-<slug>.pdf; número de páginas razoável (12 a 40);
-#  - capa: nome da ferramenta, "Plano de contratação", nome do caso, "Recomendação principal", 4 KPIs iguais a
-#    numerosCusto() (grande(ano0), grande(total), grande(anual), din(porAluno, 2)) e índice "Neste plano";
-#  - "Em resumo" (p. 2): os mesmos KPIs, 7 barras de camada nas cores da Figura 1 com largura proporcional ao
-#    custo total da camada (somaPorCamada), rótulos, valores e % das camadas, valores das colunas por exercício
-#    iguais à dotação do passo 4.2 (mil(orc.dot[t])), fatos do caso; caso em branco: aviso "Plano parcial";
-#  - "Recomendações para você" antes do bloco A; índice da capa aponta para as páginas certas;
-#  - faixas dos blocos A e B (página própria, A antes de B) e as seções A1–A7 e B1–B9 em ordem;
-#  - Figura 1 (JPEG 900×1225) numa página própria entre A3 e A4, com o crédito;
+#  - nome procurement-plan-<slug>.pdf; número de páginas razoável (10 a 40);
+#  - página 1 (v14): nome da ferramenta, "Plano de contratação", nome do caso, "Recomendação principal" e os indicadores
+#    iguais aos do motor (TCO central, custo por aprendiz/professor/usuário, Ano 0 e custo anual em regime);
+#  - página 2: "Como ler este plano" e o índice "Neste plano", que aponta para as páginas certas (cinco seções e anexos A a I);
+#  - corpo em ordem de decisão: as cinco perguntas em ordem crescente de página, antes de "Anexos"; sem códigos A1–B9 nem K1–K6 no corpo;
+#  - anexos A a I em ordem; matriz do caso (anexo B) em duas páginas retrato, com o crédito; recomendações (C); perfil (A);
+#  - Figura 1 (JPEG 900×1225) numa página própria dentro do anexo E, com o crédito;
 #  - cabeçalho com título corrido e rodapé "n / N" em todas as páginas internas;
 #  - nenhum tamanho de fonte abaixo de 8 pt;
-#  - v13: matriz do caso em duas páginas retrato entre "Em resumo" e as recomendações, com o crédito, e no índice da capa;
 #  - EN: nenhuma palavra em português (mesma expressão do test_idiomas.py) nem magnitude "mil/mi/bi" (páginas da
 #    matriz fora da busca enquanto os textos de src/matriz.js não tiverem tradução).
 import asyncio, os, re, subprocess, sys
@@ -53,27 +50,18 @@ def pag_de(P, s, desde=1):
 # Dados esperados, calculados na página com as mesmas funções, e inspeção do conteúdo de cada página do PDF
 # (doc.internal.pages: operadores de cor, retângulos e tamanhos de fonte)
 JS = r"""(() => {
-  const n = numerosCusto(); const cam = n.camadas || somaPorCamada(n.av);
-  const tr_ = s => tr(s);
+  const n = numerosCusto(); const tco = n.av.tco;
+  const apr = tco.custoPorAprendizAno != null ? tco.custoPorAprendizAno : tco.custoPorProfessorAno != null ? tco.custoPorProfessorAno : n.ind.icu;
   const doc = gerarPDF();
   const pags = doc.internal.pages.slice(1).map(p => (p || []).join('\n'));
-  const cores = [1,2,3,4,5,6,7].map(k => { const d = new window.jspdf.jsPDF({ unit: 'pt' }); d.setFillColor(...PDF_COR.camadas[k]);
-    const L = d.internal.pages[1]; return L[L.length - 1]; });
-  const vals = [1,2,3,4,5,6,7].map(k => cam.total[k] || 0);
-  const tot = vals.reduce((a, b) => a + b, 0);
   const tamanhos = [...new Set(pags.join('\n').match(/ [\d.]+ Tf/g) || [])].map(z => +z.trim().split(' ')[0]);
-  // retângulo desenhado logo depois de cada cor de camada na página 2
-  const p2 = pags[1] || '';
-  const barras = cores.map(c => { const i = p2.indexOf(c + '\n'); if (i < 0) return null;
-    const m = p2.slice(i + c.length + 1, i + c.length + 120).match(/^([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+) re/); return m ? Math.abs(+m[3]) : null; });
-  return { kpis: [grande(n.ano0), grande(n.total), grande(n.anual), din(n.porAluno, 2)],
-    camadas: [1,2,3,4,5,6,7].map(k => ({ rot: k + '. ' + tr(nomeCamada(k)), v: grande(vals[k - 1]), p: pct(tot ? vals[k - 1] / tot : 0), val: vals[k - 1] })),
-    dot: n.av.r.anos.map(a => mil(n.orc.dot[a] || 0)), barras, tamanhos,
-    nome: S.caso.titulo || (S.ctx || {}).olhando || tr('Caso sem título'), faltas: (faltasTodas() || []).length,
-    t: { ferr: NOME_FERRAMENTA, sub: tr('Plano de contratação'), rec: tr('Recomendação principal'), resumo: tr('Em resumo'), recs: tr('Recomendações para você'),
-      perfil: tr('Perfil do caso'), matriz: tr(TIT_MATRIZ), credito: tr(CREDITO_MATRIZ), A: 'A. ' + tr(TIT_PLANO.A), B: 'B. ' + tr(TIT_PLANO.B), indice: tr('Neste plano'), fatos: tr('Fatos do caso'),
-      barras: tr('Custo por camada'), colunas: tr('Dotação por exercício'), faltas: tr(TIT_PLANO.faltas), refs: tr(TIT_PLANO.refs),
-      parcial: n ? tr('Plano parcial: {0} respostas pendentes.'.replace('{0}', (faltasTodas() || []).length)) : '' } };
+  const anexo = L => tr('Anexo {0}').replace('{0}', L);
+  return { kpis: [grande(n.total), din(apr, 2), grande(n.ano0), grande(tco.anual.eco)],
+    tamanhos, nome: S.caso.titulo || (S.ctx || {}).olhando || tr('Caso sem título'), faltas: (faltasTodas() || []).length,
+    q: [TXT_REL.q1, TXT_REL.q2, TXT_REL.q3, TXT_REL.q4, TXT_REL.q5].map(x => tr(x)),
+    anexos: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'].map(L => anexo(L)), tAnexos: tr(TXT_REL.anexos),
+    t: { ferr: NOME_FERRAMENTA, sub: tr('Plano de contratação'), rec: tr('Recomendação principal'), comoler: tr(TXT_REL.comoLer), matriz: tr(TIT_MATRIZ), credito: tr(CREDITO_MATRIZ),
+      indice: tr('Neste plano'), faltas: tr(TXT_REL.faltasDemais), refs: tr(TIT_PLANO.refs), faixa: tr(TXT_REL.kTcoFaixa).split('{0}')[0].trim() } };
 })()"""
 
 async def main():
@@ -97,52 +85,50 @@ async def main():
                 ok(re.fullmatch(r'procurement-plan-[a-z0-9-]+\.pdf', d.suggested_filename) is not None, f'{tag}: nome {d.suggested_filename}')
                 E = await pg.evaluate(JS); T = {k: norm(v) for k, v in E['t'].items()}
                 P = paginas(arq); N = len(P)
-                ok(12 <= N <= 40, f'{tag}: {N} páginas')
-                # capa
+                ok(10 <= N <= 40, f'{tag}: {N} páginas')
+                # página 1
                 c = P[0]; cu = c.upper()
-                ok(T['ferr'] in c and T['sub'] in c and norm(E['nome'])[:30] in c, f'{tag}: capa com ferramenta, subtítulo e caso')
-                ok(T['rec'].upper() in cu, f'{tag}: capa com a recomendação principal')
-                ok(all(norm(k) in c for k in E['kpis']), f'{tag}: capa com os 4 KPIs de numerosCusto() {E["kpis"]}')
-                ok(T['indice'].upper() in cu, f'{tag}: capa com o índice')
-                # Em resumo
+                ok(T['ferr'] in c and T['sub'].upper() in cu and norm(E['nome'])[:30] in c, f'{tag}: página 1 com ferramenta, subtítulo e caso')
+                ok(T['rec'].upper() in cu, f'{tag}: página 1 com a recomendação principal')
+                ok(all(norm(k) in c for k in E['kpis']), f'{tag}: página 1 com os indicadores do motor {E["kpis"]}')
+                ok(T['faixa'] in c and 'P10' in c and 'P90' in c, f'{tag}: página 1 com a faixa P10 a P90')
+                ok(c.count(' 1 ') >= 0 and len(re.findall(r'\b[1-5] ', c)) >= 1, f'{tag}: página 1 com as ações numeradas')
+                # página 2: "Como ler" e o índice
                 r = P[1]
-                ok(r.startswith(norm(T['ferr'])) and T['resumo'] in r, f'{tag}: página 2 é "{T["resumo"]}" com cabeçalho')
-                ok(all(norm(k) in r for k in E['kpis']), f'{tag}: resumo com os 4 KPIs')
-                ok(T['barras'] in r and all(norm(z['rot'])[:24] in r and norm(z['v']) in r for z in E['camadas']), f'{tag}: 7 barras com rótulo e valor')
-                ok(all(norm(z['p']) in r for z in E['camadas']), f'{tag}: % das camadas')
-                ok(T['colunas'] in r and all(norm(v) in r for v in E['dot']), f'{tag}: colunas por exercício = dotação do passo 4.2 {E["dot"]}')
-                ok(T['fatos'] in r, f'{tag}: fatos do caso')
-                br = E['barras']; mx = max(z['val'] for z in E['camadas'])
-                larg_max = max([w for w in br if w] or [0])
-                prop = all((z['val'] <= 0 and (w is None or w <= 1.6)) or (w is not None and (abs(w / larg_max - z['val'] / mx) < 0.01 or (w <= 1.6 and z['val'] / mx < 0.01)))
-                           for z, w in zip(E['camadas'], br)) if larg_max else False
-                ok(prop and sum(1 for w in br if w) == sum(1 for z in E['camadas'] if z['val'] > 0), f'{tag}: barras nas cores das camadas e proporcionais ao custo ({[round(w or 0) for w in br]})')
-                if E['faltas']: ok(T['parcial'] in r, f'{tag}: aviso "{T["parcial"]}"')
-                # ordem: recomendações antes do bloco A; faixas A e B; seções
-                pR = pag_de(P, T['recs']); pA = pag_de(P, T['A'], 2); pB = pag_de(P, T['B'], 2)
-                ok(0 < pR < pA < pB, f'{tag}: recomendações (p. {pR}) antes do bloco A (p. {pA}) e do B (p. {pB})')
-                ok(P[pA - 1].count(T['sub'].upper()) >= 1 and P[pB - 1].count(T['sub'].upper()) >= 1, f'{tag}: faixas dos blocos com o sobretítulo')
-                ps = [pag_de(P, s + '. ', pA - 1) for s in SECOES]
-                ok(all(ps) and ps == sorted(ps) and all(x >= pB for x in ps[7:]) and all(pA <= x < pB for x in ps[:7]), f'{tag}: faixas A1–A7 e B1–B9 em ordem {ps}')
-                # v13: matriz do caso em duas páginas retrato, entre "Em resumo" e as recomendações, com o crédito
-                pM = pag_de(P, T['matriz'], 1)
-                ok(2 < pM and pM + 1 < pR and T['matriz'] in P[pM] and T['credito'] in P[pM - 1] and T['credito'] in P[pM], f'{tag}: matriz do caso nas p. {pM}–{pM + 1}, antes das recomendações (p. {pR}), com o crédito')
-                pP = pag_de(P, T['perfil'])
-                ok(pR <= pP < pA, f'{tag}: perfil do caso (p. {pP}) entre recomendações e bloco A')
-                # índice da capa aponta para as páginas certas
-                for nome, pag in [(T['resumo'], 2), (T['matriz'], pM), (T['recs'], pR), (T['A'], pA), (T['B'], pB)]:
-                    ok(re.search(re.escape(nome) + r' (\d+)', c) is not None and int(re.search(re.escape(nome) + r' (\d+)', c).group(1)) == pag, f'{tag}: índice "{nome}" -> p. {pag}')
-                # Figura 1 numa página própria entre A3 e A4
+                ok(r.startswith(norm(T['ferr'])) and T['comoler'] in r and T['indice'].upper() in r.upper(), f'{tag}: página 2 com "{T["comoler"]}" e o índice')
+                # corpo em ordem de decisão
+                pq = [pag_de(P, q.upper(), 1) for q in E['q']]
+                pAx = pag_de(P, E['tAnexos'], 2)
+                ok(all(pq) and pq == sorted(pq) and pq[0] >= 2 and (pAx > pq[-1] or pAx == 0), f'{tag}: cinco seções do corpo em ordem (p. {pq}), antes dos anexos (p. {pAx})')
+                # anexos A a I
+                pa = [pag_de(P, a_.upper() + ' ', pq[-1]) or pag_de(P, a_.upper(), pq[-1]) for a_ in E['anexos']]
+                ok(all(pa) and pa == sorted(pa) and pa[0] >= pq[-1], f'{tag}: anexos A a I em ordem {pa}')
+                corpo = ' '.join(P[1:pa[0] - 1])
+                ok(not re.search(r'\b(?:K[1-6](?:\.\d)?|A[1-7]|B[1-9])\b', corpo), f'{tag}: sem códigos A1–B9 nem K1–K6 no corpo ({re.findall(r"[A-Z][1-9](?:[.][0-9])?", corpo)[:5]})')
+                # matriz do caso (anexo B): duas páginas retrato, com o crédito
+                pM = pag_de(P, T['matriz'], pa[1] - 1)
+                ok(pa[1] <= pM <= pa[2] - 1 and T['credito'] in P[pM - 1] and T['credito'] in P[pM], f'{tag}: matriz do caso nas p. {pM}–{pM + 1} (anexo B, p. {pa[1]}), com o crédito')
+                # índice da página 2 aponta para as páginas certas
+                for i_, (nome, pag) in enumerate([(f'{i + 1}. {q}', pq[i]) for i, q in enumerate(E['q'])]):
+                    m = re.search(re.escape(norm(nome)) + r' (\d+)', r)
+                    ok(m is not None and int(m.group(1)) == pag, f'{tag}: índice "{nome}" -> p. {pag}')
+                for L_, nome, pag in zip('ABCDEFGHI', E['anexos'], pa):
+                    m = re.search(re.escape(norm(nome)) + r'\. .*? (\d+)(?: |$)', r)
+                    ok(m is not None, f'{tag}: índice com "{nome}"')
+                # Figura 1 numa página própria dentro do anexo E
                 imgs = subprocess.run(['pdfimages', '-list', arq], capture_output=True, text=True).stdout.split('\n')[2:]
                 fig = [l.split() for l in imgs if l.strip() and l.split()[3:5] == ['900', '1225']]
                 ok(len(fig) == 1, f'{tag}: Figura 1 no PDF ({len(fig)})')
                 if fig:
                     pf = int(fig[0][0])
-                    ok(ps[2] < pf <= ps[3] - 1 and 'CC BY-SA 3.0 IGO' in P[pf - 1], f'{tag}: figura na p. {pf}, entre A3 (p. {ps[2]}) e A4 (p. {ps[3]}), com crédito')
+                    ok(pa[4] < pf < pa[5] and 'CC BY-SA 3.0 IGO' in P[pf - 1], f'{tag}: figura na p. {pf}, dentro do anexo E (p. {pa[4]} a {pa[5]}), com crédito')
                 # cabeçalho e rodapé
                 ok(all(P[i].startswith(norm(T['ferr'])) and f'{i + 1} / {N}' in P[i] for i in range(1, N)), f'{tag}: cabeçalho e rodapé "n / N" nas páginas internas')
-                pRef = pag_de(P, T['refs'], pB - 1); pF = pag_de(P, T['faltas'], pRef - 1) if E['faltas'] else 0
-                ok(pRef > ps[-1] and (pRef == N if not E['faltas'] else pF > pRef), f'{tag}: referências (p. {pRef}) no fim, respostas pendentes depois (p. {pF})')
+                pRef = pag_de(P, T['refs'], pa[8] - 1)
+                ok(pRef >= pa[8] and pRef >= N - 1, f'{tag}: referências (p. {pRef}) no fim (anexo I)')
+                if E['faltas'] > 5:
+                    pF = pag_de(P, T['faltas'], pa[0] - 1)
+                    ok(pa[0] <= pF <= pa[1], f'{tag}: lista completa de respostas que faltam no anexo A (p. {pF})')
                 # tipografia: nada abaixo de 8 pt
                 ok(min(E['tamanhos']) >= 8, f'{tag}: menor fonte {min(E["tamanhos"])} pt')
                 if lang == 'en':

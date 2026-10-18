@@ -53,7 +53,7 @@ CASO_V13 = """(()=>{carregarExemplo('B'); S.boasVindas=false;
 NOVAS = ['formacao-plano', 'sem-ferramenta', 'metas-lacunas', 'linha-base-medida']
 
 # Matriz: soma das células de custo, total do ciclo e soma das camadas
-SOMA = """(() => { const s = secoesPlano().find(z => z.id === 'matriz' && !z.sub); const n = numerosCusto(); const cam = n.camadas || somaPorCamada(n.av);
+SOMA = """(() => { const s = secoesPlano().find(z => z.tipo === 'matriz'); const n = numerosCusto(); const cam = n.camadas || somaPorCamada(n.av);
   const cel = s.mx.linhas.reduce((a, l) => a + l.cel.reduce((b, c) => b + (+c.custo || 0), 0), 0);
   return { custo: s.mx.custo, cel, somas: s.mx.somas, total: s.mx.total, ciclo: n.total, camadas: [1,2,3,4,5,6,7].reduce((a, k) => a + (cam.total[k] || 0), 0),
     linhas: s.mx.linhas.length, fases: s.mx.fases.map(f => f.id), rows: s.table.rows.length, grandeTotal: grande(s.mx.total),
@@ -74,17 +74,17 @@ async def main():
             # ---------------------------------------------------------------- página
             r = await pg.evaluate("""(() => { const P = document.getElementById('plano'); if (!P) return null;
               const o = [...P.querySelectorAll('[data-bloco], [data-sec]')].map(e => e.dataset.bloco ? '[' + e.dataset.bloco + ']' : e.dataset.sec);
-              const card = id => (P.querySelector('[data-sec="perfil"] .rp-card[data-area="' + id + '"]') || {}).innerText || '';
+              const card = id => (P.querySelector('[data-sec="resumo"] .rp-card[data-area="' + id + '"]') || {}).innerText || '';
               const M = P.querySelector('[data-sec="matriz"]'), W = M && (M.querySelector('.rp-mx-w') || M.querySelector('table').parentElement);
               const minF = el => { let m = 99; el.querySelectorAll('*').forEach(e => { if (![...e.childNodes].some(n => n.nodeType === 3 && n.data.trim())) return; const r = e.getBoundingClientRect(); if (!r.width) return; m = Math.min(m, parseFloat(getComputedStyle(e).fontSize)); }); return m; };
-              return { o, prob: card('problema'), gov: card('governanca'), lac: P.querySelectorAll('[data-sec="perfil"] .rp-lac').length,
-                b1: (P.querySelector('[data-sec="B1"]') || {}).innerText || '', mx: M ? M.innerText : '', mxH: M ? (M.querySelector('h3') || {}).innerText : '',
-                linhas: M ? M.querySelectorAll('table tbody tr').length : 0, fonteMx: M ? minF(M) : 0, fontePerfil: minF(P.querySelector('[data-sec="perfil"]')),
-                sw: document.documentElement.scrollWidth, wScroll: W ? W.scrollWidth > W.clientWidth + 1 : null, toc: !!P.querySelector('.rp-indice a[data-toc-l="matriz"]') }; })()""")
+              return { o, prob: card('problema'), gov: card('governanca'), lac: P.querySelectorAll('[data-sec="resumo"] .rp-lac').length,
+                b1: (P.querySelector('[data-sec="B1"]') || {}).innerText || '', mx: M ? M.innerText : '', mxH: M ? (M.closest('.rp-anexo').querySelector('h3') || {}).innerText : '',
+                linhas: M ? M.querySelectorAll('table tbody tr').length : 0, fonteMx: M ? minF(M) : 0, fontePerfil: minF(P.querySelector('[data-sec="resumo"]')),
+                sw: document.documentElement.scrollWidth, wScroll: W ? W.scrollWidth > W.clientWidth + 1 : null, toc: !!P.querySelector('.rp-indice a[data-toc-l="anexo-b"]') }; })()""")
             ok(r is not None, f'{tag}: plano aberto')
             if not r: continue
             o = r['o']
-            ok('matriz' in o and o.index('resumo') < o.index('matriz') < o.index('recs') < o.index('perfil'), f'{tag}: matriz logo depois de "Em resumo" ({o[:5]})')
+            ok('matriz' in o and o.index('s5') < o.index('resumo') < o.index('anexo-b') < o.index('matriz') < o.index('anexo-c') < o.index('recs'), f'{tag}: matriz no anexo B, depois do corpo e do perfil, antes das recomendações ({o[-12:]})')
             ok(r['mxH'] == 'O que cada fase exige, por camada' and r['toc'], f'{tag}: título da matriz e item no índice ({r["mxH"]})')
             ok(r['linhas'] >= 7, f'{tag}: matriz com 7 camadas ({r["linhas"]})')
             ok('Camadas: Krueger e Jackson (2026, p. 11). Distribuição por fase: elaboração desta ferramenta.' in r['mx'], f'{tag}: crédito da matriz')
@@ -107,7 +107,7 @@ async def main():
             ok('O que falta: aprovar no conselho estadual.' in r['b1'] and 'Qual: Resolução 12/2025 da secretaria.' in r['b1'], f'{tag}: B1 com "Qual?" e "O que falta?"')
             await pg.locator('#plano-matriz').scroll_into_view_if_needed()
             await pg.locator('#plano-matriz').screenshot(path=f'{TMP}/pagina_{tag}_matriz.png')
-            await pg.locator('#plano-perfil .rp-perfil').screenshot(path=f'{TMP}/pagina_{tag}_perfil.png')
+            await pg.locator('#plano-resumo .rp-perfil').screenshot(path=f'{TMP}/pagina_{tag}_perfil.png')
 
             if tag == 'd':
                 # ------------------------------------------------------------ soma da matriz = total do ciclo
@@ -173,13 +173,13 @@ async def main():
                     await pg.locator('[data-act="pdf"]:visible').first.click()
                 d = await dl.value; arq = f'{TMP}/plano_pt_B_v13.pdf'; await d.save_as(arq)
                 P = paginas(arq); PN = [norm(t) for t in P]
-                pm = [i for i, t in enumerate(PN) if i > 0 and 'O que cada fase exige, por camada' in t]
+                pm = [i for i, t in enumerate(PN) if i > 1 and 'Estado das respostas' in t]
                 ok(len(pm) == 2 and pm[1] == pm[0] + 1 and pm[0] >= 2, f'PDF: matriz em duas páginas seguidas ({[i + 1 for i in pm]})')
                 if len(pm) == 2:
                     a, b_ = PN[pm[0]], PN[pm[1]]
-                    pR = next((i for i, t in enumerate(PN) if 'Recomendações para você' in t and i > 0), -1)
-                    pRes = next((i for i, t in enumerate(PN) if 'Em resumo' in t and i > 0), -1)
-                    ok(pRes < pm[0] and pm[1] < pR, f'PDF: matriz entre "Em resumo" (p. {pRes + 1}) e as recomendações (p. {pR + 1})')
+                    pR = next((i for i, t in enumerate(PN) if 'Recomendações, por momento' in t and i > pm[1]), -1)
+                    pRes = next((i for i, t in enumerate(PN) if 'ANEXO B' in t.upper() and i > 1), -1)
+                    ok(0 < pRes <= pm[0] and pm[1] < pR, f'PDF: matriz no anexo B (p. {pRes + 1}), antes das recomendações do anexo C (p. {pR + 1})')
                     ok('1. Contexto' in a and '2. Prova de conceito ou piloto' in a and '3. Implantação' in b_ and '4. Expansão' in b_, 'PDF: fases 1 e 2 na primeira página, 3 e 4 na segunda')
                     ok(all(f'{k}. ' in a and f'{k}. ' in b_ for k in range(1, 8)) and '7. Operação' in a and '7. Operação' in b_, 'PDF: as 7 camadas nas duas páginas')
                     ok('Camadas: Krueger e Jackson (2026, p. 11). Distribuição por fase: elaboração desta ferramenta.' in a and 'Distribuição por fase: elaboração desta ferramenta.' in b_, 'PDF: crédito nas duas páginas')
@@ -190,6 +190,8 @@ async def main():
                     ok('Respondido' in a and 'Estado das respostas' in a, 'PDF: estado das células e legenda')
                     ok(all(len([l for l in P[i].split('\n') if l.strip()]) >= 30 for i in pm), 'PDF: páginas da matriz cheias (nenhuma quase vazia)')
                 tudo = norm(' '.join(P))
+                # v14: o perfil fica em duas colunas no anexo A; sem -layout o texto de cada cartão sai em sequência
+                tudo = tudo + ' ' + norm(subprocess.run(['pdftotext', arq, '-'], capture_output=True, text=True).stdout)
                 for s in ['Prioridade e impacto', 'Educar sobre a IA; Educar com a IA', 'Baixa proficiência em matemática (Numeracia nos anos iniciais; Resolução de problemas).',
                           'Qual: Resolução 12/2025 da secretaria', 'O que falta: aprovar no conselho estadual', 'Medida: não informada', 'Governança de IA na educação']:
                     ok(norm(s) in tudo, f'PDF: perfil com "{s}"')
@@ -197,7 +199,7 @@ async def main():
                 quase = [i + 1 for i, t in enumerate(P) if 0 < len([l for l in t.split('\n') if l.strip()]) <= 4]
                 ok(not quase, f'PDF: nenhuma página quase vazia {quase}')
                 for i in pm: subprocess.run(['pdftoppm', '-r', '90', '-png', '-f', str(i + 1), '-l', str(i + 1), arq, f'{TMP}/pdf_pt_matriz_p{i + 1}'])
-                pP = next((i for i, t in enumerate(PN) if 'Perfil do caso' in t and i > 0), -1)
+                pP = next((i for i, t in enumerate(PN) if 'Perfil do caso' in t and i > 1), -1)
                 if pP >= 0: subprocess.run(['pdftoppm', '-r', '90', '-png', '-f', str(pP + 1), '-l', str(pP + 1), arq, f'{TMP}/pdf_pt_perfil_p{pP + 1}'])
 
                 # ------------------------------------------------------------ EN
