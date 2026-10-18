@@ -24,6 +24,11 @@ const CASO_VAZIO = {
   implantacao: { escolas: '', pessoas: '' }, arquitetura: '',
   // 4 expansão
   elegiveis: '', expansao: 'ano1', horizonte: 3,
+  // v14 (BL3.2, BL3.5): curva de adoção (4.1.4: 'linear' | 's' | 'ondas'), ondas (4.1.5: até 4 linhas, ano e % acumulado da rede),
+  // ciclo de reposição dos dispositivos comprados (4.1.6: 'nao' | '3' | '4' | '5') e rotatividade anual das pessoas formadas
+  // (4.1.7, em %; vazio = padrão da ferramenta, 10% ao ano)
+  curva: 'linear', ondas: [{ ano: '', pct: '' }, { ano: '', pct: '' }, { ano: '', pct: '' }, { ano: '', pct: '' }],
+  reposicaoDisp: 'nao', rotacaoFormacao: '',
   ajustes: {}, degrau: 2,
 };
 // Uma linha da lista de ferramentas (2.3.3). preco: US$ por usuário por mês (opcional).
@@ -186,7 +191,8 @@ const PREMISSAS_V11 = {
   horasFormacaoPorArq: { saas: 3, api: 1.5, ow: 2 }, // horas dos exemplos A, B e C do guia (cap. 12)
   formadosPorEscola: { gestores: 2, administrativo: 1, professores: 20 }, // papéis que não são usuários
   equipeTecnicaMin: 3, escolasPorTecnico: 50,     // equipe técnica: no mínimo 3, mais 1 a cada 50 escolas
-  rotacaoFormacao: 0.10,                          // reposição anual de pessoas formadas
+  rotacaoFormacao: 0.10,                          // reposição anual de pessoas formadas (v14: editável no 4.1.7; este é o padrão)
+  curvaS: 6,                                      // v14: inclinação da curva logística de adoção (4.1.4, "em S")
   fatorFormato: { presencial: 1, hibrida: 0.8, online: 0.5 }, // programa de formação (K4.3)
   // K4.2 suporte (2.6.1–2.6.2)
   fatorSuporte: { basico: 0.5, ampliado: 1, dedicado: 2 },  // × pessoas em tempo integral do exemplo
@@ -278,6 +284,46 @@ function governancaPorRisco(cfg, nivel) {
 const formadosDoEstoque = (C, rot) => C.map((n, t) => t === 0 ? n : Math.max(n - C[t - 1], 0) + rot * C[t - 1]);
 const ROTULO_PAPEL = { professores: 'professores', gestores: 'gestores escolares', tecnica: 'equipe técnica', administrativo: 'equipe administrativa' };
 
+// ---------------------------------------------------------------------
+// v14 (BL3.2): trajetória das pessoas que usam ao longo dos anos, a partir da primeira etapa (P1, Ano 1) até toda a rede (E).
+// Devolve E por ano (Ano 0 = e0, o teste). Todas as curvas começam em P1 no Ano 1 e nunca diminuem.
+//  - 'linear' (padrão; reproduz a v13): chega a E em nExp anos depois da implantação, em passos iguais, com arredondamento.
+//  - 's' (logística): mesmos pontos de partida e de chegada da linear, mas com início lento, meio rápido e fim lento.
+//    g(x) = (σ(a(x−½)) − σ(−a/2)) / (σ(a/2) − σ(−a/2)), x = k/nExp, σ(u) = 1/(1+e^−u), a = PREMISSAS_V11.curvaS (6);
+//    g(0) = 0, g(1) = 1, crescente. Com nExp = 1 ou 2 os pontos inteiros coincidem com os da linear (g(½) = ½), e só com
+//    nExp = 3 a curva se separa dela.
+//  - 'ondas': linhas { ano, pct }: a partir do ano indicado (≥ 2; o Ano 1 é sempre a primeira etapa do 3.1) a rede
+//    está no % acumulado de E informado; entre uma onda e outra o uso fica no patamar anterior e depois da última onda
+//    fica no último patamar (só chega a E se a última onda for 100%). Linhas sem ano ou % válidos são ignoradas;
+//    o % nunca diminui e nunca fica abaixo do patamar da etapa anterior. Sem nenhuma linha válida, vale a linear.
+function ondasValidas(ondas) {
+  const L = (Array.isArray(ondas) ? ondas : []).map(o => ({ ano: Math.round(+(o || {}).ano), pct: Math.min(100, +(o || {}).pct) }))
+    .filter(o => Number.isFinite(o.ano) && o.ano >= 2 && Number.isFinite(o.pct) && o.pct > 0);
+  return L.sort((a, b) => a.ano - b.ano || a.pct - b.pct);
+}
+function trajetoriaPessoas(tipo, e0, P1, E, nExp, ondas, H) {
+  const T = Array.from({ length: H + 1 }, (_, t) => t);
+  const OL = tipo === 'ondas' ? ondasValidas(ondas) : [];
+  if (tipo === 'ondas' && OL.length) {
+    const Et = [];
+    T.forEach(t => {
+      if (t === 0) { Et.push(e0); return; }
+      if (t === 1) { Et.push(P1); return; }
+      let pct = null; OL.forEach(o => { if (o.ano <= t) pct = o.pct; });
+      const alvo = pct == null ? 0 : Math.min(E, Math.round(E * pct / 100));
+      Et.push(Math.max(Et[t - 1], alvo));
+    });
+    return Et;
+  }
+  const a = PREMISSAS_V11.curvaS, sg = u => 1 / (1 + Math.exp(-u));
+  const g = x => tipo === 's' ? (sg(a * (x - 0.5)) - sg(-a / 2)) / (sg(a / 2) - sg(-a / 2)) : x;
+  return T.map(t => {
+    if (t === 0) return e0;
+    const k = t - 1;
+    return k >= nExp ? E : Math.round(P1 + (E - P1) * g(k / nExp));
+  });
+}
+
 function cfgDoCaso(ce, perfil) {
   ce = ce || {};
   const P = PREMISSAS_V11;
@@ -314,17 +360,19 @@ function cfgDoCaso(ce, perfil) {
   m0 = Math.min(P.mesesAno0Max, m0);
   const imp = ce.implantacao || {};
   const P1 = +imp.pessoas > 0 ? Math.min(E, Math.round(+imp.pessoas)) : Math.max(1, Math.round(E * P.implantacaoFracao));
-  const nExp = ({ ano1: 1, ano2: 2, ano3: 3 })[ce.expansao] || 1;
-  const Et = T.map(t => {
-    if (t === 0) return E0;
-    const k = t - 1;
-    return k >= nExp ? E : Math.round(P1 + (E - P1) * k / nExp);
-  });
+  const nExp0 = ({ ano1: 1, ano2: 2, ano3: 3 })[ce.expansao] || 1;
+  const curva = ['s', 'ondas'].includes(ce.curva) ? ce.curva : 'linear';
+  const Et = trajetoriaPessoas(curva, E0, P1, E, nExp0, ce.ondas, H);
+  // anos de expansão: os do 4.1.2; nas ondas, até o último ano em que o uso cresce (contado a partir do Ano 1)
+  let nExp = nExp0;
+  if (curva === 'ondas' && ondasValidas(ce.ondas).length) { let u = 1; Et.forEach((n, t) => { if (t >= 2 && n > Et[t - 1]) u = t; }); nExp = Math.max(1, u - 1); }
   cfg.demanda.E = Et.slice();
+  cfg.demanda.Ealvo = E;   // v14: pessoas em toda a rede (4.1.1), para saber se o horizonte chega à escala plena (indicadoresTCO)
   cfg.demanda.meses = T.map(t => t === 0 ? m0 : ano(cfg.demanda.meses, t));
   const adoc = T.map(t => ano(cfg.demanda.adocao, t));
   const U = T.map(t => Et[t] * adoc[t]);
-  Object.assign(meta, { teste, E, E0, m0, implantacao: P1, implantacaoPadrao: !(+imp.pessoas > 0), anosExpansao: nExp });
+  Object.assign(meta, { teste, E, E0, m0, implantacao: P1, implantacaoPadrao: !(+imp.pessoas > 0), anosExpansao: nExp, curva: curva === 'ondas' && !ondasValidas(ce.ondas).length ? 'linear' : curva,
+    ondas: curva === 'ondas' ? ondasValidas(ce.ondas) : [] });
   // escolas no escopo de cada ano: teste (escolas do piloto; PoC sem escolas), Ano 1 (3.1) e proporcionais depois
   const escRede = +ce.escolasRede || 0;
   const escDe = n => escRede > 0 ? Math.min(escRede, Math.max(1, Math.round(escRede * n / E))) : Math.max(1, Math.ceil(n / P.pessoasPorEscola));
@@ -337,6 +385,9 @@ function cfgDoCaso(ce, perfil) {
   // papéis entre as pessoas que usariam (convenção de 1 professor para cada 25 estudantes)
   const pap = T.map(t => (typeof papeisUsuarios === 'function') ? papeisUsuarios(ce, Et[t]) : { usaEst: false, estudantes: 0, professores: 0, equipe: [] });
   const usaEst = pap[0].usaEst;
+  // v14 (BL5.4): fração das pessoas que usariam (E) que são aprendizes (estudantes) e professores, para o custo por aprendiz e por professor
+  cfg.demanda.fAprendiz = usaEst ? 1 : 0;
+  cfg.demanda.fProfessor = usaEst ? 1 / RAZAO_EST_PROF : ((pap[0].equipe || []).includes('professores') ? 1 / pap[0].equipe.length : 0);
   // quem paga: Ano 0 (teste) e anos seguintes
   const pub = ce.tipoTec === 'publica';
   const cedido0 = ce.pagamento === 'gratuito' || pub;
@@ -398,8 +449,12 @@ function cfgDoCaso(ce, perfil) {
     const q = novos.map(n => Math.round(n * lac));
     meta.dispositivos = { modelo, resposta: ce.modeloDisp || '', existem: ce.dispExistem || '', lacuna: lac, necessarios: nec, comprados: q.slice(), precoDisp: K.precoDispositivo };
     if (q.some(n => n > 0))
-      cfg.itens.push({ cat: 'Condições de base', s: 'K1.2', nome: 'Dispositivos a comprar (ilustrativo)', nat: 'D', orc: 'capital', moeda: 'LOC',
+      cfg.itens.push({ cat: 'Condições de base', s: 'K1.2', nome: 'Dispositivos a comprar (ilustrativo)', nat: 'D', orc: 'capital', moeda: 'LOC', tag: 'dispositivo',
         q, p: T.map(() => K.precoDispositivo), un: 'dispositivo', v: q.map(n => n * K.precoDispositivo) });
+    // v14 (BL3.5): reposição dos dispositivos comprados a cada 3, 4 ou 5 anos (4.1.6); sem resposta ou "Não repor", como na v13
+    const ciclo = ['3', '4', '5'].includes(String(ce.reposicaoDisp)) ? +ce.reposicaoDisp : 0;
+    if (ciclo) cfg.reposicao = { ciclo };
+    meta.dispositivos.ciclo = ciclo;
   }
   // 9. formação. K4.4: pessoas formadas pelos papéis marcados × horas × custo-hora; K4.3: programa × formato
   {
@@ -409,11 +464,17 @@ function cfgDoCaso(ce, perfil) {
     const formados = (ce.formados || []).filter(r => ROTULO_PAPEL[r]);
     const fForm = P.fatorFormato[ce.formacaoFormato] || 1;
     const cedida = ['fornecedor', 'parceiro'].includes(ce.formacaoPaga);
+    // v14 (BL3.5): rotatividade anual das pessoas formadas (4.1.7, em %). Vazio = padrão da v13 (a do exemplo, 10% ao ano);
+    // preenchida, vale para o tempo de formação (K4.4) e para os outros papéis formados. No modo "razão" (estudantes usam,
+    // professores formados), a v13 recontava o estoque de professores a cada ano e não usava a rotatividade; só quando a
+    // pessoa informa o percentual esse modo passa a contar novas + rotatividade × estoque (f.rotEstoque).
+    const rotTxt = ce.rotacaoFormacao;
+    const rotExp = (rotTxt === '' || rotTxt == null || !Number.isFinite(+rotTxt)) ? null : Math.min(1, Math.max(0, +rotTxt / 100));
     meta.formacao = { papeis: formados.slice(), horas, horasEstimadas: horasEst, custoHora: f ? f.custoHora : 0, fatorFormato: fForm, formato: ce.formacaoFormato || '', cedida, paga: ce.formacaoPaga || '' };
     if (f) {
       f.horas = horas;
       if (formados.length) {
-        const rot = f.rot > 0 ? f.rot : P.rotacaoFormacao;
+        const rot = rotExp != null ? rotExp : (f.rot > 0 ? f.rot : P.rotacaoFormacao);
         let cobertos;
         if (usaEst) {
           // as pessoas que usariam são estudantes: a linha do exemplo conta os professores
@@ -429,11 +490,14 @@ function cfgDoCaso(ce, perfil) {
         f.extras = formados.filter(r => !cobertos.includes(r)).map(r => {
           const C = T.map(t => r === 'tecnica' ? (t === 0 && soPoc ? P.equipeTecnicaMin : Math.max(P.equipeTecnicaMin, Math.ceil(esc[t] / P.escolasPorTecnico)))
             : (P.formadosPorEscola[r] || 1) * esc[t]);
-          return { papel: r, nome: 'Tempo de formação: ' + ROTULO_PAPEL[r], q: formadosDoEstoque(C, rot) };
+          return { papel: r, nome: 'Tempo de formação: ' + ROTULO_PAPEL[r], q: formadosDoEstoque(C, rot), novos: C.map((n, t) => t === 0 ? n : Math.max(n - C[t - 1], 0)) };
         });
         meta.formacao.fatorUsuarios = f.fator;
         meta.formacao.extras = f.extras.map(x => ({ papel: x.papel, q: x.q.slice() }));
       }
+      if (rotExp != null) { if (f.modo === 'razao') f.rotEstoque = rotExp; else f.rot = rotExp; }
+      meta.formacao.rotacao = rotExp != null ? rotExp : (f.modo === 'razao' ? 0 : (f.rot > 0 ? f.rot : P.rotacaoFormacao));
+      meta.formacao.rotacaoInformada = rotExp != null;
     }
     cfg.itens.forEach(x => {
       if (x.s !== 'K4.3') return;
@@ -493,4 +557,4 @@ function cfgDoCaso(ce, perfil) {
   return cfg;
 }
 
-if (typeof module !== 'undefined') module.exports = { CASO_VAZIO, FERRAMENTA_VAZIA, CASOS, CTX_EX, RESP_EX, ADAPTACAO, fatoresAdaptacao, PREMISSAS_K1, PREMISSAS_V11, horasFormacaoEstimada, migrarCasoV10, cfgDoCaso, governancaPorRisco };
+if (typeof module !== 'undefined') module.exports = { CASO_VAZIO, FERRAMENTA_VAZIA, CASOS, CTX_EX, RESP_EX, ADAPTACAO, fatoresAdaptacao, PREMISSAS_K1, PREMISSAS_V11, horasFormacaoEstimada, migrarCasoV10, cfgDoCaso, governancaPorRisco, trajetoriaPessoas, ondasValidas };

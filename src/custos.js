@@ -42,6 +42,36 @@ const OPC_COMPAT = { H: 3, correcoes: false, pi: 0, dep: 0, r: 0, sigmaCap: 1, d
 // Modo padrão da versão 2: correções do economista e inflação ilustrativa de 2,5% a.a.
 const OPC_PADRAO = { H: 3, correcoes: true, pi: 0.025, dep: 0, r: 0, sigmaCap: 1, doados: true, pSaida: 1, fechamento: 'saida', vidaUtil: 5, contPct: 0.05, delta: 0 };
 
+// ---------------------------------------------------------------- v14: fases (BL3.1)
+// Regra de fronteira entre as fases, tirada da semântica dos passos 3.1 e 4.1:
+//  - Ano 0 = Prova de conceito ou piloto (o teste antes da compra, passos 2.0 a 2.6);
+//  - Ano 1 = Implantação: a primeira etapa de uso real depois do teste (passo 3.1: "é o primeiro ano de uso depois do teste");
+//  - Ano 2 em diante = Expansão: os anos em que o uso cresce até toda a rede (passos 4.1.1, 4.1.2 e a curva de adoção)
+//    e, depois, os anos de operação em escala plena. A fronteira é por calendário, e não pelo ano em que a rede chega
+//    ao total, para que todo horizonte de 2 anos ou mais tenha Expansão e as fases somem sempre o total.
+// cfg.fasesAno (opcional) = ids por ano substitui a regra. Os ids são os de FASES (fluxo_dados.js).
+const FASES_MOTOR = [['piloto', 'Prova de conceito ou piloto'], ['implantacao', 'Implantação'], ['expansao', 'Expansão']];
+function faseDoAno(t, cfg) {
+  const x = cfg && cfg.fasesAno;
+  if (Array.isArray(x) && x.length) return x[Math.min(t, x.length - 1)];
+  return t <= 0 ? 'piloto' : t === 1 ? 'implantacao' : 'expansao';
+}
+
+// v14 (BL3.7): pagamento único (implantação) × recorrente. Convenção desta ferramenta, a partir das etiquetas que
+// cada linha já tem (subcomponente s, natureza nat, tipo orçamentário orc, tag):
+//  - ÚNICO: orc = 'capital' (implantação, processamento inicial de documentos, compra de dispositivos); toda a
+//    implantação e adaptação (K3.1 a K3.4: integração, conteúdo e configuração iniciais, conformidade inicial,
+//    testes de aceitação); a ingestão inicial da base de conhecimento (K2.4, só no Ano 0); a formação inicial
+//    (K4.3 e K4.4) na parte das pessoas novas na rede em cada ano; e a saída (K6.3) e o valor residual, no ano H.
+//  - RECORRENTE: tudo o mais, em todos os anos: licenças (K2.1), consumo, computação, hospedagem (K2.2 a K2.5),
+//    conectividade (K1.1), identidade (K1.3), operação, suporte e pessoal (K4.1, K4.2), reciclagem e reposição de
+//    quem sai da rede (parte "reposição" de K4.3 e K4.4), governança e avaliação (K5), manutenção e reavaliação (K6.1,
+//    K6.2) e a reposição de dispositivos (BL3.5, que é compra de capital, mas repetida).
+//  - A natureza (D desembolso, C capacidade interna, O cedido) e o tipo de componente (F fixo, V variável, E escalonado)
+//    não decidem a divisão: a mesma regra vale para as três naturezas. x.parte ('unico' | 'recorrente') ou x.vu
+//    (parte única por ano, nas mesmas unidades de x.v) substituem a regra numa linha.
+function unicoPorPadrao(x) { return x.orc === 'capital' || x.tag === 'implantacao' || /^K3\./.test(x.s || ''); }
+
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 function opcoes(cfg) { return Object.assign({}, OPC_PADRAO, cfg.opc || {}); }
 function ano(arr, t) { if (!Array.isArray(arr)) return arr; return arr.length ? arr[Math.min(t, arr.length - 1)] : 0; }
@@ -70,6 +100,33 @@ function arquitetura(cfg) {
   return 'outra';
 }
 
+// v14: pessoas formadas por ano (K4.4) e, destas, as novas na rede (formação inicial, pagamento único); o resto é
+// reciclagem e reposição de quem sai (recorrente). Os números de pessoas formadas são os da v13.
+//  - modo 'razao': as pessoas formadas são E ÷ razão a cada ano (v13); novas = aumento do estoque.
+//    f.rotEstoque (v14, só quando a pessoa informa a rotatividade no passo 4.1) passa a contar o estoque como
+//    nas demais: novas + rotatividade × estoque do ano anterior.
+//  - modo 'ativos': novas = aumento dos usuários ativos; a reposição é f.rot × usuários do ano anterior (v13).
+function formacaoPessoas(cfg, o, U, d, T) {
+  const f = cfg.formacaoTempo;
+  if (!f || !f.ativo) return null;
+  let pessoas, novos;
+  if (f.modo === 'razao') {
+    const St = T.map(t => ano(d.E, t) / f.razao);
+    novos = St.map((n, t) => t === 0 ? n : Math.max(n - St[t - 1], 0));
+    pessoas = f.rotEstoque != null ? St.map((n, t) => t === 0 ? n : novos[t] + f.rotEstoque * St[t - 1]) : St;
+  } else {
+    pessoas = T.map(t => {
+      if (t === 0) return U[0];
+      if (t === 1 && !o.correcoes) return U[1];                     // versão 1: reconta o piloto
+      return Math.max(U[t] - U[t - 1], 0) + f.rot * U[t - 1];       // versão 2: estoque formado
+    });
+    novos = T.map(t => t === 0 ? U[0] : (t === 1 && !o.correcoes) ? U[1] : Math.max(U[t] - U[t - 1], 0));
+  }
+  // v11: fator sobre as pessoas formadas (papéis marcados na 2.5.1), neutro quando ausente
+  if (f.fator != null) { pessoas = pessoas.map(n => n * (+f.fator)); novos = novos.map(n => n * (+f.fator)); }
+  return { pessoas, novos };
+}
+
 // ---------------------------------------------------------------- cálculo das linhas
 function calcular(cfg) {
   const o = opcoes(cfg);
@@ -87,12 +144,17 @@ function calcular(cfg) {
     const v = T.map(t => base[t] * fator[t]);
     const q = x.q ? T.map(t => +(x.q[t] || 0)) : null;
     const p = (x.p && q) ? T.map(t => (q[t] ? v[t] / q[t] : (+(x.p[t] || 0)) * fator[t])) : null;
-    L.push({ id: x.id || x.nome, nome: x.nome, s: x.s, k: K_DE_S[x.s], cat: x.cat || NOME_K[K_DE_S[x.s]], nat: x.nat || 'D', comp: x.comp || 'F', moeda,
+    const vu = x.vu ? T.map(t => (+x.vu[t] || 0) * fator[t]) : ((x.parte ? x.parte === 'unico' : unicoPorPadrao(x)) ? v.slice() : T.map(() => 0));
+    L.push({ vu, id: x.id || x.nome, nome: x.nome, s: x.s, k: K_DE_S[x.s], cat: x.cat || NOME_K[K_DE_S[x.s]], nat: x.nat || 'D', comp: x.comp || 'F', moeda,
       orc: x.orc || 'corrente', pagador: x.pagador || 'inst', fonte: x.fonte || 'ilustrativo', un: x.un || '', tag: x.tag || '', q, p, v, fx: moeda === 'USD' });
   };
   const U = T.map(t => ano(d.E, t) * ano(d.adocao, t));
   const I = T.map(t => U[t] * d.s * d.i * ano(d.meses, t));
   const extra = {};
+  // v14: formação inicial × reposição. Parte das pessoas novas em cada ano; o programa de formação (K4.3) usa a mesma
+  // proporção do ano e, sem o tempo de formação (K4.4), só o Ano 0 é inicial.
+  const fm = formacaoPessoas(cfg, o, U, d, T);
+  const fracNovos = T.map(t => fm ? (fm.pessoas[t] > 0 ? Math.min(1, fm.novos[t] / fm.pessoas[t]) : (t === 0 ? 1 : 0)) : (t === 0 ? 1 : 0));
 
   // ---- K2.1 licenças
   if (cfg.saas && cfg.saas.ativo) {
@@ -127,7 +189,8 @@ function calcular(cfg) {
     const corpus = r.docs * r.tokDoc;
     const tok = T.map(t => t === 0 ? corpus : (r.docsNovos * r.tokDoc + r.reindexAno * (corpus + t * r.docsNovos * r.tokDoc)));
     add({ nome: 'Embeddings de ingestão e reindexação', s: 'K2.4', cat: 'Dados e RAG', moeda: 'USD', comp: 'V', tag: 'ingestao', un: 'milhão de tokens',
-      q: tok.map(x => x / 1e6), p: T.map(() => r.Pemb), v: tok.map((x, t) => x * r.Pemb / 1e6 * tend[t]) });
+      q: tok.map(x => x / 1e6), p: T.map(() => r.Pemb), v: tok.map((x, t) => x * r.Pemb / 1e6 * tend[t]),
+      vu: tok.map((x, t) => t === 0 ? x * r.Pemb / 1e6 * tend[t] : 0) });   // v14: o corpus inicial é único; a reindexação é recorrente
     if (r.paginas > 0)
       add({ nome: 'Processamento inicial de documentos (OCR, extração)', s: 'K3.2', cat: 'Dados e RAG', moeda: 'USD', comp: 'F', orc: 'capital', un: 'página',
         q: T.map(t => t === 0 ? r.paginas : 0), p: T.map(() => r.Ppag), v: T.map(t => t === 0 ? r.paginas * r.Ppag : 0) });
@@ -172,7 +235,19 @@ function calcular(cfg) {
     // v11: itens podem trazer quantidade (q), preço (p), unidade (un), etiqueta (tag) e pagador; neutro quando ausentes
     add({ nome: x.nome, s, cat: x.cat, nat: x.nat || 'D', comp: x.comp || 'F', moeda: x.moeda || 'LOC', orc: x.orc || 'corrente',
       prob: x.prob, v: T.map(t => ano(x.v, t) * fa), q: x.q ? T.map(t => ano(x.q, t)) : undefined, p: x.p ? T.map(t => ano(x.p, t)) : undefined,
-      un: x.un, tag: x.tag, pagador: x.pagador });
+      un: x.un, tag: x.tag, pagador: x.pagador, parte: x.parte,
+      vu: s === 'K4.3' && !x.parte ? T.map(t => ano(x.v, t) * fa * fracNovos[t]) : undefined });
+    // v14 (BL3.5): reposição dos dispositivos comprados neste caso a cada n anos (cfg.reposicao.ciclo = 3, 4 ou 5; ausente = sem reposição,
+    // como na v13). Um lote comprado no ano s é recomprado em s+n, s+2n… até o horizonte, à quantidade e ao preço unitário do lote.
+    // É compra de capital, mas repetida: conta como recorrente.
+    const ciclo = Math.round(+((cfg.reposicao || {}).ciclo) || 0);
+    if (ciclo >= 1 && x.tag === 'dispositivo' && x.q && x.p) {
+      const q0 = T.map(t => ano(x.q, t));
+      const qr = T.map(t => { let n = 0; for (let k = t - ciclo; k >= 0; k -= ciclo) n += q0[k]; return n; });
+      if (qr.some(n => n > 0))
+        add({ nome: 'Reposição de dispositivos (a cada ' + ciclo + ' anos)', s, cat: x.cat, nat: x.nat || 'D', comp: 'F', moeda: x.moeda || 'LOC', orc: 'capital',
+          q: qr, p: T.map(t => ano(x.p, t)), un: x.un, tag: 'reposicao_dispositivo', parte: 'recorrente', v: qr.map((n, t) => n * ano(x.p, t)) });
+    }
   });
   // ---- pessoas
   (cfg.pessoas || []).forEach(pp => {
@@ -192,23 +267,19 @@ function calcular(cfg) {
   // ---- tempo de formação (estoque de formados)
   if (cfg.formacaoTempo && cfg.formacaoTempo.ativo) {
     const f = cfg.formacaoTempo;
-    let pessoas;
-    if (f.modo === 'razao') pessoas = T.map(t => ano(d.E, t) / f.razao);
-    else pessoas = T.map(t => {
-      if (t === 0) return U[0];
-      if (t === 1 && !o.correcoes) return U[1];                     // versão 1: reconta o piloto
-      return Math.max(U[t] - U[t - 1], 0) + f.rot * U[t - 1];       // versão 2: estoque formado
-    });
-    // v11: fator sobre as pessoas formadas (papéis marcados na 2.5.1), neutro quando ausente
-    if (f.fator != null) pessoas = pessoas.map(n => n * (+f.fator));
+    const pessoas = fm.pessoas;
     if (pessoas.some(n => n > 0) || !(f.extras || []).length)
       add({ nome: f.nome, s: 'K4.4', cat: 'Formação e mudança', nat: 'C', comp: 'V', moeda: 'LOC', un: 'pessoa formada',
-        q: pessoas, p: T.map(() => f.horas * f.custoHora * m.pessoas), v: pessoas.map(n => n * f.horas * f.custoHora * m.pessoas) });
+        q: pessoas, p: T.map(() => f.horas * f.custoHora * m.pessoas), v: pessoas.map(n => n * f.horas * f.custoHora * m.pessoas),
+        vu: fm.novos.map(n => n * f.horas * f.custoHora * m.pessoas) });
     // v11: outros papéis formados (gestores, equipe técnica...), com as mesmas horas e o mesmo custo-hora
     (f.extras || []).forEach(x => {
       const q = T.map(t => +ano(x.q, t) || 0);
+      // v14: x.novos (pessoas novas por ano, vindas de cfgDoCaso) dá a parte inicial; sem ele, só o Ano 0 é inicial
+      const nov = x.novos ? T.map(t => +ano(x.novos, t) || 0) : q.map((n, t) => t === 0 ? n : 0);
       add({ nome: x.nome, s: 'K4.4', cat: 'Formação e mudança', nat: 'C', comp: 'V', moeda: 'LOC', un: 'pessoa formada', tag: 'formacao_papel',
-        q, p: T.map(() => f.horas * f.custoHora * m.pessoas), v: q.map(n => n * f.horas * f.custoHora * m.pessoas) });
+        q, p: T.map(() => f.horas * f.custoHora * m.pessoas), v: q.map(n => n * f.horas * f.custoHora * m.pessoas),
+        vu: nov.map(n => n * f.horas * f.custoHora * m.pessoas) });
     });
   }
 
@@ -246,14 +317,16 @@ function calcular(cfg) {
       if (!['K2.2', 'K2.3', 'K2.4', 'K2.5'].includes(l.s) || l.nat !== 'D') return;
       const vo = T.map(t => l.v[t] * fr[t]);
       if (!vo.some(x => x > 0)) return;
+      const shU = T.map(t => l.v[t] ? Math.min(1, l.vu[t] / l.v[t]) : 0);   // v14: a parte única acompanha a proporção
       l.v = T.map(t => l.v[t] - vo[t]);
+      l.vu = T.map(t => l.v[t] * shU[t]);
       if (o.doados) novas.push({ id: 'cedido: ' + l.id, nome: 'Uso cedido sem custo (valor de mercado)', s: l.s, k: l.k, cat: l.cat, nat: 'O', comp: l.comp, moeda: l.moeda,
-        orc: l.orc, pagador: 'terceiro', fonte: l.fonte, un: l.un, tag: 'doado', q: null, p: null, v: vo, fx: l.fx });
+        orc: l.orc, pagador: 'terceiro', fonte: l.fonte, un: l.un, tag: 'doado', q: null, p: null, v: vo, vu: vo.map((x, t) => x * shU[t]), fx: l.fx });
     });
     novas.forEach(x => L.push(x));
   }
 
-  return { cfg, opc: o, H, anos: T, U, I, E: T.map(t => ano(d.E, t)), linhas: L, saida: S, extra, fxT, infl, impl };
+  return { cfg, opc: o, H, anos: T, fases: T.map(t => faseDoAno(t, cfg)), U, I, E: T.map(t => ano(d.E, t)), linhas: L, saida: S, extra, fxT, infl, impl };
 }
 
 // ---------------------------------------------------------------- resumo (compatível com a versão 1)
@@ -311,8 +384,123 @@ function avaliar(r) {
     variavel: faceta(l => l.comp === 'V' || l.tag === 'gpu'),
     capital: faceta(l => l.orc === 'capital'),
   };
-  return { r, defl, disc, linhas, saida, ecoAno, finAno, ctEco, saidaEco, vr: vrVP, porS, porK, porSano, fac,
+  const av = { r, defl, disc, linhas, saida, ecoAno, finAno, ctEco, saidaEco, vr: vrVP, porS, porK, porSano, fac,
     saidaFin: r.saida.filter(x => x.nat === 'D').reduce((s, x) => s + x.valor, 0), saidaTotalNominal: r.saida.reduce((s, x) => s + x.valor, 0) };
+  av.fases = decomporFases(av);      // v14 (BL3.1, BL3.7): custo e pessoas por fase, único × recorrente
+  av.tco = indicadoresTCO(av);       // v14 (BL5.4): indicadores do custo total
+  return av;
+}
+
+// ---------------------------------------------------------------- v14: custo por fase (BL3.1) e único × recorrente (BL3.7)
+// Resultado de avaliar(): av.fases = {
+//   ids: ['piloto','implantacao','expansao'], faseAno: [id por ano], total (= ctEco), unico, recorrente (valor presente, conta econômica),
+//   unicoAno[t], recorrenteAno[t] (conta econômica, preços constantes, sem desconto),
+//   porFase: { <id>: { id, nome, anos: [t…], total, nominal, unico, recorrente, porCamada: {1..7}, porK: {K1..K6},
+//     pessoas (máx. de pessoas que usariam: E), usuarios (máx. de usuários ativos: U), anosPessoa (Σ E), anosUsuario (Σ U),
+//     aprendizes, professores (máx. alcançados no ano), anosAprendiz, anosProfessor (Σ) } } }
+// Valores em valor presente na conta econômica (os mesmos de ctEco); a soma das fases é exatamente ctEco.
+// A saída (K6.3) e o valor residual caem na fase do ano H e são pagamento único.
+function papeisDe(r) {
+  const d = r.cfg.demanda || {}, un = r.cfg.unidade;
+  let fA = d.fAprendiz, fP = d.fProfessor;
+  if (fA == null && fP == null) { fA = un === 'estudante' ? 1 : null; fP = un === 'professor' ? 1 : null; }
+  return { fA: fA == null ? null : +fA, fP: fP == null ? null : +fP };
+}
+function decomporFases(av) {
+  const r = av.r, T = r.anos, H = r.H;
+  const z7 = () => { const z = {}; for (let i = 1; i <= 7; i++) z[i] = 0; return z; };
+  const zK = () => { const z = {}; ARVORE.forEach(([k]) => { z[k] = 0; }); return z; };
+  const faseAno = T.map(t => faseDoAno(t, r.cfg));
+  const { fA, fP } = papeisDe(r);
+  const P = {};
+  FASES_MOTOR.forEach(([id, nome]) => {
+    const anos = T.filter(t => faseAno[t] === id);
+    const sum = f => anos.reduce((s, t) => s + f(t), 0), max = f => Math.max(0, ...anos.map(f));
+    P[id] = { id, nome, anos, total: 0, nominal: 0, unico: 0, recorrente: 0, porCamada: z7(), porK: zK(),
+      pessoas: max(t => r.E[t]), usuarios: max(t => r.U[t]), anosPessoa: sum(t => r.E[t]), anosUsuario: sum(t => r.U[t]),
+      aprendizes: fA == null ? null : max(t => r.E[t] * fA), anosAprendiz: fA == null ? null : sum(t => r.E[t] * fA),
+      professores: fP == null ? null : max(t => r.E[t] * fP), anosProfessor: fP == null ? null : sum(t => r.E[t] * fP) };
+  });
+  const unicoAno = T.map(() => 0), recAno = T.map(() => 0);
+  av.linhas.forEach(l => {
+    const c = CAMADA_DE_S[l.s] || 7;
+    T.forEach(t => {
+      if (!l.eco[t]) return;
+      const sh = l.v[t] ? Math.min(1, Math.max(0, (l.vu ? l.vu[t] : 0) / l.v[t])) : 0;
+      const pv = l.eco[t] * av.disc[t], f = P[faseAno[t]];
+      f.total += pv; f.unico += pv * sh; f.recorrente += pv * (1 - sh);
+      f.nominal += l.eco[t] * av.defl[t]; f.porCamada[c] += pv; f.porK[l.k] += pv;
+      unicoAno[t] += l.eco[t] * sh; recAno[t] += l.eco[t] * (1 - sh);
+    });
+  });
+  const fH = P[faseAno[H]];
+  av.saida.forEach(x => {
+    const c = CAMADA_DE_S[x.s] || 7;
+    fH.total += x.ecoVP; fH.unico += x.ecoVP; fH.nominal += x.eco * av.defl[H]; fH.porCamada[c] += x.ecoVP; fH.porK[x.k] += x.ecoVP;
+    unicoAno[H] += x.eco;
+  });
+  if (av.vr) {   // valor residual (fechamento "continuidade"): abate K6.3 no ano H
+    fH.total -= av.vr; fH.unico -= av.vr; fH.nominal -= av.vr / av.disc[H] * av.defl[H]; fH.porCamada[CAMADA_DE_S['K6.3']] -= av.vr; fH.porK.K6 -= av.vr;
+    unicoAno[H] -= av.vr / av.disc[H];
+  }
+  const ids = FASES_MOTOR.map(x => x[0]);
+  const soma = k => ids.reduce((s, id) => s + P[id][k], 0);
+  return { ids, faseAno, porFase: P, total: soma('total'), nominal: soma('nominal'), unico: soma('unico'), recorrente: soma('recorrente'), unicoAno, recorrenteAno: recAno };
+}
+
+// ---------------------------------------------------------------- v14 (BL5.4): indicadores do custo total
+// av.tco = { tcoDescontado (= ctEco), tcoNominal (preços correntes, sem desconto), r, n, cae (custo anual equivalente),
+//   anosAprendiz, anosProfessor (pessoas-ano alcançadas, sem desconto), custoPorAprendizAno, custoPorProfessorAno (null se o
+//   caso não tem esse papel), pRecorrente (parte recorrente do custo total), anual: custo anual em regime }.
+// Convenções:
+//  - TCO descontado = ctEco (preços constantes do Ano 0, descontado à taxa real r; sem desconto quando r = 0). TCO nominal =
+//    a mesma conta em preços correntes (reinflada por π) e sem desconto, com a saída pela mesma ponderação.
+//  - Custo anual equivalente (CAE): VP·r/(1−(1+r)^−n), com n = H + 1 anos de custo (Ano 0 a H); com r = 0, VP/n (função cae()).
+//  - Custo por aprendiz (professor) por ano: custo total ÷ pessoas-ano alcançadas, contando as que usariam em cada ano (E, e não
+//    só as ativas) e o ano inteiro, também no Ano 0. Como o custo total é valor presente, o denominador é descontado com o mesmo
+//    fator (custo nivelado, como o índice de custo unitário); com r = 0 é a divisão simples.
+//    Aprendizes = estudantes; professores = os professores das turmas (E ÷ 25) ou os servidores professores do caso.
+//  - Parte recorrente = recorrente ÷ total (a saída entra como pagamento único).
+//  - Custo anual em regime: o primeiro ano da Expansão em que o uso chega ao patamar final (primeiro t ≥ 2 com E[t] = E[H]); se a
+//    rede não chega à escala plena no horizonte (cfg.demanda.Ealvo maior que E[H]), é o último ano (H), e isso é sinalizado.
+//    Se o caso tem financiamento externo (linhas de uso cedido, nat 'O') que ainda vale nesse ano, vale o primeiro ano depois que
+//    ele acaba (rótulo 'depois_do_financiamento'); se ele dura até o fim do horizonte, vale o ano em regime com o aviso
+//    'financiamento_ate_o_fim'. Em cada ano: custo econômico (preços constantes e correntes) e desembolso da rede (conta
+//    orçamentária, preços correntes).
+function anosCedidos(av) {
+  const r = av.r, T = r.anos, c = r.cfg;
+  const viaLinhas = T.map(t => av.linhas.some(l => l.nat === 'O' && l.v[t] > 0));
+  if (viaLinhas.some(Boolean)) return viaLinhas;
+  // modo sem os doados na conta (opc.doados = false): lê da configuração
+  return T.map(t => (Array.isArray(c.cedidoUso) && +ano(c.cedidoUso, t) > 0) || (c.saas && c.saas.ativo && Array.isArray(c.saas.fatorPreco) && +ano(c.saas.fatorPreco, t) < 1 && ano(c.saas.qtd, t) > 0));
+}
+function indicadoresTCO(av) {
+  const r = av.r, o = r.opc, H = r.H, T = r.anos, f = av.fases, n = H + 1;
+  const { fA, fP } = papeisDe(r);
+  const den = (fx) => T.reduce((s, t) => s + r.E[t] * fx * av.disc[t], 0);
+  const anosAprend = fA == null ? null : T.reduce((s, t) => s + r.E[t] * fA, 0), anosProf = fP == null ? null : T.reduce((s, t) => s + r.E[t] * fP, 0);
+  // ano em regime
+  const Efinal = r.E[H];
+  let base = H;
+  for (let t = Math.min(2, H); t <= H; t++) if (r.E[t] >= Efinal) { base = t; break; }
+  const Ealvo = r.cfg.demanda && r.cfg.demanda.Ealvo != null ? +r.cfg.demanda.Ealvo : Efinal;
+  const escalaPlena = Efinal >= Ealvo - 1e-9;
+  if (!escalaPlena) base = H;
+  const ced = anosCedidos(av);
+  let ultimoCedido = -1; ced.forEach((c, t) => { if (c) ultimoCedido = t; });
+  let ano = base, rotulo = escalaPlena ? 'primeiro_ano_em_escala_plena' : 'ultimo_ano_do_horizonte', externo = null;
+  if (ultimoCedido >= base) {
+    if (ultimoCedido + 1 <= H) { ano = ultimoCedido + 1; rotulo = 'depois_do_financiamento'; externo = { encerraEm: ultimoCedido }; }
+    else { rotulo = 'financiamento_ate_o_fim'; externo = { encerraEm: null }; }
+  }
+  const unicoEco = f.unicoAno[ano];
+  const anual = { ano, fase: f.faseAno[ano], rotulo, financiamentoExterno: externo, escalaPlenaNoHorizonte: escalaPlena,
+    eco: av.ecoAno[ano], nominal: av.ecoAno[ano] * av.defl[ano], desembolso: av.finAno[ano], unico: unicoEco, recorrente: av.ecoAno[ano] - unicoEco };
+  return { tcoDescontado: av.ctEco, tcoNominal: f.nominal, r: o.r, n, cae: cae(av.ctEco, o.r, n),
+    anosAprendiz: anosAprend, anosProfessor: anosProf,
+    custoPorAprendizAno: fA == null || !den(fA) ? null : av.ctEco / den(fA),
+    custoPorProfessorAno: fP == null || !den(fP) ? null : av.ctEco / den(fP),
+    pRecorrente: av.ctEco ? f.recorrente / av.ctEco : 0, anual };
 }
 
 // ---------------------------------------------------------------- v9: componentes de custo × sete camadas
@@ -371,6 +559,7 @@ function indicadores(cfg, av) {
     pCapital: av.fac.capital / av.ctEco,
     anosParaSair: recorrente ? av.saidaTotalNominal / recorrente : 0, recorrenteFin: recorrente,
     usuariosAno: den,
+    tco: av.tco, fases: av.fases,   // v14: indicadores do custo total e custo por fase (ver indicadoresTCO e decomporFases)
   };
 }
 
@@ -699,5 +888,6 @@ const PRESETS = {
 
 const API_CUSTOS = { ARVORE, NOME_K, NOME_S, K_DE_S, MAPA_CAT, SAL, SAL_NOME, OPC_COMPAT, OPC_PADRAO, clone, opcoes, ano, custoChamada, salario, arquitetura,
   calcular, resumo, avaliar, indicadores, cfgAltaAdocao, cfgEstresse, cenarios, direcionadores, tornado, sensibilidade, simular, orcamento, orcamentoDeLinhas,
-  lmdi, laspeyres, cae, comparar, equidade, compLicenca, compArquiteturas, PRESETS, quantil, fatorAdapt, CAMADA_DE_S, somaPorCamada };
+  lmdi, laspeyres, cae, comparar, equidade, compLicenca, compArquiteturas, PRESETS, quantil, fatorAdapt, CAMADA_DE_S, somaPorCamada,
+  FASES_MOTOR, faseDoAno, decomporFases, indicadoresTCO, papeisDe };
 if (typeof module !== 'undefined') module.exports = API_CUSTOS;
