@@ -648,6 +648,10 @@ function controle(f) {
   }
   return '';
 }
+// v14 (BL2.4): dica de uma linha sob o rótulo; os termos do glossário ficam sublinhados e abrem a definição
+function dicaCampo(f) {
+  return `<div class="dica"><span class="dica-r">${esc(tr(AJUDA_ROT.dica))}</span> <span class="dica-t">${glossarioTexto(f.dica)}</span></div>`;
+}
 function renderQ(f) {
   const ok = qOk(f), sug = sugerido(f) && (f.tipo === 'setup' || f.tipo === 'implant' || !vazio(valorCampo(f)));
   const m = modoTeste();
@@ -667,12 +671,12 @@ function renderQ(f) {
   if (f.detalhe) extra += detalheCampo(f);
   return `<div class="q${ok ? ' ok' : ''}${sug ? ' sug' : ''}${lac && temLac(valorCampo(f)) ? ' lacuna' : ''}" id="${idQ(f.n)}" data-n="${f.n}" data-campo="${f.id}">
     <${rotTag} class="q-t" id="qt-${f.id}"><span class="qn">${f.n}</span> <span class="qt">${esc(t)}</span>${f.opcional ? ' <span class="tag opc">opcional</span>' : ''}${temTag ? `<span class="tag sug-tag">${esc(textoSugerido(f))}</span>` : ''}<span class="sr q-sr">${ok ? 'respondida' : ''}</span></${rotTag.split(' ')[0]}>
-    ${h ? `<div class="hint">${esc(h)}</div>` : ''}${ex ? `<div class="hint ex">${esc(ex)}</div>` : ''}
+    ${f.dica ? dicaCampo(f) : ''}${h ? `<div class="hint">${esc(h)}</div>` : ''}${ex ? `<div class="hint ex">${esc(ex)}</div>` : ''}
     ${controle(f)}${sug ? notaSugerido(f) : ''}${extra}</div>`;
 }
 // Botão ⓘ e nota com a explicação da camada, a referência ao documento de Krueger e Jackson (2026)
 // e o botão que abre a Figura 1 (p. 11) sem alteração, com legenda e crédito.
-const INFO_ROT = { c1: 'Sobre a camada 1', c2: 'Sobre a camada 2', c24: 'Sobre as camadas 2 e 4', c3: 'Sobre a camada 3', c6: 'Sobre a camada 6', c7: 'Sobre a camada 7', c45: 'Sobre as camadas 4 e 5', c37: 'Sobre as sete camadas' };
+const INFO_ROT = { c1: 'Sobre a camada 1', c2: 'Sobre a camada 2', c24: 'Sobre as camadas 2 e 4', c236: 'Sobre as camadas 2, 3 e 6', c3: 'Sobre a camada 3', c6: 'Sobre a camada 6', c7: 'Sobre a camada 7', c45: 'Sobre as camadas 4 e 5', c37: 'Sobre as sete camadas' };
 function botaoInfo(chave, id) {
   return `<button type="button" class="info" id="bi-${id}" data-info="${chave}" data-info-id="${id}" aria-expanded="${!!S.info[id]}" aria-controls="nota-${id}" aria-label="${esc(INFO_ROT[chave] || 'Sobre as camadas')}">ⓘ</button>`;
 }
@@ -821,7 +825,44 @@ function passo4c() {
   }
   return '<p class="muted">As recomendações para você ainda não estão disponíveis nesta versão da ferramenta.</p>';
 }
-function corpoPasso(id) { return id === '4b' ? passo4b() : id === '4c' ? passo4c() : corpoPadrao(id); }
+// v14 (BL2.2): painel "Sobre esta etapa". Abre na primeira visita a cada passo e pode ser recolhido; o estado de cada passo
+// fica neste navegador (localStorage, sempre em try/catch). Passos já vistos numa visita anterior começam recolhidos.
+const AJUDA_CHAVE = 'upt_ajuda_v14';
+let AJUDA_EST = null; const AJUDA_AUTO = {};
+function ajudaLer() {
+  if (AJUDA_EST) return AJUDA_EST;
+  AJUDA_EST = {};
+  try { const o = JSON.parse(localStorage.getItem(AJUDA_CHAVE) || '{}') || {}; Object.keys(o).forEach(k => { AJUDA_EST[k] = o[k] === true; }); } catch (e) { }
+  return AJUDA_EST;
+}
+function ajudaGravar() {
+  try { const o = {}; Object.keys(AJUDA_EST || {}).forEach(k => { o[k] = AJUDA_AUTO[k] ? 'visto' : AJUDA_EST[k]; }); localStorage.setItem(AJUDA_CHAVE, JSON.stringify(o)); } catch (e) { }
+}
+function ajudaAberto(id) {
+  const E = ajudaLer();
+  if (E[id] === undefined) { E[id] = true; AJUDA_AUTO[id] = true; ajudaGravar(); }
+  return !!E[id];
+}
+function ajudaMudou(id, aberto) {
+  const E = ajudaLer();
+  if (E[id] === aberto) return;
+  E[id] = aberto; delete AJUDA_AUTO[id]; ajudaGravar();
+}
+function painelAjuda(id) {
+  const a = PASSO_AJUDA[id]; if (!a) return '';
+  const R = AJUDA_ROT, g = typeof glossarioTexto === 'function' ? glossarioTexto : (x => esc(tr(x)));
+  const parte = (t, c, extra) => `<div class="aj-p"><dt>${esc(tr(t))}</dt><dd>${c}${extra || ''}</dd></div>`;
+  return `<details class="ajuda" id="ajuda-${id}" data-ajuda="${id}" ${ajudaAberto(id) ? 'open' : ''}>
+    <summary>${esc(tr(R.painel))}</summary>
+    <dl class="aj-corpo">${parte(R.serve, g(a.serve))}${parte(R.importa, g(a.importa))}${parte(R.como, g(a.como), ` <span class="aj-quem"><b>${esc(tr(R.quem))}</b> ${esc(tr(a.quem))}.</span>`)}${parte(R.ex, g(a.ex))}</dl></details>`;
+}
+// Abertura da fase (BL2.1): o que ela decide, o que a pessoa terá ao final e quanto tempo leva
+function introFase(f) {
+  if (!f.decide) return '';
+  const R = AJUDA_ROT, p = (t, x) => `<div class="fi-p"><dt>${esc(tr(t))}</dt><dd>${glossarioTexto(x)}</dd></div>`;
+  return `<dl class="fase-intro" id="intro-${f.id}">${p(R.faseDecide, f.decide)}${p(R.faseFinal, f.final)}${p(R.faseTempo, f.tempo)}</dl>`;
+}
+function corpoPasso(id) { return painelAjuda(id) + (id === '4b' ? passo4b() : id === '4c' ? passo4c() : corpoPadrao(id)); }
 
 // ----------------------------------------------------------- passos, rodapés e fases
 function resumoPasso(id) {
@@ -900,7 +941,7 @@ function renderFase(f) {
       <span class="fase-n">${marcaFase(f, pr)}</span><span class="fase-t"><b>${esc(f.nome)}</b><small>${esc(f.sub)}</small></span>
       <span class="fase-st">${esc(tr(pr.feitos + ' de ' + pr.total + ' passos'))}</span><span class="chev" aria-hidden="true"></span></button>`;
   if (!aberta) return `<section class="fase f${f.n}${pr.completa ? ' feita' : ''}" id="fase-${f.id}">${cab}</section>`;
-  const ab = `<p class="abertura"><span>${esc(f.abertura)}</span>${f.info ? ' ' + botaoInfo(f.info, 'f-' + f.id) : ''}</p>${f.info ? notaInfo(f.info, 'f-' + f.id) : ''}`;
+  const ab = `<p class="abertura"><span>${esc(f.abertura)}</span>${f.info ? ' ' + botaoInfo(f.info, 'f-' + f.id) : ''}</p>${f.info ? notaInfo(f.info, 'f-' + f.id) : ''}${introFase(f)}`;
   return `<section class="fase f${f.n} aberta${pr.completa ? ' feita' : ''}" id="fase-${f.id}">${cab}
     <div class="fase-corpo">${ab}
       ${PASSOS[f.id].map(([id, nome]) => renderPasso(f, id, nome)).join('')}
@@ -1303,6 +1344,7 @@ function eventoFluxo(e) {
     if (el.dataset.ctxn) { gravarCtxn(el); return true; }
   }
   if (e.type === 'toggle' && el.dataset) {
+    if (el.dataset.ajuda != null) { ajudaMudou(el.dataset.ajuda, el.open); return false; }
     if (el.dataset.numdet != null) { NUM_ABERTO = el.open; return false; }
     if (el.dataset.subdet != null) { SUB_ABERTO[el.dataset.subdet] = el.open; return false; }
     if (el.dataset.desc != null) { DESC_ABERTO[el.dataset.desc] = el.open; return false; }

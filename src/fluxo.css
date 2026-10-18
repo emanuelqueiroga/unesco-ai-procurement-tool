@@ -795,3 +795,35 @@ details.desc-imp > summary:focus-visible { outline: 2px solid var(--focus); outl
   .desc-in { padding: 0 10px 12px; }
   .desc-bloco { padding: 12px; }
 }
+
+/* v14 (BL2): abertura da fase, painel "Sobre esta etapa", dicas das perguntas e glossário */
+.fase-intro { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 10px 18px; padding: 12px 14px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); max-width: 110ch; }
+.fi-p { min-width: 0; }
+.fase-intro dt { font-weight: 700; font-size: .88rem; color: var(--head); margin-bottom: 2px; }
+.fase-intro dd { margin: 0; font-size: .94rem; color: var(--ink-2); overflow-wrap: break-word; }
+details.ajuda { border: 1px solid var(--line); border-left: 3px solid var(--brand); border-radius: 8px; background: var(--surface-3); }
+details.ajuda > summary { cursor: pointer; padding: 10px 14px; font-weight: 700; color: var(--brand); list-style: none; display: flex; gap: 10px; align-items: center; }
+details.ajuda > summary::-webkit-details-marker { display: none; }
+details.ajuda > summary::before { content: ""; flex: none; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .15s; }
+details.ajuda[open] > summary::before { transform: rotate(45deg); }
+details.ajuda > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: 6px; }
+.aj-corpo { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px 22px; padding: 0 14px 14px; }
+.aj-p { min-width: 0; }
+.aj-corpo dt { font-weight: 700; font-size: .88rem; color: var(--head); margin-bottom: 2px; }
+.aj-corpo dd { margin: 0; font-size: .94rem; color: var(--ink-2); overflow-wrap: break-word; }
+.aj-quem { display: block; margin-top: 3px; color: var(--muted); }
+.aj-quem b { color: var(--ink-2); font-weight: 600; }
+.dica { font-size: .92rem; color: var(--ink-2); }
+.dica-r { font-weight: 700; color: var(--brand); }
+.gl { text-decoration: underline dotted; text-decoration-thickness: 1.5px; text-underline-offset: 3px; cursor: help; border-radius: 2px; }
+.gl:hover, .gl[aria-expanded="true"] { color: var(--brand); }
+.gl:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.gl-pop { position: absolute; z-index: 80; box-sizing: border-box; padding: 10px 12px 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: var(--shadow); font-size: .94rem; line-height: 1.45; }
+.gl-cab { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; padding-right: 30px; position: relative; }
+.gl-t { color: var(--head); }
+.gl-ext { color: var(--muted); font-size: .88rem; }
+.gl-x { position: absolute; top: -4px; right: -6px; width: 32px; height: 32px; border: 0; background: none; color: var(--muted); font-size: 1rem; cursor: pointer; border-radius: 50%; }
+.gl-x:hover { background: var(--surface-2); color: var(--ink); }
+.gl-x:focus-visible { outline: 2px solid var(--focus); outline-offset: 0; }
+.gl-d { margin: 6px 0 0; }
+@media (max-width: 760px) { details.ajuda > summary { padding: 10px 12px; } .aj-corpo { padding: 0 12px 12px; } }
