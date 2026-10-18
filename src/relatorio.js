@@ -69,7 +69,19 @@ const TXT_REL = {
   acQuandoC: 'Antes de contratar: antes de assinar o contrato da implantação (fim do Ano 0).',
   acQuandoM: 'Para manter e ampliar: durante a implantação e a expansão (Ano 1 em diante).',
   custoT: 'O custo em resumo',
-  custoAbre: 'Quanto cada fase custa, quanto é pago uma vez e quanto se repete, e o que mais pode mudar o total.',
+  // icebergs por fase (o preço da proposta acima da água; o resto abaixo)
+  icT: 'O custo de cada fase: o que se vê e o que fica escondido',
+  icAbre: 'Acima da linha d’água, o que costuma aparecer no preço da proposta: licenças, consumo de IA e dispositivos. Abaixo, o que a rede também paga para a solução funcionar. Valores por ano, em média, na conta econômica; as barras usam a mesma escala nas três fases.',
+  icAnos: 'Ano {0}', icAnosAte: 'Anos {0} a {1}',
+  icAcima: 'Preço da proposta', icAbaixo: 'Abaixo da linha d’água',
+  icMedia: 'Por ano, em média', icTotal: 'Total da fase: {0}',
+  icOculto: '{0} abaixo da linha d’água',
+  icSem: 'Sem custo nesta fase.',
+  icNota: 'A divisão entre o preço da proposta e o que fica abaixo da linha d’água é uma convenção desta ferramenta, inspirada em Krueger e Jackson (2026, Beyond the price tag); não faz parte do quadro de camadas.',
+  icDisp: 'Dispositivos', icLic: 'Licenças e assinaturas', icCons: 'Consumo de IA (uso pago)',
+  icCon: 'Conectividade e acesso', icInf: 'Infraestrutura e dados', icImp: 'Implantação e integração',
+  icFor: 'Formação', icOpe: 'Operação e suporte', icGov: 'Governança e saída',
+  custoAbre: 'Quanto cada fase custa por ano, o que aparece no preço da proposta e o que fica escondido, e o que mais pode mudar o total.',
   // introdução de cada seção do corpo
   i1: 'Esta seção descreve a solução, quem a usa e como o uso cresce, da prova de conceito ou piloto à rede toda. É a base de todos os custos que vêm depois.',
   i2: 'Esta seção mostra quanto se gasta em cada fase e em cada ano, separando o que é pago uma vez do que se repete. Serve para pedir a dotação de cada exercício.',
@@ -372,6 +384,38 @@ function relCartaoAcao(r, base) {
   });
 }
 
+
+// ----------------------------------------------------------- icebergs por fase (sumário executivo)
+// Derivado de avaliar() sem alterar o motor: soma, por fase e por subcomponente, os mesmos valores que decomporFases usa
+// (conta econômica em valor presente; saída e valor residual na fase do ano H). A soma de cada iceberg é av.fases.porFase[id].total.
+const IC_ACIMA = [['icDisp', ['K1.2']], ['icLic', ['K2.1']], ['icCons', ['K2.2']]];
+const IC_ABAIXO = [['icCon', ['K1.1', 'K1.3']], ['icInf', ['K2.3', 'K2.4', 'K2.5']], ['icImp', ['K3.1', 'K3.2', 'K3.3', 'K3.4']],
+  ['icFor', ['K4.3', 'K4.4']], ['icOpe', ['K4.1', 'K4.2']], ['icGov', ['K5.1', 'K5.2', 'K5.3', 'K5.4', 'K5.5', 'K6.1', 'K6.2', 'K6.3']]];
+function relIcebergs(d) {
+  if (!d || !d.av || !d.av.fases) return null;
+  const av = d.av, F = av.fases, T = av.r.anos, H = av.r.H;
+  const porS = {}; F.ids.forEach(id => { porS[id] = {}; });
+  const soma = (id, sub, v) => { porS[id][sub] = (porS[id][sub] || 0) + v; };
+  av.linhas.forEach(l => T.forEach(t => { if (l.eco[t]) soma(F.faseAno[t], l.s, l.eco[t] * av.disc[t]); }));
+  (av.saida || []).forEach(x => soma(F.faseAno[H], x.s, x.ecoVP));
+  if (av.vr) soma(F.faseAno[H], 'K6.3', -av.vr);
+  const grupo = (id, G) => G.map(([k, ss]) => ({ k, nome: R14(k), v: ss.reduce((a, z) => a + (porS[id][z] || 0), 0) }));
+  const fases = F.ids.map(id => F.porFase[id]).filter(f => f.anos.length).map(f => {
+    const n = f.anos.length, acima = grupo(f.id, IC_ACIMA), abaixo = grupo(f.id, IC_ABAIXO);
+    const tA = acima.reduce((a, x) => a + x.v, 0), tB = abaixo.reduce((a, x) => a + x.v, 0);
+    return { id: f.id, nome: tr((FASES_MOTOR.find(z => z[0] === f.id) || ['', f.id])[1]),
+      anosTxt: n === 1 ? R14('icAnos', f.anos[0]) : R14('icAnosAte', f.anos[0], f.anos[n - 1]), n,
+      total: f.total, media: f.total / n, acima: acima.map(x => Object.assign(x, { ano: x.v / n })), abaixo: abaixo.map(x => Object.assign(x, { ano: x.v / n })),
+      tAcima: tA, tAbaixo: tB, pOculto: tA + tB > 0 ? Math.max(0, tB) / (Math.max(0, tA) + Math.max(0, tB)) : 0 };
+  });
+  const mx = Math.max(1e-9, ...fases.flatMap(f => f.acima.concat(f.abaixo).map(x => Math.abs(x.ano))));
+  fases.forEach(f => {
+    f.acima.concat(f.abaixo).forEach(x => { x.w = Math.max(0, x.ano) / mx; x.txt = grande(x.ano); });
+    f.mediaTxt = grande(f.media); f.totalTxt = R14('icTotal', grande(f.total)); f.ocultoTxt = R14('icOculto', pct(f.pOculto)); f.vazio = Math.abs(f.total) < 0.5;
+  });
+  return { h: R14('icT'), abre: R14('icAbre'), nota: R14('icNota'), acima: R14('icAcima'), abaixo: R14('icAbaixo'), mediaRot: R14('icMedia'), sem: R14('icSem'), fases };
+}
+
 // ----------------------------------------------------------- gráficos (dados já traduzidos e formatados)
 const relCamNome = n => tr(nomeCamada(n));
 function relGraficos(d) {
@@ -512,7 +556,7 @@ function relComporPlano(S_, d) {
   // ---- primeira página, "como ler" e faltas (curtas)
   const sin = relSintese(nums, recs, a1 ? a1.principal : '');
   sin.exec = relExecutivo(by('resumo'), nums, { nReq: nReqX, nSim, nG: gq.length });
-  if (nums) sin.fasesTab = relTabelaFases(nums);
+  if (nums) sin.ice = relIcebergs(nums);
   sin.kv = sin.exec.map(x => [x.rot + ' ' + x.perg, x.frases.join(' ') || x.falta]).concat(sin.kv || []);
   add(sin);
   add({ pronto: true, tipo: 'caixa', id: 'comoler', h: R14('comoLer'), list: ['comoLer1', 'comoLer2', 'comoLer3', 'comoLer4', 'comoLer5'].map(k => R14(k)) });
@@ -750,7 +794,28 @@ const CSS_RELATORIO = `
 .rs-ac dt { font-weight: 700; color: var(--rp-head); font-size: .9rem; }
 .rs-ac dd { margin: 0; font-size: .95rem; }
 .rs-ac-l[data-c="exOque"] dd { font-weight: 700; color: var(--rp-head); }
-.rs-fases { overflow-x: auto; }
+.rs-ice { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.ic { border: 1px solid var(--rp-line); border-radius: 14px; overflow: hidden; display: grid; grid-template-rows: auto auto 1fr auto; background: #fff; }
+.ic-cab { padding: 12px 14px 4px; background: #EAF4FC; }
+.ic-cab b { display: block; color: var(--rp-head); font-size: 1.05rem; }
+.ic-cab span { font-size: .86rem; color: var(--rp-muted); }
+.ic-topo { background: #EAF4FC; padding: 0 14px 12px; }
+.ic-topo svg { display: block; width: 62%; height: 46px; margin: 0 auto -2px; }
+.ic-box { background: #fff; border-radius: 10px; padding: 8px 10px; display: grid; gap: 4px; box-shadow: 0 1px 2px rgba(12,45,77,.12); }
+.ic-l { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; font-size: .88rem; align-items: baseline; }
+.ic-l b { font-variant-numeric: tabular-nums; }
+.ic-l i { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: #D5E3F0; position: relative; overflow: hidden; }
+.ic-l i::after { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--w); background: #0069B4; border-radius: 3px; }
+.ic-agua { background: #0B4F7C; color: #fff; padding: 10px 14px 14px; display: grid; gap: 7px; align-content: start; border-top: 6px solid #1B86C6; }
+.ic-agua .ic-rot { font-size: .86rem; letter-spacing: .05em; text-transform: uppercase; color: #BFE3FA; }
+.ic-agua .ic-l i { background: rgba(255,255,255,.22); }
+.ic-agua .ic-l i::after { background: #A9D9F7; }
+.ic-box .ic-rot { font-size: .86rem; letter-spacing: .05em; text-transform: uppercase; color: var(--rp-muted); }
+.ic-pe { padding: 10px 14px 12px; text-align: center; background: #F4F8FB; display: grid; gap: 2px; }
+.ic-pe .ic-m { font-size: .86rem; color: var(--rp-muted); }
+.ic-pe .ic-v { font-size: 1.45rem; font-weight: 700; color: var(--rp-head); }
+.ic-pe .ic-o { font-size: .86rem; color: #9A3412; font-weight: 600; }
+.ic-nota { font-size: .86rem; }
 @media (max-width: 560px) { .rs-ac-l { grid-template-columns: 1fr; gap: 0; } .rs-exec tbody th { width: 38%; } }
 .rs-quem { font-size: .9rem; color: var(--rp-muted); margin: 0; }
 .rs-quem b { color: var(--rp-head); }

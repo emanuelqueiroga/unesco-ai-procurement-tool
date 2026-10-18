@@ -308,11 +308,11 @@ function gerarPDF() {
     tituloSec(tr(TXT_REL.acoes5), recs5.length ? tr(TXT_REL.acoesAbre) : '', C.alta);
     if (!recs5.length) texto(tr(TXT_REL.semAcoes), { cor: C.muted, size: 9.6 });
     else {
-      const xT = M + 30, wL = 62, wV = LW - 30 - wL - 14;
+      fonte(8.2, 'bold'); const wL = Math.max(62, ...['exOque', 'exPorque', 'exParaque', 'exComo', 'exQuem', 'exQuando'].map(k => doc.getTextWidth(pdfTxt(tr(TXT_REL[k]))) + 8)), xT = M + 30, wV = LW - 30 - wL - 14;
       const campos = r => [['exOque', r.oque, 'bold'], ['exPorque', r.porque], ['exParaque', r.paraque], ['exComo', r.como], ['exQuem', r.quemTxt], ['exQuando', r.quandoTxt]].filter(z => z[1]);
       recs5.forEach(r => {
         const F = campos(r).map(([k, v, st]) => [tr(TXT_REL[k]), quebra(v, 8.6, wV, st || 'normal'), st]);
-        const h = 10 + F.reduce((a2, f) => a2 + f[1].length * 10.8 + 3, 0) + 6;
+        const h = 9 + F.reduce((a2, f) => a2 + f[1].length * 10.3 + 2.4, 0) + 5;
         cabe(h + 4);
         doc.setDrawColor(...C.linha); doc.setLineWidth(0.7); doc.setFillColor(...C.branco); doc.roundedRect(M, y, LW, h, 6, 6, 'FD');
         doc.setFillColor(...C.alta); doc.rect(M, y + 1, 4, h - 2, 'F');
@@ -320,9 +320,9 @@ function gerarPDF() {
         let yy = y + 10;
         F.forEach(([rot, L, st]) => {
           fonte(8.2, 'bold', C.marca); doc.text(pdfTxt(rot), xT, yy + 8);
-          fonte(8.6, st || 'normal', st ? C.titulo : C.tinta); L.forEach(l => { doc.text(l, xT + wL, yy + 8.4); yy += 10.8; }); yy += 3;
+          fonte(8.6, st || 'normal', st ? C.titulo : C.tinta); L.forEach(l => { doc.text(l, xT + wL, yy + 8.4); yy += 10.3; }); yy += 2.4;
         });
-        y += h + 6;
+        y += h + 5;
       });
     }
     // o custo em resumo: fases (uma vez, recorrente) e o que mais move o custo
@@ -330,18 +330,64 @@ function gerarPDF() {
       cabe(160);
       y += 6;
       fonte(13, 'bold', C.titulo); doc.text(pdfTxt(tr(TXT_REL.custoT)), M, y + 13); y += 20;
-      texto(tr(TXT_REL.custoAbre), { size: 9.4, cor: C.muted, after: 6 });
-      if (sinteseS.fasesTab) tabela(sinteseS.fasesTab.head, sinteseS.fasesTab.rows, sinteseS.fasesTab);
-      cabe(30 + dd.drivers.length * 27);
-      fonte(11, 'bold', C.titulo); doc.text(pdfTxt(tr(TXT_REL.direcionadores)), M, y + 11); y += 18;
-      const xB = M + 260, wB = LW - 260;
+      const I = sinteseS.ice;
+      if (I && I.fases.length) {
+        const nF = I.fases.length, g = 10, wC = (LW - g * (nF - 1)) / nF, pd = 8, wI = wC - 2 * pd;
+        const hCab = 30, hPico = 26, hLin = 17, hA = 16 + 3 * hLin + 4, hB = 20 + 6 * hLin + 4, hPe = 50;
+        const hTot = hCab + hPico + hA + 8 + hB + hPe;
+        fonte(10.5, 'bold', C.titulo); const LT = quebra(I.h, 10.5, LW, 'bold');
+        cabe(hTot + 30 + LT.length * 13);
+        LT.forEach(l => { doc.text(l, M, y + 10); y += 13; }); y += 2;
+        texto(I.abre, { size: 8.4, cor: C.muted, after: 6 });
+        cabe(hTot + 24);
+        const azul = [11, 79, 124], ceu = [234, 244, 252], gelo = [159, 207, 242], borda = [78, 155, 211], barF = [213, 227, 240], barA = [169, 217, 247], laranja = [154, 52, 18];
+        const linha = (x, yy, nome, val, w, escuro) => {
+          fonte(8, 'normal', escuro ? C.branco : C.tinta); doc.text(corta(quebra(nome, 8, wI - 46), 1)[0] || '', x, yy + 8);
+          fonte(8, 'bold', escuro ? C.branco : C.titulo); doc.text(pdfTxt(val), x + wI, yy + 8, { align: 'right' });
+          doc.setFillColor(...(escuro ? [52, 110, 150] : barF)); doc.rect(x, yy + 10.5, wI, 2.6, 'F');
+          if (w > 0) { doc.setFillColor(...(escuro ? barA : C.marca)); doc.rect(x, yy + 10.5, Math.max(1, wI * w), 2.6, 'F'); }
+        };
+        I.fases.forEach((f, i) => {
+          const x0 = M + i * (wC + g); let yy = y;
+          doc.setFillColor(...ceu); doc.rect(x0, yy, wC, hCab + hPico + hA + 8, 'F');
+          fonte(9.2, 'bold', C.titulo); doc.text(corta(quebra(f.nome, 9.2, wI, 'bold'), 1)[0] || '', x0 + pd, yy + 13);
+          fonte(8, 'normal', C.muted); doc.text(pdfTxt(f.anosTxt), x0 + pd, yy + 24); yy += hCab;
+          // pico do iceberg
+          const cx = x0 + wC / 2, b = yy + hPico;
+          doc.setFillColor(...gelo); doc.setDrawColor(...borda); doc.setLineWidth(0.6);
+          doc.triangle(cx - 46, b, cx + 2, yy + 2, cx + 46, b, 'FD');
+          doc.triangle(cx - 30, b, cx - 18, yy + 12, cx - 4, b, 'F');
+          doc.setDrawColor(...C.branco); doc.setLineWidth(1); doc.line(cx + 2, yy + 2, cx - 3, yy + 16); doc.line(cx + 2, yy + 2, cx + 7, yy + 18);
+          yy = b;
+          doc.setFillColor(...C.branco); doc.roundedRect(x0 + pd - 3, yy, wC - 2 * pd + 6, hA, 4, 4, 'F');
+          fonte(8, 'bold', C.muted); doc.text(pdfTxt(I.acima.toUpperCase()), x0 + pd, yy + 10, { charSpace: 0.3 });
+          f.acima.forEach((z, k) => linha(x0 + pd, yy + 14 + k * hLin, z.nome, z.txt, z.w, false));
+          yy += hA + 8;
+          doc.setFillColor(27, 134, 198); doc.rect(x0, yy, wC, 3, 'F');
+          doc.setFillColor(...azul); doc.rect(x0, yy + 3, wC, hB - 3, 'F');
+          fonte(8, 'bold', [191, 227, 250]); doc.text(pdfTxt(I.abaixo.toUpperCase()), x0 + pd, yy + 14, { charSpace: 0.3 });
+          f.abaixo.forEach((z, k) => linha(x0 + pd, yy + 19 + k * hLin, z.nome, z.txt, z.w, true));
+          yy += hB;
+          doc.setFillColor(244, 248, 251); doc.rect(x0, yy, wC, hPe, 'F');
+          fonte(8, 'normal', C.muted); doc.text(pdfTxt(I.mediaRot), x0 + wC / 2, yy + 11, { align: 'center' });
+          fonte(13, 'bold', C.titulo); doc.text(pdfTxt(f.mediaTxt), x0 + wC / 2, yy + 25, { align: 'center' });
+          fonte(8, 'normal', C.muted); doc.text(corta(quebra(f.totalTxt, 8, wI), 1)[0] || '', x0 + wC / 2, yy + 35, { align: 'center' });
+          fonte(8, 'bold', laranja); doc.text(corta(quebra(f.ocultoTxt, 8, wI, 'bold'), 1)[0] || '', x0 + wC / 2, yy + 45, { align: 'center' });
+          doc.setDrawColor(...C.linha); doc.setLineWidth(0.6); doc.roundedRect(x0, y, wC, hTot, 6, 6, 'S');
+        });
+        y += hTot + 6;
+        texto(I.nota, { size: 8, cor: C.muted, i: true, after: 8 });
+      }
+      cabe(24 + dd.drivers.length * 21);
+      fonte(10.5, 'bold', C.titulo); doc.text(pdfTxt(tr(TXT_REL.direcionadores)), M, y + 10); y += 15;
+      const xB = M + 250, wB = LW - 250;
       dd.drivers.forEach((z, i) => {
-        fonte(9.4, 'bold', C.titulo); const Ln = corta(quebra((i + 1) + '. ' + z.nome, 9.4, 250, 'bold'), 1); doc.text(Ln[0] || '', M, y + 9);
-        fonte(8, 'normal', C.muted); doc.text(pdfTxt(z.faixa), M, y + 19);
-        doc.setFillColor(...C.cab); doc.rect(xB, y + 3, wB, 7, 'F');
-        doc.setFillColor(...C.alta); doc.rect(xB, y + 3, Math.max(2, wB * z.w), 7, 'F');
-        fonte(8, 'normal', C.tinta); doc.text(pdfTxt(z.loTxt + '  a  ' + z.hiTxt), xB, y + 20);
-        y += 27;
+        fonte(8.8, 'bold', C.titulo); doc.text(corta(quebra((i + 1) + '. ' + z.nome, 8.8, 240, 'bold'), 1)[0] || '', M, y + 9);
+        fonte(8, 'normal', C.muted); doc.text(pdfTxt(z.faixa), M + 14, y + 18);
+        doc.setFillColor(...C.cab); doc.rect(xB, y + 2, wB, 6, 'F');
+        doc.setFillColor(...C.alta); doc.rect(xB, y + 2, Math.max(2, wB * z.w), 6, 'F');
+        fonte(8, 'normal', C.tinta); doc.text(pdfTxt(z.loTxt + '  a  ' + z.hiTxt), xB, y + 17);
+        y += 21;
       });
     }
   };

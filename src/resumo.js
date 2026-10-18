@@ -842,10 +842,19 @@ function htmlSinteseP(s) {
   }
   if (d) {
     h += `<h4 class="rp-sub">${esc(tr(TXT_REL.custoT))}</h4><p class="rs-abre muted">${esc(tr(TXT_REL.custoAbre))}</p>`;
-    if (s.fasesTab) h += `<div class="rs-fases" data-k="fases">${htmlTabelaP(s.fasesTab)}</div>`;
+    if (s.ice) h += htmlIcebergsP(s.ice);
     h += `<h5 class="rp-sub">${esc(tr(TXT_REL.direcionadores))}</h5><ol class="rs-dir" data-k="direcionadores">${d.drivers.map(x => `<li><b>${esc(x.nome)}</b> <span>${esc(x.faixa)}</span><span class="rs-d-b" style="width:${Math.max(2, 100 * x.w).toFixed(1)}%" aria-hidden="true"></span><span>${esc(x.txt)}</span></li>`).join('')}</ol>`;
   }
   return h;
+}
+function htmlIcebergsP(I) {
+  const lin = x => `<div class="ic-l" data-g="${x.k}"><span>${esc(x.nome)}</span><b>${esc(x.txt)}</b><i style="--w:${(100 * x.w).toFixed(1)}%" aria-hidden="true"></i></div>`;
+  const pico = '<svg viewBox="0 0 120 40" aria-hidden="true"><path d="M4 40 L34 16 L46 24 L66 2 L84 20 L94 14 L116 40 Z" fill="#9FCFF2" stroke="#4E9BD3" stroke-width="1.2"/><path d="M66 2 L60 22 M66 2 L74 26" stroke="#fff" stroke-width="1.6" fill="none"/></svg>';
+  return `<h5 class="rp-sub">${esc(I.h)}</h5><p class="rs-abre muted">${esc(I.abre)}</p><div class="rs-ice" data-k="icebergs">${I.fases.map(f => `<article class="ic" data-fase="${f.id}">
+    <div class="ic-cab"><b>${esc(f.nome)}</b><span>${esc(f.anosTxt)}</span></div>
+    <div class="ic-topo">${pico}<div class="ic-box"><span class="ic-rot">${esc(I.acima)}</span>${f.acima.map(lin).join('')}</div></div>
+    <div class="ic-agua"><span class="ic-rot">${esc(I.abaixo)}</span>${f.abaixo.map(lin).join('')}</div>
+    <div class="ic-pe"><span class="ic-m">${esc(I.mediaRot)}</span><span class="ic-v">${esc(f.mediaTxt)}</span><span class="ic-m">${esc(f.totalTxt)}</span><span class="ic-o">${esc(f.ocultoTxt)}</span></div></article>`).join('')}</div><p class="ic-nota muted">${esc(I.nota)}</p>`;
 }
 // Respostas que faltam: lista curta perto do topo (curta) ou completa no anexo A
 function htmlFaltasP(s) {

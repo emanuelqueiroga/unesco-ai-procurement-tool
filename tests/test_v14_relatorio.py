@@ -112,6 +112,8 @@ async def main():
             SEIS = ['O quê?', 'Por quê?', 'Para quê?', 'Como?', 'Quem?', 'Quando?']
             ok(all(all(k in t for k in SEIS) for t in r['tc']), f'{ex}: cada ação responde O quê, Por quê, Para quê, Como, Quem e Quando')
             ok(all(((a['quem'] and a['quem'][:1].upper() + a['quem'][1:] in t) or (not a['quem'] and 'A equipe responsável pelo caso' in t)) for a, t in zip(M['acoes'], r['tc'])), f'{ex}: "Quem?" com a área de PASSO_AJUDA ou a equipe do caso (nada inventado)')
+            IC = await pg.evaluate("""(() => { const d = relDados(numerosCusto()); const I = relIcebergs(d); return I ? { f: I.fases.map(f => ({ dif: Math.abs(f.tAcima + f.tAbaixo - d.av.fases.porFase[f.id].total), tot: d.av.fases.porFase[f.id].total })), n: document.querySelectorAll('[data-sec="sintese"] .ic').length } : null; })()""")
+            ok(IC is not None and len(IC['f']) >= 1 and IC['n'] == len(IC['f']) and all(x['dif'] < 1e-6 * max(1, abs(x['tot'])) for x in IC['f']), f'{ex}: um iceberg por fase, e acima + abaixo da água = custo da fase no motor ({IC and len(IC["f"])})')
             ok('A proposta em seis respostas' in s and all(k in s for k in ['O quê?', 'Por quê?', 'Para quê?', 'Como?', 'Entregáveis', 'Indicadores']), f'{ex}: sumário executivo com as seis respostas')
             # ordem de decisão
             ids = r['ids']; ordem = ['sintese', 'comoler', 's1', 's2', 's3', 's4', 's5', 'anexos', 'anexo-a', 'anexo-b', 'anexo-c', 'anexo-d', 'anexo-e', 'anexo-f', 'anexo-g', 'anexo-h', 'anexo-i']
