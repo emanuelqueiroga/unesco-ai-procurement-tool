@@ -272,7 +272,7 @@ function cfgAtual() {
 // campos cuja mudança refaz as premissas de custo montadas a partir do caso
 const CAMPOS_CUSTO = ['tarefas', 'usuarios', 'afetados', 'consequencias', 'testes', 'tipoTec', 'pagamento', 'licenca', 'adaptacao', 'piloto', 'poc',
   'nFerramentas', 'conheceFerramentas', 'ferramentas', 'internet', 'escolasInternet', 'modeloDisp', 'dispExistem', 'formados', 'formacaoTipo', 'formacaoFormato',
-  'formacaoHoras', 'formacaoPaga', 'suporteQuem', 'suporteNivel', 'acompanhamento', 'implantacao', 'arquitetura', 'elegiveis', 'expansao', 'horizonte'];
+  'formacaoHoras', 'formacaoPaga', 'suporteQuem', 'suporteNivel', 'acompanhamento', 'implantacao', 'arquitetura', 'elegiveis', 'expansao', 'horizonte', 'curva', 'ondas', 'reposicaoDisp', 'rotacaoFormacao'];
 function marcarCampo(campo) {
   S.respC[campo] = true;
   if (S.exemplo !== 'novo') S.exemplo = 'editado';

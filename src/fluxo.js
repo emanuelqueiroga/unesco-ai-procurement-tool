@@ -290,6 +290,7 @@ function qOk(f, semSug) {
       return sc.length > 0 && sc.every(([o, k]) => +(c[o] || {})[k] > 0 || (o === 'implantacao' && k === 'escolas' && !(totaisCtx().escolas > 0))) && (semSug || !sugerido(f));
     }
     case 'arq': return !!c.arquitetura;
+    case 'ondas': return typeof ondasValidas === 'function' ? ondasValidas(c.ondas).length > 0 : false;
     default:
       if (vazio(v)) return false;
       if (!semSug && sugerido(f)) return false;
@@ -591,6 +592,17 @@ function opFerramentas() {
   return `<div class="ferrs">${linhas || '<p class="hint vazio-g">Nenhuma ferramenta na lista.</p>'}
     <div class="row"><button type="button" class="btn" data-act="ferr-add" id="ferr-add">+ <span>Adicionar ferramenta</span></button></div></div>`;
 }
+// 4.1.5 ondas de adoção: até 4 linhas (ano e % acumulado das pessoas do 4.1.1), gravadas em caso.ondas.<i>.ano|pct
+function opOndas() {
+  const O = Array.isArray(S.caso.ondas) ? S.caso.ondas : [];
+  const lin = i => {
+    const o = O[i] || {};
+    return `<fieldset class="onda" aria-labelledby="onda-t-${i}"><b id="onda-t-${i}" class="onda-t"><span>Onda</span> ${i + 1}</b>
+      <label class="g-c"><span>Ano</span>${nCampo({ id: 'on-' + i + '-ano', attrs: `data-fn="ondas.${i}.ano"`, valor: o.ano, casas: 0, rotulo: tr('Ano') + ' (' + tr('Onda') + ' ' + (i + 1) + ')', ph: ' ' })}</label>
+      <label class="g-c"><span>% acumulado da rede</span>${nCampo({ id: 'on-' + i + '-pct', attrs: `data-fn="ondas.${i}.pct"`, valor: o.pct, casas: 0, rotulo: tr('% acumulado da rede') + ' (' + tr('Onda') + ' ' + (i + 1) + ')', ph: ' ' })}</label></fieldset>`;
+  };
+  return `<div class="g-campos ondas">${[0, 1, 2, 3].map(lin).join('')}</div>`;
+}
 // 3.1.1 primeira etapa da implantação
 function opImplant() {
   const c = S.caso, p = c.implantacao || {}, t = totaisCtx();
@@ -634,6 +646,7 @@ function controle(f) {
     case 'implant': return opImplant();
     case 'horas': return opHoras(f);
     case 'arq': return opArq(f);
+    case 'ondas': return opOndas();
     case 'texto': {
       let ph = f.ph;
       if (f.id === 'titulo') { const t0 = (S.caso.tarefas || [])[0]; ph = t0 ? (t0 === 'outra' ? (S.caso.tarefaOutra || '') : rotulo(listaOpc(CAMPO_POR_ID.tarefas), t0)) : ''; }
@@ -644,7 +657,7 @@ function controle(f) {
       const v = String(valorCampo(f) || ''), rows = f.sugDe === 'problemas' ? Math.min(10, Math.max(f.rows || 3, v.split('\n').reduce((n, l) => n + Math.ceil((l.length || 1) / 80), 0))) : f.rows;
       return aCampo('f-' + f.id, attrCampo(f), valorCampo(f), rows, f.ph);
     }
-    case 'num': return nCampo({ id: 'f-' + f.id, attrs: `data-fn="${f.id}"`, valor: valorCampo(f), casas: 0, rotulo: f.t, ph: ' ' });
+    case 'num': return nCampo({ id: 'f-' + f.id, attrs: `data-fn="${f.id}"`, valor: valorCampo(f), casas: f.casas || 0, rotulo: f.t, ph: ' ' });
   }
   return '';
 }
@@ -770,6 +783,38 @@ function seletorMoeda() {
   const op = c => `<option value="${c}" ${mi.cod === c ? 'selected' : ''}>${c} · ${esc(nm(c))}</option>`;
   return `<div class="moeda-est"><label for="moeda-est">Moeda de exibição</label><select class="f" id="moeda-est" data-moeda="cod">${top.map(op).join('')}<option disabled>──────────</option>${resto.map(op).join('')}</select></div>`;
 }
+// v14 (BL3.1, BL3.7, BL5.4): custo por fase (pagamento único × recorrente, pessoas alcançadas) e indicadores do custo total.
+// Lê av.fases e av.tco (custos.js); o relatório lê os mesmos campos.
+function blocoFasesIndicadores(n) {
+  const F = n.av && n.av.fases, I = n.av && n.av.tco;
+  if (!F || !I) return '';
+  const un = unidMil();
+  const ids = F.ids.filter(id => F.porFase[id].anos.length);
+  const th = [tr('Fase'), tr('Pagamento único') + ' (' + un + ')', tr('Recorrente') + ' (' + un + ')', tr('Total') + ' (' + un + ')', tr('Pessoas alcançadas')];
+  const anosTxt = a => a.length === 1 ? tr('Ano ' + a[0]) : tr('Anos ' + a[0] + ' a ' + a[a.length - 1]);
+  const linhas = ids.map(id => { const p = F.porFase[id]; return `<tr><td data-th="${esc(th[0])}">${esc(tr(p.nome))} <span class="muted">(${esc(anosTxt(p.anos))})</span></td><td class="n" data-th="${esc(th[1])}">${mil(p.unico)}</td><td class="n" data-th="${esc(th[2])}">${mil(p.recorrente)}</td><td class="n" data-th="${esc(th[3])}">${mil(p.total)}</td><td class="n" data-th="${esc(th[4])}">${fmtInt(p.pessoas)}</td></tr>`; }).join('');
+  const pessoasMax = Math.max(0, ...ids.map(id => F.porFase[id].pessoas));
+  const A = I.anual;
+  const rotAnual = { primeiro_ano_em_escala_plena: 'Custo anual em regime (Ano ' + A.ano + ', primeiro ano da Expansão com toda a rede)',
+    ultimo_ano_do_horizonte: 'Custo anual no último ano do horizonte (Ano ' + A.ano + '); a rede ainda não chega a todas as pessoas',
+    depois_do_financiamento: 'Custo anual em regime (Ano ' + A.ano + ', primeiro ano depois do fim do financiamento externo)',
+    financiamento_ate_o_fim: 'Custo anual em regime (Ano ' + A.ano + '); há financiamento externo até o fim do horizonte' }[A.rotulo];
+  const kpi = (v, l) => `<div class="kpi"><span class="v">${v}</span><span class="l">${esc(tr(l))}</span></div>`;
+  const k = [kpi(grande(I.tcoDescontado), 'Custo total, descontado'),
+    kpi(grande(I.tcoNominal), 'Custo total nominal (preços correntes, sem desconto)'),
+    kpi(grande(I.cae), 'Custo anual equivalente'),
+    I.custoPorAprendizAno != null ? kpi(din(I.custoPorAprendizAno, 2), 'Por estudante por ano') : '',
+    I.custoPorProfessorAno != null ? kpi(din(I.custoPorProfessorAno, 2), 'Por professor por ano') : '',
+    kpi(pct(I.pRecorrente), 'Parte do custo total que é recorrente'),
+    kpi(grande(A.eco), rotAnual)].filter(Boolean).join('');
+  return `<h3 class="sub-h">Custo por fase</h3>
+    <div class="tw"><table class="pilha fases-t"><thead><tr><th>${esc(th[0])}</th><th class="n">${esc(th[1])}</th><th class="n">${esc(th[2])}</th><th class="n">${esc(th[3])}</th><th class="n">${esc(th[4])}</th></tr></thead><tbody>${linhas}
+      <tr class="tot"><td data-th="${esc(th[0])}">Total</td><td class="n" data-th="${esc(th[1])}">${mil(F.unico)}</td><td class="n" data-th="${esc(th[2])}">${mil(F.recorrente)}</td><td class="n" data-th="${esc(th[3])}">${mil(F.total)}</td><td class="n" data-th="${esc(th[4])}">${fmtInt(pessoasMax)}</td></tr></tbody></table></div>
+    <p class="note">O pagamento único reúne a implantação, a integração, a formação inicial e a compra de dispositivos. O recorrente reúne licenças, conectividade, operação, suporte, reciclagem da formação e reposição.</p>
+    <h3 class="sub-h">Indicadores do custo total</h3>
+    <div class="kpis kpis3">${k}</div>
+    <p class="note">${esc(tr('Desembolso da rede nesse ano, em preços correntes:'))} <b class="num">${grande(A.desembolso)}</b></p>`;
+}
 function passo4b() {
   let n;
   try { n = numerosCusto(); } catch (e) { return '<p class="muted">Não foi possível calcular com as premissas atuais.</p>'; }
@@ -800,6 +845,7 @@ function passo4b() {
       <div class="kpi"><span class="v">${din(n.porAluno, 2)}</span><span class="l">Por usuário ativo por ano</span></div>
       <div class="kpi"><span class="v">${(n.ind.anosParaSair || 0).toLocaleString(LOC(), { maximumFractionDigits: (n.ind.anosParaSair || 0) < 1 ? 2 : 1 })}</span><span class="l">Custo de sair, em anos de custo recorrente</span></div></div>
     ${linhaAdapt}
+    ${blocoFasesIndicadores(n)}
     <p class="note"><span>Valores ilustrativos. Substitua por cotações e dados locais.</span> <span>Custo total em preços constantes, com tempo das equipes; dotação em preços correntes, só desembolso.</span></p>
     <details class="calc numeros" data-numdet ${NUM_ABERTO ? 'open' : ''}><summary>Ver os números detalhados</summary>
       <div class="embutido det-num">
@@ -1142,7 +1188,7 @@ function aoMudarCampo(campo) {
     c.ferramentas = Array.from({ length: n }, () => novaFerramenta());
   }
   if (campo === 'formacaoHoras') c.formacaoEstimativa = false;   // horas digitadas pela pessoa
-  if (['piloto', 'poc', 'implantacao', 'elegiveis', 'escolasInternet', 'formacaoHoras'].includes(String(campo).split('.')[0])) {
+  if (['piloto', 'poc', 'implantacao', 'elegiveis', 'escolasInternet', 'formacaoHoras', 'ondas', 'rotacaoFormacao'].includes(String(campo).split('.')[0])) {
     const p = c.piloto || {}, t = totaisCtx(), el = document.getElementById('pct-rede');
     const v = modoTeste() !== 'poc' && t.escolas && +p.escolas ? Math.min(1, +p.escolas / t.escolas) : 0;
     if (el) { el.hidden = !v; const b = el.querySelector('b'); if (b) b.textContent = pct(v); }

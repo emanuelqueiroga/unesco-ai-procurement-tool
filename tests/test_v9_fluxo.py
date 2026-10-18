@@ -78,7 +78,7 @@ async def main():
                 nums = await percorrer(pg, tag + '-branco', w, erros, False, branco=True)
                 todos = await pg.evaluate("CAMPOS.filter(visivel).map(f=>f.n)")
                 ok(sorted(nums) == sorted(todos), f'{tag} todas as perguntas visíveis de CAMPOS aparecem com número ({len(nums)} de {len(todos)})')
-                ok(await pg.evaluate("CAMPOS.filter(f=>!visivel(f)).map(f=>f.n).join()") == '2.3.3,2.4.2', f'{tag} caso em branco: só 2.3.3 e 2.4.2 ficam ocultas (condicionais)')
+                ok(await pg.evaluate("CAMPOS.filter(f=>!visivel(f)).map(f=>f.n).join()") == '2.3.3,2.4.2,4.1.5', f'{tag} caso em branco: só 2.3.3, 2.4.2 e 4.1.5 ficam ocultas (condicionais)')
                 # v11: quatro fases, stepper e mandala
                 ok(await pg.evaluate("FASES.map(f=>f.id).join()") == 'contexto,piloto,implantacao,expansao' and await pg.locator('#stepper .step-f').count() == 4, f'{tag} quatro fases no stepper')
                 ok(await pg.locator('.mandala [data-setor]').count() == 15 and await pg.locator('.mandala [data-camada]').count() == 7 and await pg.locator('.mandala .m-set.f4').count() == 3, f'{tag} mandala: 15 passos, 7 camadas, fase 4 com a cor f4')

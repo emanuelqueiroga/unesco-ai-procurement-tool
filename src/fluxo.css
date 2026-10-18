@@ -795,3 +795,9 @@ details.desc-imp > summary:focus-visible { outline: 2px solid var(--focus); outl
   .desc-in { padding: 0 10px 12px; }
   .desc-bloco { padding: 12px; }
 }
+
+/* v14: ondas de adoção (4.1.5) */
+.g-campos.ondas { display: grid; gap: 10px; }
+fieldset.onda { display: grid; grid-template-columns: auto 1fr 1fr; gap: 10px 14px; align-items: end; padding: 10px 14px; margin: 0; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface-3); min-width: 0; }
+.onda-t { color: var(--head); }
+@media (max-width: 560px) { fieldset.onda { grid-template-columns: 1fr 1fr; } .onda-t { grid-column: 1 / -1; } }
