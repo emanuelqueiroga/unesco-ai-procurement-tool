@@ -198,7 +198,9 @@ async def main():
                                 tp = subprocess.run(['pdftotext', '-layout', '-f', str(pag), '-l', str(pag), arq, '-'], capture_output=True, text=True).stdout
                                 ok('CC BY-SA 3.0 IGO' in tp and 'Figure 1' in tp and 'reproduced without changes' in tp, f'pdf en {ex}: crédito da figura na página {pag}')
                                 ok(len([l for l in tp.split('\n') if l.strip()]) <= 8, f'pdf en {ex}: página da figura só com título, figura, legenda e rodapé')
-                                antes = subprocess.run(['pdftotext', '-layout', '-f', '3', '-l', str(pag - 1), arq, '-'], capture_output=True, text=True).stdout
+                                pgs_ = subprocess.run(['pdftotext', '-layout', arq, '-'], capture_output=True, text=True).stdout.split('\f')
+                                iIdx = next((i for i, t_ in enumerate(pgs_) if 'IN THIS PLAN' in t_.upper()), 1)
+                                antes = '\f'.join(pgs_[iIdx + 1:pag - 1])
                                 ok('ANNEX E' in antes.upper() and 'ANNEX F' not in antes.upper(), f'pdf en {ex}: figura no anexo E, antes do anexo F')
                             ok('What to require in the procurement' in plano and 'What governance is needed' in plano and plano.index('What to require in the procurement') < plano.index('What governance is needed'), f'pdf en {ex}: seção 4 (contratação) antes da seção 5 (governança)')
                             pend = await pg.evaluate(PEND_MATRIZ)

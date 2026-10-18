@@ -190,7 +190,7 @@ async def main():
             ok(r and r['itens'] == max(0, n - 5) and r['irs'] == r['itens'] and r['irsTopo'] == min(5, n), f'plano {ex}: {r and r["itens"]} itens no anexo C e {r and r["irsTopo"]} no resumo, cada um com "Ir à pergunta" ({n} no total)')
             if ex == 'novo': ok('Ainda não há respostas suficientes' in r['txt'], 'plano novo: mensagem de lista vazia')
             md = await pg.evaluate("relMD(dadosRelatorio())")
-            ok('## Anexo C. Recomendações, por momento' in md and md.index('## Em resumo') < md.index('## 1. O que se compra') < md.index('## Anexo C.') < md.index('## Anexo D.') and '## undefined' not in md, f'plano {ex}: Markdown com resumo, seções 1 a 5 e anexo C')
+            ok('## Anexo C. Recomendações, por momento' in md and md.index('## Sumário executivo') < md.index('## 1. O que se compra') < md.index('## Anexo C.') < md.index('## Anexo D.') and '## undefined' not in md, f'plano {ex}: Markdown com resumo, seções 1 a 5 e anexo C')
             if ex == 'D':
                 await pg.screenshot(path=f'{TMP}/plano_D.png')
                 await pg.locator('[data-sec="recs"] [data-ir]').first.click(); await pg.wait_for_timeout(250)

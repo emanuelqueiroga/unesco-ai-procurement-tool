@@ -817,22 +817,34 @@ function cssPlanoV13() {
 function htmlSinteseP(s) {
   const d = s.d;
   let h = '';
+  // v14 (revisão): a proposta em seis respostas
+  if (s.exec && s.exec.length) {
+    h += `<h4 class="rp-sub">${esc(tr(TXT_REL.exT))}</h4><table class="rs-exec" data-k="exec"><thead><tr><th scope="col">${esc(tr(TXT_REL.exDim))}</th><th scope="col">${esc(tr(TXT_REL.exResp))}</th></tr></thead><tbody>${s.exec.map(x =>
+      `<tr data-dim="${esc(x.id)}"><th scope="row"><b>${esc(x.rot)}</b><span>${esc(x.perg)}</span></th><td>${x.frases.length ? (x.frases.length > 1 ? `<ul>${x.frases.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : `<p>${esc(x.frases[0])}</p>`) : `<p class="muted">${esc(x.falta)}</p>`}</td></tr>`).join('')}</tbody></table>`;
+  }
   if (!d) h += `<p class="rp-vazio">${esc(s.semCusto)}</p>`;
   else {
     const w = Math.max(d.hi - d.lo, d.central * 0.02), a = d.lo - 0.5 * w, b = d.hi + 0.5 * w;
     const pos = v => (100 * (v - a) / (b - a)).toFixed(2);
-    h += `<div class="rs-topo"><div class="rs-tco" data-k="tco"><span class="rs-tco-l">${esc(tr(TXT_REL.kTco))}</span><span class="rs-tco-v">${valorKpiP(d.centralTxt)}</span>
+    h += `<h4 class="rp-sub">${esc(tr(TXT_REL.numT))}</h4><div class="rs-topo"><div class="rs-tco" data-k="tco"><span class="rs-tco-l">${esc(tr(TXT_REL.kTco))}</span><span class="rs-tco-v">${valorKpiP(d.centralTxt)}</span>
       <span class="rs-tco-f">${esc(d.faixaTxt)}</span>
       <div class="rs-faixa" role="img" aria-label="${esc(d.faixaTxt + '; ' + tr(TXT_REL.kCentral) + ': ' + d.centralTxt)}"><i style="left:${pos(d.lo)}%;width:${(pos(d.hi) - pos(d.lo)).toFixed(2)}%"></i><b style="left:${pos(d.central)}%"></b></div>
       <p class="rs-nota">${esc(d.nota)}</p></div>
       <div class="rs-kpis">${d.kpis.map(k => `<div class="rp-kpi" data-k="${k.id}"><span class="rp-kpi-v">${valorKpiP(k.v)}</span><span class="rp-kpi-l">${esc(k.l)}</span>${k.nota ? `<span class="rp-kpi-n">${esc(k.nota)}</span>` : ''}</div>`).join('')}</div></div>`;
-    h += `<h4 class="rp-sub">${esc(tr(TXT_REL.direcionadores))}</h4><ol class="rs-dir" data-k="direcionadores">${d.drivers.map(x => `<li><b>${esc(x.nome)}</b> <span>${esc(x.faixa)}</span><span class="rs-d-b" style="width:${Math.max(2, 100 * x.w).toFixed(1)}%" aria-hidden="true"></span><span>${esc(x.txt)}</span></li>`).join('')}</ol>`;
   }
   h += `<h4 class="rp-sub">${esc(tr(TXT_REL.acoes5))}</h4>`;
   if (!s.recs.length) h += `<p class="rp-vazio">${esc(tr(TXT_REL.semAcoes))}</p>`;
-  else h += `<ol class="rp-top" data-k="acoes">${s.recs.map(r => `<li class="rp-tc" data-rec="${esc(r.id)}"><span class="rp-tn" aria-hidden="true">${r.n}</span><div class="rp-tc-c">
-    <p class="rp-tc-a">${esc(r.texto)}</p>${r.quem ? `<p class="rs-quem"><b>${esc(tr(TXT_REL.quemAge))}</b> ${esc(r.quem)}</p>` : ''}
+  else {
+    const lin = (k, v) => v ? `<div class="rs-ac-l" data-c="${k}"><dt>${esc(tr(TXT_REL[k]))}</dt><dd>${esc(v)}</dd></div>` : '';
+    h += `<p class="rs-abre muted">${esc(tr(TXT_REL.acoesAbre))}</p><ol class="rp-top" data-k="acoes">${s.recs.map(r => `<li class="rp-tc" data-rec="${esc(r.id)}"><span class="rp-tn" aria-hidden="true">${r.n}</span><div class="rp-tc-c">
+    <dl class="rs-ac">${lin('exOque', r.oque)}${lin('exPorque', r.porque)}${lin('exParaque', r.paraque)}${lin('exComo', r.como)}${lin('exQuem', r.quemTxt)}${lin('exQuando', r.quandoTxt)}</dl>
     <p class="rp-tags"><span class="rp-tag" data-tipo="${esc(r.tipo)}">${esc(r.tipo)}</span><span class="rp-tag rp-q">${esc(r.quando)}</span></p></div>${r.ir ? `<button type="button" class="link rc-ir" data-ir="${esc(r.ir)}">${esc(tr(TXT_REC.ir))}</button>` : ''}</li>`).join('')}</ol>`;
+  }
+  if (d) {
+    h += `<h4 class="rp-sub">${esc(tr(TXT_REL.custoT))}</h4><p class="rs-abre muted">${esc(tr(TXT_REL.custoAbre))}</p>`;
+    if (s.fasesTab) h += `<div class="rs-fases" data-k="fases">${htmlTabelaP(s.fasesTab)}</div>`;
+    h += `<h5 class="rp-sub">${esc(tr(TXT_REL.direcionadores))}</h5><ol class="rs-dir" data-k="direcionadores">${d.drivers.map(x => `<li><b>${esc(x.nome)}</b> <span>${esc(x.faixa)}</span><span class="rs-d-b" style="width:${Math.max(2, 100 * x.w).toFixed(1)}%" aria-hidden="true"></span><span>${esc(x.txt)}</span></li>`).join('')}</ol>`;
+  }
   return h;
 }
 // Respostas que faltam: lista curta perto do topo (curta) ou completa no anexo A
@@ -902,7 +914,7 @@ function renderPlano() {
       out += `<div class="rp-item" id="plano-faltas" data-sec="faltas" data-toc="faltas">${htmlFaltasP(s)}</div>`;
     } else if (s.tipo === 'princ') {
       fecha(); toc.push([s.id, s.rotulo, s.num, '']);
-      out += `<section class="rp-sec rp-princ-sec" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}" aria-labelledby="plano-${s.id}-t">${cabP(s.num, s.h, '', 'plano-' + s.id, s.rotulo)}`; aberta = true;
+      out += `<section class="rp-sec rp-princ-sec" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}" aria-labelledby="plano-${s.id}-t">${cabP(s.num, s.h, s.intro || '', 'plano-' + s.id, s.rotulo)}`; aberta = true;
     } else if (s.tipo === 'anexos') {
       fecha(); anexos = true; toc.push(['anexos', s.h, '', '']);
       out += `<div class="rp-anexos" id="plano-anexos" data-sec="anexos" data-toc="anexos"><header class="rp-cab"><div class="rp-cab-t"><h3 id="plano-anexos-t">${esc(s.h)}</h3><p class="rp-abre">${esc((s.p || [])[0] || '')}</p></div></header>`;

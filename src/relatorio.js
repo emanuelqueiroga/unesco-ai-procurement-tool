@@ -11,8 +11,71 @@ const REL_N_SIM = 1500, REL_SEMENTE = 20261003;
 
 const TXT_REL = {
   // resumo da primeira página
-  sintese: 'Em resumo',
-  sinteseAbre: 'Os números principais da estimativa ilustrativa e as cinco ações mais importantes.',
+  sintese: 'Sumário executivo',
+  sinteseAbre: 'O que se propõe, por que, para que, como, o que será entregue e como medir, com os números principais da estimativa ilustrativa.',
+  // v14 (revisão do sumário): seis respostas da decisão (O quê, Por quê, Para quê, Como, Entregáveis, Indicadores)
+  exT: 'A proposta em seis respostas',
+  exDim: 'Dimensão', exPerg: 'Pergunta', exResp: 'Resposta deste caso',
+  exOque: 'O quê?', exOqueP: 'O que será feito?',
+  exPorque: 'Por quê?', exPorqueP: 'Por que isso precisa ser feito?',
+  exParaque: 'Para quê?', exParaqueP: 'Qual é a finalidade?',
+  exComo: 'Como?', exComoP: 'Como será realizado?',
+  exEntreg: 'Entregáveis', exEntregP: 'O que será produzido?',
+  exInd: 'Indicadores', exIndP: 'Como verificar se deu certo?',
+  exQuem: 'Quem?', exQuemP: 'Quem será responsável?',
+  exQuando: 'Quando?', exQuandoP: 'Quando será realizado?',
+  exFalta: 'Ainda sem resposta: complete o passo {0}.',
+  oqApl: 'Contratar e implantar uma solução de IA para: {0}.',
+  oqUsu: 'Quem usa: {0}.',
+  oqArq: 'Ponto de partida de arquitetura: {0}.',
+  oqEsc: 'Alcance previsto: {0} pessoas com acesso à solução no Ano {1}.',
+  pqProb: 'Problemas identificados: {0}.',
+  pqSit: 'Situação atual: {0}',
+  pqPri: 'Prioridades da rede: {0}.',
+  paImp: 'Impacto desejado: {0}.',
+  paRes: 'Resultado esperado: {0}',
+  coTeste: 'Testar primeiro: {0} ({1}).',
+  coTeste0: 'Testar primeiro: {0}.',
+  coEtapa: 'Implantar numa primeira etapa: {0}.',
+  coExp: 'Expandir até a rede toda: {0}.',
+  coForm: 'Formar {0}, {1} por pessoa.',
+  coForm0: 'Formar {0}.',
+  coSup: 'Suporte aos usuários: {0}.',
+  enTeste: 'Relatório de avaliação do teste, com a decisão de continuar, ajustar ou parar.',
+  enContrato: 'Contrato com {0} requisitos e cláusulas deste caso, incluindo o plano de saída.',
+  enUso: 'Solução em uso por {0} pessoas no Ano {1} ({2} das que têm acesso).',
+  enForm: 'Pessoas formadas: {0}.',
+  enGov: 'Condições de governança confirmadas antes de contratar ({0} de {1} hoje).',
+  inRes: 'Resultado: {0}',
+  inBase: 'Linha de base: {0}',
+  inCusto: 'Custo por ano, sem passar de {0} por estudante, professor ou usuário (estimativa central).',
+  inAdo: 'Adoção: parcela das pessoas com acesso que usam de fato (estimativa: {0} no Ano {1}).',
+  inGov: 'Governança: condições confirmadas ({0} de {1} hoje).',
+  numT: 'Os números principais',
+  // cartões das ações (O quê, Por quê, Para quê, Como, Quem, Quando)
+  acoesAbre: 'Cada ação responde a seis perguntas. A lista sai das respostas deste caso: se uma resposta mudar, a ação muda.',
+  acPorqueResp: 'A resposta “{1}” à pergunta {0} ({2}).',
+  acParaCustoT: 'Evitar que o teste comece sem as condições para medir resultado e custo.',
+  acParaCustoC: 'Contratar com custo conhecido, preço previsível e saída possível.',
+  acParaCustoM: 'Manter o custo sob controle durante a implantação e a expansão.',
+  acParaPolT: 'Proteger estudantes e professores e garantir que o teste possa ser avaliado.',
+  acParaPolC: 'Contratar com regras claras de uso, dados e responsabilidade.',
+  acParaPolM: 'Manter o uso seguro, acompanhado e sujeito a revisão.',
+  acComo: 'Revise a resposta {0} ({1}) e siga o detalhe no anexo {2}.',
+  acComo0: 'Siga o detalhe no anexo {0}.',
+  acQuem0: 'A equipe responsável pelo caso.',
+  acQuemNota: '(área que costuma saber a resposta; confirme com a sua equipe)',
+  acQuandoT: 'Antes do teste: antes de começar a prova de conceito ou o piloto (Ano 0).',
+  acQuandoC: 'Antes de contratar: antes de assinar o contrato da implantação (fim do Ano 0).',
+  acQuandoM: 'Para manter e ampliar: durante a implantação e a expansão (Ano 1 em diante).',
+  custoT: 'O custo em resumo',
+  custoAbre: 'Quanto cada fase custa, quanto é pago uma vez e quanto se repete, e o que mais pode mudar o total.',
+  // introdução de cada seção do corpo
+  i1: 'Esta seção descreve a solução, quem a usa e como o uso cresce, da prova de conceito ou piloto à rede toda. É a base de todos os custos que vêm depois.',
+  i2: 'Esta seção mostra quanto se gasta em cada fase e em cada ano, separando o que é pago uma vez do que se repete. Serve para pedir a dotação de cada exercício.',
+  i3: 'Esta seção mostra o que pode fazer o custo subir ou cair e quanto. Serve para decidir quais premissas confirmar antes de contratar.',
+  i4: 'Esta seção lista o que o edital e o contrato devem exigir para que o preço seja previsível e a saída seja possível.',
+  i5: 'Esta seção mostra as condições de governança que devem estar confirmadas antes de contratar e como o uso será acompanhado.',
   kTco: 'Custo total do ciclo de vida (TCO)',
   kTcoFaixa: 'Faixa provável (P10 a P90): {0} a {1}',
   kTcoNotaD: 'Soma dos custos de todos os anos, em preços do Ano 0 e descontada à taxa de {0} ao ano. A faixa vem de {1} simulações; o valor central é o cenário esperado.',
@@ -34,10 +97,10 @@ const TXT_REL = {
   semCusto: 'Não foi possível calcular a estimativa com as respostas atuais.',
   // como ler
   comoLer: 'Como ler este plano',
-  comoLer1: 'Este plano responde, em ordem, a cinco perguntas de quem decide: o que se compra, quanto custa e quando, o que pode mudar o custo, o que exigir na contratação e que governança é necessária. A primeira página resume tudo; os anexos trazem os detalhes.',
+  comoLer1: 'O sumário executivo, no início, resume a proposta em seis respostas (o quê, por quê, para quê, como, entregáveis e indicadores), as cinco ações principais e o custo. Depois, o plano responde em ordem a cinco perguntas de quem decide: o que se compra, quanto custa e quando, o que pode mudar o custo, o que exigir na contratação e que governança é necessária. Os anexos trazem os detalhes.',
   comoLer2: 'Os valores são ilustrativos, a menos que o anexo de premissas cite uma fonte. Todos estão em preços do Ano 0.',
   comoLer3: 'Custo pago uma vez: implantação e compras iniciais. Custo recorrente: o que se repete todo ano. A faixa P10 a P90 mostra a incerteza: em 80% dos cenários simulados o custo fica dentro dela.',
-  comoLer4: 'Em “Quem age”, a área indicada é a que costuma saber responder à pergunta que originou a ação; confirme com a sua equipe.',
+  comoLer4: 'Em “Quem?”, a área indicada é a que costuma saber responder à pergunta que originou a ação; confirme com a sua equipe.',
   comoLer5: 'Os termos técnicos estão explicados no glossário, no fim.',
   // faltas (curta, perto do topo)
   faltasLink: 'Ver todas as respostas que faltam',
@@ -235,7 +298,7 @@ function relSintese(d, recs, principal) {
   const o = { pronto: true, tipo: 'sintese', id: 'sintese', h: tr(TXT_REL.sintese), p: [R14('sinteseAbre')], principal: principal ? tr(principal) : '' };
   const top = (recs || []).slice(0, 5).map((r, i) => ({ n: i + 1, texto: tr(r.texto), quem: relQuem(r), tipo: tr(TIPO_REC[r.tipo] || r.tipo), prio: r.prioridade,
     quando: tr((QUANDO_REC.find(z => z[0] === r.quando) || ['', r.quando])[1]), id: r.id, ir: r.ir || '' }));
-  o.recs = top;
+  o.recs = top.map((z, i) => relCartaoAcao(recs[i], z));
   if (!d) { o.semCusto = R14('semCusto'); o.kv = []; o.list = top.map(r => r.texto); return o; }
   const rD = d.tco.r;
   const direc = d.tor.rows.slice(0, 3);
@@ -257,6 +320,56 @@ function relSintese(d, recs, principal) {
     .concat(o.d.drivers.map((x, i) => [(i + 1) + '. ' + x.nome, x.txt]));
   o.list = top.map(r => r.texto + (r.quem ? ' (' + R14('quemAge') + ' ' + r.quem + ')' : ''));
   return o;
+}
+
+
+// ----------------------------------------------------------- v14 (revisão): sumário executivo em seis respostas e ações em cartões
+// Tudo sai das respostas do caso (pares já traduzidos de "resumo") e dos números do motor; nada é inventado.
+const REL_SEM = v => v == null || String(v).trim() === '' || String(v).trim() === '—';
+const relPonto = s => String(s || '').trim().replace(/[.。]\s*$/, '');
+function relExecutivo(res, nums, ex) {
+  const kv = {}; ((res && res.kv) || []).forEach(([k, v]) => { kv[k] = v; });
+  const g = k => REL_SEM(kv[k]) ? '' : String(kv[k]).replace(/\n\(.*\)$/s, '').replace(/\n/g, '; ').trim();
+  const L = [];
+  const dim = (id, kR, kP, passo, frases) => L.push({ id, rot: R14(kR), perg: R14(kP), frases: frases.filter(Boolean), falta: R14('exFalta', passo) });
+  const eleg = nums ? Math.round(nums.E[nums.E.length - 1]) : 0;
+  dim('oque', 'exOque', 'exOqueP', '2.1', [g('Aplicações') && R14('oqApl', relPonto(g('Aplicações'))), g('Quem usa') && R14('oqUsu', relPonto(g('Quem usa'))),
+    g('Arquitetura considerada') && R14('oqArq', relPonto(g('Arquitetura considerada'))), eleg > 0 && R14('oqEsc', fmtInt(eleg), nums.H)]);
+  dim('porque', 'exPorque', 'exPorqueP', '1.2', [g('Problemas marcados') && R14('pqProb', relPonto(g('Problemas marcados'))), g('Situação atual') && R14('pqSit', g('Situação atual')),
+    !g('Problemas marcados') && g('Prioridades') && R14('pqPri', relPonto(g('Prioridades')))]);
+  dim('paraque', 'exParaque', 'exParaqueP', '1.2', [g('Impacto desejado') && R14('paImp', relPonto(g('Impacto desejado'))), g('Resultado esperado e como medir') && R14('paRes', g('Resultado esperado e como medir'))]);
+  const teste = g('Prova de conceito ou piloto'), setup = g('Piloto: escolas, participantes e duração') || g('Prova de conceito: participantes e duração');
+  const horas = g('Horas de formação por pessoa'), formados = g('Quem será formado');
+  dim('como', 'exComo', 'exComoP', '2.0', [teste && (setup ? R14('coTeste', relPonto(teste), relPonto(setup)) : R14('coTeste0', relPonto(teste))),
+    g('Primeira etapa da implantação') && R14('coEtapa', relPonto(g('Primeira etapa da implantação'))),
+    g('Tempo para chegar a todos depois da implantação') && R14('coExp', relPonto(g('Tempo para chegar a todos depois da implantação'))),
+    formados && (horas ? R14('coForm', relPonto(formados), relPonto(horas)) : R14('coForm0', relPonto(formados))),
+    g('Quem dá suporte aos usuários') && R14('coSup', relPonto(g('Quem dá suporte aos usuários')))]);
+  const iH = nums ? nums.T.length - 1 : 0, EH = nums ? nums.E[iH] : 0, UH = nums ? nums.U[iH] : 0;
+  dim('entreg', 'exEntreg', 'exEntregP', '2.0', [teste && R14('enTeste'), ex.nReq > 0 && R14('enContrato', fmtInt(ex.nReq)),
+    UH > 0 && R14('enUso', fmtInt(Math.round(UH)), nums.H, pct(EH ? UH / EH : 0)), formados && R14('enForm', relPonto(formados)),
+    ex.nG > 0 && R14('enGov', ex.nSim, ex.nG)]);
+  dim('ind', 'exInd', 'exIndP', '1.2', [g('Resultado esperado e como medir') && R14('inRes', g('Resultado esperado e como medir')),
+    g('Linha de base') && R14('inBase', g('Linha de base')), nums && R14('inCusto', din(nums.apr.v, 2)),
+    UH > 0 && R14('inAdo', pct(EH ? UH / EH : 0), nums.H), ex.nG > 0 && R14('inGov', ex.nSim, ex.nG)]);
+  return L;
+}
+const REL_ANEXO_TIPO = { custo: 'E', politica: 'F' };
+function relCartaoAcao(r, base) {
+  const txt = tr(r.texto), m = txt.match(/^(.*?)\s?[:：]\s+(.+)$/s);
+  const p = r.porque || {};
+  const resp = typeof recTrPartes === 'function' ? recTrPartes(p.resposta) : (Array.isArray(p.resposta) ? p.resposta.map(tr).join('; ') : tr(p.resposta || ''));
+  const porque = m ? relCap(m[2]) : (p.n ? R14('acPorqueResp', p.n, resp, tr(p.pergunta || '')) : '');
+  const q = r.quando === 'antes_teste' ? 'T' : r.quando === 'antes_contratar' ? 'C' : 'M';
+  const anexo = REL_ANEXO_TIPO[r.tipo] || 'C';
+  return Object.assign({}, base, {
+    oque: m ? m[1] : txt,
+    porque, origem: p.n ? R14('acPorqueResp', p.n, resp, tr(p.pergunta || '')) : '',
+    paraque: R14((r.tipo === 'politica' ? 'acParaPol' : 'acParaCusto') + q),
+    como: p.n ? R14('acComo', p.n, tr(p.pergunta || ''), anexo) : R14('acComo0', anexo),
+    quemTxt: base.quem ? base.quem + ' ' + R14('acQuemNota') : R14('acQuem0'),
+    quandoTxt: R14('acQuando' + q),
+  });
 }
 
 // ----------------------------------------------------------- gráficos (dados já traduzidos e formatados)
@@ -393,9 +506,15 @@ function relComporPlano(S_, d) {
   let recs = [];
   try { recs = recomendacoesCaso() || []; } catch (e) { console.warn(e); }
   const a1 = by('A1');
+  const a5x = by('A5');
+  const nReqX = (a5x && a5x.table ? a5x.table.rows.length : 0) + (a5x && a5x.list ? a5x.list.length : 0);
 
   // ---- primeira página, "como ler" e faltas (curtas)
-  add(relSintese(nums, recs, a1 ? a1.principal : ''));
+  const sin = relSintese(nums, recs, a1 ? a1.principal : '');
+  sin.exec = relExecutivo(by('resumo'), nums, { nReq: nReqX, nSim, nG: gq.length });
+  if (nums) sin.fasesTab = relTabelaFases(nums);
+  sin.kv = sin.exec.map(x => [x.rot + ' ' + x.perg, x.frases.join(' ') || x.falta]).concat(sin.kv || []);
+  add(sin);
   add({ pronto: true, tipo: 'caixa', id: 'comoler', h: R14('comoLer'), list: ['comoLer1', 'comoLer2', 'comoLer3', 'comoLer4', 'comoLer5'].map(k => R14(k)) });
   const fa = by('faltas');
   if (fa) {
@@ -519,6 +638,7 @@ function relComporPlano(S_, d) {
   add(relGlossario());
   anexo('I', 'i', R14('aI'));
   const rf = by('refs'); if (rf) add(Object.assign({}, rf, { sub: true, tipo: 'refs' }));
+  L.forEach(x => { if (x.tipo === 'princ') x.intro = R14('i' + x.num); });
   return L;
 }
 
@@ -616,6 +736,22 @@ const CSS_RELATORIO = `
 .rs-dir b { color: var(--rp-head); }
 .rs-dir span { font-size: .9rem; color: var(--rp-muted); }
 .rs-dir .rs-d-b { display: block; height: 8px; border-radius: 4px; background: #B3261E; opacity: .85; }
+.rs-exec { width: 100%; border-collapse: collapse; font-size: .97rem; }
+.rs-exec th, .rs-exec td { text-align: start; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--rp-line); }
+.rs-exec thead th { font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; color: var(--rp-muted); background: var(--rp-bg); }
+.rs-exec tbody th { width: 30%; font-weight: 400; }
+.rs-exec tbody th b { display: block; color: var(--rp-head); font-size: 1.02rem; }
+.rs-exec tbody th span { display: block; font-size: .86rem; color: var(--rp-muted); }
+.rs-exec td p, .rs-exec td ul { margin: 0; }
+.rs-exec td ul { padding-inline-start: 1.1em; display: grid; gap: 4px; }
+.rs-abre { margin: -4px 0 4px; font-size: .92rem; }
+.rs-ac { margin: 0; display: grid; gap: 6px; }
+.rs-ac-l { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 10px; }
+.rs-ac dt { font-weight: 700; color: var(--rp-head); font-size: .9rem; }
+.rs-ac dd { margin: 0; font-size: .95rem; }
+.rs-ac-l[data-c="exOque"] dd { font-weight: 700; color: var(--rp-head); }
+.rs-fases { overflow-x: auto; }
+@media (max-width: 560px) { .rs-ac-l { grid-template-columns: 1fr; gap: 0; } .rs-exec tbody th { width: 38%; } }
 .rs-quem { font-size: .9rem; color: var(--rp-muted); margin: 0; }
 .rs-quem b { color: var(--rp-head); }
 .rp-rot { margin: 0; font-size: .86rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--rp-brand); }

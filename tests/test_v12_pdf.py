@@ -5,7 +5,7 @@
 #  - nome procurement-plan-<slug>.pdf; número de páginas razoável (10 a 40);
 #  - página 1 (v14): nome da ferramenta, "Plano de contratação", nome do caso, "Recomendação principal" e os indicadores
 #    iguais aos do motor (TCO central, custo por aprendiz/professor/usuário, Ano 0 e custo anual em regime);
-#  - página 2: "Como ler este plano" e o índice "Neste plano", que aponta para as páginas certas (cinco seções e anexos A a I);
+#  - depois do sumário executivo (até 3 páginas): "Como ler este plano" e o índice "Neste plano", que aponta para as páginas certas (cinco seções e anexos A a I);
 #  - corpo em ordem de decisão: as cinco perguntas em ordem crescente de página, antes de "Anexos"; sem códigos A1–B9 nem K1–K6 no corpo;
 #  - anexos A a I em ordem; matriz do caso (anexo B) em duas páginas retrato, com o crédito; recomendações (C); perfil (A);
 #  - Figura 1 (JPEG 900×1225) numa página própria dentro do anexo E, com o crédito;
@@ -93,12 +93,14 @@ async def main():
                 ok(all(norm(k) in c for k in E['kpis']), f'{tag}: página 1 com os indicadores do motor {E["kpis"]}')
                 ok(T['faixa'] in c and 'P10' in c and 'P90' in c, f'{tag}: página 1 com a faixa P10 a P90')
                 ok(c.count(' 1 ') >= 0 and len(re.findall(r'\b[1-5] ', c)) >= 1, f'{tag}: página 1 com as ações numeradas')
-                # página 2: "Como ler" e o índice
-                r = P[1]
+                # "Como ler" e o índice: logo depois do sumário executivo (até 3 páginas)
+                iCo = next((i for i, p_ in enumerate(P) if T['comoler'] in p_ and T['indice'].upper() in p_.upper()), 1)
+                ok(1 <= iCo <= 3, f'{tag}: "Como ler" na p. {iCo + 1}, depois do sumário executivo')
+                r = P[iCo]
                 ok(r.startswith(norm(T['ferr'])) and T['comoler'] in r and T['indice'].upper() in r.upper(), f'{tag}: página 2 com "{T["comoler"]}" e o índice')
                 # corpo em ordem de decisão
                 pq = [pag_de(P, q.upper(), 1) for q in E['q']]
-                pAx = pag_de(P, E['tAnexos'], 2)
+                pAx = pag_de(P, E['tAnexos'], iCo + 1)
                 ok(all(pq) and pq == sorted(pq) and pq[0] >= 2 and (pAx > pq[-1] or pAx == 0), f'{tag}: cinco seções do corpo em ordem (p. {pq}), antes dos anexos (p. {pAx})')
                 # anexos A a I
                 pa = [pag_de(P, a_.upper() + ' ', pq[-1]) or pag_de(P, a_.upper(), pq[-1]) for a_ in E['anexos']]

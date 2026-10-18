@@ -251,35 +251,90 @@ function gerarPDF() {
       fonte(9.6, 'bold', C.titulo); Lp.forEach((l, i) => doc.text(l, M + 12, y + 24 + i * 12.4));
       y += hp + 10;
     } else y += 2;
+    // isenção no pé da página 1 (desenhada antes, para o conteúdo seguir fluindo)
+    const Lf = quebra(tr(FAIXA_PLANO), 8, LW);
+    fonte(8, 'normal', C.muted); Lf.forEach((l, i) => doc.text(l, M, H - 44 + i * 9.4));
+    fonte(8, 'normal', C.muted); quebra(tr(TXT_VINCULO), 8, LW).slice(0, 1).forEach((l, i) => doc.text(l, M, H - 44 + (Lf.length + i) * 9.4));
     const dd = sinteseS.d;
     if (!dd) { texto(sinteseS.semCusto || tP('semCusto'), { cor: C.muted }); }
     else {
       // TCO com a faixa P10 a P90
-      const hT = 94;
+      const hT = 86;
       doc.setDrawColor(...C.linha); doc.setLineWidth(0.7); doc.setFillColor(...C.branco); doc.roundedRect(M, y, LW, hT, 7, 7, 'FD');
       doc.setFillColor(...C.marca); doc.rect(M + 14, y, 36, 3.6, 'F');
       fonte(8, 'bold', C.muted); doc.text(pdfTxt(tr(TXT_REL.kTco).toUpperCase()), M + 14, y + 15, { charSpace: 0.35 });
-      fonte(26, 'bold', C.titulo); doc.text(pdfTxt(dd.centralTxt), M + 14, y + 44);
+      fonte(24, 'bold', C.titulo); doc.text(pdfTxt(dd.centralTxt), M + 14, y + 41);
       const wV = doc.getTextWidth(pdfTxt(dd.centralTxt));
-      fonte(9.6, 'bold', C.titulo); doc.text(pdfTxt(dd.faixaTxt), M + 14, y + 60);
-      // faixa visual
+      fonte(9.6, 'bold', C.titulo); doc.text(pdfTxt(dd.faixaTxt), M + 14, y + 56);
       const xT = Math.max(M + 14 + wV + 20, M + 250), wT = M + LW - 14 - xT;
       const w = Math.max(dd.hi - dd.lo, dd.central * 0.02), a = dd.lo - 0.5 * w, b = dd.hi + 0.5 * w, px = v => xT + wT * (v - a) / (b - a);
-      doc.setFillColor(...C.cab); doc.roundedRect(xT, y + 30, wT, 9, 4.5, 4.5, 'F');
-      doc.setFillColor(...C.fases[0]); doc.roundedRect(px(dd.lo), y + 30, Math.max(3, px(dd.hi) - px(dd.lo)), 9, 4.5, 4.5, 'F');
-      doc.setFillColor(...C.titulo); doc.rect(px(dd.central) - 1.5, y + 27, 3, 15, 'F');
+      doc.setFillColor(...C.cab); doc.roundedRect(xT, y + 28, wT, 9, 4.5, 4.5, 'F');
+      doc.setFillColor(...C.fases[0]); doc.roundedRect(px(dd.lo), y + 28, Math.max(3, px(dd.hi) - px(dd.lo)), 9, 4.5, 4.5, 'F');
+      doc.setFillColor(...C.titulo); doc.rect(px(dd.central) - 1.5, y + 25, 3, 15, 'F');
       fonte(8, 'normal', C.muted);
-      const LN = corta(quebra(dd.nota, 8, LW - 28), 2); LN.forEach((l, i) => doc.text(l, M + 14, y + 76 + i * 9.6));
+      const LN = corta(quebra(dd.nota, 8, LW - 28), 2); LN.forEach((l, i) => doc.text(l, M + 14, y + 70 + i * 9.6));
       y += hT + 8;
-      // três indicadores
-      const g = 10, wk = (LW - 2 * g) / 3, hk = 58;
-      dd.kpis.forEach((k, i) => cartaoKPI(M + i * (wk + g), y, wk, hk, k.v, k.l, C.fasesS[i], 14));
-      y += hk + 4;
-      const reg = dd.kpis[2];
-      if (reg && reg.nota) { const LR = corta(quebra(reg.nota, 8, LW), 2); fonte(8, 'italic', C.muted); LR.forEach((l, i) => doc.text(l, M, y + 8 + i * 9.6)); y += LR.length * 9.6 + 6; }
-      // maiores direcionadores
+      const g = 10, wk = (LW - 2 * g) / 3, hk = 54;
+      dd.kpis.forEach((k, i) => cartaoKPI(M + i * (wk + g), y, wk, hk, k.v, k.l, C.fasesS[i], 13));
+      y += hk + 10;
+    }
+    // a proposta em seis respostas (O quê, Por quê, Para quê, Como, Entregáveis, Indicadores)
+    const ex = sinteseS.exec || [];
+    if (ex.length) {
+      fonte(11.5, 'bold', C.titulo); doc.text(pdfTxt(tr(TXT_REL.exT)), M, y + 11); y += 17;
+      const LB = H - 44 - 8;   // a página 1 termina acima da isenção
+      const wR = 112, wA = LW - wR - 12;
+      ex.forEach(x => {
+        const fr = x.frases.length ? x.frases : [x.falta];
+        const LL = fr.map(f => quebra(f, 8.8, wA - (fr.length > 1 ? 10 : 0)));
+        const hA = LL.reduce((a2, L) => a2 + L.length * 11.2 + 2, 0);
+        const hR = 8 + Math.max(hA, 26) + 4;
+        if (y + hR > (doc.getNumberOfPages() === 1 ? LB : BASE)) novaPag();
+        doc.setDrawColor(...C.linha); doc.setLineWidth(0.5); doc.line(M, y + hR, M + LW, y + hR);
+        fonte(9.6, 'bold', C.marca); doc.text(pdfTxt(x.rot), M, y + 13);
+        fonte(8, 'normal', C.muted); corta(quebra(x.perg, 8, wR - 6), 2).forEach((l, i) => doc.text(l, M, y + 24 + i * 9.4));
+        let yy = y + 8;
+        LL.forEach(L => {
+          if (fr.length > 1) { doc.setFillColor(...C.marca); doc.rect(M + wR + 12, yy + 3.6, 3, 3, 'F'); }
+          fonte(8.8, 'normal', x.frases.length ? C.tinta : C.muted);
+          L.forEach(l => { doc.text(l, M + wR + 12 + (fr.length > 1 ? 10 : 0), yy + 8.6); yy += 11.2; }); yy += 2;
+        });
+        y += hR + 2;
+      });
+    }
+    // as cinco ações, cada uma com O quê, Por quê, Para quê, Como, Quem e Quando (seguem logo após as seis respostas)
+    cabe(300); y += 10;
+    const recs5 = sinteseS.recs || [];
+    tituloSec(tr(TXT_REL.acoes5), recs5.length ? tr(TXT_REL.acoesAbre) : '', C.alta);
+    if (!recs5.length) texto(tr(TXT_REL.semAcoes), { cor: C.muted, size: 9.6 });
+    else {
+      const xT = M + 30, wL = 62, wV = LW - 30 - wL - 14;
+      const campos = r => [['exOque', r.oque, 'bold'], ['exPorque', r.porque], ['exParaque', r.paraque], ['exComo', r.como], ['exQuem', r.quemTxt], ['exQuando', r.quandoTxt]].filter(z => z[1]);
+      recs5.forEach(r => {
+        const F = campos(r).map(([k, v, st]) => [tr(TXT_REL[k]), quebra(v, 8.6, wV, st || 'normal'), st]);
+        const h = 10 + F.reduce((a2, f) => a2 + f[1].length * 10.8 + 3, 0) + 6;
+        cabe(h + 4);
+        doc.setDrawColor(...C.linha); doc.setLineWidth(0.7); doc.setFillColor(...C.branco); doc.roundedRect(M, y, LW, h, 6, 6, 'FD');
+        doc.setFillColor(...C.alta); doc.rect(M, y + 1, 4, h - 2, 'F');
+        fonte(16, 'bold', C.alta); doc.text(String(r.n), M + 17, y + 22, { align: 'center' });
+        let yy = y + 10;
+        F.forEach(([rot, L, st]) => {
+          fonte(8.2, 'bold', C.marca); doc.text(pdfTxt(rot), xT, yy + 8);
+          fonte(8.6, st || 'normal', st ? C.titulo : C.tinta); L.forEach(l => { doc.text(l, xT + wL, yy + 8.4); yy += 10.8; }); yy += 3;
+        });
+        y += h + 6;
+      });
+    }
+    // o custo em resumo: fases (uma vez, recorrente) e o que mais move o custo
+    if (dd) {
+      cabe(160);
+      y += 6;
+      fonte(13, 'bold', C.titulo); doc.text(pdfTxt(tr(TXT_REL.custoT)), M, y + 13); y += 20;
+      texto(tr(TXT_REL.custoAbre), { size: 9.4, cor: C.muted, after: 6 });
+      if (sinteseS.fasesTab) tabela(sinteseS.fasesTab.head, sinteseS.fasesTab.rows, sinteseS.fasesTab);
+      cabe(30 + dd.drivers.length * 27);
       fonte(11, 'bold', C.titulo); doc.text(pdfTxt(tr(TXT_REL.direcionadores)), M, y + 11); y += 18;
-      const xB = M + 260, wB = LW - 260, mxd = Math.max(1e-9, ...dd.drivers.map(z => Math.max(Math.abs(z.lo), Math.abs(z.hi))));
+      const xB = M + 260, wB = LW - 260;
       dd.drivers.forEach((z, i) => {
         fonte(9.4, 'bold', C.titulo); const Ln = corta(quebra((i + 1) + '. ' + z.nome, 9.4, 250, 'bold'), 1); doc.text(Ln[0] || '', M, y + 9);
         fonte(8, 'normal', C.muted); doc.text(pdfTxt(z.faixa), M, y + 19);
@@ -288,44 +343,15 @@ function gerarPDF() {
         fonte(8, 'normal', C.tinta); doc.text(pdfTxt(z.loTxt + '  a  ' + z.hiTxt), xB, y + 20);
         y += 27;
       });
-      y += 4;
     }
-    // as cinco ações mais importantes (cada uma: ação e quem age)
-    const recs5 = sinteseS.recs || [];
-    fonte(11, 'bold', C.titulo); doc.text(pdfTxt(tr(TXT_REL.acoes5)), M, y + 11); y += 18;
-    if (!recs5.length) texto(tr(TXT_REL.semAcoes), { cor: C.muted, size: 9.6 });
-    else {
-      const folga = H - 40 - 42 - (typeof avisoTraducao === 'function' && avisoTraducao() ? 70 : 0) - y, xT = M + 34, wT = LW - 34 - 10;
-      let sz = 9.6;
-      const medir = z => recs5.reduce((a, r) => a + 14 + corta(quebra(r.texto, z, wT, 'bold'), 3).length * z * 1.3 + (r.quem ? 11 : 0) + 4, 0);
-      while (sz > 8.2 && medir(sz) > folga) sz -= 0.4;
-      recs5.forEach(r => {
-        const La = corta(quebra(r.texto, sz, wT, 'bold'), 3);
-        const h = 12 + La.length * sz * 1.3 + (r.quem ? 11 : 0) + 4;
-        doc.setDrawColor(...C.linha); doc.setLineWidth(0.7); doc.setFillColor(...C.branco); doc.roundedRect(M, y, LW, h, 6, 6, 'FD');
-        doc.setFillColor(...C.alta); doc.rect(M, y + 1, 4, h - 2, 'F');
-        fonte(17, 'bold', C.alta); doc.text(String(r.n), M + 19, y + 24, { align: 'center' });
-        fonte(sz, 'bold', C.titulo); La.forEach((l, i) => doc.text(l, xT, y + 12 + sz + i * sz * 1.3 - 2));
-        if (r.quem) {
-          const yq = y + 12 + La.length * sz * 1.3 + 4;
-          fonte(8, 'bold', C.muted); const lq = pdfTxt(tr(TXT_REL.quemAge)); doc.text(lq, xT, yq);
-          fonte(8, 'normal', C.muted); doc.text(corta(quebra(r.quem + '  ·  ' + r.quando, 8, wT - doc.getTextWidth(lq) - 8), 1)[0] || '', xT + doc.getTextWidth(pdfTxt(lq)) + 4, yq);
-        }
-        y += h + 5;
-      });
-    }
-    // isenção no pé
-    const Lf = quebra(tr(FAIXA_PLANO), 8, LW);
-    fonte(8, 'normal', C.muted); Lf.forEach((l, i) => doc.text(l, M, H - 44 + i * 9.4));
-    fonte(8, 'normal', C.muted); quebra(tr(TXT_VINCULO), 8, LW).slice(0, 1).forEach((l, i) => doc.text(l, M, H - 44 + (Lf.length + i) * 9.4));
   };
   let pagFaltas = 0, pagAnexoA = 0, boxFaltas = null;
   const INDICE = [];   // [título, página] para o índice
 
   // ---------------------------------------------------------------- "Como ler", faltas e índice (página 2)
-  let yIndice = 0, hIndice = 0;
+  let yIndice = 0, hIndice = 0, pagComoLer = 2;
   const comoLer = () => {
-    novaPag();
+    novaPag(); pagComoLer = doc.getNumberOfPages();
     const sC = secs.find(s => s.tipo === 'caixa');
     if (sC) {
       const itens = sC.list.map(z => quebra(z, 9.4, LW - 44));
@@ -353,7 +379,7 @@ function gerarPDF() {
   const desenharIndice = () => {
     const itens = INDICE.filter(z => z[1]);
     if (!itens.length) return;
-    doc.setPage(2);
+    doc.setPage(pagComoLer);
     const lin = Math.ceil(itens.length / 2), g = 24, wI = (LW - g) / 2, hl = Math.min(16, (hIndice - 20) / lin);
     fonte(8.6, 'bold', C.marca); doc.text(pdfTxt(tP('indice').toUpperCase()), M, yIndice + 8, { charSpace: 0.5 });
     itens.forEach(([t, pg], i) => {
@@ -504,6 +530,7 @@ function gerarPDF() {
     fonte(14.5, 'bold', C.titulo); Lh.forEach((l, i) => doc.text(l, M + 44, y + 26 + i * 18.5));
     doc.setDrawColor(...C.linha); doc.setLineWidth(0.7); doc.line(M, y + h + 2, W - M, y + h + 2);
     y += h + 12;
+    if (s.intro) texto(s.intro, { size: 9.8, cor: C.muted, i: true, after: 8 });
   };
   const faixaAnexos = s => {
     novaPag();
@@ -837,7 +864,7 @@ function gerarPDF() {
     corpo(s);
   });
   // a caixa de respostas pendentes da página 2 leva à lista completa (Anexo A); o índice é desenhado no fim
-  tarde.push(() => { if (boxFaltas && pagAnexoA) { doc.setPage(2); ehLink(M, boxFaltas.y, LW, boxFaltas.h, pagAnexoA); } });
+  tarde.push(() => { if (boxFaltas && pagAnexoA) { doc.setPage(pagComoLer); ehLink(M, boxFaltas.y, LW, boxFaltas.h, pagAnexoA); } });
   tarde.push(desenharIndice);
   tarde.forEach(f => f());
 

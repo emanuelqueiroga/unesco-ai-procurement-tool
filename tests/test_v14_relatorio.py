@@ -9,7 +9,8 @@
 #    (recorrente / total, faixa, custo de saída) e sem códigos K1–K6, A1–A7, B1–B9 no corpo;
 #  - cinco gráficos (fases e anos por camada, camadas, adoção, cenários, tornado), cada um com a leitura gerada dos dados,
 #    na página e no PDF; simulação determinista (mesma semente, mesmo resultado) e rápida;
-#  - PDF: corpo do caso em branco com no máximo 8 páginas; página 1 com os mesmos números da página;
+#  - PDF: sumário executivo com até 3 páginas (seis respostas, cinco ações com O quê, Por quê, Para quê, Como, Quem, Quando,
+#    custo em resumo); corpo do caso em branco com no máximo 7 páginas depois dele; página 1 com os mesmos números da página;
 #  - anexo "Premissas e fontes" com todas as entradas de premissasDoCaso (valor, origem, fonte, grau; fora da faixa marcado),
 #    versaoReferencias() e a nota de métodos; glossário com todos os termos de glossarioLista();
 #  - 390 px sem rolagem horizontal; árabe em RTL;
@@ -53,7 +54,7 @@ MOTOR = r"""(() => {
   const L = relDados(n);
   return { central, lo, hi, p10: sim.ct.p10, p90: sim.ct.p90, centralTxt: grande(central), loTxt: grande(lo), hiTxt: grande(hi),
     apr: din(apr, 2), ano0: grande(n.ano0), regime: grande(tco.anual.eco), pRec: pct(tco.pRecorrente),
-    direc: tor.rows.slice(0, 3).map(r => tr(r.nome)), acoes: recs.map(r => ({ texto: tr(r.texto), quem: quem(r) })),
+    direc: tor.rows.slice(0, 3).map(r => tr(r.nome)), acoes: recs.map(r => { const t = tr(r.texto), m = t.match(/^(.*?)\s?[:：]\s+(.+)$/s); return { texto: t, oque: m ? m[1] : t, quem: quem(r) }; }),
     rel: L ? { central: L.central, lo: L.lo, hi: L.hi } : null,
     nPrem: (premissasDoCaso(S.caso, cfg) || []).length };
 })()"""
@@ -107,8 +108,11 @@ async def main():
             ok(M['centralTxt'] in s and M['loTxt'] in s and M['hiTxt'] in s and 'P10 a P90' in s, f'{ex}: resumo com o TCO central e a faixa P10 a P90')
             ok(M['apr'] in s and M['ano0'] in s and M['regime'] in s, f'{ex}: resumo com custo por pessoa, Ano 0 e custo anual em regime ({M["apr"]}, {M["ano0"]}, {M["regime"]})')
             ok(all(d in s for d in M['direc']) and len(M['direc']) == 3, f'{ex}: três maiores direcionadores do tornado {M["direc"]}')
-            ok(len(r['tc']) == len(M['acoes']) and all(a['texto'] in t for a, t in zip(M['acoes'], r['tc'])), f'{ex}: cinco ações do motor de recomendações ({len(r["tc"])})')
-            ok(all((('Quem age' in t and a['quem'] and a['quem'][:1].upper() + a['quem'][1:] in t) or ('Quem age' not in t and not a['quem'])) for a, t in zip(M['acoes'], r['tc'])), f'{ex}: "Quem age" só com a área de PASSO_AJUDA')
+            ok(len(r['tc']) == len(M['acoes']) and all(a['oque'] in t for a, t in zip(M['acoes'], r['tc'])), f'{ex}: cinco ações do motor de recomendações ({len(r["tc"])})')
+            SEIS = ['O quê?', 'Por quê?', 'Para quê?', 'Como?', 'Quem?', 'Quando?']
+            ok(all(all(k in t for k in SEIS) for t in r['tc']), f'{ex}: cada ação responde O quê, Por quê, Para quê, Como, Quem e Quando')
+            ok(all(((a['quem'] and a['quem'][:1].upper() + a['quem'][1:] in t) or (not a['quem'] and 'A equipe responsável pelo caso' in t)) for a, t in zip(M['acoes'], r['tc'])), f'{ex}: "Quem?" com a área de PASSO_AJUDA ou a equipe do caso (nada inventado)')
+            ok('A proposta em seis respostas' in s and all(k in s for k in ['O quê?', 'Por quê?', 'Para quê?', 'Como?', 'Entregáveis', 'Indicadores']), f'{ex}: sumário executivo com as seis respostas')
             # ordem de decisão
             ids = r['ids']; ordem = ['sintese', 'comoler', 's1', 's2', 's3', 's4', 's5', 'anexos', 'anexo-a', 'anexo-b', 'anexo-c', 'anexo-d', 'anexo-e', 'anexo-f', 'anexo-g', 'anexo-h', 'anexo-i']
             ok([i for i in ids if i in ordem] == ordem, f'{ex}: resumo, "Como ler", seções 1 a 5 e anexos A a I em ordem')
@@ -169,12 +173,16 @@ async def main():
             pAx = next((i + 1 for i, t in enumerate(P) if i > 1 and 'ANEXO A' in t), 0)
             ok(pAx > 2, f'pdf {ex}: anexos começam na p. {pAx} de {N}')
             corpo = P[:pAx - 1]
-            if ex == 'novo': ok(len(corpo) <= 8, f'pdf {ex}: corpo do caso em branco com {len(corpo)} páginas (máximo 8); anexos {N - len(corpo)}')
-            else: print(f'     pdf {ex}: corpo {len(corpo)} páginas, anexos {N - len(corpo)}, total {N}')
+            pCo = next((i + 1 for i, t in enumerate(P) if 'Como ler este plano' in t and 'NESTE PLANO' in t), 0)
+            execu = ' '.join(P[:pCo - 1]); nEx = pCo - 1
+            ok(1 <= nEx <= 3, f'pdf {ex}: sumário executivo com {nEx} páginas (máximo 3)')
+            if ex == 'novo': ok(len(corpo) - nEx <= 7, f'pdf {ex}: corpo do caso em branco com {len(corpo) - nEx} páginas depois do sumário (máximo 7); anexos {N - len(corpo)}')
+            else: print(f'     pdf {ex}: sumário {nEx} páginas, corpo {len(corpo) - nEx}, anexos {N - len(corpo)}, total {N}')
             c = P[0]
             ok(all(norm(k) in c for k in [M['centralTxt'], M['loTxt'], M['hiTxt'], M['apr'], M['ano0'], M['regime']]), f'pdf {ex}: página 1 com os números do motor ({M["centralTxt"]}, {M["loTxt"]} a {M["hiTxt"]})')
-            ok(all(d_ in c for d_ in M['direc']) and all(norm(a['texto'])[12:40] in c for a in M['acoes']), f'pdf {ex}: página 1 com os três direcionadores e as cinco ações')
-            ok(all(a['quem'][:1].upper() + a['quem'][1:] in c for a in M['acoes'] if a['quem']), f'pdf {ex}: "Quem age" na página 1')
+            ok('A proposta em seis respostas' in c and 'O quê?' in c and 'Por quê?' in c, f'pdf {ex}: página 1 com as seis respostas')
+            ok(all(d_ in execu for d_ in M['direc']) and all(norm(a['oque'])[:28] in execu for a in M['acoes']), f'pdf {ex}: sumário executivo com os três direcionadores e as cinco ações')
+            ok(all(a['quem'][:1].upper() + a['quem'][1:] in execu for a in M['acoes'] if a['quem']), f'pdf {ex}: "Quem?" no sumário executivo')
             ok(not CODIGOS.search(' '.join(corpo)), f'pdf {ex}: sem códigos K, A e B no corpo ({CODIGOS.findall(" ".join(corpo))[:5]})')
             ok(all(norm(G[t]['h']) in raw for t in GRAFICOS), f'pdf {ex}: cinco gráficos com título ({[t for t in GRAFICOS if norm(G[t]["h"]) in raw]})')
             ok(all(norm(G[t]['leitura']).replace('−', '-') in raw for t in GRAFICOS), f'pdf {ex}: cada gráfico com a leitura da página')

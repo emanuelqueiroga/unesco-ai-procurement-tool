@@ -214,7 +214,7 @@ async def main():
                 loc = await pg.evaluate('avisoTraducao().local')
                 if l == 'bm': ok(norm(loc) in norm(P[0]), 'bm: aviso em bambara na capa do PDF')
                 if l == 'zh': ok(loc in P[0].replace('\n', '').replace(' ', ''), 'zh: aviso em chinês na capa do PDF')
-                ok('?' not in re.sub(r'https?://\S+', '', P[0]).replace('؟', ''), f'{l}: capa sem "?" de caracteres trocados')
+                ok('?' not in re.sub(r'(?<=[A-Za-z])\?(?=\s|$)', '', re.sub(r'https?://\S+', '', P[0])).replace('؟', ''), f'{l}: capa sem "?" de caracteres trocados (as perguntas do sumário, em inglês, terminam em "?")')
             elif l == 'pt':
                 ok('Helvetica' in fontes and 'Noto' not in fontes, 'pt: PDF só com Helvetica')
                 ok(AVISO_EN not in norm(''.join(P)), 'pt: PDF sem aviso de tradução')
