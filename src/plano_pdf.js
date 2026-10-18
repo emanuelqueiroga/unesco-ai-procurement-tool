@@ -333,7 +333,7 @@ function gerarPDF() {
       const I = sinteseS.ice;
       if (I && I.fases.length) {
         const nF = I.fases.length, g = 10, wC = (LW - g * (nF - 1)) / nF, pd = 8, wI = wC - 2 * pd;
-        const hCab = 30, hPico = 30, hLin = 17, hA = 16 + 3 * hLin + 4, hB = 24 + 6 * hLin + 2, hPe = 54;
+        const hCab = 30, hPico = 30, hLin = 18, hA = 16 + 4 * hLin + 4, hB = 24 + 6 * hLin + 2, hPe = 54;
         const hTot = hCab + hPico + hA - 4 + hB + 4 + hPe;
         fonte(10.5, 'bold', C.titulo); const LT = quebra(I.h, 10.5, LW, 'bold');
         cabe(hTot + 30 + LT.length * 13);
@@ -347,8 +347,8 @@ function gerarPDF() {
           const zero = z.ano < 0.5;
           fonte(8, zero ? 'normal' : 'normal', zero ? (escuro ? [143, 182, 211] : cinza) : (escuro ? C.branco : C.tinta)); doc.text(corta(quebra(z.nome, 8, wI - 48), 1)[0] || '', x, yy + 8);
           fonte(8, 'bold', zero ? (escuro ? [143, 182, 211] : cinza) : (escuro ? C.branco : C.titulo)); doc.text(pdfTxt(z.txt), x + wI, yy + 8, { align: 'right' });
-          doc.setFillColor(...(escuro ? [40, 104, 146] : barF)); doc.roundedRect(x, yy + 10.5, wI, 2.6, 1.3, 1.3, 'F');
-          if (z.w > 0) { doc.setFillColor(...(escuro ? barA : C.marca)); doc.roundedRect(x, yy + 10.5, Math.max(1.5, wI * z.w), 2.6, 1.3, 1.3, 'F'); }
+          doc.setFillColor(...(escuro ? [40, 104, 146] : barF)); doc.roundedRect(x, yy + 12, wI, 2.2, 1.1, 1.1, 'F');
+          if (z.w > 0) { doc.setFillColor(...(escuro ? barA : C.marca)); doc.roundedRect(x, yy + 12, Math.max(1.5, wI * z.w), 2.2, 1.1, 1.1, 'F'); }
         };
         I.fases.forEach((f, i) => {
           const x0 = M + i * (wC + g); let yy = y; const tint = TINT[f.id] || TINT.implantacao;

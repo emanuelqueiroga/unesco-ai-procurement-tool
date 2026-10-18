@@ -71,15 +71,15 @@ const TXT_REL = {
   custoT: 'O custo em resumo',
   // icebergs por fase (o preço da proposta acima da água; o resto abaixo)
   icT: 'O custo de cada fase: o que se vê e o que fica escondido',
-  icAbre: 'Acima da linha d’água, o que costuma aparecer no preço da proposta: licenças, consumo de IA e dispositivos. Abaixo, o que a rede também paga para a solução funcionar. Valores por ano, em média, na conta econômica; as barras usam a mesma escala nas três fases.',
+  icAbre: 'Acima da linha d’água, o que costuma aparecer no preço da proposta: dispositivos novos, licenças, consumo de IA, computação e hospedagem. Abaixo, o que a rede também paga para a solução funcionar. Valores por ano, em média, na conta econômica; as barras usam a mesma escala nas três fases.',
   icAnos: 'Ano {0}', icAnosAte: 'Anos {0} a {1}',
   icAcima: 'Preço da proposta', icAbaixo: 'Abaixo da linha d’água',
   icMedia: 'Por ano, em média', icTotal: 'Total da fase: {0}',
   icOculto: '{0} abaixo da linha d’água',
   icSem: 'Sem custo nesta fase.',
   icNota: 'A divisão entre o preço da proposta e o que fica abaixo da linha d’água é uma convenção desta ferramenta, inspirada em Krueger e Jackson (2026, Beyond the price tag); não faz parte do quadro de camadas.',
-  icDisp: 'Dispositivos', icLic: 'Licenças e assinaturas', icCons: 'Consumo de IA (uso pago)',
-  icCon: 'Conectividade e acesso', icInf: 'Infraestrutura e dados', icImp: 'Implantação e integração',
+  icDisp: 'Dispositivos novos', icLic: 'Licenças e assinaturas', icCons: 'Consumo de IA (uso pago)',
+  icCon: 'Conectividade e acesso', icInf: 'Dados e conhecimento', icComp: 'Computação e hospedagem', icImp: 'Implantação e integração',
   icFor: 'Formação', icOpe: 'Operação e suporte', icGov: 'Governança e saída',
   custoAbre: 'Quanto cada fase custa por ano, o que aparece no preço da proposta e o que fica escondido, e o que mais pode mudar o total.',
   // introdução de cada seção do corpo
@@ -388,8 +388,8 @@ function relCartaoAcao(r, base) {
 // ----------------------------------------------------------- icebergs por fase (sumário executivo)
 // Derivado de avaliar() sem alterar o motor: soma, por fase e por subcomponente, os mesmos valores que decomporFases usa
 // (conta econômica em valor presente; saída e valor residual na fase do ano H). A soma de cada iceberg é av.fases.porFase[id].total.
-const IC_ACIMA = [['icDisp', ['K1.2']], ['icLic', ['K2.1']], ['icCons', ['K2.2']]];
-const IC_ABAIXO = [['icCon', ['K1.1', 'K1.3']], ['icInf', ['K2.3', 'K2.4', 'K2.5']], ['icImp', ['K3.1', 'K3.2', 'K3.3', 'K3.4']],
+const IC_ACIMA = [['icDisp', ['K1.2']], ['icLic', ['K2.1']], ['icCons', ['K2.2']], ['icComp', ['K2.3', 'K2.5']]];
+const IC_ABAIXO = [['icCon', ['K1.1', 'K1.3']], ['icInf', ['K2.4']], ['icImp', ['K3.1', 'K3.2', 'K3.3', 'K3.4']],
   ['icFor', ['K4.3', 'K4.4']], ['icOpe', ['K4.1', 'K4.2']], ['icGov', ['K5.1', 'K5.2', 'K5.3', 'K5.4', 'K5.5', 'K6.1', 'K6.2', 'K6.3']]];
 function relIcebergs(d) {
   if (!d || !d.av || !d.av.fases) return null;
@@ -803,7 +803,7 @@ const CSS_RELATORIO = `
 .ic-ceu { position: relative; background: linear-gradient(#F2F9FE, #E3F1FC); padding: 14px 16px 0; }
 .ic-ceu svg { display: block; width: 92%; height: 84px; margin: 0 auto -22px; position: relative; z-index: 0; }
 .ic-box { position: relative; z-index: 1; background: #fff; border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; box-shadow: 0 2px 6px rgba(12,45,77,.14); margin-bottom: -14px; }
-.ic-l { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; font-size: .9rem; align-items: baseline; color: #17212B; }
+.ic-l { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 8px; font-size: .9rem; align-items: baseline; color: #17212B; }
 .ic-l b { font-variant-numeric: tabular-nums; color: #0C2D4D; }
 .ic-l[data-zero] { color: #8B98A5; } .ic-l[data-zero] b { color: #8B98A5; font-weight: 600; }
 .ic-agua .ic-l, .ic-agua .ic-l b { color: #fff; }

@@ -230,5 +230,9 @@
  "Formação": "Formación",
  "Operação e suporte": "Operación y soporte",
  "Governança e saída": "Gobernanza y salida",
- "Quanto cada fase custa por ano, o que aparece no preço da proposta e o que fica escondido, e o que mais pode mudar o total.": "Cuánto cuesta cada fase por año, qué aparece en el precio de la oferta y qué queda oculto, y qué más puede cambiar el total."
+ "Quanto cada fase custa por ano, o que aparece no preço da proposta e o que fica escondido, e o que mais pode mudar o total.": "Cuánto cuesta cada fase por año, qué aparece en el precio de la oferta y qué queda oculto, y qué más puede cambiar el total.",
+ "Acima da linha d’água, o que costuma aparecer no preço da proposta: dispositivos novos, licenças, consumo de IA, computação e hospedagem. Abaixo, o que a rede também paga para a solução funcionar. Valores por ano, em média, na conta econômica; as barras usam a mesma escala nas três fases.": "Por encima de la línea de flotación, lo que suele aparecer en el precio de la oferta: dispositivos nuevos, licencias, uso de IA, cómputo y alojamiento. Por debajo, lo que el sistema educativo también paga para que la solución funcione. Valores medios por año, en la cuenta económica; las barras usan la misma escala en las tres fases.",
+ "Dispositivos novos": "Dispositivos nuevos",
+ "Dados e conhecimento": "Datos y conocimiento",
+ "Computação e hospedagem": "Cómputo y alojamiento"
 }

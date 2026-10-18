@@ -230,5 +230,9 @@
  "Formação": "Training",
  "Operação e suporte": "Operations and support",
  "Governança e saída": "Governance and exit",
- "Quanto cada fase custa por ano, o que aparece no preço da proposta e o que fica escondido, e o que mais pode mudar o total.": "How much each phase costs per year, what appears in the bid price and what stays hidden, and what else could change the total."
+ "Quanto cada fase custa por ano, o que aparece no preço da proposta e o que fica escondido, e o que mais pode mudar o total.": "How much each phase costs per year, what appears in the bid price and what stays hidden, and what else could change the total.",
+ "Acima da linha d’água, o que costuma aparecer no preço da proposta: dispositivos novos, licenças, consumo de IA, computação e hospedagem. Abaixo, o que a rede também paga para a solução funcionar. Valores por ano, em média, na conta econômica; as barras usam a mesma escala nas três fases.": "Above the waterline, what usually appears in the bid price: new devices, licences, AI usage, computing and hosting. Below, what the school system also pays for the solution to work. Average values per year, on an economic basis; the bars use the same scale in all three phases.",
+ "Dispositivos novos": "New devices",
+ "Dados e conhecimento": "Data and knowledge",
+ "Computação e hospedagem": "Computing and hosting"
 }
