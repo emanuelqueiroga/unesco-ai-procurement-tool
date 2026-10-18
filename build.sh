@@ -28,9 +28,9 @@ JS=$JS_OK
 import json, sys, os, glob
 l = '$l'; d = {}
 if l in '$NOVOS'.split():
-    arqs = ['i18n/%s.json' % l] + ([os.path.join(os.environ['I18N_TESTE'], l + '.json')] if os.environ.get('I18N_TESTE') else []) + sorted(glob.glob('i18n/v13_*_%s.json' % l))
+    arqs = ['i18n/%s.json' % l] + ([os.path.join(os.environ['I18N_TESTE'], l + '.json')] if os.environ.get('I18N_TESTE') else []) + sorted(glob.glob('i18n/v13_*_%s.json' % l)) + sorted(glob.glob('i18n/v14_*_%s.json' % l))
 else:
-    arqs = ['i18n/%s.json' % l, 'i18n/extra_%s.json' % l] + sorted(glob.glob('i18n/v9_*_%s.json' % l)) + sorted(glob.glob('i18n/v10_*_%s.json' % l)) + sorted(glob.glob('i18n/v11_*_%s.json' % l)) + sorted(glob.glob('i18n/v12_*_%s.json' % l)) + sorted(glob.glob('i18n/v13_*_%s.json' % l))
+    arqs = ['i18n/%s.json' % l, 'i18n/extra_%s.json' % l] + sorted(glob.glob('i18n/v9_*_%s.json' % l)) + sorted(glob.glob('i18n/v10_*_%s.json' % l)) + sorted(glob.glob('i18n/v11_*_%s.json' % l)) + sorted(glob.glob('i18n/v12_*_%s.json' % l)) + sorted(glob.glob('i18n/v13_*_%s.json' % l)) + sorted(glob.glob('i18n/v14_*_%s.json' % l))
 for f in arqs:
     if os.path.exists(f): d.update(json.load(open(f)))
 sys.stdout.write(json.dumps(d, ensure_ascii=False))"; echo ','; done; echo '};';
