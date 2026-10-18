@@ -333,47 +333,60 @@ function gerarPDF() {
       const I = sinteseS.ice;
       if (I && I.fases.length) {
         const nF = I.fases.length, g = 10, wC = (LW - g * (nF - 1)) / nF, pd = 8, wI = wC - 2 * pd;
-        const hCab = 30, hPico = 26, hLin = 17, hA = 16 + 3 * hLin + 4, hB = 20 + 6 * hLin + 4, hPe = 50;
-        const hTot = hCab + hPico + hA + 8 + hB + hPe;
+        const hCab = 30, hPico = 30, hLin = 17, hA = 16 + 3 * hLin + 4, hB = 24 + 6 * hLin + 2, hPe = 54;
+        const hTot = hCab + hPico + hA - 4 + hB + 4 + hPe;
         fonte(10.5, 'bold', C.titulo); const LT = quebra(I.h, 10.5, LW, 'bold');
         cabe(hTot + 30 + LT.length * 13);
         LT.forEach(l => { doc.text(l, M, y + 10); y += 13; }); y += 2;
         texto(I.abre, { size: 8.4, cor: C.muted, after: 6 });
         cabe(hTot + 24);
-        const azul = [11, 79, 124], ceu = [234, 244, 252], gelo = [159, 207, 242], borda = [78, 155, 211], barF = [213, 227, 240], barA = [169, 217, 247], laranja = [154, 52, 18];
-        const linha = (x, yy, nome, val, w, escuro) => {
-          fonte(8, 'normal', escuro ? C.branco : C.tinta); doc.text(corta(quebra(nome, 8, wI - 46), 1)[0] || '', x, yy + 8);
-          fonte(8, 'bold', escuro ? C.branco : C.titulo); doc.text(pdfTxt(val), x + wI, yy + 8, { align: 'right' });
-          doc.setFillColor(...(escuro ? [52, 110, 150] : barF)); doc.rect(x, yy + 10.5, wI, 2.6, 'F');
-          if (w > 0) { doc.setFillColor(...(escuro ? barA : C.marca)); doc.rect(x, yy + 10.5, Math.max(1, wI * w), 2.6, 'F'); }
+        const agua = [11, 79, 124], agua2 = [16, 92, 140], ceu = [236, 246, 253], gelo = [185, 221, 246], gelo2 = [125, 184, 230], borda = [78, 155, 211], barF = [227, 236, 244], barA = [169, 220, 248], cinza = [139, 152, 165], azulO = [11, 90, 140];
+        const TINT = { piloto: [251, 228, 216], implantacao: [220, 235, 250], expansao: [220, 243, 230] };
+        const poli = (pts, estilo) => { const [x0_, y0_] = pts[0]; doc.lines(pts.slice(1).map((p_, k) => [p_[0] - pts[k][0], p_[1] - pts[k][1]]), x0_, y0_, [1, 1], estilo, true); };
+        const linha = (x, yy, z, escuro) => {
+          const zero = z.ano < 0.5;
+          fonte(8, zero ? 'normal' : 'normal', zero ? (escuro ? [143, 182, 211] : cinza) : (escuro ? C.branco : C.tinta)); doc.text(corta(quebra(z.nome, 8, wI - 48), 1)[0] || '', x, yy + 8);
+          fonte(8, 'bold', zero ? (escuro ? [143, 182, 211] : cinza) : (escuro ? C.branco : C.titulo)); doc.text(pdfTxt(z.txt), x + wI, yy + 8, { align: 'right' });
+          doc.setFillColor(...(escuro ? [40, 104, 146] : barF)); doc.roundedRect(x, yy + 10.5, wI, 2.6, 1.3, 1.3, 'F');
+          if (z.w > 0) { doc.setFillColor(...(escuro ? barA : C.marca)); doc.roundedRect(x, yy + 10.5, Math.max(1.5, wI * z.w), 2.6, 1.3, 1.3, 'F'); }
         };
         I.fases.forEach((f, i) => {
-          const x0 = M + i * (wC + g); let yy = y;
-          doc.setFillColor(...ceu); doc.rect(x0, yy, wC, hCab + hPico + hA + 8, 'F');
-          fonte(9.2, 'bold', C.titulo); doc.text(corta(quebra(f.nome, 9.2, wI, 'bold'), 1)[0] || '', x0 + pd, yy + 13);
+          const x0 = M + i * (wC + g); let yy = y; const tint = TINT[f.id] || TINT.implantacao;
+          // cabeçalho colorido da fase
+          doc.setFillColor(...tint); doc.roundedRect(x0, yy, wC, hCab + 6, 6, 6, 'F'); doc.rect(x0, yy + hCab - 4, wC, 10, 'F');
+          fonte(9.4, 'bold', C.titulo); doc.text(corta(quebra(f.nome, 9.4, wI, 'bold'), 1)[0] || '', x0 + pd, yy + 13);
           fonte(8, 'normal', C.muted); doc.text(pdfTxt(f.anosTxt), x0 + pd, yy + 24); yy += hCab;
-          // pico do iceberg
-          const cx = x0 + wC / 2, b = yy + hPico;
-          doc.setFillColor(...gelo); doc.setDrawColor(...borda); doc.setLineWidth(0.6);
-          doc.triangle(cx - 46, b, cx + 2, yy + 2, cx + 46, b, 'FD');
-          doc.triangle(cx - 30, b, cx - 18, yy + 12, cx - 4, b, 'F');
-          doc.setDrawColor(...C.branco); doc.setLineWidth(1); doc.line(cx + 2, yy + 2, cx - 3, yy + 16); doc.line(cx + 2, yy + 2, cx + 7, yy + 18);
-          yy = b;
-          doc.setFillColor(...C.branco); doc.roundedRect(x0 + pd - 3, yy, wC - 2 * pd + 6, hA, 4, 4, 'F');
-          fonte(8, 'bold', C.muted); doc.text(pdfTxt(I.acima.toUpperCase()), x0 + pd, yy + 10, { charSpace: 0.3 });
-          f.acima.forEach((z, k) => linha(x0 + pd, yy + 14 + k * hLin, z.nome, z.txt, z.w, false));
-          yy += hA + 8;
-          doc.setFillColor(27, 134, 198); doc.rect(x0, yy, wC, 3, 'F');
-          doc.setFillColor(...azul); doc.rect(x0, yy + 3, wC, hB - 3, 'F');
-          fonte(8, 'bold', [191, 227, 250]); doc.text(pdfTxt(I.abaixo.toUpperCase()), x0 + pd, yy + 14, { charSpace: 0.3 });
-          f.abaixo.forEach((z, k) => linha(x0 + pd, yy + 19 + k * hLin, z.nome, z.txt, z.w, true));
-          yy += hB;
-          doc.setFillColor(244, 248, 251); doc.rect(x0, yy, wC, hPe, 'F');
+          // céu com o pico do iceberg (duas faces, contorno e reflexos)
+          doc.setFillColor(...ceu); doc.rect(x0, yy, wC, hPico + hA - 8, 'F');
+          const L = x0 + wC * 0.1, R = x0 + wC * 0.9, b = yy + hPico + 10, top = yy + 3, cx = x0 + wC * 0.52, ww = R - L;
+          const P = [[L, b], [L + ww * 0.22, yy + hPico * 0.45], [L + ww * 0.3, yy + hPico * 0.6], [cx, top], [L + ww * 0.62, yy + hPico * 0.42], [L + ww * 0.72, yy + hPico * 0.3], [R, b]];
+          doc.setFillColor(...gelo); poli(P, 'F');
+          doc.setFillColor(...gelo2); poli([[cx, top], [L + ww * 0.62, yy + hPico * 0.42], [L + ww * 0.72, yy + hPico * 0.3], [R, b], [cx + ww * 0.04, b], [cx - ww * 0.04, yy + hPico * 0.5]], 'F');
+          doc.setDrawColor(...borda); doc.setLineWidth(0.8); poli(P, 'S');
+          doc.setDrawColor(...C.branco); doc.setLineWidth(1.3); doc.line(cx, top, cx - 4, top + 13); doc.line(cx, top, cx + 6, top + 15);
+          yy += hPico;
+          // caixa branca: o preço da proposta
+          doc.setFillColor(214, 226, 236); doc.roundedRect(x0 + pd - 3 + 0.6, yy + 0.9, wC - 2 * pd + 6, hA, 5, 5, 'F');
+          doc.setFillColor(...C.branco); doc.roundedRect(x0 + pd - 3, yy, wC - 2 * pd + 6, hA, 5, 5, 'F');
+          fonte(8, 'bold', C.muted); doc.text(pdfTxt(I.acima.toUpperCase()), x0 + pd, yy + 11, { charSpace: 0.3 });
+          f.acima.forEach((z, k) => linha(x0 + pd, yy + 15 + k * hLin, z, false));
+          yy += hA - 4;
+          // água funda com o gelo submerso, mais largo quanto maior a parcela escondida
+          doc.setFillColor(46, 155, 216); doc.rect(x0, yy, wC, 3.5, 'F');
+          doc.setFillColor(...agua); doc.rect(x0, yy + 3.5, wC, hB + 4 - 3.5, 'F');
+          const pw = 0.62 + 0.36 * Math.max(0, Math.min(1, f.pOculto)), l = x0 + wC * (0.5 - pw / 2), r = x0 + wC * (0.5 + pw / 2), yb = yy + hB + 4;
+          doc.setFillColor(...agua2);
+          poli([[x0 + wC * 0.2, yy + 3.5], [x0 + wC * 0.8, yy + 3.5], [r - 2, yy + (yb - yy) * 0.3], [r, yy + (yb - yy) * 0.62], [r - 8, yy + (yb - yy) * 0.92], [x0 + wC * 0.58, yb], [x0 + wC * 0.36, yb - 2], [l + 6, yy + (yb - yy) * 0.84], [l, yy + (yb - yy) * 0.52], [l + 4, yy + (yb - yy) * 0.24]], 'F');
+          fonte(8, 'bold', [191, 227, 250]); doc.text(pdfTxt(I.abaixo.toUpperCase()), x0 + pd, yy + 18, { charSpace: 0.3 });
+          f.abaixo.forEach((z, k) => linha(x0 + pd, yy + 23 + k * hLin, z, true));
+          yy += hB + 4;
+          // pé colorido: média por ano, total e parcela escondida
+          doc.setFillColor(...tint); doc.rect(x0, yy, wC, hPe - 6, 'F'); doc.roundedRect(x0, yy, wC, hPe, 6, 6, 'F');
           fonte(8, 'normal', C.muted); doc.text(pdfTxt(I.mediaRot), x0 + wC / 2, yy + 11, { align: 'center' });
-          fonte(13, 'bold', C.titulo); doc.text(pdfTxt(f.mediaTxt), x0 + wC / 2, yy + 25, { align: 'center' });
-          fonte(8, 'normal', C.muted); doc.text(corta(quebra(f.totalTxt, 8, wI), 1)[0] || '', x0 + wC / 2, yy + 35, { align: 'center' });
-          fonte(8, 'bold', laranja); doc.text(corta(quebra(f.ocultoTxt, 8, wI, 'bold'), 1)[0] || '', x0 + wC / 2, yy + 45, { align: 'center' });
-          doc.setDrawColor(...C.linha); doc.setLineWidth(0.6); doc.roundedRect(x0, y, wC, hTot, 6, 6, 'S');
+          fonte(14, 'bold', C.titulo); doc.text(pdfTxt(f.mediaTxt), x0 + wC / 2, yy + 27, { align: 'center' });
+          fonte(8, 'normal', C.muted); doc.text(corta(quebra(f.totalTxt, 8, wI), 1)[0] || '', x0 + wC / 2, yy + 38, { align: 'center' });
+          fonte(8, 'bold', azulO); doc.text(corta(quebra(f.ocultoTxt, 8, wI, 'bold'), 1)[0] || '', x0 + wC / 2, yy + 49, { align: 'center' });
+          doc.setDrawColor(211, 222, 232); doc.setLineWidth(0.6); doc.roundedRect(x0, y, wC, hTot, 6, 6, 'S');
         });
         y += hTot + 6;
         texto(I.nota, { size: 8, cor: C.muted, i: true, after: 8 });

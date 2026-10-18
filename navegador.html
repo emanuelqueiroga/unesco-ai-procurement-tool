@@ -8740,27 +8740,34 @@ const CSS_RELATORIO = `
 .rs-ac dt { font-weight: 700; color: var(--rp-head); font-size: .9rem; }
 .rs-ac dd { margin: 0; font-size: .95rem; }
 .rs-ac-l[data-c="exOque"] dd { font-weight: 700; color: var(--rp-head); }
-.rs-ice { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
-.ic { border: 1px solid var(--rp-line); border-radius: 14px; overflow: hidden; display: grid; grid-template-rows: auto auto 1fr auto; background: #fff; }
-.ic-cab { padding: 12px 14px 4px; background: #EAF4FC; }
-.ic-cab b { display: block; color: var(--rp-head); font-size: 1.05rem; }
-.ic-cab span { font-size: .86rem; color: var(--rp-muted); }
-.ic-topo { background: #EAF4FC; padding: 0 14px 12px; }
-.ic-topo svg { display: block; width: 62%; height: 46px; margin: 0 auto -2px; }
-.ic-box { background: #fff; border-radius: 10px; padding: 8px 10px; display: grid; gap: 4px; box-shadow: 0 1px 2px rgba(12,45,77,.12); }
-.ic-l { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; font-size: .88rem; align-items: baseline; }
-.ic-l b { font-variant-numeric: tabular-nums; }
-.ic-l i { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: #D5E3F0; position: relative; overflow: hidden; }
+.rs-ice { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+.ic { --tint: #DCEBFA; border: 1px solid #D3DEE8; border-radius: 16px; overflow: hidden; display: grid; grid-template-rows: auto auto 1fr auto; background: #fff; }
+.ic[data-fase="piloto"] { --tint: #FBE4D8; } .ic[data-fase="implantacao"] { --tint: #DCEBFA; } .ic[data-fase="expansao"] { --tint: #DCF3E6; }
+.ic-cab { padding: 14px 16px 12px; background: var(--tint); }
+.ic-cab b { display: block; color: #0C2D4D; font-size: 1.08rem; }
+.ic-cab span { font-size: .86rem; color: #36424E; }
+.ic-ceu { position: relative; background: linear-gradient(#F2F9FE, #E3F1FC); padding: 14px 16px 0; }
+.ic-ceu svg { display: block; width: 92%; height: 84px; margin: 0 auto -22px; position: relative; z-index: 0; }
+.ic-box { position: relative; z-index: 1; background: #fff; border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; box-shadow: 0 2px 6px rgba(12,45,77,.14); margin-bottom: -14px; }
+.ic-l { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; font-size: .9rem; align-items: baseline; color: #17212B; }
+.ic-l b { font-variant-numeric: tabular-nums; color: #0C2D4D; }
+.ic-l[data-zero] { color: #8B98A5; } .ic-l[data-zero] b { color: #8B98A5; font-weight: 600; }
+.ic-agua .ic-l, .ic-agua .ic-l b { color: #fff; }
+.ic-agua .ic-l[data-zero], .ic-agua .ic-l[data-zero] b { color: #8FB6D3; }
+.ic-l i { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: #E3ECF4; position: relative; overflow: hidden; }
 .ic-l i::after { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--w); background: #0069B4; border-radius: 3px; }
-.ic-agua { background: #0B4F7C; color: #fff; padding: 10px 14px 14px; display: grid; gap: 7px; align-content: start; border-top: 6px solid #1B86C6; }
-.ic-agua .ic-rot { font-size: .86rem; letter-spacing: .05em; text-transform: uppercase; color: #BFE3FA; }
-.ic-agua .ic-l i { background: rgba(255,255,255,.22); }
-.ic-agua .ic-l i::after { background: #A9D9F7; }
-.ic-box .ic-rot { font-size: .86rem; letter-spacing: .05em; text-transform: uppercase; color: var(--rp-muted); }
-.ic-pe { padding: 10px 14px 12px; text-align: center; background: #F4F8FB; display: grid; gap: 2px; }
-.ic-pe .ic-m { font-size: .86rem; color: var(--rp-muted); }
-.ic-pe .ic-v { font-size: 1.45rem; font-weight: 700; color: var(--rp-head); }
-.ic-pe .ic-o { font-size: .86rem; color: #9A3412; font-weight: 600; }
+.ic-agua { position: relative; background: linear-gradient(#0E5A8A, #08385F); color: #fff; padding: 30px 16px 16px; display: grid; gap: 8px; align-content: start; border-top: 5px solid #2E9BD8; overflow: hidden; }
+.ic-agua > svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.ic-agua > :not(svg) { position: relative; z-index: 1; }
+.ic-agua .ic-l i { background: rgba(255,255,255,.18); }
+.ic-agua .ic-l i::after { background: #A9DCF8; }
+.ic-rot { font-size: .86rem; letter-spacing: .05em; text-transform: uppercase; font-weight: 600; }
+.ic-box .ic-rot { color: #586674; }
+.ic-agua .ic-rot { color: #BFE3FA; }
+.ic-pe { padding: 14px 16px 16px; text-align: center; background: var(--tint); display: grid; gap: 2px; }
+.ic-pe .ic-m { font-size: .86rem; color: #36424E; }
+.ic-pe .ic-v { font-size: 1.6rem; font-weight: 700; color: #0C2D4D; letter-spacing: -.01em; }
+.ic-pe .ic-o { font-size: .9rem; color: #0B5A8C; font-weight: 700; }
 .ic-nota { font-size: .86rem; }
 @media (max-width: 560px) { .rs-ac-l { grid-template-columns: 1fr; gap: 0; } .rs-exec tbody th { width: 38%; } }
 .rs-quem { font-size: .9rem; color: var(--rp-muted); margin: 0; }
@@ -11427,13 +11434,18 @@ function htmlSinteseP(s) {
   }
   return h;
 }
+// Iceberg: céu com o pico (o preço da proposta) e água funda com o gelo submerso, mais largo quanto maior a parcela escondida
+const IC_PICO = '<svg viewBox="0 0 200 64" aria-hidden="true"><path d="M18 64 L62 30 L76 40 L104 4 L124 32 L140 22 L182 64 Z" fill="#B9DDF6"/><path d="M104 4 L124 32 L140 22 L182 64 L112 64 L98 30 Z" fill="#7DB8E6"/><path d="M18 64 L62 30 L76 40 L104 4 L124 32 L140 22 L182 64 Z" fill="none" stroke="#4E9BD3" stroke-width="1.4" stroke-linejoin="round"/><path d="M104 4 L96 26 M104 4 L114 30 M62 30 L58 42" stroke="#fff" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>';
+function icSubmerso(p) {
+  const w = 0.62 + 0.36 * Math.max(0, Math.min(1, p)), l = 50 - 50 * w, r = 50 + 50 * w;
+  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M20 0 L80 0 L${(r - 2).toFixed(1)} 30 L${r.toFixed(1)} 62 L${(r - 8).toFixed(1)} 92 L58 100 L36 97 L${(l + 6).toFixed(1)} 84 L${l.toFixed(1)} 52 L${(l + 4).toFixed(1)} 24 Z" fill="#6CBDEE" fill-opacity=".22"/><path d="M50 0 L56 46 L48 100" stroke="#A9DCF8" stroke-opacity=".12" stroke-width="1.2" fill="none" vector-effect="non-scaling-stroke"/></svg>`;
+}
 function htmlIcebergsP(I) {
-  const lin = x => `<div class="ic-l" data-g="${x.k}"><span>${esc(x.nome)}</span><b>${esc(x.txt)}</b><i style="--w:${(100 * x.w).toFixed(1)}%" aria-hidden="true"></i></div>`;
-  const pico = '<svg viewBox="0 0 120 40" aria-hidden="true"><path d="M4 40 L34 16 L46 24 L66 2 L84 20 L94 14 L116 40 Z" fill="#9FCFF2" stroke="#4E9BD3" stroke-width="1.2"/><path d="M66 2 L60 22 M66 2 L74 26" stroke="#fff" stroke-width="1.6" fill="none"/></svg>';
+  const lin = x => `<div class="ic-l" data-g="${x.k}"${x.ano < 0.5 ? ' data-zero' : ''}><span>${esc(x.nome)}</span><b>${esc(x.txt)}</b><i style="--w:${(100 * x.w).toFixed(1)}%" aria-hidden="true"></i></div>`;
   return `<h5 class="rp-sub">${esc(I.h)}</h5><p class="rs-abre muted">${esc(I.abre)}</p><div class="rs-ice" data-k="icebergs">${I.fases.map(f => `<article class="ic" data-fase="${f.id}">
     <div class="ic-cab"><b>${esc(f.nome)}</b><span>${esc(f.anosTxt)}</span></div>
-    <div class="ic-topo">${pico}<div class="ic-box"><span class="ic-rot">${esc(I.acima)}</span>${f.acima.map(lin).join('')}</div></div>
-    <div class="ic-agua"><span class="ic-rot">${esc(I.abaixo)}</span>${f.abaixo.map(lin).join('')}</div>
+    <div class="ic-ceu">${IC_PICO}<div class="ic-box"><span class="ic-rot">${esc(I.acima)}</span>${f.acima.map(lin).join('')}</div></div>
+    <div class="ic-agua">${icSubmerso(f.pOculto)}<span class="ic-rot">${esc(I.abaixo)}</span>${f.abaixo.map(lin).join('')}</div>
     <div class="ic-pe"><span class="ic-m">${esc(I.mediaRot)}</span><span class="ic-v">${esc(f.mediaTxt)}</span><span class="ic-m">${esc(f.totalTxt)}</span><span class="ic-o">${esc(f.ocultoTxt)}</span></div></article>`).join('')}</div><p class="ic-nota muted">${esc(I.nota)}</p>`;
 }
 // Respostas que faltam: lista curta perto do topo (curta) ou completa no anexo A
@@ -11926,47 +11938,60 @@ function gerarPDF() {
       const I = sinteseS.ice;
       if (I && I.fases.length) {
         const nF = I.fases.length, g = 10, wC = (LW - g * (nF - 1)) / nF, pd = 8, wI = wC - 2 * pd;
-        const hCab = 30, hPico = 26, hLin = 17, hA = 16 + 3 * hLin + 4, hB = 20 + 6 * hLin + 4, hPe = 50;
-        const hTot = hCab + hPico + hA + 8 + hB + hPe;
+        const hCab = 30, hPico = 30, hLin = 17, hA = 16 + 3 * hLin + 4, hB = 24 + 6 * hLin + 2, hPe = 54;
+        const hTot = hCab + hPico + hA - 4 + hB + 4 + hPe;
         fonte(10.5, 'bold', C.titulo); const LT = quebra(I.h, 10.5, LW, 'bold');
         cabe(hTot + 30 + LT.length * 13);
         LT.forEach(l => { doc.text(l, M, y + 10); y += 13; }); y += 2;
         texto(I.abre, { size: 8.4, cor: C.muted, after: 6 });
         cabe(hTot + 24);
-        const azul = [11, 79, 124], ceu = [234, 244, 252], gelo = [159, 207, 242], borda = [78, 155, 211], barF = [213, 227, 240], barA = [169, 217, 247], laranja = [154, 52, 18];
-        const linha = (x, yy, nome, val, w, escuro) => {
-          fonte(8, 'normal', escuro ? C.branco : C.tinta); doc.text(corta(quebra(nome, 8, wI - 46), 1)[0] || '', x, yy + 8);
-          fonte(8, 'bold', escuro ? C.branco : C.titulo); doc.text(pdfTxt(val), x + wI, yy + 8, { align: 'right' });
-          doc.setFillColor(...(escuro ? [52, 110, 150] : barF)); doc.rect(x, yy + 10.5, wI, 2.6, 'F');
-          if (w > 0) { doc.setFillColor(...(escuro ? barA : C.marca)); doc.rect(x, yy + 10.5, Math.max(1, wI * w), 2.6, 'F'); }
+        const agua = [11, 79, 124], agua2 = [16, 92, 140], ceu = [236, 246, 253], gelo = [185, 221, 246], gelo2 = [125, 184, 230], borda = [78, 155, 211], barF = [227, 236, 244], barA = [169, 220, 248], cinza = [139, 152, 165], azulO = [11, 90, 140];
+        const TINT = { piloto: [251, 228, 216], implantacao: [220, 235, 250], expansao: [220, 243, 230] };
+        const poli = (pts, estilo) => { const [x0_, y0_] = pts[0]; doc.lines(pts.slice(1).map((p_, k) => [p_[0] - pts[k][0], p_[1] - pts[k][1]]), x0_, y0_, [1, 1], estilo, true); };
+        const linha = (x, yy, z, escuro) => {
+          const zero = z.ano < 0.5;
+          fonte(8, zero ? 'normal' : 'normal', zero ? (escuro ? [143, 182, 211] : cinza) : (escuro ? C.branco : C.tinta)); doc.text(corta(quebra(z.nome, 8, wI - 48), 1)[0] || '', x, yy + 8);
+          fonte(8, 'bold', zero ? (escuro ? [143, 182, 211] : cinza) : (escuro ? C.branco : C.titulo)); doc.text(pdfTxt(z.txt), x + wI, yy + 8, { align: 'right' });
+          doc.setFillColor(...(escuro ? [40, 104, 146] : barF)); doc.roundedRect(x, yy + 10.5, wI, 2.6, 1.3, 1.3, 'F');
+          if (z.w > 0) { doc.setFillColor(...(escuro ? barA : C.marca)); doc.roundedRect(x, yy + 10.5, Math.max(1.5, wI * z.w), 2.6, 1.3, 1.3, 'F'); }
         };
         I.fases.forEach((f, i) => {
-          const x0 = M + i * (wC + g); let yy = y;
-          doc.setFillColor(...ceu); doc.rect(x0, yy, wC, hCab + hPico + hA + 8, 'F');
-          fonte(9.2, 'bold', C.titulo); doc.text(corta(quebra(f.nome, 9.2, wI, 'bold'), 1)[0] || '', x0 + pd, yy + 13);
+          const x0 = M + i * (wC + g); let yy = y; const tint = TINT[f.id] || TINT.implantacao;
+          // cabeçalho colorido da fase
+          doc.setFillColor(...tint); doc.roundedRect(x0, yy, wC, hCab + 6, 6, 6, 'F'); doc.rect(x0, yy + hCab - 4, wC, 10, 'F');
+          fonte(9.4, 'bold', C.titulo); doc.text(corta(quebra(f.nome, 9.4, wI, 'bold'), 1)[0] || '', x0 + pd, yy + 13);
           fonte(8, 'normal', C.muted); doc.text(pdfTxt(f.anosTxt), x0 + pd, yy + 24); yy += hCab;
-          // pico do iceberg
-          const cx = x0 + wC / 2, b = yy + hPico;
-          doc.setFillColor(...gelo); doc.setDrawColor(...borda); doc.setLineWidth(0.6);
-          doc.triangle(cx - 46, b, cx + 2, yy + 2, cx + 46, b, 'FD');
-          doc.triangle(cx - 30, b, cx - 18, yy + 12, cx - 4, b, 'F');
-          doc.setDrawColor(...C.branco); doc.setLineWidth(1); doc.line(cx + 2, yy + 2, cx - 3, yy + 16); doc.line(cx + 2, yy + 2, cx + 7, yy + 18);
-          yy = b;
-          doc.setFillColor(...C.branco); doc.roundedRect(x0 + pd - 3, yy, wC - 2 * pd + 6, hA, 4, 4, 'F');
-          fonte(8, 'bold', C.muted); doc.text(pdfTxt(I.acima.toUpperCase()), x0 + pd, yy + 10, { charSpace: 0.3 });
-          f.acima.forEach((z, k) => linha(x0 + pd, yy + 14 + k * hLin, z.nome, z.txt, z.w, false));
-          yy += hA + 8;
-          doc.setFillColor(27, 134, 198); doc.rect(x0, yy, wC, 3, 'F');
-          doc.setFillColor(...azul); doc.rect(x0, yy + 3, wC, hB - 3, 'F');
-          fonte(8, 'bold', [191, 227, 250]); doc.text(pdfTxt(I.abaixo.toUpperCase()), x0 + pd, yy + 14, { charSpace: 0.3 });
-          f.abaixo.forEach((z, k) => linha(x0 + pd, yy + 19 + k * hLin, z.nome, z.txt, z.w, true));
-          yy += hB;
-          doc.setFillColor(244, 248, 251); doc.rect(x0, yy, wC, hPe, 'F');
+          // céu com o pico do iceberg (duas faces, contorno e reflexos)
+          doc.setFillColor(...ceu); doc.rect(x0, yy, wC, hPico + hA - 8, 'F');
+          const L = x0 + wC * 0.1, R = x0 + wC * 0.9, b = yy + hPico + 10, top = yy + 3, cx = x0 + wC * 0.52, ww = R - L;
+          const P = [[L, b], [L + ww * 0.22, yy + hPico * 0.45], [L + ww * 0.3, yy + hPico * 0.6], [cx, top], [L + ww * 0.62, yy + hPico * 0.42], [L + ww * 0.72, yy + hPico * 0.3], [R, b]];
+          doc.setFillColor(...gelo); poli(P, 'F');
+          doc.setFillColor(...gelo2); poli([[cx, top], [L + ww * 0.62, yy + hPico * 0.42], [L + ww * 0.72, yy + hPico * 0.3], [R, b], [cx + ww * 0.04, b], [cx - ww * 0.04, yy + hPico * 0.5]], 'F');
+          doc.setDrawColor(...borda); doc.setLineWidth(0.8); poli(P, 'S');
+          doc.setDrawColor(...C.branco); doc.setLineWidth(1.3); doc.line(cx, top, cx - 4, top + 13); doc.line(cx, top, cx + 6, top + 15);
+          yy += hPico;
+          // caixa branca: o preço da proposta
+          doc.setFillColor(214, 226, 236); doc.roundedRect(x0 + pd - 3 + 0.6, yy + 0.9, wC - 2 * pd + 6, hA, 5, 5, 'F');
+          doc.setFillColor(...C.branco); doc.roundedRect(x0 + pd - 3, yy, wC - 2 * pd + 6, hA, 5, 5, 'F');
+          fonte(8, 'bold', C.muted); doc.text(pdfTxt(I.acima.toUpperCase()), x0 + pd, yy + 11, { charSpace: 0.3 });
+          f.acima.forEach((z, k) => linha(x0 + pd, yy + 15 + k * hLin, z, false));
+          yy += hA - 4;
+          // água funda com o gelo submerso, mais largo quanto maior a parcela escondida
+          doc.setFillColor(46, 155, 216); doc.rect(x0, yy, wC, 3.5, 'F');
+          doc.setFillColor(...agua); doc.rect(x0, yy + 3.5, wC, hB + 4 - 3.5, 'F');
+          const pw = 0.62 + 0.36 * Math.max(0, Math.min(1, f.pOculto)), l = x0 + wC * (0.5 - pw / 2), r = x0 + wC * (0.5 + pw / 2), yb = yy + hB + 4;
+          doc.setFillColor(...agua2);
+          poli([[x0 + wC * 0.2, yy + 3.5], [x0 + wC * 0.8, yy + 3.5], [r - 2, yy + (yb - yy) * 0.3], [r, yy + (yb - yy) * 0.62], [r - 8, yy + (yb - yy) * 0.92], [x0 + wC * 0.58, yb], [x0 + wC * 0.36, yb - 2], [l + 6, yy + (yb - yy) * 0.84], [l, yy + (yb - yy) * 0.52], [l + 4, yy + (yb - yy) * 0.24]], 'F');
+          fonte(8, 'bold', [191, 227, 250]); doc.text(pdfTxt(I.abaixo.toUpperCase()), x0 + pd, yy + 18, { charSpace: 0.3 });
+          f.abaixo.forEach((z, k) => linha(x0 + pd, yy + 23 + k * hLin, z, true));
+          yy += hB + 4;
+          // pé colorido: média por ano, total e parcela escondida
+          doc.setFillColor(...tint); doc.rect(x0, yy, wC, hPe - 6, 'F'); doc.roundedRect(x0, yy, wC, hPe, 6, 6, 'F');
           fonte(8, 'normal', C.muted); doc.text(pdfTxt(I.mediaRot), x0 + wC / 2, yy + 11, { align: 'center' });
-          fonte(13, 'bold', C.titulo); doc.text(pdfTxt(f.mediaTxt), x0 + wC / 2, yy + 25, { align: 'center' });
-          fonte(8, 'normal', C.muted); doc.text(corta(quebra(f.totalTxt, 8, wI), 1)[0] || '', x0 + wC / 2, yy + 35, { align: 'center' });
-          fonte(8, 'bold', laranja); doc.text(corta(quebra(f.ocultoTxt, 8, wI, 'bold'), 1)[0] || '', x0 + wC / 2, yy + 45, { align: 'center' });
-          doc.setDrawColor(...C.linha); doc.setLineWidth(0.6); doc.roundedRect(x0, y, wC, hTot, 6, 6, 'S');
+          fonte(14, 'bold', C.titulo); doc.text(pdfTxt(f.mediaTxt), x0 + wC / 2, yy + 27, { align: 'center' });
+          fonte(8, 'normal', C.muted); doc.text(corta(quebra(f.totalTxt, 8, wI), 1)[0] || '', x0 + wC / 2, yy + 38, { align: 'center' });
+          fonte(8, 'bold', azulO); doc.text(corta(quebra(f.ocultoTxt, 8, wI, 'bold'), 1)[0] || '', x0 + wC / 2, yy + 49, { align: 'center' });
+          doc.setDrawColor(211, 222, 232); doc.setLineWidth(0.6); doc.roundedRect(x0, y, wC, hTot, 6, 6, 'S');
         });
         y += hTot + 6;
         texto(I.nota, { size: 8, cor: C.muted, i: true, after: 8 });

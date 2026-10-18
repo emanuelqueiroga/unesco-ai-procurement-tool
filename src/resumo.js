@@ -847,13 +847,18 @@ function htmlSinteseP(s) {
   }
   return h;
 }
+// Iceberg: céu com o pico (o preço da proposta) e água funda com o gelo submerso, mais largo quanto maior a parcela escondida
+const IC_PICO = '<svg viewBox="0 0 200 64" aria-hidden="true"><path d="M18 64 L62 30 L76 40 L104 4 L124 32 L140 22 L182 64 Z" fill="#B9DDF6"/><path d="M104 4 L124 32 L140 22 L182 64 L112 64 L98 30 Z" fill="#7DB8E6"/><path d="M18 64 L62 30 L76 40 L104 4 L124 32 L140 22 L182 64 Z" fill="none" stroke="#4E9BD3" stroke-width="1.4" stroke-linejoin="round"/><path d="M104 4 L96 26 M104 4 L114 30 M62 30 L58 42" stroke="#fff" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>';
+function icSubmerso(p) {
+  const w = 0.62 + 0.36 * Math.max(0, Math.min(1, p)), l = 50 - 50 * w, r = 50 + 50 * w;
+  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M20 0 L80 0 L${(r - 2).toFixed(1)} 30 L${r.toFixed(1)} 62 L${(r - 8).toFixed(1)} 92 L58 100 L36 97 L${(l + 6).toFixed(1)} 84 L${l.toFixed(1)} 52 L${(l + 4).toFixed(1)} 24 Z" fill="#6CBDEE" fill-opacity=".22"/><path d="M50 0 L56 46 L48 100" stroke="#A9DCF8" stroke-opacity=".12" stroke-width="1.2" fill="none" vector-effect="non-scaling-stroke"/></svg>`;
+}
 function htmlIcebergsP(I) {
-  const lin = x => `<div class="ic-l" data-g="${x.k}"><span>${esc(x.nome)}</span><b>${esc(x.txt)}</b><i style="--w:${(100 * x.w).toFixed(1)}%" aria-hidden="true"></i></div>`;
-  const pico = '<svg viewBox="0 0 120 40" aria-hidden="true"><path d="M4 40 L34 16 L46 24 L66 2 L84 20 L94 14 L116 40 Z" fill="#9FCFF2" stroke="#4E9BD3" stroke-width="1.2"/><path d="M66 2 L60 22 M66 2 L74 26" stroke="#fff" stroke-width="1.6" fill="none"/></svg>';
+  const lin = x => `<div class="ic-l" data-g="${x.k}"${x.ano < 0.5 ? ' data-zero' : ''}><span>${esc(x.nome)}</span><b>${esc(x.txt)}</b><i style="--w:${(100 * x.w).toFixed(1)}%" aria-hidden="true"></i></div>`;
   return `<h5 class="rp-sub">${esc(I.h)}</h5><p class="rs-abre muted">${esc(I.abre)}</p><div class="rs-ice" data-k="icebergs">${I.fases.map(f => `<article class="ic" data-fase="${f.id}">
     <div class="ic-cab"><b>${esc(f.nome)}</b><span>${esc(f.anosTxt)}</span></div>
-    <div class="ic-topo">${pico}<div class="ic-box"><span class="ic-rot">${esc(I.acima)}</span>${f.acima.map(lin).join('')}</div></div>
-    <div class="ic-agua"><span class="ic-rot">${esc(I.abaixo)}</span>${f.abaixo.map(lin).join('')}</div>
+    <div class="ic-ceu">${IC_PICO}<div class="ic-box"><span class="ic-rot">${esc(I.acima)}</span>${f.acima.map(lin).join('')}</div></div>
+    <div class="ic-agua">${icSubmerso(f.pOculto)}<span class="ic-rot">${esc(I.abaixo)}</span>${f.abaixo.map(lin).join('')}</div>
     <div class="ic-pe"><span class="ic-m">${esc(I.mediaRot)}</span><span class="ic-v">${esc(f.mediaTxt)}</span><span class="ic-m">${esc(f.totalTxt)}</span><span class="ic-o">${esc(f.ocultoTxt)}</span></div></article>`).join('')}</div><p class="ic-nota muted">${esc(I.nota)}</p>`;
 }
 // Respostas que faltam: lista curta perto do topo (curta) ou completa no anexo A
