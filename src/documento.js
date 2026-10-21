@@ -458,7 +458,7 @@ function docHTML() {
   return `<section class="resumo plano rp dv" id="plano">
     <div class="dv-grade">
       <aside class="dv-ind" id="dv-ind" aria-label="${esc(tr('Índice e lacunas'))}" data-notr>${indiceHTML()}</aside>
-      <article class="dv-doc" id="dv-doc">
+      <article class="dv-doc rp-corpo" id="dv-doc">
         <div class="dv-mini" id="dv-mini" aria-hidden="true" data-notr></div>
         ${capaHTML()}
         <section class="dv-num" id="dv-num" aria-labelledby="dv-num-t" data-notr></section>
