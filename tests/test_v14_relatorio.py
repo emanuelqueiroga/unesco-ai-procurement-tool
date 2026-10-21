@@ -59,7 +59,11 @@ MOTOR = r"""(() => {
     nPrem: (premissasDoCaso(S.caso, cfg) || []).length };
 })()"""
 
+# v15 (proposta C, documento vivo): o sumário da página é o bloco de números do topo (#dv-num) mais a seção do sumário,
+# com "A proposta em seis respostas" recolhida (aberta aqui antes da leitura); os três maiores direcionadores ficam na
+# seção 3 e os icebergs na seção 2 (o detalhamento do custo). Só o caminho até os elementos mudou.
 PAGINA = r"""(() => { const P = document.getElementById('plano'); if (!P) return null;
+  P.querySelectorAll('details.dv-exec').forEach(d => { d.open = true; });
   const ids = [...P.querySelectorAll('[data-sec]')].map(e => e.dataset.sec);
   const corpoEls = [...P.querySelectorAll('.rp-sintese, .rp-comoler, .rp-princ-sec, .rp-princ-sec ~ div[data-sec]')].filter(e => !e.closest('.rp-anexos'));
   const sec = id => (P.querySelector('[data-sec="' + id + '"]') || {});
@@ -70,7 +74,7 @@ PAGINA = r"""(() => { const P = document.getElementById('plano'); if (!P) return
   const g = {};
   GR.forEach(t => { const f = P.querySelector('[data-grafico="' + t + '"]'); g[t] = f ? { n: 1, leitura: (f.querySelector('.rg-leitura') || {}).innerText || '', titulo: (f.querySelector('.rp-graf-t') || {}).innerText || '' } : null; });
   const H = [...P.querySelectorAll('.rp-princ-sec')].map(e => ({ rot: (e.querySelector('.rp-rot') || {}).textContent, h: (e.querySelector('h3') || {}).textContent }));
-  return { vista: S.vista, ids, corpo, sintese: sec('sintese').innerText || '', tc: [...P.querySelectorAll('[data-sec="sintese"] .rp-tc')].map(e => e.innerText),
+  return { vista: S.vista, ids, corpo, sintese: [document.getElementById('dv-num'), P.querySelector('[data-sec="sintese"]'), P.querySelector('[data-sec="s3"] [data-k="direcionadores"]')].map(e => (e && e.innerText) || '').join('\n'), tc: [...P.querySelectorAll('[data-sec="sintese"] .rp-tc')].map(e => e.innerText),
     graf: g, H, comoler: sec('comoler').innerText || '', faltas: [...P.querySelectorAll('[data-sec="faltas"]')].length,
     premissas: sec('premissas').innerText || '', nLinhasPrem: sec('premissas').querySelectorAll('table tbody tr').length,
     foraN: sec('premissas').querySelectorAll('table tbody tr.hl, table tbody tr[data-fora]').length,
@@ -112,7 +116,7 @@ async def main():
             SEIS = ['O quê?', 'Por quê?', 'Para quê?', 'Como?', 'Quem?', 'Quando?']
             ok(all(all(k in t for k in SEIS) for t in r['tc']), f'{ex}: cada ação responde O quê, Por quê, Para quê, Como, Quem e Quando')
             ok(all(((a['quem'] and a['quem'][:1].upper() + a['quem'][1:] in t) or (not a['quem'] and 'A equipe responsável pelo caso' in t)) for a, t in zip(M['acoes'], r['tc'])), f'{ex}: "Quem?" com a área de PASSO_AJUDA ou a equipe do caso (nada inventado)')
-            IC = await pg.evaluate("""(() => { const d = relDados(numerosCusto()); const I = relIcebergs(d); return I ? { f: I.fases.map(f => ({ dif: Math.abs(f.tAcima + f.tAbaixo - d.av.fases.porFase[f.id].total), tot: d.av.fases.porFase[f.id].total })), n: document.querySelectorAll('[data-sec="sintese"] .ic').length } : null; })()""")
+            IC = await pg.evaluate("""(() => { const d = relDados(numerosCusto()); const I = relIcebergs(d); return I ? { f: I.fases.map(f => ({ dif: Math.abs(f.tAcima + f.tAbaixo - d.av.fases.porFase[f.id].total), tot: d.av.fases.porFase[f.id].total })), n: document.querySelectorAll('[data-sec="sintese"] .ic, [data-sec="s2"] .ic').length } : null; })()""")
             ok(IC is not None and len(IC['f']) >= 1 and IC['n'] == len(IC['f']) and all(x['dif'] < 1e-6 * max(1, abs(x['tot'])) for x in IC['f']), f'{ex}: um iceberg por fase, e acima + abaixo da água = custo da fase no motor ({IC and len(IC["f"])})')
             ok('A proposta em seis respostas' in s and all(k in s for k in ['O quê?', 'Por quê?', 'Para quê?', 'Como?', 'Entregáveis', 'Indicadores']), f'{ex}: sumário executivo com as seis respostas')
             # ordem de decisão

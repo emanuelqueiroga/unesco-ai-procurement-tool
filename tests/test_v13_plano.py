@@ -80,7 +80,7 @@ async def main():
               return { o, prob: card('problema'), gov: card('governanca'), lac: P.querySelectorAll('[data-sec="resumo"] .rp-lac').length,
                 b1: (P.querySelector('[data-sec="B1"]') || {}).innerText || '', mx: M ? M.innerText : '', mxH: M ? (M.closest('.rp-anexo').querySelector('h3') || {}).innerText : '',
                 linhas: M ? M.querySelectorAll('table tbody tr').length : 0, fonteMx: M ? minF(M) : 0, fontePerfil: minF(P.querySelector('[data-sec="resumo"]')),
-                sw: document.documentElement.scrollWidth, wScroll: W ? W.scrollWidth > W.clientWidth + 1 : null, toc: !!P.querySelector('.rp-indice a[data-toc-l="anexo-b"]') }; })()""")
+                sw: document.documentElement.scrollWidth, wScroll: W ? W.scrollWidth > W.clientWidth + 1 : null, toc: !!(P.querySelector('.rp-indice a[data-toc-l="anexo-b"]') || P.querySelector('#dv-ind a[data-toc-l="anexo-b"]')) }; })()""")
             ok(r is not None, f'{tag}: plano aberto')
             if not r: continue
             o = r['o']

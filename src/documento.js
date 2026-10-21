@@ -220,7 +220,7 @@ function blocoHTML(id) {
   const nOk = vis.filter(f => qOk(f)).length;
   const st = nOk === vis.length ? 'ok' : 'pend';
   const alvo = vis.some(f => DOC.alvo === f.id);
-  const tit = id === 'gov' ? tr('Governança de IA na educação (1.3)') : tr(LAC_ROT[id]) ;
+  const tit = id === 'gov' ? tr('Governança de IA na educação (1.3)') : capP(tr(LAC_ROT[id]));
   const fila = DOC.fila && alvo ? `<div class="dv-fila-bar" role="group" aria-label="${esc(tr('Preencher em ordem'))}"><span>${esc(trN('Lacuna {0} de {1}', posFila(), pendentes().length))}</span><button type="button" class="btn pri" data-act="dv-prox">${esc(tr('Ir para a próxima lacuna'))} ${IC_SETA}</button><button type="button" class="btn" data-act="dv-fila-fim">${esc(tr('Parar'))}</button></div>` : '';
   return `<div class="dv-bloco${alvo ? ' dv-alvo' : ''}" id="bl-${id}" data-bloco="${id}">
     <div class="dv-bl-cab"><span class="dv-bl-t">${esc(tit)}</span><span class="dv-st dv-st-${st}">${st === 'ok' ? IC_OK + esc(tr('Completo')) : IC_PEND + esc(trN(vis.length > 1 ? '{0} de {1} respondidas' : 'A responder', nOk, vis.length))}</span></div>
@@ -292,7 +292,7 @@ function numerosHTML(mini) {
   if (fx) {
     const w = Math.max(fx.hi - fx.lo, d.total * 0.02), a = fx.lo - 0.5 * w, b = fx.hi + 0.5 * w, pos = v => (100 * (v - a) / (b - a)).toFixed(2);
     barra = `<div class="dv-faixa" aria-hidden="true"><i style="inset-inline-start:${pos(fx.lo)}%;width:${(pos(fx.hi) - pos(fx.lo)).toFixed(2)}%"></i><b style="inset-inline-start:${pos(d.total)}%"></b></div>
-      <span class="dv-fx-t">${esc(tr('Faixa provável'))}: <span class="num">${esc(trN('{0} a {1}', grande(fx.lo), grande(fx.hi)))}</span><br>${esc(tr('8 em cada 10 cenários simulados caem aqui'))}</span>`;
+      <span class="dv-fx-t">${esc(tr('Faixa provável (P10 a P90)'))}: <span class="num">${esc(trN('{0} a {1}', grande(fx.lo), grande(fx.hi)))}</span><br>${esc(tr('8 em cada 10 cenários simulados caem aqui'))}</span>`;
   } else barra = `<span class="dv-fx-t">${esc(tr('Calculando a faixa provável…'))}</span>`;
   const fe = faltasEstimativa();
   const falta = fe.length ? `<p class="dv-num-falta">${IC_PEND}<span>${esc(tr('A estimativa ainda usa valores ilustrativos para:'))}</span> ${fe.map(f => `<button type="button" class="link" data-ir-lac="${esc(f.id)}">${esc(rotCampo(f))}</button>`).join(', ')}</p>` : '';
@@ -357,7 +357,7 @@ function indiceHTML() {
   let logos = '';
   try { logos = [...document.querySelectorAll('.rodape-logos .logo')].map(i => `<img src="${i.getAttribute('src')}" alt="${esc(i.getAttribute('alt') || '')}" height="28">`).join(''); } catch (e) { }
   return `<div class="dv-ind-in"><nav class="dv-toc" aria-label="${esc(tr('Neste plano'))}"><p class="dv-ind-t">${esc(tr('Neste plano'))}</p>
-    <ol>${secs.map(s => `<li><a href="#plano-${s}" data-toc-l="${s}">${num[s] ? `<span class="dv-in">${num[s]}</span>` : ''}<span class="dv-il">${esc(tr(DOC_SEC_ROT[s]))}</span>${est(estadoSecao(s))}</a></li>`).join('')}</ol></nav>
+    <ol>${secs.map(s => `<li${s === 'anexos' ? ' class="dv-ax"' : ''}><a href="#plano-${s}" data-toc-l="${s}">${num[s] ? `<span class="dv-in">${num[s]}</span>` : ''}<span class="dv-il">${esc(tr(DOC_SEC_ROT[s]))}</span>${est(estadoSecao(s))}</a>${s === 'anexos' && DOC.anexos ? `<ol class="dv-ax-l">${DOC.anexos.map(a => `<li><a href="#plano-${a.s.id}" data-toc-l="${a.s.id}"><span class="dv-in">${esc(a.s.letra)}</span><span class="dv-il">${esc(a.s.h)}</span></a></li>`).join('')}</ol>` : ''}</li>`).join('')}</ol></nav>
     ${pend}
     <div class="dv-vinc"><p>${esc(tr('Vinculado à Cátedra UNESCO UNITWIN de IA Desplugada na Educação e ao IA.EDU'))}</p><div class="dv-logos">${logos}</div></div></div>`;
 }
@@ -372,7 +372,9 @@ function gruposPlano() {
   let cur = 'sintese', anexo = null;
   secs.forEach(s => {
     if (s.tipo === 'sintese') { G.sin = s; G.cab.sintese = s; cur = 'sintese'; return; }
-    if (s.tipo === 'caixa' || (s.tipo === 'faltas' && s.curta) || s.tipo === 'fatos') return;
+    if (s.tipo === 'caixa') { G.comoler = s; return; }
+    if (s.tipo === 'faltas' && s.curta) { G.faltas = s; return; }
+    if (s.tipo === 'fatos') return;
     if (s.tipo === 'princ') { G.cab[s.id] = s; cur = s.id; anexo = null; return; }
     if (s.tipo === 'anexos') { G.cab.anexos = s; cur = 'anexos'; return; }
     if (s.tipo === 'anexo') { anexo = { s, itens: [] }; G.anexos.push(anexo); return; }
@@ -394,11 +396,12 @@ function sinteseHTML(s, P) {
 }
 function geradoHTML(sid, G, P) {
   let h = '';
-  if (sid === 'sintese') return sinteseHTML(G.sin, P);
+  if (sid === 'sintese') return sinteseHTML(G.sin, P) + (G.faltas ? `<div class="rp-item dv-faltas" id="plano-faltas" data-sec="faltas">${htmlFaltasP(G.faltas)}</div>` : '');
+  if (sid === 'comoler') return G.comoler ? `<h3 id="plano-comoler-t">${esc(G.comoler.h)}</h3><ul>${G.comoler.list.map(z => `<li>${esc(z)}</li>`).join('')}</ul>` : '';
   if (sid === 's2' && G.sin && G.sin.ice) h += `<div class="rp-item dv-ice">${htmlIcebergsP(G.sin.ice)}</div>`;
   if (sid === 's3' && G.sin && G.sin.d && G.sin.d.drivers) h += `<div class="rp-item"><h4>${esc(tr(TXT_REL.direcionadores))}</h4><ol class="rs-dir" data-k="direcionadores">${G.sin.d.drivers.map(x => `<li><b>${esc(x.nome)}</b> <span>${esc(x.faixa)}</span><span class="rs-d-b" style="width:${Math.max(2, 100 * x.w).toFixed(1)}%" aria-hidden="true"></span><span>${esc(x.txt)}</span></li>`).join('')}</ol></div>`;
   h += itensHTML(G.itens[sid] || [], P);
-  if (sid === 'anexos') h += G.anexos.map(a => `<section class="rp-sec rp-anexo" id="plano-${a.s.id}" data-sec="${a.s.id}" data-pai="anexos" aria-labelledby="plano-${a.s.id}-t"><header class="rp-cab"><span class="rp-num" aria-hidden="true">${esc(a.s.letra)}</span><div class="rp-cab-t"><p class="rp-rot">${esc(tr('Anexo {0}').replace('{0}', a.s.letra))}</p><h3 id="plano-${a.s.id}-t">${esc(a.s.h)}</h3></div></header>${itensHTML(a.itens, P)}</section>`).join('');
+  if (sid === 'anexos') h += G.anexos.map(a => `<section class="rp-sec rp-anexo" id="plano-${a.s.id}" data-sec="${a.s.id}" data-toc="${a.s.id}" data-pai="anexos" aria-labelledby="plano-${a.s.id}-t"><header class="rp-cab"><span class="rp-num" aria-hidden="true">${esc(a.s.letra)}</span><div class="rp-cab-t"><p class="rp-rot">${esc(tr('Anexo {0}').replace('{0}', a.s.letra))}</p><h3 id="plano-${a.s.id}-t">${esc(a.s.h)}</h3></div></header>${itensHTML(a.itens, P)}</section>`).join('');
   return h;
 }
 function cabSecao(sid, G) {
@@ -411,7 +414,7 @@ function cabSecao(sid, G) {
 }
 function calcHTML() {
   return `<details class="calc dv-calc" id="dv-calc" data-calc ${S.calcAberta ? 'open' : ''}><summary>${esc(tr('Ajustar premissas, itens e cenários na calculadora completa'))}</summary>
-    <div id="custos-box" class="embutido">${S.calcAberta && typeof renderCustos === 'function' ? renderCustos() : ''}</div></details>`;
+    ${S.calcAberta && typeof renderCustos === 'function' ? `<div id="custos-box" class="embutido">${renderCustos()}</div>` : ''}</details>`;
 }
 
 // ----------------------------------------------------------- documento inteiro
@@ -437,7 +440,7 @@ function legendaHTML() {
 }
 function docHTML() {
   const { G, P } = gruposPlano();
-  DOC.P = P;
+  DOC.P = P; DOC.anexos = G.anexos;
   const sec = sid => {
     const cls = sid === 'sintese' ? 'rp-sintese' : sid === 'anexos' ? 'rp-anexos' : 'rp-princ-sec';
     const tag = sid === 'anexos' ? 'div' : 'section';
@@ -453,7 +456,9 @@ function docHTML() {
         <div class="dv-mini" id="dv-mini" aria-hidden="true" data-notr></div>
         ${capaHTML()}
         <section class="dv-num" id="dv-num" aria-labelledby="dv-num-t" data-notr></section>
-        ${['sintese', 's1', 's2', 's3', 's4', 's5', 'anexos'].map(sec).join('')}
+        ${sec('sintese')}
+        <aside class="rp-comoler dv-comoler" id="plano-comoler" data-sec="comoler" aria-labelledby="plano-comoler-t"><div class="dv-ger" data-ger="comoler">${geradoHTML('comoler', G, P)}</div></aside>
+        ${['s1', 's2', 's3', 's4', 's5', 'anexos'].map(sec).join('')}
         <p class="rp-isencao faixa-plano dv-isen">${esc(tr(FAIXA_PLANO))}</p>
         ${typeof avisoTradHTML === 'function' ? avisoTradHTML('rp-aviso-trad') : ''}
       </article>
@@ -508,7 +513,7 @@ function agendarGerado() {
 function refazerGerado() {
   if (S.boasVindas !== false || DOC.pop || !document.getElementById('dv-doc')) return;
   let r; try { r = gruposPlano(); } catch (e) { console.warn(e); return; }
-  const { G, P } = r; DOC.P = P;
+  const { G, P } = r; DOC.P = P; DOC.anexos = G.anexos;
   document.querySelectorAll('#dv-doc [data-ger]').forEach(el => { const h = geradoHTML(el.dataset.ger, G, P); if (el.dataset.h !== h) { el.innerHTML = h; el.dataset.h = h; } });
   document.querySelectorAll('#dv-doc [data-cab]').forEach(el => { const h = cabSecao(el.dataset.cab, G); if (el.innerHTML !== h) el.innerHTML = h; });
   if (typeof aplicarIdioma === 'function' && typeof traduzirArvore === 'function') { try { traduzirArvore(document.getElementById('dv-doc')); } catch (e) { } }
@@ -582,10 +587,21 @@ function popCorpo() {
       <h3 class="lp-t" id="lp-t"><${rotTag} id="qt-${esc(f.id)}">${esc(t)}</${rotTag.split(' ')[0]}></h3></div>
       <button type="button" class="lp-x" data-lp="fechar" aria-label="${esc(tr('Fechar sem mudar'))}">×</button></div>
     ${ajuda ? `<p class="lp-h">${ajuda}</p>` : ''}
-    <div class="lp-ctl q${sub ? '' : ' lp-' + f.tipo}" data-campo="${esc(f.id)}">${ctl}</div>
+    <div class="lp-ctl q${sub ? '' : ' lp-' + f.tipo}"${sub ? '' : ` id="${idQ(f.n)}"`} data-campo="${esc(f.id)}">${ctl}</div>
     <div class="lp-ef" id="lp-ef" data-notr aria-live="polite">${efeitoHTML()}</div>
     <p class="lp-erro" id="lp-erro" role="alert" hidden></p>
-    <div class="lp-pe" data-notr><button type="button" class="btn pri" data-lp="ok">${esc(tr('Confirmar'))}</button><button type="button" class="btn" data-lp="ilus">${esc(tr('Usar valor ilustrativo'))}</button>${DOC.fila ? `<button type="button" class="link" data-lp="pular">${esc(tr('Pular'))}</button>` : ''}<span class="lp-k">${fila}<span>${esc(tr('Enter confirma · Esc fecha'))}</span></span></div>`;
+    <div class="lp-pe" data-notr><button type="button" class="btn pri" data-lp="ok">${esc(tr('Confirmar'))}</button><button type="button" class="btn" data-lp="ilus">${esc(tr('Usar valor ilustrativo'))}</button>${DOC.fila ? `<button type="button" class="link" data-lp="pular">${esc(tr('Pular'))}</button>` : ''}<span class="lp-k">${fila}<span>${esc(tr('Enter confirma · Esc fecha'))}</span></span></div>
+    ${ajudaPop(f)}`;
+}
+// "Por que perguntamos isso?": a ajuda do passo da v14 (para que serve, por que importa, como responder, quem sabe,
+// exemplo), recolhida por padrão (auditoria C1); fica aberta para quem a abriu antes (mesmo registro da v14)
+function ajudaPop(f) {
+  const id = passoDe(f), a = PASSO_AJUDA[id]; if (!a) return '';
+  const E = ajudaLer(), aberto = E[id] === true && !AJUDA_AUTO[id];
+  const R = AJUDA_ROT, g = typeof glossarioTexto === 'function' ? glossarioTexto : (x => esc(tr(x)));
+  const parte = (t, c, extra) => `<div class="aj-p"><dt>${esc(tr(t))}</dt><dd>${c}${extra || ''}</dd></div>`;
+  return `<details class="ajuda lp-aj" id="ajuda-${id}" data-ajuda="${id}" ${aberto ? 'open' : ''}><summary>${esc(tr('Por que perguntamos isso?'))}</summary>
+    <dl class="aj-corpo">${parte(R.serve, g(a.serve))}${parte(R.importa, g(a.importa))}${parte(R.como, g(a.como), ` <span class="aj-quem"><b>${esc(tr(R.quem))}</b> ${esc(tr(a.quem))}.</span>`)}${parte(R.ex, g(a.ex))}</dl></details>`;
 }
 function efeitoHTML() {
   if (!DOC.pop) return '';
@@ -626,6 +642,13 @@ function abrirLacuna(key, opts = {}) {
   const r = btn.getBoundingClientRect();
   if (!opts.semRolar && (r.top < 120 || r.bottom > window.innerHeight * 0.55)) window.scrollTo({ top: window.scrollY + r.top - Math.min(200, window.innerHeight * 0.25), behavior: 'instant' });
   posicionarPop();
+  // o popover inteiro (até Confirmar) cabe na tela: rola o documento sem esconder a lacuna sob as barras
+  if (!opts.semRolar && !el.classList.contains('lp-folha')) {
+    const pr = el.getBoundingClientRect(), rb = btn.getBoundingClientRect();
+    const topo = (document.querySelector('.top') || { offsetHeight: 56 }).offsetHeight + 64;
+    const falta = pr.bottom - window.innerHeight + 16;
+    if (falta > 0) window.scrollBy({ top: Math.min(falta, Math.max(0, rb.top - topo)), behavior: 'instant' });
+  }
   requestAnimationFrame(() => {
     const alvo = el.querySelector('.lp-ctl input:checked, .lp-ctl input:not([type=hidden]), .lp-ctl textarea, .lp-ctl select, .lp-ctl button');
     if (alvo) alvo.focus({ preventScroll: true });
@@ -731,7 +754,7 @@ function irDocumento(fid, passo, alvo) {
   if (fid && passo) { S.fase = fid; S.passo = passo; }
   const f = alvo ? (CAMPO_POR_ID[alvo] || CAMPOS.find(x => x.n.replace(/\./g, '-') === alvo || x.n === alvo)) : null;
   render();
-  if (f && visivel(f)) { requestAnimationFrame(() => abrirCampo(f)); return; }
+  if (f && visivel(f)) { abrirCampo(f); return; }
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
@@ -839,7 +862,7 @@ function ligarDocumento() {
   document.addEventListener('mousedown', e => {
     if (!DOC.pop) return;
     const el = e.target;
-    if (el.closest('#lac-pop') || el.closest('[data-lac]') || el.closest('.gl-pop, .glos, dialog, #toast')) return;
+    if (el.closest('#lac-pop') || el.closest('[data-lac]') || el.closest('#gl-pop, dialog, #toast')) return;
     fecharPop(DOC.pop.mudou || fotoEstado() !== DOC.pop.snap ? 'manter' : 'cancelar');
   }, true);
   document.addEventListener('keydown', e => {
@@ -855,6 +878,7 @@ function ligarDocumento() {
     if (e.key === 'Escape' && DOC.gaveta) { DOC.gaveta = false; document.body.classList.remove('dv-gaveta'); renderTopo(); const g = document.getElementById('btn-gaveta'); if (g) g.focus(); return; }
     if (!DOC.pop) { if (e.key === 'Escape' && DOC.fila) { DOC.fila = false; DOC.alvo = ''; render(); } return; }
     const dentro = e.target.closest && e.target.closest('#lac-pop');
+    if (e.key === 'Escape' && document.getElementById('gl-pop')) return;   // a definição do glossário fecha primeiro
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); DOC.fila = false; fecharPop('cancelar'); return; }
     if (e.key === 'Enter' && dentro && !e.shiftKey && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT') {
       e.preventDefault(); e.stopPropagation();
@@ -871,6 +895,11 @@ function ligarDocumento() {
       if (e.shiftKey && i === 0) { e.preventDefault(); fs[fs.length - 1].focus(); }
       else if (!e.shiftKey && i === fs.length - 1) { e.preventDefault(); fs[0].focus(); }
     }
+  }, true);
+  // calculadora completa: só existe na página quando está aberta (abrir e fechar redesenham o documento)
+  document.addEventListener('toggle', e => {
+    const d = e.target; if (!d || d.id !== 'dv-calc') return;
+    if (d.open !== !!document.getElementById('custos-box')) { S.calcAberta = d.open; setTimeout(render, 0); }
   }, true);
   // números digitados no popover: o efeito no custo acompanha a digitação
   document.addEventListener('input', () => { if (DOC.pop) requestAnimationFrame(atualizarEfeito); });
