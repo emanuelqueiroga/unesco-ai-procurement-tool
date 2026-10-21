@@ -6,8 +6,10 @@ python3 tools/checar_referencias.py || { echo 'build interrompido: corrija os da
 NOVOS="ar zh bm zu sw"   # v13 (RQ-18): idiomas novos
 L1=$(base64 -w0 assets/iaedu.png); L2=$(base64 -w0 assets/catedra.png)
 # ordem dos scripts (plano_dados.js logo depois de fluxo_dados.js; v10: formula.js e recomendacoes.js antes de resumo.js)
+# v15 (B3): explica.js (botões ⓘ e balões de explicação) e b3.js (preenchimento para leigos, aparências) depois de trabalho.js;
+# tools/fontes_web.py embute as fontes (WOFF2 em base64) no lugar de /*%%FONTES_WEB%%*/ em src/shell.html
 # v13: prioridades.js (catálogo do 1.2) depois de framework.js; matriz.js depois de fluxo_dados.js; inicio.js (página inicial e matriz) depois de fluxo.js
-JS="src/i18n.js src/custos.js src/framework.js src/prioridades.js src/casos.js src/pais.js src/custos_ui.js src/fluxo_dados.js src/glossario.js src/matriz.js src/plano_dados.js src/formula.js src/recomendacoes.js src/relatorio.js src/fluxo.js src/trabalho.js src/inicio.js src/resumo.js src/plano_pdf.js src/app.js"
+JS="src/i18n.js src/custos.js src/framework.js src/prioridades.js src/casos.js src/pais.js src/custos_ui.js src/fluxo_dados.js src/glossario.js src/matriz.js src/plano_dados.js src/formula.js src/recomendacoes.js src/relatorio.js src/fluxo.js src/trabalho.js src/explica_dados.js src/explica.js src/b3.js src/inicio.js src/resumo.js src/plano_pdf.js src/app.js"
 # opcionais enquanto os pacotes R2 e R3 da v10 não chegam: avisam e ficam de fora; os demais são obrigatórios
 OPCIONAIS=" src/formula.js src/recomendacoes.js src/inicio.js "
 JS_OK=""
@@ -17,7 +19,7 @@ for f in $JS; do
   else echo "faltando: $f" >&2; exit 1; fi
 done
 JS=$JS_OK
-{ sed -e "s#%%LOGO_IAEDU%%#data:image/png;base64,$L1#g" -e "s#%%LOGO_CATEDRA%%#data:image/png;base64,$L2#g" src/shell.html | python3 -c "import sys; t=sys.stdin.read(); sys.stdout.write(t.replace('/*%%FLUXO_CSS%%*/', open('src/fluxo.css').read() + ''.join(open(f).read() for f in ['src/inicio.css', 'src/idiomas.css', 'src/trabalho.css'] if __import__('os').path.exists(f))))"; echo '<script>';
+{ sed -e "s#%%LOGO_IAEDU%%#data:image/png;base64,$L1#g" -e "s#%%LOGO_CATEDRA%%#data:image/png;base64,$L2#g" src/shell.html | python3 -c "import sys, subprocess; t=sys.stdin.read(); fw=subprocess.run(['python3', 'tools/fontes_web.py'], capture_output=True, text=True, check=True).stdout; sys.stdout.write(t.replace('/*%%FONTES_WEB%%*/', fw).replace('/*%%FLUXO_CSS%%*/', open('src/fluxo.css').read() + ''.join(open(f).read() for f in ['src/inicio.css', 'src/idiomas.css', 'src/trabalho.css', 'src/b3.css'] if __import__('os').path.exists(f))))"; echo '<script>';
   cat vendor/jspdf.umd.min.js; echo; cat vendor/jspdf.plugin.autotable.min.js; echo; echo '</script><script>';
   echo -n 'const MOEDAS = '; cat data/moedas.json; echo ';';
   # v14 (BL4.1, BL1): base de referências e perfis de país, embutidos para funcionar sem rede (custos.js e pais.js os leem)

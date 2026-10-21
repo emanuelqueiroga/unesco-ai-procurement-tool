@@ -700,7 +700,10 @@ function valorKpiP(v) {
   return `${m[1] ? `<span class="u">${esc(m[1].trim())}</span> ` : ''}<span class="n">${esc(m[2])}</span>${m[3] ? ` <span class="u">${esc(m[3].trim())}</span>` : ''}`;
 }
 // Cabeçalho das seções principais: número grande, pergunta, título (o achado) e frase de abertura
-const cabP = (num, h, abre, id, rot) => `<header class="rp-cab">${num ? `<span class="rp-num" aria-hidden="true">${esc(num)}</span>` : ''}<div class="rp-cab-t">${rot ? `<p class="rp-rot">${esc(rot)}</p>` : ''}<h3 id="${id}-t">${esc(h)}</h3>${abre ? `<p class="rp-abre">${esc(abre)}</p>` : ''}</div></header>`;
+// v15 (B3): cada seção do plano na página tem um ⓘ com uma explicação curta (o PDF não muda)
+const exSecP = id => { const sec = String(id).replace(/^plano-/, ''); return typeof temExPlano === 'function' && temExPlano(sec) ? botaoEx('s:' + sec, 'Sobre esta seção', id + '-t') : ''; };
+const exSecPainel = id => { const sec = String(id).replace(/^plano-/, ''); return typeof temExPlano === 'function' && temExPlano(sec) ? exPlano(sec) : ''; };
+const cabP = (num, h, abre, id, rot) => `<header class="rp-cab">${num ? `<span class="rp-num" aria-hidden="true">${esc(num)}</span>` : ''}<div class="rp-cab-t">${rot ? `<p class="rp-rot">${esc(rot)}</p>` : ''}<div class="rp-h-ex"><h3 id="${id}-t">${esc(h)}</h3>${exSecP(id)}</div>${exSecPainel(id)}${abre ? `<p class="rp-abre">${esc(abre)}</p>` : ''}</div></header>`;
 // Recomendações: as 5 primeiras de prioridade alta em cartões; depois a lista completa por momento, como checklist
 function htmlRecsP(R, o = {}) {
   if (!(o.todas || R).length) return `<p class="rp-vazio">${esc(tr(TXT_REC.vazio))}</p>`;
@@ -918,6 +921,15 @@ function renderPlano() {
     if (s.det || longa) return wrap(`<details class="mais"><summary>${esc(s.det || s.h)}${longa ? ` <span class="rp-n">${(((s.table || {}).rows || []).length || (s.list || []).length)}</span>` : ''}</summary><div class="mais-in">${htmlCorpoP(s)}</div></details>`);
     return wrap(`${s.h ? `<h4>${esc(s.h)}</h4>` : ''}${htmlCorpoP(s)}`);
   };
+  // v15 (B3): "O que fazer agora" no fim do corpo do plano (antes dos anexos): as recomendações existentes, por prioridade
+  let agoraFeito = false;
+  const agoraHTML = () => {
+    agoraFeito = true;
+    if (typeof listaAgora !== 'function') return '';
+    toc.push(['agora', tr('O que fazer agora'), '', '']);
+    return `<section class="rp-sec rp-agora" id="plano-agora" data-sec="agora" data-toc="agora" aria-labelledby="plano-agora-t"><header class="rp-cab"><div class="rp-cab-t"><div class="rp-h-ex"><h3 id="plano-agora-t">${esc(tr('O que fazer agora'))}</h3>${botaoEx('c:agora', 'Sobre esta seção', 'plano-agora-t')}</div>${exCusto('agora')}</div></header>
+      ${listaAgora(8, true, true)}${acoesAgora().length > 8 ? `<p><a href="#plano-anexo-c">${esc(tr('Ver todas as recomendações no anexo C'))}</a></p>` : ''}</section>`;
+  };
   let aberta = false, anexos = false;
   const fecha = () => { if (aberta) { out += aberta === 'anexo' ? '</details></section>' : '</section>'; aberta = false; } };
   secs.forEach(s => {
@@ -932,16 +944,17 @@ function renderPlano() {
       fecha(); toc.push([s.id, s.rotulo, s.num, '']);
       out += `<section class="rp-sec rp-princ-sec" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}" aria-labelledby="plano-${s.id}-t">${cabP(s.num, s.h, s.intro || '', 'plano-' + s.id, s.rotulo)}`; aberta = true;
     } else if (s.tipo === 'anexos') {
-      fecha(); anexos = true; toc.push(['anexos', s.h, '', '']);
-      out += `<div class="rp-anexos" id="plano-anexos" data-sec="anexos" data-toc="anexos"><header class="rp-cab"><div class="rp-cab-t"><h3 id="plano-anexos-t">${esc(s.h)}</h3><p class="rp-abre">${esc((s.p || [])[0] || '')}</p></div></header>`;
+      fecha(); out += agoraHTML(); anexos = true; toc.push(['anexos', s.h, '', '']);
+      out += `<div class="rp-anexos" id="plano-anexos" data-sec="anexos" data-toc="anexos"><header class="rp-cab"><div class="rp-cab-t"><div class="rp-h-ex"><h3 id="plano-anexos-t">${esc(s.h)}</h3>${exSecP('plano-anexos')}</div>${exSecPainel('plano-anexos')}<p class="rp-abre">${esc((s.p || [])[0] || '')}</p></div></header>`;
     } else if (s.tipo === 'anexo') {
       fecha(); toc.push([s.id, s.h, s.letra, 'anexos']);
       // v15 (B): anexos recolhidos na tela; o índice e os links abrem o anexo (montarPlano); o PDF mostra tudo
-      out += `<section class="rp-sec rp-anexo" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}" data-pai="anexos" aria-labelledby="plano-${s.id}-t"><details class="rp-anexo-d"><summary><header class="rp-cab"><span class="rp-num" aria-hidden="true">${esc(s.letra)}</span><div class="rp-cab-t"><p class="rp-rot">${esc(tr('Anexo {0}').replace('{0}', s.letra))}</p><h3 id="plano-${s.id}-t">${esc(s.h)}</h3></div></header></summary>`; aberta = 'anexo';
+      out += `<section class="rp-sec rp-anexo" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}" data-pai="anexos" aria-labelledby="plano-${s.id}-t"><details class="rp-anexo-d"><summary><header class="rp-cab"><span class="rp-num" aria-hidden="true">${esc(s.letra)}</span><div class="rp-cab-t"><p class="rp-rot">${esc(tr('Anexo {0}').replace('{0}', s.letra))}</p><h3 id="plano-${s.id}-t">${esc(s.h)}</h3></div></header></summary>${temExPlano(s.id) ? `<div class="rp-anexo-ex">${exSecP('plano-' + s.id)}<span class="rp-anexo-exl" aria-hidden="true">${esc(tr('Sobre esta seção'))}</span>${exSecPainel('plano-' + s.id)}</div>` : ''}`; aberta = 'anexo';
     } else out += itemP(s);
   });
   fecha();
   if (anexos) out += '</div>';
+  if (!agoraFeito) out += agoraHTML();
 
   // índice (coluna fixa a partir de 1100 px; faixa de fichas em telas menores)
   const tops = toc.filter(z => !z[3]);

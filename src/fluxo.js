@@ -445,7 +445,9 @@ function marcado(f, valOpc) {
   const tem = Array.isArray(v) ? v.includes(valOpc) : String(v) === String(valOpc) && v !== '' && v != null;
   if (!tem) return false;
   if (f.onde === 'ctx' || f.onde === 'resp') return true;
-  return respondido(f.id) || sugerido(f) || !f.padrao;
+  // v15 (B3): nada vem marcado; a sugestão aparece em "Sugerido: X" e só vira resposta com um clique
+  if (sugerido(f)) return false;
+  return respondido(f.id) || !f.padrao;
 }
 function campoOutro(f) {
   if (!f.outro) return '';
@@ -455,9 +457,13 @@ function campoOutro(f) {
   const val = f.onde === 'ctx' ? S.ctx[f.outro.id] : S.caso[f.outro.id];
   return `<div class="outro">${tCampo('f-' + f.outro.id, attrCampo(f, f.outro.id), val, f.outro.t, f.outro.t)}</div>`;
 }
+// v15 (B3): escolhas curtas (2 a 5 opções curtas, sem subtítulo) viram fichas grandes; opções de sentido não óbvio ganham ⓘ
+function escolhaCurta(f) { const L = listaOpc(f); return L.length >= 2 && L.length <= 5 && L.every(o => !subOpc(o) && String(o[1]).length <= 44); }
 function opRadio(f) {
-  const nome = f.id, attr = f.onde === 'ctx' ? 'data-ctx' : 'data-f';
-  return `<div class="opts${f.cols ? ' cols' : ''}" role="radiogroup" aria-labelledby="qt-${f.id}">${listaOpc(f).map(o => `<label class="opt"><input type="radio" name="${nome}" value="${esc(o[0])}" ${attr}="${nome}" ${marcado(f, o[0]) ? 'checked' : ''}><span><b>${esc(o[1])}</b>${subOpc(o) ? `<small>${esc(subOpc(o))}</small>` : ''}</span></label>`).join('')}</div>${campoOutro(f)}`;
+  const nome = f.id, attr = f.onde === 'ctx' ? 'data-ctx' : 'data-f', curta = escolhaCurta(f);
+  const op = o => `<label class="opt"><input type="radio" name="${nome}" value="${esc(o[0])}" ${attr}="${nome}" ${marcado(f, o[0]) ? 'checked' : ''}><span><b>${esc(o[1])}</b>${subOpc(o) ? `<small>${esc(subOpc(o))}</small>` : ''}</span></label>`;
+  return `<div class="opts${curta ? ' curtas' : f.cols ? ' cols' : ''}" role="radiogroup" aria-labelledby="qt-${f.id}">${listaOpc(f).map(o => typeof temExOpcao === 'function' && temExOpcao(f.id, o[0])
+    ? `<div class="opt-w">${op(o)}${botaoEx('o:' + f.id + ':' + o[0], 'Sobre a opção', '')}${exOpcao(f.id, o[0])}</div>` : op(o)).join('')}</div>${campoOutro(f)}`;
 }
 function opChips(f) {
   return `<div class="chips" role="group" aria-labelledby="qt-${f.id}">${listaOpc(f).map(o => `<label class="chip"><input type="checkbox" data-fm="${f.id}" value="${esc(o[0])}" ${marcado(f, o[0]) ? 'checked' : ''}><span>${esc(o[1])}${subOpc(o) ? ` <small>${esc(subOpc(o))}</small>` : ''}</span></label>`).join('')}</div>${campoOutro(f)}`;
@@ -556,11 +562,11 @@ function detalheCampo(f) { return !f.detalhe ? '' : f.onde === 'resp' ? detalheR
 // 2.3.8 tamanho e duração: campos da prova de conceito (caso.poc), do piloto (caso.piloto) ou dos dois
 function opSetup() {
   const c = S.caso, m = modoTeste(), t = totaisCtx();
-  const lab = (o, txt, k) => `<label class="g-c"><span>${esc(txt)}</span>${nCampo({ id: (o === 'poc' ? 'poc-' : 'pl-') + k, attrs: `data-fn="${o}.${k}"`, valor: (c[o] || {})[k], casas: 0, rotulo: tr(txt), ph: ' ' })}</label>`;
+  const lab = (o, txt, k) => `<label class="g-c"><span>${esc(txt)}</span>${campoNumB3({ id: (o === 'poc' ? 'poc-' : 'pl-') + k, path: o + '.' + k, valor: (c[o] || {})[k], rotulo: tr(txt), notaId: 'il-' + o })}</label>`;
   const p = c.piloto || {};
   const pctRede = m !== 'poc' && t.escolas && +p.escolas ? Math.min(1, +p.escolas / t.escolas) : 0;
-  const poc = `<div class="g-campos setup">${lab('poc', 'Pessoas que vão testar', 'participantes')}${lab('poc', 'Duração (meses)', 'meses')}</div>`;
-  const pil = `<div class="g-campos setup">${lab('piloto', 'Escolas', 'escolas')}${lab('piloto', 'Participantes', 'participantes')}${lab('piloto', 'Duração (meses)', 'meses')}</div>
+  const poc = `<div class="g-campos setup">${lab('poc', 'Pessoas que vão testar', 'participantes')}${lab('poc', 'Duração (meses)', 'meses')}</div>${notaIlusGrupo('il-poc', ['poc.participantes', 'poc.meses'])}`;
+  const pil = `<div class="g-campos setup">${lab('piloto', 'Escolas', 'escolas')}${lab('piloto', 'Participantes', 'participantes')}${lab('piloto', 'Duração (meses)', 'meses')}</div>${notaIlusGrupo('il-piloto', ['piloto.escolas', 'piloto.participantes', 'piloto.meses'])}
     <div class="hint" id="pct-rede"${pctRede ? '' : ' hidden'}><span>Escolas do piloto em relação à rede:</span> <b class="num">${pct(pctRede)}</b></div>`;
   if (m === 'poc') return poc;
   if (m === 'ambos') return `<div class="setup-dois"><div class="setup-bloco"><h4 class="setup-h">Prova de conceito</h4>${poc}</div><div class="setup-bloco"><h4 class="setup-h">Piloto</h4>${pil}</div></div>`;
@@ -606,15 +612,16 @@ function opOndas() {
 // 3.1.1 primeira etapa da implantação
 function opImplant() {
   const c = S.caso, p = c.implantacao || {}, t = totaisCtx();
-  const lab = (txt, k) => `<label class="g-c"><span>${esc(txt)}</span>${nCampo({ id: 'im-' + k, attrs: `data-fn="implantacao.${k}"`, valor: p[k], casas: 0, rotulo: tr(txt), ph: ' ' })}</label>`;
-  return `<div class="g-campos setup">${lab('Escolas', 'escolas')}${lab('Pessoas', 'pessoas')}</div>
+  const lab = (txt, k) => `<label class="g-c"><span>${esc(txt)}</span>${campoNumB3({ id: 'im-' + k, path: 'implantacao.' + k, valor: p[k], rotulo: tr(txt), notaId: 'il-implantacao' })}</label>`;
+  return `<div class="g-campos setup">${lab('Escolas', 'escolas')}${lab('Pessoas', 'pessoas')}</div>${notaIlusGrupo('il-implantacao', ['implantacao.escolas', 'implantacao.pessoas'])}
     ${t.escolas > 0 ? `<div class="hint"><span>Escolas da rede, segundo o passo 1.1:</span> <b class="num">${fmtInt(t.escolas)}</b></div>` : ''}`;
 }
 // 2.5.4 horas de formação por pessoa, com "Usar uma estimativa" (valor ilustrativo marcado como sugerido)
+// v15 (B3): a estimativa ilustrativa aparece como sugestão ("Sugerido: 8 horas por pessoa", com Aceitar) e, no campo vazio,
+// como o valor ilustrativo que o motor usa
 function opHoras(f) {
-  const c = S.caso, est = sugerido(f);
-  return `<div class="horas">${nCampo({ id: 'f-' + f.id, attrs: `data-fn="${f.id}"`, valor: c[f.id], casas: 0, rotulo: tr(f.t), ph: ' ' })}
-    ${est ? '' : `<button type="button" class="btn" data-act="horas-est">Usar uma estimativa</button>`}</div>`;
+  const c = S.caso;
+  return `<div class="horas">${campoNumB3({ id: 'f-' + f.id, path: f.id, valor: c[f.id], rotulo: tr(f.t) })}</div>`;
 }
 // 3.2.1 arquitetura: as três opções em linguagem simples e "Ainda não sei (usar a presumida: X)"
 function arqPresumida() {
@@ -650,14 +657,14 @@ function controle(f) {
     case 'texto': {
       let ph = f.ph;
       if (f.id === 'titulo') { const t0 = (S.caso.tarefas || [])[0]; ph = t0 ? (t0 === 'outra' ? (S.caso.tarefaOutra || '') : rotulo(listaOpc(CAMPO_POR_ID.tarefas), t0)) : ''; }
-      return tCampo('f-' + f.id, attrCampo(f), valorCampo(f), ph);
+      return tCampo('f-' + f.id, attrCampo(f), sugerido(f) ? '' : valorCampo(f), ph);
     }
     case 'area': {
       // v13: textos sugeridos pelos problemas podem ter várias linhas (um objetivo por problema)
-      const v = String(valorCampo(f) || ''), rows = f.sugDe === 'problemas' ? Math.min(10, Math.max(f.rows || 3, v.split('\n').reduce((n, l) => n + Math.ceil((l.length || 1) / 80), 0))) : f.rows;
-      return aCampo('f-' + f.id, attrCampo(f), valorCampo(f), rows, f.ph);
+      const v = sugerido(f) ? '' : String(valorCampo(f) || ''), rows = f.sugDe === 'problemas' ? Math.min(10, Math.max(f.rows || 3, v.split('\n').reduce((n, l) => n + Math.ceil((l.length || 1) / 80), 0))) : f.rows;
+      return aCampo('f-' + f.id, attrCampo(f), v, rows, f.ph);
     }
-    case 'num': return nCampo({ id: 'f-' + f.id, attrs: `data-fn="${f.id}"`, valor: valorCampo(f), casas: f.casas || 0, rotulo: f.t, ph: ' ' });
+    case 'num': return campoNumB3({ id: 'f-' + f.id, path: f.id, valor: valorCampo(f), casas: f.casas || 0, rotulo: f.t });
   }
   return '';
 }
@@ -666,7 +673,7 @@ function dicaCampo(f) {
   return `<div class="dica"><span class="dica-r">${esc(tr(AJUDA_ROT.dica))}</span> <span class="dica-t">${glossarioTexto(f.dica)}</span></div>`;
 }
 function renderQ(f) {
-  const ok = qOk(f), sug = sugerido(f) && (f.tipo === 'setup' || f.tipo === 'implant' || !vazio(valorCampo(f)));
+  const ok = qOk(f), sug = sugerido(f) && (f.tipo === 'setup' || f.tipo === 'implant' || f.tipo === 'horas' || !vazio(valorCampo(f)));
   const m = modoTeste();
   const alt = m === 'poc' && f.tPoc ? 'Poc' : m === 'ambos' && f.tAmbos ? 'Ambos' : '';
   const t = alt ? f['t' + alt] : f.t, h = alt ? f['h' + alt] : f.h, ex = alt ? f['ex' + alt] : f.ex;
@@ -682,10 +689,14 @@ function renderQ(f) {
   const lac = f.sugDe === 'problemas' && ['texto', 'area'].includes(f.tipo);
   if (lac) extra += `<div class="hint lacuna-dica">Complete as lacunas marcadas com __ com os dados da sua rede.</div>`;
   if (f.detalhe) extra += detalheCampo(f);
-  return `<div class="q${ok ? ' ok' : ''}${sug ? ' sug' : ''}${lac && temLac(valorCampo(f)) ? ' lacuna' : ''}" id="${idQ(f.n)}" data-n="${f.n}" data-campo="${f.id}">
-    <${rotTag} class="q-t" id="qt-${f.id}"><span class="qn">${f.n}</span> <span class="qt">${esc(t)}</span>${f.opcional ? ' <span class="tag opc">opcional</span>' : ''}${temTag ? `<span class="tag sug-tag">${esc(textoSugerido(f))}</span>` : ''}<span class="sr q-sr">${ok ? 'respondida' : ''}</span></${rotTag.split(' ')[0]}><span class="q-selo" aria-hidden="true">Sua resposta</span>
-    ${h ? `<div class="hint">${esc(h)}</div>` : f.dica ? dicaCampo(f) : ''}${maisQ(f, h ? f.dica : '', ex)}
-    ${controle(f)}${sug ? notaSugerido(f) : ''}${extra}<p class="q-delta" aria-hidden="true" hidden></p></div>`;
+  // v15 (B3): ⓘ ao lado do rótulo (explicação no lugar), marca "Afeta o custo", "Sugerido: X" com Aceitar antes das opções
+  const tagSug = temTag && (sug || (f.tipo === 'horas' && typeof temSugestao === 'function' && temSugestao(f)));
+  return `<div class="q${ok ? ' ok' : ''}${sug ? ' sug' : ''}${lac && temLac(valorCampo(f)) && !sugerido(f) ? ' lacuna' : ''}" id="${idQ(f.n)}" data-n="${f.n}" data-campo="${f.id}">
+    <div class="q-cab"><${rotTag} class="q-t" id="qt-${f.id}"><span class="qn">${f.n}</span> <span class="qt">${esc(t)}</span>${f.opcional ? ' <span class="tag opc">opcional</span>' : ''}${tagSug ? `<span class="tag sug-tag">${esc(textoSugerido(f))}</span>` : ''}<span class="sr q-sr">${ok ? 'respondida' : ''}</span></${rotTag.split(' ')[0]}>${botaoEx('q:' + f.id, 'Sobre a pergunta', 'qt-' + f.id)}</div><span class="q-selo" aria-hidden="true">Sua resposta</span>
+    ${afetaCusto(f) ? tagCusto() : ''}
+    ${exCampo(f, { dicaVisivel: !h && !!f.dica, ex })}
+    ${h ? `<div class="hint">${esc(h)}</div>` : f.dica ? dicaCampo(f) : ''}
+    ${caixaSugestao(f)}${ilusPadrao(f)}${controle(f)}${extra}<p class="q-delta" aria-hidden="true" hidden></p></div>`;
 }
 // v15 (B): a pergunta mostra uma linha de ajuda; a dica (quando há ajuda) e o exemplo ficam recolhidos
 function maisQ(f, dica, ex) {
@@ -830,7 +841,8 @@ function blocoPais() {
   } else if (c.pais === OUTRO_PAIS) nota = `<div class="pais-nota" role="status"><span>Sem dados de país: valem os valores ilustrativos da ferramenta. Informe os números da sua rede nas perguntas abaixo.</span></div>`;
   const aberto = PAIS_ABERTO == null ? !!c.pais : PAIS_ABERTO;
   return `<div class="q pais-q" id="q-1-1-0" data-n="1.1.0" data-pais-bloco>
-    <label class="q-t" for="f-pais"><span class="qn">1.1.0</span> <span class="qt">Em que país fica a rede?</span> <span class="tag opc">opcional</span></label>
+    <div class="q-cab"><label class="q-t" for="f-pais" id="qt-pais"><span class="qn">1.1.0</span> <span class="qt">Em que país fica a rede?</span> <span class="tag opc">opcional</span></label>${botaoEx('q:pais', 'Sobre a pergunta', 'qt-pais')}</div>
+    ${tagCusto()}${painelEx('q:pais', exP(EX_Q.pais))}
     <div class="hint">O país define a moeda, a taxa de câmbio e os dados de referência que já vêm preenchidos. Você pode alterar qualquer valor.</div>
     <select class="f" id="f-pais" data-pais="sel"><option value="" ${c.pais ? '' : 'selected'}>Escolha o país</option>${ops}<option value="${OUTRO_PAIS}" ${c.pais === OUTRO_PAIS ? 'selected' : ''}>Outro país ou não listado</option></select>
     ${nota}
@@ -1137,6 +1149,8 @@ function eventoFluxo(e) {
   const el = e.target;
   // v15 (B): painel de trabalho (menu Caso, gavetas, abas, confirmação de troca)
   if (typeof eventoTrabalho === 'function' && eventoTrabalho(e)) return true;
+  // v15 (B3): aceitar uma sugestão (ou todas as do passo) com um clique
+  if (typeof eventoB3 === 'function' && eventoB3(e)) return true;
   // v13: página inicial e matriz (pacote B2, inicio.js)
   if (typeof eventoInicio === 'function' && eventoInicio(e)) return true;
   if (typeof eventoPais === 'function' && eventoPais(e)) return true;

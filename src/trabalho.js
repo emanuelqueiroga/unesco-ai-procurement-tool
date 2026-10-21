@@ -47,6 +47,12 @@ const ICO_ILUS = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" st
 const seloIlus = (t) => `<span class="selo-il">${ICO_ILUS}<span>${esc(t || 'Ilustrativo')}</span></span>`;
 // valor já formatado no idioma (grande(), din()): o tradutor do DOM não mexe nele
 const vN = (x, cls) => `<span class="num${cls ? ' ' + cls : ''}" data-notr>${esc(x)}</span>`;
+// v15 (B3): o número grande com o símbolo da moeda num <span> próprio (a aparência executiva o mostra menor); o texto não muda
+function vNGrande(x) {
+  const m = String(x).match(/^([^\d\u2212-]*?[^\d\s\u2212-])(\s?)(?=[\d\u2212-])/);
+  if (!m) return vN(x);
+  return `<span class="num" data-notr><span class="cm-moeda">${esc(m[1])}</span>${esc(m[2] + String(x).slice(m[0].length))}</span>`;
+}
 
 function nPasso(id) { const L = passosLista(); return (L.find(x => x.id === id) || { i: 1 }).i; }
 
@@ -74,6 +80,7 @@ function renderIndice() {
       <div class="ix-prog"><b>${esc(tr('Passo ' + nPasso(atual) + ' de ' + L.length))}</b><span>${esc(tr('Fase ' + fAt.n + ' de ' + FASES.length))}</span></div>
       <div class="ix-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${L.length}" aria-valuenow="${nOk}" aria-label="${esc(tr('Passos completos'))}"><i style="width:${(100 * nOk / L.length).toFixed(1)}%"></i></div>
       <p class="ix-res">${esc(tr(nOk === 1 ? '1 completo' : nOk + ' completos'))}${nPend ? ' · ' + esc(tr(nPend === 1 ? '1 com pendências' : nPend + ' com pendências')) : ''}</p>
+      <p class="ix-falta" id="ix-falta">${esc(textoFaltaTotal())}</p>
       <button type="button" class="ix-rec" data-act="indice-recolher" aria-expanded="${!rec}" aria-controls="ix-lista" aria-label="${esc(tr(rec ? 'Mostrar o índice dos passos' : 'Recolher o índice dos passos'))}">${ICO_CHEV_B}</button>
       <button type="button" class="ix-fechar" data-act="gaveta-fechar" aria-label="${esc(tr('Fechar o índice'))}">${ICO_X_B}</button>
     </div>
@@ -92,8 +99,9 @@ function rodapeNav(fid, id, soPri) {
   let pri;
   if (!prox) pri = `<button type="button" class="btn pri nav-seg" data-act="gerar-plano"><span>Ver plano</span> <span aria-hidden="true">→</span></button>`;
   else {
-    const act = !fs.length ? 'continuar' : !pend.length ? 'continuar-confirmar' : 'continuar-forcar';
-    const rot = act === 'continuar-confirmar' ? tr('Confirmar e continuar para ' + numPasso(prox.id)) : tr('Continuar para ' + numPasso(prox.id));
+    // v15 (B3): nada é aceito sem a pessoa pedir; "Continuar" sempre avança (as sugestões se aceitam no aviso do passo)
+    const act = !fs.length ? 'continuar' : 'continuar-forcar';
+    const rot = tr('Continuar para ' + numPasso(prox.id));
     pri = `<button type="button" class="btn pri nav-seg" data-act="${act}" data-de="${id}"><span>${esc(rot)}</span> <span class="nav-nome">${esc(prox.nome)}</span> <span aria-hidden="true">→</span></button>`;
   }
   if (soPri) return pri;
@@ -105,10 +113,16 @@ function rodapePasso(fid, id) {
   let msg = '';
   if (PASSOS_VER.includes(id)) msg = '';
   else if (!fs.length) msg = `<p class="ok-msg">${esc(tr('Passo completo.'))}</p>`;
-  else if (!pend.length) msg = `<p class="pe-msg">${esc(tr(id === '2b' ? 'Revise as respostas sugeridas pelas tarefas.' : 'Revise as respostas sugeridas.'))}</p>`;
-  else msg = `<div class="aviso pe-falta"><b>${esc(tr('Ainda falta responder neste passo:'))}</b>
+  else {
+    // v15 (B3): o que falta, com um botão para aceitar as sugestões do passo (todas de uma vez, por escolha da pessoa)
+    const nS = nSugestoesPasso(id), L = passosLista(), prox = L[L.findIndex(x => x.id === id) + 1];
+    const aceitar = !nS ? '' : !pend.length && prox ? `<button type="button" class="btn" data-act="continuar-confirmar" data-de="${id}">${esc(tr('Aceitar as sugestões e continuar'))}</button>`
+      : `<button type="button" class="btn" data-act="aceitar-sug" data-de="${id}">${esc(tr(nS === 1 ? 'Aceitar 1 sugestão deste passo' : 'Aceitar as ' + nS + ' sugestões deste passo'))}</button>`;
+    msg = `<div class="aviso pe-falta"><b>${esc(textoFaltaPasso(id))}</b>${!pend.length ? ` <span class="pe-msg">${esc(tr(id === '2b' ? 'Revise as respostas sugeridas pelas tarefas.' : 'Revise as respostas sugeridas.'))}</span>` : ''}
     <ul>${fs.map(f => `<li><button type="button" class="link" data-ir="${fid}:${id}:${f.n.replace(/\./g, '-')}"><span class="qn-l">${f.n}</span> <span>${esc(textoCampo(f))}</span></button></li>`).join('')}</ul>
+    ${aceitar ? `<div class="pe-acoes">${aceitar}</div>` : ''}
     <p class="small muted">${esc(tr('Você pode continuar e voltar depois.'))}</p></div>`;
+  }
   return `<div class="pe" id="pe-${id}">${msg}${rodapeNav(fid, id)}</div>`;
 }
 function renderCentro() {
@@ -121,7 +135,8 @@ function renderCentro() {
   return `<button type="button" class="passo-gaveta-b" data-act="gaveta" aria-expanded="${GAVETA}" aria-controls="indice">${ICO_LISTA_B}<span><b>${esc(tr('Passo ' + nPasso(id) + ' de ' + L.length))}</b> · <span>${numPasso(id)}</span> <span>${esc(nome)}</span></span>${ICO_CHEV_B}</button>
     <section class="passo aberto st-${st || 'novo'}" id="passo-${id}" aria-labelledby="passo-h">
       <p class="passo-meta"><span>${esc(tr('Fase ' + f.n + ' de ' + FASES.length))}</span> · <span>${esc(f.nome)}</span>${nq ? ` · <span>${esc(tr(nq === 1 ? '1 pergunta' : nq + ' perguntas'))}</span>` : ''}${ex ? ` · <span class="tag-ex">Exemplo</span>` : ''}</p>
-      <h1 class="passo-h" id="passo-h" tabindex="-1"><span class="passo-n">${numPasso(id)}</span> <span>${esc(nome)}</span></h1>
+      <div class="passo-tit"><h1 class="passo-h" id="passo-h" tabindex="-1"><span class="passo-n">${numPasso(id)}</span> <span>${esc(nome)}</span></h1>${PASSO_AJUDA[id] ? botaoEx('p:' + id, 'Sobre o passo', 'passo-h', 'ajuda-' + id) : ''}</div>
+      ${nq ? `<p class="falta-passo${faltas(id).length ? '' : ' zero'}" id="falta-passo" aria-live="polite">${esc(textoFaltaPasso(id))}</p>` : ''}
       ${a.serve ? `<p class="passo-sub">${g(a.serve)}</p>` : ''}
       <div class="passo-corpo">${corpoPasso(id)}${rodapePasso(fid, id)}</div>
     </section>`;
@@ -203,36 +218,38 @@ function abaCusto(n) {
   if (d) {
     const w = Math.max(d.hi - d.lo, d.central * 0.02), a = d.lo - 0.4 * w, b = d.hi + 0.4 * w, pos = v => (100 * (v - a) / (b - a)).toFixed(1);
     faixa = `<div class="cm-faixa" id="cm-faixa" role="img" aria-label="${esc(tr('Faixa provável') + ': ' + grande(d.lo) + ' – ' + grande(d.hi))}"><i style="inset-inline-start:${pos(d.lo)}%;width:${(pos(d.hi) - pos(d.lo))}%"></i><b style="inset-inline-start:${pos(d.central)}%"></b></div>
-      <p class="cm-faixa-t"><span>Faixa provável:</span> ${vN(grande(d.lo))} <span>a</span> ${vN(grande(d.hi))} <span class="muted">(8 em 10 cenários)</span></p>`;
+      <div class="cm-hl"><p class="cm-faixa-t" id="cm-faixa-t"><span>Faixa provável:</span> ${vN(grande(d.lo))} <span>a</span> ${vN(grande(d.hi))} <span class="muted">(8 em 10 cenários)</span></p>${botaoExCusto('faixa', 'cm-faixa-t')}</div>${exCusto('faixa')}`;
   }
   const mud = MUDANCAS[0];
   const hist = MUDANCAS.length > 1 ? `<details class="cm-hist" data-hist ${HIST_ABERTO ? 'open' : ''}><summary>Ver as últimas mudanças</summary><ol>${MUDANCAS.map(m => `<li>${vN(sinalCusto(m.delta))} <span>${m.n ? `<span>${esc(m.n)}</span> <span>${esc(m.t)}</span>` : '<span>Premissas de custo</span>'}</span></li>`).join('')}</ol></details>` : '';
   // custo por fase (icebergs em forma compacta: visível no orçamento × abaixo da linha d'água)
-  let fases = '';
+  let fases = '', I = null;
   try {
-    const I = typeof relIcebergs === 'function' ? relIcebergs({ av: n.av }) : null;
+    I = typeof relIcebergs === 'function' ? relIcebergs({ av: n.av }) : null;
     if (I && I.fases.length) {
       const mx = Math.max(1, ...I.fases.map(f => Math.max(0, f.tAcima) + Math.max(0, f.tAbaixo)));
-      fases = `<div class="cm-bloco"><h3 class="cm-h">Custo por fase</h3>
-        <p class="cm-leg"><span class="cm-sw cm-sw-a"></span><span>${esc(I.acima)}</span> <span class="cm-sw cm-sw-b"></span><span>${esc(I.abaixo)}</span></p>
+      fases = `<div class="cm-bloco"><div class="cm-hl"><h3 class="cm-h" id="cm-fases-h">Custo por fase</h3>${botaoExCusto('fases', 'cm-fases-h')}</div>${exCusto('fases')}
+        <div class="cm-hl"><p class="cm-leg" id="cm-leg"><span class="cm-sw cm-sw-a"></span><span>${esc(I.acima)}</span> <span class="cm-sw cm-sw-b"></span><span>${esc(I.abaixo)}</span></p>${botaoExCusto('linha', 'cm-leg')}</div>${exCusto('linha')}
         <ul class="cm-fases">${I.fases.map(f => `<li><div class="cm-fl"><span><b>${esc(f.nome)}</b> <span class="muted">· ${esc(f.anosTxt)}</span></span>${vN(grande(f.total), 'cm-fv')}</div>
           <div class="cm-fb" aria-hidden="true"><i class="a" style="width:${(100 * Math.max(0, f.tAcima) / mx).toFixed(1)}%"></i><i class="b" style="width:${(100 * Math.max(0, f.tAbaixo) / mx).toFixed(1)}%"></i></div>
           <p class="cm-fo">${esc(f.ocultoTxt)}</p></li>`).join('')}</ul></div>`;
     }
   } catch (e) { console.warn(e); }
-  const dir = sd ? `<div class="cm-bloco" id="cm-dir"><h3 class="cm-h">O que mais muda o custo</h3><ol class="cm-dir">${sd.drivers.map(x => `<li><span class="cm-dn">${esc(x.nome)}</span>${vN(x.loTxt + ' / ' + x.hiTxt, 'cm-dr')}<span class="cm-db" aria-hidden="true"><i style="width:${Math.max(4, 100 * x.w).toFixed(1)}%"></i></span></li>`).join('')}</ol>
+  const dir = sd ? `<div class="cm-bloco" id="cm-dir"><div class="cm-hl"><h3 class="cm-h" id="cm-dir-h">O que mais muda o custo</h3>${botaoExCusto('fatores', 'cm-dir-h')}</div>${exCusto('fatores')}<ol class="cm-dir">${sd.drivers.map(x => `<li><span class="cm-dn">${esc(x.nome)}</span>${vN(x.loTxt + ' / ' + x.hiTxt, 'cm-dr')}<span class="cm-db" aria-hidden="true"><i style="width:${Math.max(4, 100 * x.w).toFixed(1)}%"></i></span></li>`).join('')}</ol>
     <p class="cm-nota muted">Variação do custo total quando cada premissa vai do valor baixo ao alto.</p></div>` : '';
   return `<div class="cm" data-k="custo">
-    <div class="cm-topo"><h2 class="cm-l">Custo total do ciclo de vida</h2>${seloIlus()}</div>
-    <p class="cm-v" id="cm-tco">${vN(grande(n.total))}</p>
+    <div class="cm-topo"><div class="cm-hl"><h2 class="cm-l" id="cm-l">Custo total do ciclo de vida</h2>${botaoExCusto('tco', 'cm-l')}</div>${seloIlus()}</div>${exCusto('tco')}
+    <div class="cm-vl"><p class="cm-v" id="cm-tco">${vNGrande(grande(n.total))}</p>${d && n.total > 0 ? `<span class="cm-chip" aria-hidden="true">±${esc(pct(Math.max(n.total - d.lo, d.hi - n.total) / n.total))}</span>` : ''}</div>
     <p class="cm-anos muted">${esc(tr('Ano 0 a Ano ' + H))} · <span>preços do Ano 0, com desconto</span></p>
     ${faixa}
-    <dl class="cm-kv"><div><dt>${esc(tr('Ano 0 (teste)'))}</dt><dd id="cm-ano0">${vN(grande(n.ano0))}</dd></div>
-      <div><dt>${esc(tr('Por ano em regime (Ano ' + (an.ano != null ? an.ano : H) + ')'))}</dt><dd id="cm-anual">${vN(grande(an.eco || 0))}</dd></div></dl>
-    <div class="cm-mud" id="cm-mud">${mud ? `<p>${textoMudanca(mud)}</p>` : '<p class="muted">Cada resposta que muda o custo aparece aqui.</p>'}${hist}</div>
+    <dl class="cm-kv"><div><dt><span id="cm-ano0-l">${esc(tr('Ano 0 (teste)'))}</span>${botaoExCusto('ano0', 'cm-ano0-l')}</dt><dd id="cm-ano0">${vN(grande(n.ano0))}</dd></div>
+      <div><dt><span id="cm-anual-l">${esc(tr('Por ano em regime (Ano ' + (an.ano != null ? an.ano : H) + ')'))}</span>${botaoExCusto('anual', 'cm-anual-l')}</dt><dd id="cm-anual">${vN(grande(an.eco || 0))}</dd></div></dl>
+    ${exCusto('ano0')}${exCusto('anual')}
+    ${blocoPorQue(n, I, sd)}
+    <div class="cm-mud" id="cm-mud"><div class="cm-hl">${mud ? `<p id="cm-mud-t">${textoMudanca(mud)}</p>` : '<p class="muted" id="cm-mud-t">Cada resposta que muda o custo aparece aqui.</p>'}${botaoExCusto('mud', 'cm-mud-t')}</div>${exCusto('mud')}${hist}</div>
     ${faltasEstimativaHTML()}
     ${fases}${dir}
-    <p class="cm-nota muted">Valores ilustrativos. Substitua por cotações e dados locais.</p></div>`;
+    <div class="cm-hl"><p class="cm-nota muted" id="cm-ilus-t">Valores ilustrativos. Substitua por cotações e dados locais.</p>${botaoExCusto('ilus', 'cm-ilus-t')}</div>${exCusto('ilus')}</div>`;
 }
 // Frase de decisão do caso, montada só com as respostas (nada é inventado)
 function fraseDecisao() {
@@ -250,20 +267,14 @@ function fraseDecisao() {
 }
 function abaPlano(n) {
   const dec = fraseDecisao();
-  let R = [];
-  try { R = typeof recomendacoesCaso === 'function' ? recomendacoesCaso() : []; } catch (e) { R = []; }
   const tco = n && n.av.tco ? n.av.tco : null;
-  const acoes = R.slice(0, 3).map(r => {
-    const t = tr(r.texto), mm = t.match(/^(.*?)\s?[:：]\s+(.+)$/s);
-    return `<li><span class="pl-pr ${r.prioridade === 'alta' ? 'alta' : ''}">${esc(tr(r.prioridade === 'alta' ? 'Prioridade alta' : 'Prioridade média'))}</span><p data-notr>${esc(mm ? mm[1] : t)}</p>${r.ir ? `<button type="button" class="link" data-ir="${esc(r.ir)}">Ir à pergunta</button>` : ''}</li>`;
-  }).join('');
   return `<div class="pl" data-k="plano">
-    <h2 class="cm-h">Decisão recomendada</h2>
+    <div class="cm-hl"><h2 class="cm-h" id="pl-dec-h">Decisão recomendada</h2>${botaoExCusto('decisao', 'pl-dec-h')}</div>${exCusto('decisao')}
     ${dec ? `<p class="pl-dec" data-notr>${esc(dec)}</p>` : `<p class="muted">Responda o passo 2.0 (prova de conceito ou piloto) e o tamanho do teste no 2.3.8 para ver a decisão.</p>`}
     ${n ? `<h2 class="cm-h">Números</h2><dl class="pl-kv"><div><dt>Custo total do ciclo de vida</dt><dd>${vN(grande(n.total))}</dd></div><div><dt>${esc(tr('Ano 0 (teste)'))}</dt><dd>${vN(grande(n.ano0))}</dd></div>
       ${tco ? `<div><dt>${esc(tr('Por ano em regime (Ano ' + tco.anual.ano + ')'))}</dt><dd>${vN(grande(tco.anual.eco))}</dd></div>` : ''}</dl>${seloIlus('Estimativa ilustrativa')}` : ''}
-    <h2 class="cm-h">Três ações</h2>
-    ${acoes ? `<ol class="pl-ac">${acoes}</ol>` : '<p class="muted">As ações aparecem conforme as respostas.</p>'}
+    <div class="cm-hl"><h2 class="cm-h" id="pl-agora-h">O que fazer agora</h2>${botaoEx('c:agora', 'Sobre esta seção', 'pl-agora-h')}</div>${exCusto('agora')}
+    ${listaAgora(5, true)}
     <button type="button" class="btn pl-ver" data-act="gerar-plano">Ver o plano completo</button></div>`;
 }
 // premissas que cada passo usa (ids de premissasDoCaso: perfil do país e linhas da base de referências)
@@ -281,7 +292,7 @@ function abaPremissas(n) {
   const usadas = rx ? L.filter(p => rx.test(p.campo)) : L;
   const lin = p => `<li><span class="pm-r">${esc(tr(p.rotulo))}</span>${vN(typeof relValorPremissa === 'function' ? relValorPremissa(p) : String(p.valor), 'pm-v')}${p.unidade && !/^%|US\$/.test(p.unidade) ? `<span class="pm-u muted">${esc(tr(p.unidade))}</span>` : ''}${typeof marcadorOrigem === 'function' ? marcadorOrigem(p) : ''}</li>`;
   return `<div class="pm" data-k="premissas">
-    <h2 class="cm-h">${esc(tr('Premissas que o passo ' + numPasso(S.passo) + ' usa'))}</h2>
+    <div class="cm-hl"><h2 class="cm-h" id="pm-h">${esc(tr('Premissas que o passo ' + numPasso(S.passo) + ' usa'))}</h2>${botaoEx('c:premissas', 'Sobre esta seção', 'pm-h')}</div>${exCusto('premissas')}
     ${usadas.length ? `<ul class="pm-l">${usadas.slice(0, 14).map(lin).join('')}</ul>${usadas.length > 14 ? `<p class="small muted">${esc(tr('E mais ' + (usadas.length - 14) + ' no painel completo.'))}</p>` : ''}`
       : '<p class="muted">Este passo não usa custos unitários da base de referências. As respostas dele mudam quantidades (pessoas, escolas, meses).</p>'}
     <p class="cm-nota muted">${esc(tr('O custo usa ' + L.length + ' premissas no total. Cada uma mostra de onde veio; valores sem fonte são ilustrativos.'))}</p>
@@ -305,8 +316,8 @@ function botaoCel() {
   const L = passosLista(), i = L.findIndex(x => x.id === S.passo), prox = L[i + 1];
   if (!prox) return `<button type="button" class="btn pri bc-seg" data-act="gerar-plano"><span>Ver plano</span> <span aria-hidden="true">→</span></button>`;
   const fs = PASSOS_VER.includes(S.passo) ? [] : faltas(S.passo), pend = fs.filter(f => !qOk(f, true));
-  const act = !fs.length ? 'continuar' : !pend.length ? 'continuar-confirmar' : 'continuar-forcar';
-  return `<button type="button" class="btn pri bc-seg" data-act="${act}" data-de="${S.passo}" aria-label="${esc(tr((act === 'continuar-confirmar' ? 'Confirmar e continuar para ' : 'Continuar para ') + numPasso(prox.id)))}"><span>${esc(tr(act === 'continuar-confirmar' ? 'Confirmar' : 'Continuar'))}</span> <span aria-hidden="true">→</span></button>`;
+  const act = !fs.length ? 'continuar' : 'continuar-forcar';
+  return `<button type="button" class="btn pri bc-seg" data-act="${act}" data-de="${S.passo}" aria-label="${esc(tr('Continuar para ' + numPasso(prox.id)))}"><span>${esc(tr('Continuar'))}</span> <span aria-hidden="true">→</span></button>`;
 }
 function fecharGavetas() {
   GAVETA = false; FOLHA = false;
@@ -433,6 +444,7 @@ function render() {
   if (document.getElementById('cres') && typeof renderCustosResultados === 'function') renderCustosResultados();
   if (foco) { const f = document.getElementById(foco); if (f) try { f.focus({ preventScroll: true }); } catch (e) { } }
   window.scrollTo(0, y);
+  if (modo === 'trabalho' && !PREM_ABERTO && typeof atualizarB3 === 'function') atualizarB3();
   salvar();
 }
 // Depois de uma resposta que não redesenha a tela: índice, painel, barra, marcas das perguntas e rodapé do passo
@@ -459,6 +471,7 @@ function atualizarFaseViva() {
     const sr = q.querySelector('.q-sr'); if (sr && sr.dataset.v !== String(ok)) { sr.dataset.v = String(ok); sr.textContent = ok ? tr('respondida') : ''; }
   });
   if (S.vista === 'plano' || S.boasVindas !== false || PREM_ABERTO) return;
+  if (typeof atualizarB3 === 'function') atualizarB3();
   const p = document.getElementById('passo-' + S.passo); if (!p) return;
   const st = estadoPasso(S.passo);
   ['st-ok', 'st-andamento', 'st-novo'].forEach(c => p.classList.remove(c)); p.classList.add('st-' + (st || 'novo'));

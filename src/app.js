@@ -603,7 +603,9 @@ function ligar() {
       return;
     }
     if (el.dataset.fm) {
-      const k = el.dataset.fm; const s = new Set(S.caso[k] || []); el.checked ? s.add(el.value) : s.delete(el.value);
+      // v15 (B3): uma sugestão ainda não aceita não aparece marcada; a primeira escolha começa do zero
+      const k = el.dataset.fm, fq = typeof CAMPO_POR_ID !== 'undefined' ? CAMPO_POR_ID[k] : null;
+      const s = new Set(fq && typeof sugerido === 'function' && sugerido(fq) ? [] : (S.caso[k] || [])); el.checked ? s.add(el.value) : s.delete(el.value);
       // "nenhuma"/"nenhum" exclui as demais opções, e vice-versa
       const nada = { consequencias: 'nenhuma', dados: 'nenhum', testes: 'recomendar' }[k];
       if (nada && el.checked) { if (el.value === nada) { s.clear(); s.add(nada); } else s.delete(nada); }
