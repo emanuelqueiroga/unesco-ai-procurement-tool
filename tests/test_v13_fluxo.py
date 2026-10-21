@@ -28,6 +28,14 @@ async def abrir(pg, lang='pt'):
 async def branco(pg):
     await pg.evaluate("(()=>{carregarExemplo('novo'); S.boasVindas=false; abrirFase('contexto','1b');})()"); await pg.wait_for_timeout(200)
 
+# v15 (proposta C, documento vivo): as perguntas que cabem numa frase são lacunas do texto e abrem num popover
+# (abrirFase com o id do campo como alvo); os blocos de formulário (1.2.1, 1.2.2, 1.3) ficam no próprio documento.
+# Os seletores mudaram só no caminho (#lac-pop no lugar de #passo-x); o "Para a implantação" e o bloco "Da camada 2"
+# do 3.1 saíram de propósito (não há passos; cada pergunta fica na sua frase da seção 1) e viraram verificações
+# equivalentes no documento.
+def lac(k, f='contexto', p='1b'):
+    return f"abrirFase('{f}','{p}','{k}')"
+
 async def ev(pg, js, t=150):
     r = await pg.evaluate(js); await pg.wait_for_timeout(t); return r
 
@@ -100,43 +108,55 @@ async def main():
         ok(await ev(pg, "S.caso.resultado") == sp['resultado'] and await ev(pg, "temLacuna(S.caso.resultado) && !qOk(CAMPO_POR_ID.resultado, true)"), '1.2.6 com os objetivos e lacunas')
         ok(await ev(pg, "S.caso.tarefas") == sp["tarefas"] and await ev(pg, "sugerido(CAMPO_POR_ID.tarefas) && !qOk(CAMPO_POR_ID.tarefas)"), f'2.1.1 sugerido: {sp["tarefas"]}')
         ok(await ev(pg, "(S.caso.usuarios||[]).length>0 && sugerido(CAMPO_POR_ID.usuarios)"), 'tarefas sugeridas sugerem o 2.2 (aplicarSugestoes)')
-        tags = await ev(pg, "[...document.querySelectorAll('#passo-1b .q.sug .sug-tag')].map(e=>e.closest('.q').dataset.campo+'='+e.textContent)")
+        tags, notas, dicas = [], [], {}
+        for k in ['olhando', 'problema', 'impactos', 'resultado']:
+            await ev(pg, lac(k), 150)
+            tags += await ev(pg, f"[...document.querySelectorAll('#lac-pop .q.sug .sug-tag')].map(e=>'{k}='+e.textContent)", 0)
+            notas += await ev(pg, "[...document.querySelectorAll('#lac-pop .q.sug .sug-nota')].map(e=>e.textContent.trim())", 0)
+            dicas[k] = await pg.locator('#lac-pop .q.lacuna .lacuna-dica').is_visible()
+            if k == 'problema': ok((await pg.locator('#q-1-2-4 .lacuna-dica').text_content()).strip() == 'Complete as lacunas marcadas com __ com os dados da sua rede.', 'texto da dica das lacunas')
         ok(sorted(tags) == sorted([k + '=sugerido pelos problemas do passo 1.2' for k in ['olhando', 'problema', 'impactos', 'resultado']]), f'etiquetas no 1.2: {tags}')
-        notas = await ev(pg, "[...document.querySelectorAll('#passo-1b .q.sug .sug-nota')].map(e=>e.textContent.trim())")
         ok(len(notas) == 4 and all(n == 'Sugestão a partir dos problemas marcados no passo 1.2. Confirme ou ajuste.' for n in notas), 'linha de "por quê" em cada sugestão do 1.2')
-        ok(await pg.locator('#q-1-2-4.lacuna .lacuna-dica').is_visible() and await pg.locator('#q-1-2-6.lacuna .lacuna-dica').is_visible() and not await pg.locator('#q-1-2-3 .lacuna-dica').is_visible(), 'dica das lacunas sob 1.2.4 e 1.2.6')
-        ok((await pg.locator('#q-1-2-4 .lacuna-dica').text_content()).strip() == 'Complete as lacunas marcadas com __ com os dados da sua rede.', 'texto da dica das lacunas')
+        ok(dicas['problema'] and dicas['resultado'] and not dicas['olhando'], f'dica das lacunas sob 1.2.4 e 1.2.6 {dicas}')
+        ok(await ev(pg, "document.querySelectorAll('#plano-s1 [data-lac=\"olhando\"].lac-ilus, #plano-s1 [data-lac=\"problema\"].lac-ilus').length") == 2, 'no texto, as sugestões aparecem como valor ilustrativo (pontilhado)')
+        await pg.keyboard.press('Escape'); await pg.wait_for_timeout(150)
         # mais problemas recalculam o que não foi confirmado
         await pg.click('#pb-C4'); await pg.wait_for_timeout(250)
         ok('(e mais 1)' in await ev(pg, "S.ctx.olhando") and 'tempo_docente' in await ev(pg, "S.caso.impactos") and 'planos_aula' in await ev(pg, "S.caso.tarefas"), 'marcar C4 recalcula 1.2.3, 1.2.5 e 2.1.1')
         # digitar confirma; depois as sugestões não substituem
+        await ev(pg, lac('olhando'), 150)
         await pg.fill('#f-olhando', 'Matemática e tempo dos professores'); await pg.wait_for_timeout(150)
+        await ev(pg, lac('impactos'), 150)
         await pg.locator('#q-1-2-5 [data-fm="impactos"][value="desigualdade"]').check(); await pg.wait_for_timeout(200)
+        await pg.click('#lac-pop [data-lp="ok"]'); await pg.wait_for_timeout(250)   # Confirmar guarda (Esc desfaria)
         ok(await ev(pg, "!!S.respC.olhando && !!S.respC.impactos && !sugerido(CAMPO_POR_ID.olhando) && qOk(CAMPO_POR_ID.olhando) && qOk(CAMPO_POR_ID.impactos)"), 'digitar no 1.2.3 e marcar um impacto confirmam')
+        await pg.keyboard.press('Escape'); await pg.wait_for_timeout(150)
         await pg.click('#pb-C7'); await pg.wait_for_timeout(250)
         ok(await ev(pg, "S.ctx.olhando==='Matemática e tempo dos professores' && !S.caso.impactos.includes('permanencia') && S.caso.tarefas.includes('alerta_precoce')"), 'C7 muda só o que não foi confirmado (2.1.1 sim; 1.2.3 e 1.2.5 não)')
+        await ev(pg, lac('problema'), 150)
         await pg.fill('#f-problema', 'Na rede, hoje: 60% dos estudantes do 9º ano estão abaixo do nível adequado.'); await pg.wait_for_timeout(150)
         ok(await ev(pg, "qOk(CAMPO_POR_ID.problema) && !document.querySelector('#q-1-2-4').classList.contains('lacuna')"), '1.2.4 sem lacunas conta como respondida e a dica some')
         await pg.fill('#f-problema', 'Na rede, hoje: __ estudantes.'); await pg.wait_for_timeout(150)
         ok(await ev(pg, "!qOk(CAMPO_POR_ID.problema) && document.querySelector('#q-1-2-4').classList.contains('lacuna')"), 'texto digitado com "__" volta a não contar')
         await pg.fill('#f-problema', 'Na rede, hoje: 60% dos estudantes do 9º ano estão abaixo do nível adequado.'); await pg.wait_for_timeout(150)
         # 2.1: tarefas sugeridas, confirmação por "Confirmar e continuar"
-        await ev(pg, "abrirFase('piloto','2a')", 200)
+        await ev(pg, lac('tarefas', 'piloto', '2a'), 200)
         ok(await pg.locator('#q-2-1-1.sug .sug-tag').text_content() == 'sugerido pelos problemas do passo 1.2' and await pg.locator('#q-2-1-1 input:checked').count() == len(await ev(pg, "S.caso.tarefas")), '2.1.1 abre com as tarefas sugeridas')
-        ok(await pg.locator('#passo-2a .aviso.sem-ferr').count() == 0, 'sem aviso de "regras e processos" quando há tarefas')
-        await ev(pg, "abrirFase('piloto','2b')", 200)
+        ok(await pg.locator('#plano .aviso.sem-ferr').count() == 0, 'sem aviso de "regras e processos" quando há tarefas')
+        await ev(pg, lac('usuarios', 'piloto', '2b'), 200)
         ok((await pg.locator('#q-2-2-1.sug .sug-nota').text_content()).strip() == 'Sugestão a partir das tarefas marcadas no passo 2.1. Confirme ou ajuste.', '2.2.1: linha de "por quê" da sugestão das tarefas')
-        await ev(pg, "abrirFase('piloto','2a')", 200)
-        await pg.click('#pe-2a [data-act="continuar-confirmar"]'); await pg.wait_for_timeout(250)
-        ok(await ev(pg, "!!S.respC.tarefas && qOk(CAMPO_POR_ID.tarefas) && S.passo==='2b'"), '"Confirmar e continuar" confirma as tarefas')
-        # só problemas sem tarefa de IA → aviso no topo do 2.1
+        # "Confirmar" no popover confirma as tarefas sugeridas (antes: "Confirmar e continuar" no rodapé do passo)
+        await ev(pg, lac('tarefas', 'piloto', '2a'), 200)
+        await pg.click('#lac-pop [data-lp="ok"]'); await pg.wait_for_timeout(250)
+        ok(await ev(pg, "!!S.respC.tarefas && qOk(CAMPO_POR_ID.tarefas)"), '"Confirmar" confirma as tarefas')
+        # só problemas sem tarefa de IA → aviso antes da frase das tarefas
         await branco(pg)
         await ev(pg, "(()=>{S.ctx.prioridades=['governar']; S.ctx.problemas=['G2','G4']; render(); abrirFase('piloto','2a');})()", 250)
-        ok(await pg.locator('#passo-2a .aviso.sem-ferr').count() == 1 and await ev(pg, "S.caso.tarefas.length===0"), 'problemas sem tarefa de IA: aviso AVISO_SEM_FERRAMENTA no 2.1 e nada marcado')
-        ok(await ev(pg, "document.querySelector('#passo-2a .passo-corpo').firstElementChild.classList.contains('sem-ferr') || document.querySelector('#passo-2a .abertura + .sem-ferr')!==null"), 'aviso no topo do passo')
+        ok(await pg.locator('#plano .aviso.sem-ferr').count() == 1 and await ev(pg, "S.caso.tarefas.length===0"), 'problemas sem tarefa de IA: aviso AVISO_SEM_FERRAMENTA e nada marcado')
+        ok(await ev(pg, "(()=>{const a=document.querySelector('#plano .aviso.sem-ferr'), t=document.querySelector('#plano-s1 [data-lac=\"tarefas\"]'); return !!(a&&t&&(a.compareDocumentPosition(t)&4));})()"), 'aviso antes da frase das tarefas')
 
         # ---------------------------------------------------------- 1.2.7 e 1.3.x: detalhe de "Sim" e "Em parte"
-        await ev(pg, "(()=>{S.ctx.prioridades=['com']; S.ctx.problemas=['C1','C2']; abrirFase('contexto','1b');})()", 250)
+        await ev(pg, "(()=>{S.ctx.prioridades=['com']; S.ctx.problemas=['C1','C2']; abrirFase('contexto','1b','linhaBase');})()", 250)
         ok(await pg.locator('#det-linhaBase .q-det-in').count() == 0, '1.2.7 sem resposta: sem detalhe')
         await pg.click('#q-1-2-7 [data-f="linhaBase"][value="sim"]'); await pg.wait_for_timeout(200)
         ok(await pg.locator('#det-linhaBase [data-fm="linhaBaseProblemas"]').count() == 2 and await pg.locator('#f-linhaBaseMedida').count() == 1, '"Sim": caixas com os problemas marcados e "Qual medida?"')
@@ -152,6 +172,7 @@ async def main():
         ok(await pg.locator('#det-linhaBase #f-linhaBaseProblemaTxt').count() == 1 and await pg.locator('#det-linhaBase [data-fm]').count() == 0, 'sem problemas marcados: "Para quais problemas?" em texto livre')
         await pg.fill('#f-linhaBaseProblemaTxt', 'Leitura no 5º ano'); await pg.wait_for_timeout(150)
         ok(await ev(pg, "S.caso.linhaBaseProblemaTxt") == 'Leitura no 5º ano', 'texto livre gravado em linhaBaseProblemaTxt')
+        await pg.keyboard.press('Escape'); await pg.wait_for_timeout(150)
         await ev(pg, "abrirFase('contexto','1c')", 200)
         labels = {'g-comite': 'Qual equipe ou instância? Quem participa?', 'g-politica': 'Qual documento? (nome, data ou link)', 'g-legislacao': 'Quais normas já foram identificadas?',
                   'g-dados': 'Qual política ou norma de dados?', 'g-etica': 'Quais orientações? Para quem?', 'g-compras': 'Quais regras ou modelos?'}
@@ -176,41 +197,33 @@ async def main():
         await branco(pg)
         ok(await ev(pg, N_CAMADA2) == 14, 'sem resposta 2.0: 14 perguntas da camada 2 (como na v12)')
         ok(await ev(pg, "S.caso.nFerramentas===''"), '2.3.1 sem sugestão antes do 2.0')
-        await ev(pg, "abrirFase('piloto','20')")
+        await ev(pg, lac('testes', 'piloto', '20'))
         await pg.locator('[data-fm="testes"][value="piloto"]').click(); await pg.wait_for_timeout(200)
         ok(await ev(pg, N_CAMADA2) == 11, 'piloto: 11 perguntas da camada 2')
         ok(await ev(pg, "camposPasso('3a').map(f=>f.id).join()") == 'implantacao,frequencia,licenca,adaptacao', 'piloto: 2.2.4, 2.3.6 e 2.3.7 no passo 3.1, depois do 3.1.1')
         ok(await ev(pg, "S.caso.nFerramentas==='1' && sugerido(CAMPO_POR_ID.nFerramentas)"), '2.3.1 "Uma" sugerida pela resposta 2.0')
-        await ev(pg, "abrirFase('piloto','2c')", 200)
+        await ev(pg, lac('nFerramentas', 'piloto', '2c'), 200)
         ok(await pg.locator('#q-2-3-1.sug .sug-tag').text_content() == 'sugerido pela resposta 2.0' and (await pg.locator('#q-2-3-1 .sug-nota').text_content()).strip() == 'Testar uma ferramenta por vez permite saber o que funcionou. Confirme ou escolha outra opção.', '2.3.1: etiqueta e "por quê"')
-        det = pg.locator('#passo-2c details.desc-imp[data-desc="2c"]')
-        ok(await det.count() == 1 and not await ev(pg, "document.querySelector('#passo-2c details.desc-imp').open"), '2.3: "Para a implantação" recolhido no fim do passo')
-        ok((await det.locator('summary').text_content()).strip() == 'Para a implantação (pode responder agora ou depois)' and (await det.locator('.desc-in > .hint').text_content()).strip() == 'Estas perguntas também aparecem no passo 3.1.', 'resumo e nota do <details>')
-        ok(await ev(pg, "[...document.querySelectorAll('#passo-2c details.desc-imp .q')].map(q=>q.dataset.n).join()") == '2.3.6,2.3.7', '2.3.6 e 2.3.7 dentro do <details>')
-        ok(await ev(pg, "document.querySelector('#passo-2c .passo-corpo > details.desc-imp + .pe')!==null"), '<details> logo antes do rodapé do passo')
-        await det.locator('summary').click(); await pg.wait_for_timeout(150)
+        # v15: sem passos, 2.2.4, 2.3.6 e 2.3.7 ficam nas suas frases da seção 1 (não há "Para a implantação" nem bloco no 3.1)
+        ok(await ev(pg, "['frequencia','licenca','adaptacao'].every(k=>!!document.querySelector('#plano-s1 [data-lac=\"'+k+'\"]'))"), '2.2.4, 2.3.6 e 2.3.7 continuam nas frases da seção 1')
         await pg.locator('#q-2-3-1 [data-f="nFerramentas"][value="1"]').click(); await pg.wait_for_timeout(200)
-        ok(await ev(pg, "!!S.respC.nFerramentas && !sugerido(CAMPO_POR_ID.nFerramentas)") and await ev(pg, "document.querySelector('#passo-2c details.desc-imp').open"), 'clicar na opção sugerida confirma; o <details> continua aberto')
+        ok(await ev(pg, "!!S.respC.nFerramentas && !sugerido(CAMPO_POR_ID.nFerramentas)"), 'clicar na opção sugerida confirma')
+        await ev(pg, lac('licenca', 'piloto', '2c'), 200)
         await pg.locator('#q-2-3-6 [data-f="licenca"][value="assinatura"]').click(); await pg.wait_for_timeout(200)
-        ok(await ev(pg, "S.caso.licenca==='assinatura' && qOk(CAMPO_POR_ID.licenca)"), 'responder 2.3.6 dentro do <details>')
-        await ev(pg, "irPara('passo-2c')", 300)
+        ok(await ev(pg, "S.caso.licenca==='assinatura' && qOk(CAMPO_POR_ID.licenca)"), 'responder 2.3.6 no popover')
+        await pg.click('#lac-pop [data-lp="ok"]'); await pg.wait_for_timeout(250)
         await pg.screenshot(path=TMP + '/v13_2c_piloto_1360.png', full_page=False)
         ok(await ev(pg, "faltas('2c').every(f=>!['licenca','adaptacao'].includes(f.id)) && faltas('3a').some(f=>f.id==='adaptacao')"), 'validação: 2.3.7 conta no 3.1, não no 2.3')
         ft = await ev(pg, "faltasTodas().filter(x=>['frequencia','adaptacao'].includes(x.id)).map(x=>x.ir)")
         ok(sorted(ft) == ['implantacao:3a:2-2-4', 'implantacao:3a:2-3-7'], f'faltasTodas leva ao passo 3.1: {ft}')
-        await ev(pg, "abrirFase('implantacao','3a')", 250)
-        ok(await pg.locator('#desc-3a h3').text_content() == 'Da camada 2: decisões que ficaram para a implantação' and await ev(pg, "[...document.querySelectorAll('#desc-3a .q')].map(q=>q.dataset.n).join()") == '2.2.4,2.3.6,2.3.7', '3.1: subtítulo e as perguntas descidas, depois das do passo')
-        ok(await ev(pg, "document.querySelector('#q-3-1-1').compareDocumentPosition(document.querySelector('#desc-3a')) & 4"), '3.1.1 antes do bloco da camada 2')
-        ok(await pg.locator('#q-2-3-6 [value="assinatura"]').is_checked(), 'resposta dada no 2.3 aparece no 3.1')
-        await ev(pg, "irPara('desc-3a')", 300)
-        await pg.screenshot(path=TMP + '/v13_3a_piloto_1360.png')
-        await ev(pg, "abrirFase('piloto','2b')", 200)
-        ok(await pg.locator('#passo-2b .passo-corpo > .q').count() == 3 and await ev(pg, "camposPasso('2b').map(f=>f.n).join()") == '2.2.1,2.2.2,2.2.3' and await pg.locator('#passo-2b details.desc-imp #q-2-2-4').count() == 1, 'piloto: 2.2 com 2.2.1–2.2.3 e 2.2.4 em "Para a implantação"')
+        ok(await ev(pg, "(document.querySelector('#plano-s1 [data-lac=\"licenca\"]')||{}).textContent.includes(tr('Licença de uso por prazo (assinatura)').slice(1, 12))"), 'resposta dada no 2.3.6 aparece no texto')
+        ok(await ev(pg, "camposPasso('2b').map(f=>f.n).join()") == '2.2.1,2.2.2,2.2.3', 'piloto: 2.2 com 2.2.1–2.2.3 (2.2.4 conta no 3.1)')
         # ir à pergunta descida a partir do painel ou do plano abre o 3.1
         await ev(pg, "abrirFase('implantacao','','frequencia')", 300)
-        ok(await ev(pg, "S.passo") == '3a', 'abrirFase pelo id de uma pergunta descida vai ao 3.1')
+        ok(await ev(pg, "S.passo") == '3a' and await ev(pg, "DOC.pop && DOC.pop.key") == 'frequencia', 'abrirFase pelo id de uma pergunta descida vai ao 3.1 e abre a lacuna')
+        await pg.keyboard.press('Escape'); await pg.wait_for_timeout(150)
         # PoC: 9; os dois: 11; "recomende": 14; respostas mantidas
-        await ev(pg, "abrirFase('piloto','20')")
+        await ev(pg, lac('testes', 'piloto', '20'))
         await pg.locator('[data-fm="testes"][value="piloto"]').click(); await pg.wait_for_timeout(150)
         await pg.locator('[data-fm="testes"][value="poc"]').click(); await pg.wait_for_timeout(200)
         ok(await ev(pg, N_CAMADA2) == 9 and await ev(pg, "camposPasso('2b').map(f=>f.n).join()") == '2.2.1', 'prova de conceito: 9 perguntas; 2.2 só com 2.2.1')
@@ -257,8 +270,9 @@ async def main():
             await ev(pg, f"(()=>{{carregarExemplo('{k}'); S.boasVindas=false; render();}})()", 200)
             r = await ev(pg, "({sug: CAMPOS.filter(f=>visivel(f) && sugerido(f)).map(f=>f.id), ol: S.ctx.olhando, p1: passoFeito('1b'), t: S.caso.tarefas.length, n: S.caso.nFerramentas, pr: qOk(CAMPO_POR_ID.prioridades) && qOk(CAMPO_POR_ID.problemas), rc: CAMPOS_PROB.every(c=>S.respC[c])})")
             ok(not r['sug'] and r['p1'] and r['pr'] and r['rc'] and r['t'] > 0, f'exemplo {k}: 1.2 completo, nenhuma sugestão pendente ({r["sug"]})')
-            await ev(pg, "abrirFase('contexto','1b')", 200)
-            ok(await pg.locator('#passo-1b .q.sug').count() == 0 and await pg.locator('#det-linhaBase .q-det-in').count() == 1, f'exemplo {k}: 1.2 sem "sugerido" e com o detalhe da linha de base')
+            await ev(pg, lac('linhaBase'), 200)
+            ok(await pg.locator('#plano .q.sug').count() == 0 and await pg.locator('#det-linhaBase .q-det-in').count() == 1, f'exemplo {k}: 1.2 sem "sugerido" e com o detalhe da linha de base')
+            await pg.keyboard.press('Escape'); await pg.wait_for_timeout(100)
 
         # ---------------------------------------------------------- 400 px
         await pg.set_viewport_size({'width': 400, 'height': 860}); await pg.wait_for_timeout(200)
@@ -284,24 +298,24 @@ async def main():
         await pg.set_viewport_size({'width': 1360, 'height': 900}); await pg.wait_for_timeout(150)
         await pg.select_option('#sel-lang', 'en'); await pg.wait_for_timeout(300)
         await ev(pg, "(()=>{S.ctx.prioridades=['com']; S.ctx.problemas=['C2']; S.ctx.subs=[]; SUB_ABERTO.C2=true; S.info={'pr-com':true}; S.caso.linhaBase='parcial'; S.respC.linhaBase=true; ['olhando','problema','impactos','resultado','tarefas'].forEach(k=>delete S.respC[k]); abrirFase('contexto','1b');})()", 300)
-        SEL = ['#passo-1b .pt b', '#q-1-2-1 .q-t', '#q-1-2-1 > .hint', '#q-1-2-2 .q-t', '#q-1-2-2 > .hint', '.pg-n', '.pg-acoes', '.prob-ol', '.prob-sub summary', '.prob-outro label',
-               '#q-1-2-3 .sug-tag', '#q-1-2-3 .sug-nota', '#q-1-2-4 .lacuna-dica', '#det-linhaBase .q-det-c', '#nota-pr-com .eyebrow', '#fase-contexto .fase-t small']
+        SEL = ['#q-1-2-1 .q-t', '#q-1-2-1 > .hint', '#q-1-2-2 .q-t', '#q-1-2-2 > .hint', '.pg-n', '.pg-acoes', '.prob-ol', '.prob-sub summary', '.prob-outro label', '#nota-pr-com .eyebrow']
         txt = await ev(pg, f"{json.dumps(SEL)}.flatMap(s=>[...document.querySelectorAll(s)].map(e=>e.innerText)).join(' | ')")
+        for k, sel in [('olhando', ['#q-1-2-3 .sug-tag', '#q-1-2-3 .sug-nota']), ('problema', ['#q-1-2-4 .lacuna-dica']), ('linhaBase', ['#det-linhaBase .q-det-c'])]:
+            await ev(pg, lac(k), 200)
+            txt += ' | ' + await ev(pg, f"{json.dumps(sel)}.flatMap(s=>[...document.querySelectorAll(s)].map(e=>e.innerText)).join(' | ')")
         ph = await pg.get_attribute('#f-linhaBaseMedida', 'placeholder')
+        await pg.keyboard.press('Escape'); await pg.wait_for_timeout(100)
         ok(txt and not PT.search(txt) and not PT13.search(txt) and not PT.search(ph), f'EN 1.2 sem restos de português: {(PT.findall(txt) + PT13.findall(txt))[:6]}')
-        ok('Priority and impact' in txt and 'Select all' in txt and '0 of 10 selected' not in txt and '1 of 10 selected' in txt, 'EN 1.2: nomes e contador traduzidos')
+        ok('Select all' in txt and '0 of 10 selected' not in txt and '1 of 10 selected' in txt, 'EN 1.2: botões e contador traduzidos')
         await ev(pg, "(()=>{abrirFase('contexto','1c');})()", 250)
-        txt = await ev(pg, "[...document.querySelectorAll('#passo-1c .q-det label')].map(e=>e.innerText).join(' | ')")
+        txt = await ev(pg, "[...document.querySelectorAll('#bl-gov .q-det label')].map(e=>e.innerText).join(' | ')")
         ok(txt and not PT.search(txt) and not PT13.search(txt), f'EN 1.3: rótulos do detalhe traduzidos ({txt[:80]!r})')
-        await ev(pg, "(()=>{S.caso.testes=['piloto']; DESC_ABERTO['2c']=true; abrirFase('piloto','2c');})()", 250)
-        txt = await ev(pg, "[...document.querySelectorAll('#passo-2c details.desc-imp > summary, #passo-2c .desc-in > .hint, #q-2-3-1 .sug-tag, #q-2-3-1 .sug-nota')].map(e=>e.innerText).join(' | ')")
-        ok(txt.count('|') >= 1 and not PT.search(txt) and not PT13.search(txt), f'EN 2.3: "Para a implantação" traduzido ({txt[:120]})')
-        await ev(pg, "abrirFase('implantacao','3a')", 250)
-        txt = await ev(pg, "(document.querySelector('#desc-3a h3')||{}).innerText||''")
-        ok(txt == 'From layer 2: decisions left for deployment', f'EN 3.1: "{txt}"')
+        await ev(pg, "(()=>{S.caso.testes=['piloto']; delete S.respC.nFerramentas; render(); abrirFase('piloto','2c','nFerramentas');})()", 250)
+        txt = await ev(pg, "[...document.querySelectorAll('#q-2-3-1 .sug-tag, #q-2-3-1 .sug-nota, #lac-pop .lp-t, #lac-pop .lp-pe')].map(e=>e.innerText).join(' | ')")
+        ok(txt.count('|') >= 2 and not PT.search(txt) and not PT13.search(txt), f'EN 2.3.1: popover, etiqueta e "por quê" traduzidos ({txt[:120]})')
+        await pg.keyboard.press('Escape'); await pg.wait_for_timeout(100)
         en = await ev(pg, "document.body.innerText")
         ok(not re.search(r'(?i)\bnetworks?\b', en), 'EN sem "network"')
-        await ev(pg, "irPara('desc-3a')", 300)
         await pg.screenshot(path=TMP + '/v13_3a_en_1360.png')
 
         ok(not dialogos, f'nenhuma caixa de diálogo do navegador: {dialogos}')

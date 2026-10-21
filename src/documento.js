@@ -65,6 +65,7 @@ const DOC_SECOES = [
       { f: 'Linha de base dos problemas marcados: {0}. Alternativa sem IA já comparada: {1}.', l: ['linhaBase~', 'alternativa~'] },
     ] },
     { h: 'O que a IA vai fazer e para quem', itens: [
+      { html: 'semferr' },
       { f: 'A rede quer que a IA faça estas tarefas: {0}.', l: ['tarefas~'] },
       { f: 'A ferramenta será usada por {0}, e o que ela produz chega a {1}.', l: ['usuarios~', 'afetados~'] },
       { f: 'Com a resposta da ferramenta, as pessoas vão {0}. Frequência de uso por pessoa: {1}.', l: ['consequencias~', 'frequencia~'] },
@@ -236,6 +237,7 @@ function itemHTML(it) {
   if (it.bloco) return blocoHTML(it.bloco);
   if (it.html === 'pais') return typeof blocoPais === 'function' ? blocoPais() : '';
   if (it.html === 'moeda') return `<div class="dv-moeda">${seletorMoeda()}</div>`;
+  if (it.html === 'semferr') return typeof AVISO_SEM_FERRAMENTA !== 'undefined' && (sugProblemas() || {}).semFerramenta ? `<div class="aviso sem-ferr" role="note"><span>${esc(tr(AVISO_SEM_FERRAMENTA))}</span></div>` : '';
   return '';
 }
 function edHTML(secId) {
@@ -510,6 +512,8 @@ function atualizarDoc(semGerado) {
     if (st) { const ok = nOk === vis.length; st.className = 'dv-st dv-st-' + (ok ? 'ok' : 'pend'); st.innerHTML = ok ? IC_OK + esc(tr('Completo')) : IC_PEND + esc(trN(vis.length > 1 ? '{0} de {1} respondidas' : 'A responder', nOk, vis.length)); }
     vis.forEach(f => { const q = document.getElementById(idQ(f.n)); if (q) { q.classList.toggle('ok', qOk(f)); q.classList.toggle('sug', sugerido(f) && !vazio(valorCampo(f))); } });
   });
+  const pc = document.querySelector('#lac-pop .lp-ctl');
+  if (pc && DOC.pop && !DOC.pop.sub) { const f = DOC.pop.f; pc.classList.toggle('lacuna', f.sugDe === 'problemas' && ['texto', 'area'].includes(f.tipo) && temLac(valorCampo(f))); pc.classList.toggle('ok', qOk(f)); }
   atualizarNumeros();
   if (!semGerado) agendarGerado();
 }
@@ -587,7 +591,7 @@ function popCorpo() {
   } else {
     ctl = controle(f) + (f.detalhe ? detalheCampo(f) : '') + (sugerido(f) ? notaSugerido(f) : '');
     if (f.id === 'elegiveis') { const tt = totaisCtx(); if ((S.caso.usuarios || []).includes('estudantes') && tt.alunos > 0 && +S.caso.elegiveis !== tt.alunos) ctl += `<div class="hint"><button type="button" class="link" data-act="usar-alunos">${esc(tr('Usar o total de estudantes do contexto (' + fmtInt(tt.alunos) + ')'))}</button></div>`; }
-    if (f.sugDe === 'problemas' && ['texto', 'area'].includes(f.tipo) && temLac(valorCampo(f))) ctl += `<div class="hint lacuna-dica">${esc(tr('Complete as lacunas marcadas com __ com os dados da sua rede.'))}</div>`;
+    if (f.sugDe === 'problemas' && ['texto', 'area'].includes(f.tipo)) ctl += `<div class="hint lacuna-dica">${esc(tr('Complete as lacunas marcadas com __ com os dados da sua rede.'))}</div>`;
   }
   const rotTag = sub || ['texto', 'area', 'num', 'horas'].includes(f.tipo) ? `label for="${sub ? 'lp-in' : 'f-' + f.id}"` : 'span';
   const fila = DOC.fila ? `<span class="lp-fila">${esc(trN('Lacuna {0} de {1}', posFila(), pendentes().length))}</span>` : '';
@@ -595,7 +599,7 @@ function popCorpo() {
       <h3 class="lp-t" id="lp-t"><${rotTag} id="qt-${esc(f.id)}">${esc(t)}</${rotTag.split(' ')[0]}></h3></div>
       <button type="button" class="lp-x" data-lp="fechar" aria-label="${esc(tr('Fechar sem mudar'))}">×</button></div>
     ${ajuda ? `<p class="lp-h">${ajuda}</p>` : ''}
-    <div class="lp-ctl q${sub ? '' : ' lp-' + f.tipo}" id="${idQ(f.n)}" data-campo="${esc(f.id)}">${ctl}</div>
+    <div class="lp-ctl q${sub ? '' : ' lp-' + f.tipo}${!sub && sugerido(f) ? ' sug' : ''}${!sub && f.sugDe === 'problemas' && ['texto', 'area'].includes(f.tipo) && temLac(valorCampo(f)) ? ' lacuna' : ''}" id="${idQ(f.n)}" data-campo="${esc(f.id)}">${!sub && sugerido(f) ? `<span class="tag sug-tag">${esc(tr(textoSugerido(f)))}</span>` : ''}${ctl}</div>
     <div class="lp-ef" id="lp-ef" data-notr aria-live="polite">${efeitoHTML()}</div>
     <p class="lp-erro" id="lp-erro" role="alert" hidden></p>
     <div class="lp-pe" data-notr><button type="button" class="btn pri" data-lp="ok">${esc(tr('Confirmar'))}</button><button type="button" class="btn" data-lp="ilus">${esc(tr('Usar valor ilustrativo'))}</button>${DOC.fila ? `<button type="button" class="link" data-lp="pular">${esc(tr('Pular'))}</button>` : ''}<span class="lp-k">${fila}<span>${esc(tr('Enter confirma · Esc fecha'))}</span></span></div>
@@ -771,6 +775,7 @@ function irDocumento(fid, passo, alvo) {
   S.boasVindas = false; S.vista = '';
   if (fid && passo) { S.fase = fid; S.passo = passo; }
   const f = alvo ? (CAMPO_POR_ID[alvo] || CAMPOS.find(x => x.n.replace(/\./g, '-') === alvo || x.n === alvo)) : null;
+  if (f && !passo) { S.passo = passoDe(f); S.fase = fasePasso(S.passo) || S.fase; }
   render();
   if (f && visivel(f)) { abrirCampo(f); return; }
   window.scrollTo({ top: 0, behavior: 'instant' });
