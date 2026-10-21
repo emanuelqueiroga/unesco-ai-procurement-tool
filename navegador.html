@@ -10358,9 +10358,11 @@ function marcadorOrigem(info) {
 function campoPais(def) {
   const c = S.caso, e = valorEfetivoCampo(c, def.id), rot = tr(def.rotulo);
   const val = e ? valorParaTexto(def, e.valor) : '';
+  // v15 (B3): valor ilustrativo da ferramenta (sem dado do país) aparece como marca d'água marcada, e não como resposta
+  const ilus = e && e.origem === 'ilustrativo' && val !== '';
   const ctrl = def.tipo === 'lista'
-    ? tCampo('pc-' + def.id, `data-pc="${def.id}" autocomplete="off"`, val, 'pt, es', rot)
-    : nCampo({ id: 'pc-' + def.id, attrs: `data-pc="${def.id}"`, valor: val, casas: def.tipo === 'frac' || def.tipo === 'pct100' ? 1 : 0, rotulo: rot, ph: ' ' });
+    ? tCampo('pc-' + def.id, `data-pc="${def.id}" autocomplete="off"`, ilus ? '' : val, ilus ? val : 'pt, es', rot)
+    : nCampo({ id: 'pc-' + def.id, attrs: `data-pc="${def.id}"`, valor: ilus ? '' : val, casas: def.tipo === 'frac' || def.tipo === 'pct100' ? 1 : 0, rotulo: rot, ph: ilus ? (typeof val === 'number' ? fmtEntrada(val, 1) : String(val)) : ' ' });
   let marc = '<span class="muted">sem dado</span>';
   if (e) {
     marc = marcadorOrigem(e);
@@ -10368,7 +10370,7 @@ function campoPais(def) {
       ? ` <button type="button" class="link" data-pc-rest="${def.id}" aria-label="${esc(tr('restaurar') + ': ' + rot)}">restaurar</button>`
       : ` <button type="button" class="link" data-pc-rest="${def.id}" aria-label="${esc(tr('apagar') + ': ' + rot)}">apagar</button>`;
   }
-  return `<div class="pc" data-pc-l="${def.id}"><label for="pc-${def.id}">${esc(rot)}</label>${ctrl}<div class="pc-marc">${marc}</div></div>`;
+  return `<div class="pc${ilus ? ' com-ilus' : ''}" data-pc-l="${def.id}"><label for="pc-${def.id}">${esc(rot)}</label>${ctrl}<div class="pc-marc">${marc}</div></div>`;
 }
 function blocoPais() {
   const c = S.caso, p = paisDoCaso(c);

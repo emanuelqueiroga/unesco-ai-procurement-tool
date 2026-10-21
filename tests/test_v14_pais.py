@@ -72,7 +72,8 @@ async def main():
         ok(m[0] == 'ilustrativo' and m[1] == 'valor ilustrativo', f'inflação: marcador "valor ilustrativo": {m[:2]}')
         ok('Convenção da ferramenta (v13), ilustrativa' in m[2] and 'Ano:' in m[2], f'dica do marcador com fonte e ano: {m[2]!r}')
         ok('Grau: C' in m[2], 'dica do marcador com o grau C')
-        ok(await ev(pg, "document.getElementById('pc-inflacao').value") in ('2,5', '2.5'), f'inflação ilustrativa de 2,5%: {await ev(pg, "document.getElementById(\'pc-inflacao\').value")}')
+        # v15 (B3): o valor ilustrativo aparece como marca d'água (placeholder) marcada, e não como resposta
+        ok(await ev(pg, "document.getElementById('pc-inflacao').value || document.getElementById('pc-inflacao').placeholder") in ('2,5', '2.5'), f'inflação ilustrativa de 2,5%: {await ev(pg, "document.getElementById(\'pc-inflacao\').placeholder")}')
         ok(await ev(pg, "document.querySelector('[data-pc-rest=inflacao]')") is None, 'sem edição, não há "restaurar"')
         await pg.fill('#pc-inflacao', '3,5'); await pg.wait_for_timeout(200)
         m = await ev(pg, "(()=>{const m=document.querySelector('[data-pc-l=inflacao] .marc'); return m?[m.dataset.origem, m.firstChild.textContent.trim()]:null;})()")
@@ -84,7 +85,7 @@ async def main():
         await pg.click('[data-pc-rest=inflacao]'); await pg.wait_for_timeout(250)
         m = await ev(pg, "(()=>{const m=document.querySelector('[data-pc-l=inflacao] .marc'); return m?[m.dataset.origem, m.firstChild.textContent.trim()]:null;})()")
         ok(m == ['ilustrativo', 'valor ilustrativo'], f'"restaurar" volta ao marcador "valor ilustrativo": {m}')
-        ok(await ev(pg, "document.getElementById('pc-inflacao').value") in ('2,5', '2.5') and await ev(pg, "Object.keys(S.caso.editados).length") == 0, 'e ao valor da base (2,5), sem edição guardada')
+        ok(await ev(pg, "document.getElementById('pc-inflacao').value || document.getElementById('pc-inflacao').placeholder") in ('2,5', '2.5') and await ev(pg, "Object.keys(S.caso.editados).length") == 0, 'e ao valor da base (2,5), sem edição guardada')
         ok(abs(await ev(pg, "valorEfetivoCampo(S.caso,'inflacao').valor") - 0.025) < 1e-12, 'valorEfetivoCampo volta a 0,025')
 
         # ---------------------------------------------------------- dado do país e estimativa da região (dados injetados no teste: o seed só tem moeda, região e renda)
