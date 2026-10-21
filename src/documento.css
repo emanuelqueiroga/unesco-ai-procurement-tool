@@ -302,9 +302,11 @@ body.doc-on { background: var(--c-bg); }
   .dv-h1 { font-size: 1.75rem; }
   .dv-num { margin-inline: calc(-1 * var(--s4)); padding-inline: var(--s4); }
   .dv-num-g { display: flex; gap: var(--s3); overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--s4); padding-bottom: var(--s2); }
-  .dv-tco, .dv-kpis li { flex: 0 0 auto; scroll-snap-align: start; min-width: 62%; padding: var(--s3); border: 1px solid var(--c-line); border-radius: var(--r-sm); background: #fff; }
+  .dv-tco, .dv-kpis li { scroll-snap-align: start; min-width: 0; padding: var(--s3); border: 1px solid var(--c-line); border-radius: var(--r-sm); background: #fff; }
+  .dv-tco { flex: 0 0 80%; }
   .dv-kpis { display: contents; }
-  .dv-kpis li { display: grid; gap: 2px; min-width: 46%; }
+  .dv-kpis li { display: grid; align-content: start; gap: 2px; flex: 0 0 52%; }
+  body.doc-on .btn-caso .tag { display: none; }
   .dv-v { font-size: 2rem; }
   .dv-mini { top: var(--dv-hdr); }
   .dv-mini-in { margin-inline: calc(-1 * var(--s4)); border-radius: 0; gap: var(--s1) var(--s3); padding: 6px var(--s4); font-size: var(--fs-xs); }

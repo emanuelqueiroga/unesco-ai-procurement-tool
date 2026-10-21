@@ -765,7 +765,8 @@ function irBloco(f) {
   DOC.alvo = id; render();
   const q = document.getElementById(idQ(f.n)) || document.getElementById('bl-' + f.id);
   if (!q) return;
-  const top = q.getBoundingClientRect().top + window.scrollY - (document.querySelector('.top') || { offsetHeight: 0 }).offsetHeight - 72;
+  const bl = q.closest('.dv-bloco') || q;
+  const top = bl.getBoundingClientRect().top + window.scrollY - (document.querySelector('.top') || { offsetHeight: 0 }).offsetHeight - 64;
   window.scrollTo({ top, behavior: 'instant' });
   q.classList.add('pisca'); setTimeout(() => q.classList.remove('pisca'), 1600);
   const i = q.querySelector('input:not([type=hidden]), select, textarea, button:not(.info)'); if (i) i.focus({ preventScroll: true });
