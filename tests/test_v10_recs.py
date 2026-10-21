@@ -69,8 +69,9 @@ async def ir_existe(pg, ir):
     return await pg.evaluate(f"(()=>{{abrirFase('{f}','{p}','{q}'); return S.passo==='{p}' && !!document.getElementById('q-{q}');}})()")
 
 async def abrir_plano(pg):
-    await pg.evaluate("(()=>{S.vista='';render();})()")
-    await pg.locator('[data-act="gerar-plano"]:visible').first.click()
+    # v15 (proposta C): não há mais botão "Gerar plano de contratação": fora da página inicial a tela já é o plano
+    # (documento vivo); abrirPlano() leva ao topo dele
+    await pg.evaluate("(()=>{S.vista='';render(); abrirPlano();})()")
     await pg.wait_for_timeout(250)
 
 async def main():
@@ -104,8 +105,10 @@ async def main():
         # 2. caso em branco: nada; depois de marcar no percurso, ações do que foi marcado
         await carregar(pg, 'novo')
         ok(await pg.evaluate(RECS) == [], 'novo: nenhuma recomendação antes de responder')
-        await pg.evaluate("abrirFase('piloto','2c')"); await pg.wait_for_timeout(150)
+        # v15: cada pergunta abre no popover da sua lacuna (abrirFase com o campo como alvo)
+        await pg.evaluate("abrirFase('piloto','2c','tipoTec')"); await pg.wait_for_timeout(150)
         await pg.locator('input[name="tipoTec"][value="paga"]').check(force=True); await pg.wait_for_timeout(150)
+        await pg.evaluate("abrirFase('piloto','2c','pagamento')"); await pg.wait_for_timeout(150)
         await pg.locator('input[name="pagamento"][value="usuario"]').check(force=True); await pg.wait_for_timeout(150)
         r = await pg.evaluate("(()=>{const x=recomendacoesCaso().find(r=>r.id==='lic-usuario'); return x ? {n:x.porque.n, resp:x.porque.resposta, ir:x.ir, ids: recomendacoesCaso().map(r=>r.id)} : {ids: recomendacoesCaso().map(r=>r.id)};})()")
         ok(r.get('n') == '2.3.5' and r.get('resp') == 'Licença por usuário' and r.get('ir') == 'piloto:2c:2-3-5', f'novo: paga + por usuário gera a ação da licença por usuário ({r})')
@@ -150,31 +153,25 @@ async def main():
           ['internet','modeloDisp','dispExistem','suporteQuem','suporteNivel','acompanhamento','formacaoPaga'].forEach(k=>{S.respC[k]=true;}); return recomendacoesCaso().map(r=>r.id);})()""")
         ok(not [i for i in r if i.startswith(('internet', 'disp-', 'suporte', 'acomp', 'formacao-pagador', 'formacao-contrato'))], f'v11: respostas neutras não geram ações de infraestrutura, suporte ou formação ({r})')
 
-        # 3. passo 4.3 (exemplo B)
+        # 3. v15 (proposta C): o passo 4.3 deixou de existir de propósito (o documento substitui o percurso). Equivalente no
+        # documento: as recomendações do caso estão todas no plano, as cinco primeiras no sumário e as demais no anexo C,
+        # agrupadas por momento, cada uma com "Ir à pergunta", que abre a pergunta no documento (exemplo B)
         await carregar(pg, 'B')
         n = len(await pg.evaluate(RECS))
-        await pg.evaluate("abrirFase('expansao','4c')"); await pg.wait_for_timeout(200)
-        r = await pg.evaluate("""(()=>{const P=document.getElementById('passo-4c'); if(!P) return null;
-          return {itens: P.querySelectorAll('.rc-item').length, irs: P.querySelectorAll('.rc-item [data-ir]').length,
-            grupos: [...P.querySelectorAll('.rc-grupo')].map(g=>g.dataset.quando), cont: (P.querySelector('.rc-cont')||{}).innerText||'',
-            pq: (P.querySelector('.rc-pq')||{}).innerText||'', css: !!document.getElementById('css-recs'),
-            plano: P.closest('.fase') ? P.closest('.fase').querySelectorAll('[data-act="gerar-plano"]').length : 0};})()""")
-        ok(r is not None, 'B: passo 4.3 aberto')
+        await abrir_plano(pg)
+        r = await pg.evaluate("""(()=>{const P=document.getElementById('plano'); if(!P) return null; const R=P.querySelector('[data-sec="recs"]');
+          return {itens: P.querySelectorAll('[data-sec="sintese"] .rp-tc').length + (R ? R.querySelectorAll('.rc-item').length : 0),
+            irs: P.querySelectorAll('[data-sec="sintese"] .rp-tc [data-ir]').length + (R ? R.querySelectorAll('.rc-item [data-ir]').length : 0),
+            grupos: R ? [...R.querySelectorAll('.rp-grupo')].map(g=>g.dataset.quando) : []};})()""")
+        ok(r is not None, 'B: plano (documento) aberto')
         if r:
-            ok(r['itens'] == n and r['irs'] == n, f'B: 4.3 mostra {r["itens"]} itens com "Ir à pergunta" ({n} recomendações)')
+            ok(r['itens'] == n and r['irs'] == n, f'B: o documento mostra {r["itens"]} recomendações com "Ir à pergunta" ({n} recomendações)')
             ok(r['grupos'] == ['antes_teste', 'antes_contratar', 'manter'], f'B: grupos por momento {r["grupos"]}')
-            ok('Custo e compra' in r['cont'] and 'Política e governança' in r['cont'], 'B: contagem por tipo')
-            ok(r['pq'].startswith('Por quê:') and '→' in r['pq'], f'B: linha "Por quê" ({r["pq"][:80]})')
-            ok(r['css'], 'B: CSS das recomendações injetado (#css-recs)')
-            ok(r['plano'] >= 1, 'B: botão "Gerar plano de contratação" no passo 4.3')
-            alvo = await pg.evaluate("document.querySelector('#passo-4c .rc-item [data-ir]').dataset.ir")
-            await pg.locator('#passo-4c .rc-item [data-ir]').first.click(); await pg.wait_for_timeout(250)
+            alvo = await pg.evaluate("document.querySelector('#plano [data-sec=\"sintese\"] .rp-tc [data-ir]').dataset.ir")
+            await pg.locator('#plano [data-sec="sintese"] .rp-tc [data-ir]').first.click(); await pg.wait_for_timeout(250)
             f_, p_, q_ = alvo.split(':')
-            ok(await pg.evaluate(f"S.passo==='{p_}' && S.vista!=='plano' && !!document.getElementById('q-{q_}')"), f'B: "Ir à pergunta" no 4.3 abre {alvo}')
+            ok(await pg.evaluate(f"S.passo==='{p_}' && !!document.getElementById('q-{q_}')"), f'B: "Ir à pergunta" abre {alvo} no documento')
             await pg.screenshot(path=f'{TMP}/ir_B.png')
-            await pg.evaluate("abrirFase('expansao','4c')"); await pg.wait_for_timeout(150)
-            await pg.evaluate("irPara('passo-4c')"); await pg.wait_for_timeout(200)
-            await pg.screenshot(path=f'{TMP}/passo43_B.png', full_page=False)
 
         # 4. plano: seção depois do resumo e antes do bloco A
         for ex in ['A', 'B', 'C', 'D', 'novo']:
@@ -193,15 +190,19 @@ async def main():
             ok('## Anexo C. Recomendações, por momento' in md and md.index('## Sumário executivo') < md.index('## 1. O que se compra') < md.index('## Anexo C.') < md.index('## Anexo D.') and '## undefined' not in md, f'plano {ex}: Markdown com resumo, seções 1 a 5 e anexo C')
             if ex == 'D':
                 await pg.screenshot(path=f'{TMP}/plano_D.png')
+                alvo = await pg.evaluate("document.querySelector('[data-sec=\"recs\"] [data-ir]').dataset.ir")
                 await pg.locator('[data-sec="recs"] [data-ir]').first.click(); await pg.wait_for_timeout(250)
-                ok(await pg.evaluate("S.vista!=='plano' && !document.getElementById('plano')"), 'plano D: "Ir à pergunta" volta ao percurso')
+                f_, p_, q_ = alvo.split(':')
+                # v15: não há percurso separado; "Ir à pergunta" abre a pergunta no próprio documento
+                ok(await pg.evaluate(f"S.passo==='{p_}' && !!document.getElementById('q-{q_}')"), f'plano D: "Ir à pergunta" abre {alvo} no documento')
 
         # 5. EN: passo 3.4, seção do plano e PDF
         await pg.select_option('#sel-lang', 'en'); await pg.wait_for_timeout(200)
         for ex in ['A', 'B', 'C', 'D']:
             await carregar(pg, ex)
-            await pg.evaluate("abrirFase('expansao','4c')"); await pg.wait_for_timeout(200)
-            t34 = await pg.evaluate("(document.getElementById('passo-4c')||{}).innerText||''")
+            # v15: sem o passo 4.3, a lista por momento é o anexo C do documento
+            await abrir_plano(pg)
+            t34 = await pg.evaluate("(document.querySelector('#plano [data-sec=recs]')||{}).innerText||''")
             ok('Before the test' in t34 or 'Before contracting' in t34, f'en {ex}: 4.3 em inglês')
             ok(not resto_pt(t34), f'en {ex}: 4.3 sem português {resto_pt(t34)[:3]}')
             ok(not re.search(r'\bnetwork', t34, re.I), f'en {ex}: 4.3 sem "network"')
@@ -210,7 +211,7 @@ async def main():
             ok('Recommendations for you' in tp and 'for your case' not in tp and not resto_pt(tp), f'en {ex}: anexo C do plano em inglês {resto_pt(tp)[:3]}')
             ok(not re.search(r'\bnetwork', tp, re.I), f'en {ex}: seção do plano sem "network"')
             async with pg.expect_download() as dl:
-                await pg.click('#plano .res-topo [data-act="pdf"]')
+                await pg.locator('[data-act="pdf"]:visible').first.click()  # v15: Baixar PDF fica na barra superior do documento
             d = await dl.value
             arq = f'{TMP}/recs_en_{ex}.pdf'; await d.save_as(arq)
             txt = subprocess.run(['pdftotext', '-layout', arq, '-'], capture_output=True, text=True).stdout

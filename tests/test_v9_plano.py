@@ -179,7 +179,7 @@ async def main():
                     for ex in (['B'] if lang == 'pt' else ['A', 'B', 'C', 'D', 'novo']):
                         await abrir_caso(pg, ex)
                         async with pg.expect_download() as dl:
-                            await pg.click('#plano .res-topo [data-act="pdf"]')
+                            await pg.locator('[data-act="pdf"]:visible').first.click()  # v15: Baixar PDF fica na barra superior do documento
                         d = await dl.value
                         arq = f'{TMP}/plano_{lang}_{ex}.pdf'; await d.save_as(arq)
                         ok(re.fullmatch(r'procurement-plan-[a-z0-9-]+\.pdf', d.suggested_filename) is not None, f'pdf {lang} {ex}: nome {d.suggested_filename}')

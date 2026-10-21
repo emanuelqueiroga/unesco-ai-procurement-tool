@@ -587,7 +587,7 @@ function popCorpo() {
       <h3 class="lp-t" id="lp-t"><${rotTag} id="qt-${esc(f.id)}">${esc(t)}</${rotTag.split(' ')[0]}></h3></div>
       <button type="button" class="lp-x" data-lp="fechar" aria-label="${esc(tr('Fechar sem mudar'))}">×</button></div>
     ${ajuda ? `<p class="lp-h">${ajuda}</p>` : ''}
-    <div class="lp-ctl q${sub ? '' : ' lp-' + f.tipo}"${sub ? '' : ` id="${idQ(f.n)}"`} data-campo="${esc(f.id)}">${ctl}</div>
+    <div class="lp-ctl q${sub ? '' : ' lp-' + f.tipo}" id="${idQ(f.n)}" data-campo="${esc(f.id)}">${ctl}</div>
     <div class="lp-ef" id="lp-ef" data-notr aria-live="polite">${efeitoHTML()}</div>
     <p class="lp-erro" id="lp-erro" role="alert" hidden></p>
     <div class="lp-pe" data-notr><button type="button" class="btn pri" data-lp="ok">${esc(tr('Confirmar'))}</button><button type="button" class="btn" data-lp="ilus">${esc(tr('Usar valor ilustrativo'))}</button>${DOC.fila ? `<button type="button" class="link" data-lp="pular">${esc(tr('Pular'))}</button>` : ''}<span class="lp-k">${fila}<span>${esc(tr('Enter confirma · Esc fecha'))}</span></span></div>
@@ -669,6 +669,13 @@ function posicionarPop() {
   x = Math.max(16, Math.min(x, rd.width - w - 16));
   el.style.left = x + 'px'; el.style.right = 'auto';
   el.style.top = (rb.bottom - rd.top + 8) + 'px';
+}
+// Fecha a lacuna sem redesenhar (troca de caso ou de idioma redesenham em seguida); manter=true guarda o que mudou
+function descartarPop(manter) {
+  if (!DOC.pop) return;
+  if (!manter) { /* o caso vai ser substituído: nada a desfazer */ }
+  DOC.pop = null; DOC.fila = false; DOC.alvo = '';
+  const el = document.getElementById('lac-pop'); if (el) el.remove();
 }
 // modo: 'cancelar' (Esc, ×: desfaz), 'manter' (clique fora: guarda o que mudou), 'ok' (Confirmar), 'ilus' (valor ilustrativo)
 function fecharPop(modo, proxima) {

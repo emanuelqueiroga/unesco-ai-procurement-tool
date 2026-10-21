@@ -420,6 +420,7 @@ function aplicarImportado(o) {
   // formato 9 (v9 e v10) passa pela migração v10 → v11; formatos 9 e 11 (v11 e v12) passam pela migração v12 → v13
   S.versao = +o.formato === 13 ? 13 : +o.formato === 11 || +o.versao === 11 ? 11 : 9;
   SALVO = null; CONF_LIMPAR = false;
+  if (typeof descartarPop === 'function') descartarPop();
   IA = { estado: '', resposta: null, erro: '' };
   normalizarEstado();
 }
@@ -502,6 +503,7 @@ function textosExemplo() {
 }
 function carregarExemplo(k) {
   SALVO = null; CONF_LIMPAR = false;
+  if (typeof descartarPop === 'function') descartarPop();   // v15: lacuna aberta no documento não sobrevive à troca de caso
   if (k === 'novo' || !CASOS[k]) { S.caso = clone(CASO_VAZIO); S.exemplo = 'novo'; k = 'novo'; }
   else { S.caso = clone(CASOS[k]); S.exemplo = k; textosExemplo(); }
   aplicarExemploFluxo(k);
@@ -588,7 +590,7 @@ function ligar() {
     if (custosEvento(e)) return;
     if (eventoFluxo(e)) return;
     if (!el.dataset) return;
-    if (el.id === 'sel-lang') { S.lang = el.value; NOMES_MOEDA = null; aplicarIdioma(S.lang); textosExemplo(); render(); return; }
+    if (el.id === 'sel-lang') { if (typeof descartarPop === 'function') descartarPop(true); S.lang = el.value; NOMES_MOEDA = null; aplicarIdioma(S.lang); textosExemplo(); render(); return; }
     if (el.id === 'sel-exemplo') { if (el.value) carregarExemplo(el.value); el.value = ''; return; }
     if (el.dataset.num != null && (el.dataset.fn || el.dataset.f)) {
       const top = gravarNumCaso(el, el.dataset.fn || el.dataset.f);
