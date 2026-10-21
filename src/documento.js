@@ -750,6 +750,7 @@ function irBloco(f) {
 }
 // Destino dos links "Responder" e "Ir à pergunta" do plano (fase:passo:número) e do início
 function irDocumento(fid, passo, alvo) {
+  if (DOC.pop) fecharPop('manter');
   S.boasVindas = false; S.vista = '';
   if (fid && passo) { S.fase = fid; S.passo = passo; }
   const f = alvo ? (CAMPO_POR_ID[alvo] || CAMPOS.find(x => x.n.replace(/\./g, '-') === alvo || x.n === alvo)) : null;
@@ -791,7 +792,7 @@ function confirmarTroca(novo, fazer) {
     if (b.dataset.troca === 'ok') {
       const antes = JSON.stringify(dadosCaso());
       fazer();
-      toastDesfazer(tr('Caso substituído. As respostas anteriores foram apagadas.'), () => { importarCaso.forcar = true; importarCaso(antes); importarCaso.forcar = false; });
+      toastDesfazer(tr('Caso substituído. As respostas anteriores foram apagadas.'), () => importarCaso(antes));
     }
   };
   try { dlg.showModal(); } catch (e) { dlg.setAttribute('open', ''); }

@@ -200,9 +200,11 @@ async def main():
         chk(await pg.evaluate("JSON.parse(localStorage.getItem('aiedu-procurement-v9')).versao") == 13, 'localStorage v10: estado regravado na versão 11')
 
         # ---- v11: campos numéricos novos formatados enquanto se digita
-        NOVOS = [('#f-escolasInternet', "(()=>{S.caso.internet='parcial'; S.respC.internet=true; abrirFase('piloto','2d');})()", 'S.caso.escolasInternet', '12345', 12345),
-                 ('#f-formacaoHoras', "abrirFase('piloto','2e')", 'S.caso.formacaoHoras', '1200', 1200),
-                 ('#im-pessoas', "abrirFase('implantacao','3a')", 'S.caso.implantacao.pessoas', '25000', 25000)]
+        # v15 (proposta C, documento vivo): cada campo numérico fica no popover da sua lacuna; abrirFase com o campo como alvo
+        # abre a lacuna (o subcampo 3.1.1 "pessoas" tem lacuna própria, com o campo #lp-in). Só o caminho até o campo mudou.
+        NOVOS = [('#f-escolasInternet', "(()=>{S.caso.internet='parcial'; S.respC.internet=true; abrirFase('piloto','2d','escolasInternet');})()", 'S.caso.escolasInternet', '12345', 12345),
+                 ('#f-formacaoHoras', "abrirFase('piloto','2e','formacaoHoras')", 'S.caso.formacaoHoras', '1200', 1200),
+                 ('#lp-in', "(()=>{abrirFase('implantacao','3a'); abrirLacuna('implantacao:pessoas');})()", 'S.caso.implantacao.pessoas', '25000', 25000)]
         FMT = {'pt': {12345: '12.345', 1200: '1.200', 25000: '25.000'}, 'en': {12345: '12,345', 1200: '1,200', 25000: '25,000'}, 'fr': {12345: '12 345', 1200: '1 200', 25000: '25 000'}}
         for lang in ['pt', 'en', 'fr']:
             await pg.select_option('#sel-lang', lang); await pg.wait_for_timeout(120)

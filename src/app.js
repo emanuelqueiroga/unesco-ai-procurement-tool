@@ -426,13 +426,6 @@ function aplicarImportado(o) {
 function importarCaso(txt) {
   let o = null;
   try { o = JSON.parse(txt); } catch (e) { o = null; }
-  const valido = o && o.caso && ((o.app === 'ai-education-procurement-tool' && [9, 11, 13].includes(+o.formato)) || o.app === 'navegador-ia-educacao');
-  // v15: importar um caso substitui o atual; com respostas no navegador, pede confirmação antes (confirmarTroca, documento.js)
-  if (valido && !importarCaso.forcar && typeof confirmarTroca === 'function' && typeof precisaConfirmar === 'function' && precisaConfirmar()) {
-    const nome = (o.caso && o.caso.titulo) || (o.ctx && o.ctx.olhando) || tr('o caso importado');
-    confirmarTroca(nome, () => { importarCaso.forcar = true; try { importarCaso(txt); } finally { importarCaso.forcar = false; } });
-    return true;
-  }
   if (o && o.app === 'ai-education-procurement-tool' && [9, 11, 13].includes(+o.formato) && o.caso) {
     aplicarImportado(o); S.boasVindas = false; render(); window.scrollTo(0, 0); toast(tr('Caso importado.')); return true;
   }
@@ -441,6 +434,18 @@ function importarCaso(txt) {
   }
   toast(tr('Este arquivo não é um caso exportado pela ferramenta.'));
   return false;
+}
+// v15 (auditoria C3): pela interface (arquivo escolhido ou dados colados), importar um caso que substitui respostas
+// deste navegador pede confirmação nomeada antes (confirmarTroca, documento.js); importarCaso() continua direto
+function importarComConfirmacao(txt) {
+  let o = null;
+  try { o = JSON.parse(txt); } catch (e) { o = null; }
+  const valido = o && o.caso && ((o.app === 'ai-education-procurement-tool' && [9, 11, 13].includes(+o.formato)) || o.app === 'navegador-ia-educacao');
+  if (valido && typeof confirmarTroca === 'function' && typeof precisaConfirmar === 'function' && precisaConfirmar()) {
+    confirmarTroca((o.caso && o.caso.titulo) || (o.ctx && o.ctx.olhando) || tr('o caso importado'), () => importarCaso(txt));
+    return true;
+  }
+  return importarCaso(txt);
 }
 function copiarTexto(txt, ok) {
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast(tr(ok)), () => toast(tr('Não foi possível copiar.')));
@@ -555,7 +560,7 @@ function ligar() {
     else if (act === 'imp-colar') {
       const ta = document.getElementById('imp-txt'), txt = ta ? ta.value.trim() : '';
       if (!txt) { toast(tr('Cole antes os dados do caso.')); return; }
-      if (importarCaso(txt)) fecharImportar();
+      if (importarComConfirmacao(txt)) fecharImportar();
     }
     else if (act === 'dl-md') baixar(nomeArq('md'), relMD(dadosRelatorio()));
     else if (act === 'dl-html') baixar(nomeArq('html'), relHTML(dadosRelatorio(), true));
@@ -579,7 +584,7 @@ function ligar() {
   });
   document.addEventListener('change', e => {
     const el = e.target;
-    if (el.id === 'imp-json' && el.files && el.files[0]) { const r = new FileReader(); r.onload = () => importarCaso(String(r.result)); r.readAsText(el.files[0]); el.value = ''; return; }
+    if (el.id === 'imp-json' && el.files && el.files[0]) { const r = new FileReader(); r.onload = () => importarComConfirmacao(String(r.result)); r.readAsText(el.files[0]); el.value = ''; return; }
     if (custosEvento(e)) return;
     if (eventoFluxo(e)) return;
     if (!el.dataset) return;
