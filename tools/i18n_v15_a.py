@@ -125,6 +125,10 @@ T = [
  ("Ver um passo inteiro por tela (para quem já conhece a ferramenta)", "Show a whole step per screen (for people who already know the tool)", "Ver un paso completo por pantalla (para quien ya conoce la herramienta)", "Voir une étape entière par écran (pour qui connaît déjà l'outil)"),
  ("Passo {0} de {1}", "Step {0} of {1}", "Paso {0} de {1}", "Étape {0} sur {1}"),
  ("{0} de {1} passos", "{0} of {1} steps", "{0} de {1} pasos", "{0} étapes sur {1}"),
+ ("{0} perguntas essenciais, uma por tela", "{0} essential questions, one per screen", "{0} preguntas esenciales, una por pantalla", "{0} questions essentielles, une par écran"),
+ ("cerca de {0} minutos", "about {0} minutes", "unos {0} minutos", "environ {0} minutes"),
+ ("as demais são opcionais e usam valores ilustrativos", "the others are optional and use illustrative values", "las demás son opcionales y usan valores ilustrativos", "les autres sont facultatives et utilisent des valeurs indicatives"),
+ ("Fase {0}:", "Phase {0}:", "Fase {0}:", "Phase {0} :"),
 ]
 for i, l in enumerate(['en', 'es', 'fr']):
     d = {pt: row[i + 1] for pt, *rest in T for row in [(pt, *rest)]}

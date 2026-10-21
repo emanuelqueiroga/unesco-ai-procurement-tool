@@ -76,7 +76,7 @@ async def main():
             await pg.select_option('#sel-lang', lang); await pg.wait_for_timeout(150)
             for ex in exs:
                 tag = f'{lang} {ex}'
-                await pg.evaluate(f"(()=>{{carregarExemplo('{ex}'); S.boasVindas=false; S.vista=''; render(); abrirPlano();}})()")
+                await pg.evaluate(f"(()=>{{carregarExemplo('{ex}'); S.boasVindas=false; S.vista=''; render(); abrirPlano(); document.querySelectorAll('#plano details.rp-ax').forEach(d => d.open = true);}})()")
                 await pg.wait_for_timeout(200)
                 async with pg.expect_download() as dl:
                     await pg.locator('[data-act="pdf"]:visible').first.click()

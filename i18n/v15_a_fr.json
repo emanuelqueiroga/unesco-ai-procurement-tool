@@ -121,5 +121,9 @@
  "Ver uma pergunta por vez": "Voir une question à la fois",
  "Ver um passo inteiro por tela (para quem já conhece a ferramenta)": "Voir une étape entière par écran (pour qui connaît déjà l'outil)",
  "Passo {0} de {1}": "Étape {0} sur {1}",
- "{0} de {1} passos": "{0} étapes sur {1}"
+ "{0} de {1} passos": "{0} étapes sur {1}",
+ "{0} perguntas essenciais, uma por tela": "{0} questions essentielles, une par écran",
+ "cerca de {0} minutos": "environ {0} minutes",
+ "as demais são opcionais e usam valores ilustrativos": "les autres sont facultatives et utilisent des valeurs indicatives",
+ "Fase {0}:": "Phase {0} :"
 }

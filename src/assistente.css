@@ -363,7 +363,7 @@ body.vista-as .wrap { min-height: calc(100vh - 64px); align-content: start; }
 .rp-cn-k > div { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--rp-line, #D5DCE3); padding-top: 6px; }
 .rp-cn-k dt { font-size: .875rem; color: var(--rp-muted, #4A5866); }
 .rp-cn-k dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.rp-cn-il { position: absolute; top: 12px; inset-inline-end: 16px; font-size: .8125rem; font-weight: 700; padding: 0 8px; border-radius: 6px; color: #8A5200; background: #FFF3D9; }
+.rp-cn-il { position: absolute; top: 12px; inset-inline-end: 16px; font-size: .875rem; font-weight: 700; padding: 0 8px; border-radius: 6px; color: #8A5200; background: #FFF3D9; }
 @media (max-width: 640px) { .rp-capa-num { grid-template-columns: minmax(0, 1fr); } .rp-cn-v { font-size: 2rem; } }
 .toast[hidden] { display: none; }
 .as-info { display: flex; align-items: center; gap: 8px; }
@@ -374,3 +374,6 @@ body.vista-as .wrap { min-height: calc(100vh - 64px); align-content: start; }
 .as-fi-t { color: var(--muted); }
 .as-fim-final { margin: 0; font-size: var(--fs-sm); color: var(--ink-2); max-width: 68ch; }
 .as-ajuda { display: grid; gap: 4px; }
+.ini-as { margin: 8px 0 0; font-size: .875rem; color: var(--ink-2); }
+@media (max-width: 1100px) { .as-fim-ix { display: none; } }
+@media (max-width: 760px) { .ex-faixa { font-size: .875rem; } }

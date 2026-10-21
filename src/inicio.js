@@ -79,6 +79,7 @@ function paginaInicial(sv) {
           <button type="button" class="btn grande" data-act="imp-json">Importar caso</button>
         </div>
         <p class="ini-nota">As respostas ficam salvas só neste navegador. Você pode exportar o caso a qualquer momento.</p>
+        ${typeof ESSENCIAIS !== 'undefined' ? `<p class="ini-as"><span>${escI(tr(ESSENCIAIS.length + ' perguntas essenciais, uma por tela'))}</span> · <span>${escI(tr('cerca de ' + Math.round(ESSENCIAIS.length * MIN_POR_PERGUNTA) + ' minutos'))}</span> · <span>${escI(tr('as demais são opcionais e usam valores ilustrativos'))}</span></p>` : ''}
       </div>
       <aside class="ini-doc" aria-labelledby="ini-doc-t">
         <div class="ini-doc-faixa" aria-hidden="true"><span></span><span></span><span></span><span></span></div>

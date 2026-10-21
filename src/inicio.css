@@ -6,7 +6,8 @@
    Nada abaixo de .86rem.
    ===================================================================== */
 :root {
-  --cam1: #0C1D53; --cam2: #0666B3; --cam3: #096C72; --cam4: #547D1D; --cam5: #5E3C86; --cam6: #D9741A; --cam7: #1B2A55;
+  /* v15 (A3): as sete camadas com as cores de dados da página e do PDF (--d1…--d7, shell.html) */
+  --cam1: var(--d1); --cam2: var(--d2); --cam3: var(--d3); --cam4: var(--d4); --cam5: var(--d5); --cam6: var(--d6); --cam7: var(--d7);
   --ini-head: #0C2D4D; --ini-bg: #F5F8FB; --ini-line: #DDE3E9; --ini-muted: #586674;
 }
 .cam-1 { --cam: var(--cam1); } .cam-2 { --cam: var(--cam2); } .cam-3 { --cam: var(--cam3); } .cam-4 { --cam: var(--cam4); }

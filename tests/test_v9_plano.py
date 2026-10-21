@@ -57,8 +57,10 @@ def ok(cond, msg):
 async def abrir_caso(pg, ex):
     await pg.evaluate(f"(()=>{{carregarExemplo('{ex}'); S.boasVindas=false; S.vista=''; render();}})()")
     await pg.wait_for_timeout(150)
+    await pg.evaluate("abrirIndiceA()")  # v15 (A): "Plano de contratação" no índice "Ir para…"
     await pg.locator('[data-act="gerar-plano"]:visible').first.click()
     await pg.wait_for_timeout(250)
+    await pg.evaluate("document.querySelectorAll('#plano details.rp-ax').forEach(d => d.open = true)")  # v15 (A): anexos recolhidos na página
 
 async def main():
     async with async_playwright() as p:
@@ -138,8 +140,9 @@ async def main():
             await pg.evaluate("""(()=>{carregarExemplo('novo'); S.boasVindas=false; S.caso.testes=['recomendar']; S.caso.teste='recomendar'; S.respC.testes=true; S.respC.teste=true;
               S.caso.piloto={escolas:20, participantes:1200, meses:4}; S.caso.tipoTec='paga'; S.caso.pagamento='usuario';
               ['piloto','piloto.escolas','piloto.participantes','piloto.meses','setup','tipoTec','pagamento'].forEach(k=>{S.respC[k]=true;});
-              S.custo.editado=false; S.vista=''; render();})()""")
+              S.custo.editado=false; S.vista=''; render(); abrirIndiceA();})()""")  # v15 (A): "Plano de contratação" no índice
             await pg.locator('[data-act="gerar-plano"]:visible').first.click(); await pg.wait_for_timeout(250)
+            await pg.evaluate("document.querySelectorAll('#plano details.rp-ax').forEach(d => d.open = true)")  # v15 (A): anexos recolhidos na página
             r = await pg.evaluate("""(()=>{const P=document.getElementById('plano'); const tr=[...P.querySelectorAll('[data-sec=resumo] .rp-kv')].find(t=>/^Piloto: escolas/.test(t.querySelector('dt').innerText));
               return {esc: tr ? tr.querySelector('dd').innerText : '', a1: P.querySelector('[data-sec=A1]').innerText, a3: P.querySelector('[data-sec=A3]').parentElement.innerText,
                 a2: (P.querySelector('[data-sec=A2]')||{}).innerText||'', prem: P.querySelector('[data-sec=anexo-g]').textContent}})()""")

@@ -121,5 +121,9 @@
  "Ver uma pergunta por vez": "Show one question at a time",
  "Ver um passo inteiro por tela (para quem já conhece a ferramenta)": "Show a whole step per screen (for people who already know the tool)",
  "Passo {0} de {1}": "Step {0} of {1}",
- "{0} de {1} passos": "{0} of {1} steps"
+ "{0} de {1} passos": "{0} of {1} steps",
+ "{0} perguntas essenciais, uma por tela": "{0} essential questions, one per screen",
+ "cerca de {0} minutos": "about {0} minutes",
+ "as demais são opcionais e usam valores ilustrativos": "the others are optional and use illustrative values",
+ "Fase {0}:": "Phase {0}:"
 }
