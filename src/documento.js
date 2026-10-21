@@ -773,6 +773,7 @@ function menuCasoHTML() {
     <p class="mc-g" role="presentation">${esc(tr('Abrir um exemplo'))}</p>${ex}
     <hr role="separator">
     <button type="button" role="menuitem" data-act="dv-importar">${esc(tr('Importar caso (.json)'))}</button>
+    <button type="button" role="menuitem" data-act="copiar">${esc(tr('Copiar o texto do plano'))}</button>
     <button type="button" role="menuitem" data-act="exp-json">${esc(tr(CAP.downloads ? 'Exportar caso (.json)' : 'Copiar dados do caso'))}</button>
     ${S.boasVindas === false ? `<button type="button" role="menuitem" data-act="dv-inicio">${esc(tr('Voltar à página inicial'))}</button>` : ''}`;
 }
@@ -831,7 +832,7 @@ function ligarDocumento() {
     if (act === 'dv-ex') { e.stopPropagation(); abrirMenuCaso(false); abrirExemploDoc(a.dataset.k); return; }
     if (act === 'dv-importar') { e.stopPropagation(); abrirMenuCaso(false); abrirImportar(); return; }
     if (act === 'dv-inicio') { e.stopPropagation(); abrirMenuCaso(false); if (DOC.pop) fecharPop('manter'); S.boasVindas = true; SALVO = temRespostas(S) ? { nome: S.caso.titulo || (S.ctx && S.ctx.olhando) || '', exemplo: '', lugar: (S.ctx && S.ctx.local) || '', migrou: false } : null; render(); window.scrollTo(0, 0); return; }
-    if (act === 'exp-json' && el.closest('#menu-caso')) abrirMenuCaso(false);
+    if ((act === 'exp-json' || act === 'copiar') && el.closest('#menu-caso')) abrirMenuCaso(false);
     // página inicial: começar em branco ou abrir o exemplo substitui o caso salvo; pede confirmação
     if ((act === 'comecar' || act === 'ver-exemplo') && S.boasVindas !== false && precisaConfirmar()) {
       e.stopPropagation();

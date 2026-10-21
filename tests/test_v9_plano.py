@@ -2,7 +2,7 @@
 # v14 (BL6): as asserções de estrutura seguem a ordem de decisão (resumo, "Como ler", seções 1 a 5, anexos A a I); ver tests/test_v14_relatorio.py.
 # Uso: python3 tests/test_v9_plano.py   (depois de bash build.sh)
 # Verifica, para os exemplos A–D e um caso em branco:
-#  - o botão [data-act="gerar-plano"] abre #plano;
+#  - o botão [data-act="gerar-plano"] abre #plano; (v15, proposta C: sem o botão, o documento #plano já está aberto)
 #  - blocos "Custo e compra" e "Política e governança", nessa ordem, com as seções A1–A7 e B1–B9
 #    (v11: a seção "Fonte de recursos" saiu; o dossiê passou a A7);
 #  - nenhuma seção "Suas respostas";
@@ -57,7 +57,9 @@ def ok(cond, msg):
 async def abrir_caso(pg, ex):
     await pg.evaluate(f"(()=>{{carregarExemplo('{ex}'); S.boasVindas=false; S.vista=''; render();}})()")
     await pg.wait_for_timeout(150)
-    await pg.locator('[data-act="gerar-plano"]:visible').first.click()
+    # v15 (proposta C): não há botão "Gerar plano": fora da página inicial a tela já é o plano (documento vivo)
+    ok(await pg.evaluate("!!document.getElementById('plano')"), f'{ex}: o documento (#plano) já está aberto, sem "Gerar plano"')
+    await pg.evaluate('abrirPlano()')
     await pg.wait_for_timeout(250)
 
 async def main():
@@ -83,12 +85,12 @@ async def main():
                     a1: (P.querySelector('[data-sec="A1"]') || {}).innerText || '', a2: (P.querySelector('[data-sec="anexo-d"]') || {}).innerText || '',
                     formula: typeof secaoFormula === 'function',
                     resumo: (P.querySelector('[data-sec="resumo"]') || {}).innerText || '', recsH: (P.querySelector('[data-sec="anexo-c"] h3') || {}).innerText || '',
-                    capa: (P.querySelector('.rp-capa') || {}).textContent || '', kpis: P.querySelectorAll('[data-sec="sintese"] .rp-kpi').length,
+                    capa: [...P.querySelectorAll('.rp-capa, .dv-capa, .dv-princ, .dv-isen')].map(e => e.textContent).join(' '), kpis: P.querySelectorAll('[data-sec="sintese"] .rp-kpi, #dv-num .dv-kpis li').length,
                     barras: P.querySelectorAll('[data-grafico="camadas"] .rp-bar').length, cols: P.querySelectorAll('[data-grafico="fases"] .rg-col').length,
                     cartoes: P.querySelectorAll('[data-sec="resumo"] .rp-card').length, topo: P.querySelectorAll('[data-sec="sintese"] .rp-tc').length,
                     altas: P.querySelectorAll('[data-sec="recs"] .rc-item[data-prio="alta"]').length, nRecs: P.querySelectorAll('[data-sec="recs"] .rc-item').length,
-                    painel: getComputedStyle(document.getElementById('painel')).display, indice: P.querySelectorAll('.rp-indice a[data-toc-l]').length,
-                    barra: [...P.querySelectorAll('.rp-barra [data-act]')].map(b => b.dataset.act),
+                    painel: getComputedStyle(document.getElementById('painel')).display, indice: P.querySelectorAll('.rp-indice a[data-toc-l], #dv-ind a[data-toc-l]').length,
+                    barra: (() => { if (typeof abrirMenuCaso === 'function') abrirMenuCaso(true); const a = [...document.querySelectorAll('.rp-barra [data-act], #top-doc [data-act], #menu-caso [data-act]')].map(b => b.dataset.act); if (typeof abrirMenuCaso === 'function') abrirMenuCaso(false); return a; })(),
                     faltasFim: (() => { const f = [...P.querySelectorAll('[data-sec="faltas"]')]; const a = P.querySelector('[data-sec="anexo-a"]'); const s1 = P.querySelector('[data-sec="s1"]'); return !f.length || (f.length === 2 && (s1.compareDocumentPosition(f[0]) & 2) > 0 && !!a && a.contains(f[1])); })(),
                     minFonte: (() => { let m = 99, q = ''; P.querySelectorAll('*').forEach(e => { if (!e.childNodes.length || ![...e.childNodes].some(n => n.nodeType === 3 && n.data.trim())) return; const r = e.getBoundingClientRect(); if (!r.width) return; const f = parseFloat(getComputedStyle(e).fontSize); if (f < m) { m = f; q = e.className + ' ' + e.textContent.slice(0, 30); } }); return [m, q]; })(),
                     fig: (() => { const f = P.querySelector('[data-sec="A3"] figure img, [data-sec="A3"] ~ figure img, #plano-fig-tco img'); const sec = f && f.closest('section'); return f ? { ok: f.complete && f.naturalWidth === 900 && f.naturalHeight === 1225, w: f.getBoundingClientRect().width, sec: sec ? sec.dataset.sec : '', cap: (f.closest('figure').querySelector('figcaption') || {}).innerText || '' } : null; })(),
@@ -120,7 +122,9 @@ async def main():
                 ok(r['cartoes'] >= 7 or ex == 'novo', f'{tag} {ex}: perfil do caso em cartões ({r["cartoes"]})')
                 ok(r['topo'] == min(5, r['nRecs']), f'{tag} {ex}: {r["topo"]} cartões das cinco ações mais importantes ({r["nRecs"]} ações)')
                 ok(r['painel'] == 'none', f'{tag} {ex}: painel lateral escondido na vista do plano')
-                ok(r['indice'] >= 14 and r['barra'][:2] == ['pdf', 'voltar-percurso'] and 'copiar' in r['barra'] and 'imp-json' in r['barra'], f'{tag} {ex}: índice ({r["indice"]}) e barra de ações {r["barra"]}')
+                # v15 (proposta C): capa, números e índice do documento vivo (.dv-capa, #dv-num, #dv-ind); a barra de ações do plano deu
+                # lugar à barra superior (Baixar PDF) e ao menu Caso (copiar texto, importar, exportar); não há mais "Voltar ao percurso"
+                ok(r['indice'] >= 14 and 'pdf' in r['barra'] and 'copiar' in r['barra'] and ('imp-json' in r['barra'] or 'dv-importar' in r['barra']), f'{tag} {ex}: índice ({r["indice"]}) e ações {r["barra"]}')
                 ok(r['faltasFim'], f'{tag} {ex}: respostas que faltam: lista curta antes da seção 1 e lista completa no anexo A')
                 ok(r['minFonte'][0] >= 13.75, f'{tag} {ex}: nenhum texto abaixo de .86rem ({r["minFonte"]})')
                 if r['formula']: ok('Como o custo é calculado' in r['a2'] and 'As contas de cada ano' in r['a2'], f'{tag} {ex}: A2 com a fórmula do custo')
@@ -139,7 +143,7 @@ async def main():
               S.caso.piloto={escolas:20, participantes:1200, meses:4}; S.caso.tipoTec='paga'; S.caso.pagamento='usuario';
               ['piloto','piloto.escolas','piloto.participantes','piloto.meses','setup','tipoTec','pagamento'].forEach(k=>{S.respC[k]=true;});
               S.custo.editado=false; S.vista=''; render();})()""")
-            await pg.locator('[data-act="gerar-plano"]:visible').first.click(); await pg.wait_for_timeout(250)
+            await pg.evaluate('abrirPlano()'); await pg.wait_for_timeout(250)   # v15: o documento já é o plano
             r = await pg.evaluate("""(()=>{const P=document.getElementById('plano'); const tr=[...P.querySelectorAll('[data-sec=resumo] .rp-kv')].find(t=>/^Piloto: escolas/.test(t.querySelector('dt').innerText));
               return {esc: tr ? tr.querySelector('dd').innerText : '', a1: P.querySelector('[data-sec=A1]').innerText, a3: P.querySelector('[data-sec=A3]').parentElement.innerText,
                 a2: (P.querySelector('[data-sec=A2]')||{}).innerText||'', prem: P.querySelector('[data-sec=anexo-g]').textContent}})()""")
@@ -170,8 +174,11 @@ async def main():
             ok(await pg.evaluate("!document.getElementById('visor-fig').open"), f'{tag} visualizador: "Fechar" fecha')
             # Responder leva de volta à pergunta
             if tag == 'd':
+                alvo = await pg.evaluate("document.querySelector('.parcial [data-ir]').dataset.ir")
                 await pg.locator('.parcial [data-ir]').first.click(); await pg.wait_for_timeout(200)
-                ok(await pg.evaluate("S.vista !== 'plano' && !document.getElementById('plano')"), 'd novo: "Responder" volta ao percurso')
+                f_, p_, q_ = alvo.split(':')
+                # v15 (proposta C): não há percurso separado; "Responder" abre a pergunta no próprio documento
+                ok(await pg.evaluate(f"S.passo === '{p_}' && !!document.getElementById('q-{q_}')"), f'd novo: "Responder" abre a pergunta {alvo} no documento')
             # PDF
             if tag == 'd':
                 for lang in ['pt', 'en']:

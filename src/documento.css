@@ -8,7 +8,7 @@
   --c-ink: #17212B; --c-ink-2: #4A5866; --c-brand: #0069B4; --c-brand-strong: #00528F; --c-brand-tint: #E6F0FA;
   --c-ok: #1E6B45; --c-ok-bg: #E6F4EC; --c-warn: #8A5200; --c-warn-bg: #FFF3D9; --c-high: #AE4219; --c-crit: #A32228;
   --c-default: #8A5200; --c-on-brand: #FFFFFF; --c-focus: #0C2D4D; --c-halo: rgba(19, 201, 238, .4);
-  --fs-xs: .8125rem; --fs-sm: .875rem; --fs-md: 1rem; --fs-lg: 1.25rem; --fs-xl: 1.5625rem; --fs-2xl: 2.5rem;
+  --fs-xs: .86rem;   /* v12: nada abaixo de .86rem no plano (a auditoria pede 13 px como mínimo) */ --fs-sm: .875rem; --fs-md: 1rem; --fs-lg: 1.25rem; --fs-xl: 1.5625rem; --fs-2xl: 2.5rem;
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px;
   --r-sm: 6px; --r-lg: 12px;
   --sh-float: 0 1px 2px rgba(16, 36, 56, .06), 0 4px 12px rgba(16, 36, 56, .06), 0 12px 32px rgba(16, 36, 56, .10);
@@ -330,3 +330,6 @@ body.doc-on { background: var(--c-bg); }
 body.doc-on .toast { left: auto; transform: none; inset-inline-end: 24px; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); max-width: min(28rem, calc(100vw - 48px)); display: flex; gap: 12px; align-items: baseline; }
 body.doc-on .toast[hidden] { display: none; }
 @media (max-width: 860px) { body.doc-on .toast { inset-inline: 16px; bottom: auto; top: calc(var(--dv-hdr) + 8px); max-width: none; } }
+/* blocos de formulário e popover: nenhum texto abaixo de .86rem (regra do plano desde a v12) */
+.dv :is(.hint, .eyebrow, .tag, .pill, .opt small, .chip small, thead th, .tg, .small, .marc, .g-c > span, .prob-obj, .prob-sn, .pg-n, .dica, .aj-quem, .q-det-c),
+.lp :is(.hint, .eyebrow, .tag, .opt small, .chip small, .small, .dica, .g-c > span) { font-size: var(--fs-xs); }

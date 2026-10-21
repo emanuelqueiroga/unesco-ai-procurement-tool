@@ -224,7 +224,7 @@ async def main():
         # ---- "Iniciar" leva ao 1.1
         await pg.evaluate('window.scrollTo(0, 0)')
         await pg.click('#inicio .ini-acoes [data-act="comecar"]'); await pg.wait_for_timeout(400)
-        I = await pg.evaluate("({ fase: S.fase, passo: S.passo, boas: S.boasVindas, ini: !!document.getElementById('inicio'), p: !!document.getElementById('passo-1a') })")
+        I = await pg.evaluate("({ fase: S.fase, passo: S.passo, boas: S.boasVindas, ini: !!document.getElementById('inicio'), p: !!(document.getElementById('passo-1a') || document.getElementById('dv-doc')) })")   # v15 (proposta C): o documento substitui o percurso
         ok(I['fase'] == 'contexto' and I['passo'] == '1a' and I['boas'] is False and not I['ini'] and I['p'], f'"Iniciar" leva ao passo 1.1 {I}')
 
         # ---- matriz do caso (dentro do percurso)
