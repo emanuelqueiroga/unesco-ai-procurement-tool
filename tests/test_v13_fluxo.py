@@ -122,7 +122,8 @@ async def main():
         await pg.fill('#f-problema', 'Na rede, hoje: 60% dos estudantes do 9º ano estão abaixo do nível adequado.'); await pg.wait_for_timeout(150)
         # 2.1: tarefas sugeridas, confirmação por "Confirmar e continuar"
         await ev(pg, "abrirFase('piloto','2a')", 200)
-        ok(await pg.locator('#q-2-1-1.sug .sug-tag').text_content() == 'sugerido pelos problemas do passo 1.2' and await pg.locator('#q-2-1-1 input:checked').count() == len(await ev(pg, "S.caso.tarefas")), '2.1.1 abre com as tarefas sugeridas')
+        # v15 (B3): as tarefas sugeridas aparecem em "Sugerido: …" com Aceitar, sem nada marcado
+        ok(await pg.locator('#q-2-1-1.sug .sug-tag').text_content() == 'sugerido pelos problemas do passo 1.2' and await pg.locator('#q-2-1-1 input:checked').count() == 0 and await pg.locator('#sug-tarefas .sug-v b > span').count() == len(await ev(pg, "S.caso.tarefas")), '2.1.1 abre com as tarefas sugeridas')
         ok(await pg.locator('#passo-2a .aviso.sem-ferr').count() == 0, 'sem aviso de "regras e processos" quando há tarefas')
         await ev(pg, "abrirFase('piloto','2b')", 200)
         ok((await pg.locator('#q-2-2-1.sug .sug-nota').text_content()).strip() == 'Sugestão a partir das tarefas marcadas no passo 2.1. Confirme ou ajuste.', '2.2.1: linha de "por quê" da sugestão das tarefas')

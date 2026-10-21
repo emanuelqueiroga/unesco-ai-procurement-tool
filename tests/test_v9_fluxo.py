@@ -107,7 +107,8 @@ async def main():
                 await pg.locator('[data-fm="tarefas"][value="tutoria"]').click(); await pg.wait_for_timeout(200)
                 await pg.evaluate("abrirFase('piloto','2b')"); await pg.wait_for_timeout(150)
                 est = pg.locator('#passo-2b [data-fm="usuarios"][value="estudantes"]')
-                ok(await est.is_checked(), f'{tag} tutoria pré-marca estudantes em 2.2')
+                # v15 (B3): nada vem marcado; a sugestão aparece em "Sugerido: X" com o botão Aceitar
+                ok(not await est.is_checked() and await pg.evaluate("S.caso.usuarios.includes('estudantes')") and await pg.locator('#sug-usuarios [data-act="aceitar"]').is_visible(), f'{tag} tutoria sugere estudantes em 2.2 ("Sugerido", sem marcar)')
                 ok(await pg.locator('#passo-2b .q.sug[data-campo="usuarios"] .sug-tag').is_visible(), f'{tag} etiqueta "sugerido pela tarefa" visível')
                 ok(not await pg.evaluate("qOk(CAMPO_POR_ID.usuarios)"), f'{tag} sugestão não confirmada não conta como respondida')
                 await pg.evaluate("abrirFase('piloto','2a')"); await pg.wait_for_timeout(100)
@@ -287,7 +288,7 @@ async def main():
                 ok(await pg.evaluate("S.caso.tipoTec==='aberta' && !!S.respC.tipoTec && S.caso.ferramentas[0].tipoTec==='aberta'"), f'{tag} tecnologia da ferramenta principal = resposta 2.3.4')
                 # 2.3.4 → 2.3.5 e 2.3.6
                 ok(await pg.evaluate("S.caso.pagamento==='consumo' && S.caso.licenca==='aberta' && sugerido(CAMPO_POR_ID.pagamento) && sugerido(CAMPO_POR_ID.licenca)"), f'{tag} aberta sugere "por consumo" e "licença aberta"')
-                ok(await pg.locator('[data-f="pagamento"][value="consumo"]').is_checked() and await pg.locator('#q-2-3-5.sug .sug-tag').is_visible(), f'{tag} sugestão de pagamento marcada e com etiqueta')
+                ok(not await pg.locator('[data-f="pagamento"][value="consumo"]').is_checked() and await pg.locator('#sug-pagamento [data-act="aceitar"]').is_visible() and await pg.locator('#q-2-3-5.sug .sug-tag').is_visible(), f'{tag} sugestão de pagamento em "Sugerido", sem marcar, e com etiqueta')
                 ok(await pg.evaluate("S.caso.ferramentas[0].pagamento==='consumo'"), f'{tag} pagamento da ferramenta principal acompanha 2.3.5')
                 await pg.locator('[data-f="pagamento"][value="usuario"]').click(); await pg.wait_for_timeout(150)
                 await pg.locator('[data-f="tipoTec"][value="paga"]').click(); await pg.wait_for_timeout(200)
@@ -318,10 +319,11 @@ async def main():
                 ok(await pg.evaluate("passoFeito('2d')"), f'{tag} 2.4 completo')
                 # 2.5 formação: "Usar uma estimativa"
                 await pg.evaluate("abrirFase('piloto','2e')"); await pg.wait_for_timeout(150)
-                await pg.locator('[data-act="horas-est"]').click(); await pg.wait_for_timeout(200)
+                # v15 (B3): a estimativa ilustrativa vem como sugestão ("Sugerido: N horas por pessoa"), aceita com um clique
+                ok(await pg.locator('#q-2-5-4 .sug-nota').is_visible() and not await pg.evaluate("qOk(CAMPO_POR_ID.formacaoHoras)"), f'{tag} nota da estimativa ilustrativa visível')
+                await pg.locator('#q-2-5-4 [data-act="aceitar"]').click(); await pg.wait_for_timeout(200)
                 h = await pg.evaluate("[S.caso.formacaoHoras, S.caso.formacaoEstimativa, sugerido(CAMPO_POR_ID.formacaoHoras), qOk(CAMPO_POR_ID.formacaoHoras)]")
-                ok(h[0] > 0 and h[1] is True and h[2] is True and h[3] is False, f'{tag} "Usar uma estimativa" preenche as horas como sugerido {h}')
-                ok(await pg.locator('#q-2-5-4.sug .sug-nota').is_visible(), f'{tag} nota da estimativa ilustrativa visível')
+                ok(h[0] > 0 and h[1] is True and h[2] is False and h[3] is True, f'{tag} "Aceitar a sugestão" preenche as horas com a estimativa {h}')
                 if lang == 'en': await pg.evaluate("irPara('q-2-5-4')"); await pg.wait_for_timeout(250); await pg.screenshot(path=f'/tmp/claude-0/v13_b1/v11_fx_{tag}_2e.png')
                 await pg.locator('#f-formacaoHoras').fill('12'); await pg.locator('#f-formacaoHoras').press('Tab'); await pg.wait_for_timeout(150)
                 ok(await pg.evaluate("S.caso.formacaoHoras===12 && S.caso.formacaoEstimativa===false && qOk(CAMPO_POR_ID.formacaoHoras)"), f'{tag} horas digitadas deixam de ser estimativa')

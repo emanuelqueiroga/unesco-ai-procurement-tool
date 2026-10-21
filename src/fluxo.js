@@ -691,7 +691,7 @@ function renderQ(f) {
   if (f.detalhe) extra += detalheCampo(f);
   // v15 (B3): ⓘ ao lado do rótulo (explicação no lugar), marca "Afeta o custo", "Sugerido: X" com Aceitar antes das opções
   const tagSug = temTag && (sug || (f.tipo === 'horas' && typeof temSugestao === 'function' && temSugestao(f)));
-  return `<div class="q${ok ? ' ok' : ''}${sug ? ' sug' : ''}${lac && temLac(valorCampo(f)) && !sugerido(f) ? ' lacuna' : ''}" id="${idQ(f.n)}" data-n="${f.n}" data-campo="${f.id}">
+  return `<div class="q${ok ? ' ok' : ''}${sug ? ' sug' : ''}${lac && temLac(valorCampo(f)) ? ' lacuna' : ''}" id="${idQ(f.n)}" data-n="${f.n}" data-campo="${f.id}">
     <div class="q-cab"><${rotTag} class="q-t" id="qt-${f.id}"><span class="qn">${f.n}</span> <span class="qt">${esc(t)}</span>${f.opcional ? ' <span class="tag opc">opcional</span>' : ''}${tagSug ? `<span class="tag sug-tag">${esc(textoSugerido(f))}</span>` : ''}<span class="sr q-sr">${ok ? 'respondida' : ''}</span></${rotTag.split(' ')[0]}>${botaoEx('q:' + f.id, 'Sobre a pergunta', 'qt-' + f.id)}</div><span class="q-selo" aria-hidden="true">Sua resposta</span>
     ${afetaCusto(f) ? tagCusto() : ''}
     ${exCampo(f, { dicaVisivel: !h && !!f.dica, ex })}

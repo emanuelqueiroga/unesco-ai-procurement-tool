@@ -118,7 +118,7 @@ function temSugestao(f) {
 }
 function caixaSugestao(f) {
   if (!temSugestao(f)) return '';
-  const nota = sugerido(f) ? notaSugerido(f) : '';
+  const nota = sugerido(f) || f.tipo === 'horas' ? notaSugerido(f) : '';
   return `<div class="sug-box" id="sug-${f.id}"><p class="sug-v"><span class="sug-l">Sugerido:</span> ${valorSugeridoHTML(f)}</p>
     <button type="button" class="btn sug-ok" data-act="aceitar" data-campo="${f.id}" aria-describedby="sug-${f.id}">Aceitar a sugestão</button>${nota}</div>`;
 }
@@ -230,11 +230,11 @@ if (typeof document !== 'undefined') {
   document.addEventListener('pointerdown', () => { PONTEIRO = Date.now(); }, true);
   document.addEventListener('change', e => {
     const el = e.target; if (!el || !el.closest || !el.closest('#main .passo .q[data-n]')) return;
-    if (el.type === 'radio' && Date.now() - PONTEIRO < 1500) ULT_ESCOLHA = { quando: Date.now(), passo: S.passo };
+    if (el.type === 'radio' && Date.now() - PONTEIRO < 1500) ULT_ESCOLHA = { quando: Date.now(), passo: S.passo, q: el.closest('.q[data-n]').id };
   }, true);
   document.addEventListener('click', e => {
     const b = e.target && e.target.closest && e.target.closest('#main .passo .q[data-n] [data-resp]');
-    if (b) ULT_ESCOLHA = { quando: Date.now(), passo: S.passo };
+    if (b) ULT_ESCOLHA = { quando: Date.now(), passo: S.passo, q: b.closest('.q[data-n]').id };
   }, true);
 }
 // Depois de uma resposta: se ela completou o passo, o foco vai para "Próximo passo"
@@ -244,6 +244,8 @@ function focoDepoisDaResposta() {
   FALTA_ANT = { passo: S.passo, n };
   const u = ULT_ESCOLHA; ULT_ESCOLHA = null;
   if (!u || u.passo !== S.passo || Date.now() - u.quando > 1500) return;
+  // a resposta abriu um campo de detalhe (Sim ou Em parte): o foco fica com a pessoa, que pode detalhar
+  if (u.q && document.querySelector('#' + u.q + ' .q-det-in')) return;
   if (antes > 0 && n === 0) requestAnimationFrame(() => {
     const b = document.querySelector('#main .pe .nav-seg');
     if (b) { try { b.focus({ preventScroll: true }); b.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { } }

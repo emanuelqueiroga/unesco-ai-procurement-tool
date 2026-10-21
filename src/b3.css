@@ -142,7 +142,7 @@ textarea, input[type=text], input[type=number], select.f { border-width: var(--f
 /* escolhas curtas (2 a 5 opções): fichas grandes, sem bolinha de rádio */
 .opts.curtas { display: flex; flex-wrap: wrap; gap: 8px; }
 .opts.curtas .opt { min-height: 44px; padding: 9px 18px; align-items: center; border-radius: var(--r-chip); border: 1px solid var(--field-bc); background: var(--surface); position: relative; }
-.opts.curtas .opt input[type=radio] { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
+.opts.curtas .opt input[type=radio] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; margin: 0; border: 0; border-radius: inherit; cursor: pointer; z-index: 1; }
 .opts.curtas .opt b { font-weight: 600; }
 .opts.curtas .opt:has(input:checked) { background: var(--brand-tint); border-color: var(--brand-strong); box-shadow: inset 0 0 0 1px var(--brand-strong); color: var(--brand-strong); }
 .opts.curtas .opt:has(input:checked) b { color: var(--brand-strong); }
@@ -181,6 +181,7 @@ textarea, input[type=text], input[type=number], select.f { border-width: var(--f
 .sug-v b { font-weight: 600; }
 .sug-txt { display: block; margin-top: 4px; white-space: pre-line; color: var(--ink); max-height: 9.5em; overflow: auto; }
 .sug-ok { justify-self: end; white-space: nowrap; }
+.q .sug-box .sug-nota { display: block; border: 0; padding: 0; }
 .sug-box .sug-nota { grid-column: 1 / -1; margin: 0; font-size: var(--fs-sm); color: var(--ink-2) !important; }
 .q.sug .sug-nota { color: var(--ink-2) !important; }
 /* valor ilustrativo do motor no campo vazio */
@@ -277,6 +278,7 @@ input[aria-invalid="true"] { border-color: var(--crit) !important; }
 .ag-i .link { justify-self: start; font-size: var(--fs-xs); }
 .rp-agora .ag-l { gap: 16px; }
 .rp-agora .ag-i { font-size: 1rem; padding-inline-start: 36px; }
+.rp-agora .ag-pr, .rp-agora .ag-i .link, .rp .ex-x, .rp .ex-pop { font-size: .875rem; }
 .rp-agora .ag-i::before { width: 26px; height: 26px; font-size: .85rem; }
 
 /* ---------- plano: tipografia da aparência */

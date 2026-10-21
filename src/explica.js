@@ -37,7 +37,7 @@ function corpoExCampo(f, o) {
   else if (f.dica) partes.push(o.dicaVisivel ? '' : `<div class="dica"><span class="dica-r">${esc(tr(AJUDA_ROT.dica))}</span> <span class="dica-t">${glossarioTexto(f.dica)}</span></div>`);
   const a = typeof PASSO_AJUDA !== 'undefined' ? PASSO_AJUDA[f.passo] : null;
   if (a && a.quem) partes.push(exQuem(a.quem));
-  if (o.ex) partes.push(`<p class="ex-p ex-ex">${esc(tr(o.ex))}</p>`);
+  if (o.ex) partes.push(`<p class="hint ex ex-p ex-ex">${esc(tr(o.ex))}</p>`);
   // sem nada além da dica que já está à vista: repete a dica, para a explicação nunca ficar vazia
   if (!partes.join('').trim() && f.dica) partes.push(exP(f.dica));
   return partes.join('');
