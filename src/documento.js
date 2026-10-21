@@ -142,7 +142,8 @@ function listaTxt(arr) {
   try { return new Intl.ListFormat(LOC(), { style: 'long', type: 'conjunction' }).format(arr); } catch (e) { return arr.join(', '); }
 }
 const semPonto = s => String(s || '').trim().replace(/[.。]\s*$/, '');
-function partesLac(key) { const k = key.replace('~', ''); const [id, sub] = k.split(':'); return { id, sub: sub || '', f: CAMPO_POR_ID[id], min: key.endsWith('~'), k }; }
+// chave "campo" ou "objeto:subcampo"; o tamanho da prova de conceito (poc:...) é subcampo da pergunta 2.3.8 (id "piloto")
+function partesLac(key) { const k = key.replace('~', ''); const [id, sub] = k.split(':'); return { id, obj: id, sub: sub || '', f: CAMPO_POR_ID[id === 'poc' ? 'piloto' : id], min: key.endsWith('~'), k }; }
 function okSub(o, k) {
   const v = (S.caso[o] || {})[k];
   return +v > 0 && (S.exemplo !== 'novo' || !!S.respC[o + '.' + k]);
@@ -154,9 +155,9 @@ function rotOpcao(f, v) {
   return tr(rotulo(listaOpc(f), v));
 }
 // Texto da lacuna (já traduzido) ou '' quando não há valor
-function valorLac(f, sub, min) {
+function valorLac(f, sub, min, obj) {
   const c = S.caso, m = x => (min ? minus(x) : x);
-  if (sub) { const v = (c[f.id] || {})[sub]; return vazio(v) || !(+v > 0) ? '' : fmtInt(v); }
+  if (sub) { const v = (c[obj || f.id] || {})[sub]; return vazio(v) || !(+v > 0) ? '' : fmtInt(v); }
   const v = valorCampo(f);
   switch (f.tipo) {
     case 'texto': case 'area': return semPonto(v);
@@ -181,8 +182,8 @@ function valorLac(f, sub, min) {
   return '';
 }
 // 'ok' (resposta da pessoa) | 'ilus' (valor ilustrativo ou sugerido, ainda sem resposta) | 'vazio'
-function estadoLac(f, sub) {
-  if (sub) { if (okSub(f.id, sub)) return 'ok'; return valorLac(f, sub) ? 'ilus' : 'vazio'; }
+function estadoLac(f, sub, obj) {
+  if (sub) { if (okSub(obj || f.id, sub)) return 'ok'; return valorLac(f, sub, false, obj) ? 'ilus' : 'vazio'; }
   if (qOk(f)) return 'ok';
   return valorLac(f, '') ? 'ilus' : 'vazio';
 }
@@ -197,8 +198,8 @@ const IC_MENU = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" str
 const EST_LAC = { ok: 'Sua resposta', ilus: 'Valor ilustrativo, ainda sem resposta', vazio: 'Ainda sem resposta' };
 function lacHTML(key, bloco) {
   const p = partesLac(key); if (!p.f) return '';
-  const st = estadoLac(p.f, p.sub), rot = tr(LAC_ROT[p.k] || LAC_ROT[p.id] || p.id);
-  let v = st === 'vazio' ? '' : valorLac(p.f, p.sub, p.min);
+  const st = estadoLac(p.f, p.sub, p.obj), rot = tr(LAC_ROT[p.k] || LAC_ROT[p.id] || p.id);
+  let v = st === 'vazio' ? '' : valorLac(p.f, p.sub, p.min, p.obj);
   const mostra = v ? esc(v).replace(/\n/g, '<br>') : '[' + esc(rot) + ']';
   const aria = rot + ': ' + (v || '—') + '. ' + tr(EST_LAC[st]) + '. ' + tr(st === 'ok' ? 'Editar' : 'Responder');
   // <span role="button">: um <button> não quebra linha no meio do texto (o navegador o trata como inline-block)
@@ -580,14 +581,14 @@ function voltarFoto(t) {
 }
 function custoAgora() { const d = numerosDoc(); return d ? { total: d.total, ano0: d.ano0 } : { total: 0, ano0: 0 }; }
 function popCorpo() {
-  const { f, sub, key } = DOC.pop;
+  const { f, sub, key, obj } = DOC.pop;
   const m = modoTeste();
   const t = sub ? tr(SUB_T[key] || LAC_ROT[key]) : tr(textoCampo(f));
   const ajuda = sub ? (f.dica ? glossarioTexto(f.dica) : esc(tr(f.h || ''))) : f.dica ? glossarioTexto(f.dica) : f.h ? esc(tr((m === 'poc' && f.hPoc) || f.h)) : '';
   let ctl;
   if (sub) {
-    const v = (S.caso[f.id] || {})[sub];
-    ctl = `<div class="lp-num">${nCampo({ id: 'lp-in', attrs: `data-fn="${f.id}.${sub}" aria-describedby="lp-ef"`, valor: v, casas: 0, rotulo: t, ph: ' ' })}<span class="lp-un">${esc(tr(SUB_UN[sub] || ''))}</span></div>`;
+    const v = (S.caso[obj] || {})[sub];
+    ctl = `<div class="lp-num">${nCampo({ id: 'lp-in', attrs: `data-fn="${obj}.${sub}" aria-describedby="lp-ef"`, valor: v, casas: 0, rotulo: t, ph: ' ' })}<span class="lp-un">${esc(tr(SUB_UN[sub] || ''))}</span></div>`;
   } else {
     ctl = controle(f) + (f.detalhe ? detalheCampo(f) : '') + (sugerido(f) ? notaSugerido(f) : '');
     if (f.id === 'elegiveis') { const tt = totaisCtx(); if ((S.caso.usuarios || []).includes('estudantes') && tt.alunos > 0 && +S.caso.elegiveis !== tt.alunos) ctl += `<div class="hint"><button type="button" class="link" data-act="usar-alunos">${esc(tr('Usar o total de estudantes do contexto (' + fmtInt(tt.alunos) + ')'))}</button></div>`; }
@@ -645,7 +646,7 @@ function abrirLacuna(key, opts = {}) {
   const btn = opts.btn || botaoLac(p.k);
   if (!btn) return;
   DOC.alvo = '';
-  DOC.pop = { key: p.k, f: p.f, sub: p.sub, snap: fotoEstado(), antes: custoAgora(), mudou: false, idx: [...document.querySelectorAll('#dv-doc [data-lac]')].indexOf(btn) };
+  DOC.pop = { key: p.k, f: p.f, sub: p.sub, obj: p.obj, snap: fotoEstado(), antes: custoAgora(), mudou: false, idx: [...document.querySelectorAll('#dv-doc [data-lac]')].indexOf(btn) };
   btn.classList.add('lac-ed'); btn.setAttribute('aria-expanded', 'true');
   let el = document.getElementById('lac-pop');
   if (!el) { el = document.createElement('div'); el.id = 'lac-pop'; el.className = 'lp'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-labelledby', 'lp-t'); document.getElementById('dv-doc').appendChild(el); }
@@ -694,17 +695,17 @@ function descartarPop(manter) {
 // modo: 'cancelar' (Esc, ×: desfaz), 'manter' (clique fora: guarda o que mudou), 'ok' (Confirmar), 'ilus' (valor ilustrativo)
 function fecharPop(modo, proxima) {
   if (!DOC.pop) return;
-  const { key, f, sub, snap, antes, idx } = DOC.pop;
+  const { key, f, sub, snap, antes, idx, obj } = DOC.pop;
   if (modo === 'cancelar') voltarFoto(snap);
-  if (modo === 'ilus') { voltarFoto(snap); limparCampo(f, sub); }
+  if (modo === 'ilus') { voltarFoto(snap); limparCampo(f, sub, obj); }
   if (modo === 'ok') {
-    if (sub) { S.respC[f.id + '.' + sub] = true; if (subcampos(f).every(([o, k]) => S.respC[o + '.' + k])) S.respC[f.id] = true; }
+    if (sub) { S.respC[obj + '.' + sub] = true; if (subcampos(f).every(([o, k]) => S.respC[o + '.' + k])) S.respC[f.id] = true; }
     else if (f.onde === 'caso') confirmarSugestao(f);
     else if (f.onde === 'ctx' && CAMPOS_PROB.includes(f.id)) S.respC[f.id] = true;
     S.revisar = (S.revisar || []).filter(k => !S.respC[k]);
     if (CAMPOS_CUSTO.includes(f.id)) S.custo.editado = false;
     if (S.exemplo !== 'novo' && fotoEstado() !== snap) S.exemplo = 'editado';
-    const ok = sub ? okSub(f.id, sub) : (f.opcional && vazio(valorCampo(f))) || qOk(f);
+    const ok = sub ? okSub(obj, sub) : (f.opcional && vazio(valorCampo(f))) || qOk(f);
     if (!ok) { voltarFoto(JSON.stringify(Object.assign(JSON.parse(fotoEstado()), { respC: JSON.parse(snap).respC }))); mostrarErro(f, sub); return; }
   }
   const depois = custoAgora(), dT = depois.total - antes.total, dA = depois.ano0 - antes.ano0;
@@ -729,9 +730,9 @@ function mostrarErro(f, sub) {
   const i = document.querySelector('#lac-pop .lp-ctl input, #lac-pop .lp-ctl textarea'); if (i) i.focus();
 }
 // "Usar valor ilustrativo": a resposta sai e volta o valor padrão (ou sugerido) da ferramenta
-function limparCampo(f, sub) {
-  const c = S.caso;
-  if (sub) { delete S.respC[f.id + '.' + sub]; delete S.respC[f.id]; if (c[f.id]) c[f.id][sub] = ''; }
+function limparCampo(f, sub, obj) {
+  const c = S.caso; obj = obj || f.id;
+  if (sub) { delete S.respC[obj + '.' + sub]; delete S.respC[f.id]; if (c[obj]) c[obj][sub] = ''; }
   else if (f.onde === 'resp') { delete S.resp[f.id]; if (S.respDet) delete S.respDet[f.id]; }
   else if (f.onde === 'ctx') { const v = S.ctx[f.id]; S.ctx[f.id] = Array.isArray(v) ? [] : ''; delete S.respC[f.id]; }
   else {

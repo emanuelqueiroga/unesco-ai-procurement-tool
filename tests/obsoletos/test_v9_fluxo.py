@@ -1,3 +1,5 @@
+# OBSOLETO na v15 (proposta C): o percurso por passos (stepper, mandala, painel, rodapés, telas 4.2 e 4.3) deu lugar ao
+# documento vivo. As verificações que continuam valendo estão em tests/test_v15_c_fluxo.py (equivalentes no documento).
 # Teste do percurso da v9 (pacote P2): fases, passos, numeração, ✓, sugestões, mandala, ⓘ e estudantes por ano.
 # v10 (R1): nada marcado no caso em branco, escolha do caso salvo nas boas-vindas, "Começar em branco" no painel,
 # padrões gerados como "sugerido" (2.0 → 2.3.6, 2.3.1 → 2.3.2/2.3.3, 2.2.1 → 3.1.1), passo 3.4 e 3.3 recolhido.
