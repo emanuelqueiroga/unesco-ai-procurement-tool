@@ -77,7 +77,7 @@ async def main():
         pg = await b.new_page(viewport={'width': 1360, 'height': 900}); errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'ERR_' not in m.text and 'Failed to load resource' not in m.text else None)
-        await pg.goto(f'file://{ARQ}'); await pg.evaluate('localStorage.clear()'); await pg.reload(); await pg.wait_for_timeout(300)
+        await pg.goto(f'file://{ARQ}'); await pg.evaluate('localStorage.clear()'); await pg.reload(); await pg.wait_for_timeout(300); await pg.evaluate("uiA().lista = true")  # v15 (A): passo inteiro numa tela
 
         # ------------------------------------------------ seletor
         ops = await pg.evaluate("[...document.querySelectorAll('#sel-lang option')].map(o => [o.value, o.textContent, o.lang, o.dir])")

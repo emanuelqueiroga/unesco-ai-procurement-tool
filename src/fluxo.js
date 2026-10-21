@@ -1234,6 +1234,7 @@ function render() {
   let corpo;
   if (S.vista === 'plano') corpo = typeof renderPlano === 'function' ? renderPlano() : `<section class="card" id="plano"><p class="muted">O plano de contratação ainda não está disponível.</p><button type="button" class="btn" data-act="voltar-percurso">Voltar ao percurso</button></section>`;
   // v15 (direção A): o percurso é um assistente, uma pergunta por tela (assistente.js)
+  else if (S.boasVindas !== false) corpo = '';
   else corpo = typeof renderAssistente === 'function' ? renderAssistente() : FASES.map(renderFase).join('') + chamadaFinal();
   const asst = S.vista !== 'plano' && S.boasVindas === false && typeof renderAssistente === 'function';
   const faixaEx = ex ? `<div class="alert info ex-faixa"><span class="ic">Exemplo</span><span>${tituloEx ? esc(tr('Você está vendo um caso ilustrativo do guia, com respostas fictícias:')) + ' <b>' + esc(tr(tituloEx)) + '</b>. ' : ''}<span>Edite as respostas ou comece um caso em branco.</span></span><button class="btn" type="button" data-act="limpar">Começar um caso em branco</button></div>` : '';

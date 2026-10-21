@@ -116,5 +116,10 @@
  "Como o custo é calculado": "Comment le coût est calculé",
  "Caso em branco": "Cas vierge",
  "Exemplo": "Exemple",
- "Mais ações": "Autres actions"
+ "Mais ações": "Autres actions",
+ "Passo inteiro": "Étape entière",
+ "Ver uma pergunta por vez": "Voir une question à la fois",
+ "Ver um passo inteiro por tela (para quem já conhece a ferramenta)": "Voir une étape entière par écran (pour qui connaît déjà l'outil)",
+ "Passo {0} de {1}": "Étape {0} sur {1}",
+ "{0} de {1} passos": "{0} étapes sur {1}"
 }

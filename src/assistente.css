@@ -366,3 +366,7 @@ body.vista-as .wrap { min-height: calc(100vh - 64px); align-content: start; }
 .rp-cn-il { position: absolute; top: 12px; inset-inline-end: 16px; font-size: .8125rem; font-weight: 700; padding: 0 8px; border-radius: 6px; color: #8A5200; background: #FFF3D9; }
 @media (max-width: 640px) { .rp-capa-num { grid-template-columns: minmax(0, 1fr); } .rp-cn-v { font-size: 2rem; } }
 .toast[hidden] { display: none; }
+.as-info { display: flex; align-items: center; gap: 8px; }
+.as-info-t { font-size: var(--fs-sm); color: var(--muted); }
+.as-lista { display: grid; gap: 12px; }
+.as-gav-p { margin: 0 0 8px; font-size: var(--fs-sm); color: var(--muted); }

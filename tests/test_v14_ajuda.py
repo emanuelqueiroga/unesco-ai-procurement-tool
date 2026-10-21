@@ -22,7 +22,7 @@ def ok(cond, msg):
     if not cond: falhas.append(msg)
 
 async def abrir(pg, lang='pt'):
-    await pg.goto('file://' + ARQ); await pg.evaluate('localStorage.clear()'); await pg.reload(); await pg.wait_for_timeout(300)
+    await pg.goto('file://' + ARQ); await pg.evaluate('localStorage.clear()'); await pg.reload(); await pg.wait_for_timeout(300); await pg.evaluate("uiA().lista = true")  # v15 (A): passo inteiro numa tela
     await pg.select_option('#sel-lang', lang); await pg.wait_for_timeout(150)
 
 async def ev(pg, js, t=120):
@@ -117,7 +117,7 @@ async def main():
         arm = await ev(pg, "localStorage.getItem('upt_ajuda_v14')")
         ok(arm and json.loads(arm).get('1a') is False, f'estado gravado por passo no navegador ({arm})')
         # nova visita (recarregar a página): o recolhido continua recolhido; o que só abriu por ser a primeira vez começa recolhido
-        await pg.reload(); await pg.wait_for_timeout(300)
+        await pg.reload(); await pg.wait_for_timeout(300); await pg.evaluate("uiA().lista = true")  # v15 (A): passo inteiro numa tela
         await ev(pg, "(()=>{S.boasVindas=false; abrirFase('contexto','1a');})()", 250)
         ok(not await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: recolhido depois de recarregar a página')
         await ev(pg, "abrirFase('contexto','1b')", 250)
@@ -179,7 +179,7 @@ async def main():
         # toque
         tctx = await b.new_context(viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True)
         tp = await tctx.new_page()
-        await tp.goto('file://' + ARQ); await tp.evaluate('localStorage.clear()'); await tp.reload(); await tp.wait_for_timeout(300)
+        await tp.goto('file://' + ARQ); await tp.evaluate('localStorage.clear()'); await tp.reload(); await tp.wait_for_timeout(300); await tp.evaluate("uiA().lista = true")  # v15 (A): passo inteiro numa tela
         await tp.evaluate("(()=>{carregarExemplo('novo'); S.boasVindas=false; abrirFase('implantacao','3b');})()"); await tp.wait_for_timeout(250)
         await tp.locator('#ajuda-3b .gl[data-gl="saas"]').tap(); await tp.wait_for_timeout(200)
         ok(await tp.locator('#gl-pop').is_visible(), 'toque abre a definição')

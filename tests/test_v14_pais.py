@@ -19,7 +19,7 @@ def ok(cond, msg):
     if not cond: falhas.append(msg)
 
 async def abrir(pg, lang='pt'):
-    await pg.goto('file://' + ARQ); await pg.evaluate('localStorage.clear()'); await pg.reload(); await pg.wait_for_timeout(300)
+    await pg.goto('file://' + ARQ); await pg.evaluate('localStorage.clear()'); await pg.reload(); await pg.wait_for_timeout(300); await pg.evaluate("uiA().lista = true")  # v15 (A): passo inteiro numa tela
     await pg.select_option('#sel-lang', lang); await pg.wait_for_timeout(150)
 
 async def ev(pg, js, t=120):
@@ -164,7 +164,7 @@ async def main():
 
         # ---------------------------------------------------------- 390 px, sem rolagem horizontal
         pm = await b.new_page(viewport={'width': 390, 'height': 800})
-        await pm.goto('file://' + ARQ); await pm.evaluate('localStorage.clear()'); await pm.reload(); await pm.wait_for_timeout(300)
+        await pm.goto('file://' + ARQ); await pm.evaluate('localStorage.clear()'); await pm.reload(); await pm.wait_for_timeout(300); await pm.evaluate("uiA().lista = true")  # v15 (A): passo inteiro numa tela
         await pm.select_option('#sel-lang', 'pt'); await pm.wait_for_timeout(150)
         await pm.click('[data-act="comecar"]'); await pm.wait_for_timeout(250)
         await pm.evaluate("(()=>{carregarExemplo('novo'); S.boasVindas=false; abrirFase('contexto','1a');})()"); await pm.wait_for_timeout(250)

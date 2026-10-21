@@ -70,7 +70,7 @@ LARGURA = "document.documentElement.scrollWidth - document.documentElement.clien
 async def abrir(pg, lang, limpar=True):
     await pg.goto('file://' + ARQ)
     if limpar: await pg.evaluate('localStorage.clear()')
-    await pg.reload(); await pg.wait_for_timeout(300)
+    await pg.reload(); await pg.wait_for_timeout(300); await pg.evaluate("uiA().lista = true")  # v15 (A): passo inteiro numa tela
     await pg.select_option('#sel-lang', lang); await pg.wait_for_timeout(150)
     g = await pg.evaluate(GANCHOS); await pg.wait_for_timeout(150)
     return g

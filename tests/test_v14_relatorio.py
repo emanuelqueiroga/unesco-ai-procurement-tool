@@ -93,7 +93,7 @@ async def main():
         pg = await ctx.new_page(); errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.on('console', lambda m: errs.append(m.text) if m.type in ('error', 'warning') and 'TUNNEL' not in m.text else None)
-        await pg.goto(f'file://{TMP}/nav.html'); await pg.evaluate('localStorage.clear()'); await pg.reload(); await pg.wait_for_timeout(300)
+        await pg.goto(f'file://{TMP}/nav.html'); await pg.evaluate('localStorage.clear()'); await pg.reload(); await pg.wait_for_timeout(300); await pg.evaluate("uiA().lista = true")  # v15 (A): passo inteiro numa tela
         await pg.select_option('#sel-lang', 'pt'); await pg.wait_for_timeout(150)
 
         # ------------------------------------------------------------ página: resumo, ordem, gráficos, anexos
@@ -152,7 +152,7 @@ async def main():
         for lang, w in [('pt', 390), ('ar', 390), ('ar', 1200)]:
             c2 = await b.new_context(viewport={'width': w, 'height': 800})
             q = await c2.new_page()
-            await q.goto(f'file://{TMP}/nav.html'); await q.evaluate('localStorage.clear()'); await q.reload(); await q.wait_for_timeout(300)
+            await q.goto(f'file://{TMP}/nav.html'); await q.evaluate('localStorage.clear()'); await q.reload(); await q.wait_for_timeout(300); await q.evaluate("uiA().lista = true")  # v15 (A): passo inteiro numa tela
             await q.select_option('#sel-lang', lang); await q.wait_for_timeout(150)
             await abrir(q, 'A')
             r = await q.evaluate(PAGINA)

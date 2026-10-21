@@ -58,7 +58,7 @@ async def main():
         erros = []
         pg.on('pageerror', lambda e: erros.append(str(e)))
         pg.on('console', lambda m: erros.append(m.text) if m.type == 'error' and 'Failed to load resource' not in m.text else None)  # fontes externas não carregam sem rede
-        await pg.goto('file://' + ARQ); await pg.evaluate('localStorage.clear()'); await pg.reload(); await pg.wait_for_timeout(300)
+        await pg.goto('file://' + ARQ); await pg.evaluate('localStorage.clear()'); await pg.reload(); await pg.wait_for_timeout(300); await pg.evaluate("uiA().lista = true")  # v15 (A): passo inteiro numa tela
         chk(await pg.evaluate('LANG') == 'en', 'idioma inicial é en')
 
         for lang in ['pt', 'en', 'es', 'fr']:
@@ -157,7 +157,7 @@ async def main():
         # ---- migração do localStorage antigo
         txt = open(os.path.join(FIX, 'localStorage_v8_branco_parcial.json')).read()
         await pg.evaluate("t => { localStorage.clear(); localStorage.setItem('navegador-ia-educacao-v4', t); }", txt)
-        await pg.reload(); await pg.wait_for_timeout(400)
+        await pg.reload(); await pg.wait_for_timeout(400); await pg.evaluate("uiA().lista = true")  # v15 (A): passo inteiro numa tela
         r = await pg.evaluate("({ v: S.versao, caso: S.caso, ctx: S.ctx, resp: S.resp, nova: !!localStorage.getItem('aiedu-procurement-v9'), velha: !!localStorage.getItem('navegador-ia-educacao-v4') })")
         chk(r['v'] == 13, 'localStorage v8: S.versao === 13')
         chk(r['caso']['tarefas'] == ['alerta_precoce'] and 'fonte' not in r['caso'] and r['caso']['testes'] == ['recomendar'], 'localStorage v8: tarefas e testes convertidos, sem fonte')
@@ -191,7 +191,7 @@ async def main():
         chk(ida[0] == 13 and ida[1]['poc'] == {'participantes': 20, 'meses': 3} and ida[1]['impl']['pessoas'] == 5000, 'exportação v11 reimportada sem nova migração')
         txt = open(os.path.join(FIX, 'localStorage_v10_poc.json')).read()
         await pg.evaluate("t => { localStorage.clear(); localStorage.setItem('aiedu-procurement-v9', t); }", txt)
-        await pg.reload(); await pg.wait_for_timeout(400)
+        await pg.reload(); await pg.wait_for_timeout(400); await pg.evaluate("uiA().lista = true")  # v15 (A): passo inteiro numa tela
         chk(await pg.evaluate("!!SALVO && S.boasVindas===true"), 'localStorage v10: caso salvo oferecido nas boas-vindas')
         await pg.evaluate("continuarSalvo()"); await pg.wait_for_timeout(300)
         r = await pg.evaluate(V10_OK)

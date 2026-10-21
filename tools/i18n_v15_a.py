@@ -120,6 +120,11 @@ T = [
  ("Caso em branco", "Blank case", "Caso en blanco", "Cas vierge"),
  ("Exemplo", "Example", "Ejemplo", "Exemple"),
  ("Mais ações", "More actions", "Más acciones", "Autres actions"),
+ ("Passo inteiro", "Whole step", "Paso completo", "Étape entière"),
+ ("Ver uma pergunta por vez", "Show one question at a time", "Ver una pregunta a la vez", "Voir une question à la fois"),
+ ("Ver um passo inteiro por tela (para quem já conhece a ferramenta)", "Show a whole step per screen (for people who already know the tool)", "Ver un paso completo por pantalla (para quien ya conoce la herramienta)", "Voir une étape entière par écran (pour qui connaît déjà l'outil)"),
+ ("Passo {0} de {1}", "Step {0} of {1}", "Paso {0} de {1}", "Étape {0} sur {1}"),
+ ("{0} de {1} passos", "{0} of {1} steps", "{0} de {1} pasos", "{0} étapes sur {1}"),
 ]
 for i, l in enumerate(['en', 'es', 'fr']):
     d = {pt: row[i + 1] for pt, *rest in T for row in [(pt, *rest)]}

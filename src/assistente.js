@@ -39,20 +39,22 @@ const UIA_CHAVE = 'upt_v15a_ui';
 let UIA = null;
 function uiA() {
   if (UIA) return UIA;
-  UIA = { tela: '', detalhar: {}, ultimo: null, delta: null, gaveta: false, desenhada: null, sync: '' };
+  UIA = { tela: '', detalhar: {}, lista: false, ultimo: null, delta: null, gaveta: false, desenhada: null, sync: '' };
   try {
     const o = JSON.parse(localStorage.getItem(UIA_CHAVE) || 'null');
     if (o && typeof o === 'object') {
       if (typeof o.tela === 'string') UIA.tela = o.tela;
       if (o.detalhar && typeof o.detalhar === 'object') Object.keys(o.detalhar).forEach(k => { if (PASSOS[k]) UIA.detalhar[k] = !!o.detalhar[k]; });
+      UIA.lista = o.lista === true;
     }
   } catch (e) { }
   return UIA;
 }
-function uiGravar() { try { localStorage.setItem(UIA_CHAVE, JSON.stringify({ tela: uiA().tela, detalhar: uiA().detalhar })); } catch (e) { } }
+function uiGravar() { try { localStorage.setItem(UIA_CHAVE, JSON.stringify({ tela: uiA().tela, detalhar: uiA().detalhar, lista: uiA().lista })); } catch (e) { } }
 // caso novo, exemplo ou importação: volta à primeira tela, no modo essencial
 function resetAssistente() { const u = uiA(); u.tela = ''; u.detalhar = {}; u.ultimo = null; u.delta = null; u.gaveta = false; u.sync = ''; uiGravar(); }
 const naoSeiA = id => !!((S.feitos || {})['ns:' + id]);
+const POR_ABERTO = {};   // "Por que perguntamos?" aberto (só nesta sessão)
 
 // ----------------------------------------------------------- telas
 function camposTelaPasso(pid) {
@@ -68,7 +70,10 @@ function telasA(todas) {
     const det = todas || !!u.detalhar[F.id];
     PASSOS[F.id].forEach(([pid]) => {
       if (pid === '4b' || pid === '4c') { if (det) L.push({ k: pid === '4b' ? 'est' : 'rec', tipo: pid === '4b' ? 'est' : 'rec', fase: F.id, passo: pid }); return; }
-      camposTelaPasso(pid).forEach(f => { const ess = essencialA(f); if (ess || det) L.push({ k: 'q:' + f.id, tipo: 'q', fase: F.id, passo: pid, f, ess }); });
+      const fs = camposTelaPasso(pid);
+      // "Ver o passo inteiro": uma tela com todas as perguntas do passo (a chave é a da primeira pergunta)
+      if (u.lista && !todas) { if (fs.length) L.push({ k: 'q:' + fs[0].id, tipo: 'q', fase: F.id, passo: pid, f: fs[0], ess: fs.some(essencialA), lista: true, fs }); return; }
+      fs.forEach(f => { const ess = essencialA(f); if (ess || det) L.push({ k: 'q:' + f.id, tipo: 'q', fase: F.id, passo: pid, f, ess }); });
     });
     L.push(F.id === 'expansao' ? { k: 'res', tipo: 'res', fase: F.id, passo: '' } : { k: 'fim:' + F.id, tipo: 'fim', fase: F.id, passo: '' });
   });
@@ -76,6 +81,7 @@ function telasA(todas) {
 }
 const perguntasA = L => L.filter(t => t.tipo === 'q');
 function respondidaA(t) {
+  if (t.lista) return t.fs.filter(f => f.tipo !== 'pais' && !f.opcional).every(f => qOk(f) || naoSeiA(f.id));
   if (t.f.tipo === 'pais') return !!(S.caso && S.caso.pais);
   return qOk(t.f) || naoSeiA(t.f.id);
 }
@@ -114,6 +120,7 @@ function primeiraTelaPassoA(pid) {
 function marcarTelaA(k) {
   const u = uiA();
   let L = telasA(), t = L.find(x => x.k === k);
+  if (!t && u.lista && /^q:/.test(k)) { const id = k.slice(2), f = id === 'pais' ? PAIS_A : CAMPO_POR_ID[id]; if (f) t = L.find(x => x.lista && x.passo === (id === 'pais' ? '1a' : passoDe(f))); }
   if (!t) { const fase = faseDaTelaA(k); if (fase) { u.detalhar[fase] = true; L = telasA(); t = L.find(x => x.k === k); } }
   if (!t) return false;
   u.tela = t.k; S.fase = t.fase; S.passo = t.passo || PASSOS[t.fase][PASSOS[t.fase].length - 1][0]; u.sync = S.fase + ':' + S.passo;
@@ -130,6 +137,7 @@ function irAlvoA(passo, alvo) {
     else {
       const f = CAMPO_POR_ID[a] || CAMPOS.find(x => x.n === a || x.n.replace(/\./g, '-') === a.replace(/^q-/, ''));
       if (f) { const cab = Object.keys(GRUPOS_A).find(h => GRUPOS_A[h].includes(f.id)); k = 'q:' + (cab || f.id); }
+      if (f && uiA().lista) k = primeiraTelaPassoA(passoDe(f));
     }
   }
   // sem alvo: fica na tela atual se ela já é deste passo (continuar o caso salvo)
@@ -141,8 +149,8 @@ function focarTela() { requestAnimationFrame(() => { const h = document.getEleme
 
 // ----------------------------------------------------------- navegação
 function confirmarTelaA(t) {
-  if (t.tipo !== 'q' || t.f.tipo === 'pais') return;
-  [t.f].concat(grupoA(t.f)).forEach(f => { if (sugerido(f) && (f.tipo === 'setup' || f.tipo === 'implant' || !vazio(valorCampo(f)))) confirmarSugestao(f); });
+  if (t.tipo !== 'q' || (t.f.tipo === 'pais' && !t.lista)) return;
+  (t.lista ? camposPasso(t.passo) : [t.f].concat(grupoA(t.f))).forEach(f => { if (sugerido(f) && (f.tipo === 'setup' || f.tipo === 'implant' || !vazio(valorCampo(f)))) confirmarSugestao(f); });
   S.revisar = (S.revisar || []).filter(k => !S.respC[k]);
 }
 function avancarA() {
@@ -221,7 +229,7 @@ function htmlProgA(L, t) {
   const resto = Q.filter((x, i) => (iq < 0 ? true : i >= iq) && !respondidaA(x)).length;
   const u = uiA(), nDet = FASES.filter(f => u.detalhar[f.id]).length;
   const modo = nDet === FASES.length ? 'Todas as perguntas' : u.detalhar[F.id] ? 'Fase detalhada' : 'Modo essencial';
-  const conta = t.tipo === 'q' ? tr('Pergunta ' + (iq + 1) + ' de ' + N) : tr(nOk + ' de ' + N + ' perguntas');
+  const conta = t.tipo === 'q' ? tr((t.lista ? 'Passo ' : 'Pergunta ') + (iq + 1) + ' de ' + N) : tr(nOk + ' de ' + N + (u.lista ? ' passos' : ' perguntas'));
   const tempo = resto ? tr('cerca de ' + minutosA(resto) + ' min restantes') : '';
   const fimF = t.tipo === 'fim' || t.tipo === 'res';
   const barras = FASES.map(f => {
@@ -246,8 +254,10 @@ function ajudaQA(f, h) {
   if (a.importa) partes.push(`<p><b>${esc(tr(R.importa))}.</b> <span>${g(a.importa)}</span></p>`);
   if (a.quem) partes.push(`<p><b>${esc(tr(R.quem))}</b> <span>${esc(tr(a.quem))}</span>.</p>`);
   if (ex) partes.push(`<p class="as-ex">${esc(ex)}</p>`);
+  const pi = PASSO_INFO[f.passo] || {};
+  if (pi.info && typeof botaoInfo === 'function') partes.push(`<div class="as-info">${botaoInfo(pi.info, 'p-' + f.passo)}<span class="as-info-t">${esc(tr(INFO_ROT[pi.info] || 'Sobre as camadas'))}</span></div>${notaInfo(pi.info, 'p-' + f.passo)}`);
   if (!partes.length) return '';
-  return `<details class="as-por" data-as-por="${esc(f.id)}"><summary>Por que perguntamos?</summary><div class="as-por-in">${partes.join('')}</div></details>`;
+  return `<details class="as-por" data-as-por="${esc(f.id)}"${POR_ABERTO[f.id] ? ' open' : ''}><summary>Por que perguntamos?</summary><div class="as-por-in">${partes.join('')}</div></details>`;
 }
 function nsA(f) {
   if (!['radio', 'chips', 'multi', 'num', 'setup', 'implant'].includes(f.tipo)) return '';
@@ -279,9 +289,21 @@ function htmlTelaQ(t) {
   const eb = `<div class="as-eb"><p><span class="as-pn">${esc(numPasso(t.passo))}</span> <span>${esc(nomePasso(t.passo))}</span> <span class="as-qn">· ${esc(f.n)}</span>${t.ess ? '' : ` <span class="tag opc">${esc(tr('detalhe'))}</span>`}</p>${seloEstadoA(f)}</div>`;
   return `${eb}${htmlQA(f, 1)}${g.map(x => `<div class="as-grp">${htmlQA(x, 2)}</div>`).join('')}`;
 }
+// "Ver o passo inteiro": as perguntas do passo numa página (corpoPadrao, fluxo.js), com a mesma navegação
+function htmlListaA(t) {
+  const eb = `<div class="as-eb"><p><span class="as-pn">${esc(numPasso(t.passo))}</span> <span>${esc(tr('Passo inteiro'))}</span></p><button type="button" class="link" data-as="lista-off">Ver uma pergunta por vez</button></div>`;
+  const pi = PASSO_INFO[t.passo] || {};
+  const info = pi.info ? `<div class="as-info">${botaoInfo(pi.info, 'p-' + t.passo)}<span class="as-info-t">${esc(tr(INFO_ROT[pi.info] || 'Sobre as camadas'))}</span></div>${notaInfo(pi.info, 'p-' + t.passo)}` : '';
+  return `${eb}<h1 class="as-h" id="as-h" tabindex="-1">${esc(nomePasso(t.passo))}</h1>${ajudaPassoA(t.passo)}<div class="as-lista" id="passo-${t.passo}">${info}<div class="passo-corpo">${corpoPadrao(t.passo)}</div></div>`;
+}
+function ajudaPassoA(pid) {
+  const a = PASSO_AJUDA[pid]; if (!a) return '';
+  const R = AJUDA_ROT, g = typeof glossarioTexto === 'function' ? glossarioTexto : (x => esc(tr(x)));
+  return `<p class="as-linha">${g(a.serve)}</p><details class="as-por" data-as-por="${pid}"><summary>Por que perguntamos?</summary><div class="as-por-in"><p><b>${esc(tr(R.importa))}.</b> <span>${g(a.importa)}</span></p><p><b>${esc(tr(R.como))}.</b> <span>${g(a.como)}</span></p><p><b>${esc(tr(R.quem))}</b> <span>${esc(tr(a.quem))}</span>.</p><p class="as-ex"><b>${esc(tr(R.ex))}:</b> <span>${g(a.ex)}</span></p></div></details>`;
+}
 function rotuloSeguirA(t, L) {
   if (t.tipo === 'q') {
-    const sug = t.f.tipo !== 'pais' && [t.f].concat(grupoA(t.f)).some(f => sugerido(f) && (f.tipo === 'setup' || f.tipo === 'implant' || !vazio(valorCampo(f))));
+    const sug = (t.lista ? camposPasso(t.passo) : t.f.tipo !== 'pais' ? [t.f].concat(grupoA(t.f)) : []).some(f => sugerido(f) && (f.tipo === 'setup' || f.tipo === 'implant' || !vazio(valorCampo(f))));
     return sug ? 'Confirmar e continuar' : 'Continuar';
   }
   if (t.tipo === 'fim') { const F = FASES[FASES.findIndex(x => x.id === t.fase) + 1]; return F ? tr('Continuar para a fase ' + F.n) : 'Continuar'; }
@@ -410,11 +432,11 @@ function htmlResA(t, L) {
 }
 function htmlEstA() {
   return `<div class="as-eb"><p><span class="as-pn">4.2</span> <span>Estimativa de custo</span></p></div><h1 class="as-h" id="as-h" tabindex="-1">Estimativa de custo</h1>
-    <p class="as-linha">O custo de todo o ciclo, por fase e por camada. Valores ilustrativos: substitua por cotações e dados locais.</p><div class="as-est passo-corpo">${passo4b()}</div>`;
+    <p class="as-linha">O custo de todo o ciclo, por fase e por camada. Valores ilustrativos: substitua por cotações e dados locais.</p><div class="as-est" id="passo-4b"><div class="passo-corpo">${passo4b()}</div></div>`;
 }
 function htmlRecA() {
   return `<div class="as-eb"><p><span class="as-pn">4.3</span> <span>Recomendações para você</span></p></div><h1 class="as-h" id="as-h" tabindex="-1">Recomendações para você</h1>
-    <p class="as-linha">As ações para este caso, por prioridade, a partir das suas respostas.</p><div class="as-rec passo-corpo">${passo4c()}</div>`;
+    <p class="as-linha">As ações para este caso, por prioridade, a partir das suas respostas.</p><div class="as-rec" id="passo-4c"><div class="passo-corpo">${passo4c()}</div></div>`;
 }
 
 // ----------------------------------------------------------- tela inteira
@@ -433,7 +455,7 @@ function renderAssistente() {
   // "Não sei" deixa de valer quando a pergunta ganha resposta
   Object.keys(S.feitos || {}).forEach(k => { if (/^ns:/.test(k)) { const f = CAMPO_POR_ID[k.slice(3)]; if (!f || qOk(f)) delete S.feitos[k]; } });
   u.qAtual = t.tipo === 'q' ? t.f : null;
-  const corpo = t.tipo === 'q' ? htmlTelaQ(t) : t.tipo === 'fim' ? htmlFimA(t, L) : t.tipo === 'res' ? htmlResA(t, L) : t.tipo === 'est' ? htmlEstA() : htmlRecA();
+  const corpo = t.tipo === 'q' ? (t.lista ? htmlListaA(t) : htmlTelaQ(t)) : t.tipo === 'fim' ? htmlFimA(t, L) : t.tipo === 'res' ? htmlResA(t, L) : t.tipo === 'est' ? htmlEstA() : htmlRecA();
   return `<div class="as as-t-${t.tipo}" id="assistente" data-tela="${esc(t.k)}">${htmlProgA(L, t)}${faixaExA()}
     <div class="as-tela" id="as-tela">${corpo}</div>${t.tipo === 'q' || t.tipo === 'est' || t.tipo === 'rec' ? htmlNavA(t, L) : ''}</div>`;
 }
@@ -489,7 +511,9 @@ function gavetaA(n) {
   let d = null; try { d = relDados(n); } catch (e) { d = null; }
   const A = n.av.tco && n.av.tco.anual;
   const lin = (l, v, s) => `<div><dt>${esc(l)}</dt><dd class="num">${esc(v)}${s ? ` <small>${esc(s)}</small>` : ''}</dd></div>`;
-  return `<div class="as-gaveta" id="as-gaveta" role="region" aria-label="${esc(tr('Detalhes do custo'))}"><dl>
+  let pessoas = 0; try { pessoas = Math.max(0, ...(n.av.r.E || []).slice(1)) || +casoAtual().elegiveis || 0; } catch (e) { pessoas = 0; }
+  return `<div class="as-gaveta" id="as-gaveta" role="region" aria-label="${esc(tr('Detalhes do custo'))}">${pessoas ? `<p class="as-gav-p premissa">${esc(tr('Considera ' + fmtInt(pessoas) + ' pessoas usando a ferramenta na rede (passo 4.1.1).'))}</p>` : ''}<dl>
+    ${lin(tr('Custo total do ciclo de vida'), grande(n.total))}
     ${lin(tr('Custo do Ano 0 (prova de conceito ou piloto)'), grande(n.ano0))}
     ${A ? lin(tr('Por ano em regime (Ano ' + A.ano + ')'), grande(A.eco)) : ''}
     ${d ? lin(tr('Faixa provável'), grande(d.lo) + ' – ' + grande(d.hi), tr('8 em 10 cenários')) : ''}
@@ -517,6 +541,7 @@ function abrirIndiceA() {
       <button type="button" class="btn as-ind-x" data-as="fechar-ind">${ICO_A.x}<span>Fechar</span></button></div>
     <p class="as-linha">Escolha uma fase ou um passo para voltar a ele. O número de cada passo não muda.</p>
     <label class="check as-ind-todas"><input type="checkbox" data-as-todas ${todas ? 'checked' : ''}> <span>Mostrar todas as perguntas (não só as essenciais)</span></label>
+    <label class="check as-ind-todas"><input type="checkbox" data-as-lista ${uiA().lista ? 'checked' : ''}> <span>Ver um passo inteiro por tela (para quem já conhece a ferramenta)</span></label>
     ${htmlIndiceListaA(L)}</div>`;
   try { d.showModal(); } catch (e) { d.setAttribute('open', ''); }
   const at = d.querySelector('.as-ix-p.at') || d.querySelector('[data-as="fechar-ind"]'); if (at) at.focus();
@@ -563,9 +588,14 @@ function toastAcao(msg, rot, fn) {
 // ----------------------------------------------------------- eventos
 function eventoAssistente(e) {
   const el = e.target;
+  if (e.type === 'change' && el && el.dataset && el.dataset.asLista != null) {
+    const pid = S.passo; uiA().lista = el.checked; uiGravar(); fecharIndiceA();
+    const k = primeiraTelaPassoA(pid); if (k) irTelaA(k); else render(); return true;
+  }
   if (e.type === 'change' && el && el.dataset && el.dataset.asTodas != null) {
     FASES.forEach(F => { uiA().detalhar[F.id] = el.checked; }); uiGravar(); fecharIndiceA(); render(); return true;
   }
+  if (e.type === 'toggle' && el && el.dataset && el.dataset.asPor != null) { POR_ABERTO[el.dataset.asPor] = el.open; return false; }
   if (e.type !== 'click' || !el || !el.closest) return false;
   const ns = el.closest('[data-as-ns]'); if (ns) { naoSeiCampoA(ns.dataset.asNs); return true; }
   const ir = el.closest('[data-as-ir]'); if (ir) { fecharIndiceA(); irTelaA(ir.dataset.asIr); return true; }
@@ -583,6 +613,7 @@ function eventoAssistente(e) {
   if (act === 'voltar') { voltarA(); return true; }
   if (act === 'indice') { abrirIndiceA(); return true; }
   if (act === 'fechar-ind') { fecharIndiceA(); return true; }
+  if (act === 'lista-off') { uiA().lista = false; uiGravar(); const t = telasA().find(x => x.passo === S.passo && x.tipo === 'q'); if (t) irTelaA(t.k); else render(); return true; }
   if (act === 'detalhar') { detalharA(a.dataset.fase, true); return true; }
   if (act === 'essencial') { detalharA(a.dataset.fase, false); return true; }
   if (act === 'revisar') { const t = telasA().find(x => x.fase === a.dataset.fase && x.tipo === 'q'); if (t) irTelaA(t.k); return true; }
