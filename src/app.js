@@ -421,6 +421,7 @@ function aplicarImportado(o) {
   S.versao = +o.formato === 13 ? 13 : +o.formato === 11 || +o.versao === 11 ? 11 : 9;
   SALVO = null; CONF_LIMPAR = false;
   IA = { estado: '', resposta: null, erro: '' };
+  if (typeof resetMudancas === 'function') resetMudancas();
   normalizarEstado();
 }
 function importarCaso(txt) {
@@ -434,6 +435,17 @@ function importarCaso(txt) {
   }
   toast(tr('Este arquivo não é um caso exportado pela ferramenta.'));
   return false;
+}
+// v15 (C3): importar pela interface confere o arquivo e, se houver respostas no caso atual, pede confirmação antes de substituí-lo
+function importarPelaTela(txt) {
+  let o = null;
+  try { o = JSON.parse(txt); } catch (e) { o = null; }
+  const ok = o && o.caso && ((o.app === 'ai-education-procurement-tool' && [9, 11, 13].includes(+o.formato)) || o.app === 'navegador-ia-educacao');
+  if (!ok) { toast(tr('Este arquivo não é um caso exportado pela ferramenta.')); return false; }
+  fecharImportar();
+  const nome = (o.caso && o.caso.titulo) || (o.ctx && o.ctx.olhando) || tr('o caso importado');
+  pedirTroca(nome, () => { importarCaso(txt); S.boasVindas = false; abrirFase('contexto', '1a'); });
+  return true;
 }
 function copiarTexto(txt, ok) {
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast(tr(ok)), () => toast(tr('Não foi possível copiar.')));
@@ -495,6 +507,7 @@ function carregarExemplo(k) {
   aplicarExemploFluxo(k);
   S.caso = Object.assign(clone(CASO_VAZIO), S.caso);
   S.custo = { base: 'caso', cfg: null, editado: false }; IA = { estado: '', resposta: null, erro: '' };
+  if (typeof resetMudancas === 'function') resetMudancas();
   render(); window.scrollTo(0, 0);
   toast(tr(k === 'novo' ? 'Caso em branco.' : 'Exemplo carregado. As respostas são ilustrativas.'));
 }
@@ -523,7 +536,7 @@ function ligar() {
     if (cb) { S.custo.base = cb.dataset.cbase; S.custo.cfg = null; S.custo.editado = false; render(); return; }
     const a = e.target.closest('[data-act]'); if (!a) return;
     const act = a.dataset.act;
-    if (act === 'limpar') carregarExemplo('novo');
+    if (act === 'limpar') pedirTroca('um caso em branco', () => { carregarExemplo('novo'); S.boasVindas = false; abrirFase('contexto', '1a'); });
     else if (act === 'ia') analisarIA();
     else if (act === 'ia-aplicar') aplicarIA(false);
     else if (act === 'ia-texto') aplicarIA(true);
@@ -548,7 +561,7 @@ function ligar() {
     else if (act === 'imp-colar') {
       const ta = document.getElementById('imp-txt'), txt = ta ? ta.value.trim() : '';
       if (!txt) { toast(tr('Cole antes os dados do caso.')); return; }
-      if (importarCaso(txt)) fecharImportar();
+      importarPelaTela(txt);
     }
     else if (act === 'dl-md') baixar(nomeArq('md'), relMD(dadosRelatorio()));
     else if (act === 'dl-html') baixar(nomeArq('html'), relHTML(dadosRelatorio(), true));
@@ -572,12 +585,11 @@ function ligar() {
   });
   document.addEventListener('change', e => {
     const el = e.target;
-    if (el.id === 'imp-json' && el.files && el.files[0]) { const r = new FileReader(); r.onload = () => importarCaso(String(r.result)); r.readAsText(el.files[0]); el.value = ''; return; }
+    if (el.id === 'imp-json' && el.files && el.files[0]) { const r = new FileReader(); r.onload = () => importarPelaTela(String(r.result)); r.readAsText(el.files[0]); el.value = ''; return; }
     if (custosEvento(e)) return;
     if (eventoFluxo(e)) return;
     if (!el.dataset) return;
     if (el.id === 'sel-lang') { S.lang = el.value; NOMES_MOEDA = null; aplicarIdioma(S.lang); textosExemplo(); render(); return; }
-    if (el.id === 'sel-exemplo') { if (el.value) carregarExemplo(el.value); el.value = ''; return; }
     if (el.dataset.num != null && (el.dataset.fn || el.dataset.f)) {
       const top = gravarNumCaso(el, el.dataset.fn || el.dataset.f);
       if (!gancho(top)) atualizarLaterais();

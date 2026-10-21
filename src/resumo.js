@@ -817,11 +817,7 @@ function cssPlanoV13() {
 function htmlSinteseP(s) {
   const d = s.d;
   let h = '';
-  // v14 (revisão): a proposta em seis respostas
-  if (s.exec && s.exec.length) {
-    h += `<h4 class="rp-sub">${esc(tr(TXT_REL.exT))}</h4><table class="rs-exec" data-k="exec"><thead><tr><th scope="col">${esc(tr(TXT_REL.exDim))}</th><th scope="col">${esc(tr(TXT_REL.exResp))}</th></tr></thead><tbody>${s.exec.map(x =>
-      `<tr data-dim="${esc(x.id)}"><th scope="row"><b>${esc(x.rot)}</b><span>${esc(x.perg)}</span></th><td>${x.frases.length ? (x.frases.length > 1 ? `<ul>${x.frases.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : `<p>${esc(x.frases[0])}</p>`) : `<p class="muted">${esc(x.falta)}</p>`}</td></tr>`).join('')}</tbody></table>`;
-  }
+  // v15 (B): os números vêm antes das seis respostas, na mesma ordem do PDF
   if (!d) h += `<p class="rp-vazio">${esc(s.semCusto)}</p>`;
   else {
     const w = Math.max(d.hi - d.lo, d.central * 0.02), a = d.lo - 0.5 * w, b = d.hi + 0.5 * w;
@@ -832,11 +828,16 @@ function htmlSinteseP(s) {
       <p class="rs-nota">${esc(d.nota)}</p></div>
       <div class="rs-kpis">${d.kpis.map(k => `<div class="rp-kpi" data-k="${k.id}"><span class="rp-kpi-v">${valorKpiP(k.v)}</span><span class="rp-kpi-l">${esc(k.l)}</span>${k.nota ? `<span class="rp-kpi-n">${esc(k.nota)}</span>` : ''}</div>`).join('')}</div></div>`;
   }
+  // v14 (revisão): a proposta em seis respostas
+  if (s.exec && s.exec.length) {
+    h += `<h4 class="rp-sub">${esc(tr(TXT_REL.exT))}</h4><table class="rs-exec" data-k="exec"><thead><tr><th scope="col">${esc(tr(TXT_REL.exDim))}</th><th scope="col">${esc(tr(TXT_REL.exResp))}</th></tr></thead><tbody>${s.exec.map(x =>
+      `<tr data-dim="${esc(x.id)}"><th scope="row"><b>${esc(x.rot)}</b><span>${esc(x.perg)}</span></th><td>${x.frases.length ? (x.frases.length > 1 ? `<ul>${x.frases.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : `<p>${esc(x.frases[0])}</p>`) : `<p class="muted">${esc(x.falta)}</p>`}</td></tr>`).join('')}</tbody></table>`;
+  }
   h += `<h4 class="rp-sub">${esc(tr(TXT_REL.acoes5))}</h4>`;
   if (!s.recs.length) h += `<p class="rp-vazio">${esc(tr(TXT_REL.semAcoes))}</p>`;
   else {
     const lin = (k, v) => v ? `<div class="rs-ac-l" data-c="${k}"><dt>${esc(tr(TXT_REL[k]))}</dt><dd>${esc(v)}</dd></div>` : '';
-    h += `<p class="rs-abre muted">${esc(tr(TXT_REL.acoesAbre))}</p><ol class="rp-top" data-k="acoes">${s.recs.map(r => `<li class="rp-tc" data-rec="${esc(r.id)}"><span class="rp-tn" aria-hidden="true">${r.n}</span><div class="rp-tc-c">
+    h += `<p class="rs-abre muted">${esc(tr(TXT_REL.acoesAbre))}</p><ol class="rp-top" data-k="acoes">${s.recs.map(r => `<li class="rp-tc" data-rec="${esc(r.id)}" data-prio="${esc(r.prio || '')}"><span class="rp-tn" aria-hidden="true">${r.n}</span><div class="rp-tc-c">
     <dl class="rs-ac">${lin('exOque', r.oque)}${lin('exPorque', r.porque)}${lin('exParaque', r.paraque)}${lin('exComo', r.como)}${lin('exQuem', r.quemTxt)}${lin('exQuando', r.quandoTxt)}</dl>
     <p class="rp-tags"><span class="rp-tag" data-tipo="${esc(r.tipo)}">${esc(r.tipo)}</span><span class="rp-tag rp-q">${esc(r.quando)}</span></p></div>${r.ir ? `<button type="button" class="link rc-ir" data-ir="${esc(r.ir)}">${esc(tr(TXT_REC.ir))}</button>` : ''}</li>`).join('')}</ol>`;
   }
@@ -884,15 +885,16 @@ function renderPlano() {
   try { logos = [...document.querySelectorAll('.top .logo')].map(i => `<img class="rp-logo" src="${i.getAttribute('src')}" alt="${esc(i.getAttribute('alt') || '')}" width="${i.getAttribute('width') || ''}" height="${i.getAttribute('height') || ''}">`).join(''); } catch (e) { }
   const acaoAlta = P.nAlta ? `<a href="#plano-sintese">${esc(tr(P.nAlta === 1 ? '1 ação de prioridade alta' : P.nAlta + ' ações de prioridade alta'))}</a>`
     : P.recs.length ? `<a href="#plano-sintese">${esc(tr('Ver as recomendações'))}</a>` : '';
+  let dec = ''; try { dec = typeof fraseDecisao === 'function' ? fraseDecisao() : ''; } catch (e) { dec = ''; }
   const capa = `<header class="rp-capa" id="plano-capa">
     <div class="rp-capa-faixa" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
     <div class="rp-capa-in">
-      <div class="rp-capa-topo">${logos ? `<span class="rp-logos">${logos}</span>` : ''}<span class="rp-marca" data-notr>${esc(NOME_FERRAMENTA)}</span></div>
+      <div class="rp-capa-topo"><span class="rp-marca" data-notr>${esc(NOME_FERRAMENTA)}</span></div>
       <p class="rp-capa-e">${esc(tr('Plano de contratação'))}</p>
       <h2 class="rp-capa-h">${esc(titulo)}</h2>
       <p class="rp-capa-m">${[x.local, data].filter(Boolean).map(esc).join(' · ')}</p>
-      ${P.principal ? `<div class="rp-princ"><p class="rp-princ-e">${esc(tr('Recomendação principal'))}</p><p class="rp-princ-t">${esc(P.principal)}</p>${acaoAlta ? `<p class="rp-princ-a">${acaoAlta}</p>` : ''}</div>` : ''}
-      <p class="rp-isencao faixa-plano">${esc(tr(FAIXA_PLANO))}</p>
+      ${dec || P.principal ? `<div class="rp-princ"><p class="rp-princ-e">${esc(tr('Recomendação principal'))}</p><p class="rp-princ-t">${esc(dec || P.principal)}</p>${dec && P.principal && dec !== P.principal ? `<p class="rp-princ-m">${esc(P.principal)}</p>` : ''}${acaoAlta ? `<p class="rp-princ-a">${acaoAlta}</p>` : ''}</div>` : ''}
+      <div class="rp-capa-pe">${logos ? `<span class="rp-logos">${logos}</span>` : ''}<p class="rp-isencao faixa-plano">${esc(tr(FAIXA_PLANO))}</p></div>
     </div></header>`;
 
   let out = '';
@@ -917,7 +919,7 @@ function renderPlano() {
     return wrap(`${s.h ? `<h4>${esc(s.h)}</h4>` : ''}${htmlCorpoP(s)}`);
   };
   let aberta = false, anexos = false;
-  const fecha = () => { if (aberta) { out += '</section>'; aberta = false; } };
+  const fecha = () => { if (aberta) { out += aberta === 'anexo' ? '</details></section>' : '</section>'; aberta = false; } };
   secs.forEach(s => {
     if (s.tipo === 'sintese') {
       toc.push(['sintese', s.h, '', '']);
@@ -934,7 +936,8 @@ function renderPlano() {
       out += `<div class="rp-anexos" id="plano-anexos" data-sec="anexos" data-toc="anexos"><header class="rp-cab"><div class="rp-cab-t"><h3 id="plano-anexos-t">${esc(s.h)}</h3><p class="rp-abre">${esc((s.p || [])[0] || '')}</p></div></header>`;
     } else if (s.tipo === 'anexo') {
       fecha(); toc.push([s.id, s.h, s.letra, 'anexos']);
-      out += `<section class="rp-sec rp-anexo" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}" data-pai="anexos" aria-labelledby="plano-${s.id}-t"><header class="rp-cab"><span class="rp-num" aria-hidden="true">${esc(s.letra)}</span><div class="rp-cab-t"><p class="rp-rot">${esc(tr('Anexo {0}').replace('{0}', s.letra))}</p><h3 id="plano-${s.id}-t">${esc(s.h)}</h3></div></header>`; aberta = true;
+      // v15 (B): anexos recolhidos na tela; o índice e os links abrem o anexo (montarPlano); o PDF mostra tudo
+      out += `<section class="rp-sec rp-anexo" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}" data-pai="anexos" aria-labelledby="plano-${s.id}-t"><details class="rp-anexo-d"><summary><header class="rp-cab"><span class="rp-num" aria-hidden="true">${esc(s.letra)}</span><div class="rp-cab-t"><p class="rp-rot">${esc(tr('Anexo {0}').replace('{0}', s.letra))}</p><h3 id="plano-${s.id}-t">${esc(s.h)}</h3></div></header></summary>`; aberta = 'anexo';
     } else out += itemP(s);
   });
   fecha();
@@ -947,11 +950,11 @@ function renderPlano() {
     return `<li data-toc-li="${id}"><a href="#plano-${id}" data-toc-l="${id}">${num ? `<span class="rp-in">${esc(num)}</span>` : ''}<span class="rp-il">${esc(h)}</span></a>${filhos.length ? `<ol>${filhos.map(([fid, fh, fn]) => `<li><a href="#plano-${fid}" data-toc-l="${fid}"><span class="rp-in">${esc(fn)}</span><span class="rp-il">${esc(fh)}</span></a></li>`).join('')}</ol>` : ''}</li>`;
   }).join('')}</ol></nav>`;
 
-  const exp = CAP.downloads ? `<button class="btn" type="button" data-act="exp-json">Exportar caso (.json)</button>` : `<button class="btn" type="button" data-act="copiar-json">Copiar dados do caso</button>`;
   return `<section class="resumo plano rp" id="plano">
     <div class="rp-barra res-topo">
+      <button type="button" class="btn rp-volta" data-act="voltar-percurso"><span aria-hidden="true" class="rp-ic">←</span> <span>Voltar ao caso</span></button>
       <div class="rp-barra-t"><span class="rp-be">${esc(tr('Plano de contratação'))}</span><span class="rp-bc">${esc(titulo)}</span></div>
-      <div class="rp-acoes"><button type="button" class="btn pri" data-act="pdf"><span aria-hidden="true" class="rp-ic">↓</span> Baixar PDF</button><button type="button" class="btn" data-act="voltar-percurso"><span aria-hidden="true" class="rp-ic">←</span> Voltar ao percurso</button><button class="btn" type="button" data-act="copiar">Copiar texto</button>${exp}<button class="btn" type="button" data-act="imp-json">Importar caso</button></div>
+      <div class="rp-acoes"><button class="btn rp-copiar" type="button" data-act="copiar">Copiar texto</button><button type="button" class="btn pri" data-act="pdf"><span aria-hidden="true" class="rp-ic">↓</span> Baixar PDF</button></div>
     </div>
     <div class="rp-grade">${indice}<div class="rp-corpo">${capa}${out}${typeof avisoTradHTML === 'function' ? avisoTradHTML('rp-aviso-trad') : ''}</div></div>
   </section>`;
@@ -963,7 +966,7 @@ function montarPlano() {
     const top = document.querySelector('.top'), bar = P.querySelector('.rp-barra'), ind = P.querySelector('.rp-indice');
     const fixo = el => el && getComputedStyle(el).position === 'sticky' ? el.offsetHeight : 0;
     const estreito = window.matchMedia && window.matchMedia('(max-width: 1099px)').matches;
-    P.style.setProperty('--rp-hdr', (top ? top.offsetHeight : 80) + 'px');
+    P.style.setProperty('--rp-hdr', fixo(top) + 'px');
     P.style.setProperty('--rp-bar', fixo(bar) + 'px');
     P.style.setProperty('--rp-chips', (estreito ? fixo(ind) : 0) + 'px');
   };
@@ -998,6 +1001,15 @@ function montarPlano() {
   }
   if (!window.__rpOuvintes) {
     window.__rpOuvintes = true;
+    // v15 (B): um link para um anexo recolhido (índice, "ver o anexo") abre o anexo antes de rolar
+    document.addEventListener('click', e => {
+      const a = e.target && e.target.closest && e.target.closest('#plano a[href^="#plano-"]'); if (!a) return;
+      const alvo = document.getElementById(a.getAttribute('href').slice(1)); if (!alvo) return;
+      const d = alvo.querySelector(':scope > details.rp-anexo-d') || alvo.closest('details.rp-anexo-d');
+      if (d && !d.open) d.open = true;
+      const filhos = alvo.matches('.rp-anexos') ? alvo.querySelectorAll('details.rp-anexo-d') : [];
+      filhos.forEach(x => { x.open = true; });
+    }, true);
     let t = 0;
     window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { if (document.getElementById('plano') && typeof montarPlano === 'function') montarPlano(); }, 120); });
     window.addEventListener('scroll', () => { if (window.__rpAtual) requestAnimationFrame(window.__rpAtual); }, { passive: true });

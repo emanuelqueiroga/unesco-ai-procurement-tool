@@ -683,9 +683,15 @@ function renderQ(f) {
   if (lac) extra += `<div class="hint lacuna-dica">Complete as lacunas marcadas com __ com os dados da sua rede.</div>`;
   if (f.detalhe) extra += detalheCampo(f);
   return `<div class="q${ok ? ' ok' : ''}${sug ? ' sug' : ''}${lac && temLac(valorCampo(f)) ? ' lacuna' : ''}" id="${idQ(f.n)}" data-n="${f.n}" data-campo="${f.id}">
-    <${rotTag} class="q-t" id="qt-${f.id}"><span class="qn">${f.n}</span> <span class="qt">${esc(t)}</span>${f.opcional ? ' <span class="tag opc">opcional</span>' : ''}${temTag ? `<span class="tag sug-tag">${esc(textoSugerido(f))}</span>` : ''}<span class="sr q-sr">${ok ? 'respondida' : ''}</span></${rotTag.split(' ')[0]}>
-    ${f.dica ? dicaCampo(f) : ''}${h ? `<div class="hint">${esc(h)}</div>` : ''}${ex ? `<div class="hint ex">${esc(ex)}</div>` : ''}
-    ${controle(f)}${sug ? notaSugerido(f) : ''}${extra}</div>`;
+    <${rotTag} class="q-t" id="qt-${f.id}"><span class="qn">${f.n}</span> <span class="qt">${esc(t)}</span>${f.opcional ? ' <span class="tag opc">opcional</span>' : ''}${temTag ? `<span class="tag sug-tag">${esc(textoSugerido(f))}</span>` : ''}<span class="sr q-sr">${ok ? 'respondida' : ''}</span></${rotTag.split(' ')[0]}><span class="q-selo" aria-hidden="true">Sua resposta</span>
+    ${h ? `<div class="hint">${esc(h)}</div>` : f.dica ? dicaCampo(f) : ''}${maisQ(f, h ? f.dica : '', ex)}
+    ${controle(f)}${sug ? notaSugerido(f) : ''}${extra}<p class="q-delta" aria-hidden="true" hidden></p></div>`;
+}
+// v15 (B): a pergunta mostra uma linha de ajuda; a dica (quando há ajuda) e o exemplo ficam recolhidos
+function maisQ(f, dica, ex) {
+  if (!dica && !ex) return '';
+  const rot = dica && ex ? 'Exemplo e dica' : ex ? 'Ver um exemplo' : 'Por que importa';
+  return `<details class="q-mais"><summary>${esc(rot)}</summary>${dica ? dicaCampo(f) : ''}${ex ? `<div class="hint ex">${esc(ex)}</div>` : ''}</details>`;
 }
 // Botão ⓘ e nota com a explicação da camada, a referência ao documento de Krueger e Jackson (2026)
 // e o botão que abre a Figura 1 (p. 11) sem alteração, com legenda e crédito.
@@ -756,7 +762,7 @@ function fecharVisor() {
 // ----------------------------------------------------------- corpo dos passos
 function corpoPadrao(id) {
   const pi = PASSO_INFO[id] || {};
-  let s = pi.abertura ? `<p class="abertura muted">${esc(pi.abertura)}</p>` : '';
+  let s = '';
   if (id === '1a' && typeof blocoPais === 'function') s += blocoPais();   // v14 (BL1.1): o passo 1.1 começa pelo país
   if (id === '2b') s += avisoRevisar(id);
   // v13: aviso do 2.1 quando todos os problemas marcados se resolvem sem uma ferramenta de IA
@@ -948,36 +954,34 @@ function passo4c() {
   }
   return '<p class="muted">As recomendações para você ainda não estão disponíveis nesta versão da ferramenta.</p>';
 }
-// v14 (BL2.2): painel "Sobre esta etapa". Abre na primeira visita a cada passo e pode ser recolhido; o estado de cada passo
-// fica neste navegador (localStorage, sempre em try/catch). Passos já vistos numa visita anterior começam recolhidos.
-const AJUDA_CHAVE = 'upt_ajuda_v14';
-let AJUDA_EST = null; const AJUDA_AUTO = {};
+// v14 (BL2.2) → v15 (B): "Por que perguntamos?" de cada passo, recolhido por padrão. Só fica aberto num passo em que a
+// pessoa o abriu; o estado fica neste navegador (localStorage, sempre em try/catch). O "para que serve" vira a linha
+// de ajuda sob o título do passo (trabalho.js); aqui ficam a abertura do passo, por que importa, como responder, quem sabe,
+// o exemplo e a nota da camada (ⓘ com a Figura 1).
+const AJUDA_CHAVE = 'upt_ajuda_v15';
+let AJUDA_EST = null;
 function ajudaLer() {
   if (AJUDA_EST) return AJUDA_EST;
   AJUDA_EST = {};
   try { const o = JSON.parse(localStorage.getItem(AJUDA_CHAVE) || '{}') || {}; Object.keys(o).forEach(k => { AJUDA_EST[k] = o[k] === true; }); } catch (e) { }
   return AJUDA_EST;
 }
-function ajudaGravar() {
-  try { const o = {}; Object.keys(AJUDA_EST || {}).forEach(k => { o[k] = AJUDA_AUTO[k] ? 'visto' : AJUDA_EST[k]; }); localStorage.setItem(AJUDA_CHAVE, JSON.stringify(o)); } catch (e) { }
-}
-function ajudaAberto(id) {
-  const E = ajudaLer();
-  if (E[id] === undefined) { E[id] = true; AJUDA_AUTO[id] = true; ajudaGravar(); }
-  return !!E[id];
-}
+function ajudaGravar() { try { localStorage.setItem(AJUDA_CHAVE, JSON.stringify(AJUDA_EST || {})); } catch (e) { } }
+function ajudaAberto(id) { return ajudaLer()[id] === true; }
 function ajudaMudou(id, aberto) {
   const E = ajudaLer();
   if (E[id] === aberto) return;
-  E[id] = aberto; delete AJUDA_AUTO[id]; ajudaGravar();
+  E[id] = aberto; ajudaGravar();
 }
 function painelAjuda(id) {
   const a = PASSO_AJUDA[id]; if (!a) return '';
-  const R = AJUDA_ROT, g = typeof glossarioTexto === 'function' ? glossarioTexto : (x => esc(tr(x)));
+  const R = AJUDA_ROT, g = typeof glossarioTexto === 'function' ? glossarioTexto : (x => esc(tr(x))), pi = PASSO_INFO[id] || {};
   const parte = (t, c, extra) => `<div class="aj-p"><dt>${esc(tr(t))}</dt><dd>${c}${extra || ''}</dd></div>`;
+  const cam = pi.info ? `<div class="aj-cam"><span class="aj-cam-t">${esc(tr(pi.selo || ''))}</span> ${botaoInfo(pi.info, 'p-' + id)}</div>${notaInfo(pi.info, 'p-' + id)}` : '';
   return `<details class="ajuda" id="ajuda-${id}" data-ajuda="${id}" ${ajudaAberto(id) ? 'open' : ''}>
-    <summary>${esc(tr(R.painel))}</summary>
-    <dl class="aj-corpo">${parte(R.serve, g(a.serve))}${parte(R.importa, g(a.importa))}${parte(R.como, g(a.como), ` <span class="aj-quem"><b>${esc(tr(R.quem))}</b> ${esc(tr(a.quem))}.</span>`)}${parte(R.ex, g(a.ex))}</dl></details>`;
+    <summary>Por que perguntamos?</summary>
+    <div class="aj-in">${pi.abertura ? `<p class="abertura">${esc(pi.abertura)}</p>` : ''}
+    <dl class="aj-corpo">${parte(R.importa, g(a.importa))}${parte(R.como, g(a.como), ` <span class="aj-quem"><b>${esc(tr(R.quem))}</b> ${esc(tr(a.quem))}.</span>`)}${parte(R.ex, g(a.ex))}</dl>${cam}</div></details>`;
 }
 // Abertura da fase (BL2.1): o que ela decide, o que a pessoa terá ao final e quanto tempo leva
 function introFase(f) {
@@ -1013,72 +1017,8 @@ function proximo(fid, id) {
   const nf = FASES[FASES.findIndex(f => f.id === fid) + 1];
   return nf ? { tipo: 'fase', fase: nf } : { tipo: 'plano' };
 }
-function botaoSeguir(fid, id, act) {
-  const p = proximo(fid, id);
-  if (p.tipo === 'plano') return `<button type="button" class="btn pri" data-act="gerar-plano">${esc(tr('Gerar plano de contratação'))}</button>`;
-  const txt = p.tipo === 'passo' ? tr('Continuar para ' + numPasso(p.id)) : tr('Continuar para a fase ' + p.fase.n + ': ' + p.fase.nome);
-  return `<button type="button" class="btn pri" data-act="${act || 'continuar'}"${act === 'ir-fase' ? ` data-f2="${p.fase.id}"` : ''} data-de="${id}">${esc(txt)}</button>`;
-}
-function rodapePasso(fid, id) {
-  if (PASSOS_VER.includes(id)) return `<div class="pe" id="pe-${id}"><div class="passo-pe">${botaoSeguir(fid, id)}</div></div>`;
-  const fs = faltas(id);
-  // pendentes de verdade: sem resposta mesmo considerando as sugestões como confirmadas
-  const pend = fs.filter(f => !qOk(f, true));
-  if (!fs.length) return `<div class="pe" id="pe-${id}"><div class="passo-pe"><span class="ok-msg">${esc(tr('Passo completo.'))}</span>${botaoSeguir(fid, id)}</div></div>`;
-  if (!pend.length) {
-    const p = proximo(fid, id);
-    return `<div class="pe" id="pe-${id}"><div class="passo-pe"><span class="muted">${esc(tr(id === '2b' ? 'Revise as respostas sugeridas pelas tarefas.' : 'Revise as respostas sugeridas.'))}</span>
-      <button type="button" class="btn pri" data-act="continuar-confirmar" data-de="${id}">${esc(p.tipo === 'passo' ? tr('Confirmar e continuar para ' + numPasso(p.id)) : tr('Confirmar e continuar'))}</button></div></div>`;
-  }
-  return `<div class="pe" id="pe-${id}"><div class="aviso"><b>${esc(tr('Ainda falta responder neste passo:'))}</b>
-    <ul>${fs.map(f => `<li><button type="button" class="link" data-ir="${fid}:${id}:${f.n.replace(/\./g, '-')}"><span class="qn-l">${f.n}</span> <span>${esc(textoCampo(f))}</span></button></li>`).join('')}</ul>
-    <div class="row"><button type="button" class="btn" data-act="continuar-forcar" data-de="${id}">${esc(tr('Continuar mesmo assim'))}</button><span class="small muted">${esc(tr('Você pode voltar depois.'))}</span></div></div></div>`;
-}
-function rodapeFase(f) {
-  const n = PASSOS[f.id].reduce((s, [id]) => s + (PASSOS_VER.includes(id) ? 0 : faltas(id).length), 0);
-  const naoVistos = PASSOS[f.id].filter(([id]) => PASSOS_VER.includes(id) && !S.feitos[id]).map(([id]) => id);
-  const ult = PASSOS[f.id][PASSOS[f.id].length - 1][0];
-  const completa = progressoFase(f.id).completa;
-  const msg = completa ? `<span class="ok-msg">${esc(tr('Fase ' + f.n + ' completa'))}</span>`
-    : `<span class="muted">${esc(n ? (n === 1 ? tr('Falta 1 resposta nesta fase. Você pode continuar e voltar depois.') : tr('Faltam ' + n + ' respostas nesta fase. Você pode continuar e voltar depois.')) : tr(naoVistos.includes('4b') ? 'Abra a estimativa de custo para concluir esta fase.' : 'Abra as recomendações para você (4.3) para concluir esta fase.'))}</span>`;
-  return `<div class="fase-pe" id="fpe-${f.id}">${msg}${botaoSeguir(f.id, ult, f.id === 'expansao' ? '' : 'ir-fase')}</div>`;
-}
-function marcaPasso(id, st) {
-  return st === 'ok' ? `<span aria-hidden="true">✓</span><span class="sr">${numPasso(id)}</span>` : numPasso(id);
-}
-function renderPasso(f, id, nome) {
-  const fixo = id === '20';
-  const ab = fixo || S.passo === id, st = estadoPasso(id), pi = PASSO_INFO[id] || {};
-  const selo = pi.selo ? ` <span class="selo">${esc(pi.selo)}</span>` : '';
-  const info = pi.info ? botaoInfo(pi.info, 'p-' + id) : '';
-  const titulo = `<span class="pn">${marcaPasso(id, st)}</span><span class="pt"><b><span>${esc(nome)}</span>${selo}</b>${!ab ? `<small>${esc(resumoPasso(id))}</small>` : ''}</span>`;
-  const cab = fixo ? `<div class="passo-cab fixo">${titulo}</div>` : `<button type="button" class="passo-cab" data-passo="${id}" aria-expanded="${ab}">${titulo}<span class="chev" aria-hidden="true"></span></button>`;
-  return `<div class="passo st-${st || 'novo'}${ab ? ' aberto' : ''}${fixo ? ' fixo' : ''}" id="passo-${id}">
-    <div class="passo-topo">${cab}${info}</div>${pi.info ? notaInfo(pi.info, 'p-' + id) : ''}
-    ${ab ? `<div class="passo-corpo">${corpoPasso(id)}${rodapePasso(f.id, id)}</div>` : ''}</div>`;
-}
-function marcaFase(f, pr) { return pr.completa ? `<span aria-hidden="true">✓</span><span class="sr">${f.n}</span>` : f.n; }
-function renderFase(f) {
-  const aberta = S.fase === f.id, pr = progressoFase(f.id);
-  const cab = `<button type="button" class="fase-cab" data-fase="${f.id}" aria-expanded="${aberta}">
-      <span class="fase-n">${marcaFase(f, pr)}</span><span class="fase-t"><b>${esc(f.nome)}</b><small>${esc(f.sub)}</small></span>
-      <span class="fase-st">${esc(tr(pr.feitos + ' de ' + pr.total + ' passos'))}</span><span class="chev" aria-hidden="true"></span></button>`;
-  if (!aberta) return `<section class="fase f${f.n}${pr.completa ? ' feita' : ''}" id="fase-${f.id}">${cab}</section>`;
-  const ab = `<p class="abertura"><span>${esc(f.abertura)}</span>${f.info ? ' ' + botaoInfo(f.info, 'f-' + f.id) : ''}</p>${f.info ? notaInfo(f.info, 'f-' + f.id) : ''}${introFase(f)}`;
-  return `<section class="fase f${f.n} aberta${pr.completa ? ' feita' : ''}" id="fase-${f.id}">${cab}
-    <div class="fase-corpo">${ab}
-      ${PASSOS[f.id].map(([id, nome]) => renderPasso(f, id, nome)).join('')}
-      ${rodapeFase(f)}
-    </div></section>`;
-}
-function renderStepper() {
-  const el = $('#stepper'); if (!el) return;
-  el.innerHTML = FASES.map(f => {
-    const pr = progressoFase(f.id), at = S.fase === f.id && S.vista !== 'plano';
-    return `<button type="button" class="step-f f${f.n}${at ? ' at' : ''}${pr.completa ? ' feita' : ''}" data-fase="${f.id}" aria-current="${at}">
-      <span class="sf-n">${marcaFase(f, pr)}</span><span class="sf-t">${esc(f.nome)}</span><span class="sf-bar"><i style="width:${Math.round(100 * pr.pct)}%"></i></span></button>`;
-  }).join('') + `<button type="button" class="step-r${S.vista === 'plano' ? ' at' : ''}" data-act="gerar-plano" aria-current="${S.vista === 'plano'}"><span class="sf-t">${esc(tr('Gerar plano de contratação'))}</span></button>`;
-}
+// v15 (B): botaoSeguir, rodapePasso e navegação entre passos ficam em trabalho.js
+// v15 (B): índice, passo atual, painel de custo e render ficam em trabalho.js
 function boasVindas() {
   const sv = typeof SALVO !== 'undefined' ? SALVO : null;
   // v13: página inicial do pacote B2 (inicio.js); o restante fica como reserva
@@ -1101,161 +1041,6 @@ function boasVindas() {
     <p class="small muted">As respostas ficam salvas só neste navegador. Você pode exportar o caso a qualquer momento.</p>
   </section>`;
 }
-function chamadaFinal() {
-  return `<section class="cta-resumo card" id="fase-final"><div><div class="eyebrow">Ao terminar</div><h2>Plano de contratação</h2>
-    <p class="muted">Custo e compra primeiro, depois política e governança, com o diagnóstico e as recomendações do caso. Você pode gerar o plano a qualquer momento: ele lista o que ainda falta responder. Exporte em PDF.</p></div>
-    <button type="button" class="btn pri grande" data-act="gerar-plano">Gerar plano de contratação</button></section>`;
-}
-
-// ----------------------------------------------------------- mandala
-function mandala() {
-  const cx = 150, cy = 150;
-  const pt = (r, a) => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
-  const f1 = v => v.toFixed(1);
-  const setor = (r0, r1, a0, a1) => {
-    const g = r0 ? 0.012 : 0.02;
-    const [x0, y0] = pt(r1, a0 + g), [x1, y1] = pt(r1, a1 - g);
-    const larga = a1 - a0 > Math.PI ? 1 : 0;
-    if (!r0) return `M${cx},${cy} L${f1(x0)},${f1(y0)} A${r1},${r1} 0 ${larga} 1 ${f1(x1)},${f1(y1)}Z`;
-    const [x2, y2] = pt(r0, a1 - g), [x3, y3] = pt(r0, a0 + g);
-    return `M${f1(x0)},${f1(y0)} A${r1},${r1} 0 ${larga} 1 ${f1(x1)},${f1(y1)} L${f1(x2)},${f1(y2)} A${r0},${r0} 0 ${larga} 0 ${f1(x3)},${f1(y3)}Z`;
-  };
-  const ang = (i, n) => -Math.PI / 2 + i * 2 * Math.PI / n;
-  const ANEIS = { contexto: [0, 40], piloto: [44, 76], implantacao: [80, 98], expansao: [102, 120] };
-  const EST = { ok: ['m-ok', 'concluído'], andamento: ['m-and', 'em andamento'], '': ['m-vazio', 'ainda não iniciado'] };
-  let s = `<svg class="mandala" viewBox="-6 -6 312 312" role="img" aria-label="${esc(tr('Mandala: fases, passos e camadas'))}">`;
-  FASES.forEach(f => {
-    const [r0, r1] = ANEIS[f.id], ps = PASSOS[f.id];
-    ps.forEach(([id, nome], i) => {
-      const a0 = ang(i, ps.length), a1 = ang(i + 1, ps.length), st = estadoPasso(id), [cls, rot] = EST[st];
-      const at = S.vista !== 'plano' && S.fase === f.id && (S.passo === id);
-      const [tx, ty] = pt(r0 ? (r0 + r1) / 2 : 24, (a0 + a1) / 2);
-      s += `<a href="#" data-ir="${f.id}:${id}" data-setor="${id}" class="m-set f${f.n} ${cls}${at ? ' m-at' : ''}"><title>${esc(numPasso(id) + ' ' + tr(nome) + ' · ' + tr(rot))}</title><path d="${setor(r0, r1, a0, a1)}"/><text x="${f1(tx)}" y="${f1(ty + 4)}" text-anchor="middle">${numPasso(id)}</text></a>`;
-    });
-  });
-  CAMADAS.forEach(([n, nome], i) => {
-    const a0 = ang(i, 7), a1 = ang(i + 1, 7);
-    const ok = CAMADA_PASSOS[n].every(passoFeito);
-    const alvo = CAMADA_PASSOS[n][0];
-    s += `<a href="#" data-ir="${fasePasso(alvo)}:${alvo}" data-camada="${n}" class="m-cam ${ok ? 'm-ok' : 'm-vazio'}"><title>${esc(tr('Camada') + ' ' + n + ' · ' + tr(nome) + ' · ' + tr(ok ? 'concluída' : 'ainda não concluída'))}</title><path d="${setor(124, 138, a0, a1)}"/></a>`;
-    const [x, y] = pt(147, (a0 + a1) / 2);
-    s += `<text x="${f1(x)}" y="${f1(y + 4)}" text-anchor="middle" class="m-l">${n}</text>`;
-  });
-  return s + '</svg>';
-}
-
-// ----------------------------------------------------------- painel lateral
-function renderPainel() {
-  const el = $('#painel'); if (!el) return;
-  // escolha pendente entre o caso salvo e um caso em branco: o painel não mostra o caso salvo
-  if (typeof SALVO !== 'undefined' && SALVO && S.boasVindas !== false) {
-    el.innerHTML = `<div class="card painel-in"><div class="prog"><div class="eyebrow">Seu progresso</div>
-      <p class="small muted">Escolha se quer continuar o caso salvo ou começar em branco.</p></div></div>`;
-    return;
-  }
-  const t = totaisCtx(), c = S.caso;
-  const prog = FASES.map(f => { const pr = progressoFase(f.id); return `<li><button type="button" class="prog-f f${f.n}${pr.completa ? ' feita' : ''}" data-fase="${f.id}"><span class="fase-n">${marcaFase(f, pr)}</span><span class="vl-t">${esc(f.nome)}</span><span class="vl-n">${esc(tr(pr.feitos + ' de ' + pr.total + ' passos'))}</span></button></li>`; }).join('');
-  const m = modoTeste(c);
-  const teste = m ? (m === 'recomendar' ? tr('a recomendar') : rotTestes()) : '—';
-  const tec = c.tipoTec ? tr(rotulo(listaOpc(CAMPO_POR_ID.tipoTec), c.tipoTec)) : '—';
-  let est = '';
-  const fe = faltasEstimativa();
-  if (!fe.length) {
-    try {
-      const n = numerosCusto(), ce = casoAtual();
-      const pessoas = Math.max(0, ...(n.av.r.E || []).slice(1)) || +ce.elegiveis || 0;
-      est = `<div class="estim"><div class="eyebrow">Estimativa ilustrativa</div>
-        <p class="small premissa">${esc(tr('Considera ' + fmtInt(pessoas) + ' pessoas usando a ferramenta na rede (passo 4.1.1).'))}</p>
-        <div class="linha"><span>Ano 0 (prova de conceito ou piloto)</span><span class="num">${grande(n.ano0)}</span></div>
-        <div class="linha"><span><span>Custo total do ciclo</span> <small>(${esc(tr(n.H + ' anos'))})</small></span><span class="num">${grande(n.total)}</span></div>
-        <p class="small muted">Valores ilustrativos. As premissas estão no passo 4.2.</p></div>`;
-    } catch (e) { est = ''; }
-  } else {
-    est = `<div class="estim"><div class="eyebrow">Estimativa ilustrativa</div>
-      <p class="small muted">${esc(tr('A estimativa de custo aparece depois destas respostas:'))}</p>
-      <ul class="req small">${fe.map(f => `<li><button type="button" class="link" data-ir="${irCampo(f)}"><span class="qn-l">${f.n}</span> <span>${esc(textoCampo(f))}</span></button></li>`).join('')}</ul></div>`;
-  }
-  const exp = `<button type="button" class="link" data-act="exp-json">${CAP.downloads ? 'Exportar caso' : 'Copiar dados do caso'}</button>`;
-  el.innerHTML = `<div class="card painel-in">
-    <div class="prog"><div class="eyebrow">Seu progresso</div><ul class="vlist">${prog}</ul></div>
-    <div class="mand">${mandala()}
-      <p class="small muted leg-m"><span>Verde: concluído. Cor clara: em andamento. Contorno: ainda não iniciado. Centro: fase 1; anéis: fases 2, 3 e 4; anel externo: as sete camadas do custo total.</span> ${botaoInfo('c37', 'm')}</p>${notaInfo('c37', 'm')}
-      <ol class="leg">${CAMADAS.map(([n, nome]) => `<li><span class="cn">${n}</span>${esc(nome)}</li>`).join('')}</ol></div>
-    <div class="fatos"><div class="eyebrow">Seu caso</div>
-      <div class="linha"><span>Lugar</span><span>${esc(S.ctx.local || '—')}</span></div>
-      <div class="linha"><span>Estudantes</span><span class="num">${t.alunos ? fmtInt(t.alunos) : '—'}</span></div>
-      <div class="linha"><span>Aplicações</span><span>${esc((c.tarefas || []).length ? rotTarefas(3) : '—')}</span></div>
-      <div class="linha"><span>Teste</span><span>${esc(teste)}</span></div>
-      <div class="linha"><span>Tecnologia</span><span>${esc(tec)}</span></div>
-    </div>
-    ${est}
-    <div class="painel-acoes"><button class="btn pri grande" type="button" data-act="gerar-plano">Gerar plano de contratação</button>
-      <span class="small muted">Salvo neste navegador</span>
-      <span class="row small">${exp}<button type="button" class="link" data-act="imp-json">Importar caso</button>${temRespostas(S) && !CONF_LIMPAR ? '<button type="button" class="link" id="btn-limpar" data-act="limpar-pedir">Começar em branco</button>' : ''}</span>
-      ${CONF_LIMPAR ? confLimpar() : ''}</div>
-  </div>`;
-}
-
-// Confirmação inline de "Começar em branco" (sem caixas de diálogo do navegador)
-function confLimpar() {
-  return `<div class="conf-limpar" id="conf-limpar" role="group" aria-labelledby="conf-limpar-t">
-    <p id="conf-limpar-t"><b>Começar em branco?</b> <span>As respostas atuais serão apagadas deste navegador. Para guardá-las, exporte o caso antes.</span></p>
-    <div class="row"><button type="button" class="btn pri" data-act="limpar-ok">Apagar e começar em branco</button><button type="button" class="btn" data-act="limpar-nao">Cancelar</button></div></div>`;
-}
-
-// ----------------------------------------------------------- render
-function render() {
-  estadoFluxo();
-  if (S.vista !== 'plano' && S.fase === 'expansao' && PASSOS_VER.includes(S.passo)) S.feitos[S.passo] = true;
-  aplicarPadroes();
-  const y = window.scrollY, foco = document.activeElement && document.activeElement.id;
-  const ex = ['A', 'B', 'C', 'D', 'editado'].includes(S.exemplo) && S.boasVindas === false;
-  const tituloEx = ['A', 'B', 'C', 'D'].includes(S.exemplo) && typeof CASOS !== 'undefined' && CASOS[S.exemplo] ? CASOS[S.exemplo].titulo : '';
-  let corpo;
-  if (S.vista === 'plano') corpo = typeof renderPlano === 'function' ? renderPlano() : `<section class="card" id="plano"><p class="muted">O plano de contratação ainda não está disponível.</p><button type="button" class="btn" data-act="voltar-percurso">Voltar ao percurso</button></section>`;
-  else corpo = FASES.map(renderFase).join('') + chamadaFinal();
-  $('#main').innerHTML = `${S.boasVindas !== false ? '' : '<nav class="stepper" id="stepper" aria-label="Fases"></nav>'}
-    ${S.boasVindas !== false ? boasVindas() : ''}
-    ${ex ? `<div class="alert info"><span class="ic">Exemplo</span><span>${tituloEx ? esc(tr('Você está vendo um caso ilustrativo do guia, com respostas fictícias:')) + ' <b>' + esc(tr(tituloEx)) + '</b>. ' : ''}<span>Edite as respostas ou comece um caso em branco.</span></span><button class="btn" type="button" data-act="limpar">Começar um caso em branco</button></div>` : ''}
-    ${S.boasVindas !== false && S.vista !== 'plano' ? '' : corpo}`;
-  renderStepper(); renderPainel();
-  // v12: na vista do plano o painel lateral sai e o relatório usa a largura toda (fluxo.css: body.vista-plano)
-  document.body.classList.toggle('vista-plano', S.vista === 'plano');
-  if (S.vista === 'plano' && typeof montarPlano === 'function') { try { montarPlano(); } catch (e) { console.warn(e); } }
-  if (document.getElementById('cres') && typeof renderCustosResultados === 'function') renderCustosResultados();
-  if (foco) { const f = document.getElementById(foco); if (f) try { f.focus({ preventScroll: true }); } catch (e) { } }
-  window.scrollTo(0, y);
-  salvar();
-}
-function atualizarLaterais() { aplicarPadroes(); renderStepper(); renderPainel(); atualizarFaseViva(); salvar(); }
-// Atualiza marcas de respondida, passos, rodapés e cabeçalho da fase aberta sem redesenhar a página
-function atualizarFaseViva() {
-  document.querySelectorAll('.q[data-campo]').forEach(q => {
-    const f = CAMPO_POR_ID[q.dataset.campo]; if (!f) return;
-    const ok = qOk(f), sug = sugerido(f) && !vazio(valorCampo(f));
-    q.classList.toggle('ok', ok); q.classList.toggle('sug', sug);
-    if (f.sugDe === 'problemas' && ['texto', 'area'].includes(f.tipo)) q.classList.toggle('lacuna', temLac(valorCampo(f)));
-    const sr = q.querySelector('.q-sr'); if (sr && sr.dataset.v !== String(ok)) { sr.dataset.v = String(ok); sr.textContent = ok ? tr('respondida') : ''; }
-  });
-  const fid = S.fase; if (!fid || S.vista === 'plano') return;
-  const sec = document.getElementById('fase-' + fid); if (!sec) return;
-  const f = FASES.find(z => z.id === fid), pr = progressoFase(fid);
-  sec.classList.toggle('feita', pr.completa);
-  const fn = sec.querySelector('.fase-cab .fase-n'); if (fn) { const h = String(marcaFase(f, pr)); if (fn.innerHTML !== h) fn.innerHTML = h; }
-  const fst = sec.querySelector('.fase-cab .fase-st'); if (fst) fst.textContent = tr(pr.feitos + ' de ' + pr.total + ' passos');
-  PASSOS[fid].forEach(([id]) => {
-    const p = document.getElementById('passo-' + id); if (!p) return;
-    const st = estadoPasso(id);
-    ['st-ok', 'st-andamento', 'st-novo'].forEach(c => p.classList.remove(c)); p.classList.add('st-' + (st || 'novo'));
-    const pn = p.querySelector('.pn'); if (pn) { const h = String(marcaPasso(id, st)); if (pn.innerHTML !== h) pn.innerHTML = h; }
-    const sm = p.querySelector('.pt small'); if (sm) sm.textContent = resumoPasso(id);
-  });
-  ['20', S.passo].filter(Boolean).forEach(id => {
-    const pe = document.getElementById('pe-' + id);
-    if (pe && PASSOS[fid].some(p => p[0] === id)) { const novo = rodapePasso(fid, id); if (pe.outerHTML !== novo) pe.outerHTML = novo; }
-  });
-  const fpe = document.getElementById('fpe-' + fid); if (fpe) { const novo = rodapeFase(f); if (fpe.outerHTML !== novo) fpe.outerHTML = novo; }
-}
 function alvoQ(alvo) {
   if (!alvo) return '';
   if (document.getElementById('q-' + alvo)) return 'q-' + alvo;
@@ -1266,24 +1051,32 @@ function irPara(id) {
   const el = document.getElementById(id); if (!el) return;
   // v13: a pergunta pode estar num <details> recolhido ("Para a implantação", subcategorias): abre antes de rolar
   for (let d = el.closest('details'); d; d = d.parentElement && d.parentElement.closest('details')) { if (!d.open) d.open = true; }
-  const top = el.getBoundingClientRect().top + window.scrollY - (document.querySelector('.top') || { offsetHeight: 0 }).offsetHeight - 12;
+  // v15 (B): o passo aberto é o único da tela; ir ao passo é voltar ao topo
+  if (/^passo-/.test(id)) { window.scrollTo({ top: 0, behavior: 'instant' }); return; }
+  const fixos = [document.querySelector('.top'), document.querySelector('.passo-gaveta-b')].reduce((a, x) => a + (x && getComputedStyle(x).position === 'sticky' ? x.offsetHeight : 0), 0);
+  const top = el.getBoundingClientRect().top + window.scrollY - fixos - 16;
   window.scrollTo({ top, behavior: 'smooth' });
   if (el.classList.contains('q')) { el.classList.add('pisca'); setTimeout(() => el.classList.remove('pisca'), 1600); }
 }
 function abrirFase(fid, passo, alvo) {
   if (!PASSOS[fid]) return;
   if (alvo && !passo) { const f = CAMPO_POR_ID[alvo]; if (f) passo = passoDe(f); }
-  S.fase = fid; S.passo = passo || PASSOS[fid][0][0]; S.boasVindas = false; S.vista = ''; render();
-  requestAnimationFrame(() => irPara(alvo ? alvoQ(alvo) : 'passo-' + S.passo));
+  const mudou = S.passo !== (passo || PASSOS[fid][0][0]) || S.vista === 'plano' || S.boasVindas !== false;
+  S.fase = fid; S.passo = passo || PASSOS[fid][0][0]; S.boasVindas = false; S.vista = '';
+  if (typeof fecharGavetas === 'function') fecharGavetas();
+  if (typeof PREM_ABERTO !== 'undefined') PREM_ABERTO = false;
+  render();
+  requestAnimationFrame(() => { irPara(alvo ? alvoQ(alvo) : 'passo-' + S.passo); if (mudou && !alvo && typeof focoPasso === 'function') focoPasso(); });
 }
 function gerarPlano() {
   S.boasVindas = false;
+  if (typeof fecharGavetas === 'function') fecharGavetas();
   if (typeof abrirPlano === 'function') { abrirPlano(); return; }
   S.vista = 'plano'; render(); window.scrollTo({ top: 0, behavior: 'instant' });
 }
+// v15 (B): "Continuar" sempre avança; com respostas faltando, o passo fica com pendências no índice
 function continuar(modo, de) {
   const id = de || S.passo, fid = fasePasso(id); if (!fid) return;
-  if (modo === 'normal' && faltas(id).length) { render(); return; }
   if (modo === 'confirmar') {
     camposPasso(id).forEach(f => { if (sugerido(f) && !vazio(valorCampo(f))) confirmarSugestao(f); });
     S.revisar = (S.revisar || []).filter(k => !S.respC[k]);
@@ -1292,7 +1085,7 @@ function continuar(modo, de) {
   const p = proximo(fid, id);
   if (p.tipo === 'plano') { gerarPlano(); return; }
   if (p.tipo === 'fase') { abrirFase(p.fase.id); return; }
-  S.fase = fid; S.passo = p.id; render(); requestAnimationFrame(() => irPara('passo-' + p.id));
+  abrirFase(fid, p.id);
 }
 // Gancho chamado por app.js depois de gravar S.caso[campo] (ou um caminho como 'piloto.escolas').
 // Devolve true porque já atualizou a tela.
@@ -1340,6 +1133,8 @@ function gravarFerramenta(el, final) {
 }
 function eventoFluxo(e) {
   const el = e.target;
+  // v15 (B): painel de trabalho (menu Caso, gavetas, abas, confirmação de troca)
+  if (typeof eventoTrabalho === 'function' && eventoTrabalho(e)) return true;
   // v13: página inicial e matriz (pacote B2, inicio.js)
   if (typeof eventoInicio === 'function' && eventoInicio(e)) return true;
   if (typeof eventoPais === 'function' && eventoPais(e)) return true;
@@ -1355,9 +1150,9 @@ function eventoFluxo(e) {
     const iz = el.closest('[data-ir]');
     if (iz) { e.preventDefault(); const [f, p, q] = iz.dataset.ir.split(':'); abrirFase(f, p, q); return true; }
     const fz = el.closest('[data-fase]');
-    if (fz) { const id = fz.dataset.fase; if (S.fase === id && S.vista !== 'plano' && fz.classList.contains('fase-cab')) { S.fase = ''; render(); } else abrirFase(id, S.fase === id ? S.passo : ''); return true; }
+    if (fz) { const id = fz.dataset.fase; abrirFase(id, S.fase === id ? S.passo : ''); return true; }
     const pz = el.closest('[data-passo]');
-    if (pz) { const id = pz.dataset.passo; S.passo = S.passo === id ? '' : id; render(); if (S.passo) requestAnimationFrame(() => irPara('passo-' + id)); return true; }
+    if (pz) { const id = pz.dataset.passo; abrirFase(fasePasso(id), id); return true; }
     const rz = el.closest('[data-resp]');
     if (rz) {
       const id = rz.dataset.resp, v = rz.dataset.v;
@@ -1394,9 +1189,6 @@ function eventoFluxo(e) {
     const a = el.closest('[data-act]'); if (!a) return false;
     const act = a.dataset.act;
     if (act === 'continuar-salvo') { continuarSalvo(); return true; }
-    if (act === 'limpar-pedir') { CONF_LIMPAR = true; renderPainel(); requestAnimationFrame(() => { const b = document.querySelector('#conf-limpar [data-act="limpar-nao"]'); if (b) b.focus(); }); return true; }
-    if (act === 'limpar-nao') { CONF_LIMPAR = false; renderPainel(); requestAnimationFrame(() => { const b = document.getElementById('btn-limpar'); if (b) b.focus(); }); return true; }
-    if (act === 'limpar-ok') { CONF_LIMPAR = false; carregarExemplo('novo'); S.boasVindas = false; abrirFase('contexto', '1a'); return true; }
     if (act === 'ferr-add') {
       const L = S.caso.ferramentas = S.caso.ferramentas || []; L.push(novaFerramenta()); S.respC.ferramentas = true; if (S.custo) S.custo.editado = false; render();
       requestAnimationFrame(() => { const i = document.getElementById('fe-' + (L.length - 1) + '-nome'); if (i) i.focus(); });
@@ -1420,9 +1212,10 @@ function eventoFluxo(e) {
     if (act === 'continuar') { continuar('normal', a.dataset.de); return true; }
     if (act === 'continuar-forcar') { continuar('forcar', a.dataset.de); return true; }
     if (act === 'continuar-confirmar') { continuar('confirmar', a.dataset.de); return true; }
-    if (act === 'ir-fase') { const ult = PASSOS[S.fase] ? PASSOS[S.fase][PASSOS[S.fase].length - 1][0] : ''; if (ult && a.dataset.de === ult && passoFeito(ult)) S.feitos[ult] = true; abrirFase(a.dataset.f2); return true; }
-    if (act === 'comecar') { S.boasVindas = false; carregarExemplo('novo'); S.boasVindas = false; abrirFase('contexto', '1a'); return true; }
-    if (act === 'ver-exemplo') { carregarExemplo('B'); S.boasVindas = false; abrirFase('contexto', '1a'); return true; }
+    if (act === 'ir-fase-v14') { const ult = PASSOS[S.fase] ? PASSOS[S.fase][PASSOS[S.fase].length - 1][0] : ''; if (ult && a.dataset.de === ult && passoFeito(ult)) S.feitos[ult] = true; abrirFase(a.dataset.f2); return true; }
+    // v15 (C3): começar em branco ou abrir um exemplo por cima de um caso com respostas pede confirmação (trabalho.js)
+    if (act === 'comecar') { pedirTroca('um caso em branco', () => { S.boasVindas = false; carregarExemplo('novo'); S.boasVindas = false; abrirFase('contexto', '1a'); }); return true; }
+    if (act === 'ver-exemplo') { pedirTroca('Exemplo: tutor para estudantes', () => { carregarExemplo('B'); S.boasVindas = false; abrirFase('contexto', '1a'); }); return true; }
     if (act === 'gerar-plano' || act === 'ir-resumo' || act === 'ir-final') { gerarPlano(); return true; }
     if (act === 'voltar-percurso' || act === 'voltar-fases') { S.vista = ''; render(); window.scrollTo({ top: 0, behavior: 'instant' }); return true; }
     if (act === 'pdf') { if (typeof baixarPDF === 'function') baixarPDF(); return true; }

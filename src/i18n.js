@@ -60,6 +60,17 @@ function unidadesParaPT(s) {
   if (ordem.length) out = out.replace(new RegExp('(\\d) (' + ordem.map(i => rx(L[i])).join('|') + ')(?![\\p{L}])', 'gu'), (_, d, u) => d + ' ' + P[L.indexOf(u)]);
   return out;
 }
+// v15 (C9): o inverso de unidadesParaPT, para o texto já traduzido: "US$ 616.8 mil" → "US$ 616.8 k" em inglês. Sem isso, as
+// abreviações portuguesas "mil" e "mi" apareciam nas versões em inglês, espanhol e francês ("mil" em inglês se lê como milhão).
+function unidadesDePT(s) {
+  if (LANG === 'pt' || typeof s !== 'string') return s;
+  const cod = typeof moedaInfo === 'function' ? moedaInfo().cod : 'USD';
+  let out = s.split(unidMilDe(cod, 'pt')).join(unidMilDe(cod));
+  const L = magnitudes(), P = MAGNITUDES.pt;
+  const ordem = [2, 1, 0].filter(i => L[i] !== P[i]);
+  if (ordem.length) out = out.replace(new RegExp('(\\d) (' + ordem.map(i => P[i]).join('|') + ')(?![\\p{L}])', 'gu'), (_, d, u) => d + ' ' + L[P.indexOf(u)]);
+  return out;
+}
 function normalizar(s) {
   const nums = [];
   // marcas bidi que o Intl põe nas datas e números em árabe (3‏/10‏/2026) não fazem parte da chave
@@ -104,7 +115,8 @@ function tr(s) {
   if (alvo == null && !tr.emPT) {
     // valores e unidades já no idioma exibido (grande(), unidMil()): procura a forma em português
     const pt = unidadesParaPT(corpo);
-    if (pt !== corpo) { let t; tr.emPT = true; try { t = tr(pt); } finally { tr.emPT = false; } if (t !== pt) return m[1] + t + m[3]; }
+    // v15: a tradução da forma em português traz de volta os valores em português ("US$ 616,8 mil"); unidadesDePT os devolve ao idioma exibido
+    if (pt !== corpo) { let t; tr.emPT = true; try { t = tr(pt); } finally { tr.emPT = false; } if (t !== pt) return m[1] + unidadesDePT(t) + m[3]; }
   }
   if (alvo == null) {
     // número com magnitude abreviada: "R$ 1,8 mi"
@@ -333,15 +345,8 @@ const FONTES_IDIOMA = {
   zh: 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700&family=Noto+Serif+SC:wght@600;700&display=swap',
   bm: 'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Noto+Serif:wght@600;700&display=swap&text=' + encodeURIComponent('ƐƆƝŊɛɔɲŋ\u0300\u0301\u030c'),
 };
-function carregarFonteIdioma(l) {
-  const url = FONTES_IDIOMA[l];
-  if (!url || typeof document === 'undefined' || document.getElementById('fonte-' + l)) return;
-  try {
-    const k = document.createElement('link');
-    k.id = 'fonte-' + l; k.rel = 'stylesheet'; k.href = url;
-    (document.head || document.documentElement).appendChild(k);
-  } catch (e) { }
-}
+// v15: sem fontes externas (página offline). Ficam as fontes instaladas no sistema, na pilha de idiomas.css.
+function carregarFonteIdioma(l) { return l && false; }
 
 // ---------------------------------------------------------- v13 (RQ-18): aviso de tradução preliminar
 // Nos idiomas novos ainda não revisados: no idioma e em inglês, (a) abaixo do seletor ao escolher o idioma,
@@ -398,7 +403,7 @@ function avisoNoPlano() {
 function atualizarAvisoTrad() {
   if (typeof document === 'undefined') return;
   const f = document.getElementById('faixa-trad');
-  if (f) { const h = avisoTradHTML('faixa-trad-tx'); f.innerHTML = h; f.hidden = !h; }
+  if (f) { const h = avisoTradHTML('faixa-trad-tx'); f.innerHTML = h ? h + `<button type="button" class="faixa-trad-x" data-notr aria-label="${escAviso((dicionario() || {})['Fechar'] || 'Close')}" onclick="this.parentElement.hidden = true">×</button>` : ''; f.hidden = !h; }
   const box = document.getElementById('aviso-lang');
   if (box && !avisoTraducao()) { box.hidden = true; box.innerHTML = ''; }
   avisoNoPlano();
