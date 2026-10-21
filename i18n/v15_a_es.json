@@ -62,7 +62,7 @@
  "O número de cada passo não muda.": "El número de cada paso no cambia.",
  "Mostrar todas as perguntas (não só as essenciais)": "Mostrar todas las preguntas (no solo las esenciales)",
  "Seu caso": "Su caso",
- "Ano 0 a Ano {0}": "Año 0 a Año {0}",
+ "Ano {0} a Ano {1}": "Año {0} a Año {1}",
  "Faltam respostas para estimar o custo": "Faltan respuestas para estimar el costo",
  "Faixa provável": "Rango probable",
  "{0} em {1} de {2} simulações": "{0} de cada {1} de {2} simulaciones",
@@ -80,7 +80,7 @@
  "Falta 1 resposta para estimar o custo": "Falta 1 respuesta para estimar el costo",
  "Faltam {0} respostas para estimar o custo": "Faltan {0} respuestas para estimar el costo",
  "Custo total estimado": "Costo total estimado",
- "Custo total estimado · Ano 0 a Ano {0}": "Costo total estimado · Año 0 a Año {0}",
+ "Custo total estimado · Ano {0} a Ano {1}": "Costo total estimado · Año {0} a Año {1}",
  "Custo total": "Costo total",
  "no custo total": "en el costo total",
  "no Ano 0": "en el Año 0",
@@ -115,5 +115,6 @@
  "pessoas": "personas",
  "Como o custo é calculado": "Cómo se calcula el costo",
  "Caso em branco": "Caso en blanco",
- "Exemplo": "Ejemplo"
+ "Exemplo": "Ejemplo",
+ "Mais ações": "Más acciones"
 }

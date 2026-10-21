@@ -24,8 +24,8 @@ const PDF_COR = {
   tintA: [229, 240, 250], tintB: [238, 233, 245], ambar: [253, 246, 231], ambarL: [230, 200, 140],
   fases: [[169, 212, 245], [95, 168, 227], [31, 111, 184], [11, 60, 110]],
   fasesS: [[111, 178, 230], [62, 143, 208], [22, 90, 153], [7, 42, 79]],
-  // camadas 1–7, cores da Figura 1 de Krueger e Jackson (2026)
-  camadas: [null, [12, 29, 83], [6, 102, 179], [9, 108, 114], [84, 125, 29], [94, 60, 134], [217, 116, 26], [27, 42, 85]],
+  // camadas 1–7 (v15, A3): os mesmos sete matizes da página (COR_CAMADA, resumo.js), distintos entre si
+  camadas: [null, [11, 92, 173], [34, 166, 200], [120, 68, 196], [47, 143, 91], [201, 151, 0], [217, 87, 127], [91, 103, 115]],
 };
 // Áreas do perfil do caso: chaves (em português) das linhas do resumo do caso em secoesPlano()
 const PDF_AREAS = [

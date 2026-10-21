@@ -21,11 +21,12 @@
 .faixa-trad .aviso-trad { max-width: 1400px; margin: 0 auto; padding: 6px 24px; }
 /* (a) abaixo do seletor de idioma: sobre o conteúdo, sem mudar a altura do cabeçalho */
 .ctrls { position: relative; }
-.aviso-lang { position: absolute; top: calc(100% + 8px); inset-inline-start: 0; z-index: 30; width: min(26rem, calc(100vw - 32px));
+/* v15 (C8): ancorado no fim da linha (para dentro da página), sem rolagem horizontal no árabe */
+.aviso-lang { position: absolute; top: calc(100% + 8px); inset-inline-end: 0; z-index: 30; width: min(26rem, calc(100vw - 32px));
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 10px 10px 10px 12px;
   background: var(--warn-bg); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); border-radius: var(--r-card); box-shadow: var(--shadow); }
 .aviso-lang .aviso-trad-tx { flex-direction: column; }
-.aviso-lang-x { flex: none; width: 28px; height: 28px; display: inline-grid; place-items: center; border: 1px solid var(--line-2); border-radius: var(--r);
+.aviso-lang-x { flex: none; width: 36px; height: 36px; display: inline-grid; place-items: center; border: 1px solid var(--line-2); border-radius: var(--r);
   background: var(--surface); color: var(--ink); cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0; }
 .aviso-lang-x:hover { border-color: var(--line-3); }
 /* (c) pé do plano de contratação */
@@ -35,25 +36,23 @@
 }
 @media print { .aviso-lang { display: none; } }
 
-/* ---------- 2. fontes por idioma (as folhas do Google Fonts entram por carregarFonteIdioma, i18n.js) */
-/* árabe: o latim (inglês do fallback, siglas, números) continua no Source Sans 3; as letras árabes vêm da Noto */
+/* ---------- 2. fontes por idioma (v15: sem folhas externas; famílias Noto instaladas no sistema, depois as do sistema) */
 :root:lang(ar) {
-  --f-ui: "Source Sans 3", "Noto Sans Arabic", "Source Sans Pro", -apple-system, "Segoe UI", Tahoma, "Noto Sans", system-ui, sans-serif;
-  --f-head: "Source Serif 4", "Noto Naskh Arabic", "Noto Sans Arabic", "Source Serif Pro", Georgia, serif;
+  --f-ui: "Noto Sans Arabic", "Noto Sans", -apple-system, "Segoe UI", Tahoma, system-ui, sans-serif;
+  --f-head: var(--f-ui);
 }
 :root:lang(zh) {
-  --f-ui: "Source Sans 3", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Source Sans Pro", -apple-system, "Segoe UI", "Noto Sans CJK SC", system-ui, sans-serif;
-  --f-head: "Source Serif 4", "Noto Serif SC", "Noto Sans SC", "Source Serif Pro", "Songti SC", Georgia, serif;
+  --f-ui: "Noto Sans", "Noto Sans SC", "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --f-head: var(--f-ui);
 }
-/* bambara: Noto Sans/Serif só para as letras que o Source Sans 3 / Source Serif 4 não têm (Ɛ Ɔ Ɲ) */
 :root:lang(bm) {
-  --f-ui: "Source Sans 3", "Noto Sans", "Source Sans Pro", -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
-  --f-head: "Source Serif 4", "Noto Serif", "Source Serif Pro", Charter, Georgia, serif;
+  --f-ui: "Noto Sans", -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+  --f-head: var(--f-ui);
 }
 /* árabe e chinês não têm itálico nem espaçamento entre letras (no árabe, ele quebra a ligação das letras) */
 :root:is(:lang(ar), :lang(zh)) :is(body, body *) { font-style: normal !important; }
 :root:lang(ar) body * { letter-spacing: 0 !important; }
-:root:lang(ar) body { line-height: 1.6; }
+:root:lang(ar) body { line-height: 1.7; }
 
 /* ---------- 3. árabe: da direita para a esquerda */
 /* textos em inglês (fallback) num bloco árabe: cada parágrafo toma a direção do próprio texto (pontuação no lugar)

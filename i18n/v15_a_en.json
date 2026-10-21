@@ -62,7 +62,7 @@
  "O número de cada passo não muda.": "Step numbers never change.",
  "Mostrar todas as perguntas (não só as essenciais)": "Show all questions (not only the essential ones)",
  "Seu caso": "Your case",
- "Ano 0 a Ano {0}": "Year 0 to Year {0}",
+ "Ano {0} a Ano {1}": "Year {0} to Year {1}",
  "Faltam respostas para estimar o custo": "Some answers are missing to estimate the cost",
  "Faixa provável": "Likely range",
  "{0} em {1} de {2} simulações": "{0} in {1} of {2} simulations",
@@ -80,7 +80,7 @@
  "Falta 1 resposta para estimar o custo": "1 answer is missing to estimate the cost",
  "Faltam {0} respostas para estimar o custo": "{0} answers are missing to estimate the cost",
  "Custo total estimado": "Estimated total cost",
- "Custo total estimado · Ano 0 a Ano {0}": "Estimated total cost · Year 0 to Year {0}",
+ "Custo total estimado · Ano {0} a Ano {1}": "Estimated total cost · Year {0} to Year {1}",
  "Custo total": "Total cost",
  "no custo total": "in the total cost",
  "no Ano 0": "in Year 0",
@@ -115,5 +115,6 @@
  "pessoas": "people",
  "Como o custo é calculado": "How the cost is calculated",
  "Caso em branco": "Blank case",
- "Exemplo": "Example"
+ "Exemplo": "Example",
+ "Mais ações": "More actions"
 }

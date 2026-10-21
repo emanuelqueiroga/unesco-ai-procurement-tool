@@ -465,7 +465,7 @@ function renderCustoBarra() {
   const tot = n.total, a0 = n.ano0;
   if (u.ultimo && (Math.abs(tot - u.ultimo.total) >= 0.5 || Math.abs(a0 - u.ultimo.ano0) >= 0.5)) {
     const q = u.qAtual;
-    u.delta = { v: tot - u.ultimo.total, a0: a0 - u.ultimo.ano0, q: q ? q.n + ' ' + (q.tipo === 'pais' ? tr(q.t) : textoCampo(q)) : '' };
+    u.delta = { v: tot - u.ultimo.total, a0: a0 - u.ultimo.ano0, q: q ? q.n + ' ' + tr(q.tipo === 'pais' ? q.t : textoCampo(q)) : '' };
     const live = document.getElementById('as-c-live');
     if (live) live.textContent = tr('Custo total estimado') + ': ' + grande(tot) + ' (' + relSinal(u.delta.v) + ')';
   }
@@ -606,4 +606,11 @@ if (typeof document !== 'undefined') document.addEventListener('keydown', e => {
 if (typeof document !== 'undefined') document.addEventListener('click', e => {
   const m = document.getElementById('menu-caso'); if (!m || !m.open) return;
   if (!m.contains(e.target) || (e.target.closest && e.target.closest('.menu-i'))) m.open = false;
+}, true);
+// plano: um link para um anexo recolhido (índice, "lista completa no anexo A") abre o anexo antes de rolar
+if (typeof document !== 'undefined') document.addEventListener('click', e => {
+  const a = e.target && e.target.closest && e.target.closest('a[href^="#plano-"]'); if (!a) return;
+  const alvo = document.getElementById(a.getAttribute('href').slice(1)); if (!alvo) return;
+  const d = alvo.matches('details') ? alvo : alvo.querySelector(':scope > details.rp-ax') || alvo.closest('details.rp-ax');
+  if (d && !d.open) d.open = true;
 }, true);

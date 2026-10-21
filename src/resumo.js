@@ -57,7 +57,8 @@ const AREAS_PERFIL = [
   ['implantacao', 'Implantação e expansão', '', ['Prova de conceito ou piloto', 'Prova de conceito: participantes e duração', 'Piloto: escolas, participantes e duração', 'Primeira etapa da implantação', 'Pessoas que usariam em toda a rede', 'Tempo para chegar a todos depois da implantação', 'Horizonte da estimativa']],
 ];
 // Cores das camadas (Figura 1 de Krueger e Jackson, 2026, p. 11), na ordem 1–7; usadas na página e no PDF
-const COR_CAMADA = ['#0C1D53', '#0666B3', '#096C72', '#547D1D', '#5E3C86', '#D9741A', '#1B2A55'];
+// v15 (A3): sete matizes distintos (antes as camadas 1 e 7 tinham 1,15:1 entre si); as mesmas cores no PDF (PDF_COR.camadas)
+const COR_CAMADA = ['#0B5CAD', '#22A6C8', '#7844C4', '#2F8F5B', '#C99700', '#D9577F', '#5B6773'];
 
 // ----------------------------------------------------------- v13: prioridades, problemas, detalhes e matriz do caso
 // Estado do passo 1.2 (S.ctx.prioridades, problemas, subs, problemaOutro), detalhe da linha de base (S.caso.linhaBase*)
@@ -817,11 +818,6 @@ function cssPlanoV13() {
 function htmlSinteseP(s) {
   const d = s.d;
   let h = '';
-  // v14 (revisão): a proposta em seis respostas
-  if (s.exec && s.exec.length) {
-    h += `<h4 class="rp-sub">${esc(tr(TXT_REL.exT))}</h4><table class="rs-exec" data-k="exec"><thead><tr><th scope="col">${esc(tr(TXT_REL.exDim))}</th><th scope="col">${esc(tr(TXT_REL.exResp))}</th></tr></thead><tbody>${s.exec.map(x =>
-      `<tr data-dim="${esc(x.id)}"><th scope="row"><b>${esc(x.rot)}</b><span>${esc(x.perg)}</span></th><td>${x.frases.length ? (x.frases.length > 1 ? `<ul>${x.frases.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : `<p>${esc(x.frases[0])}</p>`) : `<p class="muted">${esc(x.falta)}</p>`}</td></tr>`).join('')}</tbody></table>`;
-  }
   if (!d) h += `<p class="rp-vazio">${esc(s.semCusto)}</p>`;
   else {
     const w = Math.max(d.hi - d.lo, d.central * 0.02), a = d.lo - 0.5 * w, b = d.hi + 0.5 * w;
@@ -839,6 +835,11 @@ function htmlSinteseP(s) {
     h += `<p class="rs-abre muted">${esc(tr(TXT_REL.acoesAbre))}</p><ol class="rp-top" data-k="acoes">${s.recs.map(r => `<li class="rp-tc" data-rec="${esc(r.id)}"><span class="rp-tn" aria-hidden="true">${r.n}</span><div class="rp-tc-c">
     <dl class="rs-ac">${lin('exOque', r.oque)}${lin('exPorque', r.porque)}${lin('exParaque', r.paraque)}${lin('exComo', r.como)}${lin('exQuem', r.quemTxt)}${lin('exQuando', r.quandoTxt)}</dl>
     <p class="rp-tags"><span class="rp-tag" data-tipo="${esc(r.tipo)}">${esc(r.tipo)}</span><span class="rp-tag rp-q">${esc(r.quando)}</span></p></div>${r.ir ? `<button type="button" class="link rc-ir" data-ir="${esc(r.ir)}">${esc(tr(TXT_REC.ir))}</button>` : ''}</li>`).join('')}</ol>`;
+  }
+  // v14 (revisão): a proposta em seis respostas (v15: depois dos números e das ações, na ordem do PDF)
+  if (s.exec && s.exec.length) {
+    h += `<h4 class="rp-sub">${esc(tr(TXT_REL.exT))}</h4><table class="rs-exec" data-k="exec"><thead><tr><th scope="col">${esc(tr(TXT_REL.exDim))}</th><th scope="col">${esc(tr(TXT_REL.exResp))}</th></tr></thead><tbody>${s.exec.map(x =>
+      `<tr data-dim="${esc(x.id)}"><th scope="row"><b>${esc(x.rot)}</b><span>${esc(x.perg)}</span></th><td>${x.frases.length ? (x.frases.length > 1 ? `<ul>${x.frases.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : `<p>${esc(x.frases[0])}</p>`) : `<p class="muted">${esc(x.falta)}</p>`}</td></tr>`).join('')}</tbody></table>`;
   }
   if (d) {
     h += `<h4 class="rp-sub">${esc(tr(TXT_REL.custoT))}</h4><p class="rs-abre muted">${esc(tr(TXT_REL.custoAbre))}</p>`;
@@ -866,6 +867,14 @@ function htmlFaltasP(s) {
   const n = s.total || (s.list || []).length;
   return `<div class="parcial" id="plano-faltas-lista"><p><b>${esc(s.p[0])}</b> ${esc(s.p[1] || '')}</p><ul class="req">${s.list.map((z, i) => `<li><span>${esc(z)}</span> ${s.irs[i] ? `<button type="button" class="link" data-ir="${esc(s.irs[i])}">${esc(tr('Responder'))}</button>` : ''}</li>`).join('')}</ul>${s.curta && n > s.list.length ? `<p><a href="#plano-anexo-a">${esc(tr(TXT_REL.faltasLink))}</a></p>` : ''}</div>`;
 }
+// v15: os números principais já na capa (os mesmos da síntese): custo total, faixa, Ano 0 e custo anual em regime
+function capaNumerosP(secs) {
+  const sin = (secs || []).find(z => z.tipo === 'sintese'), d = sin && sin.d;
+  if (!d) return '';
+  const k = id => (d.kpis || []).find(x => x.id === id) || {};
+  return `<div class="rp-capa-num"><div class="rp-cn-tco"><span class="rp-cn-l">${esc(tr(TXT_REL.kTco))}</span><span class="rp-cn-v">${valorKpiP(d.centralTxt)}</span><span class="rp-cn-f">${esc(d.faixaTxt)}</span></div>
+    <dl class="rp-cn-k">${['ano0', 'regime'].map(id => k(id).v ? `<div><dt>${esc(k(id).l)}</dt><dd>${esc(k(id).v)}</dd></div>` : '').join('')}</dl><span class="rp-cn-il">${esc(tr('Ilustrativo'))}</span></div>`;
+}
 function renderPlano() {
   if (typeof fxCss === 'function') fxCss();
   cssPlanoV13();
@@ -887,12 +896,13 @@ function renderPlano() {
   const capa = `<header class="rp-capa" id="plano-capa">
     <div class="rp-capa-faixa" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
     <div class="rp-capa-in">
-      <div class="rp-capa-topo">${logos ? `<span class="rp-logos">${logos}</span>` : ''}<span class="rp-marca" data-notr>${esc(NOME_FERRAMENTA)}</span></div>
+      <div class="rp-capa-topo"><span class="rp-marca" data-notr>${esc(NOME_FERRAMENTA)}</span></div>
       <p class="rp-capa-e">${esc(tr('Plano de contratação'))}</p>
       <h2 class="rp-capa-h">${esc(titulo)}</h2>
       <p class="rp-capa-m">${[x.local, data].filter(Boolean).map(esc).join(' · ')}</p>
+      ${capaNumerosP(secs)}
       ${P.principal ? `<div class="rp-princ"><p class="rp-princ-e">${esc(tr('Recomendação principal'))}</p><p class="rp-princ-t">${esc(P.principal)}</p>${acaoAlta ? `<p class="rp-princ-a">${acaoAlta}</p>` : ''}</div>` : ''}
-      <p class="rp-isencao faixa-plano">${esc(tr(FAIXA_PLANO))}</p>
+      <div class="rp-capa-pe">${logos ? `<span class="rp-logos">${logos}</span>` : ''}<p class="rp-isencao faixa-plano">${esc(tr(FAIXA_PLANO))}</p></div>
     </div></header>`;
 
   let out = '';
@@ -917,7 +927,7 @@ function renderPlano() {
     return wrap(`${s.h ? `<h4>${esc(s.h)}</h4>` : ''}${htmlCorpoP(s)}`);
   };
   let aberta = false, anexos = false;
-  const fecha = () => { if (aberta) { out += '</section>'; aberta = false; } };
+  const fecha = () => { if (aberta) { out += aberta === 'anexo' ? '</details></section>' : '</section>'; aberta = false; } };
   secs.forEach(s => {
     if (s.tipo === 'sintese') {
       toc.push(['sintese', s.h, '', '']);
@@ -934,7 +944,8 @@ function renderPlano() {
       out += `<div class="rp-anexos" id="plano-anexos" data-sec="anexos" data-toc="anexos"><header class="rp-cab"><div class="rp-cab-t"><h3 id="plano-anexos-t">${esc(s.h)}</h3><p class="rp-abre">${esc((s.p || [])[0] || '')}</p></div></header>`;
     } else if (s.tipo === 'anexo') {
       fecha(); toc.push([s.id, s.h, s.letra, 'anexos']);
-      out += `<section class="rp-sec rp-anexo" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}" data-pai="anexos" aria-labelledby="plano-${s.id}-t"><header class="rp-cab"><span class="rp-num" aria-hidden="true">${esc(s.letra)}</span><div class="rp-cab-t"><p class="rp-rot">${esc(tr('Anexo {0}').replace('{0}', s.letra))}</p><h3 id="plano-${s.id}-t">${esc(s.h)}</h3></div></header>`; aberta = true;
+      // v15: na página, cada anexo fica recolhido (o PDF e a impressão mostram tudo)
+      out += `<section class="rp-sec rp-anexo" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}" data-pai="anexos" aria-labelledby="plano-${s.id}-t"><details class="rp-ax" data-ax="${s.id}"><summary><header class="rp-cab"><span class="rp-num" aria-hidden="true">${esc(s.letra)}</span><div class="rp-cab-t"><p class="rp-rot">${esc(tr('Anexo {0}').replace('{0}', s.letra))}</p><h3 id="plano-${s.id}-t">${esc(s.h)}</h3></div></header></summary>`; aberta = 'anexo';
     } else out += itemP(s);
   });
   fecha();
@@ -951,7 +962,8 @@ function renderPlano() {
   return `<section class="resumo plano rp" id="plano">
     <div class="rp-barra res-topo">
       <div class="rp-barra-t"><span class="rp-be">${esc(tr('Plano de contratação'))}</span><span class="rp-bc">${esc(titulo)}</span></div>
-      <div class="rp-acoes"><button type="button" class="btn pri" data-act="pdf"><span aria-hidden="true" class="rp-ic">↓</span> Baixar PDF</button><button type="button" class="btn" data-act="voltar-percurso"><span aria-hidden="true" class="rp-ic">←</span> Voltar ao percurso</button><button class="btn" type="button" data-act="copiar">Copiar texto</button>${exp}<button class="btn" type="button" data-act="imp-json">Importar caso</button></div>
+      <div class="rp-acoes"><button type="button" class="btn pri" data-act="pdf"><span aria-hidden="true" class="rp-ic">↓</span> <span>Baixar PDF</span></button><button type="button" class="btn" data-act="voltar-percurso"><span aria-hidden="true" class="rp-ic">←</span> <span>Voltar ao percurso</span></button>
+        <details class="rp-mais"><summary class="btn">Mais ações</summary><div class="rp-mais-in"><button class="btn" type="button" data-act="copiar">Copiar texto</button>${exp}<button class="btn" type="button" data-act="imp-json">Importar caso</button></div></details></div>
     </div>
     <div class="rp-grade">${indice}<div class="rp-corpo">${capa}${out}${typeof avisoTradHTML === 'function' ? avisoTradHTML('rp-aviso-trad') : ''}</div></div>
   </section>`;
@@ -963,7 +975,7 @@ function montarPlano() {
     const top = document.querySelector('.top'), bar = P.querySelector('.rp-barra'), ind = P.querySelector('.rp-indice');
     const fixo = el => el && getComputedStyle(el).position === 'sticky' ? el.offsetHeight : 0;
     const estreito = window.matchMedia && window.matchMedia('(max-width: 1099px)').matches;
-    P.style.setProperty('--rp-hdr', (top ? top.offsetHeight : 80) + 'px');
+    P.style.setProperty('--rp-hdr', fixo(top) + 'px');   // v15: o cabeçalho do site não é fixo na vista do plano
     P.style.setProperty('--rp-bar', fixo(bar) + 'px');
     P.style.setProperty('--rp-chips', (estreito ? fixo(ind) : 0) + 'px');
   };

@@ -65,7 +65,7 @@ T = [
  ("O número de cada passo não muda.", "Step numbers never change.", "El número de cada paso no cambia.", "Le numéro de chaque étape ne change pas."),
  ("Mostrar todas as perguntas (não só as essenciais)", "Show all questions (not only the essential ones)", "Mostrar todas las preguntas (no solo las esenciales)", "Afficher toutes les questions (pas seulement les essentielles)"),
  ("Seu caso", "Your case", "Su caso", "Votre cas"),
- ("Ano 0 a Ano {0}", "Year 0 to Year {0}", "Año 0 a Año {0}", "Année 0 à année {0}"),
+ ("Ano {0} a Ano {1}", "Year {0} to Year {1}", "Año {0} a Año {1}", "Année {0} à année {1}"),
  ("Faltam respostas para estimar o custo", "Some answers are missing to estimate the cost", "Faltan respuestas para estimar el costo", "Il manque des réponses pour estimer le coût"),
  ("Faixa provável", "Likely range", "Rango probable", "Fourchette probable"),
  ("{0} em {1} de {2} simulações", "{0} in {1} of {2} simulations", "{0} de cada {1} de {2} simulaciones", "{0} sur {1} de {2} simulations"),
@@ -83,7 +83,7 @@ T = [
  ("Falta 1 resposta para estimar o custo", "1 answer is missing to estimate the cost", "Falta 1 respuesta para estimar el costo", "Il manque 1 réponse pour estimer le coût"),
  ("Faltam {0} respostas para estimar o custo", "{0} answers are missing to estimate the cost", "Faltan {0} respuestas para estimar el costo", "Il manque {0} réponses pour estimer le coût"),
  ("Custo total estimado", "Estimated total cost", "Costo total estimado", "Coût total estimé"),
- ("Custo total estimado · Ano 0 a Ano {0}", "Estimated total cost · Year 0 to Year {0}", "Costo total estimado · Año 0 a Año {0}", "Coût total estimé · année 0 à année {0}"),
+ ("Custo total estimado · Ano {0} a Ano {1}", "Estimated total cost · Year {0} to Year {1}", "Costo total estimado · Año {0} a Año {1}", "Coût total estimé · année {0} à année {1}"),
  ("Custo total", "Total cost", "Costo total", "Coût total"),
  ("no custo total", "in the total cost", "en el costo total", "sur le coût total"),
  ("no Ano 0", "in Year 0", "en el Año 0", "sur l'année 0"),
@@ -119,6 +119,7 @@ T = [
  ("Como o custo é calculado", "How the cost is calculated", "Cómo se calcula el costo", "Comment le coût est calculé"),
  ("Caso em branco", "Blank case", "Caso en blanco", "Cas vierge"),
  ("Exemplo", "Example", "Ejemplo", "Exemple"),
+ ("Mais ações", "More actions", "Más acciones", "Autres actions"),
 ]
 for i, l in enumerate(['en', 'es', 'fr']):
     d = {pt: row[i + 1] for pt, *rest in T for row in [(pt, *rest)]}

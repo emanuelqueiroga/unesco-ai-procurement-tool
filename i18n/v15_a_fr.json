@@ -62,7 +62,7 @@
  "O número de cada passo não muda.": "Le numéro de chaque étape ne change pas.",
  "Mostrar todas as perguntas (não só as essenciais)": "Afficher toutes les questions (pas seulement les essentielles)",
  "Seu caso": "Votre cas",
- "Ano 0 a Ano {0}": "Année 0 à année {0}",
+ "Ano {0} a Ano {1}": "Année {0} à année {1}",
  "Faltam respostas para estimar o custo": "Il manque des réponses pour estimer le coût",
  "Faixa provável": "Fourchette probable",
  "{0} em {1} de {2} simulações": "{0} sur {1} de {2} simulations",
@@ -80,7 +80,7 @@
  "Falta 1 resposta para estimar o custo": "Il manque 1 réponse pour estimer le coût",
  "Faltam {0} respostas para estimar o custo": "Il manque {0} réponses pour estimer le coût",
  "Custo total estimado": "Coût total estimé",
- "Custo total estimado · Ano 0 a Ano {0}": "Coût total estimé · année 0 à année {0}",
+ "Custo total estimado · Ano {0} a Ano {1}": "Coût total estimé · année {0} à année {1}",
  "Custo total": "Coût total",
  "no custo total": "sur le coût total",
  "no Ano 0": "sur l'année 0",
@@ -115,5 +115,6 @@
  "pessoas": "personnes",
  "Como o custo é calculado": "Comment le coût est calculé",
  "Caso em branco": "Cas vierge",
- "Exemplo": "Exemple"
+ "Exemplo": "Exemple",
+ "Mais ações": "Autres actions"
 }

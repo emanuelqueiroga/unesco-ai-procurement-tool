@@ -103,6 +103,10 @@ function tr(s) {
   }
   if (alvo == null && !tr.emPT) {
     // valores e unidades já no idioma exibido (grande(), unidMil()): procura a forma em português
+    // v15: um valor já formatado no idioma (grande(): "US$ 125.3 k") fica como está; traduzi-lo trocava
+    // a magnitude do idioma por outra ("ألف", "مليون") ou deixava a portuguesa
+    const MG = magnitudes().map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    if (new RegExp('^[\\s\\p{Sc}A-Z$+\\-−\\d.,\\u00a0\\u202f]*\\d\\s(?:' + MG.join('|') + ')$', 'u').test(corpo)) return str;
     const pt = unidadesParaPT(corpo);
     // v15: só vale a tradução que não deixou nenhuma magnitude em português ("mi", "mil", "bi") no texto;
     // antes, "… US$ 4.68 M to US$ 5.73 M" voltava como "… US$ 4.68 mi to US$ 5.73 M"
@@ -325,25 +329,12 @@ function montarIdiomas() {
   const i = document.getElementById('txt-isencao'); if (i) i.textContent = TXT_ISENCAO;
 }
 
-// ---------------------------------------------------------- v13 (RQ-18): fontes dos idiomas novos na página
-// Google Fonts é a única origem externa de CSS. Árabe: Noto Sans Arabic (interface) e Noto Naskh Arabic (títulos);
-// chinês: Noto Sans SC e Noto Serif SC (o Google entrega só as fatias usadas, por unicode-range); bambara: o
-// Source Sans 3 cobre ɛ ɔ ɲ ŋ, mas não as maiúsculas Ɛ Ɔ Ɲ (que text-transform: uppercase produz) — Noto Sans e
-// Noto Serif entram na pilha (idiomas.css) só para essas letras (parâmetro text=, poucos KB).
-const FONTES_IDIOMA = {
-  ar: 'https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@500;600;700&family=Noto+Sans+Arabic:wght@400;600;700&display=swap',
-  zh: 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700&family=Noto+Serif+SC:wght@600;700&display=swap',
-  bm: 'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Noto+Serif:wght@600;700&display=swap&text=' + encodeURIComponent('ƐƆƝŊɛɔɲŋ\u0300\u0301\u030c'),
-};
-function carregarFonteIdioma(l) {
-  const url = FONTES_IDIOMA[l];
-  if (!url || typeof document === 'undefined' || document.getElementById('fonte-' + l)) return;
-  try {
-    const k = document.createElement('link');
-    k.id = 'fonte-' + l; k.rel = 'stylesheet'; k.href = url;
-    (document.head || document.documentElement).appendChild(k);
-  } catch (e) { }
-}
+// ---------------------------------------------------------- fontes dos idiomas novos na página
+// v15: a página funciona sem rede e não carrega nada de fora (antes vinham do Google Fonts). As pilhas de
+// idiomas.css começam pelas famílias Noto (árabe, chinês, bambara) instaladas no sistema e caem nas fontes do
+// sistema; o PDF continua com as fontes Noto embutidas (tools/subset_fonts.py).
+const FONTES_IDIOMA = {};
+function carregarFonteIdioma(l) { return l && null; }
 
 // ---------------------------------------------------------- v13 (RQ-18): aviso de tradução preliminar
 // Nos idiomas novos ainda não revisados: no idioma e em inglês, (a) abaixo do seletor ao escolher o idioma,
