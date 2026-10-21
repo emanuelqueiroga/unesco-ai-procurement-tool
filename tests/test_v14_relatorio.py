@@ -83,7 +83,7 @@ PREM = r"""(() => { const L = premissasDoCaso(S.caso, cfgAtual()) || []; const v
 GRAF_TXT = r"""(() => { const G = relGraficos(relDados()); return G ? Object.fromEntries(Object.entries(G).map(([k, g]) => [k, { h: g.h, leitura: g.leitura }])) : null; })()"""
 
 async def abrir(pg, ex):
-    await pg.evaluate(f"(()=>{{carregarExemplo('{ex}'); S.boasVindas=false; S.vista=''; render(); abrirPlano();}})()")
+    await pg.evaluate(f"(()=>{{carregarExemplo('{ex}'); S.boasVindas=false; S.vista=''; render(); abrirPlano(); document.querySelectorAll('#plano details.rp-anexo-d').forEach(d => {{ d.open = true; }});}})()")
     await pg.wait_for_timeout(250)
 
 async def main():

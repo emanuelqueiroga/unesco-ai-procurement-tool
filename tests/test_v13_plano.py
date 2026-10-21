@@ -49,7 +49,7 @@ CASO_V13 = """(()=>{carregarExemplo('B'); S.boasVindas=false;
   S.caso.linhaBase='sim'; S.caso.linhaBaseProblemas=['C2']; S.caso.linhaBaseMedida=''; S.caso.linhaBaseProblemaTxt='';
   S.respDet={'g-politica':{qual:'Resolução 12/2025 da secretaria',falta:'aprovar no conselho estadual'},'g-comite':{qual:'Comitê de inovação (pedagogia, TI, jurídico)',falta:''}};
   S.resp['g-politica']='parcial'; S.resp['g-comite']='sim';
-  S.custo.editado=false; S.vista=''; render(); abrirPlano();})()"""
+  S.custo.editado=false; S.vista=''; render(); abrirPlano(); document.querySelectorAll('#plano details.rp-anexo-d').forEach(d => { d.open = true; });})()"""
 NOVAS = ['formacao-plano', 'sem-ferramenta', 'metas-lacunas', 'linha-base-medida']
 
 # Matriz: soma das células de custo, total do ciclo e soma das camadas

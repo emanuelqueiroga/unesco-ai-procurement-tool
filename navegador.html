@@ -2070,7 +2070,7 @@ body.vista-plano aside.rp-comoler { position: static !important; }
 .rp-capa-pe { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--rp-line); }
 .rp-capa-pe .rp-logos { display: inline-flex; gap: 10px; align-items: center; padding: 4px 8px; background: #fff; border: 1px solid var(--rp-line); border-radius: var(--r-sm); flex: none; }
 .rp-capa-pe .rp-logo { height: 28px; width: auto; }
-.rp-capa-pe .rp-isencao { flex: 1 1 320px; font-size: var(--fs-xs); margin: 0; padding: 0; border: 0; color: var(--rp-muted); }
+.rp-capa-pe .rp-isencao { flex: 1 1 320px; font-size: var(--fs-sm); margin: 0; padding: 0; border: 0; color: var(--rp-muted); }
 .rp-anexo-d > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; }
 @media (max-width: 640px) {
   .rp-barra { flex-wrap: nowrap; justify-content: space-between; }
@@ -2112,6 +2112,12 @@ body[data-vista="inicio"] .ini-doc-faixa { display: none; }
 body[data-vista="inicio"] .ini-hero::before { display: none; }
 body[data-vista="inicio"] .ini-eyebrow { text-transform: none; letter-spacing: 0; }
 body[data-vista="inicio"] #btn-ver-plano { display: none; }
+.q-det-in { border: 0 !important; border-radius: var(--r-sm) !important; background: var(--surface-2) !important; }
+.aj-in .fase-intro { margin: 0; display: grid; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line); background: none; border-radius: 0; }
+.aj-in .fase-intro .fi-p dt { font-weight: 700; }
+.aj-in .fase-intro .fi-p dd { margin: 0; color: var(--ink-2); }
+[dir=rtl] .ctl > svg { right: 10px; left: auto; }
+[dir=rtl] .top #sel-lang { padding-inline-start: 32px; padding-right: 32px; padding-left: 12px; }
 
 </style>
 
@@ -10191,10 +10197,12 @@ function painelAjuda(id) {
   const a = PASSO_AJUDA[id]; if (!a) return '';
   const R = AJUDA_ROT, g = typeof glossarioTexto === 'function' ? glossarioTexto : (x => esc(tr(x))), pi = PASSO_INFO[id] || {};
   const parte = (t, c, extra) => `<div class="aj-p"><dt>${esc(tr(t))}</dt><dd>${c}${extra || ''}</dd></div>`;
+  // primeiro passo de cada fase: o que a fase decide, o que se terá ao final e o tempo (antes, um bloco no topo da fase)
+  const fz = FASES.find(f => PASSOS[f.id][0][0] === id), faseIntro = fz ? introFase(fz) : '';
   const cam = pi.info ? `<div class="aj-cam"><span class="aj-cam-t">${esc(tr(pi.selo || ''))}</span> ${botaoInfo(pi.info, 'p-' + id)}</div>${notaInfo(pi.info, 'p-' + id)}` : '';
   return `<details class="ajuda" id="ajuda-${id}" data-ajuda="${id}" ${ajudaAberto(id) ? 'open' : ''}>
     <summary>Por que perguntamos?</summary>
-    <div class="aj-in">${pi.abertura ? `<p class="abertura">${esc(pi.abertura)}</p>` : ''}
+    <div class="aj-in">${faseIntro}${pi.abertura ? `<p class="abertura">${esc(pi.abertura)}</p>` : ''}
     <dl class="aj-corpo">${parte(R.importa, g(a.importa))}${parte(R.como, g(a.como), ` <span class="aj-quem"><b>${esc(tr(R.quem))}</b> ${esc(tr(a.quem))}.</span>`)}${parte(R.ex, g(a.ex))}</dl>${cam}</div></details>`;
 }
 // Abertura da fase (BL2.1): o que ela decide, o que a pessoa terá ao final e quanto tempo leva

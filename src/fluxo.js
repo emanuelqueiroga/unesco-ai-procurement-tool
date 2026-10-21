@@ -977,10 +977,12 @@ function painelAjuda(id) {
   const a = PASSO_AJUDA[id]; if (!a) return '';
   const R = AJUDA_ROT, g = typeof glossarioTexto === 'function' ? glossarioTexto : (x => esc(tr(x))), pi = PASSO_INFO[id] || {};
   const parte = (t, c, extra) => `<div class="aj-p"><dt>${esc(tr(t))}</dt><dd>${c}${extra || ''}</dd></div>`;
+  // primeiro passo de cada fase: o que a fase decide, o que se terá ao final e o tempo (antes, um bloco no topo da fase)
+  const fz = FASES.find(f => PASSOS[f.id][0][0] === id), faseIntro = fz ? introFase(fz) : '';
   const cam = pi.info ? `<div class="aj-cam"><span class="aj-cam-t">${esc(tr(pi.selo || ''))}</span> ${botaoInfo(pi.info, 'p-' + id)}</div>${notaInfo(pi.info, 'p-' + id)}` : '';
   return `<details class="ajuda" id="ajuda-${id}" data-ajuda="${id}" ${ajudaAberto(id) ? 'open' : ''}>
     <summary>Por que perguntamos?</summary>
-    <div class="aj-in">${pi.abertura ? `<p class="abertura">${esc(pi.abertura)}</p>` : ''}
+    <div class="aj-in">${faseIntro}${pi.abertura ? `<p class="abertura">${esc(pi.abertura)}</p>` : ''}
     <dl class="aj-corpo">${parte(R.importa, g(a.importa))}${parte(R.como, g(a.como), ` <span class="aj-quem"><b>${esc(tr(R.quem))}</b> ${esc(tr(a.quem))}.</span>`)}${parte(R.ex, g(a.ex))}</dl>${cam}</div></details>`;
 }
 // Abertura da fase (BL2.1): o que ela decide, o que a pessoa terá ao final e quanto tempo leva

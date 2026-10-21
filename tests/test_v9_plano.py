@@ -57,8 +57,13 @@ def ok(cond, msg):
 async def abrir_caso(pg, ex):
     await pg.evaluate(f"(()=>{{carregarExemplo('{ex}'); S.boasVindas=false; S.vista=''; render();}})()")
     await pg.wait_for_timeout(150)
+    # v15 (B): "Ver plano" fica no cabeçalho (desktop) ou no menu (celular)
+    if await pg.locator('[data-act="gerar-plano"]:visible').count() == 0:
+        await pg.locator('#btn-menu').click(); await pg.wait_for_timeout(150)
     await pg.locator('[data-act="gerar-plano"]:visible').first.click()
     await pg.wait_for_timeout(250)
+    # v15 (B): anexos recolhidos na tela; o teste os abre para ler o conteúdo
+    await pg.evaluate("document.querySelectorAll('#plano details.rp-anexo-d').forEach(d => { d.open = true; })")
 
 async def main():
     async with async_playwright() as p:
@@ -120,7 +125,9 @@ async def main():
                 ok(r['cartoes'] >= 7 or ex == 'novo', f'{tag} {ex}: perfil do caso em cartões ({r["cartoes"]})')
                 ok(r['topo'] == min(5, r['nRecs']), f'{tag} {ex}: {r["topo"]} cartões das cinco ações mais importantes ({r["nRecs"]} ações)')
                 ok(r['painel'] == 'none', f'{tag} {ex}: painel lateral escondido na vista do plano')
-                ok(r['indice'] >= 14 and r['barra'][:2] == ['pdf', 'voltar-percurso'] and 'copiar' in r['barra'] and 'imp-json' in r['barra'], f'{tag} {ex}: índice ({r["indice"]}) e barra de ações {r["barra"]}')
+                # v15 (B): a barra do plano tem Voltar, Copiar texto e Baixar PDF; exportar e importar o caso ficam no menu Caso do cabeçalho
+                menu = await pg.evaluate("(() => { abrirMenu(); const a = [...document.querySelectorAll('#menu-caso [data-act]')].map(e => e.dataset.act); fecharMenu(); return a; })()")
+                ok(r['indice'] >= 14 and set(['pdf', 'voltar-percurso', 'copiar']) <= set(r['barra']) and 'imp-json' in menu and ('exp-json' in menu), f'{tag} {ex}: índice ({r["indice"]}), barra de ações {r["barra"]} e menu Caso {menu}')
                 ok(r['faltasFim'], f'{tag} {ex}: respostas que faltam: lista curta antes da seção 1 e lista completa no anexo A')
                 ok(r['minFonte'][0] >= 13.75, f'{tag} {ex}: nenhum texto abaixo de .86rem ({r["minFonte"]})')
                 if r['formula']: ok('Como o custo é calculado' in r['a2'] and 'As contas de cada ano' in r['a2'], f'{tag} {ex}: A2 com a fórmula do custo')
@@ -139,7 +146,10 @@ async def main():
               S.caso.piloto={escolas:20, participantes:1200, meses:4}; S.caso.tipoTec='paga'; S.caso.pagamento='usuario';
               ['piloto','piloto.escolas','piloto.participantes','piloto.meses','setup','tipoTec','pagamento'].forEach(k=>{S.respC[k]=true;});
               S.custo.editado=false; S.vista=''; render();})()""")
+            if await pg.locator('[data-act="gerar-plano"]:visible').count() == 0:   # v15 (B): no celular, "Ver plano" fica no menu
+                await pg.locator('#btn-menu').click(); await pg.wait_for_timeout(150)
             await pg.locator('[data-act="gerar-plano"]:visible').first.click(); await pg.wait_for_timeout(250)
+            await pg.evaluate("document.querySelectorAll('#plano details.rp-anexo-d').forEach(d => { d.open = true; })")   # v15 (B): anexos recolhidos
             r = await pg.evaluate("""(()=>{const P=document.getElementById('plano'); const tr=[...P.querySelectorAll('[data-sec=resumo] .rp-kv')].find(t=>/^Piloto: escolas/.test(t.querySelector('dt').innerText));
               return {esc: tr ? tr.querySelector('dd').innerText : '', a1: P.querySelector('[data-sec=A1]').innerText, a3: P.querySelector('[data-sec=A3]').parentElement.innerText,
                 a2: (P.querySelector('[data-sec=A2]')||{}).innerText||'', prem: P.querySelector('[data-sec=anexo-g]').textContent}})()""")

@@ -133,7 +133,7 @@ async def main():
         await branco(pg)
         await ev(pg, "(()=>{S.ctx.prioridades=['governar']; S.ctx.problemas=['G2','G4']; render(); abrirFase('piloto','2a');})()", 250)
         ok(await pg.locator('#passo-2a .aviso.sem-ferr').count() == 1 and await ev(pg, "S.caso.tarefas.length===0"), 'problemas sem tarefa de IA: aviso AVISO_SEM_FERRAMENTA no 2.1 e nada marcado')
-        ok(await ev(pg, "document.querySelector('#passo-2a .passo-corpo').firstElementChild.classList.contains('sem-ferr') || document.querySelector('#passo-2a .abertura + .sem-ferr')!==null"), 'aviso no topo do passo')
+        ok(await ev(pg, "document.querySelector('#passo-2a .passo-corpo').firstElementChild.classList.contains('sem-ferr') || document.querySelector('#passo-2a .abertura + .sem-ferr')!==null || document.querySelector('#passo-2a .passo-corpo > .ajuda + .sem-ferr')!==null"), 'aviso no topo do passo')
 
         # ---------------------------------------------------------- 1.2.7 e 1.3.x: detalhe de "Sim" e "Em parte"
         await ev(pg, "(()=>{S.ctx.prioridades=['com']; S.ctx.problemas=['C1','C2']; abrirFase('contexto','1b');})()", 250)
@@ -185,10 +185,10 @@ async def main():
         ok(await pg.locator('#q-2-3-1.sug .sug-tag').text_content() == 'sugerido pela resposta 2.0' and (await pg.locator('#q-2-3-1 .sug-nota').text_content()).strip() == 'Testar uma ferramenta por vez permite saber o que funcionou. Confirme ou escolha outra opção.', '2.3.1: etiqueta e "por quê"')
         det = pg.locator('#passo-2c details.desc-imp[data-desc="2c"]')
         ok(await det.count() == 1 and not await ev(pg, "document.querySelector('#passo-2c details.desc-imp').open"), '2.3: "Para a implantação" recolhido no fim do passo')
-        ok((await det.locator('summary').text_content()).strip() == 'Para a implantação (pode responder agora ou depois)' and (await det.locator('.desc-in > .hint').text_content()).strip() == 'Estas perguntas também aparecem no passo 3.1.', 'resumo e nota do <details>')
+        ok((await det.locator(':scope > summary').text_content()).strip() == 'Para a implantação (pode responder agora ou depois)' and (await det.locator('.desc-in > .hint').text_content()).strip() == 'Estas perguntas também aparecem no passo 3.1.', 'resumo e nota do <details>')
         ok(await ev(pg, "[...document.querySelectorAll('#passo-2c details.desc-imp .q')].map(q=>q.dataset.n).join()") == '2.3.6,2.3.7', '2.3.6 e 2.3.7 dentro do <details>')
         ok(await ev(pg, "document.querySelector('#passo-2c .passo-corpo > details.desc-imp + .pe')!==null"), '<details> logo antes do rodapé do passo')
-        await det.locator('summary').click(); await pg.wait_for_timeout(150)
+        await det.locator(':scope > summary').click(); await pg.wait_for_timeout(150)
         await pg.locator('#q-2-3-1 [data-f="nFerramentas"][value="1"]').click(); await pg.wait_for_timeout(200)
         ok(await ev(pg, "!!S.respC.nFerramentas && !sugerido(CAMPO_POR_ID.nFerramentas)") and await ev(pg, "document.querySelector('#passo-2c details.desc-imp').open"), 'clicar na opção sugerida confirma; o <details> continua aberto')
         await pg.locator('#q-2-3-6 [data-f="licenca"][value="assinatura"]').click(); await pg.wait_for_timeout(200)
@@ -284,7 +284,7 @@ async def main():
         await pg.set_viewport_size({'width': 1360, 'height': 900}); await pg.wait_for_timeout(150)
         await pg.select_option('#sel-lang', 'en'); await pg.wait_for_timeout(300)
         await ev(pg, "(()=>{S.ctx.prioridades=['com']; S.ctx.problemas=['C2']; S.ctx.subs=[]; SUB_ABERTO.C2=true; S.info={'pr-com':true}; S.caso.linhaBase='parcial'; S.respC.linhaBase=true; ['olhando','problema','impactos','resultado','tarefas'].forEach(k=>delete S.respC[k]); abrirFase('contexto','1b');})()", 300)
-        SEL = ['#passo-1b .pt b', '#q-1-2-1 .q-t', '#q-1-2-1 > .hint', '#q-1-2-2 .q-t', '#q-1-2-2 > .hint', '.pg-n', '.pg-acoes', '.prob-ol', '.prob-sub summary', '.prob-outro label',
+        SEL = ['#passo-1b .pt b', '#passo-1b .passo-h', '#q-1-2-1 .q-t', '#q-1-2-1 > .hint', '#q-1-2-2 .q-t', '#q-1-2-2 > .hint', '.pg-n', '.pg-acoes', '.prob-ol', '.prob-sub summary', '.prob-outro label',
                '#q-1-2-3 .sug-tag', '#q-1-2-3 .sug-nota', '#q-1-2-4 .lacuna-dica', '#det-linhaBase .q-det-c', '#nota-pr-com .eyebrow', '#fase-contexto .fase-t small']
         txt = await ev(pg, f"{json.dumps(SEL)}.flatMap(s=>[...document.querySelectorAll(s)].map(e=>e.innerText)).join(' | ')")
         ph = await pg.get_attribute('#f-linhaBaseMedida', 'placeholder')

@@ -158,7 +158,7 @@ async def main():
           return {itens: P.querySelectorAll('.rc-item').length, irs: P.querySelectorAll('.rc-item [data-ir]').length,
             grupos: [...P.querySelectorAll('.rc-grupo')].map(g=>g.dataset.quando), cont: (P.querySelector('.rc-cont')||{}).innerText||'',
             pq: (P.querySelector('.rc-pq')||{}).innerText||'', css: !!document.getElementById('css-recs'),
-            plano: P.closest('.fase') ? P.closest('.fase').querySelectorAll('[data-act="gerar-plano"]').length : 0};})()""")
+            plano: P.closest('.passo') ? P.closest('.passo').querySelectorAll('[data-act="gerar-plano"]').length : 0};})()""")
         ok(r is not None, 'B: passo 4.3 aberto')
         if r:
             ok(r['itens'] == n and r['irs'] == n, f'B: 4.3 mostra {r["itens"]} itens com "Ir à pergunta" ({n} recomendações)')
