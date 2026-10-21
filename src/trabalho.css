@@ -422,3 +422,6 @@ body[data-vista="inicio"] #btn-ver-plano { display: none; }
 .aj-in .fase-intro .fi-p dd { margin: 0; color: var(--ink-2); }
 [dir=rtl] .ctl > svg { right: 10px; left: auto; }
 [dir=rtl] .top #sel-lang { padding-inline-start: 32px; padding-right: 32px; padding-left: 12px; }
+/* 4.3: um nível de caixa, sem filete decorativo; prioridade alta em texto de alerta */
+.rc-item { border-left: 1px solid var(--line) !important; }
+[dir=rtl] .rc-item { border-right: 1px solid var(--line) !important; }
