@@ -200,7 +200,8 @@ function lacHTML(key, bloco) {
   let v = st === 'vazio' ? '' : valorLac(p.f, p.sub, p.min);
   const mostra = v ? esc(v).replace(/\n/g, '<br>') : '[' + esc(rot) + ']';
   const aria = rot + ': ' + (v || '—') + '. ' + tr(EST_LAC[st]) + '. ' + tr(st === 'ok' ? 'Editar' : 'Responder');
-  return `<button type="button" class="lac lac-${st}${bloco ? ' lac-bloco' : ''}${DOC.pop && DOC.pop.key === p.k ? ' lac-ed' : ''}" data-lac="${esc(p.k)}" data-min="${p.min ? 1 : ''}" aria-haspopup="dialog" aria-label="${esc(aria)}">${st !== 'ok' ? IC_ILUS : ''}<span class="lac-v">${mostra}</span></button>`;
+  // <span role="button">: um <button> não quebra linha no meio do texto (o navegador o trata como inline-block)
+  return `<span role="button" tabindex="0" class="lac lac-${st}${bloco ? ' lac-bloco' : ''}${DOC.pop && DOC.pop.key === p.k ? ' lac-ed' : ''}" data-lac="${esc(p.k)}" data-min="${p.min ? 1 : ''}" aria-haspopup="dialog" aria-label="${esc(aria)}">${st !== 'ok' ? IC_ILUS : ''}<span class="lac-v">${mostra}</span></span>`;
 }
 // Frase com lacunas: o modelo inteiro é traduzido e só depois recebe as lacunas
 function fraseHTML(it) {
@@ -842,6 +843,10 @@ function ligarDocumento() {
     fecharPop(DOC.pop.mudou || fotoEstado() !== DOC.pop.snap ? 'manter' : 'cancelar');
   }, true);
   document.addEventListener('keydown', e => {
+    // lacunas são <span role="button">: Enter e espaço abrem
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[data-lac][role=button]') && !e.target.closest('.dv-leg')) {
+      e.preventDefault(); e.stopPropagation(); if (!(DOC.pop && DOC.pop.key === e.target.dataset.lac)) abrirLacuna(e.target.dataset.lac, { btn: e.target }); return;
+    }
     if (e.key === 'Escape' && DOC.menu) { abrirMenuCaso(false); const b = document.getElementById('btn-caso'); if (b) b.focus(); e.preventDefault(); return; }
     if (DOC.menu && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
       const its = [...document.querySelectorAll('#menu-caso [role=menuitem]')], i = its.indexOf(document.activeElement);
