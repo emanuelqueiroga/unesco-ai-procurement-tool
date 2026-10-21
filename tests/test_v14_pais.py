@@ -43,7 +43,8 @@ async def main():
 
         # ---------------------------------------------------------- o seletor de país abre o passo 1.1
         ok(await ev(pg, "!!document.getElementById('f-pais')"), 'o passo 1.1 tem o seletor de país')
-        ordem = await ev(pg, "(()=>{const a=document.getElementById('f-pais'), b=document.getElementById('q-1-1-1'); return !!(a&&b&&(a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING));})()")
+        # v15 (proposta C): no documento, a pergunta 1.1.1 é uma lacuna do texto ([data-lac=nivel]); o caminho até ela mudou
+        ordem = await ev(pg, "(()=>{const a=document.getElementById('f-pais'), b=document.getElementById('q-1-1-1')||document.querySelector('#plano-s1 [data-lac=nivel]'); return !!(a&&b&&(a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING));})()")
         ok(ordem, 'o seletor de país vem antes da pergunta 1.1.1')
         opts = await ev(pg, "[...document.querySelectorAll('#f-pais option')].map(o=>[o.value,o.textContent.trim()])")
         ok([o[0] for o in opts if o[0] and o[0] != 'outro'] == ['BRA', 'IDN', 'MAR', 'MEX', 'KEN'] or sorted(o[0] for o in opts if o[0] and o[0] != 'outro') == ['BRA', 'IDN', 'KEN', 'MAR', 'MEX'], f'os 5 países piloto na lista: {[o[0] for o in opts]}')

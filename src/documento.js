@@ -51,9 +51,9 @@ const DOC_SECOES = [
   ] }] },
   { id: 's1', blocos: [
     { h: 'Onde e para quem', itens: [
+      { html: 'pais' },
       { f: 'Este plano é para {0}. A decisão será tomada no nível {1}.', l: ['local', 'nivel~'] },
       { f: 'Ponto de partida: {0}. Etapas de ensino atendidas: {1}.', l: ['situacao~', 'etapas~'] },
-      { html: 'pais' },
       { bloco: 'grade' },
     ] },
     { h: 'O problema e o resultado esperado', itens: [
@@ -475,9 +475,14 @@ function renderDocumento() {
   renderTopo();
   // com uma lacuna em edição, só o popover e os números mudam (o documento é refeito ao fechar)
   if (DOC.pop && document.getElementById('lac-pop')) { atualizarPop(); atualizarDoc(true); return; }
+  if (renderDocumento.ocupado) return;   // um 'change' disparado pelo blur abaixo não redesenha no meio do redesenho
   const y = window.scrollY, foco = chaveFoco(document.activeElement);
   const main = $('#main');
-  main.innerHTML = docHTML();
+  renderDocumento.ocupado = true;
+  try {
+    const at = document.activeElement; if (at && main.contains(at) && at.blur) at.blur();
+    main.innerHTML = docHTML();
+  } finally { renderDocumento.ocupado = false; }
   const p = $('#painel'); if (p) p.innerHTML = '';
   atualizarNumeros();
   if (S.calcAberta && document.getElementById('cres') && typeof renderCustosResultados === 'function') renderCustosResultados();
