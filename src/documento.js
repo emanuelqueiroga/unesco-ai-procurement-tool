@@ -220,11 +220,14 @@ function blocoHTML(id) {
   const nOk = vis.filter(f => qOk(f)).length;
   const st = nOk === vis.length ? 'ok' : 'pend';
   const alvo = vis.some(f => DOC.alvo === f.id);
+  // ajuda do passo ("Por que perguntamos isso?") no primeiro bloco de cada passo
+  const pid = passoDe(vis[0]); let ajB = '';
+  if (DOC.ajB && !DOC.ajB.has(pid)) { DOC.ajB.add(pid); ajB = ajudaPop(vis[0], true); }
   const tit = id === 'gov' ? tr('Governança de IA na educação (1.3)') : capP(tr(LAC_ROT[id]));
   const fila = DOC.fila && alvo ? `<div class="dv-fila-bar" role="group" aria-label="${esc(tr('Preencher em ordem'))}"><span>${esc(trN('Lacuna {0} de {1}', posFila(), pendentes().length))}</span><button type="button" class="btn pri" data-act="dv-prox">${esc(tr('Ir para a próxima lacuna'))} ${IC_SETA}</button><button type="button" class="btn" data-act="dv-fila-fim">${esc(tr('Parar'))}</button></div>` : '';
   return `<div class="dv-bloco${alvo ? ' dv-alvo' : ''}" id="bl-${id}" data-bloco="${id}">
     <div class="dv-bl-cab"><span class="dv-bl-t">${esc(tit)}</span><span class="dv-st dv-st-${st}">${st === 'ok' ? IC_OK + esc(tr('Completo')) : IC_PEND + esc(trN(vis.length > 1 ? '{0} de {1} respondidas' : 'A responder', nOk, vis.length))}</span></div>
-    ${fila}${vis.map(f => renderQ(f)).join('')}</div>`;
+    ${fila}${vis.map(f => renderQ(f)).join('')}${ajB}</div>`;
 }
 function itemHTML(it) {
   if (it.se && !it.se()) return '';
@@ -440,7 +443,7 @@ function legendaHTML() {
 }
 function docHTML() {
   const { G, P } = gruposPlano();
-  DOC.P = P; DOC.anexos = G.anexos;
+  DOC.P = P; DOC.anexos = G.anexos; DOC.ajB = new Set();
   const sec = sid => {
     const cls = sid === 'sintese' ? 'rp-sintese' : sid === 'anexos' ? 'rp-anexos' : 'rp-princ-sec';
     const tag = sid === 'anexos' ? 'div' : 'section';
@@ -600,12 +603,14 @@ function popCorpo() {
 }
 // "Por que perguntamos isso?": a ajuda do passo da v14 (para que serve, por que importa, como responder, quem sabe,
 // exemplo), recolhida por padrão (auditoria C1); fica aberta para quem a abriu antes (mesmo registro da v14)
-function ajudaPop(f) {
+function ajudaPop(f, noBloco) {
   const id = passoDe(f), a = PASSO_AJUDA[id]; if (!a) return '';
+  // um id por passo: se o bloco de formulário do mesmo passo já traz a ajuda, a do popover ganha outro id
+  const did = !noBloco && document.querySelector(`#dv-doc .dv-bloco #ajuda-${id}`) ? 'ajuda-pop-' + id : 'ajuda-' + id;
   const E = ajudaLer(), aberto = E[id] === true && !AJUDA_AUTO[id];
   const R = AJUDA_ROT, g = typeof glossarioTexto === 'function' ? glossarioTexto : (x => esc(tr(x)));
   const parte = (t, c, extra) => `<div class="aj-p"><dt>${esc(tr(t))}</dt><dd>${c}${extra || ''}</dd></div>`;
-  return `<details class="ajuda lp-aj" id="ajuda-${id}" data-ajuda="${id}" ${aberto ? 'open' : ''}><summary>${esc(tr('Por que perguntamos isso?'))}</summary>
+  return `<details class="ajuda lp-aj" id="${did}" data-ajuda="${id}" ${aberto ? 'open' : ''}><summary>${esc(tr('Por que perguntamos isso?'))}</summary>
     <dl class="aj-corpo">${parte(R.serve, g(a.serve))}${parte(R.importa, g(a.importa))}${parte(R.como, g(a.como), ` <span class="aj-quem"><b>${esc(tr(R.quem))}</b> ${esc(tr(a.quem))}.</span>`)}${parte(R.ex, g(a.ex))}</dl></details>`;
 }
 function efeitoHTML() {
@@ -879,7 +884,8 @@ function ligarDocumento() {
     if (el.closest('#lac-pop') || el.closest('[data-lac]') || el.closest('#gl-pop, dialog, #toast')) return;
     fecharPop(DOC.pop.mudou || fotoEstado() !== DOC.pop.snap ? 'manter' : 'cancelar');
   }, true);
-  document.addEventListener('keydown', e => {
+  // na janela (antes do glossário, que também escuta no documento): Esc com uma definição aberta é do glossário
+  window.addEventListener('keydown', e => {
     // lacunas são <span role="button">: Enter e espaço abrem
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[data-lac][role=button]') && !e.target.closest('.dv-leg')) {
       e.preventDefault(); e.stopPropagation(); if (!(DOC.pop && DOC.pop.key === e.target.dataset.lac)) abrirLacuna(e.target.dataset.lac, { btn: e.target }); return;
@@ -894,7 +900,7 @@ function ligarDocumento() {
     const dentro = e.target.closest && e.target.closest('#lac-pop');
     if (e.key === 'Escape' && document.getElementById('gl-pop')) return;   // a definição do glossário fecha primeiro
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); DOC.fila = false; fecharPop('cancelar'); return; }
-    if (e.key === 'Enter' && dentro && !e.shiftKey && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT') {
+    if (e.key === 'Enter' && dentro && !e.shiftKey && !e.target.closest('[data-gl], summary') && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT') {
       e.preventDefault(); e.stopPropagation();
       // o valor digitado é gravado antes de confirmar (o 'change' do campo ainda não disparou)
       if (e.target.tagName === 'INPUT' && (e.target.type === 'text' || e.target.type === 'number')) e.target.dispatchEvent(new Event('change', { bubbles: true }));

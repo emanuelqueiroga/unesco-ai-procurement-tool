@@ -25,6 +25,13 @@ async def abrir(pg, lang='pt'):
     await pg.goto('file://' + ARQ); await pg.evaluate('localStorage.clear()'); await pg.reload(); await pg.wait_for_timeout(300)
     await pg.select_option('#sel-lang', lang); await pg.wait_for_timeout(150)
 
+# v15 (proposta C, documento vivo): a ajuda de cada passo ("Para que serve", "Por que importa", "Como responder", "Quem
+# costuma saber", "Exemplo") fica em "Por que perguntamos isso?", recolhida por padrão (auditoria v14, C1): no primeiro
+# bloco de formulário do passo ou no popover das lacunas do passo. AJ abre o que for preciso para que #ajuda-<passo> exista.
+AJ = """(pid => { let el = document.getElementById('ajuda-' + pid); if (el) return true; const fs = camposPasso(pid).filter(f => visivel(f));
+  if (!fs.length) return false; abrirCampo(fs.find(x => !ehBloco(x)) || fs[0]); return !!document.getElementById('ajuda-' + pid); })"""
+GL3B = "(()=>{ abrirFase('implantacao','3b','arquitetura'); const d = document.getElementById('ajuda-3b'); if (d) d.open = true; })()"
+
 async def ev(pg, js, t=120):
     r = await pg.evaluate(js); await pg.wait_for_timeout(t); return r
 
@@ -65,16 +72,17 @@ async def main():
         for lang in LANGS:
             await pg.select_option('#sel-lang', lang); await pg.wait_for_timeout(250)
             vistos = []; vaz = []
+            # v15: a abertura das fases (#intro-<fase>) saiu de propósito (o documento substitui o percurso; auditoria C1); os textos
+            # continuam em FASES (verificados acima) e nas traduções (abaixo). 4.2 e 4.3 viraram as seções 2 e 3 e o anexo C:
+            # sem perguntas, não têm "Por que perguntamos isso?".
             for fid, pid in passos:
                 await ev(pg, f"abrirFase('{fid}','{pid}')", 120)
-                if pid == [p_[1] for p_ in passos if p_[0] == fid][0]:
-                    n = await pg.locator(f'#intro-{fid} .fi-p').count()
-                    t = await ev(pg, f"document.getElementById('intro-{fid}').innerText", 0)
-                    ok(n == 3 and '[[' not in t and (lang == 'pt' or not PT.search(t)), f'{lang}: abertura da fase {fid} com as três partes, sem restos de português' + ('' if not PT.search(t) or lang == 'pt' else f' {PT.findall(t)[:4]}'))
+                if pid in ('4b', '4c'): continue
+                await ev(pg, AJ + f"('{pid}')", 80)
                 if await pg.locator(f'#ajuda-{pid} .aj-p').count() != 4: vaz.append(pid)
                 t = await ev(pg, f"(document.getElementById('ajuda-{pid}')||{{}}).innerText||''", 0)
                 if '[[' in t or (lang != 'pt' and PT.search(t)): vistos.append((pid, PT.findall(t)[:3]))
-            ok(not vaz, f'{lang}: painel "Sobre esta etapa" com as quatro partes nos 15 passos {vaz}')
+            ok(not vaz, f'{lang}: "Por que perguntamos isso?" com as quatro partes nos 13 passos com perguntas {vaz}')
             ok(not vistos, f'{lang}: painéis sem marcas soltas nem restos de português {vistos[:3]}')
             # textos-fonte: cada um tem tradução (menos os que são iguais em todos os idiomas)
             if lang != 'pt':
@@ -93,37 +101,42 @@ async def main():
         await pg.select_option('#sel-lang', 'pt'); await pg.wait_for_timeout(200)
 
         # ---------------------------------------------------------- dicas
-        await ev(pg, "abrirFase('piloto','2c')", 250)
-        ok(await pg.locator('#q-2-3-5 .dica').count() == 1 and 'Dica:' in await pg.locator('#q-2-3-5 .dica').inner_text(), '2.3.5 mostra a dica')
-        ok(await pg.locator('#q-2-3-5 .dica .gl').count() == 1, 'termo do glossário na dica ("custo recorrente")')
-        ok(await ev(pg, "document.querySelectorAll('.q .dica').length") >= 5, 'várias dicas visíveis no passo 2.3')
+        # v15: a dica de uma linha aparece logo abaixo da pergunta, no popover da lacuna (ou no bloco de formulário)
+        await ev(pg, "abrirFase('piloto','2c','pagamento')", 250)
+        dica = await ev(pg, "tr(CAMPO_POR_ID.pagamento.dica.replace(/\\[\\[[^|\\]]+\\|([^\\]]+)\\]\\]/g, '$1').replace(/\\[\\[([^\\]]+)\\]\\]/g, '$1')).slice(0, 30)", 0)
+        ok(await pg.locator('#lac-pop .lp-h').count() == 1 and len(await pg.locator('#lac-pop .lp-h').inner_text()) > 20, '2.3.5 mostra a dica')
+        ok(await pg.locator('#lac-pop .lp-h .gl').count() == 1, 'termo do glossário na dica ("custo recorrente")')
+        nd = await ev(pg, """(() => { let n = 0; camposPasso('2c').filter(f => f.dica && visivel(f)).forEach(f => { abrirCampo(f); const q = document.getElementById(idQ(f.n));
+          if (document.querySelector('#lac-pop .lp-h') || (q && q.querySelector('.dica'))) n++; }); return n; })()""")
+        ok(nd >= 5, f'várias dicas no passo 2.3, uma em cada pergunta ({nd})')
 
         # ---------------------------------------------------------- painel: abre na primeira visita, recolhe e fica recolhido
+        # v15: a ajuda começa recolhida (antes abria na primeira visita: auditoria C1, "a pergunta vem primeiro"); quem a abre
+        # a encontra aberta de novo, inclusive depois de recarregar (mesmo registro por passo no navegador)
         await abrir(pg); await pg.click('[data-act="comecar"]'); await pg.wait_for_timeout(250); await branco(pg)
-        ok(await pg.locator('#ajuda-1a').count() == 1 and await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: painel aberto na primeira visita')
+        await ev(pg, AJ + "('1a')", 150)
+        ok(await pg.locator('#ajuda-1a').count() == 1 and not await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: "Por que perguntamos isso?" recolhido por padrão')
         await pg.click('#ajuda-1a > summary'); await pg.wait_for_timeout(150)
-        ok(not await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: o painel recolhe ao clicar')
-        await ev(pg, "abrirFase('contexto','1b')", 200)
-        ok(await ev(pg, "document.getElementById('ajuda-1b').open"), '1.2: painel aberto na primeira visita ao passo')
+        ok(await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: abre ao clicar')
+        await ev(pg, "abrirFase('contexto','1b')", 200); await ev(pg, AJ + "('1b')", 150)
+        ok(not await ev(pg, "document.getElementById('ajuda-1b').open"), '1.2: recolhido no passo nunca aberto')
         await ev(pg, "abrirFase('contexto','1a')", 200)
-        ok(not await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: continua recolhido ao voltar ao passo')
-        await pg.fill('#f-local', 'Rede de teste'); await pg.locator('#f-local').press('Tab'); await pg.wait_for_timeout(200)
-        ok(not await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: continua recolhido depois de responder (a tela é redesenhada)')
+        ok(await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: continua aberto ao voltar ao passo')
+        await ev(pg, "abrirFase('contexto','1a','local')", 200)
+        await pg.fill('#f-local', 'Rede de teste'); await pg.locator('#f-local').press('Enter'); await pg.wait_for_timeout(300)
+        ok(await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: continua aberto depois de responder (a tela é redesenhada)')
         # teclado: Enter no resumo
         await pg.focus('#ajuda-1a > summary'); await pg.keyboard.press('Enter'); await pg.wait_for_timeout(150)
-        ok(await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: o resumo abre pelo teclado')
+        ok(not await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: o resumo recolhe pelo teclado')
         await pg.keyboard.press('Enter'); await pg.wait_for_timeout(150)
-        ok(not await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: e recolhe de novo')
+        ok(await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: e abre de novo')
         arm = await ev(pg, "localStorage.getItem('upt_ajuda_v14')")
-        ok(arm and json.loads(arm).get('1a') is False, f'estado gravado por passo no navegador ({arm})')
-        # nova visita (recarregar a página): o recolhido continua recolhido; o que só abriu por ser a primeira vez começa recolhido
+        ok(arm and json.loads(arm).get('1a') is True, f'estado gravado por passo no navegador ({arm})')
         await pg.reload(); await pg.wait_for_timeout(300)
-        await ev(pg, "(()=>{S.boasVindas=false; abrirFase('contexto','1a');})()", 250)
-        ok(not await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: recolhido depois de recarregar a página')
-        await ev(pg, "abrirFase('contexto','1b')", 250)
-        ok(not await ev(pg, "document.getElementById('ajuda-1b').open"), '1.2: já visto numa visita anterior, começa recolhido')
-        await ev(pg, "abrirFase('contexto','1c')", 250)
-        ok(await ev(pg, "document.getElementById('ajuda-1c').open"), '1.3: passo nunca visitado abre na primeira vez')
+        await ev(pg, "(()=>{S.boasVindas=false; abrirFase('contexto','1a');})()", 250); await ev(pg, AJ + "('1a')", 150)
+        ok(await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: aberto depois de recarregar a página')
+        await ev(pg, "abrirFase('contexto','1c')", 250); await ev(pg, AJ + "('1c')", 150)
+        ok(not await ev(pg, "document.getElementById('ajuda-1c').open"), '1.3: passo nunca aberto começa recolhido')
         # sem localStorage a tela funciona
         ctx2 = await b.new_context(viewport={'width': 1360, 'height': 900})
         await ctx2.add_init_script("Object.defineProperty(window,'localStorage',{get(){throw new Error('bloqueado')}})")
@@ -131,30 +144,24 @@ async def main():
         p2.on('pageerror', lambda e: e2.append(str(e)))
         await p2.goto('file://' + ARQ); await p2.wait_for_timeout(300)
         await p2.evaluate("(()=>{carregarExemplo('novo'); S.boasVindas=false; abrirFase('contexto','1a');})()"); await p2.wait_for_timeout(250)
+        await p2.evaluate(AJ + "('1a')"); await p2.wait_for_timeout(150)
         ok(await p2.locator('#ajuda-1a .aj-p').count() == 4 and not e2, f'sem localStorage: painel aparece e não há erro {e2[:2]}')
         await p2.click('#ajuda-1a > summary'); await p2.wait_for_timeout(150)
-        ok(not await p2.evaluate("document.getElementById('ajuda-1a').open") and not e2, 'sem localStorage: recolher também funciona')
+        ok(await p2.evaluate("document.getElementById('ajuda-1a').open") and not e2, 'sem localStorage: abrir também funciona')
         await ctx2.close()
 
         # ---------------------------------------------------------- passos sem explicação antes: 1.1, 1.2, 2.0, 4.1, 4.3 e o ⓘ do 3.1
-        for fid, pid in [('contexto', '1a'), ('contexto', '1b'), ('piloto', '20'), ('expansao', '4a'), ('expansao', '4c')]:
-            await ev(pg, f"abrirFase('{fid}','{pid}')", 200)
+        # v15: 4.3 virou o anexo C do documento (sem perguntas, sem ajuda de passo)
+        for fid, pid in [('contexto', '1a'), ('contexto', '1b'), ('piloto', '20'), ('expansao', '4a')]:
+            await ev(pg, f"abrirFase('{fid}','{pid}')", 200); await ev(pg, AJ + f"('{pid}')", 150)
             t = await ev(pg, f"document.getElementById('ajuda-{pid}').textContent", 0)
             ok(all(x in t for x in ['Para que serve', 'Por que importa para o custo ou a compra', 'Como responder', 'Quem costuma saber:', 'Exemplo']), f'{pid}: painel com as cinco partes')
-        await ev(pg, "abrirFase('implantacao','3a')", 250)
-        ok(await pg.locator('#passo-3a button.info').count() == 1, '3.1 tem o botão ⓘ')
-        await pg.click('#passo-3a button.info'); await pg.wait_for_timeout(200)
-        ok(await pg.get_attribute('#passo-3a button.info', 'aria-expanded') == 'true' and 'Camadas 2, 3 e 6' in await pg.locator('#nota-p-3a').inner_text(), '3.1: ⓘ abre a nota das camadas 2, 3 e 6')
-        ok(await pg.locator('#nota-p-3a .ref-tco').count() == 1, '3.1: nota com a referência a Krueger e Jackson (2026)')
-        await pg.click('#passo-3a button.info'); await pg.wait_for_timeout(150)
-        ok(await pg.locator('#nota-p-3a').count() == 0, '3.1: ⓘ fecha')
-        await ev(pg, "abrirFase('piloto','2a')", 250)
-        ok(await pg.locator('#passo-2a button.info').count() == 1 and await pg.locator('#passo-2a .passo-corpo > .ajuda').count() == 1, 'o ⓘ das camadas continua (2.1), como segundo nível')
-        # a ordem do corpo do 2.1: painel, abertura, aviso (o teste da v13 depende de "abertura + aviso")
-        ok(await ev(pg, "document.querySelector('#passo-2a .passo-corpo').firstElementChild.classList.contains('ajuda') && document.querySelector('#passo-2a .passo-corpo > .abertura') !== null"), '2.1: painel antes da abertura do passo')
+        # v15: os botões ⓘ das camadas ficavam nos cabeçalhos dos passos 2.1 e 3.1, que deixaram de existir (o documento substitui
+        # o percurso); as camadas e a Figura 1 de Krueger e Jackson (2026) continuam no plano (seção 2 e anexo E).
+        ok(await ev(pg, "!!document.querySelector('#plano [data-sec=\"anexo-e\"]') && typeof FIG_TCO !== 'undefined'"), 'camadas e Figura 1 continuam no plano (anexo E)')
 
         # ---------------------------------------------------------- glossário: abrir, fechar, teclado, outro idioma
-        await ev(pg, "abrirFase('implantacao','3b')", 250)
+        await ev(pg, GL3B, 250)
         saas = await ev(pg, "glossarioLista('pt').find(g=>g.id==='saas')")
         t = pg.locator('#ajuda-3b .gl[data-gl="saas"]')
         ok(await t.count() == 1 and await t.get_attribute('role') == 'button' and await t.get_attribute('tabindex') == '0' and await t.get_attribute('aria-expanded') == 'false', 'termo do glossário é um botão acessível (role, tabindex, aria-expanded)')
@@ -172,6 +179,7 @@ async def main():
         ok(await pg.locator('#gl-pop').count() == 1, 'Espaço abre a definição')
         await pg.mouse.click(5, 300); await pg.wait_for_timeout(150)
         ok(await pg.locator('#gl-pop').count() == 0, 'clicar fora fecha')
+        await ev(pg, GL3B, 200)   # v15: o clique fora também fecha o popover da lacuna; reabre
         await pg.locator('#ajuda-3b .gl[data-gl="pesos"]').click(); await pg.wait_for_timeout(150)
         await pg.locator('#ajuda-3b .gl[data-gl="api"]').click(); await pg.wait_for_timeout(150)
         ok(await pg.locator('#gl-pop').count() == 1 and 'API' in await pg.locator('#gl-pop .gl-t').inner_text(), 'só uma definição aberta por vez')
@@ -180,7 +188,7 @@ async def main():
         tctx = await b.new_context(viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True)
         tp = await tctx.new_page()
         await tp.goto('file://' + ARQ); await tp.evaluate('localStorage.clear()'); await tp.reload(); await tp.wait_for_timeout(300)
-        await tp.evaluate("(()=>{carregarExemplo('novo'); S.boasVindas=false; abrirFase('implantacao','3b');})()"); await tp.wait_for_timeout(250)
+        await tp.evaluate("(()=>{carregarExemplo('novo'); S.boasVindas=false;})()"); await tp.evaluate(GL3B); await tp.wait_for_timeout(250)
         await tp.locator('#ajuda-3b .gl[data-gl="saas"]').tap(); await tp.wait_for_timeout(200)
         ok(await tp.locator('#gl-pop').is_visible(), 'toque abre a definição')
         await tp.touchscreen.tap(30, 20); await tp.wait_for_timeout(200)
@@ -189,6 +197,7 @@ async def main():
         # EN
         await pg.select_option('#sel-lang', 'en'); await pg.wait_for_timeout(300)
         saas_en = await ev(pg, "glossarioLista('en').find(g=>g.id==='saas')")
+        await ev(pg, GL3B, 200)   # v15: trocar o idioma fecha a lacuna aberta
         await pg.locator('#ajuda-3b .gl[data-gl="saas"]').click(); await pg.wait_for_timeout(150)
         txt = await pg.locator('#gl-pop').inner_text()
         ok(saas_en['definicao'] in txt and not PT.search(txt) and 'software as a service' in txt, f'EN: definição traduzida ({txt[:60]!r})')
@@ -207,7 +216,7 @@ async def main():
                 if sw > 391: ruim.append((pid, sw))
             ok(not ruim, f'390 px ({lang}): sem rolagem horizontal nos 15 passos (maior {larg}) {ruim[:3]}')
         await pg.select_option('#sel-lang', 'fr'); await pg.wait_for_timeout(200)
-        await ev(pg, "abrirFase('implantacao','3b')", 250)
+        await ev(pg, GL3B, 250)
         await pg.locator('#ajuda-3b .gl[data-gl="pesos"]').click(); await pg.wait_for_timeout(200)
         bb = await pg.locator('#gl-pop').bounding_box()
         ok(bb and bb['x'] >= 0 and bb['x'] + bb['width'] <= 390, f"390 px: a definição cabe na tela ({bb and (round(bb['x']), round(bb['width']))})")
