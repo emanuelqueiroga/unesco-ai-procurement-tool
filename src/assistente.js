@@ -137,7 +137,8 @@ function irAlvoA(passo, alvo) {
     else {
       const f = CAMPO_POR_ID[a] || CAMPOS.find(x => x.n === a || x.n.replace(/\./g, '-') === a.replace(/^q-/, ''));
       if (f) { const cab = Object.keys(GRUPOS_A).find(h => GRUPOS_A[h].includes(f.id)); k = 'q:' + (cab || f.id); }
-      if (f && uiA().lista) k = primeiraTelaPassoA(passoDe(f));
+      // passo inteiro: a pergunta pedida no passo indicado (2.3.6 e 2.3.7 também aparecem no 2.3, em "Para a implantação")
+      if (f && uiA().lista) k = primeiraTelaPassoA(PASSOS[fasePasso(passo)] && (camposPasso(passo).concat(camposDescidosPasso(passo))).some(x => x.id === f.id) ? passo : passoDe(f));
     }
   }
   // sem alvo: fica na tela atual se ela já é deste passo (continuar o caso salvo)
@@ -296,10 +297,19 @@ function htmlListaA(t) {
   const info = pi.info ? `<div class="as-info">${botaoInfo(pi.info, 'p-' + t.passo)}<span class="as-info-t">${esc(tr(INFO_ROT[pi.info] || 'Sobre as camadas'))}</span></div>${notaInfo(pi.info, 'p-' + t.passo)}` : '';
   return `${eb}<h1 class="as-h" id="as-h" tabindex="-1">${esc(nomePasso(t.passo))}</h1>${ajudaPassoA(t.passo)}<div class="as-lista" id="passo-${t.passo}">${info}<div class="passo-corpo">${corpoPadrao(t.passo)}</div></div>`;
 }
+// Ajuda do passo (o antigo painel "Sobre esta etapa"): para que serve numa linha visível; o resto em "Por que perguntamos?", fechado
 function ajudaPassoA(pid) {
   const a = PASSO_AJUDA[pid]; if (!a) return '';
   const R = AJUDA_ROT, g = typeof glossarioTexto === 'function' ? glossarioTexto : (x => esc(tr(x)));
-  return `<p class="as-linha">${g(a.serve)}</p><details class="as-por" data-as-por="${pid}"><summary>Por que perguntamos?</summary><div class="as-por-in"><p><b>${esc(tr(R.importa))}.</b> <span>${g(a.importa)}</span></p><p><b>${esc(tr(R.como))}.</b> <span>${g(a.como)}</span></p><p><b>${esc(tr(R.quem))}</b> <span>${esc(tr(a.quem))}</span>.</p><p class="as-ex"><b>${esc(tr(R.ex))}:</b> <span>${g(a.ex)}</span></p></div></details>`;
+  return `<div class="as-ajuda" id="ajuda-${pid}"><p class="as-linha">${g(a.serve)}</p><details class="as-por" data-as-por="${pid}"${POR_ABERTO[pid] ? ' open' : ''}><summary>Por que perguntamos?</summary><div class="as-por-in"><p class="aj-p"><b>${esc(tr(R.importa))}.</b> <span>${g(a.importa)}</span></p><p class="aj-p"><b>${esc(tr(R.como))}.</b> <span>${g(a.como)}</span></p><p class="aj-p"><b>${esc(tr(R.quem))}</b> <span>${esc(tr(a.quem))}</span>.</p><p class="aj-p as-ex"><b>${esc(tr(R.ex))}:</b> <span>${g(a.ex)}</span></p></div></details></div>`;
+}
+// Primeira tela de cada fase: o que a fase decide e o tempo, numa linha (no lugar dos três blocos de abertura)
+function introFaseA(t, L) {
+  const F = FASES.find(x => x.id === t.fase); if (!F || !F.decide) return '';
+  const prim = L.find(x => x.fase === t.fase && x.tipo === 'q');
+  if (!prim || prim.k !== t.k) return '';
+  const g = typeof glossarioTexto === 'function' ? glossarioTexto : (x => esc(tr(x)));
+  return `<p class="as-fase-intro" id="intro-${F.id}"><b>${esc(tr('Fase ' + F.n + ':'))}</b> <span class="fi-p">${g(F.decide)}</span> <span class="fi-p as-fi-t">${g(F.tempo)}</span></p>`;
 }
 function rotuloSeguirA(t, L) {
   if (t.tipo === 'q') {
@@ -369,6 +379,7 @@ function htmlFimA(t, L) {
     <div class="as-fim-p">
       <p class="as-fim-ok${okTudo ? '' : ' warn'}">${okTudo ? ICO_A.ok : ''}<span>${esc(tr(nEss + ' de ' + ess.length + ' perguntas essenciais respondidas'))}</span></p>
       <h1 class="as-h" id="as-h" tabindex="-1">${esc(tr(okTudo ? 'Fase ' + F.n + ' concluída:' : 'Fim da fase ' + F.n + ':'))} ${esc(tr(F.nome))}</h1>
+      ${F.final ? `<p class="as-fim-final"><b>${esc(tr(AJUDA_ROT.faseFinal))}:</b> <span>${glossarioTexto(F.final)}</span></p>` : ''}
       <p class="as-linha"><span>Confira as respostas que mais pesam no custo.</span>${prox ? ` <span>${esc(tr('A seguir vem a fase ' + prox.n + ','))} ${esc(tr(prox.nome))}: ${esc(tr(qProx === 1 ? '1 pergunta, cerca de ' + minutosA(1) + ' minutos.' : qProx + ' perguntas, cerca de ' + minutosA(qProx) + ' minutos.'))}</span>` : ''}</p>
       <div class="as-fim-g">
         <section class="as-card"><h2>Respostas-chave desta fase</h2><ul class="as-chaves">${chaves.map(htmlChaveA).join('')}</ul></section>
@@ -432,11 +443,11 @@ function htmlResA(t, L) {
 }
 function htmlEstA() {
   return `<div class="as-eb"><p><span class="as-pn">4.2</span> <span>Estimativa de custo</span></p></div><h1 class="as-h" id="as-h" tabindex="-1">Estimativa de custo</h1>
-    <p class="as-linha">O custo de todo o ciclo, por fase e por camada. Valores ilustrativos: substitua por cotações e dados locais.</p><div class="as-est" id="passo-4b"><div class="passo-corpo">${passo4b()}</div></div>`;
+    <p class="as-linha">O custo de todo o ciclo, por fase e por camada. Valores ilustrativos: substitua por cotações e dados locais.</p>${ajudaPassoA('4b')}<div class="as-est" id="passo-4b"><div class="passo-corpo">${passo4b()}</div></div>`;
 }
 function htmlRecA() {
   return `<div class="as-eb"><p><span class="as-pn">4.3</span> <span>Recomendações para você</span></p></div><h1 class="as-h" id="as-h" tabindex="-1">Recomendações para você</h1>
-    <p class="as-linha">As ações para este caso, por prioridade, a partir das suas respostas.</p><div class="as-rec" id="passo-4c"><div class="passo-corpo">${passo4c()}</div></div>`;
+    <p class="as-linha">As ações para este caso, por prioridade, a partir das suas respostas.</p>${ajudaPassoA('4c')}<div class="as-rec" id="passo-4c"><div class="passo-corpo">${passo4c()}</div></div>`;
 }
 
 // ----------------------------------------------------------- tela inteira
@@ -455,7 +466,7 @@ function renderAssistente() {
   // "Não sei" deixa de valer quando a pergunta ganha resposta
   Object.keys(S.feitos || {}).forEach(k => { if (/^ns:/.test(k)) { const f = CAMPO_POR_ID[k.slice(3)]; if (!f || qOk(f)) delete S.feitos[k]; } });
   u.qAtual = t.tipo === 'q' ? t.f : null;
-  const corpo = t.tipo === 'q' ? (t.lista ? htmlListaA(t) : htmlTelaQ(t)) : t.tipo === 'fim' ? htmlFimA(t, L) : t.tipo === 'res' ? htmlResA(t, L) : t.tipo === 'est' ? htmlEstA() : htmlRecA();
+  const corpo = t.tipo === 'q' ? introFaseA(t, L) + (t.lista ? htmlListaA(t) : htmlTelaQ(t)) : t.tipo === 'fim' ? htmlFimA(t, L) : t.tipo === 'res' ? htmlResA(t, L) : t.tipo === 'est' ? htmlEstA() : htmlRecA();
   return `<div class="as as-t-${t.tipo}" id="assistente" data-tela="${esc(t.k)}">${htmlProgA(L, t)}${faixaExA()}
     <div class="as-tela" id="as-tela">${corpo}</div>${t.tipo === 'q' || t.tipo === 'est' || t.tipo === 'rec' ? htmlNavA(t, L) : ''}</div>`;
 }
@@ -627,7 +638,9 @@ if (typeof document !== 'undefined') document.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft' && e.altKey && !(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) { e.preventDefault(); voltarA(); return; }
   if (e.key !== 'Enter' || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
   const tag = el.tagName;
-  if (['TEXTAREA', 'BUTTON', 'A', 'SUMMARY', 'SELECT'].includes(tag)) return;
+  if (e.defaultPrevented || ['TEXTAREA', 'BUTTON', 'A', 'SUMMARY', 'SELECT'].includes(tag)) return;
+  // termos do glossário, ⓘ e outros controles próprios (role="button", tabindex) tratam o Enter
+  if (tag !== 'INPUT' && el !== document.body && el.closest && el.closest('[role="button"], [tabindex]:not(#as-h), [contenteditable]')) return;
   if (el !== document.body && !(el.closest && el.closest('#as-tela'))) return;
   e.preventDefault();
   if (tag === 'INPUT' && (el.type === 'text' || el.type === 'number')) el.dispatchEvent(new Event('change', { bubbles: true }));

@@ -68,13 +68,17 @@ async def main():
             for fid, pid in passos:
                 await ev(pg, f"abrirFase('{fid}','{pid}')", 120)
                 if pid == [p_[1] for p_ in passos if p_[0] == fid][0]:
+                    # v15 (A, C1): a abertura da fase vira uma linha na primeira tela da fase (o que decide e o tempo);
+                    # "o que você terá ao final" passa para a tela de fim de fase
                     n = await pg.locator(f'#intro-{fid} .fi-p').count()
                     t = await ev(pg, f"document.getElementById('intro-{fid}').innerText", 0)
-                    ok(n == 3 and '[[' not in t and (lang == 'pt' or not PT.search(t)), f'{lang}: abertura da fase {fid} com as três partes, sem restos de português' + ('' if not PT.search(t) or lang == 'pt' else f' {PT.findall(t)[:4]}'))
-                if await pg.locator(f'#ajuda-{pid} .aj-p').count() != 4: vaz.append(pid)
+                    tf = await ev(pg, f"(()=>{{ const k=uiA().tela; marcarTelaA('{'res' if fid == 'expansao' else 'fim:' + fid}'); render(); const e=document.querySelector('.as-fim-final'); const r=e?e.innerText:''; marcarTelaA(k); render(); return r; }})()", 0) if fid != 'expansao' else 'ok'
+                    ok(n == 2 and '[[' not in t + tf and tf and (lang == 'pt' or not PT.search(t + tf)), f'{lang}: abertura da fase {fid} (o que decide, tempo; o que terá ao final no fim da fase), sem restos de português' + ('' if not PT.search(t + tf) or lang == 'pt' else f' {PT.findall(t + tf)[:4]}'))
+                # v15 (A): o painel "Sobre esta etapa" vira "Para que serve" numa linha + "Por que perguntamos?" fechado (#ajuda-<passo>)
+                if await pg.locator(f'#ajuda-{pid} .aj-p').count() != 4 or await pg.locator(f'#ajuda-{pid} > .as-linha').count() != 1: vaz.append(pid)
                 t = await ev(pg, f"(document.getElementById('ajuda-{pid}')||{{}}).innerText||''", 0)
                 if '[[' in t or (lang != 'pt' and PT.search(t)): vistos.append((pid, PT.findall(t)[:3]))
-            ok(not vaz, f'{lang}: painel "Sobre esta etapa" com as quatro partes nos 15 passos {vaz}')
+            ok(not vaz, f'{lang}: ajuda do passo ("Para que serve" + "Por que perguntamos?") com as quatro partes nos 15 passos {vaz}')
             ok(not vistos, f'{lang}: painéis sem marcas soltas nem restos de português {vistos[:3]}')
             # textos-fonte: cada um tem tradução (menos os que são iguais em todos os idiomas)
             if lang != 'pt':
@@ -98,49 +102,45 @@ async def main():
         ok(await pg.locator('#q-2-3-5 .dica .gl').count() == 1, 'termo do glossário na dica ("custo recorrente")')
         ok(await ev(pg, "document.querySelectorAll('.q .dica').length") >= 5, 'várias dicas visíveis no passo 2.3')
 
-        # ---------------------------------------------------------- painel: abre na primeira visita, recolhe e fica recolhido
+        # ---------------------------------------------------------- ajuda do passo: v15 (A, C1) fechada por padrão em todo passo
+        # (antes: aberta na primeira visita e lembrada no navegador); abre e recolhe pelo clique e pelo teclado e continua
+        # aberta enquanto a tela é redesenhada; não depende de localStorage
         await abrir(pg); await pg.click('[data-act="comecar"]'); await pg.wait_for_timeout(250); await branco(pg)
-        ok(await pg.locator('#ajuda-1a').count() == 1 and await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: painel aberto na primeira visita')
-        await pg.click('#ajuda-1a > summary'); await pg.wait_for_timeout(150)
-        ok(not await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: o painel recolhe ao clicar')
+        POR = "(id => document.querySelector('#ajuda-' + id + ' details.as-por').open)"
+        ok(await pg.locator('#ajuda-1a').count() == 1 and not await ev(pg, POR + "('1a')"), '1.1: "Por que perguntamos?" fechado na primeira visita')
+        await pg.click('#ajuda-1a summary'); await pg.wait_for_timeout(150)
+        ok(await ev(pg, POR + "('1a')"), '1.1: abre ao clicar')
         await ev(pg, "abrirFase('contexto','1b')", 200)
-        ok(await ev(pg, "document.getElementById('ajuda-1b').open"), '1.2: painel aberto na primeira visita ao passo')
+        ok(not await ev(pg, POR + "('1b')"), '1.2: fechado na primeira visita ao passo')
         await ev(pg, "abrirFase('contexto','1a')", 200)
-        ok(not await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: continua recolhido ao voltar ao passo')
+        ok(await ev(pg, POR + "('1a')"), '1.1: continua aberto ao voltar ao passo (na mesma sessão)')
         await pg.fill('#f-local', 'Rede de teste'); await pg.locator('#f-local').press('Tab'); await pg.wait_for_timeout(200)
-        ok(not await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: continua recolhido depois de responder (a tela é redesenhada)')
-        # teclado: Enter no resumo
-        await pg.focus('#ajuda-1a > summary'); await pg.keyboard.press('Enter'); await pg.wait_for_timeout(150)
-        ok(await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: o resumo abre pelo teclado')
+        ok(await ev(pg, POR + "('1a')"), '1.1: continua aberto depois de responder (a tela é redesenhada)')
+        await pg.focus('#ajuda-1a summary'); await pg.keyboard.press('Enter'); await pg.wait_for_timeout(150)
+        ok(not await ev(pg, POR + "('1a')"), '1.1: o resumo recolhe pelo teclado')
         await pg.keyboard.press('Enter'); await pg.wait_for_timeout(150)
-        ok(not await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: e recolhe de novo')
-        arm = await ev(pg, "localStorage.getItem('upt_ajuda_v14')")
-        ok(arm and json.loads(arm).get('1a') is False, f'estado gravado por passo no navegador ({arm})')
-        # nova visita (recarregar a página): o recolhido continua recolhido; o que só abriu por ser a primeira vez começa recolhido
+        ok(await ev(pg, POR + "('1a')"), '1.1: e abre de novo')
         await pg.reload(); await pg.wait_for_timeout(300); await pg.evaluate("uiA().lista = true")  # v15 (A): passo inteiro numa tela
         await ev(pg, "(()=>{S.boasVindas=false; abrirFase('contexto','1a');})()", 250)
-        ok(not await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: recolhido depois de recarregar a página')
-        await ev(pg, "abrirFase('contexto','1b')", 250)
-        ok(not await ev(pg, "document.getElementById('ajuda-1b').open"), '1.2: já visto numa visita anterior, começa recolhido')
-        await ev(pg, "abrirFase('contexto','1c')", 250)
-        ok(await ev(pg, "document.getElementById('ajuda-1c').open"), '1.3: passo nunca visitado abre na primeira vez')
+        ok(not await ev(pg, POR + "('1a')"), '1.1: fechado depois de recarregar a página (nada gravado no navegador)')
         # sem localStorage a tela funciona
         ctx2 = await b.new_context(viewport={'width': 1360, 'height': 900})
         await ctx2.add_init_script("Object.defineProperty(window,'localStorage',{get(){throw new Error('bloqueado')}})")
         p2 = await ctx2.new_page(); e2 = []
         p2.on('pageerror', lambda e: e2.append(str(e)))
         await p2.goto('file://' + ARQ); await p2.wait_for_timeout(300)
-        await p2.evaluate("(()=>{carregarExemplo('novo'); S.boasVindas=false; abrirFase('contexto','1a');})()"); await p2.wait_for_timeout(250)
-        ok(await p2.locator('#ajuda-1a .aj-p').count() == 4 and not e2, f'sem localStorage: painel aparece e não há erro {e2[:2]}')
-        await p2.click('#ajuda-1a > summary'); await p2.wait_for_timeout(150)
-        ok(not await p2.evaluate("document.getElementById('ajuda-1a').open") and not e2, 'sem localStorage: recolher também funciona')
+        await p2.evaluate("(()=>{carregarExemplo('novo'); S.boasVindas=false; uiA().lista=true; abrirFase('contexto','1a');})()"); await p2.wait_for_timeout(250)
+        ok(await p2.locator('#ajuda-1a .aj-p').count() == 4 and not e2, f'sem localStorage: ajuda aparece e não há erro {e2[:2]}')
+        await p2.click('#ajuda-1a summary'); await p2.wait_for_timeout(150)
+        ok(await p2.evaluate("document.querySelector('#ajuda-1a details').open") and not e2, 'sem localStorage: abrir também funciona')
         await ctx2.close()
 
         # ---------------------------------------------------------- passos sem explicação antes: 1.1, 1.2, 2.0, 4.1, 4.3 e o ⓘ do 3.1
         for fid, pid in [('contexto', '1a'), ('contexto', '1b'), ('piloto', '20'), ('expansao', '4a'), ('expansao', '4c')]:
             await ev(pg, f"abrirFase('{fid}','{pid}')", 200)
             t = await ev(pg, f"document.getElementById('ajuda-{pid}').textContent", 0)
-            ok(all(x in t for x in ['Para que serve', 'Por que importa para o custo ou a compra', 'Como responder', 'Quem costuma saber:', 'Exemplo']), f'{pid}: painel com as cinco partes')
+            serve = await ev(pg, f"glossarioSemMarcas(PASSO_AJUDA['{pid}'].serve)", 0)
+            ok(serve[:30] in t and all(x in t for x in ['Por que importa para o custo ou a compra', 'Como responder', 'Quem costuma saber:', 'Exemplo']), f'{pid}: ajuda com as cinco partes (para que serve visível)')
         await ev(pg, "abrirFase('implantacao','3a')", 250)
         ok(await pg.locator('#passo-3a button.info').count() == 1, '3.1 tem o botão ⓘ')
         await pg.click('#passo-3a button.info'); await pg.wait_for_timeout(200)
@@ -149,9 +149,9 @@ async def main():
         await pg.click('#passo-3a button.info'); await pg.wait_for_timeout(150)
         ok(await pg.locator('#nota-p-3a').count() == 0, '3.1: ⓘ fecha')
         await ev(pg, "abrirFase('piloto','2a')", 250)
-        ok(await pg.locator('#passo-2a button.info').count() == 1 and await pg.locator('#passo-2a .passo-corpo > .ajuda').count() == 1, 'o ⓘ das camadas continua (2.1), como segundo nível')
-        # a ordem do corpo do 2.1: painel, abertura, aviso (o teste da v13 depende de "abertura + aviso")
-        ok(await ev(pg, "document.querySelector('#passo-2a .passo-corpo').firstElementChild.classList.contains('ajuda') && document.querySelector('#passo-2a .passo-corpo > .abertura') !== null"), '2.1: painel antes da abertura do passo')
+        ok(await pg.locator('#passo-2a button.info').count() == 1 and await pg.locator('#ajuda-2a details.as-por').count() == 1, 'o ⓘ das camadas continua (2.1), como segundo nível')
+        # a ordem do 2.1: ajuda, abertura, aviso (o teste da v13 depende de "abertura + aviso")
+        ok(await ev(pg, "!!(document.getElementById('ajuda-2a').compareDocumentPosition(document.getElementById('passo-2a')) & 4) && document.querySelector('#passo-2a .passo-corpo > .abertura') !== null"), '2.1: ajuda antes da abertura do passo')
 
         # ---------------------------------------------------------- glossário: abrir, fechar, teclado, outro idioma
         await ev(pg, "abrirFase('implantacao','3b')", 250)

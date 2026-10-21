@@ -127,7 +127,7 @@ async def main():
         await ev(pg, "abrirFase('piloto','2b')", 200)
         ok((await pg.locator('#q-2-2-1.sug .sug-nota').text_content()).strip() == 'Sugestão a partir das tarefas marcadas no passo 2.1. Confirme ou ajuste.', '2.2.1: linha de "por quê" da sugestão das tarefas')
         await ev(pg, "abrirFase('piloto','2a')", 200)
-        await pg.click('#pe-2a [data-act="continuar-confirmar"]'); await pg.wait_for_timeout(250)
+        await pg.click('#as-nav .as-seguir'); await pg.wait_for_timeout(250)  # v15 (A): "Confirmar e continuar" na navegação do assistente
         ok(await ev(pg, "!!S.respC.tarefas && qOk(CAMPO_POR_ID.tarefas) && S.passo==='2b'"), '"Confirmar e continuar" confirma as tarefas')
         # só problemas sem tarefa de IA → aviso no topo do 2.1
         await branco(pg)
@@ -187,7 +187,7 @@ async def main():
         ok(await det.count() == 1 and not await ev(pg, "document.querySelector('#passo-2c details.desc-imp').open"), '2.3: "Para a implantação" recolhido no fim do passo')
         ok((await det.locator('summary').text_content()).strip() == 'Para a implantação (pode responder agora ou depois)' and (await det.locator('.desc-in > .hint').text_content()).strip() == 'Estas perguntas também aparecem no passo 3.1.', 'resumo e nota do <details>')
         ok(await ev(pg, "[...document.querySelectorAll('#passo-2c details.desc-imp .q')].map(q=>q.dataset.n).join()") == '2.3.6,2.3.7', '2.3.6 e 2.3.7 dentro do <details>')
-        ok(await ev(pg, "document.querySelector('#passo-2c .passo-corpo > details.desc-imp + .pe')!==null"), '<details> logo antes do rodapé do passo')
+        ok(await ev(pg, "document.querySelector('#passo-2c .passo-corpo > details.desc-imp:last-child')!==null && !!document.querySelector('#as-nav')"), '<details> logo antes do rodapé do passo (v15: a navegação do assistente)')
         await det.locator('summary').click(); await pg.wait_for_timeout(150)
         await pg.locator('#q-2-3-1 [data-f="nFerramentas"][value="1"]').click(); await pg.wait_for_timeout(200)
         ok(await ev(pg, "!!S.respC.nFerramentas && !sugerido(CAMPO_POR_ID.nFerramentas)") and await ev(pg, "document.querySelector('#passo-2c details.desc-imp').open"), 'clicar na opção sugerida confirma; o <details> continua aberto')
@@ -284,7 +284,7 @@ async def main():
         await pg.set_viewport_size({'width': 1360, 'height': 900}); await pg.wait_for_timeout(150)
         await pg.select_option('#sel-lang', 'en'); await pg.wait_for_timeout(300)
         await ev(pg, "(()=>{S.ctx.prioridades=['com']; S.ctx.problemas=['C2']; S.ctx.subs=[]; SUB_ABERTO.C2=true; S.info={'pr-com':true}; S.caso.linhaBase='parcial'; S.respC.linhaBase=true; ['olhando','problema','impactos','resultado','tarefas'].forEach(k=>delete S.respC[k]); abrirFase('contexto','1b');})()", 300)
-        SEL = ['#passo-1b .pt b', '#q-1-2-1 .q-t', '#q-1-2-1 > .hint', '#q-1-2-2 .q-t', '#q-1-2-2 > .hint', '.pg-n', '.pg-acoes', '.prob-ol', '.prob-sub summary', '.prob-outro label',
+        SEL = ['#as-h', '#q-1-2-1 .q-t', '#q-1-2-1 > .hint', '#q-1-2-2 .q-t', '#q-1-2-2 > .hint', '.pg-n', '.pg-acoes', '.prob-ol', '.prob-sub summary', '.prob-outro label',
                '#q-1-2-3 .sug-tag', '#q-1-2-3 .sug-nota', '#q-1-2-4 .lacuna-dica', '#det-linhaBase .q-det-c', '#nota-pr-com .eyebrow', '#fase-contexto .fase-t small']
         txt = await ev(pg, f"{json.dumps(SEL)}.flatMap(s=>[...document.querySelectorAll(s)].map(e=>e.innerText)).join(' | ')")
         ph = await pg.get_attribute('#f-linhaBaseMedida', 'placeholder')

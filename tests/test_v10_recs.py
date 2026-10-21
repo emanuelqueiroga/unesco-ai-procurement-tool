@@ -70,6 +70,7 @@ async def ir_existe(pg, ir):
 
 async def abrir_plano(pg):
     await pg.evaluate("(()=>{S.vista='';render();})()")
+    await pg.evaluate("abrirIndiceA()")  # v15 (A): "Plano de contratação" fica no índice "Ir para…" (e na tela de resultado)
     await pg.locator('[data-act="gerar-plano"]:visible').first.click()
     await pg.wait_for_timeout(250)
 
@@ -158,7 +159,7 @@ async def main():
           return {itens: P.querySelectorAll('.rc-item').length, irs: P.querySelectorAll('.rc-item [data-ir]').length,
             grupos: [...P.querySelectorAll('.rc-grupo')].map(g=>g.dataset.quando), cont: (P.querySelector('.rc-cont')||{}).innerText||'',
             pq: (P.querySelector('.rc-pq')||{}).innerText||'', css: !!document.getElementById('css-recs'),
-            plano: P.closest('.fase') ? P.closest('.fase').querySelectorAll('[data-act="gerar-plano"]').length : 0};})()""")
+            plano: (telasA()[telasA().findIndex(t => t.k === 'rec') + 1] || {}).k === 'res' ? 1 : 0};})()""")  # v15 (A): o 4.3 continua para o resultado, que gera o plano
         ok(r is not None, 'B: passo 4.3 aberto')
         if r:
             ok(r['itens'] == n and r['irs'] == n, f'B: 4.3 mostra {r["itens"]} itens com "Ir à pergunta" ({n} recomendações)')
@@ -181,6 +182,7 @@ async def main():
             await carregar(pg, ex)
             n = len(await pg.evaluate(RECS))
             await abrir_plano(pg)
+            await pg.evaluate("document.querySelectorAll('#plano details.rp-ax').forEach(d => d.open = true)")  # v15 (A): anexos recolhidos na página
             r = await pg.evaluate("""(()=>{const P=document.getElementById('plano'); if(!P) return null;
               const o=[...P.querySelectorAll('[data-bloco], [data-sec]')].map(e=>e.dataset.bloco ? '['+e.dataset.bloco+']' : e.dataset.sec);
               const R=P.querySelector('[data-sec="recs"]');
@@ -206,6 +208,7 @@ async def main():
             ok(not resto_pt(t34), f'en {ex}: 4.3 sem português {resto_pt(t34)[:3]}')
             ok(not re.search(r'\bnetwork', t34, re.I), f'en {ex}: 4.3 sem "network"')
             await abrir_plano(pg)
+            await pg.evaluate("document.querySelectorAll('#plano details.rp-ax').forEach(d => d.open = true)")  # v15 (A): anexos recolhidos na página
             tp = await pg.evaluate("(document.querySelector('#plano [data-sec=recs]')||{}).innerText||''")
             ok('Recommendations for you' in tp and 'for your case' not in tp and not resto_pt(tp), f'en {ex}: anexo C do plano em inglês {resto_pt(tp)[:3]}')
             ok(not re.search(r'\bnetwork', tp, re.I), f'en {ex}: seção do plano sem "network"')
