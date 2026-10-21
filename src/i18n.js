@@ -104,12 +104,14 @@ function tr(s) {
   if (alvo == null && !tr.emPT) {
     // valores e unidades já no idioma exibido (grande(), unidMil()): procura a forma em português
     const pt = unidadesParaPT(corpo);
-    if (pt !== corpo) { let t; tr.emPT = true; try { t = tr(pt); } finally { tr.emPT = false; } if (t !== pt) return m[1] + t + m[3]; }
+    // v15: só vale a tradução que não deixou nenhuma magnitude em português ("mi", "mil", "bi") no texto;
+    // antes, "… US$ 4.68 M to US$ 5.73 M" voltava como "… US$ 4.68 mi to US$ 5.73 M"
+    if (pt !== corpo) { let t; tr.emPT = true; try { t = tr(pt); } finally { tr.emPT = false; } if (t !== pt && !/\d\s(?:mi|mil|bi)(?![\p{L}])/u.test(t)) return m[1] + t + m[3]; }
   }
   if (alvo == null) {
-    // número com magnitude abreviada: "R$ 1,8 mi"
+    // número com magnitude abreviada: "R$ 1,8 mi" (só um valor: moeda e algarismos, sem outras palavras)
     const u = corpo.match(/^(.*?)(\s)(mi|bi|mil)$/);
-    if (u && /\d/.test(u[1]) && dic[u[3]]) return m[1] + u[1] + u[2] + dic[u[3]] + m[3];
+    if (u && /\d/.test(u[1]) && /^[\s\p{Sc}A-Z$+\-−\d.,  ]*$/u.test(u[1]) && dic[u[3]]) return m[1] + u[1] + u[2] + dic[u[3]] + m[3];
     // pontuação final diferente: "Escolas:" usa a tradução de "Escolas"
     const pf = corpo.match(/^([\s\S]*?\p{L}[\s\S]*?)([:.;,]+)$/u);
     if (pf) { const t = tr(pf[1]); if (t !== pf[1]) return m[1] + t + pf[2] + m[3]; }

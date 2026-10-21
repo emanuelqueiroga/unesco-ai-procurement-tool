@@ -417,6 +417,7 @@ function aplicarImportado(o) {
   if (o.moeda) S.moeda = o.moeda;
   S.exemplo = o.exemplo === 'novo' ? 'novo' : 'editado';
   S.fase = 'contexto'; S.passo = '1a'; S.vista = ''; S.boasVindas = false; S.v10 = !!o.v10;
+  if (typeof resetAssistente === 'function') resetAssistente();
   // formato 9 (v9 e v10) passa pela migração v10 → v11; formatos 9 e 11 (v11 e v12) passam pela migração v12 → v13
   S.versao = +o.formato === 13 ? 13 : +o.formato === 11 || +o.versao === 11 ? 11 : 9;
   SALVO = null; CONF_LIMPAR = false;
@@ -496,7 +497,7 @@ function carregarExemplo(k) {
   S.caso = Object.assign(clone(CASO_VAZIO), S.caso);
   S.custo = { base: 'caso', cfg: null, editado: false }; IA = { estado: '', resposta: null, erro: '' };
   render(); window.scrollTo(0, 0);
-  toast(tr(k === 'novo' ? 'Caso em branco.' : 'Exemplo carregado. As respostas são ilustrativas.'));
+  if (k !== 'novo') toast(tr('Exemplo carregado. As respostas são ilustrativas.'));
 }
 
 // ----------------------------------------------------------- entradas do caso
@@ -523,7 +524,8 @@ function ligar() {
     if (cb) { S.custo.base = cb.dataset.cbase; S.custo.cfg = null; S.custo.editado = false; render(); return; }
     const a = e.target.closest('[data-act]'); if (!a) return;
     const act = a.dataset.act;
-    if (act === 'limpar') carregarExemplo('novo');
+    const troca = (fn, alvo) => { if (typeof trocarCaso === 'function') trocarCaso(fn, alvo); else fn(); };
+    if (act === 'limpar') troca(() => carregarExemplo('novo'), 'Caso em branco');
     else if (act === 'ia') analisarIA();
     else if (act === 'ia-aplicar') aplicarIA(false);
     else if (act === 'ia-texto') aplicarIA(true);
@@ -548,7 +550,8 @@ function ligar() {
     else if (act === 'imp-colar') {
       const ta = document.getElementById('imp-txt'), txt = ta ? ta.value.trim() : '';
       if (!txt) { toast(tr('Cole antes os dados do caso.')); return; }
-      if (importarCaso(txt)) fecharImportar();
+      fecharImportar();
+      troca(() => { importarCaso(txt); }, 'Caso importado');
     }
     else if (act === 'dl-md') baixar(nomeArq('md'), relMD(dadosRelatorio()));
     else if (act === 'dl-html') baixar(nomeArq('html'), relHTML(dadosRelatorio(), true));
@@ -572,12 +575,13 @@ function ligar() {
   });
   document.addEventListener('change', e => {
     const el = e.target;
-    if (el.id === 'imp-json' && el.files && el.files[0]) { const r = new FileReader(); r.onload = () => importarCaso(String(r.result)); r.readAsText(el.files[0]); el.value = ''; return; }
+    if (el.id === 'imp-json' && el.files && el.files[0]) { const r = new FileReader(); r.onload = () => { const txt = String(r.result); if (typeof trocarCaso === 'function') trocarCaso(() => { importarCaso(txt); }, 'Caso importado'); else importarCaso(txt); }; r.readAsText(el.files[0]); el.value = ''; return; }
     if (custosEvento(e)) return;
     if (eventoFluxo(e)) return;
     if (!el.dataset) return;
     if (el.id === 'sel-lang') { S.lang = el.value; NOMES_MOEDA = null; aplicarIdioma(S.lang); textosExemplo(); render(); return; }
-    if (el.id === 'sel-exemplo') { if (el.value) carregarExemplo(el.value); el.value = ''; return; }
+    // v15 (C3): "Abrir um exemplo" com respostas no caso atual pede confirmação, com Desfazer depois
+    if (el.id === 'sel-exemplo') { const v = el.value, rot = el.options[el.selectedIndex] ? el.options[el.selectedIndex].text : ''; el.value = ''; if (v) { const fn = () => { carregarExemplo(v); S.boasVindas = false; abrirFase('contexto', '1a'); }; if (typeof trocarCaso === 'function') trocarCaso(fn, rot); else fn(); } return; }
     if (el.dataset.num != null && (el.dataset.fn || el.dataset.f)) {
       const top = gravarNumCaso(el, el.dataset.fn || el.dataset.f);
       if (!gancho(top)) atualizarLaterais();

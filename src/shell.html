@@ -1,42 +1,67 @@
 <title>AI in Education Procurement Tool</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
 <style>
 /* Navegador de decisão de IA na educação: folha de estilo.
    Direção: base neutra fria, azul UNESCO (#0069B4) como primária, acentos IA.EDU (ciano, roxo, verde,
    rosa, amarelo, amostrados do logo) só em detalhes. Cores semânticas de risco separadas da marca.
    Roxo = ponto de decisão. Ciano = foco e aba ativa. Verde e amarelo neon nunca carregam texto. */
 :root {
-  /* superfícies e texto */
-  --bg: #F3F5F7; --surface: #FFFFFF; --surface-2: #EEF3F8; --surface-3: #F6F8FA; --hover: #F1F5F9;
-  --line: #DDE3E9; --line-2: #C3CDD7; --line-3: #8B98A5;
-  --ink: #17212B; --ink-2: #36424E; --muted: #586674;
-  --head: #0C2D4D; --brand: #0069B4; --brand-strong: #00528F; --brand-tint: #E5F0FA; --on-brand: #FFFFFF;
-  --hl: #E5F0FA;
-  /* acentos IA.EDU (decorativos) e variantes para texto/ícone (AA sobre --surface) */
+  /* v15: tokens da seção 5 da auditoria (claro). Os nomes antigos continuam valendo para o resto do CSS. */
+  --bg: #F6F8FA; --surface: #FFFFFF; --surface-2: #EEF2F6; --surface-3: #F6F8FA; --hover: #EEF2F6;
+  --line: #D5DCE3; --line-2: #7A8794; --line-3: #56636F; --line-strong: #7A8794;
+  --ink: #17212B; --ink-2: #33404C; --muted: #4A5866;
+  --head: #0C2D4D; --brand: #0069B4; --brand-strong: #00528F; --brand-tint: #E6F0FA; --on-brand: #FFFFFF;
+  --hl: #E6F0FA;
+  /* acentos IA.EDU: só decorativos (faixa do cabeçalho); nunca texto, estado ou dado */
   --acc-cyan: #13C9EE; --acc-purple: #7844C4; --acc-green: #32FC7F; --acc-pink: #EF557F; --acc-yellow: #F6CE01;
-  --acc-cyan-ink: #0A7EA3; --acc-green-ink: #137A45; --acc-yellow-ink: #7A5C00;
-  --focus: #0A7EA3; --focus-halo: rgba(19, 201, 238, .28); --tab-ind: #13C9EE;
-  /* ponto de decisão (roxo IA.EDU escurecido) */
+  --acc-cyan-ink: #0A6F90; --acc-green-ink: #137A45; --acc-yellow-ink: #7A5C00;
+  --focus: #0C2D4D; --focus-halo: rgba(19, 201, 238, .4); --tab-ind: #0069B4;
   --pd: #6B3AB8; --on-pd: #FFFFFF; --pd-bg: #F2ECFB; --pd-ink: #5A2EA0;
-  /* semântica de risco e alertas (não reutilizar como cor de marca) */
-  --ok: #2A6A4A; --ok-bg: #E8F4EC; --warn: #8A5200; --warn-bg: #FFF3D9;
+  /* semântica: estado e prioridade (não é cor de marca) */
+  --ok: #1E6B45; --ok-bg: #E6F4EC; --warn: #8A5200; --warn-bg: #FFF3D9;
   --high: #AE4219; --high-bg: #FDEDE5; --crit: #A32228; --crit-bg: #FCEBEB;
-  --info: #3B5872; --info-bg: #EDF2F7;
-  /* gráficos: K1..K6 e tornado (usar como var(--k1) etc. no JS) */
-  --k1: #0B5CAD; --k2: #22B8DC; --k3: #9B6BE0; --k4: #138A5A; --k5: #D9A300; --k6: #F07FA3;
-  --tor-lo: #3D8BD0; --tor-hi: #D24F7E;
-  /* cabeçalho, rodapé e placa dos logos (as PNG têm fundo branco: a placa é branca nos dois temas) */
-  --bar: #FFFFFF; --bar-line: #DDE3E9; --foot: #E9EDF1; --plate: #FFFFFF; --plate-line: #E3E7EB;
+  --info: #3B5872; --info-bg: #EDF2F7; --default: #8A5200;
+  /* dados: as sete camadas */
+  --d1: #0B5CAD; --d2: #22A6C8; --d3: #7844C4; --d4: #2F8F5B; --d5: #C99700; --d6: #D9577F; --d7: #5B6773;
+  --k1: #0B5CAD; --k2: #22A6C8; --k3: #7844C4; --k4: #2F8F5B; --k5: #C99700; --k6: #D9577F;
+  --tor-lo: #3D8BD0; --tor-hi: #5B6773;
+  --bar: #FFFFFF; --bar-line: #D5DCE3; --foot: #EEF2F6; --plate: #FFFFFF; --plate-line: #E3E7EB;
   --plate-ring: transparent;
   --shadow-sm: 0 1px 2px rgba(16, 36, 56, .06);
-  --shadow: 0 1px 2px rgba(16, 36, 56, .06), 0 6px 18px rgba(16, 36, 56, .07);
-  --f-ui: "Source Sans 3", "Source Sans Pro", -apple-system, "Segoe UI", Roboto, "Noto Sans", system-ui, sans-serif;
-  --f-head: "Source Serif 4", "Source Serif Pro", Charter, "Bitstream Charter", "Noto Serif", Georgia, serif;
-  --r: 4px; --r-card: 6px;
-  --hdr-h: 80px;
+  --shadow: 0 1px 2px rgba(16, 36, 56, .06), 0 4px 12px rgba(16, 36, 56, .06);
+  --f-ui: "Noto Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-head: var(--f-ui);
+  --fs-xs: .8125rem; --fs-sm: .875rem; --fs-md: 1rem; --fs-lg: 1.25rem; --fs-xl: 1.5625rem; --fs-2xl: 2.5rem;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px;
+  --r: 6px; --r-card: 12px; --r-sm: 6px; --r-lg: 12px;
+  --hdr-h: 64px;
   color-scheme: light;
+}
+/* tema escuro: mesma estrutura de tokens (o documento do plano continua claro, como papel) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1720; --surface: #17212B; --surface-2: #1E2A36; --surface-3: #1A2530; --hover: #223142;
+    --line: #2E3B48; --line-2: #8796A5; --line-3: #A9B5C1; --line-strong: #8796A5;
+    --ink: #E8EEF3; --ink-2: #C9D2DA; --muted: #A9B5C1; --head: #E8EEF3;
+    --brand: #5AA9E6; --brand-strong: #8CC4F0; --brand-tint: #12324D; --on-brand: #0B1A28; --hl: #12324D;
+    --focus: #E8EEF3; --ok: #6FCF97; --ok-bg: #123022; --warn: #F2B866; --warn-bg: #3A2A10; --default: #F2B866;
+    --high: #F39A75; --high-bg: #3A1D12; --crit: #F28B8B; --crit-bg: #3A1416; --info: #A9C2DA; --info-bg: #1B2A3A;
+    --d1: #4F9BE6; --d2: #3FC1E0; --d3: #A780E6; --d4: #5CC08A; --d5: #E2B93B; --d6: #EC86A6; --d7: #9AA6B2;
+    --bar: #17212B; --bar-line: #2E3B48; --foot: #131C25; --plate-ring: #2E3B48;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px rgba(0, 0, 0, .35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1720; --surface: #17212B; --surface-2: #1E2A36; --surface-3: #1A2530; --hover: #223142;
+  --line: #2E3B48; --line-2: #8796A5; --line-3: #A9B5C1; --line-strong: #8796A5;
+  --ink: #E8EEF3; --ink-2: #C9D2DA; --muted: #A9B5C1; --head: #E8EEF3;
+  --brand: #5AA9E6; --brand-strong: #8CC4F0; --brand-tint: #12324D; --on-brand: #0B1A28; --hl: #12324D;
+  --focus: #E8EEF3; --ok: #6FCF97; --ok-bg: #123022; --warn: #F2B866; --warn-bg: #3A2A10; --default: #F2B866;
+  --high: #F39A75; --high-bg: #3A1D12; --crit: #F28B8B; --crit-bg: #3A1416; --info: #A9C2DA; --info-bg: #1B2A3A;
+  --d1: #4F9BE6; --d2: #3FC1E0; --d3: #A780E6; --d4: #5CC08A; --d5: #E2B93B; --d6: #EC86A6; --d7: #9AA6B2;
+  --bar: #17212B; --bar-line: #2E3B48; --foot: #131C25; --plate-ring: #2E3B48;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px rgba(0, 0, 0, .35);
+  color-scheme: dark;
 }
 
 /* ---------- base */
@@ -82,7 +107,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* ---------- estrutura */
 .wrap { flex: 1 0 auto; width: 100%; display: grid; grid-template-columns: 272px minmax(0, 1fr); gap: 28px; max-width: 1400px; margin: 0 auto; padding: 24px; padding-block: 24px 64px; }
-aside { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--hdr-h) + 16px); align-self: start; display: grid; gap: 16px; }
+/* v15 (C7): só o painel lateral é fixo; antes a regra valia para todo aside e o quadro "Como ler este plano" cobria o texto */
+#painel { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--hdr-h) + 16px); align-self: start; display: grid; gap: 16px; }
 nav.tabs { display: grid; gap: 2px; }
 nav.tabs button { position: relative; display: flex; align-items: center; gap: 10px; text-align: left; border: 0; background: transparent; padding: 9px 12px 9px 14px; border-radius: var(--r); cursor: pointer; color: var(--ink-2); font-weight: 600; line-height: 1.3; transition: background-color .12s, color .12s; }
 nav.tabs button .ix { flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line-2); font-size: .72rem; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -313,7 +339,7 @@ footer.rodape { background: var(--foot); border-top: 1px solid var(--line); colo
 }
 @media (max-width: 900px) {
   .wrap { grid-template-columns: minmax(0,1fr); padding: 16px; padding-block: 16px 48px; gap: 16px; }
-  aside { position: static; }
+  #painel { position: static; }
   nav.tabs { display: flex; overflow-x: auto; gap: 4px; scrollbar-width: none; scroll-snap-type: x proximity; margin-inline: -16px; padding: 2px 16px 6px; border-bottom: 1px solid var(--line); }
   nav.tabs::-webkit-scrollbar { display: none; }
   nav.tabs button { white-space: nowrap; scroll-snap-align: start; padding: 8px 12px; flex: none; }
@@ -367,25 +393,32 @@ footer.rodape { background: var(--foot); border-top: 1px solid var(--line); colo
 </style>
 
 <div id="faixa-trad" class="faixa-trad" role="note" data-notr hidden></div>
+<a class="pular" href="#main">Pular para o conteúdo</a>
 <header class="top"><div class="top-in">
-  <a class="logos" href="#sobre" aria-label="Sobre o projeto e a Cátedra UNESCO">
-    <img class="logo logo-iaedu" src="%%LOGO_IAEDU%%" alt="IA.EDU" width="169" height="80">
-    <img class="logo logo-catedra" src="%%LOGO_CATEDRA%%" alt="Cátedra UNESCO UNITWIN" width="109" height="80">
+  <div class="brand"><b data-notr>AI in Education Procurement Tool</b><span class="caso-nome" id="caso-nome"></span></div>
+  <a class="vinc" href="#sobre" aria-label="Sobre o projeto e a Cátedra UNESCO">
+    <span class="vinc-t">Vinculado à Cátedra UNESCO UNITWIN de IA Desplugada na Educação e ao IA.EDU</span>
+    <span class="logos"><img class="logo logo-catedra" src="%%LOGO_CATEDRA%%" alt="Cátedra UNESCO UNITWIN" width="109" height="80"><img class="logo logo-iaedu" src="%%LOGO_IAEDU%%" alt="IA.EDU" width="169" height="80"></span>
   </a>
-  <div class="brand"><b data-notr>AI in Education Procurement Tool</b><span>Do contexto ao plano de contratação: aplicações, adoção e custo do seu caso</span></div>
   <div class="ctrls">
+    <details class="menu-caso" id="menu-caso"><summary class="btn"><span>Caso</span><svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="menu-in" role="group" aria-label="Caso">
+        <button type="button" class="menu-i" data-act="novo-caso">Novo caso em branco</button>
+        <label class="menu-l"><span>Abrir um exemplo</span>
+          <select id="sel-exemplo" class="f" aria-label="Abrir um exemplo">
+            <option value="">Escolha um exemplo…</option>
+            <option value="A">Exemplo: copiloto para professores</option>
+            <option value="B">Exemplo: tutor para estudantes</option>
+            <option value="C">Exemplo: alerta precoce de abandono</option>
+            <option value="D">Exemplo: assistente administrativo</option>
+          </select></label>
+        <button type="button" class="menu-i" data-act="imp-json">Importar caso</button>
+        <button type="button" class="menu-i" data-act="exp-json">Exportar caso (.json)</button>
+        <p class="menu-vinc">Vinculado à Cátedra UNESCO UNITWIN de IA Desplugada na Educação e ao IA.EDU</p>
+      </div></details>
     <label class="ctl"><span class="small">Idioma</span>
       <select id="sel-lang" data-notr aria-label="Idioma"></select></label>
     <div id="aviso-lang" class="aviso-lang" role="status" data-notr hidden></div>
-    <label class="ctl"><span class="small">Carregar</span>
-      <select id="sel-exemplo" aria-label="Carregar um caso">
-        <option value="">Escolha um caso…</option>
-        <option value="A">Exemplo: copiloto para professores</option>
-        <option value="B">Exemplo: tutor para estudantes</option>
-        <option value="C">Exemplo: alerta precoce de abandono</option>
-        <option value="D">Exemplo: assistente administrativo</option>
-        <option value="novo">Caso em branco</option>
-      </select></label>
   </div>
 </div></header>
 
@@ -405,4 +438,6 @@ footer.rodape { background: var(--foot); border-top: 1px solid var(--line); colo
     <p class="isencao" id="txt-isencao"></p>
   </div>
 </div></footer>
-<div id="toast" class="toast" hidden></div>
+<div id="as-custo" class="as-custo" hidden></div>
+<p id="as-c-live" class="sr" aria-live="polite"></p>
+<div id="toast" class="toast" role="status" hidden></div>

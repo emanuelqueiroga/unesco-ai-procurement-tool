@@ -83,6 +83,7 @@ function aplicarExemploFluxo(k) {
     CAMPOS_PROB.concat(['nFerramentas']).forEach(c => { S.respC[c] = true; });
   }
   S.v10 = true;
+  if (typeof resetAssistente === 'function') resetAssistente();
   if (CX[k]) { ['local', 'olhando', 'problemaOutro'].forEach(c => { if (S.ctx[c]) S.ctx[c] = tr(S.ctx[c]); }); }
   S.fase = 'contexto'; S.passo = '1a';
   estadoFluxo();
@@ -665,6 +666,25 @@ function controle(f) {
 function dicaCampo(f) {
   return `<div class="dica"><span class="dica-r">${esc(tr(AJUDA_ROT.dica))}</span> <span class="dica-t">${glossarioTexto(f.dica)}</span></div>`;
 }
+// v15: textos da pergunta conforme o teste escolhido no 2.0 (t, h, ex)
+function textosQ(f) {
+  const m = modoTeste();
+  const alt = m === 'poc' && f.tPoc ? 'Poc' : m === 'ambos' && f.tAmbos ? 'Ambos' : '';
+  return { t: alt ? f['t' + alt] : f.t, h: alt ? f['h' + alt] : f.h, ex: alt ? f['ex' + alt] : f.ex };
+}
+// v15: o que vem depois do controle (atalhos, notas e detalhes), comum ao passo inteiro e ao assistente
+function extraQ(f) {
+  let extra = '';
+  if (f.id === 'elegiveis') {
+    const tt = totaisCtx();
+    if ((S.caso.usuarios || []).includes('estudantes') && tt.alunos > 0 && +S.caso.elegiveis !== tt.alunos) extra = `<div class="hint"><button type="button" class="link" data-act="usar-alunos">${esc(tr('Usar o total de estudantes do contexto (' + fmtInt(tt.alunos) + ')'))}</button></div>`;
+  }
+  if (f.id === 'escolasInternet') { const tt = totaisCtx(); if (tt.escolas > 0) extra = `<div class="hint"><span>Escolas da rede, segundo o passo 1.1:</span> <b class="num">${fmtInt(tt.escolas)}</b></div>`; }
+  const lac = f.sugDe === 'problemas' && ['texto', 'area'].includes(f.tipo);
+  if (lac) extra += `<div class="hint lacuna-dica">Complete as lacunas marcadas com __ com os dados da sua rede.</div>`;
+  if (f.detalhe) extra += detalheCampo(f);
+  return extra;
+}
 function renderQ(f) {
   const ok = qOk(f), sug = sugerido(f) && (f.tipo === 'setup' || f.tipo === 'implant' || !vazio(valorCampo(f)));
   const m = modoTeste();
@@ -918,7 +938,7 @@ function passo4b() {
   if (typeof renderFormula === 'function') { try { formula = renderFormula(); } catch (e) { console.error(e); formula = ''; } }
   return `${seletorMoeda()}
     ${pend ? '<p class="hint">Enquanto faltarem respostas nos passos 2.3 a 2.6, 3.1, 3.2 e 4.1, a estimativa usa premissas padrão.</p>' : ''}
-    ${formula ? `<div class="formula-box">${formula}</div>` : ''}
+    ${formula ? (typeof renderAssistente === 'function' ? `<details class="calc formula-det"><summary>Como o custo é calculado</summary><div class="formula-box">${formula}</div></details>` : `<div class="formula-box">${formula}</div>`) : ''}
     <div class="kpis kpis5">
       <div class="kpi"><span class="v">${grande(n.ano0)}</span><span class="l">Custo do Ano 0 (prova de conceito ou piloto)</span></div>
       <div class="kpi"><span class="v">${grande(n.total)}</span><span class="l">Custo total do ciclo de vida</span></div>
@@ -1213,21 +1233,29 @@ function render() {
   const tituloEx = ['A', 'B', 'C', 'D'].includes(S.exemplo) && typeof CASOS !== 'undefined' && CASOS[S.exemplo] ? CASOS[S.exemplo].titulo : '';
   let corpo;
   if (S.vista === 'plano') corpo = typeof renderPlano === 'function' ? renderPlano() : `<section class="card" id="plano"><p class="muted">O plano de contratação ainda não está disponível.</p><button type="button" class="btn" data-act="voltar-percurso">Voltar ao percurso</button></section>`;
-  else corpo = FASES.map(renderFase).join('') + chamadaFinal();
-  $('#main').innerHTML = `${S.boasVindas !== false ? '' : '<nav class="stepper" id="stepper" aria-label="Fases"></nav>'}
+  // v15 (direção A): o percurso é um assistente, uma pergunta por tela (assistente.js)
+  else corpo = typeof renderAssistente === 'function' ? renderAssistente() : FASES.map(renderFase).join('') + chamadaFinal();
+  const asst = S.vista !== 'plano' && S.boasVindas === false && typeof renderAssistente === 'function';
+  const faixaEx = ex ? `<div class="alert info ex-faixa"><span class="ic">Exemplo</span><span>${tituloEx ? esc(tr('Você está vendo um caso ilustrativo do guia, com respostas fictícias:')) + ' <b>' + esc(tr(tituloEx)) + '</b>. ' : ''}<span>Edite as respostas ou comece um caso em branco.</span></span><button class="btn" type="button" data-act="limpar">Começar um caso em branco</button></div>` : '';
+  $('#main').innerHTML = `${S.boasVindas !== false || asst ? '' : '<nav class="stepper" id="stepper" aria-label="Fases"></nav>'}
     ${S.boasVindas !== false ? boasVindas() : ''}
-    ${ex ? `<div class="alert info"><span class="ic">Exemplo</span><span>${tituloEx ? esc(tr('Você está vendo um caso ilustrativo do guia, com respostas fictícias:')) + ' <b>' + esc(tr(tituloEx)) + '</b>. ' : ''}<span>Edite as respostas ou comece um caso em branco.</span></span><button class="btn" type="button" data-act="limpar">Começar um caso em branco</button></div>` : ''}
+    ${asst ? '' : faixaEx}
     ${S.boasVindas !== false && S.vista !== 'plano' ? '' : corpo}`;
   renderStepper(); renderPainel();
   // v12: na vista do plano o painel lateral sai e o relatório usa a largura toda (fluxo.css: body.vista-plano)
   document.body.classList.toggle('vista-plano', S.vista === 'plano');
+  document.body.classList.toggle('vista-as', asst);
+  if (typeof renderCustoBarra === 'function') renderCustoBarra();
+  if (typeof nomeCasoTopo === 'function') nomeCasoTopo();
   if (S.vista === 'plano' && typeof montarPlano === 'function') { try { montarPlano(); } catch (e) { console.warn(e); } }
   if (document.getElementById('cres') && typeof renderCustosResultados === 'function') renderCustosResultados();
   if (foco) { const f = document.getElementById(foco); if (f) try { f.focus({ preventScroll: true }); } catch (e) { } }
-  window.scrollTo(0, y);
+  // no assistente, a tela nova começa no topo e o foco vai ao título da pergunta
+  const novaTela = asst && typeof telaMudou === 'function' && telaMudou();
+  if (novaTela) { window.scrollTo(0, 0); if (typeof focarTela === 'function') focarTela(); } else window.scrollTo(0, y);
   salvar();
 }
-function atualizarLaterais() { aplicarPadroes(); renderStepper(); renderPainel(); atualizarFaseViva(); salvar(); }
+function atualizarLaterais() { aplicarPadroes(); renderStepper(); renderPainel(); atualizarFaseViva(); if (typeof atualizarAssistente === 'function') atualizarAssistente(); salvar(); }
 // Atualiza marcas de respondida, passos, rodapés e cabeçalho da fase aberta sem redesenhar a página
 function atualizarFaseViva() {
   document.querySelectorAll('.q[data-campo]').forEach(q => {
@@ -1273,7 +1301,10 @@ function irPara(id) {
 function abrirFase(fid, passo, alvo) {
   if (!PASSOS[fid]) return;
   if (alvo && !passo) { const f = CAMPO_POR_ID[alvo]; if (f) passo = passoDe(f); }
-  S.fase = fid; S.passo = passo || PASSOS[fid][0][0]; S.boasVindas = false; S.vista = ''; render();
+  S.fase = fid; S.passo = passo || PASSOS[fid][0][0]; S.boasVindas = false; S.vista = '';
+  // v15: no assistente, abre a tela da pergunta (ou a primeira tela do passo)
+  if (typeof irAlvoA === 'function') { irAlvoA(S.passo, alvo); render(); if (alvo) requestAnimationFrame(() => irPara(alvoQ(alvo))); return; }
+  render();
   requestAnimationFrame(() => irPara(alvo ? alvoQ(alvo) : 'passo-' + S.passo));
 }
 function gerarPlano() {
@@ -1342,6 +1373,7 @@ function eventoFluxo(e) {
   const el = e.target;
   // v13: página inicial e matriz (pacote B2, inicio.js)
   if (typeof eventoInicio === 'function' && eventoInicio(e)) return true;
+  if (typeof eventoAssistente === 'function' && eventoAssistente(e)) return true;   // v15: assistente (assistente.js)
   if (typeof eventoPais === 'function' && eventoPais(e)) return true;
   if (e.type === 'click') {
     const inf = el.closest('[data-info]');
@@ -1421,8 +1453,10 @@ function eventoFluxo(e) {
     if (act === 'continuar-forcar') { continuar('forcar', a.dataset.de); return true; }
     if (act === 'continuar-confirmar') { continuar('confirmar', a.dataset.de); return true; }
     if (act === 'ir-fase') { const ult = PASSOS[S.fase] ? PASSOS[S.fase][PASSOS[S.fase].length - 1][0] : ''; if (ult && a.dataset.de === ult && passoFeito(ult)) S.feitos[ult] = true; abrirFase(a.dataset.f2); return true; }
-    if (act === 'comecar') { S.boasVindas = false; carregarExemplo('novo'); S.boasVindas = false; abrirFase('contexto', '1a'); return true; }
-    if (act === 'ver-exemplo') { carregarExemplo('B'); S.boasVindas = false; abrirFase('contexto', '1a'); return true; }
+    // v15 (C3): trocar um caso com respostas pede confirmação (trocarCaso, assistente.js)
+    const troca = (fn, alvo) => { if (typeof trocarCaso === 'function') trocarCaso(fn, alvo); else fn(); };
+    if (act === 'comecar') { troca(() => { S.boasVindas = false; carregarExemplo('novo'); S.boasVindas = false; abrirFase('contexto', '1a'); }, 'Caso em branco'); return true; }
+    if (act === 'ver-exemplo') { troca(() => { carregarExemplo('B'); S.boasVindas = false; abrirFase('contexto', '1a'); }, 'Exemplo: tutor para estudantes'); return true; }
     if (act === 'gerar-plano' || act === 'ir-resumo' || act === 'ir-final') { gerarPlano(); return true; }
     if (act === 'voltar-percurso' || act === 'voltar-fases') { S.vista = ''; render(); window.scrollTo({ top: 0, behavior: 'instant' }); return true; }
     if (act === 'pdf') { if (typeof baixarPDF === 'function') baixarPDF(); return true; }
