@@ -402,7 +402,7 @@ body.vista-plano aside.rp-comoler { position: static !important; }
 .rp-anexo .rp-cab { padding-block: 12px; }
 .rp-anexo .rp-cab h3 { font-size: var(--fs-lg); }
 .rp-anexo .rp-num { font-size: 1.4rem; }
-.rp-rot { text-transform: none !important; letter-spacing: 0 !important; }
+.rp-rot { font-size: var(--fs-sm); }
 .pais-q { padding: 0; border: 0; background: none; border-radius: 0; }
 .marc { font-size: var(--fs-xs); }
 .marc-ilustrativo { background: var(--warn-bg); color: var(--warn); border-color: transparent; border-style: solid; }

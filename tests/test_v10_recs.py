@@ -70,8 +70,11 @@ async def ir_existe(pg, ir):
 
 async def abrir_plano(pg):
     await pg.evaluate("(()=>{S.vista='';render();})()")
+    if await pg.locator('[data-act="gerar-plano"]:visible').count() == 0:   # v15 (B): no celular, "Ver plano" fica no menu
+        await pg.locator('#btn-menu').click(); await pg.wait_for_timeout(150)
     await pg.locator('[data-act="gerar-plano"]:visible').first.click()
     await pg.wait_for_timeout(250)
+    await pg.evaluate("document.querySelectorAll('#plano details.rp-anexo-d').forEach(d => { d.open = true; })")   # v15 (B): anexos recolhidos
 
 async def main():
     async with async_playwright() as p:

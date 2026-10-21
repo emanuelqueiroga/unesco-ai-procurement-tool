@@ -51,6 +51,7 @@ python3 tests/test_v9_numeros.py
 python3 tests/test_v9_fluxo.py && python3 tests/test_v13_fluxo.py && python3 tests/test_v13_inicio.py
 python3 tests/test_v9_plano.py && python3 tests/test_v10_recs.py && python3 tests/test_v12_pdf.py && python3 tests/test_v13_plano.py
 python3 tests/test_v14_ajuda.py && python3 tests/test_v14_pais.py && python3 tests/test_v14_relatorio.py
+python3 tests/test_v15_b.py
 python3 tests/test_v13_idiomas.py && python3 test_idiomas.py
 ```
 

@@ -141,25 +141,19 @@ async def main():
         for l, fam in [('ar', 'Noto Sans Arabic'), ('zh', 'Noto Sans SC'), ('bm', 'Noto Sans')]:
             await pg.select_option('#sel-lang', l); await pg.wait_for_timeout(100)
             f = await pg.evaluate(f"""(() => {{ const k = document.getElementById('fonte-{l}'); return [k ? k.href : '', getComputedStyle(document.documentElement).getPropertyValue('--f-ui'), getComputedStyle(document.body).fontSize]; }})()""")
-            ok(f[0].startswith('https://fonts.googleapis.com/css2?') and fam.replace(' ', '+') in f[0], f'{l}: folha do Google Fonts ({f[0][:80]}…)')
+            # v15: a página funciona offline; sem folha do Google Fonts (a pilha usa as fontes Noto instaladas no sistema)
+            ok(not f[0] and not await pg.evaluate("!!document.querySelector('link[href*=\"fonts.googleapis\"]')"), f'{l}: sem folha de fontes externa ({f[0][:60]})')
             ok(fam in f[1] and f[2] == '16px', f'{l}: --f-ui com {fam}; corpo {f[2]}')
         await pg.select_option('#sel-lang', 'pt'); await pg.wait_for_timeout(100)
         f = await pg.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--f-ui')")
         ok('Arabic' not in f and 'SC' not in f, 'PT: pilha de fontes original')
 
-        # ------------------------------------------------ mandala (PT x AR)
-        await pg.evaluate(VISTAS['2c']); await pg.wait_for_timeout(200)
-        m_pt = await pg.evaluate(MANDALA)
+        # ------------------------------------------------ v15 (B): índice dos passos no lugar da mandala; em árabe, colunas espelhadas
         await pg.select_option('#sel-lang', 'ar'); await pg.wait_for_timeout(150)
-        await pg.evaluate(VISTAS['2c']); await pg.wait_for_timeout(200)
-        m_ar = await pg.evaluate(MANDALA)
-        ok(m_pt and m_ar and m_ar['dir'] == 'ltr' and not m_ar['tf'], f'ar: mandala sem transformação e com direction ltr ({m_ar and m_ar["dir"]})')
-        # mesmas posições horizontais (o SVG não se espelha); na vertical, só o deslocamento uniforme da métrica da fonte
-        par = list(zip(m_pt['txt'], m_ar['txt'])) if m_pt and m_ar else []
-        dy = [c[2] - a[2] for a, c in par]
-        ok(len(par) > 5 and all(a[0] == c[0] and abs(a[1] - c[1]) <= 2 for a, c in par) and max(dy) - min(dy) <= 2,
-           f'ar: mandala com os {len(par)} textos nas mesmas posições do português (Δy uniforme {sorted(set(dy))})')
-        await pg.screenshot(path=f'{TMP}/ar_2c_mandala.png', clip={'x': 0, 'y': 0, 'width': 1360, 'height': 900})
+        await pg.evaluate(VISTAS['2c']); await pg.wait_for_timeout(250)
+        pos = await pg.evaluate("(() => { const r = s => document.querySelector(s).getBoundingClientRect(); return { ix: r('#indice').left, main: r('#main').left, pn: r('#painel').left, n: document.querySelectorAll('#indice .ix-p').length, dir: getComputedStyle(document.querySelector('#indice .ix-n')).direction }; })()")
+        ok(pos['n'] == 15 and pos['ix'] > pos['main'] > pos['pn'], f'ar: índice à direita e painel de custo à esquerda (colunas espelhadas) {pos}')
+        await pg.screenshot(path=f'{TMP}/ar_2c_indice.png', clip={'x': 0, 'y': 0, 'width': 1360, 'height': 900})
 
         # ------------------------------------------------ números LTR em árabe
         nd = await pg.evaluate("""(() => { const q = s => [...document.querySelectorAll(s)];
