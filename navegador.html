@@ -2109,6 +2109,62 @@ body.vista-as .wrap { min-height: calc(100vh - 64px); align-content: start; }
 @media (max-width: 1100px) { .as-fim-ix { display: none; } }
 @media (max-width: 760px) { .ex-faixa { font-size: .875rem; } }
 
+/* tema escuro: a página inicial e o plano de contratação continuam claros, como um documento em papel
+   (as cores das duas vistas e do PDF são as mesmas); o assistente, o cabeçalho e o rodapé seguem o tema */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(#inicio, #plano) {
+  --bg: #F6F8FA; --surface: #FFFFFF; --surface-2: #EEF2F6; --surface-3: #F6F8FA; --hover: #EEF2F6;
+  --line: #D5DCE3; --line-2: #7A8794; --line-3: #56636F; --line-strong: #7A8794;
+  --ink: #17212B; --ink-2: #33404C; --muted: #4A5866;
+  --head: #0C2D4D; --brand: #0069B4; --brand-strong: #00528F; --brand-tint: #E6F0FA; --on-brand: #FFFFFF;
+  --hl: #E6F0FA;
+  --acc-cyan: #13C9EE; --acc-purple: #7844C4; --acc-green: #32FC7F; --acc-pink: #EF557F; --acc-yellow: #F6CE01;
+  --acc-cyan-ink: #0A6F90; --acc-green-ink: #137A45; --acc-yellow-ink: #7A5C00;
+  --focus: #0C2D4D; --focus-halo: rgba(19, 201, 238, .4); --tab-ind: #0069B4;
+  --pd: #6B3AB8; --on-pd: #FFFFFF; --pd-bg: #F2ECFB; --pd-ink: #5A2EA0;
+  --ok: #1E6B45; --ok-bg: #E6F4EC; --warn: #8A5200; --warn-bg: #FFF3D9;
+  --high: #AE4219; --high-bg: #FDEDE5; --crit: #A32228; --crit-bg: #FCEBEB;
+  --info: #3B5872; --info-bg: #EDF2F7; --default: #8A5200;
+  --d1: #0B5CAD; --d2: #22A6C8; --d3: #7844C4; --d4: #2F8F5B; --d5: #C99700; --d6: #D9577F; --d7: #5B6773;
+  --k1: #0B5CAD; --k2: #22A6C8; --k3: #7844C4; --k4: #2F8F5B; --k5: #C99700; --k6: #D9577F;
+  --tor-lo: #3D8BD0; --tor-hi: #5B6773;
+  --bar: #FFFFFF; --bar-line: #D5DCE3; --foot: #EEF2F6; --plate: #FFFFFF; --plate-line: #E3E7EB;
+  --plate-ring: transparent;
+  --shadow-sm: 0 1px 2px rgba(16, 36, 56, .06);
+  --shadow: 0 1px 2px rgba(16, 36, 56, .06), 0 4px 12px rgba(16, 36, 56, .06);
+  color-scheme: light;
+} }
+:root[data-theme="dark"] :is(#inicio, #plano) {
+  --bg: #F6F8FA; --surface: #FFFFFF; --surface-2: #EEF2F6; --surface-3: #F6F8FA; --hover: #EEF2F6;
+  --line: #D5DCE3; --line-2: #7A8794; --line-3: #56636F; --line-strong: #7A8794;
+  --ink: #17212B; --ink-2: #33404C; --muted: #4A5866;
+  --head: #0C2D4D; --brand: #0069B4; --brand-strong: #00528F; --brand-tint: #E6F0FA; --on-brand: #FFFFFF;
+  --hl: #E6F0FA;
+  --acc-cyan: #13C9EE; --acc-purple: #7844C4; --acc-green: #32FC7F; --acc-pink: #EF557F; --acc-yellow: #F6CE01;
+  --acc-cyan-ink: #0A6F90; --acc-green-ink: #137A45; --acc-yellow-ink: #7A5C00;
+  --focus: #0C2D4D; --focus-halo: rgba(19, 201, 238, .4); --tab-ind: #0069B4;
+  --pd: #6B3AB8; --on-pd: #FFFFFF; --pd-bg: #F2ECFB; --pd-ink: #5A2EA0;
+  --ok: #1E6B45; --ok-bg: #E6F4EC; --warn: #8A5200; --warn-bg: #FFF3D9;
+  --high: #AE4219; --high-bg: #FDEDE5; --crit: #A32228; --crit-bg: #FCEBEB;
+  --info: #3B5872; --info-bg: #EDF2F7; --default: #8A5200;
+  --d1: #0B5CAD; --d2: #22A6C8; --d3: #7844C4; --d4: #2F8F5B; --d5: #C99700; --d6: #D9577F; --d7: #5B6773;
+  --k1: #0B5CAD; --k2: #22A6C8; --k3: #7844C4; --k4: #2F8F5B; --k5: #C99700; --k6: #D9577F;
+  --tor-lo: #3D8BD0; --tor-hi: #5B6773;
+  --bar: #FFFFFF; --bar-line: #D5DCE3; --foot: #EEF2F6; --plate: #FFFFFF; --plate-line: #E3E7EB;
+  --plate-ring: transparent;
+  --shadow-sm: 0 1px 2px rgba(16, 36, 56, .06);
+  --shadow: 0 1px 2px rgba(16, 36, 56, .06), 0 4px 12px rgba(16, 36, 56, .06);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(#inicio, #plano) { background: var(--bg); color: var(--ink); color-scheme: light; border-radius: 12px; padding: 16px; } }
+:root[data-theme="dark"] :is(#inicio, #plano) { background: var(--bg); color: var(--ink); color-scheme: light; border-radius: 12px; padding: 16px; }
+@media (max-width: 760px) {
+  .as-c-falta { padding-block: 8px; }
+  .as-c-falta p { font-size: var(--fs-xs); }
+  .as-c-fl { gap: 4px 12px; }
+  .as-c-fl button > span:not(.qn-l) { display: none; }
+  .as-c-fl button { min-height: 32px; font-weight: 600; }
+}
+
 </style>
 
 <div id="faixa-trad" class="faixa-trad" role="note" data-notr hidden></div>
