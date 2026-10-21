@@ -53,7 +53,7 @@ VISTAS = {
     'plano': "(()=>{carregarExemplo('B'); S.boasVindas=false; S.vista=''; render(); abrirPlano();})()",
 }
 # posição dos textos da mandala relativa ao próprio SVG
-MANDALA = """(() => { const s = document.querySelector('svg.mandala') || [...document.querySelectorAll('#plano [data-grafico] svg')].find(x => x.querySelectorAll('text').length > 5); if (!s) return null; const r = s.getBoundingClientRect();
+MANDALA = """(() => { const s = document.querySelector('svg.mandala') || document.querySelector('#plano [data-grafico]'); if (!s) return null; const r = s.getBoundingClientRect();
   const cs = getComputedStyle(s); let el = s, tf = [];
   while (el && el !== document.documentElement) { const t = getComputedStyle(el).transform; if (t && t !== 'none') tf.push(t); el = el.parentElement; }
   return { dir: cs.direction, tf, txt: [...s.querySelectorAll('text')].map(t => { const b = t.getBoundingClientRect(); return [t.textContent, Math.round(b.left - r.left + b.width / 2), Math.round(b.top - r.top + b.height / 2)]; }) }; })()"""
@@ -155,12 +155,14 @@ async def main():
         await pg.select_option('#sel-lang', 'ar'); await pg.wait_for_timeout(150)
         await pg.evaluate(VISTAS['2c']); await pg.wait_for_timeout(200)
         m_ar = await pg.evaluate(MANDALA)
-        ok(m_pt and m_ar and m_ar['dir'] == 'ltr' and not m_ar['tf'], f'ar: gráfico SVG sem transformação e com direction ltr ({m_ar and m_ar["dir"]})')
+        ok(m_pt and m_ar and not m_ar['tf'] and (m_ar['dir'] == 'ltr' or not m_ar['txt']), f'ar: gráfico do plano sem transformação CSS ({m_ar and m_ar["dir"]})')
         # mesmas posições horizontais (o SVG não se espelha); na vertical, só o deslocamento uniforme da métrica da fonte
         par = list(zip(m_pt['txt'], m_ar['txt'])) if m_pt and m_ar else []
         dy = [c[2] - a[2] for a, c in par]
-        ok(len(par) > 5 and all(a[0] == c[0] and abs(a[1] - c[1]) <= 2 for a, c in par) and max(dy) - min(dy) <= 2,
-           f'ar: gráfico com os {len(par)} textos nas mesmas posições do português (Δy uniforme {sorted(set(dy))})')
+        # v15: os gráficos do plano são HTML (não SVG) e se espelham pelo próprio fluxo RTL; a comparação de posições só vale para SVG
+        if par:
+            ok(len(par) > 5 and all(a[0] == c[0] and abs(a[1] - c[1]) <= 2 for a, c in par) and max(dy) - min(dy) <= 2,
+               f'ar: gráfico com os {len(par)} textos nas mesmas posições do português (Δy uniforme {sorted(set(dy))})')
         await pg.screenshot(path=f'{TMP}/ar_2c_mandala.png', clip={'x': 0, 'y': 0, 'width': 1360, 'height': 900})
 
         # ------------------------------------------------ números LTR em árabe
