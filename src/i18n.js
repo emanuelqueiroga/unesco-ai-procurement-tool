@@ -80,6 +80,9 @@ function dicionario(l) {
   DIC_FALLBACK[l] = { d, en, m };
   return m;
 }
+// magnitude abreviada em português depois de um número ("4,68 mi", "397,9 mil", "2 bi")
+// que não exista no idioma exibido (o espanhol usa "mil")
+const RE_MAG_PT = { test: t => { const L = magnitudes(); const ks = ['mi', 'bi', 'mil'].filter(k => !L.includes(k)); return ks.length > 0 && new RegExp('\\d (' + ks.join('|') + ')(?![\\p{L}])', 'u').test(t); } };
 function tr(s) {
   if (LANG === 'pt' || s == null) return s;
   const str = String(s);
@@ -104,12 +107,13 @@ function tr(s) {
   if (alvo == null && !tr.emPT) {
     // valores e unidades já no idioma exibido (grande(), unidMil()): procura a forma em português
     const pt = unidadesParaPT(corpo);
-    if (pt !== corpo) { let t; tr.emPT = true; try { t = tr(pt); } finally { tr.emPT = false; } if (t !== pt) return m[1] + t + m[3]; }
+    // v15 (auditoria C9): só vale uma tradução completa; um resto em português ("US$ 4.68 mi a US$ 5.73 M") é descartado
+    if (pt !== corpo) { let t; tr.emPT = true; try { t = tr(pt); } finally { tr.emPT = false; } if (t !== pt && !RE_MAG_PT.test(t)) return m[1] + t + m[3]; }
   }
   if (alvo == null) {
     // número com magnitude abreviada: "R$ 1,8 mi"
     const u = corpo.match(/^(.*?)(\s)(mi|bi|mil)$/);
-    if (u && /\d/.test(u[1]) && dic[u[3]]) return m[1] + u[1] + u[2] + dic[u[3]] + m[3];
+    if (u && /\d/.test(u[1]) && !RE_MAG_PT.test(u[1]) && dic[u[3]]) return m[1] + u[1] + u[2] + dic[u[3]] + m[3];
     // pontuação final diferente: "Escolas:" usa a tradução de "Escolas"
     const pf = corpo.match(/^([\s\S]*?\p{L}[\s\S]*?)([:.;,]+)$/u);
     if (pf) { const t = tr(pf[1]); if (t !== pf[1]) return m[1] + t + pf[2] + m[3]; }
@@ -328,11 +332,9 @@ function montarIdiomas() {
 // chinês: Noto Sans SC e Noto Serif SC (o Google entrega só as fatias usadas, por unicode-range); bambara: o
 // Source Sans 3 cobre ɛ ɔ ɲ ŋ, mas não as maiúsculas Ɛ Ɔ Ɲ (que text-transform: uppercase produz) — Noto Sans e
 // Noto Serif entram na pilha (idiomas.css) só para essas letras (parâmetro text=, poucos KB).
-const FONTES_IDIOMA = {
-  ar: 'https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@500;600;700&family=Noto+Sans+Arabic:wght@400;600;700&display=swap',
-  zh: 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700&family=Noto+Serif+SC:wght@600;700&display=swap',
-  bm: 'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Noto+Serif:wght@600;700&display=swap&text=' + encodeURIComponent('ƐƆƝŊɛɔɲŋ\u0300\u0301\u030c'),
-};
+// v15: sem fontes externas (a página funciona sem rede): árabe, chinês e bambara usam as fontes do sistema
+// (idiomas.css põe Noto Sans Arabic, Noto Sans SC e Noto Sans na pilha, quando instaladas).
+const FONTES_IDIOMA = {};
 function carregarFonteIdioma(l) {
   const url = FONTES_IDIOMA[l];
   if (!url || typeof document === 'undefined' || document.getElementById('fonte-' + l)) return;

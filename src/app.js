@@ -426,11 +426,18 @@ function aplicarImportado(o) {
 function importarCaso(txt) {
   let o = null;
   try { o = JSON.parse(txt); } catch (e) { o = null; }
+  const valido = o && o.caso && ((o.app === 'ai-education-procurement-tool' && [9, 11, 13].includes(+o.formato)) || o.app === 'navegador-ia-educacao');
+  // v15: importar um caso substitui o atual; com respostas no navegador, pede confirmação antes (confirmarTroca, documento.js)
+  if (valido && !importarCaso.forcar && typeof confirmarTroca === 'function' && typeof precisaConfirmar === 'function' && precisaConfirmar()) {
+    const nome = (o.caso && o.caso.titulo) || (o.ctx && o.ctx.olhando) || tr('o caso importado');
+    confirmarTroca(nome, () => { importarCaso.forcar = true; try { importarCaso(txt); } finally { importarCaso.forcar = false; } });
+    return true;
+  }
   if (o && o.app === 'ai-education-procurement-tool' && [9, 11, 13].includes(+o.formato) && o.caso) {
-    aplicarImportado(o); render(); window.scrollTo(0, 0); toast(tr('Caso importado.')); return true;
+    aplicarImportado(o); S.boasVindas = false; render(); window.scrollTo(0, 0); toast(tr('Caso importado.')); return true;
   }
   if (o && o.app === 'navegador-ia-educacao' && o.caso) {
-    aplicarImportado(migrarV8(o)); render(); window.scrollTo(0, 0); toast(tr('Caso da versão anterior convertido. Revise as respostas de adoção.')); return true;
+    aplicarImportado(migrarV8(o)); S.boasVindas = false; render(); window.scrollTo(0, 0); toast(tr('Caso da versão anterior convertido. Revise as respostas de adoção.')); return true;
   }
   toast(tr('Este arquivo não é um caso exportado pela ferramenta.'));
   return false;

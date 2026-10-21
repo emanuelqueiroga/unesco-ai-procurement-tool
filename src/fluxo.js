@@ -1208,6 +1208,9 @@ function render() {
   estadoFluxo();
   if (S.vista !== 'plano' && S.fase === 'expansao' && PASSOS_VER.includes(S.passo)) S.feitos[S.passo] = true;
   aplicarPadroes();
+  // v15 (proposta C): fora da página inicial, a tela é o documento vivo (documento.js)
+  if (S.boasVindas === false && typeof renderDocumento === 'function') { renderDocumento(); salvar(); return; }
+  if (typeof renderTopo === 'function') renderTopo();
   const y = window.scrollY, foco = document.activeElement && document.activeElement.id;
   const ex = ['A', 'B', 'C', 'D', 'editado'].includes(S.exemplo) && S.boasVindas === false;
   const tituloEx = ['A', 'B', 'C', 'D'].includes(S.exemplo) && typeof CASOS !== 'undefined' && CASOS[S.exemplo] ? CASOS[S.exemplo].titulo : '';
@@ -1227,7 +1230,7 @@ function render() {
   window.scrollTo(0, y);
   salvar();
 }
-function atualizarLaterais() { aplicarPadroes(); renderStepper(); renderPainel(); atualizarFaseViva(); salvar(); }
+function atualizarLaterais() { aplicarPadroes(); if (S.boasVindas === false && typeof atualizarDoc === 'function') { atualizarDoc(); salvar(); return; } renderStepper(); renderPainel(); atualizarFaseViva(); salvar(); }
 // Atualiza marcas de respondida, passos, rodapés e cabeçalho da fase aberta sem redesenhar a página
 function atualizarFaseViva() {
   document.querySelectorAll('.q[data-campo]').forEach(q => {
@@ -1272,6 +1275,7 @@ function irPara(id) {
 }
 function abrirFase(fid, passo, alvo) {
   if (!PASSOS[fid]) return;
+  if (typeof irDocumento === 'function') { irDocumento(fid, passo, alvo); return; }   // v15 (proposta C): o documento substitui o percurso
   if (alvo && !passo) { const f = CAMPO_POR_ID[alvo]; if (f) passo = passoDe(f); }
   S.fase = fid; S.passo = passo || PASSOS[fid][0][0]; S.boasVindas = false; S.vista = ''; render();
   requestAnimationFrame(() => irPara(alvo ? alvoQ(alvo) : 'passo-' + S.passo));

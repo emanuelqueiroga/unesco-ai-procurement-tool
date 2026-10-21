@@ -866,6 +866,60 @@ function htmlFaltasP(s) {
   const n = s.total || (s.list || []).length;
   return `<div class="parcial" id="plano-faltas-lista"><p><b>${esc(s.p[0])}</b> ${esc(s.p[1] || '')}</p><ul class="req">${s.list.map((z, i) => `<li><span>${esc(z)}</span> ${s.irs[i] ? `<button type="button" class="link" data-ir="${esc(s.irs[i])}">${esc(tr('Responder'))}</button>` : ''}</li>`).join('')}</ul>${s.curta && n > s.list.length ? `<p><a href="#plano-anexo-a">${esc(tr(TXT_REL.faltasLink))}</a></p>` : ''}</div>`;
 }
+// v15 (proposta C): corpo do plano (seções e anexos) separado da capa, da barra e do índice, para que o documento vivo
+// (documento.js) use as mesmas seções. o.pular(s) omite um item; o.apos(s) devolve HTML posto logo depois do cabeçalho
+// de uma seção (sumário, 1 a 5, anexos); o.sintese(s) substitui o corpo do sumário executivo.
+function htmlCorpoPlano(secs, P, o = {}) {
+  let out = '';
+  const toc = [];   // [id da seção, rótulo, número, bloco-pai]
+  const apos = x => (o.apos ? o.apos(x) || '' : '');
+  const itemP = s => {
+    const idA = s.id ? ` id="plano-${s.id}" data-sec="${s.id}"` : '';
+    const wrap = body => `<div class="rp-item"${idA}>${body}</div>`;
+    if (s.tipo === 'figura') return htmlFiguraP(s);
+    if (['fases', 'camadas', 'adocao', 'cenarios', 'tornado'].includes(s.tipo)) return htmlGrafP(s);
+    if (s.tipo === 'fatos') return wrap(`<h4>${esc(s.h)}</h4><ul class="rp-fatos">${s.fatos.map(([k, v]) => `<li><span class="rp-fl">${esc(k)}</span><span class="rp-fv">${esc(v)}</span></li>`).join('')}</ul>`);
+    if (s.tipo === 'nota') return wrap((s.p || []).map(z => `<p class="note">${linkP(z)}</p>`).join(''));
+    if (s.tipo === 'perfil') return wrap(`<h4>${esc(s.h)}</h4>${htmlPerfilP(s.cartoes)}`);
+    if (s.tipo === 'faltas') return wrap(`<h4>${esc(s.h)}</h4>${htmlFaltasP(s)}`);
+    if (s.tipo === 'matriz') return wrap(`<h4>${esc(s.h)}</h4>${(s.p || []).map(z => `<p>${esc(z)}</p>`).join('')}${htmlMatrizP(s)}`);
+    if (s.tipo === 'recs') return wrap(`<h4>${esc(s.h)}</h4><p>${esc((s.p || [])[0] || '')}</p>${htmlRecsP(P.recs.slice(s.resto || 0), { semTop: true, todas: P.recs })}`);
+    if (s.tipo === 'refs') {
+      const cred = typeof FIG_LEGENDA !== 'undefined' && typeof FIG_TCO !== 'undefined' && FIG_TCO ? `<p class="rp-cred"><b>${esc(tr('Figura'))}:</b> ${esc(tr(FIG_LEGENDA))}</p>` : '';
+      return wrap(`${htmlCorpoP(Object.assign({}, s, { pos: null }))}${cred}${(s.pos || []).map(z => `<p class="note">${linkP(z)}</p>`).join('')}`);
+    }
+    // na página, tabelas e listas longas ficam recolhidas (o PDF e as exportações mostram tudo); premissas e glossário ficam abertos
+    const longa = !s.det && !s.eq && !s.aberto && (((s.table || {}).rows || []).length > 14 || (s.list || []).length > 10);
+    if (s.det || longa) return wrap(`<details class="mais"><summary>${esc(s.det || s.h)}${longa ? ` <span class="rp-n">${(((s.table || {}).rows || []).length || (s.list || []).length)}</span>` : ''}</summary><div class="mais-in">${htmlCorpoP(s)}</div></details>`);
+    return wrap(`${s.h ? `<h4>${esc(s.h)}</h4>` : ''}${htmlCorpoP(s)}`);
+  };
+  let aberta = false, anexos = false;
+  const fecha = () => { if (aberta) { out += '</section>'; aberta = false; } };
+  secs.forEach(s => {
+    if (o.pular && o.pular(s)) return;
+    if (s.tipo === 'sintese') {
+      toc.push(['sintese', s.h, '', '']);
+      out += `<section class="rp-sec rp-sintese" id="plano-sintese" data-sec="sintese" data-toc="sintese" aria-labelledby="plano-sintese-t">${cabP('', s.h, (s.p || [])[0], 'plano-sintese')}${apos(s)}${o.sintese ? o.sintese(s) : htmlSinteseP(s)}</section>`;
+    } else if (s.tipo === 'caixa') {
+      out += `<aside class="rp-comoler" id="plano-comoler" data-sec="comoler" aria-labelledby="plano-comoler-t"><h3 id="plano-comoler-t">${esc(s.h)}</h3><ul>${s.list.map(z => `<li>${esc(z)}</li>`).join('')}</ul></aside>`;
+    } else if (s.tipo === 'faltas' && s.curta) {
+      out += `<div class="rp-item" id="plano-faltas" data-sec="faltas" data-toc="faltas">${htmlFaltasP(s)}</div>`;
+    } else if (s.tipo === 'princ') {
+      fecha(); toc.push([s.id, s.rotulo, s.num, '']);
+      out += `<section class="rp-sec rp-princ-sec" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}" aria-labelledby="plano-${s.id}-t">${cabP(s.num, s.h, s.intro || '', 'plano-' + s.id, s.rotulo)}${apos(s)}`; aberta = true;
+    } else if (s.tipo === 'anexos') {
+      fecha(); anexos = true; toc.push(['anexos', s.h, '', '']);
+      out += `<div class="rp-anexos" id="plano-anexos" data-sec="anexos" data-toc="anexos"><header class="rp-cab"><div class="rp-cab-t"><h3 id="plano-anexos-t">${esc(s.h)}</h3><p class="rp-abre">${esc((s.p || [])[0] || '')}</p></div></header>${apos(s)}`;
+    } else if (s.tipo === 'anexo') {
+      fecha(); toc.push([s.id, s.h, s.letra, 'anexos']);
+      out += `<section class="rp-sec rp-anexo" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}" data-pai="anexos" aria-labelledby="plano-${s.id}-t"><header class="rp-cab"><span class="rp-num" aria-hidden="true">${esc(s.letra)}</span><div class="rp-cab-t"><p class="rp-rot">${esc(tr('Anexo {0}').replace('{0}', s.letra))}</p><h3 id="plano-${s.id}-t">${esc(s.h)}</h3></div></header>${apos(s)}`; aberta = true;
+    } else out += itemP(s);
+  });
+  fecha();
+  if (anexos) out += '</div>';
+
+  return { out, toc };
+}
 function renderPlano() {
   if (typeof fxCss === 'function') fxCss();
   cssPlanoV13();
@@ -895,50 +949,8 @@ function renderPlano() {
       <p class="rp-isencao faixa-plano">${esc(tr(FAIXA_PLANO))}</p>
     </div></header>`;
 
-  let out = '';
-  const itemP = s => {
-    const idA = s.id ? ` id="plano-${s.id}" data-sec="${s.id}"` : '';
-    const wrap = body => `<div class="rp-item"${idA}>${body}</div>`;
-    if (s.tipo === 'figura') return htmlFiguraP(s);
-    if (['fases', 'camadas', 'adocao', 'cenarios', 'tornado'].includes(s.tipo)) return htmlGrafP(s);
-    if (s.tipo === 'fatos') return wrap(`<h4>${esc(s.h)}</h4><ul class="rp-fatos">${s.fatos.map(([k, v]) => `<li><span class="rp-fl">${esc(k)}</span><span class="rp-fv">${esc(v)}</span></li>`).join('')}</ul>`);
-    if (s.tipo === 'nota') return wrap((s.p || []).map(z => `<p class="note">${linkP(z)}</p>`).join(''));
-    if (s.tipo === 'perfil') return wrap(`<h4>${esc(s.h)}</h4>${htmlPerfilP(s.cartoes)}`);
-    if (s.tipo === 'faltas') return wrap(`<h4>${esc(s.h)}</h4>${htmlFaltasP(s)}`);
-    if (s.tipo === 'matriz') return wrap(`<h4>${esc(s.h)}</h4>${(s.p || []).map(z => `<p>${esc(z)}</p>`).join('')}${htmlMatrizP(s)}`);
-    if (s.tipo === 'recs') return wrap(`<h4>${esc(s.h)}</h4><p>${esc((s.p || [])[0] || '')}</p>${htmlRecsP(P.recs.slice(s.resto || 0), { semTop: true, todas: P.recs })}`);
-    if (s.tipo === 'refs') {
-      const cred = typeof FIG_LEGENDA !== 'undefined' && typeof FIG_TCO !== 'undefined' && FIG_TCO ? `<p class="rp-cred"><b>${esc(tr('Figura'))}:</b> ${esc(tr(FIG_LEGENDA))}</p>` : '';
-      return wrap(`${htmlCorpoP(Object.assign({}, s, { pos: null }))}${cred}${(s.pos || []).map(z => `<p class="note">${linkP(z)}</p>`).join('')}`);
-    }
-    // na página, tabelas e listas longas ficam recolhidas (o PDF e as exportações mostram tudo); premissas e glossário ficam abertos
-    const longa = !s.det && !s.eq && !s.aberto && (((s.table || {}).rows || []).length > 14 || (s.list || []).length > 10);
-    if (s.det || longa) return wrap(`<details class="mais"><summary>${esc(s.det || s.h)}${longa ? ` <span class="rp-n">${(((s.table || {}).rows || []).length || (s.list || []).length)}</span>` : ''}</summary><div class="mais-in">${htmlCorpoP(s)}</div></details>`);
-    return wrap(`${s.h ? `<h4>${esc(s.h)}</h4>` : ''}${htmlCorpoP(s)}`);
-  };
-  let aberta = false, anexos = false;
-  const fecha = () => { if (aberta) { out += '</section>'; aberta = false; } };
-  secs.forEach(s => {
-    if (s.tipo === 'sintese') {
-      toc.push(['sintese', s.h, '', '']);
-      out += `<section class="rp-sec rp-sintese" id="plano-sintese" data-sec="sintese" data-toc="sintese" aria-labelledby="plano-sintese-t">${cabP('', s.h, (s.p || [])[0], 'plano-sintese')}${htmlSinteseP(s)}</section>`;
-    } else if (s.tipo === 'caixa') {
-      out += `<aside class="rp-comoler" id="plano-comoler" data-sec="comoler" aria-labelledby="plano-comoler-t"><h3 id="plano-comoler-t">${esc(s.h)}</h3><ul>${s.list.map(z => `<li>${esc(z)}</li>`).join('')}</ul></aside>`;
-    } else if (s.tipo === 'faltas' && s.curta) {
-      out += `<div class="rp-item" id="plano-faltas" data-sec="faltas" data-toc="faltas">${htmlFaltasP(s)}</div>`;
-    } else if (s.tipo === 'princ') {
-      fecha(); toc.push([s.id, s.rotulo, s.num, '']);
-      out += `<section class="rp-sec rp-princ-sec" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}" aria-labelledby="plano-${s.id}-t">${cabP(s.num, s.h, s.intro || '', 'plano-' + s.id, s.rotulo)}`; aberta = true;
-    } else if (s.tipo === 'anexos') {
-      fecha(); anexos = true; toc.push(['anexos', s.h, '', '']);
-      out += `<div class="rp-anexos" id="plano-anexos" data-sec="anexos" data-toc="anexos"><header class="rp-cab"><div class="rp-cab-t"><h3 id="plano-anexos-t">${esc(s.h)}</h3><p class="rp-abre">${esc((s.p || [])[0] || '')}</p></div></header>`;
-    } else if (s.tipo === 'anexo') {
-      fecha(); toc.push([s.id, s.h, s.letra, 'anexos']);
-      out += `<section class="rp-sec rp-anexo" id="plano-${s.id}" data-sec="${s.id}" data-toc="${s.id}" data-pai="anexos" aria-labelledby="plano-${s.id}-t"><header class="rp-cab"><span class="rp-num" aria-hidden="true">${esc(s.letra)}</span><div class="rp-cab-t"><p class="rp-rot">${esc(tr('Anexo {0}').replace('{0}', s.letra))}</p><h3 id="plano-${s.id}-t">${esc(s.h)}</h3></div></header>`; aberta = true;
-    } else out += itemP(s);
-  });
-  fecha();
-  if (anexos) out += '</div>';
+  const { out, toc: toc2 } = htmlCorpoPlano(secs, P);
+  toc.push(...toc2);
 
   // índice (coluna fixa a partir de 1100 px; faixa de fichas em telas menores)
   const tops = toc.filter(z => !z[3]);
