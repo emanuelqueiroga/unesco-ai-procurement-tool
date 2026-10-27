@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Plano em branco</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="prumo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<aside class="panel" aria-label="Seu plano" style="height: 760px;">
+  <div style="display: flex; justify-content: space-between; align-items: center;"><span class="t-label">Seu plano · em branco</span></div>
+  <div class="paper">
+    <div class="cover"><div class="k">Plano de contratação</div><div class="ct" style="color: var(--line-control);">Rede: ———</div><div class="muted">Problema: ——— · Teste: ———</div></div>
+    <div class="sec dim">Em resumo</div>
+    <div class="kpis2">
+      <div class="kpi-s empty"><div class="l">Custo do teste (Ano 0)</div><div class="v">—</div></div>
+      <div class="kpi-s empty"><div class="l">Custo total, 5 anos</div><div class="v">—</div></div>
+      <div class="kpi-s empty"><div class="l">Por ano de operação</div><div class="v">—</div></div>
+      <div class="kpi-s empty"><div class="l">Por estudante por ano</div><div class="v">—</div></div>
+    </div>
+    <div class="sec dim" style="margin-top: 8px;">Quanto custa</div>
+    <div style="height: 8px; border-radius: 4px; background: var(--surface-2); width: 70%;"></div>
+    <div class="sec dim" style="margin-top: 8px;">O que fazer</div>
+    <div style="height: 8px; border-radius: 4px; background: var(--surface-2); width: 85%;"></div>
+    <div style="height: 8px; border-radius: 4px; background: var(--surface-2); width: 55%;"></div>
+    <div class="sec dim" style="margin-top: 8px;">O que exigir</div>
+    <div style="height: 8px; border-radius: 4px; background: var(--surface-2); width: 60%;"></div>
+    <div style="flex-grow: 1;"></div>
+    <div class="t-cap muted" style="text-align: center;">A primeira resposta escreve a primeira linha.</div>
+  </div>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":400,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>C4 — preparei o seu plano</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#111827}
+a{color:#374151}a:hover{color:#111827}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column; font-size: 14px; color: #111827;">
+
+  <div style="height: 56px; box-sizing: border-box; border-bottom: 1px solid #D1D5DB; display: flex; align-items: center; gap: 16px; padding: 0 24px; background: #F9FAFB;">
+    <div style="width: 72px; height: 28px; border: 1px dashed #9CA3AF; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6B7280;">logo Cátedra</div>
+    <div style="width: 72px; height: 28px; border: 1px dashed #9CA3AF; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6B7280;">logo IA.EDU</div>
+    <a href="C1-Convite.dc.html" style="font-weight: 600; font-size: 15px; text-decoration: none; color: #111827;">AI in Education Procurement Tool</a>
+    <div style="flex-grow: 1;"></div>
+    <button style="height: 32px; padding: 0 12px; border: 1px solid #9CA3AF; background: #FFFFFF; border-radius: 6px; font-size: 13px;">Histórico da conversa</button>
+    <button style="height: 32px; padding: 0 12px; border: 1px solid #9CA3AF; background: #FFFFFF; border-radius: 6px; font-size: 13px;">Idioma</button>
+  </div>
+
+  <main style="flex-grow: 1; box-sizing: border-box; display: flex; justify-content: center; gap: 48px; padding: 56px 0 0; overflow: hidden;">
+    <div style="width: 480px; display: flex; flex-direction: column; gap: 20px;">
+      <div style="font-size: 12px; color: #6B7280;">Fim do percurso</div>
+      <h1 style="margin: 0; font-size: 32px; font-weight: 600; line-height: 1.2;">Preparei o seu plano.</h1>
+      <p style="margin: 0; font-size: 16px; color: #374151; line-height: 1.6;">Em resumo: a Rede Municipal de Exemplo vai testar um tutor de matemática em 3 escolas por 4 meses, escolhendo escolas já conectadas. O teste custaria por volta de <span style="font-weight: 600; color: #111827;">[valor]</span>; levar a toda a rede em 2 anos e manter por 5 custaria <span style="font-weight: 600; color: #111827;">[valor]</span>, ou <span style="font-weight: 600; color: #111827;">[valor]</span> por estudante por ano.</p>
+      <p style="margin: 0; font-size: 16px; color: #374151; line-height: 1.6;">Antes de testar, três coisas: definir quem responde pela IA na rede, registrar a medida atual do problema e escolher as escolas com internet. O resto está no plano, por momento.</p>
+      <p style="margin: 0; font-size: 13px; color: #6B7280; line-height: 1.6;">Usei premissas padrão em 12 pontos; estão marcadas no plano. Se a sua equipe técnica quiser ajustar, é só abrir o modo Refinar.</p>
+      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <button style="height: 48px; padding: 0 22px; border: 0; background: #111827; color: #FFFFFF; border-radius: 8px; font-size: 15px; font-weight: 600;">Baixar o plano em PDF</button>
+        <a href="#plano" style="height: 48px; padding: 0 16px; border: 1px solid #9CA3AF; background: #FFFFFF; color: #111827; border-radius: 8px; font-size: 15px; display: inline-flex; align-items: center; text-decoration: none;">Ler o plano na tela</a>
+        <a href="#refinar" style="font-size: 14px; margin-left: 4px;">Abrir o modo Refinar</a>
+      </div>
+      <div style="font-size: 12px; color: #9CA3AF;"><a href="C2-Pergunta.dc.html">Mudar uma resposta</a> · <a href="#exportar">Exportar o caso</a></div>
+    </div>
+
+    <div style="width: 420px; display: flex; flex-direction: column; gap: 12px;">
+      <div style="background: #F3F4F6; border: 1px solid #D1D5DB; padding: 28px 32px; display: flex; flex-direction: column; gap: 12px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06);">
+        <div style="height: 4px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));"><div style="background: #D1D5DB;"></div><div style="background: #9CA3AF;"></div><div style="background: #6B7280;"></div><div style="background: #374151;"></div></div>
+        <div style="font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #6B7280; margin-top: 8px;">Plano de contratação</div>
+        <div style="font-size: 18px; font-weight: 600; line-height: 1.2;">Tutor de matemática para estudantes</div>
+        <div style="color: #6B7280;">Rede Municipal de Exemplo · [data]</div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px;">
+          <div style="background: #FFFFFF; border: 1px solid #D1D5DB; padding: 8px;"><div style="font-size: 10px; color: #6B7280;">Custo do teste</div><div style="font-size: 16px; font-weight: 600;">[valor]</div></div>
+          <div style="background: #FFFFFF; border: 1px solid #D1D5DB; padding: 8px;"><div style="font-size: 10px; color: #6B7280;">Total, 5 anos</div><div style="font-size: 16px; font-weight: 600;">[valor]</div></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px; color: #374151;">
+          <div>1 · Em resumo</div><div>2 · Quanto custa</div><div>3 · O que fazer · 9 ações</div><div>4 · O que exigir · 7 cláusulas</div><div style="color: #9CA3AF;">Apêndice · perfil do caso, referências</div>
+        </div>
+        <div style="font-size: 10px; color: #9CA3AF; margin-top: 8px;">14 páginas · plano parcial, 12 respostas pendentes</div>
+      </div>
+    </div>
+  </main>
+
+  <div style="height: 56px; box-sizing: border-box; border-top: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #9CA3AF; text-align: center; padding: 0 160px;">
+    Valores ilustrativos. A ferramenta não fala em nome da UNESCO ou de outra instituição.
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

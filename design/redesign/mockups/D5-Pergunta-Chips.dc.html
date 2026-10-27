@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Pergunta com chips: impacto desejado</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="prumo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1360px; height: 860px; display: flex; flex-direction: column; background: var(--surface-1); color: var(--ink); font-family: var(--font-sans);">
+  <dc-import name="PartHeader" hint-size="1360px,64px"></dc-import>
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+    <dc-import name="PartNavCap1" hint-size="260px,700px"></dc-import>
+    <main style="flex-grow: 1; padding: 40px 56px; display: flex; flex-direction: column; gap: 20px;">
+      <div class="t-cap muted">Capítulo 1 · Sua rede e o problema · pergunta 8 de 10</div>
+      <h1 class="t-question" style="max-width: 600px;">Que impacto você quer alcançar?</h1>
+      <p class="t-body16 ink2" style="max-width: 560px;">Marque até três. Sugerimos os que combinam com o problema que você descreveu; o plano usa isso para medir o resultado do teste.</p>
+      <div class="t-cap muted">2 de 3 marcados</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; max-width: 620px;">
+        <button class="chip on" aria-pressed="true">Reduzir a defasagem em matemática</button>
+        <button class="chip on" aria-pressed="true">Melhorar o desempenho na avaliação da rede</button>
+        <button class="chip sug" aria-pressed="false">~ Aumentar o tempo de estudo com apoio</button>
+        <button class="chip" aria-pressed="false">Ampliar o tempo do professor para planejar</button>
+        <button class="chip" aria-pressed="false">Reduzir a reprovação</button>
+        <button class="chip" aria-pressed="false">Melhorar a comunicação com famílias</button>
+        <button class="chip" aria-pressed="false">Reduzir o abandono</button>
+        <button class="chip" aria-pressed="false">Apoiar estudantes com dificuldades específicas</button>
+        <button class="chip" aria-pressed="false">Outro…</button>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center; margin-top: 8px;">
+        <a href="D6-Governanca.dc.html" class="btn btn-primary">Continuar</a>
+        <a href="D6-Governanca.dc.html" class="btn btn-secondary">Pular por agora</a>
+        <button class="btn btn-link">Por que perguntamos isso?</button>
+      </div>
+      <div style="flex-grow: 1;"></div>
+      <div class="t-cap muted" style="border-top: 1px solid var(--line); padding-top: 12px;">Esta resposta muda no plano: resultado esperado e indicadores (perfil do caso · seção B8)</div>
+    </main>
+    <dc-import name="PartPlanEarly" hint-size="400px,760px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

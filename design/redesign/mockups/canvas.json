@@ -1,0 +1,48 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-27T20:30:00Z"},
+  "title": "Mockups — AI in Education Procurement Tool",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1360, "h": 860, "title": "D1 · Início"},
+    "D2-Abertura.dc.html": {"x": 1440, "y": 0, "w": 1360, "h": 860, "title": "D2 · Abertura do capítulo 2"},
+    "D3-Pergunta-Campos.dc.html": {"x": 2880, "y": 0, "w": 1360, "h": 860, "title": "D3 · Pergunta com campos · o plano reage"},
+    "D4-Pergunta-Cartoes.dc.html": {"x": 4320, "y": 0, "w": 1360, "h": 860, "title": "D4 · Pergunta com cartões de opção · recomendação nova"},
+
+    "D5-Pergunta-Chips.dc.html": {"x": 0, "y": 980, "w": 1360, "h": 860, "title": "D5 · Pergunta com chips (capítulo 1)"},
+    "D6-Governanca.dc.html": {"x": 1440, "y": 980, "w": 1360, "h": 860, "title": "D6 · Governança em uma tela (segmentado)"},
+    "D7-Sintese.dc.html": {"x": 2880, "y": 980, "w": 1360, "h": 860, "title": "D7 · Síntese do capítulo 2"},
+    "D8-Plano-Resumo.dc.html": {"x": 4320, "y": 980, "w": 1360, "h": 860, "title": "D8 · Plano · Em resumo"},
+
+    "D9-Plano-Fazer.dc.html": {"x": 0, "y": 1960, "w": 1360, "h": 860, "title": "D9 · Plano · O que fazer"},
+    "D10-Plano-Custa-Refinar.dc.html": {"x": 1440, "y": 1960, "w": 1360, "h": 860, "title": "D10 · Plano · Quanto custa · modo Refinar"},
+    "D11-Plano-Exigir.dc.html": {"x": 2880, "y": 1960, "w": 1360, "h": 860, "title": "D11 · Plano · O que exigir"},
+    "D12-Escuro.dc.html": {"x": 4320, "y": 1960, "w": 1360, "h": 860, "title": "D12 · Tema escuro (pergunta com campos)"},
+
+    "M1-Inicio.dc.html": {"x": 0, "y": 2940, "w": 400, "h": 860, "title": "M1 · Início · 400 px"},
+    "M2-Pergunta.dc.html": {"x": 480, "y": 2940, "w": 400, "h": 860, "title": "M2 · Pergunta · gaveta do plano fechada"},
+    "M3-Gaveta.dc.html": {"x": 960, "y": 2940, "w": 400, "h": 860, "title": "M3 · Gaveta do plano aberta"},
+    "M4-Plano.dc.html": {"x": 1440, "y": 2940, "w": 400, "h": 860, "title": "M4 · Plano · Em resumo"},
+
+    "PartHeader.dc.html": {"x": 0, "y": 3920, "w": 1360, "h": 64, "title": "Parte · Cabeçalho"},
+    "PartNavCap2.dc.html": {"x": 0, "y": 4104, "w": 260, "h": 700, "title": "Parte · Percurso · cap. 2, pergunta 6"},
+    "PartNavCap2b.dc.html": {"x": 340, "y": 4104, "w": 260, "h": 700, "title": "Parte · Percurso · cap. 2, pergunta 7"},
+    "PartNavCap1.dc.html": {"x": 680, "y": 4104, "w": 260, "h": 700, "title": "Parte · Percurso · cap. 1"},
+    "PartPlanEmpty.dc.html": {"x": 1100, "y": 4104, "w": 400, "h": 760, "title": "Parte · Plano · em branco"},
+    "PartPlanEarly.dc.html": {"x": 1580, "y": 4104, "w": 400, "h": 760, "title": "Parte · Plano · capítulo 1"},
+    "PartPlanWriting.dc.html": {"x": 2060, "y": 4104, "w": 400, "h": 760, "title": "Parte · Plano · KPI novo"},
+    "PartPlanRec.dc.html": {"x": 2540, "y": 4104, "w": 400, "h": 760, "title": "Parte · Plano · recomendação nova"}
+  },
+  "order": ["Main.dc.html", "D2-Abertura.dc.html", "D3-Pergunta-Campos.dc.html", "D4-Pergunta-Cartoes.dc.html", "D5-Pergunta-Chips.dc.html", "D6-Governanca.dc.html", "D7-Sintese.dc.html", "D8-Plano-Resumo.dc.html", "D9-Plano-Fazer.dc.html", "D10-Plano-Custa-Refinar.dc.html", "D11-Plano-Exigir.dc.html", "D12-Escuro.dc.html", "M1-Inicio.dc.html", "M2-Pergunta.dc.html", "M3-Gaveta.dc.html", "M4-Plano.dc.html", "PartHeader.dc.html", "PartNavCap2.dc.html", "PartNavCap2b.dc.html", "PartNavCap1.dc.html", "PartPlanEmpty.dc.html", "PartPlanEarly.dc.html", "PartPlanWriting.dc.html", "PartPlanRec.dc.html"],
+  "notes": {
+    "t1": {"x": 0, "y": -300, "text": "Desktop 1360 px · percurso (narrativa A com ritmo da B) · tema claro", "kind": "title1", "maxW": 5680},
+    "t2": {"x": 0, "y": 680, "text": "Desktop 1360 px · capítulo 1, síntese e o plano", "kind": "title1", "maxW": 5680},
+    "t3": {"x": 0, "y": 1660, "text": "Desktop 1360 px · as páginas do plano, modo Refinar e tema escuro", "kind": "title1", "maxW": 5680},
+    "t4": {"x": 0, "y": 2640, "text": "Celular 400 px · sem rolagem horizontal, mesma fonte", "kind": "title1", "maxW": 1840},
+    "t5": {"x": 0, "y": 3620, "text": "Partes reutilizadas pelas telas (cabeçalho, percurso, painel do plano)", "kind": "title1", "maxW": 2940}
+  },
+  "designSystems": [
+    {"title": "Prumo — AI in Education Procurement Tool", "namespace": "prumo", "artifact": "https://claude.ai/artifact/FW24XMHdnTvMRNq78bqgdY", "version": "1793142179-ca25", "copiedAt": "2026-10-27T20:30:00Z"}
+  ]
+}

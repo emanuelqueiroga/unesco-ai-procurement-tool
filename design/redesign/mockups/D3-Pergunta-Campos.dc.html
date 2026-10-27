@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Pergunta com campos: tamanho do teste</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="prumo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1360px; height: 860px; display: flex; flex-direction: column; background: var(--surface-1); color: var(--ink); font-family: var(--font-sans);">
+  <dc-import name="PartHeader" hint-size="1360px,64px"></dc-import>
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+    <dc-import name="PartNavCap2" hint-size="260px,700px"></dc-import>
+    <main style="flex-grow: 1; padding: 40px 56px; display: flex; flex-direction: column; gap: 20px; background: var(--surface-1);">
+      <div class="t-cap muted">Capítulo 2 · O teste · pergunta 6 de 11</div>
+      <h1 class="t-question" style="max-width: 600px;">De que tamanho e por quanto tempo será o piloto?</h1>
+      <p class="t-body16 ink2" style="max-width: 560px;">Um piloto pequeno ensina quase tanto quanto um grande e custa muito menos. Sugerimos cerca de 5% das escolas por 4 meses; mude se já tiver um plano.</p>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; max-width: 600px;">
+        <div class="field suggested"><label for="e">Escolas</label><input id="e" value="3"><span class="hint sug">~ sugerido · 5% de 48</span></div>
+        <div class="field suggested"><label for="p">Participantes</label><input id="p" value="180"><span class="hint sug">~ sugerido · 60 por escola</span></div>
+        <div class="field suggested"><label for="m">Duração (meses)</label><input id="m" value="4"><span class="hint sug">~ sugerido</span></div>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center; margin-top: 8px;">
+        <a href="D4-Pergunta-Cartoes.dc.html" class="btn btn-primary">Aceitar a sugestão e continuar</a>
+        <a href="D4-Pergunta-Cartoes.dc.html" class="btn btn-secondary">Pular por agora</a>
+        <button class="btn btn-link">Por que perguntamos isso?</button>
+      </div>
+      <div style="flex-grow: 1;"></div>
+      <div class="t-cap muted" style="border-top: 1px solid var(--line); padding-top: 12px;">Esta resposta muda no plano: custo do teste (Ano 0) · regras do piloto (seção A1)</div>
+    </main>
+    <dc-import name="PartPlanWriting" hint-size="400px,760px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

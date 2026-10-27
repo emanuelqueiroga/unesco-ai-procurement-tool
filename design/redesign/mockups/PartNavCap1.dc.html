@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Percurso · capítulo 1</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="prumo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<nav class="nav" aria-label="Capítulos" style="height: 700px;">
+  <div class="t-label" style="margin-bottom: 8px;">Seu percurso · 6 de 24</div>
+  <a href="#" class="ch active"><span class="dot dot-cur">1</span>1 · Sua rede e o problema</a>
+  <div class="qs">
+    <a class="q-done" href="#">✓ Nível administrativo</a>
+    <a class="q-done" href="#">✓ Nome da rede</a>
+    <a class="q-done" href="#">✓ Em que ponto você está</a>
+    <a class="q-done" href="#">✓ Etapas, escolas e estudantes</a>
+    <a class="q-done" href="#">✓ Prioridade</a>
+    <a class="q-done" href="#">✓ Problemas</a>
+    <a class="q-sug" href="#">~ Situação atual</a>
+    <div class="q-cur">● Impacto desejado</div>
+    <a class="q-todo" href="#">○ Linha de base</a>
+    <a class="q-todo" href="D6-Governanca.dc.html">○ Governança de IA</a>
+  </div>
+  <a href="D2-Abertura.dc.html" class="ch todo" style="margin-top: 6px;"><span class="dot dot-todo">2</span>2 · O teste</a>
+  <a href="#" class="ch todo"><span class="dot dot-todo">3</span>3 · A primeira etapa</a>
+  <a href="#" class="ch todo"><span class="dot dot-todo">4</span>4 · Toda a rede</a>
+  <div style="flex-grow: 1;"></div>
+  <div class="t-cap muted" style="border-top: 1px solid var(--line); padding-top: 10px; font-size: 12px;">✓ respondida · ● atual · ○ pendente · ~ sugerida, a confirmar</div>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":260,"height":700}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

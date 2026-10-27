@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Tema escuro: pergunta com campos</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="prumo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div data-theme="dark" style="width: 1360px; height: 860px; display: flex; flex-direction: column; background: var(--surface-1); color: var(--ink); font-family: var(--font-sans);">
+  <header class="hdr" style="width: 1360px;">
+    <div class="plate"><img src="/_blob/6aadb5f01370e7f5951491fe2e04165d" alt="Cátedra UNESCO UNITWIN"><img src="/_blob/852d4b415c6948a65978a764476b287a" alt="IA.EDU"></div>
+    <a href="Main.dc.html" class="t-h18" style="text-decoration: none; color: var(--ink);">AI in Education Procurement Tool</a>
+    <div style="flex-grow: 1;"></div>
+    <div class="t-cap muted">Rede Municipal de Exemplo · salvo neste navegador</div>
+    <button class="btn btn-secondary btn-sm">Idioma</button>
+    <button class="btn btn-secondary btn-sm">Modo: Essencial</button>
+  </header>
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+    <nav class="nav" aria-label="Capítulos">
+      <div class="t-label" style="margin-bottom: 8px;">Seu percurso · 11 de 24</div>
+      <a href="#" class="ch"><span class="dot dot-done">✓</span>1 · Sua rede e o problema</a>
+      <div class="qs"><div class="q-done">10 respostas</div></div>
+      <a href="#" class="ch active" style="margin-top: 6px;"><span class="dot dot-cur">2</span>2 · O teste</a>
+      <div class="qs">
+        <a class="q-done" href="#">✓ Prova de conceito ou piloto</a>
+        <a class="q-done" href="#">✓ O que a IA faz</a>
+        <a class="q-done" href="#">✓ Quem usa</a>
+        <a class="q-done" href="#">✓ Quem é afetado</a>
+        <a class="q-sug" href="#">~ Tecnologia · pagamento</a>
+        <div class="q-cur">● Tamanho do teste</div>
+        <a class="q-todo" href="#">○ Internet e dispositivos</a>
+        <a class="q-todo" href="#">○ Formação</a>
+        <a class="q-todo" href="#">○ Suporte</a>
+      </div>
+      <a href="#" class="ch todo" style="margin-top: 6px;"><span class="dot dot-todo">3</span>3 · A primeira etapa</a>
+      <a href="#" class="ch todo"><span class="dot dot-todo">4</span>4 · Toda a rede</a>
+    </nav>
+    <main style="flex-grow: 1; padding: 40px 56px; display: flex; flex-direction: column; gap: 20px;">
+      <div class="t-cap muted">Capítulo 2 · O teste · pergunta 6 de 11</div>
+      <h1 class="t-question" style="max-width: 600px;">De que tamanho e por quanto tempo será o piloto?</h1>
+      <p class="t-body16 ink2" style="max-width: 560px;">Um piloto pequeno ensina quase tanto quanto um grande e custa muito menos. Sugerimos cerca de 5% das escolas por 4 meses; mude se já tiver um plano.</p>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; max-width: 600px;">
+        <div class="field suggested"><label for="e2">Escolas</label><input id="e2" value="3"><span class="hint sug">~ sugerido · 5% de 48</span></div>
+        <div class="field suggested"><label for="p2">Participantes</label><input id="p2" value="180"><span class="hint sug">~ sugerido · 60 por escola</span></div>
+        <div class="field suggested"><label for="m2">Duração (meses)</label><input id="m2" value="4"><span class="hint sug">~ sugerido</span></div>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center; margin-top: 8px;">
+        <a href="D4-Pergunta-Cartoes.dc.html" class="btn btn-primary">Aceitar a sugestão e continuar</a>
+        <a href="D4-Pergunta-Cartoes.dc.html" class="btn btn-secondary">Pular por agora</a>
+        <button class="btn btn-link">Por que perguntamos isso?</button>
+      </div>
+      <div style="flex-grow: 1;"></div>
+      <div class="t-cap muted" style="border-top: 1px solid var(--line); padding-top: 12px;">Esta resposta muda no plano: custo do teste (Ano 0) · regras do piloto (seção A1)</div>
+    </main>
+    <aside class="panel" aria-label="Seu plano">
+      <div style="display: flex; justify-content: space-between; align-items: center;"><span class="t-label">Seu plano · escrevendo</span><a href="D8-Plano-Resumo.dc.html" class="t-cap">Abrir inteiro</a></div>
+      <div class="paper">
+        <div class="cover"><div class="k">Plano de contratação</div><div class="ct">Tutor de matemática · Rede Municipal de Exemplo</div><div class="muted">Piloto em 3 escolas por 4 meses · anos finais do fundamental</div></div>
+        <div class="sec">Em resumo</div>
+        <div class="kpis2">
+          <div class="kpi-s fresh"><div class="l">Custo do teste (Ano 0)</div><div class="v">R$ 184 mil</div><div class="f">atualizado agora</div></div>
+          <div class="kpi-s empty"><div class="l">Custo total, 5 anos</div><div class="v">—</div></div>
+          <div class="kpi-s empty"><div class="l">Por ano de operação</div><div class="v">—</div></div>
+          <div class="kpi-s empty"><div class="l">Por estudante por ano</div><div class="v">—</div></div>
+        </div>
+        <div class="origin">estimativa com premissas padrão · <a href="#">de onde vem?</a></div>
+        <div class="sec" style="margin-top: 4px;">O que fazer <span class="muted" style="font-weight: 400;">· 2</span></div>
+        <div class="rec-s"><i></i><span>Definir quem responde pela IA na rede antes do teste</span></div>
+        <div class="rec-s"><i></i><span>Registrar a medida atual do problema antes de começar</span></div>
+        <div class="sec dim" style="margin-top: 4px;">Quanto custa · aparece no capítulo 4</div>
+        <div class="sec dim">O que exigir · 3 cláusulas já definidas</div>
+        <div style="flex-grow: 1;"></div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary btn-sm is-disabled" style="flex-grow: 1;">Baixar PDF · 13 lacunas</button>
+          <button class="btn btn-secondary btn-sm">Exportar caso</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

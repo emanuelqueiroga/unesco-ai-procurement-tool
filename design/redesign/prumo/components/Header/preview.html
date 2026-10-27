@@ -1,0 +1,32 @@
+<!-- @dsCard group="Estrutura" height=110 -->
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Header</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+html,body{margin:0;background:var(--surface-1);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:20px}
+*{box-sizing:border-box}
+.row{display:flex;gap:var(--space-4);align-items:center;flex-wrap:wrap;padding:var(--space-4)}
+.col{display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-4)}
+.muted{color:var(--muted)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+header{height:64px;display:flex;align-items:center;gap:var(--space-4);padding:0 var(--space-5);background:var(--surface-1);border-bottom:1px solid var(--line)}
+.plate{display:flex;gap:var(--space-3);align-items:center;background:#ffffff;border:1px solid var(--line);border-radius:var(--radius-sm);padding:4px 8px}
+.plate img{height:36px;display:block}
+.name{font-size:18px;line-height:24px;font-weight:600}
+.sp{flex-grow:1}
+.ctx{font-size:13px;color:var(--muted)}
+.btn{height:36px;padding:0 var(--space-3);border:1px solid var(--line-control);border-radius:var(--radius-md);background:var(--surface-1);font:inherit;font-size:13px;color:var(--ink)}
+</style></head>
+<body>
+
+<header>
+  <div class="plate"><img src="/_blob/40675e2e397655d1ed1a3f6099620a6a" alt="Cátedra UNESCO UNITWIN"><img src="/_blob/67c4aa7304c00fc870f9f48367e1351f" alt="IA.EDU"></div>
+  <div class="name">AI in Education Procurement Tool</div>
+  <div class="sp"></div>
+  <div class="ctx">Rede Municipal de Exemplo · salvo neste navegador</div>
+  <button class="btn">Idioma</button>
+  <button class="btn">Modo: Essencial</button>
+</header>
+
+</body></html>

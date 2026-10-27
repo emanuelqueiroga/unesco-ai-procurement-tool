@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Governança em uma tela</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="prumo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1360px; height: 860px; display: flex; flex-direction: column; background: var(--surface-1); color: var(--ink); font-family: var(--font-sans);">
+  <dc-import name="PartHeader" hint-size="1360px,64px"></dc-import>
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+    <dc-import name="PartNavCap1" hint-size="260px,700px"></dc-import>
+    <main style="flex-grow: 1; padding: 40px 56px; display: flex; flex-direction: column; gap: 16px;">
+      <div class="t-cap muted">Capítulo 1 · Sua rede e o problema · pergunta 10 de 10 · governança (camada 1 do custo total)</div>
+      <h1 class="t-question" style="max-width: 640px;">Marque o que a sua rede já tem</h1>
+      <p class="t-body16 ink2" style="max-width: 600px;">Nada aqui é avaliado agora. As respostas viram a seção de governança do plano e as primeiras recomendações.</p>
+      <div style="display: flex; flex-direction: column; max-width: 640px; border-top: 1px solid var(--line);">
+        <div style="display: flex; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line);"><span class="t-body14" style="flex-grow: 1;">Equipe ou instância responsável por IA na educação, com várias áreas</span><div class="seg" role="group" aria-label="Equipe responsável"><button>Sim</button><button>Em parte</button><button class="on">Não</button><button>Não sei</button></div></div>
+        <div style="display: flex; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line);"><span class="t-body14" style="flex-grow: 1;">Política ou diretriz para o uso de IA nas escolas</span><div class="seg" role="group" aria-label="Política de IA"><button>Sim</button><button class="on">Em parte</button><button>Não</button><button>Não sei</button></div></div>
+        <div style="display: flex; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line);"><span class="t-body14" style="flex-grow: 1;">Regulamentação aplicável já identificada</span><div class="seg" role="group" aria-label="Regulamentação"><button class="on">Sim</button><button>Em parte</button><button>Não</button><button>Não sei</button></div></div>
+        <div style="display: flex; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line);"><span class="t-body14" style="flex-grow: 1;">Política de dados dos estudantes e das escolas</span><div class="seg" role="group" aria-label="Política de dados"><button class="on">Sim</button><button>Em parte</button><button>Não</button><button>Não sei</button></div></div>
+        <div style="display: flex; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line);"><span class="t-body14" style="flex-grow: 1;">Orientações de uso responsável para professores e estudantes</span><div class="seg" role="group" aria-label="Uso responsável"><button>Sim</button><button>Em parte</button><button>Não</button><button class="on">Não sei</button></div></div>
+        <div style="display: flex; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line);"><span class="t-body14" style="flex-grow: 1;">Regras ou orientações para a contratação de IA</span><div class="seg" role="group" aria-label="Contratação"><button>Sim</button><button>Em parte</button><button class="on">Não</button><button>Não sei</button></div></div>
+      </div>
+      <div class="t-cap muted">Os detalhes (qual documento, o que falta) ficam no modo Refinar.</div>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <a href="D7-Sintese.dc.html" class="btn btn-primary">Fechar o capítulo 1</a>
+        <a href="D7-Sintese.dc.html" class="btn btn-secondary">Pular por agora</a>
+      </div>
+      <div style="flex-grow: 1;"></div>
+      <div class="t-cap muted" style="border-top: 1px solid var(--line); padding-top: 12px;">Esta resposta muda no plano: governança da rede (B1) · 2 recomendações · funções não terceirizáveis (B2)</div>
+    </main>
+    <dc-import name="PartPlanEarly" hint-size="400px,760px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

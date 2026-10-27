@@ -1,0 +1,31 @@
+<!-- @dsCard group="Estrutura" height=300 -->
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Dialog</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+html,body{margin:0;background:var(--surface-1);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:20px}
+*{box-sizing:border-box}
+.row{display:flex;gap:var(--space-4);align-items:center;flex-wrap:wrap;padding:var(--space-4)}
+.col{display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-4)}
+.muted{color:var(--muted)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.bg{position:relative;height:280px;background:var(--surface-0)}
+.ov{position:absolute;inset:0;background:var(--overlay)}
+.dlg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:440px;background:var(--surface-1);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);padding:var(--space-5);display:flex;flex-direction:column;gap:var(--space-3)}
+.dlg h2{margin:0;font-size:18px;line-height:24px}
+.dlg p{margin:0;font-size:14px;color:var(--ink-2)}
+.acts{display:flex;gap:var(--space-3);justify-content:flex-end;margin-top:var(--space-2)}
+.btn{height:44px;padding:0 var(--space-4);border-radius:var(--radius-md);font:inherit;font-weight:600;font-size:14px;border:1px solid var(--line-control);background:var(--surface-1);color:var(--ink)}
+.btn.pri{background:var(--primary);color:var(--on-primary);border-color:transparent}
+</style></head>
+<body>
+
+<div class="bg"><div class="ov"></div>
+<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="t">
+  <h2 id="t">Começar um caso em branco?</h2>
+  <p>As respostas do caso atual continuam salvas neste navegador até você exportar ou apagar. Dá para voltar a ele pela página inicial.</p>
+  <div class="acts"><button class="btn">Cancelar</button><button class="btn pri">Começar em branco</button></div>
+</div></div>
+
+</body></html>

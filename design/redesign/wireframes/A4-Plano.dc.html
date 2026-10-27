@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>A4 — o plano inteiro</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#111827}
+a{color:#374151}a:hover{color:#111827}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column; font-size: 14px; color: #111827;">
+
+  <div style="height: 56px; box-sizing: border-box; border-bottom: 1px solid #D1D5DB; display: flex; align-items: center; gap: 16px; padding: 0 24px; background: #F9FAFB;">
+    <div style="width: 72px; height: 28px; border: 1px dashed #9CA3AF; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6B7280;">logo Cátedra</div>
+    <div style="width: 72px; height: 28px; border: 1px dashed #9CA3AF; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6B7280;">logo IA.EDU</div>
+    <a href="Main.dc.html" style="font-weight: 600; font-size: 15px; text-decoration: none; color: #111827;">AI in Education Procurement Tool</a>
+    <div style="flex-grow: 1;"></div>
+    <a href="A2-Pergunta.dc.html" style="height: 32px; padding: 0 12px; border: 1px solid #9CA3AF; background: #FFFFFF; color: #111827; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; text-decoration: none;">Voltar às perguntas · 12 faltam</a>
+    <button style="height: 32px; padding: 0 12px; border: 1px solid #9CA3AF; background: #FFFFFF; border-radius: 6px; font-size: 13px;">Exportar caso</button>
+    <button style="height: 32px; padding: 0 14px; border: 0; background: #111827; color: #FFFFFF; border-radius: 6px; font-size: 13px; font-weight: 600;">Baixar PDF</button>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+    <nav aria-label="Neste plano" style="width: 240px; box-sizing: border-box; border-right: 1px solid #D1D5DB; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; font-size: 13px;">
+      <div style="font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #6B7280; margin-bottom: 8px;">Neste plano</div>
+      <a href="#resumo" style="padding: 8px 10px; border-radius: 6px; background: #F3F4F6; font-weight: 600; text-decoration: none; color: #111827;">Em resumo</a>
+      <a href="#custa" style="padding: 8px 10px; border-radius: 6px; text-decoration: none; color: #374151;">Quanto custa</a>
+      <a href="#fazer" style="padding: 8px 10px; border-radius: 6px; text-decoration: none; color: #374151;">O que fazer <span style="color: #6B7280;">· 3</span></a>
+      <a href="#exigir" style="padding: 8px 10px; border-radius: 6px; text-decoration: none; color: #374151;">O que exigir <span style="color: #6B7280;">· 4</span></a>
+      <div style="border-top: 1px solid #E5E7EB; margin: 8px 0;"></div>
+      <a href="#perfil" style="padding: 8px 10px; border-radius: 6px; text-decoration: none; color: #6B7280;">Apêndice · perfil do caso</a>
+      <a href="#refs" style="padding: 8px 10px; border-radius: 6px; text-decoration: none; color: #6B7280;">Referências</a>
+      <a href="#faltam" style="padding: 8px 10px; border-radius: 6px; text-decoration: none; color: #6B7280;">Respostas que faltam · 12</a>
+      <div style="flex-grow: 1;"></div>
+      <div style="font-size: 11px; color: #9CA3AF;">Modo Refinar: clique em qualquer número para ver de onde vem.</div>
+    </nav>
+
+    <main style="flex-grow: 1; box-sizing: border-box; padding: 36px 56px; display: flex; flex-direction: column; gap: 20px; overflow: hidden; max-width: 1040px;">
+      <div style="border-bottom: 1px solid #D1D5DB; padding-bottom: 16px;">
+        <div style="font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #6B7280;">Plano de contratação · estimativa com premissas padrão</div>
+        <h1 style="margin: 4px 0 0; font-size: 28px; font-weight: 600; line-height: 1.2;">Tutor de matemática para estudantes · Rede Municipal de Exemplo</h1>
+        <div style="color: #6B7280; margin-top: 4px;">Piloto em 3 escolas por 4 meses · anos finais do fundamental · [data]</div>
+      </div>
+      <div style="border: 1px solid #D1D5DB; border-left: 4px solid #111827; border-radius: 4px; padding: 12px 16px; font-size: 14px;"><span style="font-weight: 600;">Recomendação principal:</span> começar por um piloto pequeno antes de contratar para a rede; 3 ações de prioridade alta antes do teste.</div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+        <div style="border: 1px solid #D1D5DB; border-radius: 4px; padding: 12px;"><div style="font-size: 11px; color: #6B7280;">Custo do teste (Ano 0)</div><div style="font-size: 24px; font-weight: 600;">[valor]</div><a href="#origem" style="font-size: 11px;">de onde vem?</a></div>
+        <div style="border: 1px solid #D1D5DB; border-radius: 4px; padding: 12px;"><div style="font-size: 11px; color: #6B7280;">Custo total, 5 anos</div><div style="font-size: 24px; font-weight: 600;">[valor]</div><a href="#origem" style="font-size: 11px;">de onde vem?</a></div>
+        <div style="border: 1px solid #D1D5DB; border-radius: 4px; padding: 12px;"><div style="font-size: 11px; color: #6B7280;">Por ano de operação</div><div style="font-size: 24px; font-weight: 600;">[valor]</div><a href="#origem" style="font-size: 11px;">de onde vem?</a></div>
+        <div style="border: 1px solid #D1D5DB; border-radius: 4px; padding: 12px;"><div style="font-size: 11px; color: #6B7280;">Por estudante por ano</div><div style="font-size: 24px; font-weight: 600;">[valor]</div><a href="#origem" style="font-size: 11px;">de onde vem?</a></div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px;">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-weight: 600;">Custo por camada, 5 anos</div>
+          <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 140px; color: #6B7280;">Aplicações</span><div style="height: 14px; width: 60%; background: #374151; border-radius: 2px;"></div><span>[%]</span></div>
+            <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 140px; color: #6B7280;">Internet e dispositivos</span><div style="height: 14px; width: 50%; background: #6B7280; border-radius: 2px;"></div><span>[%]</span></div>
+            <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 140px; color: #6B7280;">Formação</span><div style="height: 14px; width: 30%; background: #9CA3AF; border-radius: 2px;"></div><span>[%]</span></div>
+            <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 140px; color: #6B7280;">Operação e suporte</span><div style="height: 14px; width: 24%; background: #9CA3AF; border-radius: 2px;"></div><span>[%]</span></div>
+            <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 140px; color: #6B7280;">Governança</span><div style="height: 14px; width: 12%; background: #D1D5DB; border-radius: 2px;"></div><span>[%]</span></div>
+            <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 140px; color: #6B7280;">Dados e sistemas</span><div style="height: 14px; width: 10%; background: #D1D5DB; border-radius: 2px;"></div><span>[%]</span></div>
+            <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 140px; color: #6B7280;">Segurança e privacidade</span><div style="height: 14px; width: 8%; background: #D1D5DB; border-radius: 2px;"></div><span>[%]</span></div>
+          </div>
+          <div style="font-size: 11px; color: #6B7280;">Sete camadas de Krueger e Jackson (2026). Barras ilustrativas.</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-weight: 600;">Comece por estas</div>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+            <div style="display: flex; gap: 10px; border: 1px solid #D1D5DB; border-radius: 4px; padding: 10px;"><span style="font-weight: 600; color: #6B7280;">1</span><span>Definir quem responde pela IA na rede antes do teste <span style="color: #6B7280;">· antes do teste</span></span></div>
+            <div style="display: flex; gap: 10px; border: 1px solid #D1D5DB; border-radius: 4px; padding: 10px;"><span style="font-weight: 600; color: #6B7280;">2</span><span>Registrar a medida atual do problema antes de começar <span style="color: #6B7280;">· antes do teste</span></span></div>
+            <div style="display: flex; gap: 10px; border: 1px solid #D1D5DB; border-radius: 4px; padding: 10px;"><span style="font-weight: 600; color: #6B7280;">3</span><span>Escolher para o piloto escolas que já têm internet <span style="color: #6B7280;">· antes do teste</span></span></div>
+          </div>
+          <a href="#fazer" style="font-size: 12px;">Ver todas as recomendações, por momento</a>
+        </div>
+      </div>
+      <div style="flex-grow: 1;"></div>
+      <div style="font-size: 11px; color: #9CA3AF; border-top: 1px solid #E5E7EB; padding-top: 10px;">Valores ilustrativos. A ferramenta não fala em nome da UNESCO ou de outra instituição.</div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

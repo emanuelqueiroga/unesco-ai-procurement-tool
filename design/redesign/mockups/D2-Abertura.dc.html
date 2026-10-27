@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Abertura do capítulo 2</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="prumo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1360px; height: 860px; display: flex; flex-direction: column; background: var(--surface-1); color: var(--ink); font-family: var(--font-sans);">
+  <dc-import name="PartHeader" hint-size="1360px,64px"></dc-import>
+  <div style="padding: 24px 200px 0;">
+    <div class="cbar" role="group" aria-label="Capítulos">
+      <div><div class="trk"><i style="width: 100%; background: var(--phase-1);"></i></div><div class="lab">1 · Sua rede e o problema ✓</div></div>
+      <div><div class="trk"><i style="width: 0; background: var(--phase-2);"></i></div><div class="lab cur">2 · O teste</div></div>
+      <div><div class="trk"><i style="width: 0; background: var(--phase-3);"></i></div><div class="lab">3 · A primeira etapa</div></div>
+      <div><div class="trk"><i style="width: 0; background: var(--phase-4);"></i></div><div class="lab">4 · Toda a rede</div></div>
+    </div>
+  </div>
+  <main style="flex-grow: 1; padding: 80px 200px 0; display: flex; flex-direction: column; gap: 20px; max-width: 1000px;">
+    <div style="width: 48px; height: 6px; border-radius: 999px; background: var(--phase-2);"></div>
+    <div class="t-cap muted">Capítulo 2 de 4</div>
+    <h1 class="t-display">O teste</h1>
+    <div style="font-family: var(--font-serif); font-size: 22px; line-height: 30px; color: var(--ink-2); font-style: italic; max-width: 620px;">Como aprender o máximo sobre a ferramenta, com o menor risco e o menor custo?</div>
+    <p class="t-body16 ink2" style="max-width: 620px; margin-top: 8px;">Antes de contratar para a rede inteira, vale testar em poucas escolas. Neste capítulo você diz o que a IA deve fazer, quem vai usar e de que tamanho será o teste. No fim, aparece o primeiro número do plano: quanto custa testar.</p>
+    <div style="display: flex; gap: 24px;" class="t-cap muted"><span><b style="color: var(--ink);">11</b> perguntas</span><span><b style="color: var(--ink);">~8</b> minutos</span><span>Alimenta: aplicações, internet e dispositivos, formação, suporte</span></div>
+  </main>
+  <div style="height: 80px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 12px; padding: 0 200px;">
+    <a href="Main.dc.html" class="btn btn-secondary">Voltar ao início</a>
+    <div style="flex-grow: 1;"></div>
+    <a href="D3-Pergunta-Campos.dc.html" class="btn btn-primary">Começar o capítulo</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

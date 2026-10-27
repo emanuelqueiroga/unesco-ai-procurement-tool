@@ -1,0 +1,33 @@
+<!-- @dsCard group="Leitura" height=270 -->
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>LayerBars</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+html,body{margin:0;background:var(--surface-1);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:20px}
+*{box-sizing:border-box}
+.row{display:flex;gap:var(--space-4);align-items:center;flex-wrap:wrap;padding:var(--space-4)}
+.col{display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-4)}
+.muted{color:var(--muted)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.ch{padding:var(--space-4);max-width:640px;display:flex;flex-direction:column;gap:var(--space-2)}
+.t{font-weight:600;font-size:16px;margin-bottom:var(--space-2)}
+.r{display:grid;grid-template-columns:170px 1fr 56px;align-items:center;gap:var(--space-3);font-size:13px}
+.r .n{color:var(--ink)} .r .b{height:14px;border-radius:var(--radius-sm)} .r .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.cap{font-size:12px;color:var(--muted);margin-top:var(--space-2)}
+</style></head>
+<body>
+
+<div class="ch" role="img" aria-label="Aplicações e internet somam 71% do custo em cinco anos">
+  <div class="t">Custo por camada, 5 anos</div>
+  <div class="r"><span class="n">Aplicações</span><div class="b" style="width:92%;background:var(--layer-2)"></div><span class="v">46%</span></div>
+  <div class="r"><span class="n">Internet e dispositivos</span><div class="b" style="width:50%;background:var(--layer-3)"></div><span class="v">25%</span></div>
+  <div class="r"><span class="n">Formação</span><div class="b" style="width:22%;background:var(--layer-6)"></div><span class="v">11%</span></div>
+  <div class="r"><span class="n">Operação e suporte</span><div class="b" style="width:16%;background:var(--layer-7)"></div><span class="v">8%</span></div>
+  <div class="r"><span class="n">Governança</span><div class="b" style="width:10%;background:var(--layer-1)"></div><span class="v">5%</span></div>
+  <div class="r"><span class="n">Dados e sistemas</span><div class="b" style="width:6%;background:var(--layer-4)"></div><span class="v">3%</span></div>
+  <div class="r"><span class="n">Segurança e privacidade</span><div class="b" style="width:4%;background:var(--layer-5)"></div><span class="v">2%</span></div>
+  <div class="cap">Sete camadas de Krueger e Jackson (2026). Valores ilustrativos.</div>
+</div>
+
+</body></html>
