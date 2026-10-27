@@ -2,7 +2,16 @@
 
 A single-page web tool that helps education systems plan the procurement of artificial intelligence: from context to proof of concept or pilot, deployment and scale-up. It estimates the life-cycle cost by layer and ends with a procurement plan (page and PDF) and recommendations for the case.
 
-Version 13 (October 2026). Values are illustrative. The tool does not speak on behalf of UNESCO or any other institution.
+Version 0.0.14 (October 2026; see [CHANGELOG.md](CHANGELOG.md)). Values are illustrative. The tool does not speak on behalf of UNESCO or any other institution.
+
+## Versioning
+
+The tool follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`). While it is a pre-MVP, it stays at `0.0.x`: every published release increases the last number. The `VERSION` file holds the current number; the build injects it into the page footer and the PDF footer.
+
+- **Stable**: the `main` branch and `docs/index.html` (GitHub Pages). Each stable release has a Git tag `v0.0.x` and a GitHub release.
+- **Review builds**: pre-release versions such as `0.0.15-rc.1` or `0.0.16-alpha.b3`, published under `docs/revisao/` with a yellow banner and `noindex`. They are built with `CANAL=revisao bash build.sh` and keep their saved case under their own browser key, so they never change the case saved by the stable version.
+- Earlier labels ("version 9" to "version 13") correspond to `0.0.9` to `0.0.13`.
+- Release notes are kept in `CHANGELOG.md` (Keep a Changelog format).
 
 ## Use
 
@@ -20,9 +29,10 @@ Version 13 (October 2026). Values are illustrative. The tool does not speak on b
 | `assets/` | Logos, Figure 1 of Krueger and Jackson (2026) and the font licence |
 | `vendor/` | jsPDF and jsPDF-AutoTable (MIT licences included) |
 | `tools/subset_fonts.py` | Subsets Noto fonts for the PDF in Arabic, Chinese and Bambara |
-| `tests/`, `test_idiomas.py` | Node and Playwright tests |
+| `tests/`, `test_idiomas.py` | Node and Playwright tests (`tests/test_v0014.py` covers the 0.0.14 fix) |
 | `plano/` | Requirements and design notes for each version (in Portuguese) |
 | `navegador.html` | Build output (page body, as published) |
+| `VERSION`, `CHANGELOG.md` | Current version and release notes |
 | `docs/index.html` | Standalone page, identical to the published version |
 
 ## Build

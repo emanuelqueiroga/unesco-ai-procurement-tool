@@ -17,6 +17,8 @@ done
 JS=$JS_OK
 { sed -e "s#%%LOGO_IAEDU%%#data:image/png;base64,$L1#g" -e "s#%%LOGO_CATEDRA%%#data:image/png;base64,$L2#g" src/shell.html | python3 -c "import sys; t=sys.stdin.read(); sys.stdout.write(t.replace('/*%%FLUXO_CSS%%*/', open('src/fluxo.css').read() + ''.join(open(f).read() for f in ['src/inicio.css', 'src/idiomas.css'] if __import__('os').path.exists(f))))"; echo '<script>';
   cat vendor/jspdf.umd.min.js; echo; cat vendor/jspdf.plugin.autotable.min.js; echo; echo '</script><script>';
+  # 0.0.14: versão (arquivo VERSION, Versionamento Semântico), canal (estavel | revisao) e data do build
+  echo "const VERSAO_APP = '$(tr -d '[:space:]' < VERSION)'; const CANAL_APP = '${CANAL:-estavel}'; const DATA_BUILD = '$(date -u +%Y-%m-%d)';"
   echo -n 'const MOEDAS = '; cat data/moedas.json; echo ';';
   # v11: Figura 1 (p. 11) de Krueger e Jackson (2026), sem alteração, como data URI
   echo -n "const FIG_TCO = 'data:image/jpeg;base64,"; base64 -w0 assets/fig1_tco.jpg; echo "';";
@@ -30,7 +32,7 @@ l = '$l'; d = {}
 if l in '$NOVOS'.split():
     arqs = ['i18n/%s.json' % l] + ([os.path.join(os.environ['I18N_TESTE'], l + '.json')] if os.environ.get('I18N_TESTE') else []) + sorted(glob.glob('i18n/v13_*_%s.json' % l))
 else:
-    arqs = ['i18n/%s.json' % l, 'i18n/extra_%s.json' % l] + sorted(glob.glob('i18n/v9_*_%s.json' % l)) + sorted(glob.glob('i18n/v10_*_%s.json' % l)) + sorted(glob.glob('i18n/v11_*_%s.json' % l)) + sorted(glob.glob('i18n/v12_*_%s.json' % l)) + sorted(glob.glob('i18n/v13_*_%s.json' % l))
+    arqs = ['i18n/%s.json' % l, 'i18n/extra_%s.json' % l] + sorted(glob.glob('i18n/v9_*_%s.json' % l)) + sorted(glob.glob('i18n/v10_*_%s.json' % l)) + sorted(glob.glob('i18n/v11_*_%s.json' % l)) + sorted(glob.glob('i18n/v12_*_%s.json' % l)) + sorted(glob.glob('i18n/v13_*_%s.json' % l)) + sorted(glob.glob('i18n/v0_*_%s.json' % l))
 for f in arqs:
     if os.path.exists(f): d.update(json.load(open(f)))
 sys.stdout.write(json.dumps(d, ensure_ascii=False))"; echo ','; done; echo '};';

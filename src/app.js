@@ -2,7 +2,9 @@
 // Estado, entradas, exportação, relatório e eventos gerais (v9; v11: quatro fases e migração v10 → v11;
 // v13: prioridades e problemas no 1.2, detalhes de "Sim" e "Em parte" (S.respDet) e migração v12 → v13)
 // =====================================================================
-const CHAVE = 'aiedu-procurement-v9';
+// 0.0.14: a versão estável guarda o caso na chave de sempre; versões de revisão (CANAL_APP = 'revisao') usam uma chave
+// própria, para não trocar o caso da versão publicada nem o de outra revisão no mesmo endereço (emanuelqueiroga.github.io)
+const CHAVE = 'aiedu-procurement-v9' + (typeof CANAL_APP !== 'undefined' && CANAL_APP !== 'estavel' && typeof VERSAO_APP !== 'undefined' ? '@' + VERSAO_APP : '');
 const CHAVE_V8 = 'navegador-ia-educacao-v4';
 function estadoInicial() {
   return {
@@ -82,6 +84,16 @@ function temRespostas(o) {
   if (x.nivel || x.local || x.olhando || x.problemaOutro || ['prioridades', 'problemas', 'subs'].some(k => (x[k] || []).length) || Object.values(x.etapas || {}).some(e => e && e.on)) return true;
   if (Object.values(o.respDet || {}).some(d => d && (String(d.qual || '').trim() || String(d.falta || '').trim()))) return true;
   return ['titulo', 'problema', 'resultado', 'linhaBaseMedida', 'linhaBaseProblemaTxt', 'teste', 'tipoTec', 'pagamento', 'licenca', 'elegiveis', 'nFerramentas', 'conheceFerramentas', 'internet', 'modeloDisp', 'formacaoFormato', 'formacaoPaga', 'suporteQuem', 'suporteNivel', 'acompanhamento', 'arquitetura'].some(k => c[k]) || ['tarefas', 'impactos', 'usuarios', 'testes', 'ferramentas', 'formados', 'formacaoTipo', 'linhaBaseProblemas'].some(k => (c[k] || []).length);
+}
+// 0.0.14: "Início" no cabeçalho volta à página inicial sem apagar nada; com respostas, ela oferece continuar o caso
+function irInicio() {
+  if (temRespostas(S)) {
+    const ex = ['A', 'B', 'C', 'D'].includes(S.exemplo) && typeof CASOS !== 'undefined' && CASOS[S.exemplo] ? CASOS[S.exemplo].titulo : '';
+    SALVO = { nome: S.caso.titulo || (S.ctx && S.ctx.olhando) || '', exemplo: ex, lugar: (S.ctx && S.ctx.local) || '', migrou: false };
+  }
+  S.boasVindas = true; S.vista = '';
+  render();
+  try { window.scrollTo(0, 0); } catch (e) { }
 }
 // Boas-vindas: continuar o caso salvo, no passo em que a pessoa parou
 function continuarSalvo() {
@@ -521,6 +533,7 @@ function ligar() {
     if (cb) { S.custo.base = cb.dataset.cbase; S.custo.cfg = null; S.custo.editado = false; render(); return; }
     const a = e.target.closest('[data-act]'); if (!a) return;
     const act = a.dataset.act;
+    if (act === 'inicio') { irInicio(); return; }
     if (act === 'limpar') carregarExemplo('novo');
     else if (act === 'ia') analisarIA();
     else if (act === 'ia-aplicar') aplicarIA(false);
