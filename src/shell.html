@@ -73,6 +73,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .brand b { font-family: var(--f-head); font-weight: 600; font-size: 1.2rem; line-height: 1.2; color: var(--head); text-wrap: balance; }
 .brand span { font-size: .84rem; color: var(--muted); line-height: 1.35; }
 .ctrls { display: flex; gap: 12px; align-items: flex-end; flex: none; }
+.nav-top { display: flex; gap: 8px; align-items: flex-end; margin-inline-start: auto; flex-wrap: wrap; }
+.top .nav-top .btn { cursor: pointer; font-weight: 600; }
 .ctl { display: grid; gap: 2px; min-width: 0; }
 .ctl > span { font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .top select, .top .btn { height: 34px; background-color: var(--surface); color: var(--ink); border: 1px solid var(--line-2); border-radius: var(--r); padding: 4px 10px; font-size: .92rem; }
@@ -330,6 +332,7 @@ footer.rodape { background: var(--foot); border-top: 1px solid var(--line); colo
   .logo { height: 40px; }
   .brand { padding-left: 0; border-left: 0; flex: none; }
   .brand b { font-size: 1.06rem; }
+  .nav-top { grid-column: 1 / -1; margin-inline-start: 0; }
   .ctrls { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px; }
   .ctl > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .top select, .top #sel-lang { width: 100%; max-width: none; height: 32px; font-size: .9rem; }
@@ -373,6 +376,10 @@ footer.rodape { background: var(--foot); border-top: 1px solid var(--line); colo
     <img class="logo logo-catedra" src="%%LOGO_CATEDRA%%" alt="Cátedra UNESCO UNITWIN" width="109" height="80">
   </a>
   <div class="brand"><b data-notr>AI in Education Procurement Tool</b><span>Do contexto ao plano de contratação: aplicações, adoção e custo do seu caso</span></div>
+  <nav class="nav-top" aria-label="Navegação principal">
+    <button type="button" class="btn" data-act="inicio">Início</button>
+    <button type="button" class="btn" data-act="ver-matriz">Matriz camadas × fases</button>
+  </nav>
   <div class="ctrls">
     <label class="ctl"><span class="small">Idioma</span>
       <select id="sel-lang" data-notr aria-label="Idioma"></select></label>
@@ -403,6 +410,7 @@ footer.rodape { background: var(--foot); border-top: 1px solid var(--line); colo
     <p class="vinculo" id="txt-vinculo"></p>
     <p>A ferramenta aplica o guia de decisão sobre aquisição, contratação e governança de IA na educação. Os exemplos e valores são ilustrativos e devem ser substituídos por dados e cotações locais.</p>
     <p class="isencao" id="txt-isencao"></p>
+    <p class="versao small muted" id="txt-versao"></p>
   </div>
 </div></footer>
 <div id="toast" class="toast" hidden></div>

@@ -19,6 +19,8 @@ done
 JS=$JS_OK
 { sed -e "s#%%LOGO_IAEDU%%#data:image/png;base64,$L1#g" -e "s#%%LOGO_CATEDRA%%#data:image/png;base64,$L2#g" src/shell.html | python3 -c "import sys; t=sys.stdin.read(); sys.stdout.write(t.replace('/*%%FLUXO_CSS%%*/', open('src/fluxo.css').read() + ''.join(open(f).read() for f in ['src/inicio.css', 'src/idiomas.css'] if __import__('os').path.exists(f))))"; echo '<script>';
   cat vendor/jspdf.umd.min.js; echo; cat vendor/jspdf.plugin.autotable.min.js; echo; echo '</script><script>';
+  # 0.0.15: versão (arquivo VERSION, Versionamento Semântico), canal (estavel | revisao) e data do build
+  echo "const VERSAO_APP = '$(tr -d '[:space:]' < VERSION)'; const CANAL_APP = '${CANAL:-estavel}'; const DATA_BUILD = '$(date -u +%Y-%m-%d)';"
   echo -n 'const MOEDAS = '; cat data/moedas.json; echo ';';
   # v14 (BL4.1, BL1): base de referências e perfis de país, embutidos para funcionar sem rede (custos.js e pais.js os leem)
   echo -n 'const REFERENCIAS = '; cat data/referencias.json; echo ';';

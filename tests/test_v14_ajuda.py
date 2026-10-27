@@ -114,7 +114,7 @@ async def main():
         ok(await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: o resumo abre pelo teclado')
         await pg.keyboard.press('Enter'); await pg.wait_for_timeout(150)
         ok(not await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: e recolhe de novo')
-        arm = await ev(pg, "localStorage.getItem('upt_ajuda_v14')")
+        arm = await ev(pg, "localStorage.getItem(AJUDA_CHAVE)")
         ok(arm and json.loads(arm).get('1a') is False, f'estado gravado por passo no navegador ({arm})')
         # nova visita (recarregar a página): o recolhido continua recolhido; o que só abriu por ser a primeira vez começa recolhido
         await pg.reload(); await pg.wait_for_timeout(300)
