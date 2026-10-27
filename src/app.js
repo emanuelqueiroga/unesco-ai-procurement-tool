@@ -2,7 +2,9 @@
 // Estado, entradas, exportação, relatório e eventos gerais (v9; v11: quatro fases e migração v10 → v11;
 // v13: prioridades e problemas no 1.2, detalhes de "Sim" e "Em parte" (S.respDet) e migração v12 → v13)
 // =====================================================================
-const CHAVE = 'aiedu-procurement-v9';
+// 0.0.16: a versão estável guarda o caso na chave de sempre; versões de revisão (CANAL_APP = 'revisao') usam uma chave
+// própria, para não trocar o caso da versão publicada nem o de outra revisão no mesmo endereço (emanuelqueiroga.github.io)
+const CHAVE = 'aiedu-procurement-v9' + (typeof CANAL_APP !== 'undefined' && CANAL_APP !== 'estavel' && typeof VERSAO_APP !== 'undefined' ? '@' + VERSAO_APP : '');
 const CHAVE_V8 = 'navegador-ia-educacao-v4';
 function estadoInicial() {
   return {

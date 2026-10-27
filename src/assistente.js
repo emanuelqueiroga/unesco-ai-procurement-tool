@@ -35,7 +35,7 @@ const ICO_A = {
 };
 
 // ----------------------------------------------------------- estado da tela (fora do caso)
-const UIA_CHAVE = 'upt_v15a_ui';
+const UIA_CHAVE = 'upt_v15a_ui' + (typeof CANAL_APP !== 'undefined' && CANAL_APP !== 'estavel' && typeof VERSAO_APP !== 'undefined' ? '@' + VERSAO_APP : '');  // 0.0.16: chave própria nas revisões
 let UIA = null;
 function uiA() {
   if (UIA) return UIA;
