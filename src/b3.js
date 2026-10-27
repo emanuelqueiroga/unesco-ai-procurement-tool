@@ -11,7 +11,7 @@
 // =====================================================================
 
 // ----------------------------------------------------------- 1. aparências
-const APAR_CHAVE = 'upt_v15b3_aparencia';
+const APAR_CHAVE = 'upt_v15b3_aparencia' + (typeof CANAL_APP !== 'undefined' && CANAL_APP !== 'estavel' && typeof VERSAO_APP !== 'undefined' ? '@' + VERSAO_APP : '');  // 0.0.16: chave própria nas revisões
 const APARENCIAS = [['exp', 'Para leigos'], ['pub', 'Serviço público'], ['exe', 'Executiva']];
 let APAR = 'exp';
 try { const v = localStorage.getItem(APAR_CHAVE); if (APARENCIAS.some(a => a[0] === v)) APAR = v; } catch (e) { }

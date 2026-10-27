@@ -943,7 +943,7 @@ function gerarPDF() {
     }
     doc.setDrawColor(...C.linha); doc.setLineWidth(0.6); doc.line(M, H - 36 - pe, W - M, H - 36 - pe);
     fonte(8, 'normal', C.muted);
-    doc.text(pdfTxt(tP('ilustr')), M, H - 24 - pe);
+    doc.text(pdfTxt(tP('ilustr') + (typeof VERSAO_APP !== 'undefined' ? '  ·  v' + VERSAO_APP : '')), M, H - 24 - pe);
     fonte(8, 'bold', C.titulo); doc.text(i + ' / ' + n, W - M, H - 24 - pe, { align: 'right' });
   }
   avisoTradPDF(doc, { W, H, M, LW });   // v13: aviso de tradução preliminar (capa e rodapé), só nos idiomas novos

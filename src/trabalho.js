@@ -9,7 +9,7 @@
 // ----------------------------------------------------------- estado da interface (não vai para o caso salvo)
 // O caso exportado e o S do localStorage não mudam de formato: aba do painel e índice recolhido ficam numa chave
 // própria deste navegador (sempre em try/catch).
-const UI_CHAVE = 'upt_v15b_ui';
+const UI_CHAVE = 'upt_v15b_ui' + (typeof CANAL_APP !== 'undefined' && CANAL_APP !== 'estavel' && typeof VERSAO_APP !== 'undefined' ? '@' + VERSAO_APP : '');  // 0.0.16: chave própria nas revisões
 const UI = { aba: 'custo', recolhido: false };
 try { const o = JSON.parse(localStorage.getItem(UI_CHAVE) || '{}') || {}; if (['custo', 'plano', 'premissas'].includes(o.aba)) UI.aba = o.aba; UI.recolhido = o.recolhido === true; } catch (e) { }
 function uiGravar() { try { localStorage.setItem(UI_CHAVE, JSON.stringify(UI)); } catch (e) { } }
