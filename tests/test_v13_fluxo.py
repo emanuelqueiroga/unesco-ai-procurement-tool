@@ -228,7 +228,7 @@ async def main():
                         'piloto': {'escolas': '', 'participantes': '', 'meses': ''}, 'poc': {'participantes': '', 'meses': ''}, 'implantacao': {'escolas': '', 'pessoas': ''}},
                'ctx': {'nivel': 'estado', 'local': 'Rede Y', 'etapas': {}, 'dominio': 'qualificacao', 'comps': ['matematica'], 'compOutro': '', 'olhando': 'Matemática no 9º ano'},
                'resp': {'g-comite': 'sim'}, 'respC': {'problema': True}, 'custo': {'base': 'caso', 'cfg': None, 'editado': False}, 'moeda': {'cod': 'USD', 'taxa': ''}, 'lang': 'pt'}
-        await pg.evaluate("t => { localStorage.clear(); localStorage.setItem('aiedu-procurement-v9', t); }", json.dumps(v12)); await pg.reload(); await pg.wait_for_timeout(400)
+        await pg.evaluate("t => { localStorage.clear(); localStorage.setItem(CHAVE, t); }", json.dumps(v12)); await pg.reload(); await pg.wait_for_timeout(400)
         await pg.select_option('#sel-lang', 'pt'); await pg.wait_for_timeout(150)
         ok(await pg.locator('[data-act="continuar-salvo"]').count() == 1, 'estado v12 oferecido como caso salvo')
         await pg.click('[data-act="continuar-salvo"]'); await pg.wait_for_timeout(300)

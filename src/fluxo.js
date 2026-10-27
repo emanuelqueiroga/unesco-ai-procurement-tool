@@ -958,7 +958,7 @@ function passo4c() {
 // pessoa o abriu; o estado fica neste navegador (localStorage, sempre em try/catch). O "para que serve" vira a linha
 // de ajuda sob o título do passo (trabalho.js); aqui ficam a abertura do passo, por que importa, como responder, quem sabe,
 // o exemplo e a nota da camada (ⓘ com a Figura 1).
-const AJUDA_CHAVE = 'upt_ajuda_v15';
+const AJUDA_CHAVE = 'upt_ajuda_v15' + (typeof CANAL_APP !== 'undefined' && CANAL_APP !== 'estavel' && typeof VERSAO_APP !== 'undefined' ? '@' + VERSAO_APP : '');  // 0.0.16: chave própria nas revisões
 let AJUDA_EST = null;
 function ajudaLer() {
   if (AJUDA_EST) return AJUDA_EST;
