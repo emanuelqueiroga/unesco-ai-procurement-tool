@@ -950,7 +950,7 @@ function passo4c() {
 }
 // v14 (BL2.2): painel "Sobre esta etapa". Abre na primeira visita a cada passo e pode ser recolhido; o estado de cada passo
 // fica neste navegador (localStorage, sempre em try/catch). Passos já vistos numa visita anterior começam recolhidos.
-const AJUDA_CHAVE = 'upt_ajuda_v14';
+const AJUDA_CHAVE = 'upt_ajuda_v14' + (typeof CANAL_APP !== 'undefined' && CANAL_APP !== 'estavel' && typeof VERSAO_APP !== 'undefined' ? '@' + VERSAO_APP : '');  // 0.0.16: chave própria nas revisões
 let AJUDA_EST = null; const AJUDA_AUTO = {};
 function ajudaLer() {
   if (AJUDA_EST) return AJUDA_EST;

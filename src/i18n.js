@@ -190,6 +190,7 @@ function aplicarIdioma(l) {
   carregarFonteIdioma(LANG);
   atualizarAvisoTrad();
   traduzirArvore(document.body);
+  textoVersao();
   const t = document.querySelector('title'); if (t) { if (!t.dataset.orig) t.dataset.orig = t.textContent; t.textContent = tr(t.dataset.orig); }
 }
 function idiomaInicial() { return 'en'; }  // decisão da equipe: inglês como padrão nesta etapa
@@ -325,6 +326,12 @@ function montarIdiomas() {
   }
   const v = document.getElementById('txt-vinculo'); if (v) v.textContent = TXT_VINCULO;
   const i = document.getElementById('txt-isencao'); if (i) i.textContent = TXT_ISENCAO;
+  textoVersao();
+}
+// 0.0.16: versão e data do build no rodapé (refeito a cada troca de idioma)
+function textoVersao() {
+  const ve = document.getElementById('txt-versao');
+  if (ve && typeof VERSAO_APP !== 'undefined') { ve.setAttribute('data-notr', ''); ve.textContent = tr('Versão {0}').replace('{0}', VERSAO_APP) + (typeof DATA_BUILD !== 'undefined' ? ' · ' + DATA_BUILD : ''); }
 }
 
 // ---------------------------------------------------------- v13 (RQ-18): fontes dos idiomas novos na página

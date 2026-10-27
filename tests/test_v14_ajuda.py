@@ -130,7 +130,7 @@ async def main():
         ok(not await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: o resumo recolhe pelo teclado')
         await pg.keyboard.press('Enter'); await pg.wait_for_timeout(150)
         ok(await ev(pg, "document.getElementById('ajuda-1a').open"), '1.1: e abre de novo')
-        arm = await ev(pg, "localStorage.getItem('upt_ajuda_v14')")
+        arm = await ev(pg, "localStorage.getItem(AJUDA_CHAVE)")
         ok(arm and json.loads(arm).get('1a') is True, f'estado gravado por passo no navegador ({arm})')
         await pg.reload(); await pg.wait_for_timeout(300)
         await ev(pg, "(()=>{S.boasVindas=false; abrirFase('contexto','1a');})()", 250); await ev(pg, AJ + "('1a')", 150)
