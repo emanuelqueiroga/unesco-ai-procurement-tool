@@ -10,6 +10,7 @@ npm run dev          # servidor de desenvolvimento (gera tokens e dicionários a
 npm test             # Vitest: domínio, motor, fórmulas, store, migrações, Essencial
 npm run lint:domain  # src/domain/ não pode tocar DOM, localStorage nem a global S
 npm run build        # tsc --noEmit + vite build → ../docs/app/
+npm run e2e          # percorre as 25 perguntas no build (1360 px e 400 px); rode depois do build
 ```
 
 ## Pastas
@@ -20,11 +21,13 @@ npm run build        # tsc --noEmit + vite build → ../docs/app/
 | `src/store/` | Estado do caso (Zustand) no formato 14: `caso.ts` (ações), `sugestoes.ts` (sugestões em cascata, puras), `migracoes.ts` (formatos 9, 11, 13, 14 e app anterior), `perguntas.ts` (as 25 do Essencial e resposta → trechos do plano), `selectors.ts` (KPIs, recomendações, progresso), `persistencia.ts` (chave `aiedu-procurement-v14`) |
 | `src/export/` | Exportação do caso em JSON (formato 14) |
 | `src/ui/` | Componentes Prumo (um por pasta, `.tsx` + `.css`), tema claro/escuro, ícones |
-| `src/screens/` | Telas (por enquanto, a galeria de componentes em `#/galeria`) |
+| `src/percurso/` | Lógica das telas, sem desenho: rotas por hash, textos, projeção do plano (`painel.ts`), sínteses de capítulo (`sintese.ts`) e os controles de cada pergunta (`Controles.tsx`) |
+| `src/screens/` | Telas: início, abertura, pergunta e síntese de capítulo (`Percurso.tsx`), plano (`Plano.tsx`), moldura com cabeçalho, navegação e plano vivo (`Shell.tsx`, `PlanoVivo.tsx`), caixa Caso e a galeria em `#/galeria` |
 | `src/styles/` | `tokens.css` gerado de `../design/redesign/prumo/tokens.json` (versionado) e `base.css` |
 | `src/i18n/` | `index.ts` (carga sob demanda) e os `<idioma>.json` gerados por `scripts/i18n.mjs` (não versionados) |
 | `scripts/` | `tokens.mjs`, `i18n.mjs`, `check-domain.mjs` |
 | `tests/unit/` | Testes do Vitest |
+| `tests/e2e/` | Teste de ponta a ponta com Playwright sobre o build |
 
 ## Formato de dados 14
 

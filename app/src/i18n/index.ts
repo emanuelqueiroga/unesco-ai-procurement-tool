@@ -29,10 +29,10 @@ export async function usarIdioma(l: string): Promise<string> {
   return l;
 }
 
-/** idioma inicial: o guardado no caso, senão o do navegador quando existe tradução, senão português */
+/** Idioma inicial: o guardado no caso, senão português. Na linha 0.1.x os textos novos da v14 só existem em
+ *  português (os dicionários v14_<l>.json vêm com a publicação); começar pelo idioma do navegador misturaria
+ *  as duas línguas na mesma tela. Quem quiser outro idioma escolhe na caixa "Caso". */
 export function idiomaInicial(guardado?: string): string {
   const ids = idiomasDisponiveis();
-  if (guardado && ids.includes(guardado)) return guardado;
-  const nav = typeof navigator !== 'undefined' ? (navigator.languages || [navigator.language]).map(x => String(x || '').slice(0, 2).toLowerCase()) : [];
-  return nav.find(x => ids.includes(x)) || 'pt';
+  return guardado && ids.includes(guardado) ? guardado : 'pt';
 }

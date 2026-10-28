@@ -5,6 +5,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   base: './',
+  // o app lê ../data/moedas.json e ../design (fora de app/) também no servidor de desenvolvimento
+  server: { fs: { allow: ['..'] } },
   build: { outDir: '../docs/app', emptyOutDir: true },
-  test: { environment: 'node', include: ['tests/unit/**/*.test.{ts,js}'] },
+  test: { environment: 'node', include: ['tests/unit/**/*.test.{ts,tsx,js}'] },
 });

@@ -11,6 +11,28 @@ Published under `docs/revisao/` with a yellow banner. Not part of the stable lin
 - **0.0.16-alpha.a / .b / .c**: redesign proposals A (guided assistant), B (workspace with cost panel), C (living document). Branches `v15-proposta-a`, `-b`, `-c`. URLs: `/revisao/a/`, `/revisao/b/`, `/revisao/c/`.
 - **0.0.15-rc.1**: formerly "version 14 review". Step explanations, cost by phase and adoption curve, reference cost base and country profiles, procurement plan with executive summary and icebergs by phase. Branch `v14-revisao`. URL: `/revisao/`.
 
+## [0.1.0-alpha.2] - 2026-10-28
+
+Second pre-release of the redesign line (`develop` branch): the question journey of the new interface works end to end. Still not published; the stable `0.0.14` is untouched.
+
+### Added
+- The journey of narrative A with the chapter rhythm of B: start page, chapter openings, the 25 Essencial questions (one screen each, with the controls of the Prumo design system), chapter summaries written from the answers, and a plan that writes itself next to the questions. Routes by hash (`#/capitulo/2/piloto`), so the page works from GitHub Pages or a local file.
+- "Seu plano" panel (≥ 1100 px) and bottom drawer (phones): title, facts, four KPIs with their origin, the first recommendations. The first number appears when the type of technology (2.3.4) is answered; only one item is highlighted in amber after each answer (the first KPI that changed, otherwise the first new recommendation).
+- Suggestions are shown as such ("~ sugerido pelas tarefas da IA (2.1.1)") and "Aceitar a sugestão e continuar" turns them into answers; "Pular por agora" never blocks.
+- Plan pages "Em resumo" (cover, main recommendation, KPIs with origin tags, cost by layer, top three actions), "O que fazer" (all recommendations by moment, each linking back to the question that produced it) and "Respostas que faltam".
+- Refinar mode: the same screens, plus the non-Essencial questions of each chapter at the end of the chapter summary, with the default premise open for editing.
+- "Caso" dialog: export and import the case (JSON, format 14), the four illustrative examples, start blank, mode, language and appearance.
+- Tests: `tests/unit/percurso.test.ts` (routes, plan projection, chapter summaries; 145 unit tests in total) and `tests/e2e/percurso.mjs` (`npm run e2e`), which answers the 25 questions through the interface at 1360 px and 400 px and checks the first number, the summaries, the final plan, the saved origins, JSON export, reload and the absence of horizontal scrolling (118 checks).
+
+### Changed
+- The browser save is flushed when the tab is hidden or closed, so the last answer is never lost.
+- Examples mark every filled value as answered, so an example opens with all 25 Essencial questions complete.
+- Prumo components: long labels wrap inside option cards and chips (no horizontal scrolling at 400 px); KPI values and layer-bar values never wrap.
+- The interface starts in Portuguese unless the case has another language: the new texts of this line exist only in Portuguese until the `v14_<lang>.json` dictionaries are written, and starting from the browser language would mix two languages on the same screen.
+
+### Not yet
+- "Quanto custa" (table by layer and year with "de onde vem?"), "O que exigir", the appendix, the Refinar calculator and the PDF come in `0.1.0-alpha.3`.
+
 ## [0.1.0-alpha.1] - 2026-10-28
 
 First pre-release of the redesign line (`develop` branch). It is not published and not usable as a tool yet: it contains the engine, the state model and the component library of the new implementation, without the question screens. The stable `0.0.14` is untouched.

@@ -65,9 +65,14 @@ function setPath(obj: any, path: string, val: any) {
   o[ks[ks.length - 1]] = val;
 }
 /** onde um campo mora: 'resp' (g-*), 'ctx' ou 'caso' */
-function ondeMora(campo: string): 'resp' | 'ctx' | 'caso' {
+// campos "Outro, qual?" (nivelOutro, impactoOutro, tarefaOutra) moram junto do campo de que dependem
+const PAI_DO_OUTRO: Record<string, string> = Object.fromEntries(
+  Object.values(CAMPO_POR_ID as Record<string, any>).filter((f) => f && f.outro && f.outro.id).map((f) => [f.outro.id, f.id]),
+);
+export function ondeMora(campo: string): 'resp' | 'ctx' | 'caso' {
   if (/^g-/.test(campo)) return 'resp';
-  const f = (CAMPO_POR_ID as any)[campo.split('.')[0]];
+  const top = campo.split('.')[0];
+  const f = (CAMPO_POR_ID as any)[top] || (CAMPO_POR_ID as any)[PAI_DO_OUTRO[top]];
   return f && f.onde === 'ctx' ? 'ctx' : 'caso';
 }
 function gravar(e: Estado14, campo: string, valor: any) {
@@ -75,7 +80,7 @@ function gravar(e: Estado14, campo: string, valor: any) {
   if (onde === 'resp') { e.resp[campo] = valor; return; }
   setPath(onde === 'ctx' ? e.ctx : e.caso, campo, clone(valor));
 }
-function valorDe(e: Estado14, campo: string) {
+export function valorDe(e: Estado14, campo: string) {
   const onde = ondeMora(campo);
   if (onde === 'resp') return e.resp[campo];
   return campo.split('.').reduce((o: any, k) => (o == null ? undefined : o[k]), onde === 'ctx' ? e.ctx : e.caso);
@@ -207,12 +212,18 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     confirmarGerados(e.caso, rc);
     (CAMPOS_PROB as string[]).concat(['nFerramentas']).forEach(c => { rc[c] = true; });
     // todo valor do exemplo é 'informado' (as sugestões não substituem as respostas ilustrativas)
+    // no exemplo, todo valor preenchido é resposta, inclusive os que coincidem com a premissa padrão (situação 'nova',
+    // expansão 'ano1'…); nos objetos de tamanho (piloto, poc, implantacao) contam o subcampo e o campo
     Object.keys(e.caso).forEach(c => {
       const v = (e.caso as any)[c];
-      if (c in (SUB_OBJ as any)) { (SUB_OBJ as any)[c].forEach((s: string) => { if (!vazio((v || {})[s])) rc[c + '.' + s] = true; }); return; }
-      if (!vazio(v) && v !== false && !(c in CASO_VAZIO && JSON.stringify(v) === JSON.stringify((CASO_VAZIO as any)[c]))) rc[c] = true;
+      if (c in (SUB_OBJ as any)) {
+        (SUB_OBJ as any)[c].forEach((s: string) => { if (!vazio((v || {})[s])) { rc[c + '.' + s] = true; rc[c] = true; } });
+        return;
+      }
+      if (!vazio(v) && v !== false) rc[c] = true;
     });
     Object.keys(e.ctx).forEach(c => { if (!vazio(e.ctx[c])) rc[c] = true; });
+    if (Object.values(e.ctx.etapas || {}).some((x: any) => x && x.on)) rc.grade = true;   // escolas e estudantes por etapa (1.1.5)
     Object.keys(rc).forEach(c => { e.origem[c] = 'informado'; });
     Object.keys(e.resp).forEach(g => { if (e.resp[g]) e.origem[g] = 'informado'; });
     e.respC = Object.fromEntries(Object.keys(rc).filter(c => !/^g-/.test(c)).map(c => [c, true]));

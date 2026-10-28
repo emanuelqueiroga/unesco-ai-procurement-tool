@@ -1,3 +1,6 @@
 i18n/trad/parts/
 __pycache__/
 .DS_Store
+
+# build da reimplementação (app/): fora do controle de versão até a publicação da 0.1.0
+docs/app/

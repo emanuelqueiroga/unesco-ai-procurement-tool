@@ -15,7 +15,7 @@
 
 .pr-layerbars-row {
   display: grid;
-  grid-template-columns: 170px minmax(0, 1fr) 56px;
+  grid-template-columns: 170px minmax(0, 1fr) minmax(56px, max-content);
   align-items: center;
   gap: var(--space-3);
   font-size: 13px;
@@ -40,6 +40,7 @@
 }
 
 .pr-layerbars-value {
+  white-space: nowrap;
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: var(--ink-2);
@@ -54,6 +55,6 @@
 
 @media (max-width: 400px) {
   .pr-layerbars-row {
-    grid-template-columns: 120px minmax(0, 1fr) 44px;
+    grid-template-columns: 112px minmax(0, 1fr) minmax(44px, max-content);
   }
 }

@@ -1,0 +1,72 @@
+// Rotas por hash (funciona no GitHub Pages e no arquivo local, sem servidor):
+//   #/                         início
+//   #/capitulo/:n              abertura do capítulo
+//   #/capitulo/:n/:tela        pergunta (id da tela do Essencial, perguntas.ts)
+//   #/capitulo/:n/sintese      síntese do capítulo
+//   #/plano  #/plano/fazer     plano (Em resumo; O que fazer)
+//   #/galeria                  galeria de componentes do Prumo
+import { useEffect, useState } from 'react';
+import type { Capitulo } from '../store';
+import { ESSENCIAL } from '../store';
+
+export type Rota =
+  | { tipo: 'inicio' }
+  | { tipo: 'abertura'; n: Capitulo }
+  | { tipo: 'pergunta'; n: Capitulo; tela: string }
+  | { tipo: 'sintese'; n: Capitulo }
+  | { tipo: 'plano'; pagina: 'resumo' | 'fazer' | 'faltam' }
+  | { tipo: 'galeria' };
+
+const cap = (s: string): Capitulo | null => (['1', '2', '3', '4'].includes(s) ? (+s as Capitulo) : null);
+
+export function lerRota(hash: string): Rota {
+  const p = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  if (p[0] === 'galeria') return { tipo: 'galeria' };
+  if (p[0] === 'plano') return { tipo: 'plano', pagina: p[1] === 'fazer' ? 'fazer' : p[1] === 'faltam' ? 'faltam' : 'resumo' };
+  if (p[0] === 'capitulo') {
+    const n = cap(p[1] || '');
+    if (!n) return { tipo: 'inicio' };
+    if (!p[2]) return { tipo: 'abertura', n };
+    if (p[2] === 'sintese') return { tipo: 'sintese', n };
+    const t = ESSENCIAL.find((x) => x.id === p[2] && x.capitulo === n);
+    return t ? { tipo: 'pergunta', n, tela: t.id } : { tipo: 'abertura', n };
+  }
+  return { tipo: 'inicio' };
+}
+
+export const href = {
+  inicio: () => '#/',
+  abertura: (n: number) => `#/capitulo/${n}`,
+  pergunta: (n: number, tela: string) => `#/capitulo/${n}/${tela}`,
+  sintese: (n: number) => `#/capitulo/${n}/sintese`,
+  plano: (pagina: 'resumo' | 'fazer' | 'faltam' = 'resumo') => (pagina === 'resumo' ? '#/plano' : `#/plano/${pagina}`),
+  tela: (id: string) => {
+    const t = ESSENCIAL.find((x) => x.id === id);
+    return t ? `#/capitulo/${t.capitulo}/${t.id}` : '#/';
+  },
+};
+
+export function ir(destino: string) {
+  if (typeof window === 'undefined') return;
+  if (window.location.hash === destino) return;
+  window.location.hash = destino;
+}
+
+export function useRota(): Rota {
+  const ler = () => lerRota(typeof window === 'undefined' ? '' : window.location.hash);
+  const [rota, setRota] = useState<Rota>(ler);
+  useEffect(() => {
+    const mudou = () => {
+      setRota(ler());
+      // cada tela começa do topo; o foco vai para o título (main) para leitores de tela
+      window.scrollTo(0, 0);
+      requestAnimationFrame(() => {
+        const alvo = document.querySelector<HTMLElement>('[data-foco-inicial]') || document.querySelector<HTMLElement>('main h1');
+        if (alvo) { if (!alvo.hasAttribute('tabindex')) alvo.setAttribute('tabindex', '-1'); alvo.focus({ preventScroll: true }); }
+      });
+    };
+    window.addEventListener('hashchange', mudou);
+    return () => window.removeEventListener('hashchange', mudou);
+  }, []);
+  return rota;
+}

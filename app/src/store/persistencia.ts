@@ -48,9 +48,18 @@ export function ligarPersistencia(st: StorageLike | null = storagePadrao(), atra
   let timer: ReturnType<typeof setTimeout> | null = null;
   const CHAVES = ['caso', 'ctx', 'resp', 'respC', 'respDet', 'revisar', 'feitos', 'custo', 'moeda', 'lang', 'origem', 'sugestoes', 'modo', 'capitulo', 'exemplo'] as const;
   const mudou = (a: CasoStore, b: CasoStore) => CHAVES.some(k => a[k] !== b[k]);
-  return useCaso.subscribe((s, anterior) => {
+  const gravarJa = () => { if (timer) { clearTimeout(timer); timer = null; salvar(soEstado(useCaso.getState()), st); } };
+  const des = useCaso.subscribe((s, anterior) => {
     if (!mudou(s, anterior)) return;
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => { timer = null; salvar(soEstado(useCaso.getState()), st); }, atrasoMs);
   });
+  // ao fechar ou esconder a aba, o que ainda estava no atraso é gravado na hora
+  const aoEsconder = () => { if (typeof document === 'undefined' || document.visibilityState === 'hidden') gravarJa(); };
+  if (typeof window !== 'undefined') { window.addEventListener('pagehide', gravarJa); document.addEventListener('visibilitychange', aoEsconder); }
+  return () => {
+    des();
+    gravarJa();
+    if (typeof window !== 'undefined') { window.removeEventListener('pagehide', gravarJa); document.removeEventListener('visibilitychange', aoEsconder); }
+  };
 }

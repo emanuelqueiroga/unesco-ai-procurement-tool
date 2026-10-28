@@ -1,6 +1,6 @@
 // Seletores: derivações puras do estado v14 para a interface (plano, KPIs, recomendações, progresso).
 // Recebem o Estado14 (ou o store) e nunca o mutam: cfgAtual guarda a cfg em estado.custo, por isso recebe uma cópia.
-import { clone, cfgAtual, numerosCusto, casoAtual, perfil, recomendacoesCaso, premissasUnitarias, faltasEstimativa, QUESTOES_G, CAMPO_POR_ID } from '../domain';
+import { clone, cfgAtual, numerosCusto, casoAtual, perfil, recomendacoesCaso, premissasUnitarias, faltasEstimativa, modoTeste, QUESTOES_G, CAMPO_POR_ID } from '../domain';
 import type { Estado14, Origem, Capitulo } from './tipos';
 import { ESSENCIAL, telasDoCapitulo, type TelaEssencial } from './perguntas';
 import { soEstado } from './caso';
@@ -22,10 +22,16 @@ export function faltasEstimativaDe(s: Estado14): any[] { return faltasEstimativa
 export function origemDe(s: Estado14, campo: string): Origem { return s.origem[campo] || (s.respC[campo] ? 'informado' : 'padrao'); }
 export const respondido = (s: Estado14, campo: string) => { const o = origemDe(s, campo); return o === 'informado' || o === 'refinado'; };
 
-/** a tela do Essencial está respondida? (o campo principal informado; governança: as seis perguntas) */
+/** campos que a tela realmente pergunta neste caso: o tamanho do teste segue a resposta 2.0 (prova de conceito,
+ *  piloto ou os dois) e as perguntas condicionais (2.4.2) só contam quando aparecem */
+export function camposAtivos(s: Estado14, t: TelaEssencial): string[] {
+  if (t.id === 'piloto') { const m = modoTeste(s.caso); return m === 'poc' ? ['poc'] : m === 'ambos' ? ['poc', 'piloto'] : ['piloto']; }
+  return t.campos.filter(c => { const f: any = (CAMPO_POR_ID as any)[c]; try { return !f || !f.se || !!f.se(s.caso); } catch (e) { return true; } });
+}
+/** a tela do Essencial está respondida? (governança: as seis perguntas; as demais: o campo principal e os ativos obrigatórios) */
 export function telaRespondida(s: Estado14, t: TelaEssencial): boolean {
   if (t.id === 'governanca') return t.campos.every(g => !!s.resp[g]);
-  if (t.id === 'internet') return respondido(s, 'internet') && (s.caso.internet !== 'parcial' || respondido(s, 'escolasInternet'));
+  if (t.id === 'internet' || t.id === 'piloto') return camposAtivos(s, t).every(c => respondido(s, c));
   return respondido(s, t.campos[0]);
 }
 export interface Progresso { capitulo: Capitulo; total: number; feitas: number; completo: boolean }
