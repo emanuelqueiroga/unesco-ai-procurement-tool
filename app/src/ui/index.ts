@@ -82,3 +82,8 @@ export { useMediaQuery, BREAKPOINTS } from './useMediaQuery';
 export { useTheme, applyTheme, initialTheme } from './theme';
 export type { Theme } from './theme';
 export { setTradutorUI, tx } from './texto';
+export { NumeroField } from './NumeroField/NumeroField';
+export type { NumeroFieldProps } from './NumeroField/NumeroField';
+export { formatarDigitando, lerDigitado, paraTexto, separadores } from './NumeroField/formatar';
+export { Popover } from './Popover/Popover';
+export type { PopoverProps } from './Popover/Popover';

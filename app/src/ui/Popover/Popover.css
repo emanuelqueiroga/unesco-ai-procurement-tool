@@ -1,0 +1,8 @@
+.pr-popover { position: relative; display: inline-block; }
+.pr-popover-gatilho { background: none; border: 0; padding: 0; font: inherit; font-size: 13px; color: var(--primary); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; min-height: 24px; }
+.pr-popover-gatilho:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-sm); }
+.pr-popover-painel { position: absolute; z-index: 30; inset-block-start: calc(100% + 6px); inset-inline-start: 0; width: min(360px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); background: var(--surface-1); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-md); font-size: 14px; line-height: 20px; text-align: start; white-space: normal; }
+.pr-popover-painel--fim { inset-inline-start: auto; inset-inline-end: 0; }
+.pr-popover-titulo { font-weight: 600; }
+.pr-popover-corpo { display: flex; flex-direction: column; gap: var(--space-1); color: var(--ink-2); }
+.pr-popover-acoes { display: flex; flex-wrap: wrap; gap: var(--space-3); padding-top: var(--space-1); border-top: 1px solid var(--line); }

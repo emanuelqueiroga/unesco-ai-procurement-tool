@@ -4,6 +4,7 @@
 //   #/capitulo/:n/:tela        pergunta (id da tela do Essencial, perguntas.ts)
 //   #/capitulo/:n/sintese      síntese do capítulo
 //   #/plano[/custa|fazer|exigir|apendice|faltam]   páginas do plano
+//   #/refinar[/premissas|ferramentas|cenarios]   calculadora do modo Refinar
 //   #/galeria                  galeria de componentes do Prumo
 import { useEffect, useState } from 'react';
 import type { Capitulo } from '../store';
@@ -12,12 +13,16 @@ import { ESSENCIAL } from '../store';
 export type PaginaPlano = 'resumo' | 'custa' | 'fazer' | 'exigir' | 'apendice' | 'faltam';
 const PAGINAS: PaginaPlano[] = ['resumo', 'custa', 'fazer', 'exigir', 'apendice', 'faltam'];
 
+export type AbaRefinar = 'premissas' | 'ferramentas' | 'cenarios';
+const ABAS: AbaRefinar[] = ['premissas', 'ferramentas', 'cenarios'];
+
 export type Rota =
   | { tipo: 'inicio' }
   | { tipo: 'abertura'; n: Capitulo }
   | { tipo: 'pergunta'; n: Capitulo; tela: string }
   | { tipo: 'sintese'; n: Capitulo }
   | { tipo: 'plano'; pagina: PaginaPlano }
+  | { tipo: 'refinar'; aba: AbaRefinar; foco?: string }
   | { tipo: 'galeria' };
 
 const cap = (s: string): Capitulo | null => (['1', '2', '3', '4'].includes(s) ? (+s as Capitulo) : null);
@@ -25,6 +30,8 @@ const cap = (s: string): Capitulo | null => (['1', '2', '3', '4'].includes(s) ? 
 export function lerRota(hash: string): Rota {
   const p = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   if (p[0] === 'galeria') return { tipo: 'galeria' };
+  // #/refinar/premissas/<campo> abre a aba com o campo em foco ("Ajustar premissas" do "de onde vem?")
+  if (p[0] === 'refinar') return { tipo: 'refinar', aba: ABAS.includes(p[1] as AbaRefinar) ? (p[1] as AbaRefinar) : 'premissas', foco: p[2] || undefined };
   if (p[0] === 'plano') return { tipo: 'plano', pagina: PAGINAS.includes(p[1] as PaginaPlano) ? (p[1] as PaginaPlano) : 'resumo' };
   if (p[0] === 'capitulo') {
     const n = cap(p[1] || '');
@@ -42,6 +49,7 @@ export const href = {
   abertura: (n: number) => `#/capitulo/${n}`,
   pergunta: (n: number, tela: string) => `#/capitulo/${n}/${tela}`,
   sintese: (n: number) => `#/capitulo/${n}/sintese`,
+  refinar: (aba: AbaRefinar = 'premissas', foco?: string) => `#/refinar/${aba}${foco ? '/' + foco : ''}`,
   plano: (pagina: PaginaPlano = 'resumo') => (pagina === 'resumo' ? '#/plano' : `#/plano/${pagina}`),
   tela: (id: string) => {
     const t = ESSENCIAL.find((x) => x.id === id);
