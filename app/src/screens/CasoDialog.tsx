@@ -1,12 +1,13 @@
 // Caixa "Caso": exportar e importar o caso (JSON, formato 14; arquivo ou dados colados), carregar um exemplo,
-// começar em branco, moeda, idioma e tema. Tudo fica no navegador; nada é enviado. Antes de substituir um caso
+// começar em branco, país da rede (opcional, REF-06), moeda, idioma e tema; a versão da base de referências (REF-05). Tudo fica no navegador; nada é enviado. Antes de substituir um caso
 // com respostas (exemplos, em branco, importar) pede confirmação (acoes.ts).
 import { useRef, useState } from 'react';
-import { CASOS, tr } from '../domain';
+import { CASOS, tr, LOC, versaoReferencias } from '../domain';
 import { useCaso } from '../store';
 import { Dialog, Button, Alert, Segmented, TextField, useTheme } from '../ui';
 import { t } from '../percurso/textos';
 import { SeletorMoeda } from './refinar/SeletorMoeda';
+import { Pais } from '../percurso/Pais';
 import {
   baixarArquivo, exportarCaso, copiarDadosCaso, importarArquivo, importarTexto, abrirExemplo, comecarEmBranco, temDownloads, confirmacaoAberta,
   type ResultadoImportacao,
@@ -72,6 +73,13 @@ export function CampoImportar({ onPronto, rotulo }: { onPronto?: (erro: string |
   );
 }
 
+/** "Base de referências v1.0.0 (18/10/2026); países v1.0.0 (18/10/2026)." */
+function textoVersao(): string {
+  const v = versaoReferencias();
+  const data = (d: string) => { try { return d ? new Date(d + 'T12:00:00').toLocaleDateString(String(LOC())) : '?'; } catch (e) { return d; } };
+  return t('Base de referências v{0} ({1}); países v{2} ({3}).', { 0: v.referencias, 1: data(v.atualizado), 2: v.paises, 3: data(v.paisesAtualizado) });
+}
+
 export function CasoDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const s = useCaso();
   const [theme, setTheme] = useTheme();
@@ -124,8 +132,10 @@ export function CasoDialog({ open, onClose }: { open: boolean; onClose: () => vo
           <p className="pc-dialogo-texto">{t('Essencial: as perguntas que mudam o plano, com premissas padrão no resto. Refinar: as mesmas telas, com as premissas de cada capítulo abertas para ajuste.')}</p>
         </section>
         <section>
-          <h3 className="pc-dialogo-titulo">{t('Moeda')}</h3>
+          <h3 className="pc-dialogo-titulo">{t('País e moeda')}</h3>
+          <Pais />
           <SeletorMoeda compacto semNota />
+          <p className="pc-dialogo-texto">{textoVersao()}</p>
         </section>
         <section>
           <h3 className="pc-dialogo-titulo">{t('Aparência')}</h3>

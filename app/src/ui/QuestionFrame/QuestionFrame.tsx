@@ -9,6 +9,8 @@ export type QuestionFrameProps = {
   title: string;
   /** Explicação em `body-16` `ink-2`: por que perguntamos. */
   explanation?: ReactNode;
+  /** Ajuda aberta sob a explicação ("Como responder", "Quem costuma saber", "Exemplo"); fica fora do `<p>` da explicação. */
+  help?: ReactNode;
   /** O controle: TextField, OptionCard, Chip, Segmented, SchoolsGrid ou PilotSize. */
   children: ReactNode;
   /** Botões: primário, "Pular por agora" e o link "Por que perguntamos isso?". */
@@ -24,6 +26,7 @@ export function QuestionFrame({
   kicker,
   title,
   explanation,
+  help,
   children,
   actions,
   affects,
@@ -35,6 +38,7 @@ export function QuestionFrame({
       <div className="pr-questionframe-kicker">{kicker}</div>
       <h1 className="pr-questionframe-title">{title}</h1>
       {explanation ? <p className="pr-questionframe-text">{explanation}</p> : null}
+      {help ? <div className="pr-questionframe-help">{help}</div> : null}
       <div className="pr-questionframe-control">{children}</div>
       {actions ? <div className="pr-questionframe-actions">{actions}</div> : null}
       {affects ? (

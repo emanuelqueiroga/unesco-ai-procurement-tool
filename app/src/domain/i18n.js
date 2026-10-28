@@ -135,6 +135,8 @@ function tr(s) {
       const out = fr.map(f => tr(f));
       if (out.every((o, i) => o !== fr[i] || !/\p{L}{3}/u.test(fr[i]))) return m[1] + out.join(' ') + m[3];
     }
+    // diagnóstico: um teste pode criar globalThis.__trFaltas (Set) para colher as chaves sem tradução
+    if (globalThis.__trFaltas && !tr.emPT) globalThis.__trFaltas.add(chave);
     return str;
   }
   return m[1] + alvo.replace(/\{(\d+)\}/g, (_, i) => nums[+i] != null ? nums[+i] : '') + m[3];

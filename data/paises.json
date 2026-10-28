@@ -1,0 +1,21 @@
+{
+ "versao": "1.0.0",
+ "atualizado": "2026-10-18",
+ "nota": "Perfis de país. Só moeda, região e grupo de renda estão preenchidos (grupo de renda a verificar). Os demais campos ficam nulos até haver dado com fonte e ano. Ver LEIA-ME.md.",
+ "regioes": [
+  {"codigo": "EAP", "nome": "Leste Asiático e Pacífico"},
+  {"codigo": "ECA", "nome": "Europa e Ásia Central"},
+  {"codigo": "LAC", "nome": "América Latina e Caribe"},
+  {"codigo": "MENA", "nome": "Oriente Médio e Norte da África"},
+  {"codigo": "NA", "nome": "América do Norte"},
+  {"codigo": "SA", "nome": "Sul da Ásia"},
+  {"codigo": "SSA", "nome": "África Subsaariana"}
+ ],
+ "paises": [
+  {"iso3": "BRA", "nome": "Brasil", "regiao": "LAC", "grupoRenda": {"valor": "media-alta", "fonte": "Banco Mundial, a verificar", "ano": null}, "moeda": "BRL", "escolas": null, "estudantes": null, "professores": null, "pctUrbano": null, "pctEscolasInternet": null, "salarioProfessor": null, "inflacao": null, "taxaDesconto": null, "idiomas": null},
+  {"iso3": "MEX", "nome": "México", "regiao": "LAC", "grupoRenda": {"valor": "media-alta", "fonte": "Banco Mundial, a verificar", "ano": null}, "moeda": "MXN", "escolas": null, "estudantes": null, "professores": null, "pctUrbano": null, "pctEscolasInternet": null, "salarioProfessor": null, "inflacao": null, "taxaDesconto": null, "idiomas": null},
+  {"iso3": "KEN", "nome": "Quênia", "regiao": "SSA", "grupoRenda": {"valor": "media-baixa", "fonte": "Banco Mundial, a verificar", "ano": null}, "moeda": "KES", "escolas": null, "estudantes": null, "professores": null, "pctUrbano": null, "pctEscolasInternet": null, "salarioProfessor": null, "inflacao": null, "taxaDesconto": null, "idiomas": null},
+  {"iso3": "MAR", "nome": "Marrocos", "regiao": "MENA", "grupoRenda": {"valor": "media-baixa", "fonte": "Banco Mundial, a verificar", "ano": null}, "moeda": "MAD", "escolas": null, "estudantes": null, "professores": null, "pctUrbano": null, "pctEscolasInternet": null, "salarioProfessor": null, "inflacao": null, "taxaDesconto": null, "idiomas": null},
+  {"iso3": "IDN", "nome": "Indonésia", "regiao": "EAP", "grupoRenda": {"valor": "media-alta", "fonte": "Banco Mundial, a verificar", "ano": null}, "moeda": "IDR", "escolas": null, "estudantes": null, "professores": null, "pctUrbano": null, "pctEscolasInternet": null, "salarioProfessor": null, "inflacao": null, "taxaDesconto": null, "idiomas": null}
+ ]
+}

@@ -53,7 +53,6 @@
 /* abertura, pergunta, síntese */
 .pc-abertura { max-width: 720px; display: flex; flex-direction: column; gap: var(--space-4); }
 .pc-pergunta { max-width: 720px; display: flex; flex-direction: column; gap: var(--space-5); }
-.pc-porque { display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--surface-0); border-left: 3px solid var(--primary); border-radius: var(--radius-sm); font-size: 14px; line-height: 20px; color: var(--ink-2); }
 .pc-voltar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); font-size: 14px; }
 .pc-sintese { display: flex; flex-direction: column; gap: var(--space-6); }
 .pc-dica-refinar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }

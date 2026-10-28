@@ -340,7 +340,8 @@ function fxOrigem(ctx, arq) {
   // formação
   if (cfg.formacaoTempo && cfg.formacaoTempo.ativo) {
     const f = cfg.formacaoTempo, cp = f.horas * f.custoHora;
-    if (f.modo === 'razao') L.push(fxT('Pessoas formadas: 1 para cada ' + fxQtd(f.razao) + ' pessoas que poderiam usar.'));
+    if (f.modo === 'razao' && f.rotEstoque != null) L.push(fxT('Pessoas formadas a cada ano: 1 para cada ' + fxQtd(f.razao) + ' pessoas que poderiam usar (as novas), mais ' + fxPct(f.rotEstoque, 0) + ' das já formadas (quem sai e é substituído, passo 4.1.7).'));
+    else if (f.modo === 'razao') L.push(fxT('Pessoas formadas: 1 para cada ' + fxQtd(f.razao) + ' pessoas que poderiam usar.'));
     else L.push(fxT('Pessoas formadas a cada ano: os novos usuários ativos, mais ' + fxPct(f.rot, 0) + ' dos já formados (quem sai e é substituído).'));
     L.push(fxT('Custo por pessoa formada:') + ' ' + fxT(fxNum(f.horas) + ' horas') + ' × ' + fxPreco(f.custoHora) + ' ' + fxT('por hora') + ' = ' + fxPreco(cp) + '.');
   }
@@ -389,7 +390,16 @@ function fxOrigemV11(ctx, v, L, t1) {
   else if (v.teste === 'poc') L.push(fxT('Ano 0: prova de conceito com ' + fxQtd(E[0]) + ' pessoas durante ' + m0 + ' meses.'));
   else L.push(fxT('Ano 0: piloto com ' + fxQtd(E[0]) + ' participantes durante ' + m0 + ' meses.'));
   if (H >= 1) L.push(fxT('Ano 1: primeira etapa da implantação, com ' + fxQtd(E[1]) + ' pessoas') + (v.implantacaoPadrao ? ' ' + fxT('(um terço das pessoas que usariam, sugestão ilustrativa)') : '') + '.');
-  if (H >= 2) L.push(k <= H ? fxT('Depois, o uso cresce em partes iguais até ' + fxQtd(v.E) + ' pessoas no Ano ' + k + '.') : fxT('Depois, o uso cresce em partes iguais e chegaria a ' + fxQtd(v.E) + ' pessoas no Ano ' + k + ', depois do horizonte da estimativa.'));
+  // v14 (BL3.2): a curva de adoção do passo 4.1.4. A linear mantém os textos da v13.
+  if (H >= 2) {
+    if (v.curva === 'ondas' && (v.ondas || []).length) {
+      L.push(fxT('Depois, o uso cresce em ondas, segundo o passo 4.1.5:') + ' ' + v.ondas.filter(o => o.ano <= H).map(o => fxT('Ano ' + o.ano + ': ' + fxPct(o.pct / 100, 0) + ' das pessoas que usariam')).join('; ') + '. ' +
+        fxT('Entre uma onda e outra o uso fica no patamar anterior, e depois da última onda fica no último patamar.'));
+    } else if (v.curva === 's') {
+      L.push(k <= H ? fxT('Depois, o uso cresce em curva em S (devagar no começo, mais rápido no meio e devagar no fim) até ' + fxQtd(v.E) + ' pessoas no Ano ' + k + '.')
+        : fxT('Depois, o uso cresce em curva em S e chegaria a ' + fxQtd(v.E) + ' pessoas no Ano ' + k + ', depois do horizonte da estimativa.'));
+    } else L.push(k <= H ? fxT('Depois, o uso cresce em partes iguais até ' + fxQtd(v.E) + ' pessoas no Ano ' + k + '.') : fxT('Depois, o uso cresce em partes iguais e chegaria a ' + fxQtd(v.E) + ' pessoas no Ano ' + k + ', depois do horizonte da estimativa.'));
+  }
   // internet (K1.1)
   const vi = v.internet || {};
   const semI = vi.escolasSemInternet || [];
@@ -418,6 +428,8 @@ function fxOrigemV11(ctx, v, L, t1) {
         (vd.resposta ? fxT('Modelo de uso:') + ' ' + fxOpc('modeloDisp', vd.modelo) + ' (' + fxT(regra) + '). ' : '') +
         fxT('Parte que falta: ' + fxPct(vd.lacuna, 0) + '.') + ' ' +
         fxT('Ano ' + tD + ': ' + fxQtd(comp[tD]) + ' dispositivos') + ' × ' + fxPreco(vd.precoDisp) + ' = ' + fxDin(comp[tD] * vd.precoDisp) + '.');
+      // v14 (BL3.5): reposição dos dispositivos comprados
+      if (vd.ciclo > 0) L.push(fxT('Reposição dos dispositivos (passo 4.1.6): cada lote comprado é comprado de novo a cada ' + fxNum(vd.ciclo, 0) + ' anos, dentro do horizonte, ao mesmo preço corrigido; entra no custo recorrente.'));
     } else if (vd.existem === 'sim') L.push(fxT('Dispositivos: já existem nas escolas (passo 2.4), sem compra na estimativa.'));
   }
   // formação (K4.4 e K4.3)

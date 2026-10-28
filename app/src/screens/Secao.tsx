@@ -3,11 +3,13 @@
 // Porte da parte HTML de src/resumo.js da v13 (htmlCorpoP, htmlTabelaP, htmlEqP, htmlFiguraP) com os componentes do Prumo.
 // Listas com mais de 10 itens e tabelas com mais de 14 linhas começam recolhidas na página (PLA-15) e abertas
 // na impressão e no PDF; a Figura 1 abre ampliada num Dialog (PLA-06).
+// 0.0.15: `recolher` (tabela que repete um gráfico ao lado, REL-12) começa recolhida na página; `achado` é o
+// título-achado em número de um bloco (REL-08); os títulos não mostram os códigos A1–A7 e B1–B9.
 import { Fragment, createContext, useContext, useRef, useState, type ReactNode } from 'react';
 import { tr } from '../domain';
 import { DataTable, KpiTile, Dialog, Button, useMediaQuery, type DataColumn, type DataRow } from '../ui';
 import { fmt } from '../percurso/ambiente';
-import { t } from '../percurso/textos';
+import { t, plural } from '../percurso/textos';
 import { ROT_ESTADO, TXT_MATRIZ } from '../plano/secoes.js';
 import './plano.css';
 
@@ -18,7 +20,18 @@ export interface SecaoPlano {
   cartoes?: { id: string; h: string; kv: [string, string][]; hTable?: string; table?: { head: string[]; rows: string[][] } | null }[];
   mx?: MatrizDados;
   pagina?: string;
+  /** 0.0.15: já traduzida por plano/relatorio.js */
+  pronto?: boolean;
+  /** tabela que repete o gráfico ao lado: recolhida na página, aberta na impressão e no PDF */
+  recolher?: boolean;
+  /** título-achado do bloco ("O custo total pode ficar entre…") */
+  achado?: string;
+  /** o bloco "O que pode mudar o custo" de "Quanto custa" */
+  incerteza?: boolean;
 }
+
+/** REL-08: o título sem o código interno da seção ("A2. ", "B6. "), para planos e textos antigos. */
+export const semCodigo = (h?: string) => String(h || '').replace(/^[AB]\d+\.\s*/, '');
 
 interface CelulaMx { fase: string; t: string; n: string[]; na: boolean; estado: string; custo: number | null }
 interface MatrizDados {
@@ -164,6 +177,7 @@ function MatrizPlano({ m, legenda }: { m: MatrizDados; legenda?: string }) {
 }
 
 function Corpo({ s, kpiOrigem }: { s: SecaoPlano; kpiOrigem?: (i: number, alinharAoFim: boolean) => ReactNode }) {
+  const achado = s.achado ? <p className="pc-achado">{s.achado}</p> : null;
   const estreito = useMediaQuery('(max-width: 900px)');
   const lista = s.list && s.list.length ? (
     <ul className="pc-lista">{s.list.map((x, i) => <li key={i}><Linkado texto={x} /></li>)}</ul>
@@ -173,6 +187,7 @@ function Corpo({ s, kpiOrigem }: { s: SecaoPlano; kpiOrigem?: (i: number, alinha
   const fim = (i: number) => i % colunas >= Math.ceil(colunas / 2);
   return (
     <>
+      {achado}
       {(s.pre || []).map((x, i) => <p key={'pre' + i} className="pc-nota"><Linkado texto={x} /></p>)}
       {s.kv && s.kv.length ? (
         s.eq ? <Equacao kv={s.kv} />
@@ -183,7 +198,10 @@ function Corpo({ s, kpiOrigem }: { s: SecaoPlano; kpiOrigem?: (i: number, alinha
       {lista && s.list!.length > MAX_ITENS_LISTA
         ? <Recolhivel resumo={t('Mostrar os {n} itens', { n: s.list!.length })}>{lista}</Recolhivel>
         : lista}
-      {s.mx ? <MatrizPlano m={s.mx} legenda={s.h} /> : s.table ? <TabelaPlano t={s.table} legenda={s.h} /> : null}
+      {s.mx ? <MatrizPlano m={s.mx} legenda={s.h} />
+        : s.table && s.recolher && (s.table.rows || []).length <= MAX_LINHAS_TABELA
+          ? <Recolhivel resumo={plural(s.table.rows.length, 'Mostrar a tabela ({n} linha)', 'Mostrar a tabela ({n} linhas)')}><TabelaPlano t={s.table} legenda={s.h} /></Recolhivel>
+          : s.table ? <TabelaPlano t={s.table} legenda={s.h} /> : null}
       {(s.pos || []).map((x, i) => <p key={'pos' + i} className="pc-nota"><Linkado texto={x} /></p>)}
     </>
   );
@@ -250,14 +268,14 @@ export function Secao({ s, extra, kpiOrigem }: { s: SecaoPlano; extra?: ReactNod
   if (s.det) {
     return (
       <details id={id} className={'pc-secao pc-secao--det' + (s.sub ? ' pc-secao--sub' : '')} open={imprimindo || undefined}>
-        <summary><span className="pc-secao-h3">{s.h}</span>{s.det && s.det !== s.h ? <span className="pc-nota"> · {s.det}</span> : null}</summary>
+        <summary><span className="pc-secao-h3">{semCodigo(s.h)}</span>{s.det && s.det !== s.h ? <span className="pc-nota"> · {s.det}</span> : null}</summary>
         <div className="pc-secao-corpo">{corpo}</div>
       </details>
     );
   }
   return (
-    <section className={'pc-secao' + (s.sub ? ' pc-secao--sub' : '')} id={id}>
-      {s.h ? <Titulo className={s.sub ? 'pc-secao-h3' : 'pc-secao-h'}>{s.h}</Titulo> : null}
+    <section className={'pc-secao' + (s.sub ? ' pc-secao--sub' : '') + (s.incerteza ? ' pc-secao--bloco' : '')} id={id}>
+      {s.h ? <Titulo className={s.sub ? 'pc-secao-h3' : 'pc-secao-h'}>{semCodigo(s.h)}</Titulo> : null}
       {corpo}
     </section>
   );

@@ -89,7 +89,32 @@ const KPI_POR_CAMPO: Record<string, string[]> = {
   formacaoTipo: ['A2'], formacaoPaga: ['kpi.anual', 'kpi.total'],
   suporteQuem: ['kpi.anual', 'kpi.total'], suporteNivel: ['kpi.anual', 'kpi.total'], acompanhamento: ['kpi.anual', 'kpi.total'],
   afetados: ['A2'], consequencias: ['A2'], frequencia: ['A2'],
+  // v15 (MOT-02): perguntas opcionais do motor, só no Refinar do capítulo 4 (curva, ondas, reposição dos dispositivos, rotatividade)
+  curva: ['kpi.anual', 'kpi.total', 'A2'], ondas: ['kpi.anual', 'kpi.total', 'A2'],
+  reposicaoDisp: ['kpi.anual', 'kpi.total', 'A2'], rotacaoFormacao: ['kpi.anual', 'kpi.total', 'A2'],
 };
+/** perguntas opcionais do motor (4.1.4 a 4.1.7): só no Refinar; nunca são lacuna e, sem resposta, valem os padrões da v13 */
+export const CAMPOS_MOTOR = ['curva', 'ondas', 'reposicaoDisp', 'rotacaoFormacao'];
+/**
+ * "De onde vem?" dos números do motor (MOT-12): a pergunta (ou as perguntas) do Refinar que o número lê e, quando não há pergunta,
+ * a nota da convenção. `nota` é texto em português para o consumidor passar por t().
+ *  - curva: como o uso cresce (4.1.4 e, em ondas, 4.1.5); reposicao: ciclo dos dispositivos (4.1.6); rotatividade: 4.1.7;
+ *  - fases: fronteiras dos anos (convenção, sem pergunta); unicoRecorrente: o que é pagamento único e o que é recorrente.
+ */
+export interface FonteMotor { campos: string[]; nota?: string }
+export const FONTES_MOTOR: Record<string, FonteMotor> = {
+  curva: { campos: ['curva', 'ondas'] },
+  reposicao: { campos: ['reposicaoDisp'] },
+  rotatividade: { campos: ['rotacaoFormacao'] },
+  fases: { campos: [], nota: 'As fases seguem o calendário: o Ano 0 é a prova de conceito ou o piloto, o Ano 1 é a implantação e, do Ano 2 em diante, a expansão.' },
+  unicoRecorrente: { campos: [], nota: 'O pagamento único reúne a implantação, a integração, a formação inicial e a compra de dispositivos. O recorrente reúne licenças, conectividade, operação, suporte, reciclagem da formação e reposição.' },
+  regime: { campos: ['elegiveis', 'expansao', 'curva', 'ondas', 'horizonte'] },
+};
+/** o número tem uma pergunta do motor por trás? (ids de FONTES_MOTOR com pergunta) */
+export function fonteMotor(id: string): FonteMotor | null { return FONTES_MOTOR[id] || null; }
+/** trechos do plano que dependem de uma pergunta do motor: o inverso de afetadosPor para os 4 campos */
+export function motorQueAfeta(trecho: string): string[] { return CAMPOS_MOTOR.filter((c) => (KPI_POR_CAMPO[c] || []).includes(trecho)); }
+
 // regras cujo `campo` é função (lê o contexto k): campos de origem declarados aqui
 const REGRAS_CAMPO_FN: Record<string, string[]> = {
   'formacao-plano': ['problemas', 'prioridades'], 'ferramentas-levantar': ['nFerramentas', 'conheceFerramentas'], 'ferramentas-interop': ['ferramentas', 'nFerramentas'],

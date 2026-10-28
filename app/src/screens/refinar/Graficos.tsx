@@ -3,6 +3,7 @@
 // custo unitário por componente (CUS-18). Cada gráfico traz o número ao lado da barra, para não depender da cor.
 import { din, pct, LOC } from '../../domain';
 import { t } from '../../percurso/textos';
+import './fases.css';
 
 const nf = (x: number, d = 2) => (+x || 0).toLocaleString(String(LOC()), { maximumFractionDigits: d });
 
@@ -81,6 +82,37 @@ export function BarrasICU({ itens, total }: { itens: { k: string; nome: string; 
         ))}
       </ul>
       <figcaption className="rf-nota"><b>{t('Índice total')}</b>: {din(total, 2)} {t('por usuário ativo por ano = soma dos componentes')}</figcaption>
+    </figure>
+  );
+}
+
+export interface BarraFase { id: string; nome: string; rotuloAnos: string; unico: number; recorrente: number; total: number }
+
+/**
+ * Barras empilhadas por fase (MOT-10): pagamento único e recorrente. Todas as fases dividem a mesma escala, para comparar o
+ * tamanho; o valor de cada parte e o total vêm escritos ao lado, para não depender só da cor.
+ */
+export function BarrasFases({ fases, fmt }: { fases: BarraFase[]; fmt: (v: number) => string }) {
+  const mx = Math.max(...fases.map((f) => Math.max(f.total, f.unico + f.recorrente)), 1e-9);
+  const w = (v: number) => (Math.max(0, v) / mx) * 100;
+  return (
+    <figure className="rf-grafico" aria-label={t('Custo por fase')}>
+      <ul className="rf-barras">
+        {fases.map((f) => (
+          <li key={f.id} className="rf-barras-linha">
+            <span className="rf-barras-nome">{t(f.nome)} <span className="rf-mudo">({f.rotuloAnos})</span></span>
+            <svg className="rf-barras-svg" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true">
+              <rect className="rf-cor-unico" x={0} y={1} width={w(f.unico)} height={8} />
+              <rect className="rf-cor-recorrente" x={w(f.unico)} y={1} width={w(f.recorrente)} height={8} />
+            </svg>
+            <span className="rf-barras-val">
+              <span><i className="rf-amostra rf-amostra--unico" aria-hidden="true" />{t('Pagamento único')}: {fmt(f.unico)}</span>
+              <span><i className="rf-amostra rf-amostra--recorrente" aria-hidden="true" />{t('Recorrente')}: {fmt(f.recorrente)}</span>
+              <span>{t('Total')}: {fmt(f.total)}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
     </figure>
   );
 }

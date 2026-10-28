@@ -15,3 +15,7 @@ export * from './formula.js';
 export * from './fluxo.js';
 export * from './matriz.js';
 export * from './recomendacoes.js';
+export * from './glossario.js';
+export * from './ajuda.js';
+export * from './referencias.js';
+export * from './pais.js';

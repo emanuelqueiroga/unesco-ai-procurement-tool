@@ -87,3 +87,4 @@ export type { NumeroFieldProps } from './NumeroField/NumeroField';
 export { formatarDigitando, lerDigitado, paraTexto, separadores } from './NumeroField/formatar';
 export { Popover } from './Popover/Popover';
 export type { PopoverProps } from './Popover/Popover';
+export { Termo, TextoComTermos } from './Termo';

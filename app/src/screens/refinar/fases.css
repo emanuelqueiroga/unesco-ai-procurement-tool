@@ -1,0 +1,9 @@
+/* Custo por fase na aba Cenários (MOT-10): barras empilhadas único × recorrente e a tabela com seletor Camada | Componente.
+   Só tokens do Prumo; a estrutura das barras reaproveita .rf-barras de refinar.css. */
+.rf-cor-unico { fill: var(--accent); }
+.rf-cor-recorrente { fill: var(--primary); }
+.rf-amostra--unico { background: var(--accent); }
+.rf-amostra--recorrente { background: var(--primary); }
+.rf-fases-seletor { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; }
+.rf-fases-seletor .rf-rotulo { font-size: 13px; line-height: 18px; color: var(--muted); }
+.rf-fases-detalhe { display: flex; flex-direction: column; gap: var(--space-3); }

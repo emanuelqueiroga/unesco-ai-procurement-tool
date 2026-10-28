@@ -1,10 +1,11 @@
 // Síntese de fim de capítulo: até dois parágrafos em prosa a partir das respostas, sem veredito, e o número que o
 // capítulo libera (2: custo do teste; 3: custo do primeiro ano; 4: custo total). Pura.
-import { totaisCtx, modoTeste, QUESTOES_G, NIVEIS_ADM, tr, rotulo, numerosCusto } from '../domain';
+import { totaisCtx, modoTeste, QUESTOES_G, NIVEIS_ADM, tr, rotulo, numerosCusto, pct } from '../domain';
 import type { Estado14, Capitulo } from '../store';
 import { cfgDe, respondido } from '../store';
 import { fmt, sincronizar } from './ambiente';
 import { t, minusc, minusc1 } from './textos';
+import { crescimentoDoCaso } from './motor';
 import { etapasTexto, prioridadesTexto, origemKpi, temNumeros, recsPlano, rotuloOpc, type KpiId } from './painel';
 import type { Origem } from '../store';
 
@@ -70,12 +71,43 @@ function cap3(e: Estado14): string[] {
   return [ponto(t('No primeiro ano de uso real, {e} escolas e {p} pessoas usam a ferramenta', { e: fmt.int(i.escolas), p: fmt.int(i.pessoas) }))];
 }
 
+/** Como o uso cresce (4.1.4 e 4.1.5): em passos iguais, em curva em S ou em ondas, com os anos e as porcentagens. */
+export function textoCrescimento(c: Record<string, any>): string {
+  const g = crescimentoDoCaso(c);
+  if (g.tipo === 's') return t('o uso cresce em curva em S (devagar no começo, mais rápido no meio e devagar no fim)');
+  if (g.tipo === 'ondas') {
+    const o = g.ondas.map((x) => t('Ano {a}: {p}%', { a: x.ano, p: x.pct })).join('; ');
+    return t('o uso cresce em ondas ({o})', { o }) + (g.patamar != null ? '; ' + t('depois da última onda o uso fica em {p}% das pessoas da rede', { p: g.patamar }) : '');
+  }
+  return t('o uso cresce em passos iguais');
+}
+
 function cap4(e: Estado14): string[] {
   const c = e.caso;
   const out: string[] = [];
+  const ondas = crescimentoDoCaso(c).tipo === 'ondas';
   if (+c.elegiveis) out.push(t('Em toda a rede, {n} pessoas usariam a ferramenta', { n: fmt.int(c.elegiveis) }));
-  if (c.expansao) out.push(t('a meta é chegar a todas {q}', { q: minusc(rotuloOpc('expansao', c.expansao)) }));
+  // com ondas, as ondas substituem a resposta do 4.1.2: a meta "em quanto tempo" sai da frase
+  if (c.expansao && !ondas) out.push(t('a meta é chegar a todas {q}', { q: minusc(rotuloOpc('expansao', c.expansao)) }));
+  // chegando à rede toda no primeiro ano (4.1.2), não há curva a descrever
+  if (out.length && (ondas || (c.expansao && c.expansao !== 'ano1'))) out.push(textoCrescimento(c));
   return out.length ? [ponto(out.join('; '))] : [t('O tamanho da rede inteira ainda não foi informado: o plano usa a estimativa a partir das etapas.')];
+}
+
+/**
+ * O que cada fase do custo (Prova de conceito ou piloto, Implantação, Expansão) tem a dizer no capítulo correspondente
+ * (2, 3 e 4): a parte de pagamento único e a recorrente. Em porcentagem no 2 e no 3, porque o número do capítulo
+ * (custo do teste, custo do primeiro ano) está em preços constantes e a fase em valor presente; no 4, o custo da expansão.
+ */
+export function fraseDaFase(n: Capitulo, fases: any): string {
+  const id = n === 2 ? 'piloto' : n === 3 ? 'implantacao' : n === 4 ? 'expansao' : '';
+  const f = fases && fases.porFase ? fases.porFase[id] : null;
+  if (!f || !f.anos || !f.anos.length || !(f.total > 0)) return '';
+  const u = pct(f.unico / f.total), r = pct(f.recorrente / f.total);
+  if (n !== 4) return t('Do custo da fase de {nome}, {u} é pagamento único e {r} é recorrente.', { nome: minusc(t(f.nome)), u, r });
+  const a0 = f.anos[0], a1 = f.anos[f.anos.length - 1];
+  const anos = a0 === a1 ? t('Ano ' + a0) : t('Anos {0} a {1}', { 0: a0, 1: a1 });
+  return t('A fase de {nome} ({anos}) custa {v}: {u} é pagamento único e {r} é recorrente.', { nome: minusc(t(f.nome)), anos, v: fmt.curto(f.total), u, r });
 }
 
 export function sinteseCapitulo(n: Capitulo, e: Estado14): Sintese {
@@ -85,6 +117,8 @@ export function sinteseCapitulo(n: Capitulo, e: Estado14): Sintese {
   let kpi: Sintese['kpi'];
   if (n > 1 && temNumeros(e)) {
     const num = numerosCusto(cfgDe(e)) as any;
+    const fase = fraseDaFase(n, num.av && num.av.fases);
+    if (fase && paragrafos.length) paragrafos[paragrafos.length - 1] += ' ' + fase;
     if (n === 2) kpi = { id: 'kpi.ano0', label: t('Custo do teste (Ano 0)'), value: fmt.curto(num.ano0), fullValue: fmt.cheio(num.ano0), origem: origemKpi(e, 'kpi.ano0') };
     else if (n === 3) { const v = (num.av.ecoAno || [])[1] || 0; kpi = { id: 'ano1', label: t('Custo do primeiro ano de uso (Ano 1)'), value: fmt.curto(v), fullValue: fmt.cheio(v), origem: origemKpi(e, 'kpi.anual') }; }
     else kpi = { id: 'kpi.total', label: t('Custo total, {H} anos', { H: num.H }), value: fmt.curto(num.total), fullValue: fmt.cheio(num.total), origem: origemKpi(e, 'kpi.total') };

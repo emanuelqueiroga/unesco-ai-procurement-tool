@@ -35,14 +35,16 @@ export const CAPITULOS_INFO: Record<Capitulo, InfoCapitulo> = {
     guia: 'Como aprender o máximo sobre a ferramenta, com o menor risco e o menor custo?',
     texto: 'Antes de contratar para a rede inteira, vale testar em poucas escolas. Neste capítulo você diz o que a IA deve fazer, quem vai usar e de que tamanho será o teste. No fim, aparece o primeiro número do plano: quanto custa testar.',
     entrega: 'quanto custa testar',
-    alimenta: 'aplicações, internet e dispositivos, formação, suporte',
+    // camadas 2 a 7 (2.2 e 2.3 também alimentam as camadas 4 e 5, segundo a 0.0.15)
+    alimenta: 'aplicações, integração de dados, segurança e privacidade, internet e dispositivos, formação, suporte',
   },
   3: {
     n: 3, titulo: 'A primeira etapa', minutos: 1,
     guia: 'Se o teste der certo, por onde começar de verdade?',
     texto: 'Depois do teste vem o primeiro ano de uso real, ainda sem a rede inteira. Uma pergunta só: quantas escolas e quantas pessoas começam. Você sai sabendo o custo do primeiro ano.',
     entrega: 'custo do primeiro ano',
-    alimenta: 'operação e suporte, integração de dados',
+    // a 0.0.15 liga o 3.1 às camadas 2, 3 e 6; a arquitetura (3.2, camadas 4 e 5) só aparece no Refinar
+    alimenta: 'aplicações, internet e dispositivos, formação (e, no Refinar, integração de dados e segurança)',
   },
   4: {
     n: 4, titulo: 'Toda a rede', minutos: 2,
@@ -72,7 +74,7 @@ export const LEAD: Record<string, string> = {
   afetados: 'Quanto mais a resposta da ferramenta pesa sobre crianças e adolescentes, mais salvaguardas o plano pede.',
   tipoTec: 'O tipo de tecnologia muda a forma de pagamento, as cláusulas do contrato e o custo de operação.',
   pagamento: 'A forma de pagamento muda o custo do teste e o risco de ficar preso a um fornecedor depois.',
-  piloto: 'Um piloto pequeno ensina quase tanto quanto um grande e custa muito menos. Sugerimos cerca de 5% das escolas por 4 meses; mude se já tiver um plano.',
+  piloto: 'Um [[piloto]] pequeno ensina quase tanto quanto um grande e custa muito menos. Sugerimos cerca de 5% das escolas por 4 meses; mude se já tiver um plano.',
   internet: 'Conexão e dispositivos costumam custar mais do que a ferramenta. A resposta define o que entra no custo do teste.',
   modeloDisp: 'O modelo de uso define quantos dispositivos comprar ou manter.',
   formados: 'Formação é uma das maiores parcelas do custo, e a mais esquecida nos orçamentos.',

@@ -49,6 +49,7 @@ export function Inicio() {
         </div>
         <p className="pc-nota">
           {t('Leva uns 20 minutos. Dá para parar e voltar: as respostas ficam salvas só neste navegador.')}{' '}
+          {t('Tenha à mão o cadastro de escolas e matrículas, ou os números da sua rede.')}{' '}
           <Button variant="link" size="sm" onClick={() => { void abrirExemplo('B', 'percurso'); }}>{t('Percorrer um exemplo, pergunta a pergunta')}</Button>
         </p>
         <ol className="pc-capitulos">

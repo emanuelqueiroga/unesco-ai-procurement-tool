@@ -1,12 +1,14 @@
 // Aba 1 — Premissas por ano (CUS-03 demanda, CUS-04 insumos, CUS-05 tempo e câmbio, CUS-25 conta econômica
 // avançada) e os resultados que mudam a cada edição: árvore K1–K6 nas duas contas (CUS-12), visão orçamentária
 // por exercício (CUS-13) e as contas de cada ano com abas Ano 0…H e Saída (CUS-19).
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useCaso, calcDe } from '../../store';
 import { SAL, SAL_NOME, salario, arquitetura, din, mil, pct, unidMil, LOC } from '../../domain';
 import { Button, DataTable, Segmented, type DataColumn, type DataRow } from '../../ui';
+import { CampoNumero } from '../../percurso/CampoNumero';
 import { t } from '../../percurso/textos';
 import { AnosCfg, Bloco, CampoCfg, Selecao, SelecaoFuncao, SelecaoSub, TextoCfg } from './Campos';
+import { DadosPais } from './DadosPais';
 import { contasPorAno, linhasArvore, novaLinha, subDe, todosAbertos, type Resultados } from './calc';
 
 const nfInt = (x: number) => Math.round(+x || 0).toLocaleString(String(LOC()));
@@ -20,6 +22,7 @@ export function PremissasEntrada({ res }: { res: BaseCfg }) {
     <>
       <h2 className="rf-grupo-h">{t('Premissas')}</h2>
       <Demanda res={res} />
+      <DadosPais />
       <Tempo res={res} />
       <Insumos res={res} />
       <Avancado res={res} />
@@ -38,6 +41,23 @@ export function AbaPremissas({ res }: { res: Resultados }) {
     </>
   );
 }
+
+
+/** Campo numérico opcional de um caminho da cfg: em branco (ou zero, onde zero não faz sentido) apaga o valor em vez de gravar 0. */
+function CampoCfgOpcional({ caminho, rotulo, valor, percentual, decimais = false, dica }: {
+  caminho: string; rotulo: string; valor: any; percentual?: boolean; decimais?: boolean; dica?: ReactNode;
+}) {
+  const editarCfg = useCaso((s) => s.editarCfg);
+  const v = valor === '' || valor == null || !isFinite(+valor) ? '' : +valor;
+  return (
+    <div className="rf-campo" id={'rf-' + caminho}>
+      <CampoNumero label={rotulo} value={v} decimais={decimais} percentual={percentual} hint={dica} size={9}
+        onChange={(x) => editarCfg(caminho, x === '' || (!percentual && +x <= 0) ? null : x)} />
+    </div>
+  );
+}
+/** as respostas 4.1.4 a 4.1.7 refazem a cfg: o aviso com as duas saídas já existe (CUS-10); isto diz de onde vêm os campos */
+const AVISO_MOTOR = () => t('Mudar as respostas 4.1.4 a 4.1.7 no percurso refaz esta premissa; você escolhe entre manter e descartar as suas edições.');
 
 // ----------------------------------------------------------- demanda (CUS-03)
 function Demanda({ res }: { res: BaseCfg }) {
@@ -67,6 +87,7 @@ function Tempo({ res }: { res: BaseCfg }) {
   const { cfg } = res;
   const o = cfg.opc, m = cfg.mult || {};
   const arq = arquitetura(cfg);
+  const temDispositivos = (cfg.itens || []).some((x: any) => x.tag === 'dispositivo');
   return (
     <Bloco id="tempo" titulo={t('Tempo, preços e câmbio')}>
       <div className="rf-grade">
@@ -77,7 +98,12 @@ function Tempo({ res }: { res: BaseCfg }) {
         <CampoCfg caminho="mult.pessoas" rotulo={t('Multiplicador do custo de pessoal')} valor={m.pessoas ?? 1} />
         {arq !== 'saas' ? <CampoCfg caminho="mult.preco" rotulo={t('Multiplicador de preço de modelo ou GPU')} valor={m.preco ?? 1} /> : null}
         <CampoCfg caminho="opc.contPct" rotulo={t('Reserva de contingência')} valor={o.contPct} percentual />
+        {temDispositivos || (cfg.reposicao && cfg.reposicao.ciclo) ? (
+          <CampoCfgOpcional caminho="reposicao.ciclo" rotulo={t('Reposição dos dispositivos: a cada quantos anos')} valor={(cfg.reposicao || {}).ciclo}
+            dica={t('Em branco, não há reposição. Cada lote comprado é comprado de novo ao fim do ciclo, dentro do horizonte, e entra no custo recorrente.') + ' ' + AVISO_MOTOR()} />
+        ) : null}
       </div>
+      {temDispositivos || (cfg.reposicao && cfg.reposicao.ciclo) ? null : <p className="rf-nota">{t('Sem compra de dispositivos, não há o que repor.')}</p>}
       {cfg.adaptacao ? (
         <div id="rf-adaptacao" className="rf-sub">
           <h3 className="rf-sub-h">{t('Adaptação ao contexto')}</h3>
@@ -202,6 +228,10 @@ function Insumos({ res }: { res: BaseCfg }) {
             {fmt.modo === 'razao'
               ? <CampoCfg caminho="formacaoTempo.razao" rotulo={t('Estudantes por professor formado')} valor={fmt.razao} />
               : <CampoCfg caminho="formacaoTempo.rot" rotulo={t('Rotatividade anual')} valor={fmt.rot} percentual />}
+            {fmt.modo === 'razao' ? (
+              <CampoCfgOpcional caminho="formacaoTempo.rotEstoque" rotulo={t('Rotatividade anual das pessoas formadas')} valor={fmt.rotEstoque} percentual decimais
+                dica={t('Em branco, a formação conta de novo, a cada ano, todos os professores formados, sem rotatividade. Com um valor, conta as pessoas novas mais esta parcela das já formadas.') + ' ' + AVISO_MOTOR()} />
+            ) : null}
           </div>
         ) : <p className="rf-nota">{t('Sem tempo de formação modelado.')}</p>}
       </div>

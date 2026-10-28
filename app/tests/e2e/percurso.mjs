@@ -116,7 +116,8 @@ async function percorrer(b, largura) {
   ok(semFalta, `${rotulo}: ainda há respostas faltando no fim`);
   const plano = await p.locator('main').innerText();
   ok(plano.includes('Rede Municipal de Exemplo'), `${rotulo}: plano sem o nome da rede`);
-  ok(/Custo total, 3 anos/.test(plano), `${rotulo}: plano sem o custo total`);
+  if (!/Custo total, 3 anos/i.test(plano) && process.env.E2E_DEBUG) console.log(plano.slice(0, 2500));
+  ok(/Custo total, 3 anos/i.test(plano), `${rotulo}: plano sem o custo total`);
   ok(/Comece por estas/.test(plano), `${rotulo}: plano sem recomendações`);
   await semRolagemHorizontal(p, `${rotulo} plano`);
 
@@ -247,7 +248,7 @@ async function matriz(b) {
   ok(!(await p.locator('.pc-matriz').isVisible().catch(() => false)), 'matriz: não fechou com Esc');
   ok(await botao.evaluate((el) => el === document.activeElement), 'matriz: o foco não voltou ao botão "Ver a matriz completa"');
   // o botão "Matriz" do cabeçalho abre o mesmo diálogo, e "Ver na matriz" destaca uma fase
-  await p.getByRole('button', { name: 'Matriz', exact: true }).click();
+  await p.getByRole('button', { name: 'Matriz camadas × fases', exact: true }).click();
   await p.locator('.pc-matriz table').waitFor({ timeout: 5000 });
   await p.keyboard.press('Escape');
   await p.getByRole('button', { name: 'Ver na matriz', exact: true }).first().click();

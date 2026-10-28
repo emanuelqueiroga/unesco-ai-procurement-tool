@@ -11,6 +11,26 @@ Published under `docs/revisao/` with a yellow banner. Not part of the stable lin
 - **0.0.16-alpha.a / .b / .c**: redesign proposals A (guided assistant), B (workspace with cost panel), C (living document). Branches `v15-proposta-a`, `-b`, `-c`. URLs: `/revisao/a/`, `/revisao/b/`, `/revisao/c/`.
 - **0.0.15-rc.1**: formerly "version 14 review". Step explanations, cost by phase and adoption curve, reference cost base and country profiles, procurement plan with executive summary and icebergs by phase. Branch `v14-revisao`. URL: `/revisao/`.
 
+## [0.1.0-alpha.5] - 2026-10-28
+
+Fifth pre-release of the redesign line (`develop` branch), published as the review build `/revisao/v014/`. It brings in what the 0.0.15-rc.1 review (`/revisao/`, branch `v14-revisao`) added on top of 0.0.14, mapped in `design/redesign/04-requisitos-0015.md` and `design/redesign/paridade-0015/` (70 requirements: AJU, MOT, REF, REL). The numbers of the examples and of every regression test are unchanged.
+
+### Added
+- Executive summary in "Em resumo": total life-cycle cost with the likely range (P10 to P90, 1,500 simulations with a fixed seed), the cost of Year 0, the steady-state annual cost and the cost per learner with access and per active user (each named by its denominator), "A proposta em seis respostas" (O quê, Por quê, Para quê, Como, Entregáveis, Indicadores), the five first actions as cards with O quê, Por quê, Para quê, Como, Quem and Quando, "O custo em resumo" with one iceberg per phase (the proposal price above the waterline, everything else below), and the three drivers that move the cost most. Same content in the PDF.
+- "Quanto custa": cost by phase (proof of concept or pilot, deployment, expansion; one-off and recurring; people reached), total-cost indicators (nominal, equivalent annual cost, per learner and per teacher, recurring share, steady-state year), adoption, scenarios, all drivers and the uncertainty simulation. Each page opens with its decision question and a finding title written from the numbers.
+- Appendix: "Premissas e fontes" (every assumption with value, origin, source, year, grade and reference range, out-of-range flagged, versions of the reference base) and "Glossário".
+- Cost engine of 0.0.15 (phases, adoption curve, device replacement, training turnover, one-off × recurring, new indicators) and its four optional questions in Refinar (4.1.4 curve, 4.1.5 waves, 4.1.6 replacement, 4.1.7 turnover). Calculator: one-off/recurring tags, phase columns in the CSV, cost by phase by layer and component, replacement cycle and turnover fields.
+- Versioned reference base (`data/referencias.json`, 70 rows) and five pilot country profiles (`data/paises.json`), checked at build time (`app/scripts/checar-referencias.mjs`). Optional country on the "Nome do lugar ou da rede" screen (currency follows the country while it is still US$), "Dados do país" in the calculator, source/year/grade and "seu valor · faixa de referência" on every premise, "fora da faixa" and "restaurar".
+- Help: "Como responder", "Quem costuma saber" and "Exemplo" inside "Por que perguntamos isso?" (closed by default), tips on the Refinar questions, chapter openings that say what you leave with, the layers ⓘ on chapter 3, and a glossary of 15 terms underlined in the help texts (keyboard and screen-reader accessible).
+- Every new text in the nine languages (`i18n/v15_*`); Arabic, Chinese, Bambara, isiZulu and Kiswahili remain preliminary.
+- Tests: 445 unit tests (including the 0.0.15 engine test with its v13 baseline and the reference-base tests) and 225 end-to-end checks.
+
+### Fixed
+- The same cost per person was called "por estudante" on the page and "por usuário ativo" in the PDF; internal codes (A2., K3.3) no longer show in "Quanto custa"; the "Alimenta:" layers of chapters 2 and 3.
+
+### Not included
+- The per-step memory of the help panel (0.0.15), the "one-page summary" that ran to three pages, and the blank-case cost without a label (the "Ainda sem números" rule stays).
+
 ## [0.1.0-alpha.4] - 2026-10-28
 
 Fourth pre-release of the redesign line (`develop` branch), published as the review build `/revisao/v014/`. Parity with 0.0.14: the published tool was reverse-engineered area by area and every capability it had and the redesign lacked became a requirement (`design/redesign/03-requisitos-paridade.md`, with the full inventories in `design/redesign/paridade/`: 109 requirements, PER, CUS, PLA and TRA). The rule is that the redesign may change the form but never let people do less than 0.0.14 did.

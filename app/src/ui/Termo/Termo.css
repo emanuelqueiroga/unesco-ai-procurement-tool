@@ -1,0 +1,66 @@
+/* Termo do glossário: herda a fonte e a cor do texto em volta; só o sublinhado pontilhado o distingue. */
+.pr-termo {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-decoration-color: var(--primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+.pr-termo:hover,
+.pr-termo[aria-expanded='true'] { text-decoration-style: solid; }
+.pr-termo:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-sm); }
+
+.pr-termo-painel {
+  position: fixed;
+  z-index: 105;
+  box-sizing: border-box;
+  max-inline-size: calc(100vw - 32px);
+  max-block-size: calc(100vh - 32px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-1);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  text-align: start;
+  white-space: normal;
+}
+.pr-termo-painel:focus { outline: none; }
+.pr-termo-painel:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pr-termo-cab { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
+.pr-termo-nome { min-inline-size: 0; overflow-wrap: anywhere; }
+.pr-termo-ext { color: var(--muted); }
+.pr-termo-def { margin: 0; color: var(--ink-2); overflow-wrap: anywhere; }
+.pr-termo-fechar {
+  flex: none;
+  inline-size: 32px;
+  block-size: 32px;
+  margin-block: -6px;
+  margin-inline-end: -8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  cursor: pointer;
+}
+.pr-termo-fechar:hover { background: var(--surface-0); }
+.pr-termo-fechar:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }

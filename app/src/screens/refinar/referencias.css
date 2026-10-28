@@ -1,0 +1,29 @@
+/* Base de referências e país (pacote REF): faixa de referência nos campos da calculadora, "restaurar",
+   controle do país (tela "Nome do lugar ou da rede") e bloco "Dados do país". Só tokens do Prumo. */
+
+/* ------------------------------------------------ faixa de referência (Campos.tsx) */
+.rf-ref { display: flex; flex-direction: column; gap: var(--space-1); }
+.rf-ref-dica, .rf-ref-faixa, .rf-ref-fonte { display: block; font-size: 13px; line-height: 18px; overflow-wrap: anywhere; }
+.rf-ref-faixa { color: var(--ink-2); }
+.rf-ref-fonte { color: var(--muted); }
+.rf-ref-fora {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  margin-inline-start: var(--space-2); padding-inline: var(--space-2);
+  border-radius: var(--radius-sm); background: var(--warn-bg); color: var(--ink); font-weight: 600; white-space: nowrap;
+}
+.rf-ref-fora svg { color: var(--warn); flex: none; }
+.rf-campo--fora .pr-textfield-input { border-color: var(--warn); }
+.rf-ref-restaurar { align-self: flex-start; }
+
+/* ------------------------------------------------ país (Pais.tsx) */
+.rf-pais { display: flex; flex-direction: column; gap: var(--space-2); margin-block: var(--space-4) var(--space-3); min-width: 0; }
+.rf-pais .rf-select { max-width: min(340px, 100%); }
+.rf-pais-nota { margin: 0; font-size: 13px; line-height: 18px; color: var(--muted); max-width: 80ch; overflow-wrap: anywhere; }
+
+/* ------------------------------------------------ dados do país (DadosPais.tsx) */
+.rf-dpais-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); }
+.rf-dpais-item { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.rf-dpais-origem { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); font-size: 13px; line-height: 18px; color: var(--ink-2); }
+.rf-dpais-semdado { color: var(--muted); font-style: italic; }
+.rf-dpais-custo { font-size: 13px; line-height: 18px; color: var(--muted); }
+.rf-dpais-abrir { align-self: flex-start; }

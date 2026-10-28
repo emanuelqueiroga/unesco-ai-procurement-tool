@@ -11,7 +11,9 @@
 // respC continua sendo derivado (informado/refinado = confirmado), para o domínio e a exportação da v13.
 import { create } from 'zustand';
 import { clone, CASO_VAZIO, CASOS, CTX_EX, RESP_EX, CAMPO_POR_ID, CAMPOS_CUSTO, CAMPOS_SUGERIDOS, CAMPOS_PROB, SUB_OBJ,
-  confirmarGerados, horasEstimativa, vazio, tr, cfgAtual, direcionadores, PRESETS } from '../domain';
+  confirmarGerados, horasEstimativa, vazio, tr, cfgAtual, direcionadores, PRESETS, salario, opcoes,
+  escolherPais as escolherPaisDoCaso, editarCampoPais as editarCampoPaisDoCaso, restaurarCampoPais as restaurarCampoPaisDoCaso,
+  moedaAoEscolherPais, PAIS_CAMPOS_NO_CUSTO } from '../domain';
 import type { Estado14, Origem, Modo, Capitulo, DadosCaso14, Custo } from './tipos';
 import { estadoInicial, migrar, ErroImportacao } from './migracoes';
 import { aplicarSugestoes } from './sugestoes';
@@ -89,6 +91,33 @@ export function editarCaminho(cfg: any, caminho: string, valor: any) {
   o[ult] = valor;
 }
 
+// ----------------------------------------------------------- valores da base (REF-04): "restaurar" na calculadora
+/** a cfg montada das respostas (ou do exemplo em custo.base), sem as edições da calculadora */
+export function cfgSemEdicoes(e: Estado14): any {
+  const cfg = cfgAtual({ ...e, custo: { base: e.custo.base || 'caso', cfg: null, editado: false } } as any);
+  if (!cfg.__base) cfg.__base = e.custo.base || 'caso';
+  return cfg;
+}
+/** valor de um caminho na cfg, com os padrões que o motor aplica quando a chave falta (salários, opções, multiplicadores) */
+export function valorDoCaminho(cfg: any, caminho: string): any {
+  const v = getPath(cfg, caminho);
+  if (v !== undefined) return v;
+  const [a, b] = caminho.split('.');
+  if (a === 'salarios' && b) return salario(cfg, b);
+  if (a === 'opc' && b) return (opcoes(cfg) as any)[b];
+  if (a === 'mult' && b) return 1;
+  return undefined;
+}
+/** a cfg editada tem os mesmos valores da cfg das respostas? (salários iguais ao padrão não contam como edição) */
+export function semEdicoes(cfg: any, base: any): boolean {
+  const norm = (c: any) => {
+    const x = clone(c); delete x.__base;
+    if (x.salarios) { Object.keys(x.salarios).forEach((k) => { if (x.salarios[k] === salario(base, k)) delete x.salarios[k]; }); if (!Object.keys(x.salarios).length) delete x.salarios; }
+    return JSON.stringify(x);
+  };
+  return norm(cfg) === norm(base);
+}
+
 /** O que acabou de mudar no plano: a interface destaca os trechos por alguns segundos (âmbar). */
 export interface Recente { campo: string; afetados: string[]; em: number }
 
@@ -124,6 +153,16 @@ export interface CasoStore extends Estado14 {
   refazerCfg(): void;
   /** mantém as edições depois de uma resposta que alimenta o custo ter mudado */
   manterEdicoesCfg(): void;
+  /** volta um caminho da cfg ao valor das respostas (ou da base); sem nenhuma outra edição, a calculadora deixa de estar editada (REF-04) */
+  restaurarCfg(caminho: string): void;
+
+  // país da rede (REF-06 a REF-10): opcional, fora das 25 perguntas
+  /** grava o país (ISO3, 'outro' ou ''), descarta as edições do perfil e ajusta a moeda se ainda for o dólar; devolve a moeda nova, se mudou */
+  escolherPais(iso: string): { moeda: string | null };
+  /** valor do perfil do país digitado pela pessoa (na unidade guardada: fração para inflação e desconto); '' apaga */
+  editarCampoPais(campo: string, valor: any): void;
+  /** volta o campo do perfil ao valor do país, da região ou ilustrativo */
+  restaurarCampoPais(campo: string): void;
   /** estado de exibição da calculadora (conta, avançado, nós abertos, alternativas, λ, estratos…) */
   setCalc(parcial: Partial<CustoCalc>): void;
 
@@ -336,6 +375,48 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     delete c.pendente;
     set({ custo: c });
   },
+  restaurarCfg(caminho) {
+    const e = copiar(get());
+    if (!e.custo.editado || !e.custo.cfg) return;
+    const base = cfgSemEdicoes(e);
+    const v = valorDoCaminho(base, caminho);
+    if (v === undefined) return;
+    const cfg = clone(e.custo.cfg);
+    editarCaminho(cfg, caminho, clone(v));
+    if (semEdicoes(cfg, base)) {
+      const c: CustoCalc = { ...e.custo, cfg: null, editado: false };
+      delete c.pendente;
+      set({ custo: c });
+    } else set({ custo: { ...e.custo, cfg, editado: true } });
+  },
+
+  escolherPais(iso) {
+    const e = copiar(get());
+    const antes = String(e.caso.pais || '');
+    escolherPaisDoCaso(e.caso, iso);
+    const novo = String(e.caso.pais || '');
+    const m = moedaAoEscolherPais(e.moeda, novo);
+    if (m) e.moeda = m as Estado14['moeda'];
+    if (novo !== antes) {
+      invalidarCusto(e);
+      if (e.exemplo !== 'novo') e.exemplo = 'editado';
+    }
+    set({ ...e, recente: recenteDe('pais', []) });
+    return { moeda: m ? m.cod : null };
+  },
+  editarCampoPais(campo, valor) {
+    const e = copiar(get());
+    editarCampoPaisDoCaso(e.caso, campo, valor);
+    if ((PAIS_CAMPOS_NO_CUSTO as string[]).includes(campo)) invalidarCusto(e);
+    if (e.exemplo !== 'novo') e.exemplo = 'editado';
+    set({ ...e, recente: recenteDe('pais', []) });
+  },
+  restaurarCampoPais(campo) {
+    const e = copiar(get());
+    restaurarCampoPaisDoCaso(e.caso, campo);
+    if ((PAIS_CAMPOS_NO_CUSTO as string[]).includes(campo)) invalidarCusto(e);
+    set({ ...e, recente: recenteDe('pais', []) });
+  },
   setCalc(parcial) {
     const p: any = { ...parcial };
     delete p.base; delete p.cfg; delete p.editado;   // estes só pelas ações próprias
@@ -345,6 +426,8 @@ export const useCaso = create<CasoStore>()((set, get) => ({
   carregarExemplo(k) {
     const base = estadoInicial();
     const e: Estado14 = { ...base, lang: get().lang, moeda: clone(get().moeda), modo: get().modo };
+    // a moeda que o país do caso anterior pôs volta ao dólar (o caso novo não tem país)
+    if (e.moeda.doPais) { const m = moedaAoEscolherPais(e.moeda, ''); if (m) e.moeda = m as Estado14['moeda']; }
     const ex: any = (CASOS as any)[k];
     if (k === 'novo' || !ex) { set({ ...e, recente: null, migradoDe: '' }); return; }
     e.caso = Object.assign(clone(CASO_VAZIO), clone(ex));
@@ -365,6 +448,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     // no exemplo, todo valor preenchido é resposta, inclusive os que coincidem com a premissa padrão (situação 'nova',
     // expansão 'ano1'…); nos objetos de tamanho (piloto, poc, implantacao) contam o subcampo e o campo
     Object.keys(e.caso).forEach(c => {
+      if (c === 'pais' || c === 'editados') return;   // o país não é pergunta do percurso (REF-06)
       const v = (e.caso as any)[c];
       if (c in (SUB_OBJ as any)) {
         (SUB_OBJ as any)[c].forEach((s: string) => { if (!vazio((v || {})[s])) { rc[c + '.' + s] = true; rc[c] = true; } });

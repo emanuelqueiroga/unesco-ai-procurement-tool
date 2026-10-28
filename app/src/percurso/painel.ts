@@ -1,8 +1,8 @@
 // Projeção do estado no plano: o que o painel "Seu plano", a gaveta do celular, as sínteses e a página do plano
 // mostram. Pura (recebe o Estado14 e devolve dados prontos para os componentes), testada em tests/unit/painel.test.ts.
-import { ETAPAS_ENS, QUANDO_REC, totaisCtx, modoTeste, PRIORIDADES, OPC, RESP_G, CAMPOS, rotulo, tr, faltasTodas, explicacaoCusto, premissasUnitarias } from '../domain';
+import { ETAPAS_ENS, QUANDO_REC, totaisCtx, modoTeste, PRIORIDADES, OPC, RESP_G, CAMPOS, rotulo, tr, faltasTodas, explicacaoCusto, premissasUnitarias, premissasDoCaso, resumoPremissas, CAMPO_POR_ID } from '../domain';
 import type { Estado14, Origem } from '../store';
-import { ESSENCIAL, afetadosPor, numerosDe, recomendacoesDe, faltamDe, origemDe, respondido, camposAtivos, cfgDe, telaDoCampo, capituloDoCampo } from '../store';
+import { ESSENCIAL, afetadosPor, numerosDe, recomendacoesDe, faltamDe, origemDe, respondido, camposAtivos, cfgDe, telaDoCampo, capituloDoCampo, motorQueAfeta } from '../store';
 import { fmt, sincronizar } from './ambiente';
 import { t, plural, NOME_TESTE, CURTO, CAPITULOS_INFO, minusc } from './textos';
 import { href } from './rota';
@@ -197,6 +197,9 @@ export interface ExplicacaoKpi {
   conta: string[];
   /** premissas que o alimentam */
   premissas: string[];
+  /** de onde vêm as premissas de custo (REF-12): quantas são convenção da ferramenta (grau C), dado do país ou da região,
+   *  alteradas por você e fora da faixa de referência; '' quando a cfg não usa a base */
+  fontes: string;
   /** respostas que mais pesam, as menos firmes primeiro */
   drivers: DriverKpi[];
   /** onde responder primeiro: a resposta menos firme */
@@ -214,6 +217,12 @@ export function driversDe(e: Estado14, id: KpiOuSaida): DriverKpi[] {
     const origem = e.exemplo !== 'novo' ? 'informado' : camposAtivos(e, tela).map((k) => origemDe(e, k)).reduce<Origem>((acc, o) => pior(acc, o), 'refinado');
     L.push({ campo: c, label: t(CURTO[tela.id] || tela.id), origem, href: href.campo(c) });
   });
+  // MOT-12: perguntas opcionais do motor (4.1.4–4.1.7) que alimentam o número, quando o caso as mostra
+  motorQueAfeta(id === 'saida' ? 'kpi.total' : id).forEach((c) => {
+    const f: any = (CAMPO_POR_ID as any)[c];
+    if (!f || (f.se && !f.se(e.caso))) return;
+    L.push({ campo: c, label: String(tr(f.t)), origem: origemDe(e, c), href: href.campo(c) });
+  });
   return L.map((d, i) => [d, i] as const).sort((a, b) => ORDEM_ORIGEM.indexOf(a[0].origem) - ORDEM_ORIGEM.indexOf(b[0].origem) || a[1] - b[1]).map((x) => x[0]);
 }
 
@@ -223,9 +232,10 @@ export function explicacaoKpi(e: Estado14, id: KpiOuSaida): ExplicacaoKpi {
   const kpi: KpiId = id === 'saida' ? 'kpi.total' : id;
   const origem = origemKpi(e, kpi);
   const drivers = driversDe(e, id);
-  let conta: string[] = [], premissas: string[] = [];
+  let conta: string[] = [], premissas: string[] = [], fontes = '';
   try {
     const cfg = cfgDe(e);
+    fontes = textoFontesPremissas(resumoPremissas(premissasDoCaso(e, cfg)));
     const x: any = explicacaoCusto(cfg);
     const n: any = numerosDe(e);
     if (x) {
@@ -245,7 +255,18 @@ export function explicacaoKpi(e: Estado14, id: KpiOuSaida): ExplicacaoKpi {
     }
     premissas = (premissasUnitarias(e, cfg) as string[]).slice(0, id === 'kpi.porAluno' ? 3 : 4);
   } catch (err) { console.warn(err); }
-  return { origem, conta, premissas, drivers, irCampo: drivers[0] };
+  return { origem, conta, premissas, fontes, drivers, irCampo: drivers[0] };
+}
+
+/** "22 premissas de custo vêm da base de referências: 21 ainda são convenções da ferramenta (grau C); 1 alterada por você; 1 fora da faixa de referência." */
+export function textoFontesPremissas(r: { total: number; convencao: number; pais: number; regiao: number; usuario: number; fora: number }): string {
+  if (!r || !r.total) return '';
+  const partes: string[] = [];
+  if (r.convencao) partes.push(plural(r.convencao, '{n} ainda é convenção da ferramenta (grau C)', '{n} ainda são convenções da ferramenta (grau C)'));
+  if (r.pais + r.regiao) partes.push(plural(r.pais + r.regiao, '{n} vem de dados do país ou da região', '{n} vêm de dados do país ou da região'));
+  if (r.usuario) partes.push(plural(r.usuario, '{n} alterada por você', '{n} alteradas por você'));
+  if (r.fora) partes.push(plural(r.fora, '{n} fora da faixa de referência', '{n} fora da faixa de referência'));
+  return plural(r.total, '{n} premissa de custo vem da base de referências', '{n} premissas de custo vêm da base de referências') + ': ' + partes.join('; ') + '.';
 }
 
 export function painelDe(e: Estado14): Painel {
@@ -265,7 +286,7 @@ export function painelDe(e: Estado14): Painel {
   }
   const ROT: Record<KpiId, string> = {
     'kpi.ano0': t('Custo do teste (Ano 0)'), 'kpi.total': t('Custo total, {H} anos', { H }),
-    'kpi.anual': t('Por ano de operação'), 'kpi.porAluno': t('Por estudante por ano'),
+    'kpi.anual': t('Por ano de operação'), 'kpi.porAluno': t('Por usuário ativo por ano'),
   };
   const kpis: KpiPlano[] = KPI_IDS.map((id) => {
     const v = vazio[id];

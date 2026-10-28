@@ -3,17 +3,17 @@
 // Monte Carlo sob demanda (CUS-17) e, no modo avançado, custo anual equivalente, LMDI, Laspeyres (CUS-25),
 // comparação de alternativas e equidade por estrato (CUS-24).
 import { useMemo, useState } from 'react';
-import { useCaso, calcDe, type AlternativaCusto, type EstratoCusto } from '../../store';
+import { useCaso, calcDe, fonteMotor, type AlternativaCusto, type EstratoCusto } from '../../store';
 import {
   ARVORE, NOME_K, cenarios, tornado, direcionadores, simular, cae, lmdi, laspeyres, comparar, equidade, arquitetura,
   din, mil, pct, unidMil, LOC,
 } from '../../domain';
-import { Button, DataTable, KpiTile, TextField, type DataColumn, type DataRow } from '../../ui';
+import { Button, DataTable, KpiTile, Segmented, TextField, type DataColumn, type DataRow } from '../../ui';
 import { CampoNumero } from '../../percurso/CampoNumero';
 import { t } from '../../percurso/textos';
 import { Bloco } from './Campos';
-import { BarrasICU, FaixasMC, Tornado } from './Graficos';
-import { cenariosTabela, legendaCenarios, listaComparacao, novaLinha, type Resultados } from './calc';
+import { BarrasFases, BarrasICU, FaixasMC, Tornado } from './Graficos';
+import { cenariosTabela, detalhePorFase, legendaCenarios, listaComparacao, novaLinha, tabelaFases, type DetalheFase, type Resultados } from './calc';
 
 const nf = (x: number, d = 2) => (+x || 0).toLocaleString(String(LOC()), { maximumFractionDigits: d });
 const nfInt = (x: number) => Math.round(+x || 0).toLocaleString(String(LOC()));
@@ -24,6 +24,7 @@ export function AbaCenarios({ res }: { res: Resultados }) {
   return (
     <>
       <Indicadores res={res} />
+      <Fases res={res} />
       <Cenarios res={res} />
       <Sensibilidade res={res} />
       <MonteCarlo res={res} />
@@ -63,6 +64,61 @@ function Indicadores({ res }: { res: Resultados }) {
         {t('Custo marginal ÷ médio: {v} (abaixo de 1 indica custos fixos diluídos com a escala).', { v: nf(ind.razaoMarginalMedio) })}
       </p>
       <BarrasICU itens={itens} total={ind.icu} />
+    </Bloco>
+  );
+}
+
+// ----------------------------------------------------------- custo por fase (MOT-10)
+/** Custo por fase do motor (Prova de conceito ou piloto, Implantação, Expansão): único e recorrente, pessoas alcançadas e, abrindo, camadas ou componentes. */
+function Fases({ res }: { res: Resultados }) {
+  const [vista, setVista] = useState<'fase' | DetalheFase>('fase');
+  const tab = tabelaFases(res.av);
+  if (!tab || !tab.linhas.length) return null;
+  const { linhas, total } = tab;
+  const temAprendiz = linhas.some((l) => l.aprendizes != null), temProf = linhas.some((l) => l.professores != null);
+  const cols: DataColumn[] = [
+    { key: 'f', label: t('Fase') }, { key: 'anos', label: t('Anos') },
+    { key: 'u', label: t('Pagamento único'), numeric: true }, { key: 'r', label: t('Recorrente'), numeric: true }, { key: 't', label: t('Total'), numeric: true },
+    { key: 'p', label: t('Pessoas alcançadas'), numeric: true },
+    ...(temAprendiz ? [{ key: 'a', label: t('Aprendizes'), numeric: true }] : []),
+    ...(temProf ? [{ key: 'pr', label: t('Professores'), numeric: true }] : []),
+  ];
+  const celulaPessoas = (v: number | null) => (v == null ? '–' : nfInt(v));
+  const rows: DataRow[] = [
+    ...linhas.map((l): DataRow => ({
+      key: l.id,
+      cells: { f: t(l.nome), anos: l.rotuloAnos, u: mil(l.unico), r: mil(l.recorrente), t: mil(l.total), p: nfInt(l.pessoas), a: celulaPessoas(l.aprendizes), pr: celulaPessoas(l.professores) },
+    })),
+    { key: 'total', total: true, cells: { f: t('Custo total do ciclo de vida'), anos: '', u: mil(total.unico), r: mil(total.recorrente), t: mil(total.total), p: nfInt(total.pessoas), a: '', pr: '' } },
+  ];
+  const det = vista === 'fase' ? null : detalhePorFase(res.av, vista);
+  const colsDet: DataColumn[] = det ? [{ key: 'n', label: vista === 'camada' ? t('Camada') : t('Componente') }, ...det.fases.map((f) => ({ key: f.id, label: t(f.nome), numeric: true })), { key: 'tot', label: t('Total'), numeric: true }] : [];
+  const rowsDet: DataRow[] = det ? [
+    ...det.linhas.map((l): DataRow => ({
+      key: l.id, layer: vista === 'camada' ? +l.id : undefined,
+      cells: { n: l.rotulo, ...Object.fromEntries(det.fases.map((f) => [f.id, mil(l.porFase[f.id])])), tot: mil(l.total) },
+    })),
+    { key: 'total', total: true, cells: { n: t('Custo total do ciclo de vida'), ...Object.fromEntries(det.fases.map((f) => [f.id, mil(det.linhas.reduce((a, l) => a + l.porFase[f.id], 0))])), tot: mil(det.linhas.reduce((a, l) => a + l.total, 0)) } },
+  ] : [];
+  const notaFases = fonteMotor('fases')!.nota!, notaUnico = fonteMotor('unicoRecorrente')!.nota!;
+  return (
+    <Bloco id="fases" titulo={t('Custo por fase')} nota={t(notaUnico)}>
+      <BarrasFases fmt={(v) => din(v, 0)} fases={linhas.map((l) => ({ id: l.id, nome: l.nome, rotuloAnos: l.rotuloAnos, unico: l.unico, recorrente: l.recorrente, total: l.total }))} />
+      <div className="rf-tabela"><DataTable columns={cols} rows={rows} caption={t('Custo por fase') + ' (' + unidMil() + ')'} /></div>
+      <p className="rf-nota">{t(notaFases)} {t('No total, as pessoas alcançadas são o máximo entre as fases, não a soma.')}</p>
+      <div className="rf-fases-seletor">
+        <Segmented
+          label={t('Custo por fase')}
+          value={vista}
+          onChange={setVista}
+          options={[{ value: 'fase', label: t('Fase') }, { value: 'camada', label: t('Camada') }, { value: 'componente', label: t('Componente') }]}
+        />
+      </div>
+      {det ? (
+        <div className="rf-tabela" id="rf-fases-detalhe">
+          <DataTable columns={colsDet} rows={rowsDet} caption={t('Custo por fase') + ' · ' + (vista === 'camada' ? t('Camada') : t('Componente')) + ' (' + unidMil() + ')'} />
+        </div>
+      ) : null}
     </Bloco>
   );
 }

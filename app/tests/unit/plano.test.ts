@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { useCaso } from '../../src/store/caso';
 import { numerosDe } from '../../src/store/selectors';
 import { nomeArq } from '../../src/export/json';
-import { setDicionarios, setLang, setMoeda, setTabelaMoedas, grande, din, tr, CREDITO_MATRIZ, TIT_MATRIZ } from '../../src/domain';
+import { setDicionarios, setLang, setMoeda, setTabelaMoedas, grande, din, tr, CREDITO_MATRIZ, TIT_MATRIZ, TIT_PLANO } from '../../src/domain';
 import { secoesPlano, painelPlano, trSecao, secoesDaPagina, PAGINAS_PLANO, PAGINA_SECAO, TIT_PAGINAS } from '../../src/plano/secoes.js';
 import { painelDe } from '../../src/percurso/painel';
 import { gerarPDF, nomeArqPDF, pdfTxt, quebrarCJK, carregarFontesPDF } from '../../src/plano/pdf.js';
@@ -36,7 +36,8 @@ function exemplo(k: string): any {
   return e;
 }
 const A_ = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7'], B_ = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9'];
-const IDS = ['resumo', 'perfil', 'matriz', 'recs', 'A', ...A_, 'B', ...B_, 'refs'];
+// 0.0.15 (REL-13, REL-14): premissas e fontes e glossário no apêndice, antes das referências
+const IDS = ['resumo', 'perfil', 'matriz', 'recs', 'A', ...A_, 'B', ...B_, 'premissas', 'glossario', 'refs'];
 
 // todos os textos de uma estrutura (strings em qualquer profundidade)
 function textos(x: any, out: string[] = []): string[] {
@@ -73,7 +74,9 @@ describe('secoesPlano', () => {
       setLang('en');
       const en = secoesPlano(e).map(trSecao);
       expect(textos(en).filter(t => RUIM.test(t))).toEqual([]);
-      expect(en.find((s: any) => s.id === 'A2').h).toBe('A2. ' + tr('Custo estimado (ilustrativo)'));
+      // REL-08: os títulos não levam os códigos A1–A7 e B1–B9 (o código fica no id)
+      expect(en.find((s: any) => s.id === 'A2').h).toBe(tr('Custo estimado (ilustrativo)'));
+      expect(secs.filter((s: any) => /^[AB]\d\.\s/.test(String(s.h)))).toEqual([]);
     });
   }
 
@@ -131,7 +134,7 @@ describe('secoesPlano', () => {
     // no apêndice, as respostas que faltam ficam no fim; o painel traz o aviso
     const ap = secoesDaPagina(secs, 'apendice');
     expect(ap[ap.length - 1].id).toBe('faltas');
-    expect(ap.filter((s: any) => !s.sub).map((s: any) => s.id)).toEqual(['perfil', 'matriz', 'refs', 'faltas']);
+    expect(ap.filter((s: any) => !s.sub).map((s: any) => s.id)).toEqual(['perfil', 'matriz', 'premissas', 'glossario', 'refs', 'faltas']);
     const P = painelPlano(e);
     expect(P.faltas && P.faltas.list.length).toBe(f.list.length);
     // A2: sem o tipo de tecnologia não há números (nada de valores inventados)
@@ -149,8 +152,9 @@ describe('secoesPlano', () => {
     expect(de('custa')).toEqual(['A', 'A2', 'A3']);
     expect(de('fazer')).toEqual(['recs', 'A1', 'B', 'B1', 'B2', 'B3', 'B4', 'B7', 'B8', 'B9']);
     expect(de('exigir')).toEqual(['A4', 'A5', 'A6', 'A7', 'B5', 'B6']);
-    expect(de('apendice')).toEqual(['perfil', 'matriz', 'refs']);
-    expect(secoesDaPagina(secs, 'apendice').map((s: any) => s.id || s.h)).toEqual(['perfil', 'Ferramentas', 'Etapas, escolas e estudantes', 'matriz', 'fig-tco', 'refs']);
+    expect(de('apendice')).toEqual(['perfil', 'matriz', 'premissas', 'glossario', 'refs']);
+    expect(secoesDaPagina(secs, 'apendice').map((s: any) => s.id || s.h)).toEqual(['perfil', 'Ferramentas', 'Etapas, escolas e estudantes', 'matriz', 'fig-tco',
+      'premissas', 'Premissas desta estimativa', 'Como o modelo funciona hoje', 'glossario', 'refs']);
     expect(PAGINAS_PLANO.reduce((n, pg) => n + secoesDaPagina(secs, pg).length, 0)).toBe(secs.length);
   });
 
@@ -212,11 +216,12 @@ describe('PDF', () => {
     const pR = onde('Em resumo'), pC = onde('Quanto custa'), pF = onde('O que fazer'), pE = onde('O que exigir'), pA = onde('Apêndice');
     expect(pR).toBe(1);
     expect([pR, pC, pF, pE, pA].every((p, i, L) => p > 0 && (!i || p > L[i - 1]))).toBe(true);
-    // números das seções nas faixas, na página certa
-    const numPag = (id: string) => pag.findIndex((p, i) => i > 1 && p.includes('(' + id + '.)'));
-    expect([numPag('A2'), numPag('A3')].every(p => p >= pC && p < pF)).toBe(true);
-    expect([numPag('A1'), numPag('B1'), numPag('B3'), numPag('B9')].every(p => p >= pF && p < pE)).toBe(true);
-    expect([numPag('A4'), numPag('A7'), numPag('B5'), numPag('B6')].every(p => p >= pE && p < pA)).toBe(true);
+    // títulos das seções nas faixas, na página certa, sem os códigos A1–A7 e B1–B9 (REL-08)
+    const titPag = (id: string) => pag.findIndex((p, i) => i > 1 && p.includes('(' + pdfTxt(tr((TIT_PLANO as any)[id])).replace(/[()]/g, '\\$&') + ')'));
+    expect([titPag('A2'), titPag('A3')].every(p => p >= pC && p < pF)).toBe(true);
+    expect([titPag('B1'), titPag('B3'), titPag('B9')].every(p => p >= pF && p < pE)).toBe(true);
+    expect([titPag('A4'), titPag('A7'), titPag('B5'), titPag('B6')].every(p => p >= pE && p < pA)).toBe(true);
+    expect(pag.some(p => /\((?:A[1-7]|B[1-9])\.\)/.test(p))).toBe(false);
   }, 60000);
 
   it('caso em branco: PDF parcial com as respostas que faltam no fim', async () => {

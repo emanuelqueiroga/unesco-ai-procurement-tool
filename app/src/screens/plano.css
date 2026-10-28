@@ -154,3 +154,99 @@
   a { color: inherit; text-decoration: none; }
   a.pc-url { text-decoration: underline; }
 }
+
+/* ---- 0.0.15: sumário executivo de "Em resumo" (REL-01 a REL-06) ---- */
+.pc-abertura { display: flex; flex-direction: column; gap: var(--space-1); }
+.pc-abertura .pc-kicker { margin: 0; }
+.pc-achado { margin: 0; font-size: 17px; line-height: 24px; font-weight: 600; color: var(--primary-strong); text-wrap: balance; }
+.pc-secao--bloco { border-top: 2px solid var(--primary); margin-top: var(--space-4); }
+/* custo total com a faixa P10–P90 */
+.pc-tco { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) var(--space-5); border: 1px solid var(--line); border-block-start: 4px solid var(--primary); border-radius: var(--radius-md); background: var(--surface-1); min-width: 0; }
+.pc-tco-rotulo { font-size: 13px; line-height: 18px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.pc-tco-valor { font-size: 36px; line-height: 42px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+@media (max-width: 640px) { .pc-tco-valor { font-size: 28px; line-height: 34px; } }
+.pc-tco-faixa { font-size: 16px; line-height: 22px; font-weight: 600; color: var(--primary-strong); }
+.pc-tco-barra { position: relative; block-size: 14px; margin-block: var(--space-1); border-radius: var(--radius-pill); background: var(--surface-2); }
+.pc-tco-barra-faixa { position: absolute; inset-block: 0; border-radius: var(--radius-pill); background: var(--phase-2); }
+.pc-tco-barra-central { position: absolute; inset-block: -4px; inline-size: 4px; margin-inline-start: -2px; border-radius: 2px; background: var(--ink); }
+.pc-tco-origem { display: flex; flex-wrap: wrap; gap: var(--space-2); position: relative; }
+.pc-tco-origem .pr-popover-painel { width: min(340px, calc(100vw - 32px)); max-height: 70vh; overflow: auto; }
+.pc-kpis--ind { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); margin-top: var(--space-3); }
+@media (max-width: 900px) { .pc-kpis--ind { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 420px) { .pc-kpis--ind { grid-template-columns: minmax(0, 1fr); } }
+.pc-ind { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; position: relative; }
+.pc-ind .pr-kpitile { position: relative; }
+.pc-ind .pr-popover { position: static; }
+.pc-ind .pr-popover-painel { inset-block-start: calc(100% - var(--space-2)); width: min(340px, calc(100vw - 32px)); max-height: 70vh; overflow: auto; }
+.pc-ind-nota { margin: 0; }
+/* seis respostas */
+.pc-seis { margin: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.pc-seis-linha { display: grid; grid-template-columns: minmax(150px, 26%) minmax(0, 1fr); gap: var(--space-2) var(--space-4); padding: var(--space-3) 0; border-bottom: 1px solid var(--line); }
+@media (max-width: 640px) { .pc-seis-linha { grid-template-columns: minmax(0, 1fr); } }
+.pc-seis-linha dt { display: flex; flex-direction: column; gap: 2px; margin: 0; }
+.pc-seis-linha dt b { font-size: 16px; line-height: 22px; color: var(--primary-strong); }
+.pc-seis-linha dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.pc-seis-linha dd .pc-lista { margin: 0; }
+.pc-seis-linha dd p { margin: 0; }
+/* cartões das ações */
+.pc-acao-pq { display: block; }
+.pc-acao-det { margin-top: var(--space-2); }
+.pc-acao-det > summary { cursor: pointer; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--primary-strong); min-height: 32px; display: inline-flex; align-items: center; }
+.pc-acao-det > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pc-acao-dl { margin: var(--space-2) 0 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.pc-acao-dl-l { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: var(--space-2); }
+@media (max-width: 520px) { .pc-acao-dl-l { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+.pc-acao-dl dt { margin: 0; font-size: 13px; line-height: 20px; font-weight: 600; color: var(--ink); }
+.pc-acao-dl dd { margin: 0; font-size: 14px; line-height: 20px; color: var(--ink-2); overflow-wrap: anywhere; }
+/* direcionadores */
+.pc-dir-bloco { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); }
+.pc-dir { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.pc-dir-item { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3) var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-1); }
+.pc-dir-nome b { color: var(--ink); }
+.pc-dir-barra { display: block; block-size: 8px; border-radius: var(--radius-pill); background: var(--surface-2); overflow: hidden; }
+.pc-dir-barra i { display: block; block-size: 100%; background: var(--high); border-radius: var(--radius-pill); }
+.pc-dir-txt { font-size: 14px; line-height: 20px; color: var(--ink-2); }
+.pc-comoler > summary { color: var(--ink); }
+
+/* ---- icebergs por fase (REL-05): só tokens; uma coluna abaixo de ~760 px ---- */
+.pc-ice { margin: 0; display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.pc-ice-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--space-4); }
+.pc-ice-cartao { display: grid; grid-template-rows: auto auto 1fr auto; border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface-1); min-width: 0; }
+.pc-ice-cab { display: flex; flex-direction: column; gap: 2px; padding: var(--space-3) var(--space-4); background: var(--surface-0); border-block-start: 5px solid var(--phase-2); }
+.pc-ice-cartao[data-fase='implantacao'] .pc-ice-cab { border-block-start-color: var(--phase-3); }
+.pc-ice-cartao[data-fase='expansao'] .pc-ice-cab { border-block-start-color: var(--phase-4); }
+.pc-ice-fase { margin: 0; font-size: 16px; line-height: 22px; font-weight: 600; color: var(--ink); }
+.pc-ice-anos { font-size: 13px; line-height: 18px; color: var(--muted); }
+.pc-ice-ceu { position: relative; padding: var(--space-3) var(--space-3) 0; background: var(--info-bg); }
+.pc-ice-pico { display: block; inline-size: 88%; block-size: 72px; margin: 0 auto -20px; position: relative; z-index: 0; }
+.pc-ice-pico-luz { fill: var(--primary-tint); }
+.pc-ice-pico-sombra { fill: var(--phase-2); }
+.pc-ice-pico-borda { fill: none; stroke: var(--phase-3); stroke-width: 1.4; stroke-linejoin: round; }
+.pc-ice-pico-brilho { fill: none; stroke: var(--surface-1); stroke-width: 2.2; stroke-linecap: round; }
+.pc-ice-caixa { position: relative; z-index: 1; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2) var(--space-3); margin-bottom: -12px; border-radius: var(--radius-md); background: var(--surface-1); box-shadow: var(--shadow-sm); }
+.pc-ice-rot { font-size: 13px; line-height: 18px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.pc-ice-linhas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.pc-ice-l { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--space-2); align-items: baseline; font-size: 13px; line-height: 18px; color: var(--ink); }
+.pc-ice-l-nome { overflow-wrap: anywhere; }
+.pc-ice-l-valor { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pc-ice-l--zero { color: var(--muted); }
+.pc-ice-l--zero .pc-ice-l-valor { font-weight: 400; }
+.pc-ice-barra { grid-column: 1 / -1; display: block; block-size: 5px; border-radius: var(--radius-pill); background: var(--surface-2); overflow: hidden; }
+.pc-ice-barra i { display: block; block-size: 100%; border-radius: var(--radius-pill); background: var(--primary); }
+.pc-ice-agua { position: relative; display: flex; flex-direction: column; gap: var(--space-2); padding: calc(var(--space-5) + 8px) var(--space-3) var(--space-4); background: var(--phase-4); color: var(--on-phase-dark); border-block-start: 4px solid var(--phase-3); overflow: hidden; }
+.pc-ice-agua > :not(svg) { position: relative; z-index: 1; }
+.pc-ice-submerso { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; z-index: 0; }
+.pc-ice-submerso path { fill: color-mix(in srgb, var(--on-phase-dark) 14%, transparent); }
+.pc-ice-agua .pc-ice-rot, .pc-ice-agua .pc-ice-l { color: var(--on-phase-dark); }
+.pc-ice-agua .pc-ice-l--zero { color: color-mix(in srgb, var(--on-phase-dark) 78%, var(--phase-4)); }
+.pc-ice-agua .pc-ice-barra { background: color-mix(in srgb, var(--on-phase-dark) 22%, transparent); }
+.pc-ice-agua .pc-ice-barra i { background: var(--on-phase-dark); }
+.pc-ice-pe { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--space-3) var(--space-3) var(--space-4); text-align: center; background: var(--surface-0); }
+.pc-ice-pe-rot { font-size: 13px; line-height: 18px; color: var(--ink-2); }
+.pc-ice-pe-valor { font-size: 24px; line-height: 30px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.pc-ice-oculto { font-size: 14px; line-height: 20px; font-weight: 700; color: var(--primary-strong); }
+@media print {
+  .pc-acao-det > summary { display: none; }
+  .pc-ice-cartao, .pc-tco, .pc-seis-linha, .pc-dir-item { break-inside: avoid; }
+  .pc-kpis--ind { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}

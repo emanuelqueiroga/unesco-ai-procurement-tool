@@ -6,6 +6,7 @@
 // e comparação de alternativas.
 // Valores-base em US$ do Ano 0. Ano 0 = implantação e piloto.
 // =====================================================================
+import { refValor, refFaixaMult } from './referencias_base.js';
 
 // ---------------------------------------------------------------- árvore
 const ARVORE = [
@@ -26,10 +27,14 @@ const MAPA_CAT = {
   'Condições de base': 'K1.1',
 };
 
-const SAL = {
-  gestor_produto: 48000, eng_integracao: 45000, eng_ml: 60000, analista_privacidade: 42000,
-  especialista_pedagogico: 36000, gestor_contrato: 36000, suporte_n1: 22000, analista_conteudo: 36000,
-};
+// ---------------------------------------------------------------- v14 (BL4.1): base de referências, fonte única dos valores-padrão
+// Todo custo unitário ilustrativo vem de data/referencias.json (lido em referencias_base.js, importado no build).
+// Cada linha tem escopo 'global', um código de região (paises.json) ou um ISO3. refValor(id, escopos) percorre a lista
+// de escopos na ordem (país, região, global) e devolve o primeiro valor encontrado: é a cadeia de recuo do BL1.3. Sem escopos,
+// vale só o global, e os números são os da v13. Um id que falta é erro, para que nenhum valor-padrão volte a ficar escrito no código.
+const PAPEIS_SAL = ['gestor_produto', 'eng_integracao', 'eng_ml', 'analista_privacidade', 'especialista_pedagogico', 'gestor_contrato', 'suporte_n1', 'analista_conteudo'];
+function salariosPara(esc) { const s = {}; PAPEIS_SAL.forEach(k => { s[k] = refValor('sal.' + k, esc); }); return s; }
+const SAL = salariosPara();
 const SAL_NOME = {
   gestor_produto: 'Gestão de produto', eng_integracao: 'Engenharia de integração/infra', eng_ml: 'Engenharia de ML',
   analista_privacidade: 'Privacidade e segurança', especialista_pedagogico: 'Especialista pedagógico',
@@ -40,7 +45,37 @@ const SAL_NOME = {
 // Modo de compatibilidade: reproduz os números da versão 1 do guia.
 const OPC_COMPAT = { H: 3, correcoes: false, pi: 0, dep: 0, r: 0, sigmaCap: 1, doados: false, pSaida: 1, fechamento: 'saida', vidaUtil: 5, contPct: 0.05, delta: 0 };
 // Modo padrão da versão 2: correções do economista e inflação ilustrativa de 2,5% a.a.
-const OPC_PADRAO = { H: 3, correcoes: true, pi: 0.025, dep: 0, r: 0, sigmaCap: 1, doados: true, pSaida: 1, fechamento: 'saida', vidaUtil: 5, contPct: 0.05, delta: 0 };
+const OPC_PADRAO = { H: 3, correcoes: true, pi: refValor('macro.inflacao'), dep: 0, r: refValor('macro.taxaDesconto'), sigmaCap: 1, doados: true, pSaida: 1, fechamento: 'saida', vidaUtil: 5, contPct: 0.05, delta: 0 };
+
+// ---------------------------------------------------------------- v14: fases (BL3.1)
+// Regra de fronteira entre as fases, tirada da semântica dos passos 3.1 e 4.1:
+//  - Ano 0 = Prova de conceito ou piloto (o teste antes da compra, passos 2.0 a 2.6);
+//  - Ano 1 = Implantação: a primeira etapa de uso real depois do teste (passo 3.1: "é o primeiro ano de uso depois do teste");
+//  - Ano 2 em diante = Expansão: os anos em que o uso cresce até toda a rede (passos 4.1.1, 4.1.2 e a curva de adoção)
+//    e, depois, os anos de operação em escala plena. A fronteira é por calendário, e não pelo ano em que a rede chega
+//    ao total, para que todo horizonte de 2 anos ou mais tenha Expansão e as fases somem sempre o total.
+// cfg.fasesAno (opcional) = ids por ano substitui a regra. Os ids são os de FASES (fluxo_dados.js).
+const FASES_MOTOR = [['piloto', 'Prova de conceito ou piloto'], ['implantacao', 'Implantação'], ['expansao', 'Expansão']];
+function faseDoAno(t, cfg) {
+  const x = cfg && cfg.fasesAno;
+  if (Array.isArray(x) && x.length) return x[Math.min(t, x.length - 1)];
+  return t <= 0 ? 'piloto' : t === 1 ? 'implantacao' : 'expansao';
+}
+
+// v14 (BL3.7): pagamento único (implantação) × recorrente. Convenção desta ferramenta, a partir das etiquetas que
+// cada linha já tem (subcomponente s, natureza nat, tipo orçamentário orc, tag):
+//  - ÚNICO: orc = 'capital' (implantação, processamento inicial de documentos, compra de dispositivos); toda a
+//    implantação e adaptação (K3.1 a K3.4: integração, conteúdo e configuração iniciais, conformidade inicial,
+//    testes de aceitação); a ingestão inicial da base de conhecimento (K2.4, só no Ano 0); a formação inicial
+//    (K4.3 e K4.4) na parte das pessoas novas na rede em cada ano; e a saída (K6.3) e o valor residual, no ano H.
+//  - RECORRENTE: tudo o mais, em todos os anos: licenças (K2.1), consumo, computação, hospedagem (K2.2 a K2.5),
+//    conectividade (K1.1), identidade (K1.3), operação, suporte e pessoal (K4.1, K4.2), reciclagem e reposição de
+//    quem sai da rede (parte "reposição" de K4.3 e K4.4), governança e avaliação (K5), manutenção e reavaliação (K6.1,
+//    K6.2) e a reposição de dispositivos (BL3.5, que é compra de capital, mas repetida).
+//  - A natureza (D desembolso, C capacidade interna, O cedido) e o tipo de componente (F fixo, V variável, E escalonado)
+//    não decidem a divisão: a mesma regra vale para as três naturezas. x.parte ('unico' | 'recorrente') ou x.vu
+//    (parte única por ano, nas mesmas unidades de x.v) substituem a regra numa linha.
+function unicoPorPadrao(x) { return x.orc === 'capital' || x.tag === 'implantacao' || /^K3\./.test(x.s || ''); }
 
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 function opcoes(cfg) { return Object.assign({}, OPC_PADRAO, cfg.opc || {}); }
@@ -70,6 +105,33 @@ function arquitetura(cfg) {
   return 'outra';
 }
 
+// v14: pessoas formadas por ano (K4.4) e, destas, as novas na rede (formação inicial, pagamento único); o resto é
+// reciclagem e reposição de quem sai (recorrente). Os números de pessoas formadas são os da v13.
+//  - modo 'razao': as pessoas formadas são E ÷ razão a cada ano (v13); novas = aumento do estoque.
+//    f.rotEstoque (v14, só quando a pessoa informa a rotatividade no passo 4.1) passa a contar o estoque como
+//    nas demais: novas + rotatividade × estoque do ano anterior.
+//  - modo 'ativos': novas = aumento dos usuários ativos; a reposição é f.rot × usuários do ano anterior (v13).
+function formacaoPessoas(cfg, o, U, d, T) {
+  const f = cfg.formacaoTempo;
+  if (!f || !f.ativo) return null;
+  let pessoas, novos;
+  if (f.modo === 'razao') {
+    const St = T.map(t => ano(d.E, t) / f.razao);
+    novos = St.map((n, t) => t === 0 ? n : Math.max(n - St[t - 1], 0));
+    pessoas = f.rotEstoque != null ? St.map((n, t) => t === 0 ? n : novos[t] + f.rotEstoque * St[t - 1]) : St;
+  } else {
+    pessoas = T.map(t => {
+      if (t === 0) return U[0];
+      if (t === 1 && !o.correcoes) return U[1];                     // versão 1: reconta o piloto
+      return Math.max(U[t] - U[t - 1], 0) + f.rot * U[t - 1];       // versão 2: estoque formado
+    });
+    novos = T.map(t => t === 0 ? U[0] : (t === 1 && !o.correcoes) ? U[1] : Math.max(U[t] - U[t - 1], 0));
+  }
+  // v11: fator sobre as pessoas formadas (papéis marcados na 2.5.1), neutro quando ausente
+  if (f.fator != null) { pessoas = pessoas.map(n => n * (+f.fator)); novos = novos.map(n => n * (+f.fator)); }
+  return { pessoas, novos };
+}
+
 // ---------------------------------------------------------------- cálculo das linhas
 function calcular(cfg) {
   const o = opcoes(cfg);
@@ -87,12 +149,17 @@ function calcular(cfg) {
     const v = T.map(t => base[t] * fator[t]);
     const q = x.q ? T.map(t => +(x.q[t] || 0)) : null;
     const p = (x.p && q) ? T.map(t => (q[t] ? v[t] / q[t] : (+(x.p[t] || 0)) * fator[t])) : null;
-    L.push({ id: x.id || x.nome, nome: x.nome, s: x.s, k: K_DE_S[x.s], cat: x.cat || NOME_K[K_DE_S[x.s]], nat: x.nat || 'D', comp: x.comp || 'F', moeda,
+    const vu = x.vu ? T.map(t => (+x.vu[t] || 0) * fator[t]) : ((x.parte ? x.parte === 'unico' : unicoPorPadrao(x)) ? v.slice() : T.map(() => 0));
+    L.push({ vu, id: x.id || x.nome, nome: x.nome, s: x.s, k: K_DE_S[x.s], cat: x.cat || NOME_K[K_DE_S[x.s]], nat: x.nat || 'D', comp: x.comp || 'F', moeda,
       orc: x.orc || 'corrente', pagador: x.pagador || 'inst', fonte: x.fonte || 'ilustrativo', un: x.un || '', tag: x.tag || '', q, p, v, fx: moeda === 'USD' });
   };
   const U = T.map(t => ano(d.E, t) * ano(d.adocao, t));
   const I = T.map(t => U[t] * d.s * d.i * ano(d.meses, t));
   const extra = {};
+  // v14: formação inicial × reposição. Parte das pessoas novas em cada ano; o programa de formação (K4.3) usa a mesma
+  // proporção do ano e, sem o tempo de formação (K4.4), só o Ano 0 é inicial.
+  const fm = formacaoPessoas(cfg, o, U, d, T);
+  const fracNovos = T.map(t => fm ? (fm.pessoas[t] > 0 ? Math.min(1, fm.novos[t] / fm.pessoas[t]) : (t === 0 ? 1 : 0)) : (t === 0 ? 1 : 0));
 
   // ---- K2.1 licenças
   if (cfg.saas && cfg.saas.ativo) {
@@ -127,7 +194,8 @@ function calcular(cfg) {
     const corpus = r.docs * r.tokDoc;
     const tok = T.map(t => t === 0 ? corpus : (r.docsNovos * r.tokDoc + r.reindexAno * (corpus + t * r.docsNovos * r.tokDoc)));
     add({ nome: 'Embeddings de ingestão e reindexação', s: 'K2.4', cat: 'Dados e RAG', moeda: 'USD', comp: 'V', tag: 'ingestao', un: 'milhão de tokens',
-      q: tok.map(x => x / 1e6), p: T.map(() => r.Pemb), v: tok.map((x, t) => x * r.Pemb / 1e6 * tend[t]) });
+      q: tok.map(x => x / 1e6), p: T.map(() => r.Pemb), v: tok.map((x, t) => x * r.Pemb / 1e6 * tend[t]),
+      vu: tok.map((x, t) => t === 0 ? x * r.Pemb / 1e6 * tend[t] : 0) });   // v14: o corpus inicial é único; a reindexação é recorrente
     if (r.paginas > 0)
       add({ nome: 'Processamento inicial de documentos (OCR, extração)', s: 'K3.2', cat: 'Dados e RAG', moeda: 'USD', comp: 'F', orc: 'capital', un: 'página',
         q: T.map(t => t === 0 ? r.paginas : 0), p: T.map(() => r.Ppag), v: T.map(t => t === 0 ? r.paginas * r.Ppag : 0) });
@@ -172,7 +240,19 @@ function calcular(cfg) {
     // v11: itens podem trazer quantidade (q), preço (p), unidade (un), etiqueta (tag) e pagador; neutro quando ausentes
     add({ nome: x.nome, s, cat: x.cat, nat: x.nat || 'D', comp: x.comp || 'F', moeda: x.moeda || 'LOC', orc: x.orc || 'corrente',
       prob: x.prob, v: T.map(t => ano(x.v, t) * fa), q: x.q ? T.map(t => ano(x.q, t)) : undefined, p: x.p ? T.map(t => ano(x.p, t)) : undefined,
-      un: x.un, tag: x.tag, pagador: x.pagador });
+      un: x.un, tag: x.tag, pagador: x.pagador, parte: x.parte,
+      vu: s === 'K4.3' && !x.parte ? T.map(t => ano(x.v, t) * fa * fracNovos[t]) : undefined });
+    // v14 (BL3.5): reposição dos dispositivos comprados neste caso a cada n anos (cfg.reposicao.ciclo = 3, 4 ou 5; ausente = sem reposição,
+    // como na v13). Um lote comprado no ano s é recomprado em s+n, s+2n… até o horizonte, à quantidade e ao preço unitário do lote.
+    // É compra de capital, mas repetida: conta como recorrente.
+    const ciclo = Math.round(+((cfg.reposicao || {}).ciclo) || 0);
+    if (ciclo >= 1 && x.tag === 'dispositivo' && x.q && x.p) {
+      const q0 = T.map(t => ano(x.q, t));
+      const qr = T.map(t => { let n = 0; for (let k = t - ciclo; k >= 0; k -= ciclo) n += q0[k]; return n; });
+      if (qr.some(n => n > 0))
+        add({ nome: 'Reposição de dispositivos (a cada ' + ciclo + ' anos)', s, cat: x.cat, nat: x.nat || 'D', comp: 'F', moeda: x.moeda || 'LOC', orc: 'capital',
+          q: qr, p: T.map(t => ano(x.p, t)), un: x.un, tag: 'reposicao_dispositivo', parte: 'recorrente', v: qr.map((n, t) => n * ano(x.p, t)) });
+    }
   });
   // ---- pessoas
   (cfg.pessoas || []).forEach(pp => {
@@ -192,23 +272,19 @@ function calcular(cfg) {
   // ---- tempo de formação (estoque de formados)
   if (cfg.formacaoTempo && cfg.formacaoTempo.ativo) {
     const f = cfg.formacaoTempo;
-    let pessoas;
-    if (f.modo === 'razao') pessoas = T.map(t => ano(d.E, t) / f.razao);
-    else pessoas = T.map(t => {
-      if (t === 0) return U[0];
-      if (t === 1 && !o.correcoes) return U[1];                     // versão 1: reconta o piloto
-      return Math.max(U[t] - U[t - 1], 0) + f.rot * U[t - 1];       // versão 2: estoque formado
-    });
-    // v11: fator sobre as pessoas formadas (papéis marcados na 2.5.1), neutro quando ausente
-    if (f.fator != null) pessoas = pessoas.map(n => n * (+f.fator));
+    const pessoas = fm.pessoas;
     if (pessoas.some(n => n > 0) || !(f.extras || []).length)
       add({ nome: f.nome, s: 'K4.4', cat: 'Formação e mudança', nat: 'C', comp: 'V', moeda: 'LOC', un: 'pessoa formada',
-        q: pessoas, p: T.map(() => f.horas * f.custoHora * m.pessoas), v: pessoas.map(n => n * f.horas * f.custoHora * m.pessoas) });
+        q: pessoas, p: T.map(() => f.horas * f.custoHora * m.pessoas), v: pessoas.map(n => n * f.horas * f.custoHora * m.pessoas),
+        vu: fm.novos.map(n => n * f.horas * f.custoHora * m.pessoas) });
     // v11: outros papéis formados (gestores, equipe técnica...), com as mesmas horas e o mesmo custo-hora
     (f.extras || []).forEach(x => {
       const q = T.map(t => +ano(x.q, t) || 0);
+      // v14: x.novos (pessoas novas por ano, vindas de cfgDoCaso) dá a parte inicial; sem ele, só o Ano 0 é inicial
+      const nov = x.novos ? T.map(t => +ano(x.novos, t) || 0) : q.map((n, t) => t === 0 ? n : 0);
       add({ nome: x.nome, s: 'K4.4', cat: 'Formação e mudança', nat: 'C', comp: 'V', moeda: 'LOC', un: 'pessoa formada', tag: 'formacao_papel',
-        q, p: T.map(() => f.horas * f.custoHora * m.pessoas), v: q.map(n => n * f.horas * f.custoHora * m.pessoas) });
+        q, p: T.map(() => f.horas * f.custoHora * m.pessoas), v: q.map(n => n * f.horas * f.custoHora * m.pessoas),
+        vu: nov.map(n => n * f.horas * f.custoHora * m.pessoas) });
     });
   }
 
@@ -246,14 +322,16 @@ function calcular(cfg) {
       if (!['K2.2', 'K2.3', 'K2.4', 'K2.5'].includes(l.s) || l.nat !== 'D') return;
       const vo = T.map(t => l.v[t] * fr[t]);
       if (!vo.some(x => x > 0)) return;
+      const shU = T.map(t => l.v[t] ? Math.min(1, l.vu[t] / l.v[t]) : 0);   // v14: a parte única acompanha a proporção
       l.v = T.map(t => l.v[t] - vo[t]);
+      l.vu = T.map(t => l.v[t] * shU[t]);
       if (o.doados) novas.push({ id: 'cedido: ' + l.id, nome: 'Uso cedido sem custo (valor de mercado)', s: l.s, k: l.k, cat: l.cat, nat: 'O', comp: l.comp, moeda: l.moeda,
-        orc: l.orc, pagador: 'terceiro', fonte: l.fonte, un: l.un, tag: 'doado', q: null, p: null, v: vo, fx: l.fx });
+        orc: l.orc, pagador: 'terceiro', fonte: l.fonte, un: l.un, tag: 'doado', q: null, p: null, v: vo, vu: vo.map((x, t) => x * shU[t]), fx: l.fx });
     });
     novas.forEach(x => L.push(x));
   }
 
-  return { cfg, opc: o, H, anos: T, U, I, E: T.map(t => ano(d.E, t)), linhas: L, saida: S, extra, fxT, infl, impl };
+  return { cfg, opc: o, H, anos: T, fases: T.map(t => faseDoAno(t, cfg)), U, I, E: T.map(t => ano(d.E, t)), linhas: L, saida: S, extra, fxT, infl, impl };
 }
 
 // ---------------------------------------------------------------- resumo (compatível com a versão 1)
@@ -311,8 +389,123 @@ function avaliar(r) {
     variavel: faceta(l => l.comp === 'V' || l.tag === 'gpu'),
     capital: faceta(l => l.orc === 'capital'),
   };
-  return { r, defl, disc, linhas, saida, ecoAno, finAno, ctEco, saidaEco, vr: vrVP, porS, porK, porSano, fac,
+  const av = { r, defl, disc, linhas, saida, ecoAno, finAno, ctEco, saidaEco, vr: vrVP, porS, porK, porSano, fac,
     saidaFin: r.saida.filter(x => x.nat === 'D').reduce((s, x) => s + x.valor, 0), saidaTotalNominal: r.saida.reduce((s, x) => s + x.valor, 0) };
+  av.fases = decomporFases(av);      // v14 (BL3.1, BL3.7): custo e pessoas por fase, único × recorrente
+  av.tco = indicadoresTCO(av);       // v14 (BL5.4): indicadores do custo total
+  return av;
+}
+
+// ---------------------------------------------------------------- v14: custo por fase (BL3.1) e único × recorrente (BL3.7)
+// Resultado de avaliar(): av.fases = {
+//   ids: ['piloto','implantacao','expansao'], faseAno: [id por ano], total (= ctEco), unico, recorrente (valor presente, conta econômica),
+//   unicoAno[t], recorrenteAno[t] (conta econômica, preços constantes, sem desconto),
+//   porFase: { <id>: { id, nome, anos: [t…], total, nominal, unico, recorrente, porCamada: {1..7}, porK: {K1..K6},
+//     pessoas (máx. de pessoas que usariam: E), usuarios (máx. de usuários ativos: U), anosPessoa (Σ E), anosUsuario (Σ U),
+//     aprendizes, professores (máx. alcançados no ano), anosAprendiz, anosProfessor (Σ) } } }
+// Valores em valor presente na conta econômica (os mesmos de ctEco); a soma das fases é exatamente ctEco.
+// A saída (K6.3) e o valor residual caem na fase do ano H e são pagamento único.
+function papeisDe(r) {
+  const d = r.cfg.demanda || {}, un = r.cfg.unidade;
+  let fA = d.fAprendiz, fP = d.fProfessor;
+  if (fA == null && fP == null) { fA = un === 'estudante' ? 1 : null; fP = un === 'professor' ? 1 : null; }
+  return { fA: fA == null ? null : +fA, fP: fP == null ? null : +fP };
+}
+function decomporFases(av) {
+  const r = av.r, T = r.anos, H = r.H;
+  const z7 = () => { const z = {}; for (let i = 1; i <= 7; i++) z[i] = 0; return z; };
+  const zK = () => { const z = {}; ARVORE.forEach(([k]) => { z[k] = 0; }); return z; };
+  const faseAno = T.map(t => faseDoAno(t, r.cfg));
+  const { fA, fP } = papeisDe(r);
+  const P = {};
+  FASES_MOTOR.forEach(([id, nome]) => {
+    const anos = T.filter(t => faseAno[t] === id);
+    const sum = f => anos.reduce((s, t) => s + f(t), 0), max = f => Math.max(0, ...anos.map(f));
+    P[id] = { id, nome, anos, total: 0, nominal: 0, unico: 0, recorrente: 0, porCamada: z7(), porK: zK(),
+      pessoas: max(t => r.E[t]), usuarios: max(t => r.U[t]), anosPessoa: sum(t => r.E[t]), anosUsuario: sum(t => r.U[t]),
+      aprendizes: fA == null ? null : max(t => r.E[t] * fA), anosAprendiz: fA == null ? null : sum(t => r.E[t] * fA),
+      professores: fP == null ? null : max(t => r.E[t] * fP), anosProfessor: fP == null ? null : sum(t => r.E[t] * fP) };
+  });
+  const unicoAno = T.map(() => 0), recAno = T.map(() => 0);
+  av.linhas.forEach(l => {
+    const c = CAMADA_DE_S[l.s] || 7;
+    T.forEach(t => {
+      if (!l.eco[t]) return;
+      const sh = l.v[t] ? Math.min(1, Math.max(0, (l.vu ? l.vu[t] : 0) / l.v[t])) : 0;
+      const pv = l.eco[t] * av.disc[t], f = P[faseAno[t]];
+      f.total += pv; f.unico += pv * sh; f.recorrente += pv * (1 - sh);
+      f.nominal += l.eco[t] * av.defl[t]; f.porCamada[c] += pv; f.porK[l.k] += pv;
+      unicoAno[t] += l.eco[t] * sh; recAno[t] += l.eco[t] * (1 - sh);
+    });
+  });
+  const fH = P[faseAno[H]];
+  av.saida.forEach(x => {
+    const c = CAMADA_DE_S[x.s] || 7;
+    fH.total += x.ecoVP; fH.unico += x.ecoVP; fH.nominal += x.eco * av.defl[H]; fH.porCamada[c] += x.ecoVP; fH.porK[x.k] += x.ecoVP;
+    unicoAno[H] += x.eco;
+  });
+  if (av.vr) {   // valor residual (fechamento "continuidade"): abate K6.3 no ano H
+    fH.total -= av.vr; fH.unico -= av.vr; fH.nominal -= av.vr / av.disc[H] * av.defl[H]; fH.porCamada[CAMADA_DE_S['K6.3']] -= av.vr; fH.porK.K6 -= av.vr;
+    unicoAno[H] -= av.vr / av.disc[H];
+  }
+  const ids = FASES_MOTOR.map(x => x[0]);
+  const soma = k => ids.reduce((s, id) => s + P[id][k], 0);
+  return { ids, faseAno, porFase: P, total: soma('total'), nominal: soma('nominal'), unico: soma('unico'), recorrente: soma('recorrente'), unicoAno, recorrenteAno: recAno };
+}
+
+// ---------------------------------------------------------------- v14 (BL5.4): indicadores do custo total
+// av.tco = { tcoDescontado (= ctEco), tcoNominal (preços correntes, sem desconto), r, n, cae (custo anual equivalente),
+//   anosAprendiz, anosProfessor (pessoas-ano alcançadas, sem desconto), custoPorAprendizAno, custoPorProfessorAno (null se o
+//   caso não tem esse papel), pRecorrente (parte recorrente do custo total), anual: custo anual em regime }.
+// Convenções:
+//  - TCO descontado = ctEco (preços constantes do Ano 0, descontado à taxa real r; sem desconto quando r = 0). TCO nominal =
+//    a mesma conta em preços correntes (reinflada por π) e sem desconto, com a saída pela mesma ponderação.
+//  - Custo anual equivalente (CAE): VP·r/(1−(1+r)^−n), com n = H + 1 anos de custo (Ano 0 a H); com r = 0, VP/n (função cae()).
+//  - Custo por aprendiz (professor) por ano: custo total ÷ pessoas-ano alcançadas, contando as que usariam em cada ano (E, e não
+//    só as ativas) e o ano inteiro, também no Ano 0. Como o custo total é valor presente, o denominador é descontado com o mesmo
+//    fator (custo nivelado, como o índice de custo unitário); com r = 0 é a divisão simples.
+//    Aprendizes = estudantes; professores = os professores das turmas (E ÷ 25) ou os servidores professores do caso.
+//  - Parte recorrente = recorrente ÷ total (a saída entra como pagamento único).
+//  - Custo anual em regime: o primeiro ano da Expansão em que o uso chega ao patamar final (primeiro t ≥ 2 com E[t] = E[H]); se a
+//    rede não chega à escala plena no horizonte (cfg.demanda.Ealvo maior que E[H]), é o último ano (H), e isso é sinalizado.
+//    Se o caso tem financiamento externo (linhas de uso cedido, nat 'O') que ainda vale nesse ano, vale o primeiro ano depois que
+//    ele acaba (rótulo 'depois_do_financiamento'); se ele dura até o fim do horizonte, vale o ano em regime com o aviso
+//    'financiamento_ate_o_fim'. Em cada ano: custo econômico (preços constantes e correntes) e desembolso da rede (conta
+//    orçamentária, preços correntes).
+function anosCedidos(av) {
+  const r = av.r, T = r.anos, c = r.cfg;
+  const viaLinhas = T.map(t => av.linhas.some(l => l.nat === 'O' && l.v[t] > 0));
+  if (viaLinhas.some(Boolean)) return viaLinhas;
+  // modo sem os doados na conta (opc.doados = false): lê da configuração
+  return T.map(t => (Array.isArray(c.cedidoUso) && +ano(c.cedidoUso, t) > 0) || (c.saas && c.saas.ativo && Array.isArray(c.saas.fatorPreco) && +ano(c.saas.fatorPreco, t) < 1 && ano(c.saas.qtd, t) > 0));
+}
+function indicadoresTCO(av) {
+  const r = av.r, o = r.opc, H = r.H, T = r.anos, f = av.fases, n = H + 1;
+  const { fA, fP } = papeisDe(r);
+  const den = (fx) => T.reduce((s, t) => s + r.E[t] * fx * av.disc[t], 0);
+  const anosAprend = fA == null ? null : T.reduce((s, t) => s + r.E[t] * fA, 0), anosProf = fP == null ? null : T.reduce((s, t) => s + r.E[t] * fP, 0);
+  // ano em regime
+  const Efinal = r.E[H];
+  let base = H;
+  for (let t = Math.min(2, H); t <= H; t++) if (r.E[t] >= Efinal) { base = t; break; }
+  const Ealvo = r.cfg.demanda && r.cfg.demanda.Ealvo != null ? +r.cfg.demanda.Ealvo : Efinal;
+  const escalaPlena = Efinal >= Ealvo - 1e-9;
+  if (!escalaPlena) base = H;
+  const ced = anosCedidos(av);
+  let ultimoCedido = -1; ced.forEach((c, t) => { if (c) ultimoCedido = t; });
+  let ano = base, rotulo = escalaPlena ? 'primeiro_ano_em_escala_plena' : 'ultimo_ano_do_horizonte', externo = null;
+  if (ultimoCedido >= base) {
+    if (ultimoCedido + 1 <= H) { ano = ultimoCedido + 1; rotulo = 'depois_do_financiamento'; externo = { encerraEm: ultimoCedido }; }
+    else { rotulo = 'financiamento_ate_o_fim'; externo = { encerraEm: null }; }
+  }
+  const unicoEco = f.unicoAno[ano];
+  const anual = { ano, fase: f.faseAno[ano], rotulo, financiamentoExterno: externo, escalaPlenaNoHorizonte: escalaPlena,
+    eco: av.ecoAno[ano], nominal: av.ecoAno[ano] * av.defl[ano], desembolso: av.finAno[ano], unico: unicoEco, recorrente: av.ecoAno[ano] - unicoEco };
+  return { tcoDescontado: av.ctEco, tcoNominal: f.nominal, r: o.r, n, cae: cae(av.ctEco, o.r, n),
+    anosAprendiz: anosAprend, anosProfessor: anosProf,
+    custoPorAprendizAno: fA == null || !den(fA) ? null : av.ctEco / den(fA),
+    custoPorProfessorAno: fP == null || !den(fP) ? null : av.ctEco / den(fP),
+    pRecorrente: av.ctEco ? f.recorrente / av.ctEco : 0, anual };
 }
 
 // ---------------------------------------------------------------- v9: componentes de custo × sete camadas
@@ -371,6 +564,7 @@ function indicadores(cfg, av) {
     pCapital: av.fac.capital / av.ctEco,
     anosParaSair: recorrente ? av.saidaTotalNominal / recorrente : 0, recorrenteFin: recorrente,
     usuariosAno: den,
+    tco: av.tco, fases: av.fases,   // v14: indicadores do custo total e custo por fase (ver indicadoresTCO e decomporFases)
   };
 }
 
@@ -402,29 +596,33 @@ function cenarios(cfg) {
 
 // ---------------------------------------------------------------- direcionadores e faixas próprias
 // Faixas (mín, máx) como multiplicadores do valor provável. Convenções editoriais do guia, não evidência.
+// v14 (BL4.1): onde há linha na base de referências (salário, preço da licença, preço do modelo ou da GPU, manutenção, horas de formação),
+// a faixa vem de baixo e alto da linha; as demais (adoção, câmbio, sessões, tokens, chamadas, vazão) continuam convenções do guia.
 function direcionadores(cfg) {
   const arq = arquitetura(cfg), H = opcoes(cfg).H;
+  const esc = (cfg && cfg.escopos) || null;
+  const F = id => refFaixaMult(id, esc);
   const D = [];
   const mult = k => (c, f) => { c.mult = Object.assign({ fx: 1, pessoas: 1, preco: 1 }, c.mult || {}); c.mult[k] *= f; };
   const adoc = (c, f) => { c.demanda.adocao = Array.from({ length: H + 1 }, (_, t) => t === 0 ? ano(cfg.demanda.adocao, 0) : Math.min(0.95, ano(cfg.demanda.adocao, t) * f)); };
   D.push({ id: 'adocao', nome: 'Taxa de adoção', min: 0.6, max: 1.4, ap: adoc, comum: 'adocao' });
-  D.push({ id: 'pessoas', nome: 'Custo carregado de pessoal', min: 0.9, max: 1.15, ap: mult('pessoas') });
+  D.push({ id: 'pessoas', nome: 'Custo carregado de pessoal', min: F('sal.gestor_produto').min, max: F('sal.gestor_produto').max, ap: mult('pessoas') });
   D.push({ id: 'fx', nome: 'Câmbio (itens em moeda estrangeira)', min: 0.9, max: 1.3, ap: mult('fx'), comum: 'fx' });
   if (arq === 'saas') {
-    D.push({ id: 'precoLic', nome: 'Preço da licença', min: 0.95, max: 1.15, ap: (c, f) => { c.saas.preco *= f; } });
-    if (cfg.formacaoTempo && cfg.formacaoTempo.ativo) D.push({ id: 'horasForm', nome: 'Horas de formação por usuário', min: 0.7, max: 1.5, ap: (c, f) => { c.formacaoTempo.horas *= f; } });
+    D.push({ id: 'precoLic', nome: 'Preço da licença', min: F('saas.preco').min, max: F('saas.preco').max, ap: (c, f) => { c.saas.preco *= f; } });
+    if (cfg.formacaoTempo && cfg.formacaoTempo.ativo) D.push({ id: 'horasForm', nome: 'Horas de formação por usuário', min: F('formacao.horas.saas').min, max: F('formacao.horas.saas').max, ap: (c, f) => { c.formacaoTempo.horas *= f; } });
   }
   if (arq === 'api') {
-    if ((cfg.implantacao || []).length) D.push({ id: 'manut', nome: 'Manutenção evolutiva (% da implantação)', min: 0.8, max: 1.5, ap: (c, f) => { c.implantacao[0].manutPct *= f; } });
+    if ((cfg.implantacao || []).length) D.push({ id: 'manut', nome: 'Manutenção evolutiva (% da implantação)', min: F('api.manutPct').min, max: F('api.manutPct').max, ap: (c, f) => { c.implantacao[0].manutPct *= f; } });
     D.push({ id: 's', nome: 'Sessões por usuário', min: 0.7, max: 1.5, ap: (c, f) => { c.demanda.s *= f; }, comum: 'adocao' });
     D.push({ id: 'Tin', nome: 'Tokens de entrada por chamada', min: 0.7, max: 1.5, ap: (c, f) => { c.api.Tin *= f; } });
     D.push({ id: 'k', nome: 'Chamadas por interação', min: 0.8, max: 1.5, ap: (c, f) => { c.api.k *= f; } });
-    D.push({ id: 'preco', nome: 'Preço por token', min: 0.8, max: 1.25, ap: mult('preco') });
+    D.push({ id: 'preco', nome: 'Preço por token', min: F('api.modelo_intermediario.Pin').min, max: F('api.modelo_intermediario.Pin').max, ap: mult('preco') });
   }
   if (arq === 'ow') {
     D.push({ id: 's', nome: 'Sessões por usuário', min: 0.7, max: 1.5, ap: (c, f) => { c.demanda.s *= f; }, comum: 'adocao' });
     D.push({ id: 'theta', nome: 'Vazão por GPU (tokens/s)', min: 0.75, max: 1.2, ap: (c, f) => { c.ow.theta *= f; } });
-    D.push({ id: 'preco', nome: 'Preço da hora de GPU', min: 0.8, max: 1.25, ap: mult('preco') });
+    D.push({ id: 'preco', nome: 'Preço da hora de GPU', min: F('ow.gpu.hora').min, max: F('ow.gpu.hora').max, ap: mult('preco') });
     D.push({ id: 'Tout', nome: 'Tokens de saída por interação', min: 0.7, max: 1.5, ap: (c, f) => { c.ow.Tout *= f; } });
   }
   (cfg.faixas || []).forEach(fx => { const d = D.find(x => x.id === fx.id); if (d) { d.min = fx.min; d.max = fx.max; } });
@@ -595,7 +793,7 @@ function compArquiteturas(cfg) {
   const pessoasOp = r.linhas.filter(l => l.tag === 'opmodelo').reduce((s, l) => s + l.v[t2], 0);
   const resto = res.tot[t2] - infra - pessoasOp;
   const I2 = r.I[t2];
-  const mod = custoChamada(300, 10, 0.20, 1.20);
+  const mod = custoChamada(300, 10, refValor('api.modelo_pequeno.Pin', cfg.escopos), refValor('api.modelo_pequeno.Pout', cfg.escopos));
   const apiCusto = (Pin, Pout) => I2 * (custoChamada(ow.Tin, ow.Tout, Pin, Pout) + mod) + c.armazenamento;
   const pApi = c.pessoasAPI.reduce((s, [sal, fte]) => s + salario(cfg, sal) * fte, 0);
   return { I2, resto, rows: [
@@ -605,16 +803,20 @@ function compArquiteturas(cfg) {
 }
 
 // ---------------------------------------------------------------- exemplos do guia (Cap. 12)
-const PRESETS = {
+// v14 (BL4.1): os valores-padrão dos exemplos vêm da base de referências. construirPresets(esc) refaz os três exemplos
+// com a cadeia de escopos do país (['BRA', 'LAC', 'global']); PRESETS é a versão global, igual à da v13.
+function construirPresets(esc) {
+  const R = id => refValor(id, esc);
+  return {
   A: {
     nome: 'Exemplo A. Copiloto SaaS para professores', arq: 'saas', risco: 'moderado', unidade: 'professor', unidadePl: 'professores',
     demanda: { E: [600, 12000, 12000, 12000], adocao: [0.70, 0.35, 0.45, 0.50], s: 0, i: 0, meses: [4, 12, 12, 12] },
-    saas: { ativo: true, qtd: [600, 12000, 12000, 12000], preco: 9.00, reajuste: 0.04, mesesCobr: [4, 12, 12, 12], fatorPreco: [0, 1, 1, 1], precoNominal: 13.00, fatorNominal: 1.15 },
-    implantacao: [{ cat: 'Integração', nome: 'Integração SSO, diretório e AVA (implantação)', valor: 40000, manutPct: 0.15, nomeManut: 'Manutenção de integrações', s: 'K3.1', sManut: 'K6.1' }],
+    saas: { ativo: true, qtd: [600, 12000, 12000, 12000], refPreco: 'saas.preco', preco: R('saas.preco'), reajuste: 0.04, mesesCobr: [4, 12, 12, 12], fatorPreco: [0, 1, 1, 1], precoNominal: R('saas.precoNominal'), fatorNominal: 1.15 },
+    implantacao: [{ cat: 'Integração', nome: 'Integração SSO, diretório e AVA (implantação)', valor: R('saas.implantacao'), ref: 'saas.implantacao', refManut: 'saas.manutPct', manutPct: R('saas.manutPct'), nomeManut: 'Manutenção de integrações', s: 'K3.1', sManut: 'K6.1' }],
     itens: [
-      { cat: 'Privacidade e conformidade', s: 'K3.3', nome: 'Revisão jurídica e de proteção de dados', nat: 'D', v: [8000, 0, 0, 0] },
-      { cat: 'Avaliação', s: 'K5.5', nome: 'Avaliação independente', nat: 'D', v: [0, 25000, 0, 20000] },
-      { cat: 'Formação e mudança', s: 'K4.3', nome: 'Programa de formação (formadores, materiais)', nat: 'D', v: [20000, 12000, 12000, 12000] },
+      { cat: 'Privacidade e conformidade', s: 'K3.3', nome: 'Revisão jurídica e de proteção de dados', nat: 'D', v: [R('saas.juridico'), 0, 0, 0], refs: ['saas.juridico', null, null, null] },
+      { cat: 'Avaliação', s: 'K5.5', nome: 'Avaliação independente', nat: 'D', v: [0, R('gov.avaliacaoExterna.ano1'), 0, R('gov.avaliacaoExterna.ano3')], refs: [null, 'gov.avaliacaoExterna.ano1', null, 'gov.avaliacaoExterna.ano3'] },
+      { cat: 'Formação e mudança', s: 'K4.3', nome: 'Programa de formação (formadores, materiais)', nat: 'D', v: [R('saas.formacao.ano0'), R('saas.formacao.anual'), R('saas.formacao.anual'), R('saas.formacao.anual')], refs: ['saas.formacao.ano0', 'saas.formacao.anual', 'saas.formacao.anual', 'saas.formacao.anual'] },
     ],
     pessoas: [
       { cat: 'Pessoas', s: 'K3.2', nome: 'Configuração e políticas (TI)', nat: 'C', partes: [['eng_integracao', [0.25, 0, 0, 0]]] },
@@ -624,27 +826,27 @@ const PRESETS = {
       { cat: 'Monitoramento', s: 'K5.3', nome: 'Amostragem pedagógica de qualidade', nat: 'C', partes: [['especialista_pedagogico', [0, 0.2, 0.2, 0.2]]] },
     ],
     suporte: { ativo: true, nome: 'Suporte aos usuários (escalonado)', sal: 'suporte_n1', faixas: [[5000, 0.5]], acima: 1.0, anos: [1, 2, 3] },
-    formacaoTempo: { ativo: true, nome: 'Tempo docente em formação', modo: 'ativos', horas: 3, custoHora: 12, rot: 0.10 },
+    formacaoTempo: { ativo: true, nome: 'Tempo docente em formação', modo: 'ativos', horas: R('formacao.horas.saas'), refHoras: 'formacao.horas.saas', custoHora: R('formacao.custoHora.saas'), refCustoHora: 'formacao.custoHora.saas', rot: 0.10 },
     saida: {
-      itens: [{ nome: 'Exportação e transformação de materiais', valor: 8000 }, { nome: 'Formadores para a nova solução', valor: 8000 }, { nome: 'Desativação, exclusão e evidência', valor: 2000 }],
-      reconstrucaoPct: 0.6, mesesParalelo: 1, horasRetreino: 2, custoHora: 12, internos: [],
+      itens: [{ nome: 'Exportação e transformação de materiais', valor: R('saas.saida.exportacao'), ref: 'saas.saida.exportacao' }, { nome: 'Formadores para a nova solução', valor: R('saas.saida.formadores'), ref: 'saas.saida.formadores' }, { nome: 'Desativação, exclusão e evidência', valor: R('saas.saida.desativacao'), ref: 'saas.saida.desativacao' }],
+      reconstrucaoPct: 0.6, mesesParalelo: 1, horasRetreino: R('saida.horasRetreino.saas'), refHorasRetreino: 'saida.horasRetreino.saas', custoHora: R('formacao.custoHora.saas'), refCustoHora: 'formacao.custoHora.saas', internos: [],
     },
   },
   B: {
     nome: 'Exemplo B. Assistente administrativo com API e RAG', arq: 'api', risco: 'limitado', unidade: 'servidor', unidadePl: 'servidores',
     demanda: { E: [150, 3000, 3000, 3000], adocao: [0.70, 0.40, 0.55, 0.60], s: 12, i: 3, meses: [3, 11, 11, 11] },
-    api: { ativo: true, k: 1.3, Tin: 5000, Tout: 400, h: 0.20, Pin: 2.00, Pout: 10.00, auxAtivo: true, TinAux: 600, ToutAux: 10, PinAux: 0.20, PoutAux: 1.20, Tq: 50, PrerankMil: 1.00 },
-    rag: { ativo: true, docs: 20000, tokDoc: 2500, docsNovos: 4000, reindexAno: 1, paginas: 200000, Ppag: 0.0015, Pemb: 0.10 },
+    api: { ativo: true, k: 1.3, Tin: 5000, Tout: 400, h: 0.20, Pin: R('api.modelo_intermediario.Pin'), Pout: R('api.modelo_intermediario.Pout'), auxAtivo: true, TinAux: 600, ToutAux: 10, PinAux: R('api.modelo_pequeno.Pin'), PoutAux: R('api.modelo_pequeno.Pout'), Tq: 50, PrerankMil: R('api.rerank') },
+    rag: { ativo: true, docs: 20000, tokDoc: 2500, docsNovos: 4000, reindexAno: 1, paginas: 200000, Ppag: R('rag.ocr'), Pemb: R('rag.embeddings') },
     mensais: [
-      { cat: 'Dados e RAG', s: 'K2.4', nome: 'Banco vetorial gerenciado', valor: 200, mesesY0: 6, fx: true },
-      { cat: 'Infraestrutura', s: 'K2.5', nome: 'Hospedagem da aplicação', valor: 900, mesesY0: 6, fx: true },
-      { cat: 'Monitoramento', s: 'K2.5', nome: 'Ferramenta de observabilidade', valor: 250, mesesY0: 6, fx: true },
+      { cat: 'Dados e RAG', s: 'K2.4', nome: 'Banco vetorial gerenciado', valor: R('api.mensal.vetorial'), ref: 'api.mensal.vetorial', mesesY0: 6, fx: true },
+      { cat: 'Infraestrutura', s: 'K2.5', nome: 'Hospedagem da aplicação', valor: R('api.mensal.hospedagem'), ref: 'api.mensal.hospedagem', mesesY0: 6, fx: true },
+      { cat: 'Monitoramento', s: 'K2.5', nome: 'Ferramenta de observabilidade', valor: R('api.mensal.observabilidade'), ref: 'api.mensal.observabilidade', mesesY0: 6, fx: true },
     ],
-    implantacao: [{ cat: 'Integração', nome: 'Desenvolvimento da aplicação, RAG e integrações', valor: 110000, manutPct: 0.20, nomeManut: 'Manutenção evolutiva e adaptação a mudanças de API', s: 'K3.1', sManut: 'K6.1' }],
+    implantacao: [{ cat: 'Integração', nome: 'Desenvolvimento da aplicação, RAG e integrações', valor: R('api.implantacao'), ref: 'api.implantacao', refManut: 'api.manutPct', manutPct: R('api.manutPct'), nomeManut: 'Manutenção evolutiva e adaptação a mudanças de API', s: 'K3.1', sManut: 'K6.1' }],
     itens: [
-      { cat: 'Avaliação', s: 'K3.4', nome: 'Conjunto de avaliação e testes de aceitação', nat: 'D', v: [12000, 0, 0, 0] },
-      { cat: 'Avaliação', s: 'K6.2', nome: 'Reexecução dos testes a cada mudança', nat: 'D', v: [0, 6000, 6000, 6000] },
-      { cat: 'Formação e mudança', s: 'K4.3', nome: 'Formação (materiais e oficinas)', nat: 'D', v: [3000, 4000, 4000, 4000] },
+      { cat: 'Avaliação', s: 'K3.4', nome: 'Conjunto de avaliação e testes de aceitação', nat: 'D', v: [R('gov.testeLocal'), 0, 0, 0], refs: ['gov.testeLocal', null, null, null] },
+      { cat: 'Avaliação', s: 'K6.2', nome: 'Reexecução dos testes a cada mudança', nat: 'D', v: [0, R('gov.reexecucaoTestes'), R('gov.reexecucaoTestes'), R('gov.reexecucaoTestes')], refs: [null, 'gov.reexecucaoTestes', 'gov.reexecucaoTestes', 'gov.reexecucaoTestes'] },
+      { cat: 'Formação e mudança', s: 'K4.3', nome: 'Formação (materiais e oficinas)', nat: 'D', v: [R('api.formacao.ano0'), R('api.formacao.anual'), R('api.formacao.anual'), R('api.formacao.anual')], refs: ['api.formacao.ano0', 'api.formacao.anual', 'api.formacao.anual', 'api.formacao.anual'] },
     ],
     pessoas: [
       { cat: 'Pessoas', s: 'K4.1', nome: 'Curadoria da base de conhecimento', nat: 'C', partes: [['analista_conteudo', [0.25, 0.5, 0.5, 0.5]]] },
@@ -653,26 +855,26 @@ const PRESETS = {
       { cat: 'Governança', s: 'K5.2', nome: 'Privacidade e segurança', nat: 'C', partes: [['analista_privacidade', [0.05, 0.1, 0.1, 0.1]]] },
       { cat: 'Governança', s: 'K5.1', nome: 'Gestão contratual', nat: 'C', partes: [['gestor_contrato', [0, 0.05, 0.05, 0.05]]] },
     ],
-    formacaoTempo: { ativo: true, nome: 'Tempo dos servidores em formação', modo: 'ativos', horas: 1.5, custoHora: 10, rot: 0.10 },
+    formacaoTempo: { ativo: true, nome: 'Tempo dos servidores em formação', modo: 'ativos', horas: R('formacao.horas.api'), refHoras: 'formacao.horas.api', custoHora: R('formacao.custoHora.api'), refCustoHora: 'formacao.custoHora.api', rot: 0.10 },
     saida: {
-      itens: [{ nome: 'Documentação e transferência de conhecimento', valor: 15000 }, { nome: 'Novo teste com o conjunto de avaliação', valor: 10000 }],
-      reconstrucaoPct: 0.30, reindexar: true, reindexFixo: 2000, mesesParalelo: 2, horasRetreino: 0, custoHora: 10,
+      itens: [{ nome: 'Documentação e transferência de conhecimento', valor: R('api.saida.documentacao'), ref: 'api.saida.documentacao' }, { nome: 'Novo teste com o conjunto de avaliação', valor: R('api.saida.novoTeste'), ref: 'api.saida.novoTeste' }],
+      reconstrucaoPct: 0.30, reindexar: true, reindexFixo: R('api.saida.reindexFixo'), refReindex: 'api.saida.reindexFixo', mesesParalelo: 2, horasRetreino: 0, custoHora: R('formacao.custoHora.api'), refCustoHora: 'formacao.custoHora.api',
       internos: [['gestor_produto', 0.125], ['eng_integracao', 0.125]],
     },
   },
   C: {
     nome: 'Exemplo C. Tutor com modelo de pesos abertos', arq: 'ow', risco: 'elevado', unidade: 'estudante', unidadePl: 'estudantes',
     demanda: { E: [6000, 50000, 150000, 150000], adocao: [0.60, 0.45, 0.35, 0.40], s: 8, i: 10, meses: [4, 9, 9, 9] },
-    ow: { ativo: true, Tin: 1800, Tout: 250, fPico: 0.70, hPicoMes: 1600 / 9, phi: 2.0, theta: 600, u: 0.70, red: 1, minFora: 2, Pgpu: 1.32, Pseg: 0.53, nSeg: 2 },
-    mensais: [{ cat: 'Infraestrutura', s: 'K2.5', nome: 'Armazenamento, rede, registros e balanceamento', valor: 1500, mesesY0: 4, fx: true }],
-    implantacao: [{ cat: 'Integração', nome: 'Plataforma do tutor e integrações (implantação)', valor: 180000, manutPct: 0.15, nomeManut: 'Manutenção da plataforma e integrações', s: 'K3.1', sManut: 'K6.1' }],
+    ow: { ativo: true, Tin: 1800, Tout: 250, fPico: 0.70, hPicoMes: 1600 / 9, phi: 2.0, theta: 600, u: 0.70, red: 1, minFora: 2, Pgpu: R('ow.gpu.hora'), Pseg: R('ow.seg.hora'), nSeg: 2 },
+    mensais: [{ cat: 'Infraestrutura', s: 'K2.5', nome: 'Armazenamento, rede, registros e balanceamento', valor: R('ow.mensal.infra'), ref: 'ow.mensal.infra', mesesY0: 4, fx: true }],
+    implantacao: [{ cat: 'Integração', nome: 'Plataforma do tutor e integrações (implantação)', valor: R('ow.implantacao'), ref: 'ow.implantacao', refManut: 'ow.manutPct', manutPct: R('ow.manutPct'), nomeManut: 'Manutenção da plataforma e integrações', s: 'K3.1', sManut: 'K6.1' }],
     itens: [
-      { cat: 'Dados', s: 'K3.2', nome: 'Alinhamento curricular, instruções e conjuntos de teste', nat: 'D', v: [20000, 0, 0, 0] },
-      { cat: 'Privacidade e conformidade', s: 'K3.3', nome: 'Avaliação de impacto e proteção de crianças', nat: 'D', v: [15000, 0, 0, 0] },
-      { cat: 'Governança', s: 'K5.4', nome: 'Testes adversariais externos e auditoria', nat: 'D', v: [0, 45000, 45000, 45000] },
-      { cat: 'Avaliação', s: 'K5.5', nome: 'Avaliação de impacto (desenho comparativo)', nat: 'D', v: [0, 60000, 60000, 0] },
-      { cat: 'Mudança tecnológica', s: 'K6.2', nome: 'Reavaliação por troca de versão do modelo', nat: 'D', v: [0, 10000, 10000, 10000] },
-      { cat: 'Formação e mudança', s: 'K4.3', nome: 'Formação de professores', nat: 'D', v: [10000, 15000, 15000, 15000] },
+      { cat: 'Dados', s: 'K3.2', nome: 'Alinhamento curricular, instruções e conjuntos de teste', nat: 'D', v: [R('ow.curricular'), 0, 0, 0], refs: ['ow.curricular', null, null, null] },
+      { cat: 'Privacidade e conformidade', s: 'K3.3', nome: 'Avaliação de impacto e proteção de crianças', nat: 'D', v: [R('ow.protecao'), 0, 0, 0], refs: ['ow.protecao', null, null, null] },
+      { cat: 'Governança', s: 'K5.4', nome: 'Testes adversariais externos e auditoria', nat: 'D', v: [0, R('gov.testesAdversariais'), R('gov.testesAdversariais'), R('gov.testesAdversariais')], refs: [null, 'gov.testesAdversariais', 'gov.testesAdversariais', 'gov.testesAdversariais'] },
+      { cat: 'Avaliação', s: 'K5.5', nome: 'Avaliação de impacto (desenho comparativo)', nat: 'D', v: [0, R('gov.avaliacaoImpacto'), R('gov.avaliacaoImpacto'), 0], refs: [null, 'gov.avaliacaoImpacto', 'gov.avaliacaoImpacto', null] },
+      { cat: 'Mudança tecnológica', s: 'K6.2', nome: 'Reavaliação por troca de versão do modelo', nat: 'D', v: [0, R('gov.reavaliacao.alto'), R('gov.reavaliacao.alto'), R('gov.reavaliacao.alto')], refs: [null, 'gov.reavaliacao.alto', 'gov.reavaliacao.alto', 'gov.reavaliacao.alto'] },
+      { cat: 'Formação e mudança', s: 'K4.3', nome: 'Formação de professores', nat: 'D', v: [R('ow.formacao.ano0'), R('ow.formacao.anual'), R('ow.formacao.anual'), R('ow.formacao.anual')], refs: ['ow.formacao.ano0', 'ow.formacao.anual', 'ow.formacao.anual', 'ow.formacao.anual'] },
     ],
     pessoas: [
       { cat: 'Pessoas', s: 'K4.1', nome: 'Engenharia de ML e operação do modelo', nat: 'D', tag: 'opmodelo', partes: [['eng_ml', [0.5, 1, 1, 1]]] },
@@ -683,20 +885,23 @@ const PRESETS = {
       { cat: 'Governança', s: 'K5.1', nome: 'Gestão contratual', nat: 'C', partes: [['gestor_contrato', [0.05, 0.1, 0.1, 0.1]]] },
     ],
     suporte: { ativo: true, nome: 'Suporte às escolas (escalonado)', sal: 'suporte_n1', faixas: [[20000, 0.5], [60000, 1.0]], acima: 1.5, anos: [0, 1, 2, 3] },
-    formacaoTempo: { ativo: true, nome: 'Tempo docente em formação', modo: 'razao', razao: 50, horas: 2, custoHora: 12, rot: 0 },
+    formacaoTempo: { ativo: true, nome: 'Tempo docente em formação', modo: 'razao', razao: 50, horas: R('formacao.horas.ow'), refHoras: 'formacao.horas.ow', custoHora: R('formacao.custoHora.ow'), refCustoHora: 'formacao.custoHora.ow', rot: 0 },
     comparaAPI: {
-      armazenamento: 18000, pessoasAPI: [['eng_ml', 0.3], ['eng_integracao', 0.1]],
-      opcoes: [{ nome: 'API, modelo pequeno (US$ 0,20 / 1,20 por milhão de tokens)', Pin: 0.20, Pout: 1.20 }, { nome: 'API, modelo intermediário (US$ 2,00 / 10,00)', Pin: 2.00, Pout: 10.00 }],
+      armazenamento: R('ow.comparaAPI.armazenamento'), pessoasAPI: [['eng_ml', 0.3], ['eng_integracao', 0.1]],
+      opcoes: [{ nome: 'API, modelo pequeno (US$ 0,20 / 1,20 por milhão de tokens)', Pin: R('api.modelo_pequeno.Pin'), Pout: R('api.modelo_pequeno.Pout') }, { nome: 'API, modelo intermediário (US$ 2,00 / 10,00)', Pin: R('api.modelo_intermediario.Pin'), Pout: R('api.modelo_intermediario.Pout') }],
     },
     saida: {
-      itens: [{ nome: 'Transferência de conhecimento e documentação', valor: 25000 }, { nome: 'Novo ciclo de testes e de segurança', valor: 30000 }],
-      reconstrucaoPct: 0.25, mesesParalelo: 1, horasRetreino: 0, custoHora: 12,
+      itens: [{ nome: 'Transferência de conhecimento e documentação', valor: R('ow.saida.transferencia'), ref: 'ow.saida.transferencia' }, { nome: 'Novo ciclo de testes e de segurança', valor: R('ow.saida.novoCiclo'), ref: 'ow.saida.novoCiclo' }],
+      reconstrucaoPct: 0.25, mesesParalelo: 1, horasRetreino: 0, custoHora: R('formacao.custoHora.ow'), refCustoHora: 'formacao.custoHora.ow',
       internos: [['gestor_produto', 0.3], ['especialista_pedagogico', 0.2]],
     },
   },
-};
+  };
+}
+const PRESETS = construirPresets();
 // moeda dos itens: implantação e itens locais (LOC) por padrão; serviços mensais e licenças em US$
 
-export { ARVORE, NOME_K, NOME_S, K_DE_S, MAPA_CAT, SAL, SAL_NOME, OPC_COMPAT, OPC_PADRAO, clone, opcoes, ano, custoChamada, salario, arquitetura,
+export { salariosPara, PAPEIS_SAL, construirPresets, ARVORE, NOME_K, NOME_S, K_DE_S, MAPA_CAT, SAL, SAL_NOME, OPC_COMPAT, OPC_PADRAO, clone, opcoes, ano, custoChamada, salario, arquitetura,
   calcular, resumo, avaliar, indicadores, cfgAltaAdocao, cfgEstresse, cenarios, direcionadores, tornado, sensibilidade, simular, orcamento, orcamentoDeLinhas,
-  lmdi, laspeyres, cae, comparar, equidade, compLicenca, compArquiteturas, PRESETS, quantil, fatorAdapt, CAMADA_DE_S, somaPorCamada };
+  lmdi, laspeyres, cae, comparar, equidade, compLicenca, compArquiteturas, PRESETS, quantil, fatorAdapt, CAMADA_DE_S, somaPorCamada,
+  FASES_MOTOR, faseDoAno, decomporFases, indicadoresTCO, papeisDe };

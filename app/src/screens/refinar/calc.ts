@@ -3,7 +3,7 @@
 // src/custos_ui.js da v13 (renderCustosResultados, tabelaArvore, cfgAlternativa, seletor de moeda, CSV); o motor
 // (calcular, avaliar, indicadores, orcamento, cenarios, tornado, simular…) não é reimplementado aqui.
 import {
-  ARVORE, NOME_K, NOME_S, MAPA_CAT, OPC_PADRAO, clone, opcoes, ano, arquitetura, calcular, avaliar, indicadores, orcamento,
+  ARVORE, NOME_K, NOME_S, MAPA_CAT, OPC_PADRAO, CAMADAS, FASES_MOTOR, clone, opcoes, ano, arquitetura, calcular, avaliar, indicadores, orcamento,
   orcamentoDeLinhas, explicacaoCusto, getTabelaMoedas, nomeMoeda, moedaInfo, sepNum, tr, LOC,
 } from '../../domain';
 import type { AbaRefinar } from '../../percurso/rota';
@@ -51,10 +51,25 @@ export interface LinhaArvore {
   /** tem filhos (componente com subcomponentes; subcomponente com insumos) */
   expansivel: boolean;
   aberto: boolean;
-  /** insumo: natureza, moeda, capital, variável, fim do horizonte */
+  /** insumo: natureza, moeda, capital, variável, fim do horizonte, pagamento único e/ou recorrente */
   tags?: string[];
   unidade?: string;
+  /** insumo: pagamento único, recorrente ou os dois (MOT-09) */
+  pagamento?: Pagamento;
 }
+
+// ----------------------------------------------------------- pagamento único × recorrente por insumo (MOT-09)
+export type Pagamento = 'unico' | 'recorrente' | 'misto';
+/** Pagamento de um insumo: a parte única (`vu`, da regra do motor ou de x.parte/x.vu) sobre o valor da linha, somados os anos. */
+export function pagamentoDaLinha(l: { v?: number[]; vu?: number[] }): Pagamento {
+  const tv = (l.v || []).reduce((a, b) => a + (+b || 0), 0);
+  const tu = (l.vu || []).reduce((a, b) => a + (+b || 0), 0);
+  if (!(tv > 0)) return 'recorrente';
+  const f = tu / tv;
+  return f >= 0.999 ? 'unico' : f <= 0.001 ? 'recorrente' : 'misto';
+}
+/** etiquetas do pagamento (pagamento único, recorrente; os dois no misto), já traduzidas */
+export const etiquetasPagamento = (p: Pagamento): string[] => (p === 'unico' ? [tr('Pagamento único')] : p === 'recorrente' ? [tr('Recorrente')] : [tr('Pagamento único'), tr('Recorrente')]);
 /** linhas visíveis da árvore (porte de tabelaArvore, custos_ui.js), mais a linha de total no fim */
 export function linhasArvore(av: any, ind: any, conta: Conta, abertos: Record<string, boolean>): { linhas: LinhaArvore[]; total: LinhaArvore } {
   const T: number[] = av.r.anos;
@@ -86,12 +101,14 @@ export function linhasArvore(av: any, ind: any, conta: Conta, abertos: Record<st
         if (l.moeda === 'USD') tags.push('US$');
         if (l.orc === 'capital') tags.push(tr('capital'));
         if (l.comp === 'V' || l.tag === 'gpu') tags.push(tr('variável'));
+        const pagamento = pagamentoDaLinha(l);
+        tags.push(...etiquetasPagamento(pagamento));
         const v = totL(l);
-        out.push({ id: s + ':' + i, nivel: 2, rotulo: tr(l.nome), k, serie: serieLinha(l), total: v, porUsuario: pu(v), pct: null, expansivel: false, aberto: false, tags, unidade: l.un ? tr(l.un) : '' });
+        out.push({ id: s + ':' + i, nivel: 2, rotulo: tr(l.nome), k, serie: serieLinha(l), total: v, porUsuario: pu(v), pct: null, expansivel: false, aberto: false, tags, unidade: l.un ? tr(l.un) : '', pagamento });
       });
       if (s === 'K6.3') av.saida.forEach((x: any, i: number) => {
         const v = conta === 'fin' ? (x.nat === 'D' ? x.valor : 0) : x.ecoVP;
-        out.push({ id: 'saida:' + i, nivel: 2, rotulo: tr(x.nome), k, serie: T.map((_, j) => (j === T.length - 1 ? v : 0)), total: v, porUsuario: pu(v), pct: null, expansivel: false, aberto: false, tags: [tr('fim do horizonte')] });
+        out.push({ id: 'saida:' + i, nivel: 2, rotulo: tr(x.nome), k, serie: T.map((_, j) => (j === T.length - 1 ? v : 0)), total: v, porUsuario: pu(v), pct: null, expansivel: false, aberto: false, tags: [tr('fim do horizonte'), ...etiquetasPagamento('unico')], pagamento: 'unico' });
       });
     });
   });
@@ -188,26 +205,85 @@ export function taxaReferencia(cod: string): number | null {
 // campos; BOM para o Excel. Porte de csvCustos (custos_ui.js), que só exportava US$ com vírgula.
 export function csvCustosMoeda(cfg0: any): string {
   const cfg = cfgPronta(cfg0);
-  const r = calcular(cfg), av = avaliar(r), T: number[] = r.anos;
+  const r = calcular(cfg), av: any = avaliar(r), T: number[] = r.anos;
   const m = moedaInfo();
   const dec = sepNum().decimal || '.';
   const q = (s: any) => '"' + String(tr(s ?? '')).replace(/"/g, '""') + '"';
   const nf = (v: number) => (v * m.f).toFixed(2).replace('.', dec);
-  const cab = ['Componente', 'Subcomponente', 'Insumo', 'Natureza', 'Comportamento', 'Moeda', 'Classificação orçamentária', 'Unidade'].map((x) => q(x))
+  // fases (MOT-10): total econômico de cada linha por fase, no mesmo valor presente do total; entre os anos e o total
+  const fases = av.fases;
+  const ids: string[] = fases ? fases.ids : [];
+  const nomeFase = (id: string) => String((FASES_MOTOR as any[]).find((x) => x[0] === id)?.[1] || id);
+  const porFase = (eco: number[]): number[] => ids.map((id) => T.reduce((a, t) => a + (fases.faseAno[t] === id ? (eco[t] || 0) * av.disc[t] : 0), 0));
+  const pagamento = (p: Pagamento) => etiquetasPagamento(p).join(' + ');
+  const cab = ['Componente', 'Subcomponente', 'Insumo', 'Natureza', 'Comportamento', 'Moeda', 'Classificação orçamentária', 'Unidade', 'Pagamento'].map((x) => q(x))
     .concat(T.map((t) => q(tr('Ano ' + t) + ' (' + tr('nominal') + ', ' + m.cod + ')')))
+    .concat(ids.map((id) => q(tr(nomeFase(id)) + ' (' + m.cod + ')')))
     .concat([q(tr('Total econômico') + ' (' + m.cod + ', ' + tr('preços constantes do Ano 0') + ')')]);
   const L = [cab.join(';')];
   const nat = (n: string) => tr(({ D: 'desembolso', C: 'capacidade', O: 'cedido' } as Record<string, string>)[n] || n);
-  av.linhas.forEach((l: any) => L.push([l.k, l.s, q(l.nome), q(nat(l.nat)), l.comp, l.moeda, l.orc, q(l.un), ...l.v.map(nf), nf(l.ecoVP)].join(';')));
-  av.saida.forEach((x: any) => L.push(['K6', 'K6.3', q(x.nome), q(nat(x.nat)), q(tr('contingente')), x.moeda, 'corrente', '', ...T.map((_, i) => (i === T.length - 1 ? nf(x.valor) : '')), nf(x.ecoVP)].join(';')));
+  av.linhas.forEach((l: any) => L.push([l.k, l.s, q(l.nome), q(nat(l.nat)), l.comp, l.moeda, l.orc, q(l.un), q(pagamento(pagamentoDaLinha(l))), ...l.v.map(nf), ...porFase(l.eco).map(nf), nf(l.ecoVP)].join(';')));
+  av.saida.forEach((x: any) => {
+    const noH = ids.map((id) => (fases && fases.faseAno[T[T.length - 1]] === id ? x.ecoVP : 0));
+    L.push(['K6', 'K6.3', q(x.nome), q(nat(x.nat)), q(tr('contingente')), x.moeda, 'corrente', '', q(pagamento('unico')), ...T.map((_, i) => (i === T.length - 1 ? nf(x.valor) : '')), ...noH.map(nf), nf(x.ecoVP)].join(';'));
+  });
   return '﻿' + L.join('\n');
+}
+
+// ----------------------------------------------------------- custo por fase (MOT-10)
+// Os dados vêm de av.fases (decomporFases): a soma das fases é exatamente o custo total (ctEco). A "fase" do motor
+// (Prova de conceito ou piloto, Implantação, Expansão) é o calendário dos anos, e não a "Fase" do percurso.
+export interface LinhaFase {
+  id: string; nome: string; anos: number[]; rotuloAnos: string;
+  unico: number; recorrente: number; total: number; pUnico: number;
+  /** máximo de pessoas alcançadas na fase (E), de aprendizes e de professores (null quando o caso não tem o papel) */
+  pessoas: number; aprendizes: number | null; professores: number | null;
+}
+const rotuloAnosFase = (anos: number[]): string => (anos.length === 1 ? tr('Ano ' + anos[0]) : tr('Anos ' + anos[0] + ' a ' + anos[anos.length - 1]));
+/** fases que têm pelo menos um ano (com horizonte de 1 ano não há Expansão), com o total; o total de pessoas é o máximo entre as fases, não a soma */
+export function tabelaFases(av: any): { linhas: LinhaFase[]; total: { unico: number; recorrente: number; total: number; pUnico: number; pessoas: number } } | null {
+  const f = av && av.fases;
+  if (!f || !f.porFase) return null;
+  const linhas: LinhaFase[] = (f.ids as string[]).map((id) => f.porFase[id]).filter((x: any) => x && x.anos.length).map((x: any) => ({
+    id: x.id, nome: x.nome, anos: x.anos, rotuloAnos: rotuloAnosFase(x.anos),
+    unico: x.unico, recorrente: x.recorrente, total: x.total, pUnico: x.total ? x.unico / x.total : 0,
+    pessoas: x.pessoas, aprendizes: x.aprendizes, professores: x.professores,
+  }));
+  return {
+    linhas,
+    total: { unico: f.unico, recorrente: f.recorrente, total: f.total, pUnico: f.total ? f.unico / f.total : 0, pessoas: Math.max(0, ...linhas.map((x) => x.pessoas)) },
+  };
+}
+
+export type DetalheFase = 'camada' | 'componente';
+export interface LinhaDetalheFase { id: string; rotulo: string; porFase: Record<string, number>; total: number }
+/** Custo por fase aberto em camadas (7) ou em componentes (K1–K6); some a linha que não tem custo em nenhuma fase. Cada coluna soma o total da fase. */
+export function detalhePorFase(av: any, tipo: DetalheFase): { fases: { id: string; nome: string }[]; linhas: LinhaDetalheFase[] } | null {
+  const f = av && av.fases;
+  if (!f || !f.porFase) return null;
+  const fases = (f.ids as string[]).filter((id) => f.porFase[id].anos.length).map((id) => ({ id, nome: f.porFase[id].nome as string }));
+  const itens: [string, string, (id: string) => number][] = tipo === 'camada'
+    ? (CAMADAS as any[]).map(([n, nome]) => [String(n), tr(nome) as string, (id: string) => +f.porFase[id].porCamada[n] || 0] as [string, string, (id: string) => number])
+    : (ARVORE as any[]).map(([k, nk]) => [k, k + ' ' + tr(nk), (id: string) => +f.porFase[id].porK[k] || 0] as [string, string, (id: string) => number]);
+  const linhas = itens.map(([id, rotulo, de]) => {
+    const por: Record<string, number> = {};
+    fases.forEach((x) => { por[x.id] = de(x.id); });
+    return { id, rotulo, porFase: por, total: fases.reduce((a, x) => a + por[x.id], 0) };
+  }).filter((l) => Math.abs(l.total) > 0.5 || fases.some((x) => Math.abs(l.porFase[x.id]) > 0.5));
+  return { fases, linhas };
 }
 
 // ----------------------------------------------------------- foco ("de onde vem?" → Ajustar premissas)
 // O foco é o caminho de um campo da cfg ('demanda.adocao', 'saas.preco', 'opc.pi', 'itens.2') ou o id de uma
 // seção ('demanda', 'tempo', 'insumos', 'arvore', 'orcamento', 'contas', 'arquitetura', 'licenca', 'cenarios',
 // 'tornado', 'montecarlo', 'indicadores') ou de um KPI do plano ('kpi.total'…).
-const FOCO_KPI: Record<string, string> = { 'kpi.ano0': 'contas', 'kpi.anual': 'orcamento', 'kpi.total': 'contas', 'kpi.porAluno': 'indicadores' };
+// MOT-12: os números do motor levam ao campo da premissa (curva → pessoas por ano, reposição → ciclo, rotatividade → formação,
+// custo por fase e pagamento único × recorrente → o bloco "Custo por fase").
+const FOCO_KPI: Record<string, string> = {
+  'kpi.ano0': 'contas', 'kpi.anual': 'orcamento', 'kpi.total': 'contas', 'kpi.porAluno': 'indicadores',
+  'kpi.fases': 'fases', 'kpi.unicoRecorrente': 'fases', 'kpi.regime': 'indicadores', 'kpi.tco': 'indicadores',
+  'kpi.curva': 'demanda.E', 'kpi.reposicao': 'reposicao.ciclo', 'kpi.rotatividade': 'formacaoTempo',
+};
 export function focoNormal(foco?: string): string | undefined {
   if (!foco) return undefined;
   const f = decodeURIComponent(foco);
@@ -218,7 +294,7 @@ export function abaDoFoco(foco?: string): AbaRefinar | null {
   if (!f) return null;
   const raiz = f.split('.')[0];
   if (['saas', 'api', 'rag', 'ow', 'ferramentas', 'arquitetura', 'licenca', 'arquiteturas', 'comparaAPI'].includes(raiz)) return 'ferramentas';
-  if (['cenarios', 'tornado', 'faixas', 'montecarlo', 'indicadores', 'alternativas', 'equidade', 'avancado-analises'].includes(raiz)) return 'cenarios';
+  if (['cenarios', 'tornado', 'faixas', 'montecarlo', 'indicadores', 'fases', 'alternativas', 'equidade', 'avancado-analises'].includes(raiz)) return 'cenarios';
   return 'premissas';
 }
 /** ids candidatos para rolar até o foco: o caminho inteiro e os prefixos ('demanda.adocao.1' → 'demanda.adocao' → 'demanda') */

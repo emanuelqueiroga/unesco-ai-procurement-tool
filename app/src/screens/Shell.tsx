@@ -73,7 +73,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   const atalhos = (
     <>
       <Button variant="secondary" size="sm" href={href.inicio()}>{t('Início')}</Button>
-      <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog">{t('Matriz')}</Button>
+      <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={t('Matriz camadas × fases')}>{t('Matriz')}</Button>
       {s.modo === 'refinar' ? <Button variant="secondary" size="sm" href={href.refinar()}>{t('Calculadora')}</Button> : null}
     </>
   );

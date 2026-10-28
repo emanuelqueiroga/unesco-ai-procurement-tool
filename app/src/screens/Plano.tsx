@@ -2,6 +2,9 @@
 // relatório em PDF e o caso em JSON. As seções vêm de src/plano/secoes.js (porte de src/resumo.js da v13).
 // P3: links "Rever a resposta" para qualquer pergunta (href.campo), lacunas nas duas classes (as mesmas do PDF),
 // fatos do caso em fichas, "de onde vem?" nos KPIs, gráfico da dotação por exercício, índice interno, impressão.
+// 0.0.15 (REL-01 a REL-08, REL-12, REL-16): "Em resumo" é o sumário executivo (custo total com a faixa P10–P90,
+// indicadores com o nome de cada denominador, seis respostas, cinco ações em cartões, um iceberg por fase e os três
+// maiores direcionadores); cada página abre com a pergunta de decisão, o parágrafo de abertura e o título-achado.
 import { useEffect, useMemo, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { CAMADAS, QUANDO_REC, TIPO_REC, LOC, getLang, tr, mil, unidMil } from '../domain';
@@ -18,6 +21,9 @@ import { t, plural, minusc } from '../percurso/textos';
 import { href, type PaginaPlano } from '../percurso/rota';
 import { lacunasDe, tituloParcial, textoLacunas, textoAltas, rotuloOrigem, driversDe, explicacaoKpi, type KpiOuSaida, type Painel, type RecPlano } from '../percurso/painel';
 import { secoesPlano, trSecao, painelPlano } from '../plano/secoes.js';
+import { R } from '../plano/relatorio.js';
+import { Iceberg } from './Iceberg';
+import { FaixaTco, IndicadoresResumo, SeisRespostas, AcoesResumo, Direcionadores, ComoLer, type SumarioPlano } from './Sumario';
 import figuraTCO from '../../../assets/fig1_tco.jpg';
 import './plano.css';
 
@@ -99,6 +105,7 @@ function ConteudoOrigem({ s, id, origem }: { s: CasoStore; id: KpiOuSaida; orige
       {x.premissas.length ? (
         <span className="pc-pop-bloco"><b>{t('Premissas que o alimentam')}</b>{x.premissas.map((l, i) => <span key={i} className="pc-pop-item">{l}</span>)}</span>
       ) : null}
+      {(x as any).fontes ? <span className="pc-pop-bloco">{(x as any).fontes}</span> : null}
       {x.drivers.length ? (
         <span className="pc-pop-bloco">
           <b>{t('Respostas que mais pesam')}</b>
@@ -124,6 +131,7 @@ export function OrigemKpi({ s, id, origem, rotuloKpi, alinharAoFim }: { s: CasoS
           <>
             <a href={href.refinar('premissas', String(id).startsWith('kpi.') ? String(id) : undefined)}>{t('Ajustar premissas')}</a>
             {ir ? <a href={ir.href}>{t('Ir à pergunta')}</a> : null}
+            <a href={href.plano('apendice')}>{t('Ver premissas e fontes')}</a>
           </>
         )}
       >
@@ -199,24 +207,6 @@ function TituloEditavel({ s, p }: { s: CasoStore; p: Painel }) {
   );
 }
 
-function KpisResumo({ s, p }: { s: CasoStore; p: Painel }) {
-  const estreito = useMediaQuery('(max-width: 900px)');
-  const cols = estreito ? 2 : 4;
-  return (
-    <div className="pc-kpis">
-      {p.kpis.map((k, i) => (
-        <KpiTile
-          key={k.id}
-          label={k.label}
-          value={k.value}
-          fullValue={k.fullValue}
-          origin={<OrigemKpi s={s} id={k.id} origem={k.origem} rotuloKpi={k.label} alinharAoFim={i % cols >= cols / 2} />}
-        />
-      ))}
-    </div>
-  );
-}
-
 function SemNumeros({ p }: { p: Painel }) {
   return (
     <Alert kind="info" title={t('Ainda sem números')}>
@@ -232,12 +222,17 @@ function SemNumeros({ p }: { p: Painel }) {
   );
 }
 
-function Resumo({ s, p, principal, fatos }: { s: CasoStore; p: Painel; principal: string; fatos: [string, string][] }) {
+function Resumo({ s, p, principal, sum }: { s: CasoStore; p: Painel; principal: string; sum: SumarioPlano | null }) {
   const L = p.lacunas;
-  const altas = p.recs.filter((r) => r.prioridade === 'alta');
-  const topo = altas.length ? altas.slice(0, 3) : p.recs.slice(0, 3);
-  const numero = numerar(p.recs);
   const data = new Date().toLocaleDateString(LOC(), { year: 'numeric', month: 'long', day: 'numeric' });
+  // "de onde vem?" dos números do sumário: o KPI do painel que os explica (origem e respostas que pesam)
+  const origem = (kpi: string, rotulo: string, fim: boolean) => {
+    const k = p.kpis.find((z) => z.id === kpi);
+    return k ? <OrigemKpi s={s} id={kpi as KpiOuSaida} origem={k.origem} rotuloKpi={rotulo} alinharAoFim={fim} /> : null;
+  };
+  const kTotal = p.kpis.find((z) => z.id === 'kpi.total');
+  const links: Record<string, string | undefined> = Object.fromEntries(p.recs.map((r) => [r.id, r.href]));
+  const comNumeros = p.temNumeros && !!sum && sum.numeros && !!sum.faixa;
   return (
     <>
       <header className="pc-plano-capa">
@@ -246,6 +241,7 @@ function Resumo({ s, p, principal, fatos }: { s: CasoStore; p: Painel; principal
         {p.fatos ? <p className="pc-plano-fatos">{p.fatos}</p> : null}
         <p className="pc-nota">{t('Gerado em')} {data}{s.exemplo !== 'novo' ? ' · ' + t('Exemplo ilustrativo: as respostas não são de uma rede real.') : ''}</p>
       </header>
+      <p className="pc-lead">{R('sinteseAbre')}</p>
       {principal ? (
         <div className="pc-callout">
           <span className="pc-callout-rotulo">{t('Recomendação principal')}</span>
@@ -258,40 +254,36 @@ function Resumo({ s, p, principal, fatos }: { s: CasoStore; p: Painel; principal
           {textoLacunas(L)} {t('O plano já pode ser usado; o que depende dessas respostas usa premissas padrão.')} <a href={href.plano('faltam')}>{t('Ver o que falta')}</a>
         </Alert>
       ) : null}
-      {p.temNumeros ? (
-        <>
-          <KpisResumo s={s} p={p} />
-          <BarrasCamadas p={p} />
-        </>
+      {comNumeros ? (
+        <section className="pc-plano-sec" id="sec-numeros" aria-label={t('Os números principais')}>
+          <FaixaTco f={sum!.faixa!} rotulo={kTotal ? kTotal.label : sum!.faixa!.rotulo} origem={origem('kpi.total', sum!.faixa!.rotulo, false)} />
+          <IndicadoresResumo L={sum!.indicadores} origem={origem} />
+        </section>
       ) : <SemNumeros p={p} />}
-      {fatos.length ? (
-        <section className="pc-plano-sec" id="sec-fatos">
-          <h2 className="pc-plano-h2">{t('Fatos do caso')}</h2>
-          <dl className="pc-fichas">
-            {fatos.map(([k, v]) => <div key={k} className="pc-ficha"><dt>{k}</dt><dd>{v}</dd></div>)}
-          </dl>
-          <a href={href.plano('apendice')}>{t('Ver o perfil completo do caso')}</a>
+      {sum ? <SeisRespostas L={sum.exec} /> : null}
+      <a href={href.plano('apendice')}>{t('Ver o perfil completo do caso')}</a>
+      {sum ? <AcoesResumo L={sum.acoes} total={p.recs.length} links={links} /> : null}
+      {comNumeros && sum ? (
+        <section className="pc-plano-sec" id="sec-custo-resumo">
+          <h2 className="pc-plano-h2">{R('custoT')}</h2>
+          <p className="pc-nota">{R('custoAbre')}</p>
+          {sum.ice ? <Iceberg ice={sum.ice} /> : null}
+          <Direcionadores L={sum.drivers} />
         </section>
       ) : null}
-      {topo.length ? (
-        <section className="pc-plano-sec">
-          <h2 className="pc-plano-h2">{altas.length ? t('Comece por estas') : t('Ações recomendadas')}</h2>
-          <div className="pc-recs">{topo.map((r) => <Rec key={r.id} r={r} n={numero.get(r.id)} />)}</div>
-          <a href={href.plano('fazer')}>{t('Ver todas as {n} recomendações, por momento', { n: p.recs.length })}</a>
-        </section>
-      ) : null}
+      <ComoLer />
     </>
   );
 }
 
 // ----------------------------------------------------------- O que fazer
-function Fazer({ p, secs }: { p: Painel; secs: SecaoPlano[] }) {
+function Fazer({ p, secs, achado }: { p: Painel; secs: SecaoPlano[]; achado?: string }) {
   const numero = numerar(p.recs);
   const nCusto = p.recs.filter((r) => r.tipo === 'custo').length, nPol = p.recs.length - nCusto;
   return (
     <>
-      <h1 className="pc-plano-titulo">{t('O que fazer')}</h1>
-      <p className="pc-lead">{t('Ações geradas a partir das respostas deste caso, por momento e prioridade. Cada ação mostra a pergunta que a originou: se mudar a resposta, a lista muda.')}</p>
+      <Abertura titulo={t('O que fazer')} pergunta={R('q5')} achado={achado} intro={t('Ações geradas a partir das respostas deste caso, por momento e prioridade. Cada ação mostra a pergunta que a originou: se mudar a resposta, a lista muda.')} />
+      {p.recs.length ? <p className="pc-nota">{t('As cinco primeiras, com o detalhe de cada uma, estão em “Em resumo”.')}</p> : null}
       {!p.recs.length ? <Alert kind="info" title={t('Ainda não há respostas suficientes para recomendar ações.')} /> : (
         <p className="pc-contagens" aria-label={t('Resumo das ações')}>
           <span className="pc-selo">{plural(p.recs.length, '{n} ação no total', '{n} ações no total')}</span>
@@ -316,16 +308,27 @@ function Fazer({ p, secs }: { p: Painel; secs: SecaoPlano[] }) {
 }
 
 // ----------------------------------------------------------- páginas com seções
-function Pagina({ titulo, intro, secs, pagina, extra, kpiOrigem }: {
-  titulo: string; intro?: string; secs: SecaoPlano[]; pagina: string;
+/** Abertura de uma página do plano: a pergunta de decisão (etiqueta), o título, o achado em número e o parágrafo. */
+function Abertura({ titulo, pergunta, achado, intro }: { titulo: string; pergunta?: string; achado?: string; intro?: string }) {
+  return (
+    <header className="pc-abertura">
+      {pergunta ? <p className="pc-kicker">{pergunta}</p> : null}
+      <h1 className="pc-plano-titulo">{titulo}</h1>
+      {achado ? <p className="pc-achado">{achado}</p> : null}
+      {intro ? <p className="pc-lead">{intro}</p> : null}
+    </header>
+  );
+}
+
+function Pagina({ titulo, pergunta, achado, intro, secs, pagina, extra, kpiOrigem }: {
+  titulo: string; pergunta?: string; achado?: string; intro?: string; secs: SecaoPlano[]; pagina: string;
   /** conteúdo no fim de uma seção (pelo id) */
   extra?: Record<string, React.ReactNode>;
   kpiOrigem?: Record<string, (i: number, alinharAoFim: boolean) => React.ReactNode>;
 }) {
   return (
     <>
-      <h1 className="pc-plano-titulo">{titulo}</h1>
-      {intro ? <p className="pc-lead">{intro}</p> : null}
+      <Abertura titulo={titulo} pergunta={pergunta} achado={achado} intro={intro} />
       {secs.filter((x) => x.pagina === pagina && x.id !== 'faltas').map((x, j) => (
         <Secao key={j} s={x} extra={x.id && !x.sub ? extra?.[x.id] : undefined} kpiOrigem={x.id && !x.sub ? kpiOrigem?.[x.id] : undefined} />
       ))}
@@ -411,13 +414,22 @@ function IndiceInterno({ entradas }: { entradas: Entrada[] }) {
   );
 }
 
-function entradasDe(pagina: PaginaPlano, secs: SecaoPlano[], p: Painel): Entrada[] {
+function entradasDe(pagina: PaginaPlano, secs: SecaoPlano[], p: Painel, sum?: SumarioPlano | null): Entrada[] {
   const L: Entrada[] = [];
+  if (pagina === 'resumo') {
+    if (p.temNumeros && sum && sum.numeros) L.push({ id: 'sec-numeros', label: t('Os números principais') });
+    if (sum && sum.exec.length) L.push({ id: 'sec-seis', label: R('exT') });
+    L.push({ id: 'sec-acoes', label: t('Comece por estas') });
+    if (p.temNumeros && sum && sum.numeros) L.push({ id: 'sec-custo-resumo', label: R('custoT') });
+    return L;
+  }
   if (pagina === 'fazer') (QUANDO_REC as any[]).forEach(([q, rot]) => { if (p.recs.some((r) => r.quando === q)) L.push({ id: 'sec-q-' + q, label: String(tr(rot)) }); });
   if (pagina === 'custa' && p.temNumeros) L.push({ id: 'sec-dotacao', label: t('Dotação a solicitar por exercício') });
   secs.filter((x) => x.pagina === pagina && x.tipo !== 'bloco' && x.tipo !== 'faltas' && x.h && x.id !== 'recs').forEach((x) => {
     if (x.tipo === 'figura') { L.push({ id: 'sec-' + x.id, label: String(x.h) }); return; }
     if (x.sub && !(pagina === 'custa' && !x.det)) return;
+    // em "Quanto custa", das subseções novas só o bloco "O que pode mudar o custo" entra no índice
+    if (x.sub && ((x.pronto && !x.incerteza) || x.recolher)) return;
     L.push({ id: ancoraDe(x), label: String(x.h).replace(/^[AB]\d\.\s*/, '') });
   });
   if (pagina === 'apendice' && p.lacunas.total) L.push({ id: 'faltam', label: t('Respostas que faltam') });
@@ -435,10 +447,12 @@ export function Plano({ pagina }: { pagina: PaginaPlano }) {
     let pp: any = {};
     try { pp = painelPlano(s, secs as any); } catch (e) { pp = {}; }
     const principal = String(pp.principal || '') || (p.recs.find((r) => r.prioridade === 'alta') || p.recs[0] || { texto: '' }).texto;
-    return { secs, principal, fatos: (pp.fatos || []) as [string, string][], graf: (pp.graf || null) as { anos: number[]; dot: number[] } | null };
+    const sum = ((secs.find((x) => x.id === 'resumo' && !x.sub) as any) || {}).sumario as SumarioPlano | undefined;
+    return { secs, principal, sum: sum || null, graf: (pp.graf || null) as { anos: number[]; dot: number[] } | null };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.caso, s.ctx, s.resp, s.origem, s.custo, s.moeda, s.exemplo, s.lang, p]);
-  const { secs, principal, fatos, graf } = dados;
+  const { secs, principal, sum, graf } = dados;
+  const ach = (sum && sum.achados) || {};
 
   // Ctrl+P: o documento traz as cinco páginas, uma por folha, com tudo aberto (PLA-07)
   const [imprimindo, setImprimindo] = useState(false);
@@ -476,11 +490,11 @@ export function Plano({ pagina }: { pagina: PaginaPlano }) {
   );
 
   const conteudo = (pg: PaginaPlano | 'faltam') => (
-    pg === 'resumo' ? <Resumo s={s} p={p} principal={principal} fatos={fatos} />
-      : pg === 'fazer' ? <Fazer p={p} secs={secs} />
-        : pg === 'custa' ? <Pagina titulo={t('Quanto custa')} secs={secs} pagina="custa" extra={{ A2: extraA2 }} kpiOrigem={{ A2: origemA2 }} />
-          : pg === 'exigir' ? <Pagina titulo={t('O que exigir')} intro={t('O que pedir na contratação: o arranjo de aquisição, as cláusulas de custo, dados e saída, a diligência proporcional ao risco e os documentos do dossiê.')} secs={secs} pagina="exigir" />
-            : pg === 'apendice' ? <><Pagina titulo={t('Apêndice')} secs={secs} pagina="apendice" /><Faltam p={p} /></>
+    pg === 'resumo' ? <Resumo s={s} p={p} principal={principal} sum={sum} />
+      : pg === 'fazer' ? <Fazer p={p} secs={secs} achado={ach.fazer} />
+        : pg === 'custa' ? <Pagina titulo={t('Quanto custa')} pergunta={R('q2')} achado={p.temNumeros ? ach.custa : undefined} intro={R('i2')} secs={secs} pagina="custa" extra={{ A2: extraA2 }} kpiOrigem={{ A2: origemA2 }} />
+          : pg === 'exigir' ? <Pagina titulo={t('O que exigir')} pergunta={R('q4')} achado={ach.exigir} intro={t('O que pedir na contratação: o arranjo de aquisição, as cláusulas de custo, dados e saída, a diligência proporcional ao risco e os documentos do dossiê.')} secs={secs} pagina="exigir" />
+            : pg === 'apendice' ? <><Pagina titulo={t('Apêndice')} intro={R('anexosAbre')} secs={secs} pagina="apendice" /><Faltam p={p} /></>
               : <><h1 className="pc-plano-titulo">{t('Respostas que faltam')}</h1><Faltam p={p} semTitulo /></>
   );
 
@@ -497,7 +511,7 @@ export function Plano({ pagina }: { pagina: PaginaPlano }) {
               <Button variant="secondary" size="sm" onClick={() => { void exportarCaso(); }}>{t('Exportar caso')}</Button>
               <BotaoPDF s={s} />
             </div>
-            {imprimindo ? null : <IndiceInterno key={pagina} entradas={entradasDe(pagina, secs, p)} />}
+            {imprimindo ? null : <IndiceInterno key={pagina} entradas={entradasDe(pagina, secs, p, sum)} />}
             {imprimindo
               ? PAGINAS.map((pg) => <div key={pg} className="pc-folha">{conteudo(pg)}</div>)
               : conteudo(pagina)}

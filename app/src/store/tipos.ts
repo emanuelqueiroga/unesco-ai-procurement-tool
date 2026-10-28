@@ -6,14 +6,16 @@ export type Origem = 'padrao' | 'sugerido' | 'informado' | 'refinado';
 export type Modo = 'essencial' | 'refinar';
 export type Capitulo = 1 | 2 | 3 | 4;
 
-/** Caso no formato de CASO_VAZIO (casos.js); os campos são os da v13, sem tipagem fina nesta etapa. */
+/** Caso no formato de CASO_VAZIO (casos.js); os campos são os da v13, sem tipagem fina nesta etapa.
+ *  Da 0.0.15: `pais` (ISO3 de data/paises.json, 'outro' ou '') e `editados` (valores do perfil do país que a pessoa alterou). */
 export type Caso = Record<string, any>;
 export type Ctx = Record<string, any>;
 export type RespGov = Record<string, string | undefined>;
 export type RespDet = Record<string, { qual?: string; falta?: string } | undefined>;
 
 export interface Custo { base: string; cfg: any; editado: boolean; pendente?: boolean }
-export interface Moeda { cod: string; taxa: string | number; taxaDe?: string }
+/** Moeda de exibição; `doPais` = ISO3 do país que a ajustou (a ferramenta trocou o dólar pela moeda do país, REF-07) */
+export interface Moeda { cod: string; taxa: string | number; taxaDe?: string; doPais?: string }
 
 export interface Estado14 {
   formato: 14;

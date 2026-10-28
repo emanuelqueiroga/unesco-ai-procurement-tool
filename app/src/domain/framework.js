@@ -132,6 +132,9 @@ const OPC = {
   // v11: 4.1.2 em quanto tempo, depois da implantação (3.1), o uso chega a todas as pessoas
   expansao: [['ano1', 'Um ano depois da implantação'], ['ano2', 'Dois anos depois da implantação'], ['ano3', 'Três anos depois da implantação']],
   horizonte: [[3, '3 anos'], [5, '5 anos']],
+  // v14: 4.1.4 curva de adoção e 4.1.6 reposição dos dispositivos comprados
+  curva: [['linear', 'Linear', 'Passos iguais, do primeiro ano da implantação até toda a rede.'], ['s', 'Em S', 'Começa devagar, acelera no meio e desacelera no fim, com os mesmos pontos de partida e de chegada da linear.'], ['ondas', 'Em ondas', 'Você informa em que ano a rede chega a cada porcentagem do total (até 4 ondas).']],
+  reposicaoDisp: [['nao', 'Não repor dentro do horizonte'], ['3', 'A cada 3 anos'], ['4', 'A cada 4 anos'], ['5', 'A cada 5 anos']],
   simNao: [['sim', 'Sim'], ['nao', 'Ainda não']],
   classes: [
     ['geracao', 'Geração de conteúdo'], ['recomendacao', 'Recomendação'], ['classificacao', 'Classificação'],

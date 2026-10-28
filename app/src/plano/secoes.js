@@ -52,7 +52,14 @@
 //   B7        Antes de levar à rede e para manter (+ listas) fazer      próximos passos
 //   B8        Monitoramento e avaliação                      fazer      próximos passos
 //   B9        Critérios dos pontos de decisão do guia        fazer      próximos passos (decisões)
+//   premissas Premissas e fontes (+ premissas desta          apendice   0.0.15: anexo G (REL-13)
+//             estimativa, como o modelo funciona hoje)
+//   glossario Glossário                                      apendice   0.0.15: anexo H (REL-14)
 //   refs      Referências                                    apendice   referências
+// 0.0.15 (REL-01 a REL-12, MOT-03, MOT-04): A2 ganha "Custo por fase", "Indicadores do custo total", a adoção e o bloco
+// "O que pode mudar o custo" (cenários, direcionadores, simulação); os títulos não levam mais os códigos A1–A7 e
+// B1–B9 nem os subcomponentes K (só internos: o id da seção); a seção "resumo" leva o sumário executivo em `sumario`
+// (dados de plano/relatorio.js, já traduzidos), lido pela página e pelo PDF.
 // Dentro de uma página, a ordem é a do array (a da v13); no apêndice, "Respostas que faltam" vai para o fim.
 // =====================================================================
 import {
@@ -73,8 +80,15 @@ import {
 } from '../domain/index.ts';
 // critérios compartilhados com a página (P3): lacunas nas duas classes e "sem números" até dizer o tipo de tecnologia (2.3.4)
 import { lacunasDe, temNumeros, tituloParcial, textoLacunas, rotuloResposta, campoDoNumero } from '../percurso/painel.ts';
+// 0.0.15 (BL6): sumário executivo, tabelas novas de "Quanto custa", premissas e glossário (plano/relatorio.js)
+import {
+  R as R15, trN, TXT_REL, relDados, relFaixa, relIndicadores, relDirecionadores, relIcebergs, relTabelaFases, relIndicadoresTCO,
+  relAdocao, relCenarios, relTornado, relSimulacao, relAchados, relExecutivo, relAcoes, relPremissas, relGlossario,
+} from './relatorio.js';
 
 const NOME_FERRAMENTA = 'AI in Education Procurement Tool';
+// REL-08: o multiplicador do nível de adaptação, sem os códigos K3.1 e K3.2
+const TXT_MULT = 'Multiplicadores do nível de adaptação: {0} na integração e no desenvolvimento; {1} no conteúdo e na configuração iniciais (convenção ilustrativa da ferramenta).';
 
 // ----------------------------------------------------------- páginas do plano (v14)
 const PAGINAS_PLANO = ['resumo', 'custa', 'fazer', 'exigir', 'apendice'];
@@ -85,7 +99,7 @@ const PAGINA_SECAO = {
   faltas: 'apendice', resumo: 'resumo', perfil: 'apendice', matriz: 'apendice', recs: 'fazer',
   A: 'custa', A1: 'fazer', A2: 'custa', A3: 'custa', A4: 'exigir', A5: 'exigir', A6: 'exigir', A7: 'exigir',
   B: 'fazer', B1: 'fazer', B2: 'fazer', B3: 'fazer', B4: 'fazer', B5: 'exigir', B6: 'exigir', B7: 'fazer', B8: 'fazer', B9: 'fazer',
-  refs: 'apendice',
+  premissas: 'apendice', glossario: 'apendice', refs: 'apendice',
 };
 // seções de uma página, na ordem do plano; no apêndice, as respostas que faltam ficam no fim
 function secoesDaPagina(secs, pagina) {
@@ -322,7 +336,8 @@ function secoesPlano(estado, opts) {
     if (!o.sub) pagAtual = o.pagina;
     S_.push(o); return o;
   };
-  const tituloSec = id => id + '. ' + tr(TIT_PLANO[id]);
+  // REL-08: sem os códigos A1–A7 e B1–B9 no título (o código fica só no id da seção)
+  const tituloSec = id => TIT_PLANO[id];
 
   // Respostas que faltam: as lacunas do Essencial (uma por tela) e as de refinamento, a mesma contagem da página
   if (d.lacunas.total) {
@@ -480,7 +495,9 @@ function secoesPlano(estado, opts) {
     list: TXT_A1.concat(d.poc ? [TXT_A1_POC] : []) });
 
   // A2
+  let premLista = [], rel = null;
   if (custo) {
+    rel = relDados(estado, { cfg, custo });
     const cam = custo.camadas, H = custo.H;
     const tot = [1, 2, 3, 4, 5, 6, 7].reduce((s, n) => s + (cam.total[n] || 0), 0);
     const tot0 = [1, 2, 3, 4, 5, 6, 7].reduce((s, n) => s + (cam.ano0[n] || 0), 0);
@@ -509,7 +526,7 @@ function secoesPlano(estado, opts) {
     if (c.adaptacao) {
       let f = { fK31: 1, fK32: 1 };
       try { f = fatoresAdaptacao(c.adaptacao, { saas: 'A', api: 'B', ow: 'C' }[arq]) || f; } catch (e) { }
-      prem.push(tr('Nível de adaptação:') + ' ' + tr(rotP(OPC.adaptacao, c.adaptacao)) + '. ' + tr('Multiplicador de K3.1: ' + numP(f.fK31, 2) + '; de K3.2: ' + numP(f.fK32, 2) + ' (convenção ilustrativa da ferramenta).'));
+      prem.push(tr('Nível de adaptação:') + ' ' + tr(rotP(OPC.adaptacao, c.adaptacao)) + '. ' + trN(TXT_MULT, numP(f.fK31, 2), numP(f.fK32, 2)));
     } else prem.push('Nível de adaptação não informado: a estimativa usa o nível do exemplo do guia.');
     if (c.pagamento) prem.push(tr('Pagamento no teste:') + ' ' + tr(rotP(OPC.pagamento, c.pagamento)) + '.');
     const doado = (custo.av.fac || {}).doado || 0;
@@ -534,13 +551,31 @@ function secoesPlano(estado, opts) {
     sec({ id: 'A2', h: tituloSec('A2'), pre: padrao ? ['Estimativa baseada em premissas padrão: ' + d.lacunas.total + ' perguntas ainda sem resposta.'] : null, kv, kpis: true, graf, pos: ['Valores ilustrativos. Substitua por cotações e dados locais.'] });
     // a primeira parte da fórmula ("Como o custo é calculado") tem kv = termos + total: na página vira a equação do passo 4.2
     formula.forEach((f, i) => sec(Object.assign({}, f, { sub: true, id: undefined }, i === 0 && (f.kv || []).length > 1 ? { eq: true } : {})));
-    sec({ sub: true, h: 'Custo por camada', table: { head: ['Camada', tr('Ano 0') + ' (' + unidMil() + ')', tr('Total do ciclo') + ' (' + unidMil() + ')', '%'],
+    // REL-12: na página, as tabelas que repetem um gráfico ao lado (barras por camada, colunas da dotação) ficam
+    // recolhidas (recolher); no PDF ficam abertas
+    sec({ sub: true, h: 'Custo por camada', recolher: true, table: { head: ['Camada', tr('Ano 0') + ' (' + unidMil() + ')', tr('Total do ciclo') + ' (' + unidMil() + ')', '%'],
       rows: [1, 2, 3, 4, 5, 6, 7].map(n => [rotuloCamada(n), mil(cam.ano0[n] || 0), mil(cam.total[n] || 0), pct(tot ? (cam.total[n] || 0) / tot : 0)])
         .concat([[tr('Total'), mil(tot0), mil(tot), pct(1)]]), num: [1, 2, 3] },
       pos: [NOTA_CONVENCAO] });
-    sec({ sub: true, h: 'Dotação a solicitar por exercício', table: { head: ['Exercício'].concat(anos.map(a => tr('Ano ' + a))),
+    if (rel) {
+      // MOT-03: custo por fase (pagamento único × recorrente, pessoas); MOT-04: indicadores do custo total
+      sec({ sub: true, pronto: true, h: R15('sFases'), table: relTabelaFases(rel), pos: [R15('fNotaMotor'), R15('fNota')] });
+      sec({ sub: true, pronto: true, h: R15('sInd'), kv: relIndicadoresTCO(rel) });
+      const ad = relAdocao(rel);
+      sec({ sub: true, pronto: true, h: R15('gAdocaoT'), p: [ad.leitura], table: ad.table });
+    }
+    sec({ sub: true, h: 'Dotação a solicitar por exercício', recolher: true, table: { head: ['Exercício'].concat(anos.map(a => tr('Ano ' + a))),
       rows: [[tr('Dotação a solicitar') + ' (' + unidMil() + ')'].concat(anos.map(a => mil(custo.orc.dot[a] || 0)))], num: anos.map((a, i) => i + 1) } });
-    sec({ sub: true, h: 'Premissas desta estimativa', list: prem });
+    if (rel) {
+      // REL-10, REL-11: o que pode mudar o custo (cenários, direcionadores, simulação), em versão de leitura
+      const ce3 = relCenarios(rel), to = relTornado(rel), si = relSimulacao(rel);
+      sec({ sub: true, pronto: true, incerteza: true, h: R15('q3'), achado: R15('h3', grande(rel.lo), grande(rel.hi)), p: [R15('i3')] });
+      sec({ sub: true, pronto: true, h: R15('sCenarios'), p: [ce3.leitura], table: ce3.table });
+      sec({ sub: true, pronto: true, h: R15('sDirec'), p: [to.leitura], table: to.table, pos: [to.sub] });
+      sec({ sub: true, pronto: true, h: R15('sSimula'), table: si.table, pos: [si.nota] });
+    }
+    // REL-13: a lista "Premissas desta estimativa" vai para o apêndice, com "Premissas e fontes"
+    premLista = prem;
   } else {
     sec({ id: 'A2', h: tituloSec('A2'), semNumeros: d.semNumeros,
       p: [d.semNumeros ? 'Os números do plano aparecem quando você disser o tipo de tecnologia da ferramenta (pergunta 2.3.4).' : 'Não foi possível calcular a estimativa com as respostas atuais. Responda ao passo 2.3 (Adoção) e às fases 3 e 4.'] });
@@ -548,7 +583,7 @@ function secoesPlano(estado, opts) {
 
   // A3
   const subsDe = n => Object.keys(CAMADA_DE_S || CAMADA_DE_S_PLANO).filter(s => camadaDeS(s) === n)
-    .map(s => s + ' ' + tr((NOME_S && NOME_S[s]) || '')).join('; ');
+    .map(s => tr((NOME_S && NOME_S[s]) || s)).join('; ');   // REL-08: o nome do subcomponente, sem o código K
   const resp = E.resp || {};
   const gq = govQuestoes();
   const nSim = gq.filter(q => resp[q.id] === 'sim').length;
@@ -714,6 +749,29 @@ function secoesPlano(estado, opts) {
     });
   });
 
+  // 0.0.15 (REL-13, REL-14): premissas e fontes, como o modelo funciona hoje e glossário, no apêndice
+  const pr = relPremissas(estado);
+  if (pr.table || premLista.length) {
+    sec({ id: 'premissas', pronto: true, h: R15('aG'), p: pr.table ? [R15('pIntro')] : [], table: pr.table, pos: pr.table ? pr.pos : [] });
+    if (premLista.length) sec({ sub: true, h: TXT_REL.pLista, list: premLista });
+    sec({ sub: true, pronto: true, h: R15('metodos'), list: pr.metodos, pos: pr.versao ? [pr.versao] : [] });
+  }
+  const gl = relGlossario();
+  if (gl) sec({ id: 'glossario', pronto: true, h: R15('aH'), p: [R15('gIntro')], table: gl });
+
+  // 0.0.15 (REL-01 a REL-06, REL-08): sumário executivo de "Em resumo", na seção "resumo" (página e PDF)
+  const nReq = linhasCl.length + destA5.length;
+  const ex = { nReq, nSim, nG: gq.length };
+  const ordemQ = q => { const i = ['antes_teste', 'antes_contratar', 'manter'].indexOf(q); return i < 0 ? 9 : i; };
+  // a mesma ordem de "O que fazer" (percurso/painel.ts:recsPlano): prioridade alta primeiro, depois o momento
+  const recsOrd = d.recs.slice().sort((a, b) => (a.prioridade === b.prioridade ? 0 : a.prioridade === 'alta' ? -1 : 1) || ordemQ(a.quando) - ordemQ(b.quando));
+  const sRes = S_.find(z => z.id === 'resumo' && !z.sub);
+  if (sRes) sRes.sumario = {
+    numeros: !!rel, faixa: relFaixa(rel), indicadores: relIndicadores(rel), exec: relExecutivo(linhasResumo, rel, ex),
+    acoes: relAcoes(d.recs.length ? recsOrd : [], 5), nRecs: d.recs.length, ice: relIcebergs(rel), drivers: relDirecionadores(rel, 3),
+    achados: relAchados(rel, ex),
+  };
+
   // Referências
   sec({ id: 'refs', h: TIT_PLANO.refs, list: [REFS_PLANO[0], tr(REFS_PLANO[1]) + ' ' + URL_TCO + ' ' + tr(REFS_PLANO[2])], pos: [TXT_VINCULO, TXT_ISENCAO] });
   return S_;
@@ -722,6 +780,8 @@ function secoesPlano(estado, opts) {
 // Tradução só dos campos de conteúdo (ids, tipos, páginas e alvos de navegação ficam como estão)
 function trSecao(s) {
   const o = Object.assign({}, s);
+  // 0.0.15: seções montadas por plano/relatorio.js já vêm traduzidas e formatadas (não traduzir de novo "US$ 4.68 M")
+  if (o.pronto) return o;
   ['h', 'det', 'alt'].forEach(k => { if (o[k]) o[k] = tr(o[k]); });
   ['pre', 'p', 'list', 'pos'].forEach(k => { if (o[k]) o[k] = o[k].map(z => tr(z)); });
   if (o.kv) o.kv = o.kv.map(([k, v]) => [tr(k), tr(v)]);
@@ -729,7 +789,7 @@ function trSecao(s) {
   if (o.principal) o.principal = tr(o.principal);
   if (o.cartoes) o.cartoes = o.cartoes.map(z => Object.assign({}, z, { h: tr(z.h), hTable: z.hTable ? tr(z.hTable) : '', kv: z.kv.map(([k, v]) => [tr(k), tr(v)]),
     table: z.table ? Object.assign({}, z.table, { head: z.table.head.map(x => tr(x)), rows: z.table.rows.map(r => r.map(x => tr(x))) }) : null }));
-  if (o.table) o.table = Object.assign({}, o.table, { head: o.table.head.map(z => tr(z)), rows: o.table.rows.map(r => r.map(z => tr(z))) });
+  if (o.table && !o.table.pronto) o.table = Object.assign({}, o.table, { head: o.table.head.map(z => tr(z)), rows: o.table.rows.map(r => r.map(z => tr(z))) });
   return o;
 }
 

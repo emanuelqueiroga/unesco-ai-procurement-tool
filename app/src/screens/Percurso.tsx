@@ -1,17 +1,21 @@
 // Telas do percurso: abertura de capítulo (D2), pergunta (D3–D6, M2, M3) e síntese de capítulo (D7).
 import { useEffect, useState, type ReactNode } from 'react';
-import { CAMPO_POR_ID, textoCampo, tr } from '../domain';
 import {
-  useCaso, ESSENCIAL, telasDoCapitulo, afetadosPor, camposRefinar, origemDe, extrasDoCapitulo, comparaN, idDoFoco, ajudaDaTela, comLacuna,
+  CAMPO_POR_ID, textoCampo, tr, REF_TCO, INFO_C236, modoTeste, ajudaDeTela, dicaDaTela, dicaDoCampo, quemSabe,
+} from '../domain';
+import {
+  useCaso, ESSENCIAL, telasDoCapitulo, afetadosPor, camposRefinar, origemDe, extrasDoCapitulo, comparaN, idDoFoco, comLacuna,
   type Capitulo, type CasoStore, type Origem,
 } from '../store';
-import { ChapterOpening, ChapterSummary, QuestionFrame, Button, SourceTag } from '../ui';
+import { ChapterOpening, ChapterSummary, QuestionFrame, Button, SourceTag, Popover } from '../ui';
+import { TextoComTermos } from '../ui/Termo';
 import { Shell } from './Shell';
 import { BotaoPDF } from './Plano';
 import { ControlesTela, ControleCampo, ControleExtra, ProvedorRefinar, sugeridosDaTela, TIPOS_SIMPLES } from '../percurso/Controles';
 import { sinteseCapitulo } from '../percurso/sintese';
 import { CAPITULOS_INFO, LEAD, TITULO_TELA, linhaAfeta, plural, minusc, t } from '../percurso/textos';
 import { href, ir } from '../percurso/rota';
+import './percurso-ajuda.css';
 
 const rotuloOrigem = (o: string) => ({ padrao: t('padrão'), sugerido: t('~ sugerido'), informado: t('informado'), refinado: t('refinado') } as Record<string, string>)[o] || o;
 
@@ -37,7 +41,22 @@ export function Abertura({ n }: { n: Capitulo }) {
         >
           {t(info.texto)}
         </ChapterOpening>
-        <p className="pc-nota">{t('Alimenta: {c}', { c: t(info.alimenta) })}</p>
+        <ul className="pc-abertura-notas">
+          <li>{t('Você sai com: {entrega}', { entrega: t(info.entrega) })}</li>
+          {n === 1 ? <li>{t('Tenha à mão o cadastro de escolas e matrículas, ou os números da sua rede.')}</li> : null}
+          <li className="pc-nota">{t('Alimenta: {c}', { c: t(info.alimenta) })}</li>
+          {n === 3 ? (
+            <li className="pc-nota">
+              <Popover
+                label={t('Sobre as camadas 2, 3 e 6')}
+                title={t('Sobre as camadas 2, 3 e 6')}
+                actions={<a href={REF_TCO.url} target="_blank" rel="noopener noreferrer">{String(tr(REF_TCO.link))}</a>}
+              >
+                {String(tr(INFO_C236))} {String(tr(REF_TCO.texto))}
+              </Popover>
+            </li>
+          ) : null}
+        </ul>
       </div>
     </Shell>
   );
@@ -49,8 +68,30 @@ function tituloTela(s: CasoStore, id: string): string {
   return f ? String(tr(textoCampo(f, s.caso))) : id;
 }
 
+const semDoisPontos = (x: string) => x.replace(/\s*[:：]\s*$/, '');
+
+/** "Por que perguntamos isso?" aberto: Como responder, Quem costuma saber e Exemplo, com os termos do glossário sublinhados. */
+function AjudaPergunta({ ajuda }: { ajuda: { como: string | null; quem: string | null; exemplo: string | null } }) {
+  const itens = ([
+    [t('Como responder'), ajuda.como],
+    [semDoisPontos(t('Quem costuma saber:')), ajuda.quem],
+    [t('Exemplo'), ajuda.exemplo],
+  ] as [string, string | null][]).filter((x): x is [string, string] => !!x[1]);
+  return (
+    <dl className="pc-ajuda" id="pc-ajuda">
+      {itens.map(([rotulo, texto]) => (
+        <div key={rotulo} className="pc-ajuda-item">
+          <dt>{rotulo}</dt>
+          <dd><TextoComTermos texto={texto} /></dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
   const s = useCaso();
+  // sem memória: a explicação começa fechada em cada pergunta (a tela é remontada a cada pergunta) e nunca abre sozinha
   const [porque, setPorque] = useState(false);
   const telas = telasDoCapitulo(n);
   const i = telas.findIndex((x) => x.id === id);
@@ -58,15 +99,16 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
   const prox = telas[i + 1] ? href.pergunta(n, telas[i + 1].id) : href.sintese(n);
   const ant = i > 0 ? href.pergunta(n, telas[i - 1].id) : href.abertura(n);
   const sugeridos = sugeridosDaTela(s, tela);
-  const ajuda = ajudaDaTela(s.caso, tela).map((x) => String(tr(x)));
+  const ajuda = ajudaDeTela(tela.n, { modo: modoTeste(s.caso) });
+  const dica = dicaDaTela(tela.campos);
   const afetados = Array.from(new Set(tela.campos.flatMap((c) => afetadosPor(c))));
   // um texto sugerido que ainda tem lacuna (__) não é confirmado: a pessoa precisa completá-lo
   const confirmaveis = sugeridos.filter((c) => !comLacuna(s, c));
   const continuar = () => { confirmaveis.forEach((c) => s.confirmar(c)); ir(prox); };
   // no Refinar não há limite de problemas, então a frase de abertura muda
   const lead = id === 'problemas' && s.modo === 'refinar'
-    ? t('Marque os problemas que quer resolver; no modo Refinar não há limite. Cada problema já traz uma descrição, impactos e tarefas que a IA pode apoiar; você ajusta depois.')
-    : LEAD[id] ? t(LEAD[id]) : null;
+    ? 'Marque os problemas que quer resolver; no modo Refinar não há limite. Cada problema já traz uma descrição, impactos e tarefas que a IA pode apoiar; você ajusta depois.'
+    : LEAD[id] || null;
   const numeroGlobal = ESSENCIAL.indexOf(tela) + 1;
   return (
     <Shell pos={{ capitulo: n, tela: id }} contexto={t('Capítulo {n} · {nome}', { n, nome: t(CAPITULOS_INFO[n].titulo) })}>
@@ -76,16 +118,17 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
           title={tituloTela(s, id)}
           explanation={
             <>
-              {lead}
-              {porque && ajuda.length ? <span className="pc-porque" id="pc-porque">{ajuda.map((a) => <span key={a}>{a}</span>)}</span> : null}
+              {lead ? <TextoComTermos texto={lead} /> : null}
+              {dica ? <>{lead ? ' ' : ''}<span className="pc-dica"><span className="pc-dica-rot">{t('Dica:')}</span> <TextoComTermos texto={dica} /></span></> : null}
             </>
           }
+          help={porque && ajuda ? <AjudaPergunta ajuda={ajuda} /> : null}
           actions={
             <div className="pc-botoes">
               <Button onClick={continuar}>{confirmaveis.length ? t('Aceitar a sugestão e continuar') : t('Continuar')}</Button>
               <Button variant="secondary" href={prox}>{t('Pular por agora')}</Button>
-              {ajuda.length ? (
-                <Button variant="link" aria-expanded={porque} aria-controls="pc-porque" onClick={() => setPorque((x) => !x)}>
+              {ajuda ? (
+                <Button variant="link" aria-expanded={porque} aria-controls={porque ? 'pc-ajuda' : undefined} onClick={() => setPorque((x) => !x)}>
                   {porque ? t('Fechar a explicação') : t('Por que perguntamos isso?')}
                 </Button>
               ) : null}
@@ -113,6 +156,18 @@ const TITULO_EXTRA: Record<string, string> = {
   linhaBase: 'Para quais problemas e qual medida (linha de base)',
   governanca: 'Qual documento ou equipe já existe, e o que falta (governança)',
 };
+
+/** Dica de uma linha e "Quem costuma saber" de uma pergunta do Refinar (as dez que o Essencial não traz ficavam sem ajuda). */
+function AjudaRefinar({ id, n }: { id: string; n: string }) {
+  const dica = dicaDoCampo(id), quem = quemSabe(n);
+  if (!dica && !quem) return null;
+  return (
+    <p className="pc-ajuda-refinar">
+      {dica ? <span className="pc-dica"><span className="pc-dica-rot">{t('Dica:')}</span> <TextoComTermos texto={dica} /></span> : null}
+      {quem ? <span className="pc-quem"><span className="pc-dica-rot">{t('Quem costuma saber:')}</span> {t(quem)}</span> : null}
+    </p>
+  );
+}
 
 interface ItemPremissa { id: string; n: string; titulo: string; origem: Origem | null; corpo: ReactNode }
 
@@ -165,6 +220,7 @@ function PremissasCapitulo({ s, n, foco }: { s: CasoStore; n: Capitulo; foco?: s
                 <span className="pc-refinar-q">{it.titulo}</span>
                 {it.origem ? <SourceTag origin={it.origem} label={rotuloOrigem(it.origem)} /> : null}
               </div>
+              <AjudaRefinar id={it.id} n={it.n} />
               {it.corpo}
             </li>
           ))}

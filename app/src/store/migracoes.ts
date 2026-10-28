@@ -203,6 +203,9 @@ export function normalizarEstado(o: any) {
   if (!Array.isArray(o.caso.ferramentas)) o.caso.ferramentas = [];
   ['pagaDepois', 'fonte', 'infra', 'arquiteturaManual'].forEach(k => { delete o.caso[k]; });
   if (!Array.isArray(o.caso.linhaBaseProblemas)) o.caso.linhaBaseProblemas = [];
+  // 0.0.15 (REF-11): país da rede (ISO3, 'outro' ou '') e valores do perfil do país editados pela pessoa
+  if (typeof o.caso.pais !== 'string') o.caso.pais = '';
+  if (!o.caso.editados || typeof o.caso.editados !== 'object' || Array.isArray(o.caso.editados)) o.caso.editados = {};
   o.ctx = o.ctx || {}; o.resp = o.resp || {}; o.feitos = o.feitos || {};
   o.respDet = o.respDet && typeof o.respDet === 'object' ? o.respDet : {};
   ['prioridades', 'problemas', 'subs'].forEach(k => { if (!Array.isArray(o.ctx[k])) o.ctx[k] = []; });

@@ -99,3 +99,10 @@
 
 /* ---------- síntese do capítulo: item em foco */
 .pcx-foco { outline: 2px solid var(--focus); outline-offset: 6px; border-radius: var(--radius-sm); }
+
+/* ---------- 4.1.5 ondas de adoção: até 4 linhas, ano e % acumulado */
+.pcx-ondas { display: flex; flex-direction: column; gap: var(--space-3); max-width: 620px; }
+.pcx-ondas-lista { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: var(--space-3); }
+.pcx-onda { display: flex; flex-direction: column; gap: var(--space-2); margin: 0; min-width: 0; padding: var(--space-3) var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-1); }
+.pcx-onda-titulo { padding: 0 var(--space-2); font-size: 14px; line-height: 20px; font-weight: 600; color: var(--ink); }
+.pcx-onda-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 110px), 1fr)); gap: var(--space-3); align-items: start; }

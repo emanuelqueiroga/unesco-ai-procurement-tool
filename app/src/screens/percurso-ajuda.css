@@ -1,0 +1,30 @@
+/* Ajuda do percurso (AJU): "Por que perguntamos isso?" aberto, dicas, ajuda das premissas do Refinar e notas da abertura. */
+
+/* Como responder, Quem costuma saber e Exemplo */
+.pc-ajuda {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-0);
+  border-inline-start: 3px solid var(--primary);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.pc-ajuda-item { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pc-ajuda dt { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--muted); }
+.pc-ajuda dd { margin: 0; }
+
+/* dica de uma linha, no fim da frase de abertura */
+.pc-dica-rot { font-weight: 600; color: var(--ink); }
+
+/* ajuda de uma premissa do Refinar */
+.pc-ajuda-refinar { margin: 0; display: flex; flex-direction: column; gap: var(--space-1); font-size: 13px; line-height: 18px; color: var(--ink-2); overflow-wrap: anywhere; }
+
+/* abertura do capítulo: o que você leva, o que ter à mão e as camadas */
+.pc-abertura-notas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); font-size: 14px; line-height: 20px; color: var(--ink-2); overflow-wrap: anywhere; }
+.pc-abertura-notas > .pc-nota { font-size: 13px; line-height: 18px; }

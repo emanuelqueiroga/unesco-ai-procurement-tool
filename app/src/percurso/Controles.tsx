@@ -19,12 +19,17 @@ import { CampoNumero } from './CampoNumero';
 import { t, plural } from './textos';
 import { href } from './rota';
 import {
+  MAX_POR_CAMPO, linhasDeOndas, ondaEditada, errosDaOnda, avisoOndas, casasDoCampo, valorComCasas, erroDeIntervalo, horizonteDoCaso,
+  type Mensagem,
+} from './motor';
+import {
   inteiro, numeroDe, erroNumero, alternarOpcao, legendasOpc, problemasDoGrupo, ORDEM_PROBLEMAS, ORDEM_SUBS, sugeridaPeloImpacto,
   ferramentaAdicionada, ferramentaRemovida, ferramentaAlterada, ferramentaTarefa, arquiteturaPresumida, rotuloArquitetura,
   etapaEditada, anosDaEtapa, respostaGov, pedeDetalhe, pendenciasRevisar, nomesDoValor, notasPremissa,
   type Ferramenta, type PatchEtapa,
 } from './refinar';
 import './controles.css';
+import { Pais } from './Pais';
 
 // ----------------------------------------------------------- utilidades
 /** inteiro digitado no campo de texto do SchoolsGrid (escolas, estudantes) */
@@ -252,22 +257,64 @@ function Texto({ e, campo, multiline, rotulo: rotuloCampo, sufixo, dica }: { e: 
   );
 }
 
-/** Campo numérico de um campo do caso (inteiro, formatado no idioma enquanto se digita). */
+const msg = (m?: Mensagem): string | undefined => (m ? t(m.k, m.vars) : undefined);
+
+/** Campo numérico de um campo do caso: inteiro, ou com as casas decimais do campo (`casas`, 4.1.7) e o teto de MAX_POR_CAMPO; formatado no idioma enquanto se digita. */
 function Numero({ e, campo, rotulo: rotuloCampo, sufixo, dica, max, tamanho = 10 }: { e: Estado14; campo: string; rotulo?: string; sufixo?: ReactNode; dica?: ReactNode; max?: number; tamanho?: number }) {
   const gravar = useGravar();
+  const f: any = (CAMPO_POR_ID as any)[campo] || {};
+  const casas = casasDoCampo(f);
+  const teto = MAX_POR_CAMPO[campo];
   const o = origemDe(e, campo);
   const v = numeroDe(o === 'padrao' && e.exemplo === 'novo' ? '' : valorDe(e, campo));
   return (
     <CampoNumero
       label={rotuloCampo || t('Sua resposta')}
       value={v}
+      decimais={casas > 0}
       suggested={o === 'sugerido'}
       hint={o === 'sugerido' ? textoSugestao(e, campo) : dica}
-      suffix={sufixo}
+      suffix={sufixo ?? (teto === 100 ? '%' : undefined)}
       size={tamanho}
-      error={erroNumero(v, { max })}
-      onChange={(x) => gravar(campo, inteiro(x))}
+      error={casas > 0 || teto != null ? msg(erroDeIntervalo(v, teto)) : erroNumero(v, { max })}
+      onChange={(x) => gravar(campo, casas > 0 ? valorComCasas(x, casas) : inteiro(x))}
     />
+  );
+}
+
+// ----------------------------------------------------------- 4.1.5 ondas de adoção (só no Refinar)
+/** Até 4 ondas (ano a partir do Ano 2 e % acumulado da rede). Grava a lista inteira em `ondas`; linhas em branco no fim não são guardadas. */
+function Ondas({ e }: { e: Estado14 }) {
+  const gravar = useGravar();
+  const L = linhasDeOndas(e.caso.ondas);
+  const H = horizonteDoCaso(e.caso);
+  const aviso = avisoOndas(e.caso.ondas);
+  const grava = (i: number, campo: 'ano' | 'pct', x: number | '') => gravar('ondas', ondaEditada(e.caso.ondas, i, campo, x));
+  return (
+    <div className="pcx-ondas">
+      <div className="pcx-ondas-lista">
+        {L.map((o, i) => {
+          const erro = errosDaOnda(o, H);
+          const nome = `${t('Onda')} ${i + 1}`;
+          return (
+            <fieldset key={i} className="pcx-onda">
+              <legend className="pcx-onda-titulo">{nome}</legend>
+              <div className="pcx-onda-campos">
+                <CampoNumero label={`${t('Ano')} (${nome})`} value={o.ano} size={6} error={msg(erro.ano)} onChange={(x) => grava(i, 'ano', x)} />
+                <CampoNumero label={`${t('% acumulado da rede')} (${nome})`} value={o.pct} size={6} suffix="%" error={msg(erro.pct)} onChange={(x) => grava(i, 'pct', x)} />
+              </div>
+            </fieldset>
+          );
+        })}
+      </div>
+      {aviso && aviso.tipo === 'ultima_abaixo' ? (
+        <Alert kind="atencao" title={t('A última onda não chega a 100%')}>
+          {t('Depois do Ano {a} o uso fica em {p}% das pessoas da rede.', { a: aviso.ano, p: aviso.pct })}
+        </Alert>
+      ) : null}
+      {aviso && aviso.tipo === 'sem_validas' ? <p className="pc-nota">{t('Sem nenhuma onda completa, a estimativa usa a curva linear.')}</p> : null}
+      <p className="pc-nota">{t('Até 4 ondas. As linhas em branco não contam.')}</p>
+    </div>
   );
 }
 
@@ -364,13 +411,14 @@ export function ControleCampo({ e, campo }: { e: Estado14; campo: string }) {
     case 'multi': return <Multi e={e} campo={campo} />;
     case 'texto': return <Texto e={e} campo={campo} />;
     case 'area': return <Texto e={e} campo={campo} multiline />;
-    case 'num': case 'horas': return <Numero e={e} campo={campo} />;
+    case 'num': case 'horas': return <Numero e={e} campo={campo} dica={campo === 'rotacaoFormacao' ? t('Em branco, a estimativa usa 10% ao ano.') : undefined} />;
+    case 'ondas': return <Ondas e={e} />;
     case 'ferramentas': return <Ferramentas e={e} />;
     case 'arq': return <Arquitetura e={e} />;
     default: return null;
   }
 }
-export const TIPOS_SIMPLES = ['radio', 'chips', 'multi', 'texto', 'area', 'num', 'horas', 'ferramentas', 'arq'];
+export const TIPOS_SIMPLES = ['radio', 'chips', 'multi', 'texto', 'area', 'num', 'horas', 'ondas', 'ferramentas', 'arq'];
 
 // ----------------------------------------------------------- telas compostas
 function Etapas({ e }: { e: Estado14 }) {
@@ -968,7 +1016,7 @@ export function ControlesTela({ e, tela }: { e: Estado14; tela: TelaEssencial })
     case 'formados': return <Formacao e={e} />;
     case 'implantacao': return <Implantacao e={e} />;
     case 'elegiveis': return <><Numero e={e} campo="elegiveis" rotulo={t('Pessoas em toda a rede')} /><NotaPremissa e={e} campo="elegiveis" /></>;
-    case 'local': return <Texto e={e} campo="local" rotulo={t('Nome do lugar ou da rede')} />;
+    case 'local': return <><Texto e={e} campo="local" rotulo={t('Nome do lugar ou da rede')} /><Pais /></>;
     default: return <Fragment>{tela.campos.map((c) => <ControleCampo key={c} e={e} campo={c} />)}</Fragment>;
   }
 }

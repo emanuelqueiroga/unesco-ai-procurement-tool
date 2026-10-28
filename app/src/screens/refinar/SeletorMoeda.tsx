@@ -1,10 +1,11 @@
 // Moeda de exibição e taxa de câmbio (CUS-07, CUS-08): lista com as principais moedas no topo e as demais por
 // nome no idioma; campo "XXX por US$ 1" com a taxa de referência como sugestão; data e fonte da taxa. Trocar de
 // moeda zera a taxa informada. Grava com setMoeda({ cod, taxa, taxaDe }); o domínio (moedaInfo) só honra a taxa
-// quando taxaDe é a moeda atual. Reutilizável (caixa Caso, pacote transversal).
+// quando taxaDe é a moeda atual. Reutilizável (caixa Caso, pacote transversal). Quando foi o país da rede que pôs a
+// moeda (moeda.doPais, REF-07), uma linha diz isso; escolher outra moeda aqui é escolha da pessoa e o país não a muda mais.
 import { useId } from 'react';
 import { useCaso } from '../../store';
-import { nomeMoeda, lerNumero, LOC } from '../../domain';
+import { nomeMoeda, lerNumero, LOC, paisPorIso, nomePais } from '../../domain';
 import { CampoNumero } from '../../percurso/CampoNumero';
 import { MOEDAS } from '../../percurso/ambiente';
 import { t } from '../../percurso/textos';
@@ -55,6 +56,9 @@ export function SeletorMoeda({ compacto, semNota }: { compacto?: boolean; semNot
           </div>
         ) : null}
       </div>
+      {moeda && moeda.doPais && paisPorIso(moeda.doPais) && (paisPorIso(moeda.doPais) as any).moeda === cod ? (
+        <p className="rf-nota">{t('Moeda do país escolhido ({pais}).', { pais: String(nomePais(paisPorIso(moeda.doPais))) })}</p>
+      ) : null}
       {semNota ? null : (
         <p className="rf-nota">
           {t('O modelo calcula em dólares (US$) e converte para a moeda escolhida pela taxa de referência de {data} ({fonte}), que você pode substituir. A conversão é de exibição. O risco de variação cambial sobre os itens cotados em dólar está nas premissas (trajetória do câmbio) e nos cenários.', { data: dataTaxa(), fonte: MOEDAS.fonte })}

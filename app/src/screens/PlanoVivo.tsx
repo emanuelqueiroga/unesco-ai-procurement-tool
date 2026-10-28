@@ -38,7 +38,8 @@ export function useNovidade(p: Painel, recenteEm: number | undefined): Novidade 
 }
 
 function Conteudo({ p, nov, fluid, soPapel }: { p: Painel; nov: Novidade | null; fluid?: boolean; soPapel?: boolean }) {
-  const kpis: PanelKpi[] = p.kpis.map((k) => ({ id: k.id, label: k.label, value: k.value, fullValue: k.fullValue, fresh: nov?.kpi === k.id }));
+  // decisão 3 (0.0.15): o custo por pessoa diz o denominador; US$ 12,77 é por usuário ativo, o mesmo nome do plano e do PDF
+  const kpis: PanelKpi[] = p.kpis.map((k) => ({ id: k.id, label: k.id === 'kpi.porAluno' ? t('Por usuário ativo por ano') : k.label, value: k.value, fullValue: k.fullValue, fresh: nov?.kpi === k.id }));
   const padrao = p.kpis.some((k) => k.value && k.origem === 'padrao');
   return (
     <PlanPanel
