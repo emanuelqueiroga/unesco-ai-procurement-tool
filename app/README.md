@@ -11,6 +11,7 @@ npm test             # Vitest: domínio, motor, fórmulas, store, migrações, E
 npm run lint:domain  # src/domain/ não pode tocar DOM, localStorage nem a global S
 npm run build        # tsc --noEmit + vite build → ../docs/app/
 npm run e2e          # percorre as 25 perguntas no build (1360 px e 400 px); rode depois do build
+VITE_CANAL=revisao npx vite build --outDir <pasta>   # build de revisão: faixa amarela, noindex e chave própria no navegador
 ```
 
 ## Pastas

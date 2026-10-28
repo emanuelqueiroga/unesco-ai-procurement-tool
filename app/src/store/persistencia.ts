@@ -21,9 +21,9 @@ function ler(st: StorageLike, chave: string): any {
 }
 
 /** Lê o caso guardado (v14, senão v13, senão v8). null quando não há nada aproveitável. */
-export function carregar(st: StorageLike | null = storagePadrao()): Carga | null {
+export function carregar(st: StorageLike | null = storagePadrao(), chaveV14: string = CHAVE): Carga | null {
   if (!st) return null;
-  const fontes: [string, Carga['de']][] = [[CHAVE, 'v14'], [CHAVE_V13, 'v13'], [CHAVE_V8, 'v8']];
+  const fontes: [string, Carga['de']][] = [[chaveV14, 'v14'], [CHAVE_V13, 'v13'], [CHAVE_V8, 'v8']];
   for (const [chave, de] of fontes) {
     const o = ler(st, chave);
     if (!o) continue;
@@ -36,23 +36,25 @@ export function carregar(st: StorageLike | null = storagePadrao()): Carga | null
   return null;
 }
 
-export function salvar(estado: Estado14, st: StorageLike | null = storagePadrao()): boolean {
+export function salvar(estado: Estado14, st: StorageLike | null = storagePadrao(), chaveV14: string = CHAVE): boolean {
   if (!st) return false;
-  try { st.setItem(CHAVE, JSON.stringify(soEstado(estado))); return true; } catch (e) { return false; }
+  try { st.setItem(chaveV14, JSON.stringify(soEstado(estado))); return true; } catch (e) { return false; }
 }
 
-/** Liga o store ao storage: carrega o caso guardado e grava a cada mudança de estado (com um pequeno atraso). */
-export function ligarPersistencia(st: StorageLike | null = storagePadrao(), atrasoMs = 250): () => void {
-  const c = carregar(st);
+/** Liga o store ao storage: carrega o caso guardado e grava a cada mudança de estado (com um pequeno atraso).
+ *  `chaveV14`: as versões de revisão (CANAL=revisao) usam uma chave própria por versão, como na v13, para não
+ *  trocar o caso de outra versão no mesmo endereço; as chaves da v13 e do app anterior são só lidas. */
+export function ligarPersistencia(st: StorageLike | null = storagePadrao(), atrasoMs = 250, chaveV14: string = CHAVE): () => void {
+  const c = carregar(st, chaveV14);
   if (c) useCaso.getState().repor(c.estado, c.de);
   let timer: ReturnType<typeof setTimeout> | null = null;
   const CHAVES = ['caso', 'ctx', 'resp', 'respC', 'respDet', 'revisar', 'feitos', 'custo', 'moeda', 'lang', 'origem', 'sugestoes', 'modo', 'capitulo', 'exemplo'] as const;
   const mudou = (a: CasoStore, b: CasoStore) => CHAVES.some(k => a[k] !== b[k]);
-  const gravarJa = () => { if (timer) { clearTimeout(timer); timer = null; salvar(soEstado(useCaso.getState()), st); } };
+  const gravarJa = () => { if (timer) { clearTimeout(timer); timer = null; salvar(soEstado(useCaso.getState()), st, chaveV14); } };
   const des = useCaso.subscribe((s, anterior) => {
     if (!mudou(s, anterior)) return;
     if (timer) clearTimeout(timer);
-    timer = setTimeout(() => { timer = null; salvar(soEstado(useCaso.getState()), st); }, atrasoMs);
+    timer = setTimeout(() => { timer = null; salvar(soEstado(useCaso.getState()), st, chaveV14); }, atrasoMs);
   });
   // ao fechar ou esconder a aba, o que ainda estava no atraso é gravado na hora
   const aoEsconder = () => { if (typeof document === 'undefined' || document.visibilityState === 'hidden') gravarJa(); };

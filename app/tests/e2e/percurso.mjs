@@ -9,7 +9,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
-const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../docs/app');
+// E2E_DIR: outra pasta de build (por exemplo, o build de revisão)
+const RAIZ = path.resolve(process.env.E2E_DIR || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../docs/app'));
 if (!fs.existsSync(path.join(RAIZ, 'index.html'))) { console.error('Rode antes: npm run build'); process.exit(2); }
 const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.json': 'application/json', '.svg': 'image/svg+xml' };
 const servidor = http.createServer((req, res) => {
@@ -111,7 +112,8 @@ async function percorrer(b, largura) {
 
   // as respostas ficaram guardadas com a origem certa
   await p.waitForTimeout(400);   // a gravação no navegador tem um pequeno atraso
-  const guardado = JSON.parse(await p.evaluate(() => localStorage.getItem('aiedu-procurement-v14')));
+  // a chave é 'aiedu-procurement-v14' (estável) ou 'aiedu-procurement-v14@<versão>' (revisão)
+  const guardado = JSON.parse(await p.evaluate(() => { const k = Object.keys(localStorage).find((x) => x.startsWith('aiedu-procurement-v14')); return k ? localStorage.getItem(k) : null; }));
   ok(guardado && guardado.formato === 14, `${rotulo}: estado v14 não foi salvo`);
   ok(guardado.origem.tarefas === 'informado' && guardado.origem['piloto.escolas'] === 'informado', `${rotulo}: sugestões aceitas não viraram 'informado'`);
   ok(guardado.caso.escolasInternet === 30 && guardado.caso.internet === 'parcial', `${rotulo}: internet parcial não gravou 30 escolas`);

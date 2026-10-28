@@ -116,3 +116,7 @@
 .pc-pergunta > .pr-questionframe,
 .pc-abertura > .pr-chapteropening,
 .pc-sintese > .pr-chaptersummary { padding: 0; background: transparent; }
+
+/* faixa das versões de revisão (CANAL=revisao) */
+.pc-faixa-revisao { background: var(--warn-bg); color: var(--ink); border-bottom: 1px solid var(--warn); padding: var(--space-2) var(--space-4); font-size: 14px; line-height: 20px; font-weight: 600; text-align: center; }
+.pc-faixa-revisao a { color: inherit; }
