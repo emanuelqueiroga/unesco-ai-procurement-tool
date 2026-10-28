@@ -81,12 +81,12 @@ E três coisas que a ferramenta nunca faz: não dá veredito no meio do percurso
 
 ## Arquitetura de informação simplificada
 
-O caminho Essencial fica com 24 perguntas (contra 51), as quatro fases continuam existindo porque a matriz camada × fase e o guia dependem delas, e tudo o que sai vai para Refinar com um valor padrão declarado.
+O caminho Essencial fica com 25 perguntas (contra 51; eram 24 até a decisão de 28/10/2026 de manter a alternativa sem IA), as quatro fases continuam existindo porque a matriz camada × fase e o guia dependem delas, e tudo o que sai vai para Refinar com um valor padrão declarado.
 
 | Passo atual | Fica no Essencial | Vai para Refinar | Como fica |
 | --- | --- | --- | --- |
 | 1.1 Onde e para quem | Nível administrativo; nome da rede; em que ponto está; etapas atendidas com total de escolas e estudantes por etapa | Detalhe por ano ou série | 4 perguntas; a grade por ano vira um link "detalhar por ano" |
-| 1.2 Prioridade e impacto | Prioridade; até 3 problemas do catálogo; situação atual (texto); impacto desejado; linha de base (sim/em parte/não) | Subcategorias; "outro problema"; resultado esperado e medição; alternativa sem IA; detalhes da linha de base | 5 perguntas; o título curto do problema (1.2.3) é gerado da escolha, editável |
+| 1.2 Prioridade e impacto | Prioridade; até 3 problemas do catálogo; situação atual (texto); impacto desejado; linha de base (sim/em parte/não); alternativa sem IA (sim/ainda não) | Subcategorias; "outro problema"; resultado esperado e medição; detalhes da linha de base | 6 perguntas; o título curto do problema (1.2.3) é gerado da escolha, editável |
 | 1.3 Governança | Uma tela única: "Marque o que a sua rede já tem" com os 6 itens em Sim / Em parte / Não | Os 12 campos "Qual?" e "O que falta?" | 1 tela; as respostas alimentam B1 e as recomendações exatamente como hoje |
 | 2.0 Prova de conceito ou piloto | A escolha, com "recomende para mim" | | 1 pergunta; deixa de reorganizar outras perguntas, porque as que "desciam" vão para Refinar |
 | 2.1 Aplicações | O que a IA faz (sugerido pelos problemas) | Nome da aplicação | 1 pergunta |

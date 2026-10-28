@@ -17,7 +17,7 @@ A v14 reescreve a camada de interface da ferramenta em React com TypeScript e Vi
 | Dados | Formato 14 do JSON do caso, que importa 9, 11 e 13 pelas migrações existentes e acrescenta a origem de cada valor | Casos salvos continuam abrindo |
 | Testes | Vitest para o domínio (porta dos testes Node), Playwright para o fluxo (porta dos testes Python) | Mesmas verificações, mesma linguagem do projeto |
 
-O que muda para a pessoa que usa: 24 perguntas no modo Essencial (as outras 27 viram premissas com valor padrão declarado e ficam no modo Refinar), quatro capítulos com abertura e síntese, o plano visível desde a primeira resposta, quatro páginas de plano em linguagem de gestor e a etiqueta de origem em todo número. O que não muda: os números que o motor calcula para um mesmo caso, as 66 regras de recomendação, a matriz camada × fase, os nove idiomas, o PDF e o vínculo institucional.
+O que muda para a pessoa que usa: 25 perguntas no modo Essencial (as outras 26 viram premissas com valor padrão declarado e ficam no modo Refinar), quatro capítulos com abertura e síntese, o plano visível desde a primeira resposta, quatro páginas de plano em linguagem de gestor e a etiqueta de origem em todo número. O que não muda: os números que o motor calcula para um mesmo caso, as 66 regras de recomendação, a matriz camada × fase, os nove idiomas, o PDF e o vínculo institucional.
 
 Observação: o README fala em versão 13 e o código grava `versao: 13`, mas o último commit se chama "Revisão v15: proposta B3". Esta especificação chama a nova base de v14 por ser a próxima depois do formato de dados 13; se houver uma v15 em andamento em outro lugar, o número é só um rótulo.
 
@@ -96,7 +96,7 @@ Destino: Essencial (E), Refinar (R) ou deixa de ser pergunta (—). A premissa p
 | 1.2.5 | Impacto desejado (`caso.impactos`) | E | 1 | Sugerido pela união dos impactos dos problemas |
 | 1.2.6 | Resultado esperado (`caso.resultado`) | R | — | Sugerido dos objetivos; dispara `metas-lacunas` |
 | 1.2.7 | Linha de base (`caso.linhaBase`) | E | 1 | `'nao'` (`CASO_VAZIO`); detalhes vão para R |
-| 1.2.8 | Alternativa sem IA (`caso.alternativa`) | R | — | Vazio → `alternativaSemIA=false` → alerta (`alertas`). Proposta v14: padrão 'nao', com recomendação |
+| 1.2.8 | Alternativa sem IA (`caso.alternativa`) | E | 1 | Vazio → `alternativaSemIA=false` → alerta de atenção (`alertas`); a regra `alternativa` só dispara com 'nao'. Fica no Essencial (decisão de 28/10/2026) |
 | 1.3.1–1.3.6 | Governança (`resp['g-*']`) | E, uma tela | 1 | Sem padrão: `undefined` não gera ação (`ACOES_G`). Os 12 detalhes `respDet` vão para R |
 | 2.0 | Prova de conceito ou piloto (`caso.testes`) | E | 2 | `[]` → ramo do piloto: E0 = max(50, 5% de E), 4 meses (`cfgDoCaso`) |
 | 2.1.1 | O que a IA faz (`caso.tarefas`) | E | 2 | Sugerido pelos problemas; uma das 3 de `faltasEstimativa` |
@@ -129,11 +129,11 @@ Destino: Essencial (E), Refinar (R) ou deixa de ser pergunta (—). A premissa p
 | 3.2.1 | Arquitetura (`caso.arquitetura`) | R | — | `''` → `derivarArquitetura` (aberta → ow; consumo → api; senão saas), `__arqPresumida` |
 | 4.1.1 | Pessoas em toda a rede (`caso.elegiveis`) | E, sugerido | 4 | Estudantes das etapas, ou estudantes/25, ou 1000 (`casoEfetivo`, `__elegPadrao`); uma das 3 de `faltasEstimativa` |
 | 4.1.2 | Em quanto tempo (`caso.expansao`) | E | 4 | `'ano1'` (`CASO_VAZIO`) |
-| 4.1.3 | Horizonte (`caso.horizonte`) | R | — | 3 anos (`CASO_VAZIO`); proposta v14: padrão 5; decidir antes de implementar |
+| 4.1.3 | Horizonte (`caso.horizonte`) | R | — | 3 anos (`CASO_VAZIO`), mantido na v14 (decisão de 28/10/2026); mockups e previews que diziam "5 anos" passam a dizer "3 anos" |
 | 4.2 | Estimativa | — | Quanto custa | Calculadora, cenários, tornado e Monte Carlo em Refinar |
 | 4.3 | Recomendações | — | O que fazer | `recomendacoesCaso` igual |
 
-Contagem: 24 no Essencial (1.1.1, 1.1.2, 1.1.3, 1.1.4+1.1.5, 1.2.1, 1.2.2, 1.2.4, 1.2.5, 1.2.7, governança, 2.0, 2.1.1, 2.2.1, 2.2.2+2.2.3, 2.3.4, 2.3.5, 2.3.8, 2.4.1+2.4.2, 2.4.3, 2.5.1+2.5.4, 2.6.2, 3.1.1, 4.1.1, 4.1.2). Três respostas continuam sendo o mínimo para o primeiro número (`faltasEstimativa`: tarefas, tipo de tecnologia e elegíveis), todas no Essencial; como `elegiveis` é sugerido, o primeiro número aparece ao confirmar 2.3.4.
+Contagem: 25 no Essencial (1.1.1, 1.1.2, 1.1.3, 1.1.4+1.1.5, 1.2.1, 1.2.2, 1.2.4, 1.2.5, 1.2.7, 1.2.8, governança, 2.0, 2.1.1, 2.2.1, 2.2.2+2.2.3, 2.3.4, 2.3.5, 2.3.8, 2.4.1+2.4.2, 2.4.3, 2.5.1+2.5.4, 2.6.2, 3.1.1, 4.1.1, 4.1.2). Três respostas continuam sendo o mínimo para o primeiro número (`faltasEstimativa`: tarefas, tipo de tecnologia e elegíveis), todas no Essencial; como `elegiveis` é sugerido, o primeiro número aparece ao confirmar 2.3.4.
 
 As perguntas que hoje "descem" para o passo 3.1 (`camposDescidos`: `frequencia`, `licenca`, `adaptacao`, e na PoC `afetados` e `consequencias`) deixam de mudar de lugar: as três primeiras estão em Refinar e as duas últimas ficam sempre no capítulo 2, porque alimentam o perfil de risco em qualquer modo de teste.
 
@@ -201,6 +201,6 @@ Etapas 3 e 4 podem andar em paralelo com a 2. Fora da v14: guia impresso, revis�
 | `internet` vazio é 'sim' no custo e "não sim" nas recomendações | Recomendação sem custo correspondente | Padronizar vazio = 'sim'; registrar em `plano/11_v14.md` |
 | jsPDF e subsets Noto no bundle | Build pesado, PDF lento no celular | Import dinâmico de `export/pdf.ts` e das fontes ao clicar em Baixar PDF |
 
-Decisões em aberto: horizonte padrão (3 no código, 5 nas telas); arquitetura fora do Essencial; limite de três problemas; alternativa sem IA fora do Essencial com padrão 'nao'. Framework: React escolhido; Svelte é a alternativa com bundle menor.
+Decisões em aberto: arquitetura fora do Essencial e limite de três problemas (comentários no modelo de UX). Decididos em 28/10/2026: React mantido; horizonte padrão 3 anos; alternativa sem IA (1.2.8) fica no Essencial, o que leva o caminho a 25 perguntas.
 
 Referências: `design/redesign/` na branch `redesign-v14`; código analisado da `main` em 27 de outubro de 2026 (commit "Revisão v15: proposta B3").
