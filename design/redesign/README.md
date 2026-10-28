@@ -5,6 +5,7 @@ Material produzido em 27 de outubro de 2026 para o redesenho da AI in Education 
 | Pasta ou arquivo | O que é | Versão viva |
 | --- | --- | --- |
 | `01-modelo-de-ux.md` | Modelo de UX: usuários e modos (Essencial e Refinar), princípios, arquitetura de informação de 51 para 24 perguntas, três propostas de narrativa e a decisão (A + ritmo da B) | https://claude.ai/artifact/5QvKB2ZSUokhgYtxSeXacE |
+| `02-especificacao-reimplementacao.md` | Especificação de reimplementação em React + TypeScript + Vite: arquitetura, módulos reaproveitados, modelo de dados (formato 14), mapa das 51 perguntas para as 24 do Essencial com as premissas padrão do código, comportamentos da narrativa, componentes por tela, tokens, i18n/PDF, plano de migração e riscos | https://claude.ai/artifact/5ergYqbDmgVTQHNQWifUFf |
 | `wireframes/` | Protótipos navegáveis em cinza das três narrativas (13 telas, formato `.dc.html` do canvas Design) | https://claude.ai/artifact/LgArTmVLpymbT4QjnHkdRa |
 | `prumo/` | Design system Prumo: `README.md` (brand book), `tokens.json` (cores claro/escuro, tipografia, espaçamento, raios, sombras), `components/<Nome>/README.md` e `preview.html` (19 componentes), `assets/Logos/` | https://claude.ai/artifact/FW24XMHdnTvMRNq78bqgdY |
 | `mockups/` | Mockups com o Prumo aplicado: 12 telas de desktop (1360 px), 4 de celular (400 px) e as partes reutilizadas; `prumo.css` é a compilação dos tokens em variáveis CSS | https://claude.ai/artifact/W5XfuSdxyb4VBTvitiGNn9 |
