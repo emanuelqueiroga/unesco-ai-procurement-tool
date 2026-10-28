@@ -26,7 +26,7 @@ export function App() {
       case 'galeria': return <Galeria />;
       case 'abertura': return <Abertura key={`a${rota.n}`} n={rota.n} />;
       case 'pergunta': return <Pergunta key={`p${rota.tela}`} n={rota.n} tela={rota.tela} />;
-      case 'sintese': return <Sintese key={`s${rota.n}`} n={rota.n} />;
+      case 'sintese': return <Sintese key={`s${rota.n}`} n={rota.n} foco={rota.foco} />;
       case 'plano': return <Plano pagina={rota.pagina} />;
       case 'refinar': return <Refinar aba={rota.aba} foco={rota.foco} />;
       default: return <Inicio />;

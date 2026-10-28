@@ -124,7 +124,7 @@ function PremissasCapitulo({ s, n }: { s: CasoStore; n: Capitulo }) {
   );
 }
 
-export function Sintese({ n }: { n: Capitulo }) {
+export function Sintese({ n }: { n: Capitulo; foco?: string }) {
   const s = useCaso();
   const sin = sinteseCapitulo(n, s);
   const prox = n < 4 ? CAPITULOS_INFO[(n + 1) as Capitulo] : null;

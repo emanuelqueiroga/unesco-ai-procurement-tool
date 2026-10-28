@@ -8,7 +8,7 @@
 //   #/galeria                  galeria de componentes do Prumo
 import { useEffect, useState } from 'react';
 import type { Capitulo } from '../store';
-import { ESSENCIAL } from '../store';
+import { ESSENCIAL, telaDoCampo, capituloDoCampo } from '../store';
 
 export type PaginaPlano = 'resumo' | 'custa' | 'fazer' | 'exigir' | 'apendice' | 'faltam';
 const PAGINAS: PaginaPlano[] = ['resumo', 'custa', 'fazer', 'exigir', 'apendice', 'faltam'];
@@ -20,7 +20,7 @@ export type Rota =
   | { tipo: 'inicio' }
   | { tipo: 'abertura'; n: Capitulo }
   | { tipo: 'pergunta'; n: Capitulo; tela: string }
-  | { tipo: 'sintese'; n: Capitulo }
+  | { tipo: 'sintese'; n: Capitulo; foco?: string }
   | { tipo: 'plano'; pagina: PaginaPlano }
   | { tipo: 'refinar'; aba: AbaRefinar; foco?: string }
   | { tipo: 'galeria' };
@@ -37,7 +37,8 @@ export function lerRota(hash: string): Rota {
     const n = cap(p[1] || '');
     if (!n) return { tipo: 'inicio' };
     if (!p[2]) return { tipo: 'abertura', n };
-    if (p[2] === 'sintese') return { tipo: 'sintese', n };
+    // #/capitulo/:n/sintese/<campo>: a síntese com as premissas do capítulo abertas e o campo em foco
+    if (p[2] === 'sintese') return p[3] ? { tipo: 'sintese', n, foco: p[3] } : { tipo: 'sintese', n };
     const t = ESSENCIAL.find((x) => x.id === p[2] && x.capitulo === n);
     return t ? { tipo: 'pergunta', n, tela: t.id } : { tipo: 'abertura', n };
   }
@@ -51,6 +52,13 @@ export const href = {
   sintese: (n: number) => `#/capitulo/${n}/sintese`,
   refinar: (aba: AbaRefinar = 'premissas', foco?: string) => `#/refinar/${aba}${foco ? '/' + foco : ''}`,
   plano: (pagina: PaginaPlano = 'resumo') => (pagina === 'resumo' ? '#/plano' : `#/plano/${pagina}`),
+  /** Onde responder um campo qualquer: a tela do Essencial, ou a síntese do capítulo com o campo em foco (Refinar). */
+  campo: (campo: string) => {
+    const base = String(campo).split('.')[0];
+    const t = telaDoCampo(base);
+    if (t) return `#/capitulo/${t.capitulo}/${t.id}`;
+    return `#/capitulo/${capituloDoCampo(base)}/sintese/${base}`;
+  },
   tela: (id: string) => {
     const t = ESSENCIAL.find((x) => x.id === id);
     return t ? `#/capitulo/${t.capitulo}/${t.id}` : '#/';
