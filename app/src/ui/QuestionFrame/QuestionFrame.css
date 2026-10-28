@@ -1,0 +1,72 @@
+.pr-questionframe {
+  flex-grow: 1;
+  min-width: 0;
+  padding: 40px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: var(--surface-1);
+}
+
+.pr-questionframe-kicker {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+}
+
+.pr-questionframe-title {
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: 600;
+  color: var(--ink);
+  max-width: 640px;
+}
+
+.pr-questionframe-text {
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--ink-2);
+  max-width: 560px;
+}
+
+.pr-questionframe-control {
+  max-width: 640px;
+}
+
+.pr-questionframe-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  margin-top: var(--space-2);
+}
+
+.pr-questionframe-affects {
+  margin-top: auto;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  .pr-questionframe {
+    padding: 20px var(--space-4);
+    gap: var(--space-4);
+  }
+  .pr-questionframe-title {
+    font-size: 24px;
+    line-height: 30px;
+  }
+}
+
+@media (max-width: 640px) {
+  .pr-questionframe-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pr-questionframe-actions > .pr-button--primary {
+    width: 100%;
+  }
+}

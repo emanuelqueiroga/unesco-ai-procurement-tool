@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Início — o plano se escreve</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="prumo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1360px; height: 860px; display: flex; flex-direction: column; background: var(--surface-1); color: var(--ink); font-family: var(--font-sans);">
+  <dc-import name="PartHeader" hint-size="1360px,64px"></dc-import>
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+    <main style="width: 960px; padding: 72px 64px 40px; display: flex; flex-direction: column; gap: 24px;">
+      <div class="t-label">Plano de contratação com custo do ciclo de vida</div>
+      <h1 class="t-display" style="max-width: 640px;">Seu plano de contratação de IA se escreve enquanto você responde</h1>
+      <p class="t-body16 ink2" style="max-width: 580px;">Cerca de 24 perguntas sobre a sua rede, o problema que quer resolver e o teste que pretende fazer. A cada resposta, o plano ao lado ganha um número, uma frase ou uma recomendação. No fim, você baixa o PDF.</p>
+      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <a href="D2-Abertura.dc.html" class="btn btn-primary" style="height: 48px;">Começar</a>
+        <a href="D8-Plano-Resumo.dc.html" class="btn btn-secondary" style="height: 48px;">Ver um plano de exemplo</a>
+        <button class="btn btn-secondary" style="height: 48px;">Importar caso</button>
+      </div>
+      <div class="t-cap muted">Leva uns 20 minutos. Dá para parar e voltar: as respostas ficam salvas só neste navegador.</div>
+      <div style="flex-grow: 1;"></div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px;">
+        <div style="border-top: 3px solid var(--phase-1); padding-top: 10px;"><div style="font-weight: 600;">1 · Sua rede e o problema</div><div class="t-cap muted">10 perguntas · perfil da rede e problema definido</div></div>
+        <div style="border-top: 3px solid var(--phase-2); padding-top: 10px;"><div style="font-weight: 600;">2 · O teste</div><div class="t-cap muted">11 perguntas · quanto custa testar</div></div>
+        <div style="border-top: 3px solid var(--phase-3); padding-top: 10px;"><div style="font-weight: 600;">3 · A primeira etapa</div><div class="t-cap muted">1 pergunta · custo do primeiro ano</div></div>
+        <div style="border-top: 3px solid var(--phase-4); padding-top: 10px;"><div style="font-weight: 600;">4 · Toda a rede</div><div class="t-cap muted">2 perguntas · o plano completo em PDF</div></div>
+      </div>
+      <div class="t-cap muted" style="margin-top: 8px;">Projeto vinculado à Cátedra UNESCO UNITWIN de Inteligência Artificial Desplugada na Educação e ao IA.EDU. Valores ilustrativos; a ferramenta não fala em nome da UNESCO ou de outra instituição.</div>
+    </main>
+    <dc-import name="PartPlanEmpty" hint-size="400px,760px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

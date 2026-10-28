@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>B1 — início: mapa da jornada</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#111827}
+a{color:#374151}a:hover{color:#111827}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column; font-size: 14px; color: #111827;">
+
+  <div style="height: 56px; box-sizing: border-box; border-bottom: 1px solid #D1D5DB; display: flex; align-items: center; gap: 16px; padding: 0 24px; background: #F9FAFB;">
+    <div style="width: 72px; height: 28px; border: 1px dashed #9CA3AF; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6B7280;">logo Cátedra</div>
+    <div style="width: 72px; height: 28px; border: 1px dashed #9CA3AF; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6B7280;">logo IA.EDU</div>
+    <div style="font-weight: 600; font-size: 15px;">AI in Education Procurement Tool</div>
+    <div style="flex-grow: 1;"></div>
+    <button style="height: 32px; padding: 0 12px; border: 1px solid #9CA3AF; background: #FFFFFF; border-radius: 6px; font-size: 13px;">Idioma</button>
+    <button style="height: 32px; padding: 0 12px; border: 1px solid #9CA3AF; background: #FFFFFF; border-radius: 6px; font-size: 13px;">Importar caso</button>
+  </div>
+
+  <main style="flex-grow: 1; box-sizing: border-box; padding: 64px 120px 40px; display: flex; flex-direction: column; gap: 32px;">
+    <div style="max-width: 720px; display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: #6B7280;">Plano de contratação com custo do ciclo de vida</div>
+      <h1 style="margin: 0; font-size: 40px; font-weight: 600; line-height: 1.15;">Do contexto ao plano de contratação, em quatro capítulos</h1>
+      <p style="margin: 0; color: #4B5563; font-size: 16px; line-height: 1.55;">Cada capítulo faz poucas perguntas e termina dizendo o que você já sabe. No fim do quarto, o plano está pronto para baixar.</p>
+    </div>
+
+    <div style="position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; margin-top: 8px;">
+      <div style="position: absolute; left: 40px; right: 40px; top: 19px; height: 2px; background: #D1D5DB;"></div>
+      <div style="display: flex; flex-direction: column; gap: 12px; position: relative;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; background: #111827; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 600;">1</div>
+        <div style="font-weight: 600; font-size: 16px;">Sua rede e o problema</div>
+        <div style="color: #6B7280; font-size: 13px; line-height: 1.5;">Onde, para quem, qual problema e que governança já existe.</div>
+        <div style="font-size: 12px; color: #6B7280;">10 perguntas · ~8 min</div>
+        <div style="font-size: 12px; color: #6B7280; border-top: 1px solid #E5E7EB; padding-top: 8px;">Você sai sabendo: o perfil da rede e o problema bem definido.</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px; position: relative;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #111827; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 600;">2</div>
+        <div style="font-weight: 600; font-size: 16px;">O teste</div>
+        <div style="color: #6B7280; font-size: 13px; line-height: 1.5;">O que a IA faz, quem usa, que tamanho tem o piloto e o que ele exige.</div>
+        <div style="font-size: 12px; color: #6B7280;">11 perguntas · ~8 min</div>
+        <div style="font-size: 12px; color: #6B7280; border-top: 1px solid #E5E7EB; padding-top: 8px;">Você sai sabendo: quanto custa o teste.</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px; position: relative;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #9CA3AF; background: #FFFFFF; color: #6B7280; display: flex; align-items: center; justify-content: center; font-weight: 600;">3</div>
+        <div style="font-weight: 600; font-size: 16px;">A primeira etapa</div>
+        <div style="color: #6B7280; font-size: 13px; line-height: 1.5;">Quantas escolas e pessoas começam de verdade.</div>
+        <div style="font-size: 12px; color: #6B7280;">1 pergunta · ~1 min</div>
+        <div style="font-size: 12px; color: #6B7280; border-top: 1px solid #E5E7EB; padding-top: 8px;">Você sai sabendo: o custo do primeiro ano de uso real.</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px; position: relative;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #9CA3AF; background: #FFFFFF; color: #6B7280; display: flex; align-items: center; justify-content: center; font-weight: 600;">4</div>
+        <div style="font-weight: 600; font-size: 16px;">Toda a rede</div>
+        <div style="color: #6B7280; font-size: 13px; line-height: 1.5;">Até onde ir, em quanto tempo, por quantos anos.</div>
+        <div style="font-size: 12px; color: #6B7280;">2 perguntas · ~2 min</div>
+        <div style="font-size: 12px; color: #6B7280; border-top: 1px solid #E5E7EB; padding-top: 8px;">Você sai com: o plano de contratação completo, em PDF.</div>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <a href="B2-Abertura.dc.html" style="height: 48px; padding: 0 24px; background: #111827; color: #FFFFFF; border-radius: 6px; font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; text-decoration: none;">Começar o capítulo 1</a>
+      <a href="B5-Plano.dc.html" style="height: 48px; padding: 0 18px; border: 1px solid #9CA3AF; background: #FFFFFF; color: #111827; border-radius: 6px; font-size: 15px; display: inline-flex; align-items: center; text-decoration: none;">Ver um exemplo pronto</a>
+      <span style="font-size: 12px; color: #9CA3AF; margin-left: 8px;">(no protótipo, Começar abre a abertura do capítulo 2)</span>
+    </div>
+    <div style="font-size: 11px; color: #9CA3AF;">Vinculado à Cátedra UNESCO UNITWIN de Inteligência Artificial Desplugada na Educação e ao IA.EDU. Valores ilustrativos; a ferramenta não fala em nome da UNESCO. As respostas ficam só neste navegador.</div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

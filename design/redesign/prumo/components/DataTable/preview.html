@@ -1,0 +1,32 @@
+<!-- @dsCard group="Leitura" height=230 -->
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>DataTable</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+html,body{margin:0;background:var(--surface-1);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:20px}
+*{box-sizing:border-box}
+.row{display:flex;gap:var(--space-4);align-items:center;flex-wrap:wrap;padding:var(--space-4)}
+.col{display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-4)}
+.muted{color:var(--muted)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.tw{padding:var(--space-4);max-width:720px}
+table{border-collapse:collapse;width:100%;font-size:14px;line-height:20px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:13px;padding:8px 12px;border-bottom:1px solid var(--line-control);background:var(--surface-2)}
+td{padding:10px 12px;border-bottom:1px solid var(--line)}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.total td{font-weight:600;border-top:2px solid var(--line-control);border-bottom:0}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px;vertical-align:middle}
+</style></head>
+<body>
+
+<div class="tw"><table>
+<thead><tr><th>Camada</th><th class="num">Ano 0</th><th class="num">Anos 1–3</th><th class="num">% do total</th></tr></thead>
+<tbody>
+<tr><td><span class="sw" style="background:var(--layer-2)"></span>Aplicações</td><td class="num">R$ 62 mil</td><td class="num">R$ 980 mil</td><td class="num">46%</td></tr>
+<tr><td><span class="sw" style="background:var(--layer-3)"></span>Internet e dispositivos</td><td class="num">R$ 41 mil</td><td class="num">R$ 520 mil</td><td class="num">25%</td></tr>
+<tr><td><span class="sw" style="background:var(--layer-6)"></span>Formação</td><td class="num">R$ 30 mil</td><td class="num">R$ 210 mil</td><td class="num">11%</td></tr>
+<tr class="total"><td>Total</td><td class="num">R$ 184 mil</td><td class="num">R$ 2,1 mi</td><td class="num">100%</td></tr>
+</tbody></table></div>
+
+</body></html>

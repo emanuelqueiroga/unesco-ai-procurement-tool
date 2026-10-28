@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>A1 — início: o plano se escreve</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#111827}
+a{color:#374151}a:hover{color:#111827}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column; font-size: 14px; color: #111827;">
+
+  <div style="height: 56px; box-sizing: border-box; border-bottom: 1px solid #D1D5DB; display: flex; align-items: center; gap: 16px; padding: 0 24px; background: #F9FAFB;">
+    <div style="width: 72px; height: 28px; border: 1px dashed #9CA3AF; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6B7280;">logo Cátedra</div>
+    <div style="width: 72px; height: 28px; border: 1px dashed #9CA3AF; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6B7280;">logo IA.EDU</div>
+    <div style="font-weight: 600; font-size: 15px;">AI in Education Procurement Tool</div>
+    <div style="flex-grow: 1;"></div>
+    <button style="height: 32px; padding: 0 12px; border: 1px solid #9CA3AF; background: #FFFFFF; border-radius: 6px; font-size: 13px;">Idioma</button>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+    <main style="width: 760px; box-sizing: border-box; padding: 72px 64px; display: flex; flex-direction: column; gap: 24px;">
+      <div style="font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: #6B7280;">Plano de contratação com custo do ciclo de vida</div>
+      <h1 style="margin: 0; font-size: 40px; font-weight: 600; line-height: 1.15; max-width: 600px;">Seu plano de contratação de IA se escreve enquanto você responde</h1>
+      <p style="margin: 0; color: #4B5563; font-size: 16px; line-height: 1.55; max-width: 560px;">Cerca de 24 perguntas sobre a sua rede, o problema que quer resolver e o teste que pretende fazer. A cada resposta, o plano ao lado ganha um número, uma frase ou uma recomendação. No fim, você baixa o PDF.</p>
+      <div style="display: flex; gap: 12px; align-items: center; margin-top: 8px;">
+        <a href="A2-Pergunta.dc.html" style="height: 48px; padding: 0 24px; background: #111827; color: #FFFFFF; border-radius: 6px; font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; text-decoration: none;">Começar</a>
+        <a href="A4-Plano.dc.html" style="height: 48px; padding: 0 18px; border: 1px solid #9CA3AF; background: #FFFFFF; color: #111827; border-radius: 6px; font-size: 15px; display: inline-flex; align-items: center; text-decoration: none;">Ver um plano de exemplo</a>
+        <button style="height: 48px; padding: 0 18px; border: 1px solid #9CA3AF; background: #FFFFFF; border-radius: 6px; font-size: 15px;">Importar caso</button>
+      </div>
+      <div style="font-size: 12px; color: #6B7280;">Leva uns 20 minutos. Dá para parar e voltar: as respostas ficam salvas só neste navegador.</div>
+      <div style="flex-grow: 1;"></div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; font-size: 12px;">
+        <div style="border-top: 2px solid #374151; padding-top: 8px;"><div style="font-weight: 600;">1 · Sua rede e o problema</div><div style="color: #6B7280;">10 perguntas</div></div>
+        <div style="border-top: 2px solid #9CA3AF; padding-top: 8px;"><div style="font-weight: 600;">2 · O teste</div><div style="color: #6B7280;">11 perguntas · primeiro número</div></div>
+        <div style="border-top: 2px solid #D1D5DB; padding-top: 8px;"><div style="font-weight: 600;">3 · Primeira etapa</div><div style="color: #6B7280;">1 pergunta</div></div>
+        <div style="border-top: 2px solid #E5E7EB; padding-top: 8px;"><div style="font-weight: 600;">4 · Toda a rede</div><div style="color: #6B7280;">2 perguntas · plano completo</div></div>
+      </div>
+      <div style="font-size: 11px; color: #9CA3AF;">Vinculado à Cátedra UNESCO UNITWIN de Inteligência Artificial Desplugada na Educação e ao IA.EDU. Valores ilustrativos; a ferramenta não fala em nome da UNESCO.</div>
+    </main>
+
+    <aside aria-label="Seu plano" style="flex-grow: 1; box-sizing: border-box; border-left: 1px solid #D1D5DB; background: #F3F4F6; padding: 40px 48px; display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #6B7280;">Seu plano · em branco</div>
+      <div style="background: #FFFFFF; border: 1px solid #D1D5DB; border-radius: 4px; padding: 24px; display: flex; flex-direction: column; gap: 16px; flex-grow: 1; font-size: 12px;">
+        <div style="border-bottom: 1px solid #E5E7EB; padding-bottom: 12px;">
+          <div style="font-size: 10px; color: #6B7280;">PLANO DE CONTRATAÇÃO</div>
+          <div style="font-size: 18px; font-weight: 600; margin-top: 2px; color: #9CA3AF;">Rede: ———</div>
+          <div style="color: #9CA3AF;">Problema: ——— · Teste: ———</div>
+        </div>
+        <div style="font-weight: 600; color: #9CA3AF;">Em resumo</div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+          <div style="border: 1px dashed #D1D5DB; border-radius: 4px; padding: 10px;"><div style="font-size: 10px; color: #9CA3AF;">Custo do teste</div><div style="font-size: 18px; color: #D1D5DB;">—</div></div>
+          <div style="border: 1px dashed #D1D5DB; border-radius: 4px; padding: 10px;"><div style="font-size: 10px; color: #9CA3AF;">Custo total, 3 anos</div><div style="font-size: 18px; color: #D1D5DB;">—</div></div>
+          <div style="border: 1px dashed #D1D5DB; border-radius: 4px; padding: 10px;"><div style="font-size: 10px; color: #9CA3AF;">Por ano de operação</div><div style="font-size: 18px; color: #D1D5DB;">—</div></div>
+          <div style="border: 1px dashed #D1D5DB; border-radius: 4px; padding: 10px;"><div style="font-size: 10px; color: #9CA3AF;">Por estudante por ano</div><div style="font-size: 18px; color: #D1D5DB;">—</div></div>
+        </div>
+        <div style="font-weight: 600; color: #9CA3AF; margin-top: 6px;">Quanto custa</div>
+        <div style="height: 10px; border-radius: 5px; background: #F3F4F6;"></div>
+        <div style="height: 10px; border-radius: 5px; background: #F3F4F6; width: 70%;"></div>
+        <div style="font-weight: 600; color: #9CA3AF; margin-top: 6px;">O que fazer</div>
+        <div style="height: 10px; border-radius: 5px; background: #F3F4F6; width: 85%;"></div>
+        <div style="height: 10px; border-radius: 5px; background: #F3F4F6; width: 60%;"></div>
+        <div style="font-weight: 600; color: #9CA3AF; margin-top: 6px;">O que exigir</div>
+        <div style="height: 10px; border-radius: 5px; background: #F3F4F6; width: 75%;"></div>
+        <div style="flex-grow: 1;"></div>
+        <div style="font-size: 12px; color: #6B7280; text-align: center;">A primeira resposta escreve a primeira linha.</div>
+      </div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

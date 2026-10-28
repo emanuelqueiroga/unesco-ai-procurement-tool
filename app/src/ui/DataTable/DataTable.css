@@ -1,0 +1,133 @@
+.pr-datatable {
+  width: 100%;
+  max-width: 720px;
+  /* A tabela vira cartões quando a sua coluna tem até 640 px (o que inclui o viewport de 640 px). */
+  container-type: inline-size;
+}
+
+.pr-datatable-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ink);
+}
+
+.pr-datatable-caption {
+  text-align: left;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+  padding-bottom: var(--space-2);
+}
+.pr-datatable-caption--sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.pr-datatable-table thead th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 18px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line-control);
+  background: var(--surface-2);
+}
+
+.pr-datatable-table tbody th,
+.pr-datatable-table tbody td {
+  text-align: left;
+  font-weight: 400;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.pr-datatable-num {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-datatable-total th,
+.pr-datatable-total td {
+  font-weight: 600;
+  border-top: 2px solid var(--line-control);
+  border-bottom: 0;
+}
+
+.pr-datatable-selected th,
+.pr-datatable-selected td {
+  background: var(--primary-tint);
+}
+
+.pr-datatable-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* Até 640 px de coluna: cartões empilhados, rótulo e valor por linha, nunca rolagem horizontal. */
+@container (max-width: 640px) {
+  .pr-datatable-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .pr-datatable-table,
+  .pr-datatable-table tbody,
+  .pr-datatable-table tr,
+  .pr-datatable-table tbody th,
+  .pr-datatable-table tbody td {
+    display: block;
+  }
+  .pr-datatable-table tr {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-2);
+    background: var(--surface-1);
+  }
+  .pr-datatable-table tbody th,
+  .pr-datatable-table tbody td {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .pr-datatable-table tbody th {
+    font-weight: 600;
+    justify-content: flex-start;
+    gap: 0;
+  }
+  .pr-datatable-table tbody tr > :last-child {
+    border-bottom: 0;
+  }
+  .pr-datatable-table tbody td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 13px;
+    text-align: left;
+    font-weight: 400;
+    font-variant-numeric: normal;
+  }
+  .pr-datatable-total th,
+  .pr-datatable-total td {
+    border-top: 0;
+  }
+  .pr-datatable-total {
+    border-width: 2px !important;
+    border-color: var(--line-control) !important;
+  }
+}

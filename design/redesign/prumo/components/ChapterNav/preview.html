@@ -1,0 +1,42 @@
+<!-- @dsCard group="Percurso" height=330 -->
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>ChapterNav</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+html,body{margin:0;background:var(--surface-1);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:20px}
+*{box-sizing:border-box}
+.row{display:flex;gap:var(--space-4);align-items:center;flex-wrap:wrap;padding:var(--space-4)}
+.col{display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-4)}
+.muted{color:var(--muted)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+nav{width:260px;padding:var(--space-4);display:flex;flex-direction:column;gap:4px;background:var(--surface-1)}
+.zone{font-size:12px;line-height:16px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:var(--space-2)}
+.ch{display:flex;align-items:center;gap:var(--space-2);padding:6px var(--space-2);border-radius:var(--radius-md);font-weight:600}
+.ch.active{background:var(--surface-2)}
+.dot{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.done{background:var(--primary);color:var(--on-primary)}
+.cur{border:2px solid var(--primary)}
+.todo{border:1px solid var(--line-control);color:var(--muted)}
+.qs{padding-left:34px;display:flex;flex-direction:column;gap:3px;font-size:13px;line-height:18px}
+.q-done{color:var(--muted)} .q-cur{font-weight:600;color:var(--ink)} .q-todo{color:var(--muted);opacity:.7} .q-sug{color:var(--accent-ink)}
+</style></head>
+<body>
+
+<nav aria-label="Capítulos">
+  <div class="zone">Seu percurso · 11 de 24</div>
+  <div class="ch"><span class="dot done">✓</span>1 · Sua rede e o problema</div>
+  <div class="ch active"><span class="dot cur">2</span>2 · O teste</div>
+  <div class="qs">
+    <div class="q-done">✓ O que a IA faz</div>
+    <div class="q-done">✓ Quem usa</div>
+    <div class="q-sug">~ Tecnologia · pagamento</div>
+    <div class="q-cur">● Tamanho do teste</div>
+    <div class="q-todo">○ Internet e dispositivos</div>
+    <div class="q-todo">○ Formação</div>
+  </div>
+  <div class="ch"><span class="dot todo">3</span><span class="muted">3 · Primeira etapa</span></div>
+  <div class="ch"><span class="dot todo">4</span><span class="muted">4 · Toda a rede</span></div>
+</nav>
+
+</body></html>

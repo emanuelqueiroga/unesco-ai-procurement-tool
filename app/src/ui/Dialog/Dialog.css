@@ -1,0 +1,65 @@
+.pr-dialog-root {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+.pr-dialog-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay);
+}
+
+.pr-dialog {
+  position: relative;
+  width: 440px;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  background: var(--surface-1);
+  color: var(--ink);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.pr-dialog:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+.pr-dialog--figure {
+  width: auto;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.pr-dialog-title {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+.pr-dialog-body {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ink-2);
+}
+
+.pr-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  margin-top: var(--space-2);
+}
+
+/* Variante só de amostra: o diálogo preso a um contêiner (galeria). */
+.pr-dialog-root--inline {
+  position: absolute;
+}

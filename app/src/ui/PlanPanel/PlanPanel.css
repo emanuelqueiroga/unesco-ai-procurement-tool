@@ -1,0 +1,175 @@
+.pr-planpanel {
+  width: 400px;
+  flex-shrink: 0;
+  background: var(--surface-0);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border-left: 1px solid var(--line);
+  min-height: 0;
+}
+.pr-planpanel--fluid {
+  width: auto;
+  border-left: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.pr-planpanel-zone {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  min-height: 24px;
+}
+.pr-planpanel-open {
+  position: relative;
+  font-size: 13px;
+  line-height: 18px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: var(--primary);
+}
+.pr-planpanel-open::before {
+  content: '';
+  position: absolute;
+  inset: -13px 0;
+}
+
+.pr-planpanel-paper {
+  background: var(--surface-plan);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink);
+  flex-grow: 1;
+  overflow: auto;
+}
+
+.pr-planpanel-cover {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: var(--space-3);
+}
+.pr-planpanel-kicker {
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pr-planpanel-title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.pr-planpanel-title--empty {
+  color: var(--line-control);
+}
+.pr-planpanel-facts {
+  color: var(--muted);
+}
+
+.pr-planpanel-sec {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+}
+.pr-planpanel-sec--dim {
+  color: var(--muted);
+  font-weight: 500;
+}
+.pr-planpanel-count {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.pr-planpanel-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.pr-planpanel-origin {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+.pr-planpanel-origin .pr-sourcelink,
+.pr-planpanel-origin a {
+  font-size: 12px;
+}
+
+.pr-planpanel-recs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pr-planpanel-rec {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+.pr-planpanel-box {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--line-control);
+  border-radius: 3px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.pr-planpanel-rec--fresh {
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  margin: -6px;
+}
+.pr-planpanel-new {
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.pr-planpanel-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: var(--space-2);
+}
+.pr-planpanel-skeleton i {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--surface-2);
+}
+
+.pr-planpanel-empty-msg {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  text-align: center;
+  color: var(--muted);
+}
+
+.pr-planpanel-footer {
+  margin-top: auto;
+  padding-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

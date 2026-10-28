@@ -1,0 +1,31 @@
+<!-- @dsCard group="Origem dos números" height=110 -->
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>SourceTag</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+html,body{margin:0;background:var(--surface-1);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:20px}
+*{box-sizing:border-box}
+.row{display:flex;gap:var(--space-4);align-items:center;flex-wrap:wrap;padding:var(--space-4)}
+.col{display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-4)}
+.muted{color:var(--muted)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.tag{display:inline-flex;align-items:center;gap:var(--space-1);height:22px;padding:0 var(--space-2);border-radius:var(--radius-sm);font-size:12px;font-weight:600;letter-spacing:.02em}
+.tag.padrao{border:1px solid var(--line-control);color:var(--muted)}
+.tag.sugerido{background:var(--accent-tint);color:var(--accent-ink)}
+.tag.informado{background:var(--primary-tint);color:var(--primary)}
+.tag.refinado{background:var(--ink);color:var(--surface-1)}
+.link{color:var(--primary);font-size:13px;text-decoration:underline;text-underline-offset:3px}
+</style></head>
+<body>
+
+<div class="row">
+  <span class="tag padrao">padrão</span>
+  <span class="tag sugerido">~ sugerido</span>
+  <span class="tag informado">informado</span>
+  <span class="tag refinado">refinado</span>
+  <span class="muted">·</span>
+  <a class="link" href="#">de onde vem?</a>
+</div>
+
+</body></html>

@@ -1,0 +1,102 @@
+.pr-schoolsgrid {
+  display: flex;
+  flex-direction: column;
+  max-width: 640px;
+  border-top: 1px solid var(--line);
+}
+
+.pr-schoolsgrid-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.pr-schoolsgrid-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  flex: 1 1 260px;
+  cursor: pointer;
+}
+.pr-schoolsgrid-check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+}
+
+.pr-schoolsgrid-text {
+  display: flex;
+  flex-direction: column;
+}
+.pr-schoolsgrid-label {
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--ink);
+}
+.pr-schoolsgrid-row--on .pr-schoolsgrid-label {
+  font-weight: 600;
+}
+.pr-schoolsgrid-sub {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+}
+
+.pr-schoolsgrid-fields {
+  display: grid;
+  grid-template-columns: repeat(2, 128px);
+  gap: var(--space-2) var(--space-3);
+}
+.pr-schoolsgrid-hint {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+}
+.pr-schoolsgrid-hint--suggested {
+  color: var(--accent-ink);
+}
+.pr-schoolsgrid-hint--error {
+  color: var(--crit);
+}
+
+.pr-schoolsgrid-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+}
+.pr-schoolsgrid-totals b {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.pr-schoolsgrid-detail {
+  position: relative;
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.pr-schoolsgrid-detail::before {
+  content: '';
+  position: absolute;
+  inset: -13px 0;
+}
+
+@media (max-width: 400px) {
+  .pr-schoolsgrid-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+}

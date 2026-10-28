@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>B3 — pergunta: tamanho do teste</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#111827}
+a{color:#374151}a:hover{color:#111827}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column; font-size: 14px; color: #111827;">
+
+  <div style="height: 56px; box-sizing: border-box; border-bottom: 1px solid #D1D5DB; display: flex; align-items: center; gap: 16px; padding: 0 24px; background: #F9FAFB;">
+    <div style="width: 72px; height: 28px; border: 1px dashed #9CA3AF; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6B7280;">logo Cátedra</div>
+    <div style="width: 72px; height: 28px; border: 1px dashed #9CA3AF; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6B7280;">logo IA.EDU</div>
+    <a href="B1-Mapa.dc.html" style="font-weight: 600; font-size: 15px; text-decoration: none; color: #111827;">AI in Education Procurement Tool</a>
+    <div style="flex-grow: 1;"></div>
+    <button style="height: 32px; padding: 0 12px; border: 1px solid #9CA3AF; background: #FFFFFF; border-radius: 6px; font-size: 13px;">Idioma</button>
+    <button style="height: 32px; padding: 0 12px; border: 1px solid #9CA3AF; background: #FFFFFF; border-radius: 6px; font-size: 13px;">Salvar e sair</button>
+  </div>
+
+  <nav aria-label="Capítulos" style="box-sizing: border-box; padding: 20px 160px 0; display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;">
+      <div style="height: 6px; border-radius: 3px; background: #374151;"></div>
+      <div style="height: 6px; border-radius: 3px; background: #D1D5DB; position: relative; overflow: hidden;"><div style="width: 55%; height: 6px; background: #374151;"></div></div>
+      <div style="height: 6px; border-radius: 3px; background: #E5E7EB;"></div>
+      <div style="height: 6px; border-radius: 3px; background: #E5E7EB;"></div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; font-size: 12px;">
+      <div style="color: #6B7280;">1 · Sua rede e o problema ✓</div>
+      <div style="font-weight: 600;">2 · O teste</div>
+      <div style="color: #9CA3AF;">3 · Primeira etapa</div>
+      <div style="color: #9CA3AF;">4 · Toda a rede</div>
+    </div>
+  </nav>
+
+  <main style="flex-grow: 1; box-sizing: border-box; padding: 40px 160px 0; display: flex; flex-direction: column; gap: 20px; max-width: 960px; overflow: hidden;">
+    <div style="border-left: 3px solid #D1D5DB; padding-left: 14px;">
+      <div style="font-size: 12px; color: #6B7280;">Capítulo 2 · O teste · pergunta-guia</div>
+      <div style="font-size: 15px; color: #4B5563; font-style: italic;">Como aprender o máximo sobre a ferramenta, com o menor risco e o menor custo?</div>
+    </div>
+    <h1 style="margin: 8px 0 0; font-size: 28px; font-weight: 600; line-height: 1.25;">De que tamanho e por quanto tempo será o piloto?</h1>
+    <p style="margin: 0; color: #4B5563; max-width: 560px; line-height: 1.5;">Um piloto pequeno ensina quase tanto quanto um grande e custa muito menos. Sugerimos cerca de 5% das escolas por 4 meses.</p>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; max-width: 600px;">
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #6B7280;">Escolas<input value="3" style="height: 44px; border: 1px solid #9CA3AF; border-radius: 6px; padding: 0 12px; font-size: 16px; background: #F3F4F6;"><span style="font-size: 11px; color: #6B7280;">~ sugerido · 5% de 48</span></label>
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #6B7280;">Participantes<input value="[número]" style="height: 44px; border: 1px solid #9CA3AF; border-radius: 6px; padding: 0 12px; font-size: 16px; background: #F3F4F6;"><span style="font-size: 11px; color: #6B7280;">~ sugerido</span></label>
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #6B7280;">Duração (meses)<input value="4" style="height: 44px; border: 1px solid #9CA3AF; border-radius: 6px; padding: 0 12px; font-size: 16px; background: #F3F4F6;"><span style="font-size: 11px; color: #6B7280;">~ sugerido</span></label>
+    </div>
+    <details style="max-width: 600px; font-size: 13px; color: #4B5563;"><summary style="cursor: pointer;">Por que perguntamos isso?</summary><div style="padding-top: 8px; line-height: 1.5;">O tamanho do piloto define o custo do Ano 0 e as regras do teste no plano (seção A1).</div></details>
+    <div style="flex-grow: 1;"></div>
+    <div style="background: #F3F4F6; border: 1px solid #D1D5DB; border-radius: 6px; padding: 12px 16px; font-size: 13px; color: #4B5563; max-width: 600px;">
+      <span style="font-weight: 600; color: #111827;">Até aqui:</span> rede municipal com 48 escolas, anos finais do fundamental, problema de defasagem em matemática, governança parcial. Piloto com tutor para estudantes.
+    </div>
+  </main>
+
+  <div style="height: 72px; box-sizing: border-box; border-top: 1px solid #D1D5DB; display: flex; align-items: center; gap: 12px; padding: 0 160px;">
+    <a href="B2-Abertura.dc.html" style="height: 44px; padding: 0 16px; border: 1px solid #9CA3AF; background: #FFFFFF; color: #111827; border-radius: 6px; font-size: 14px; display: inline-flex; align-items: center; text-decoration: none;">Voltar</a>
+    <div style="font-size: 12px; color: #6B7280;">pergunta 6 de 11 neste capítulo</div>
+    <div style="flex-grow: 1;"></div>
+    <a href="B4-Sintese.dc.html" style="height: 44px; padding: 0 16px; border: 1px solid #9CA3AF; background: #FFFFFF; color: #111827; border-radius: 6px; font-size: 14px; display: inline-flex; align-items: center; text-decoration: none;">Pular por agora</a>
+    <a href="B4-Sintese.dc.html" style="height: 44px; padding: 0 20px; background: #111827; color: #FFFFFF; border-radius: 6px; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; text-decoration: none;">Continuar</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

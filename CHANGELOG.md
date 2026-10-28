@@ -11,6 +11,22 @@ Published under `docs/revisao/` with a yellow banner. Not part of the stable lin
 - **0.0.16-alpha.a / .b / .c**: redesign proposals A (guided assistant), B (workspace with cost panel), C (living document). Branches `v15-proposta-a`, `-b`, `-c`. URLs: `/revisao/a/`, `/revisao/b/`, `/revisao/c/`.
 - **0.0.15-rc.1**: formerly "version 14 review". Step explanations, cost by phase and adoption curve, reference cost base and country profiles, procurement plan with executive summary and icebergs by phase. Branch `v14-revisao`. URL: `/revisao/`.
 
+## [0.1.0-alpha.1] - 2026-10-28
+
+First pre-release of the redesign line (`develop` branch). It is not published and not usable as a tool yet: it contains the engine, the state model and the component library of the new implementation, without the question screens. The stable `0.0.14` is untouched.
+
+### Added
+- `app/`: a new implementation in React 18, TypeScript and Vite, built from scratch next to the legacy page (`src/`, `build.sh`), with `npm test` (Vitest, 128 tests), `npm run lint:domain` and `npm run build` (output in `docs/app/`, not committed yet).
+- `app/src/domain/`: the v13 cost engine, framework, recommendation rules (66), priorities catalogue, question catalogue, formulas, matrix and i18n as pure ES modules. Functions that read the legacy global `S` now take the case state as a parameter; `scripts/check-domain.mjs` fails the build if any domain file touches the DOM, `localStorage` or `S`.
+- `app/src/store/`: the case state as a Zustand store in **data format 14** = format 13 plus `origem` (`padrao` | `sugerido` | `informado` | `refinado` for every answer), `sugestoes` (which answer produced each suggestion), `modo` (`essencial` | `refinar`) and `capitulo`. Suggestions cascade as pure functions and never overwrite an answer the person gave. `migrar()` accepts exported cases in formats 9, 11, 13 and 14, the browser state saved by 0.0.9–0.0.14 and the cases of the earlier "Navegador de IA na Educação" app, and derives `origem`. The browser key is `aiedu-procurement-v14`; the keys of the stable version and of the earlier app are read but never changed.
+- `app/src/store/perguntas.ts`: the 25 questions of the Essencial mode (24 from the specification plus 1.2.8, kept by decision of 28/10/2026) in four chapters, and the map from each answer to the plan excerpts it can change.
+- `app/src/ui/`: the Prumo design system as React components (25 components, light and dark themes, tokens compiled from `design/redesign/prumo/tokens.json` by `scripts/tokens.mjs`), with a gallery at `#/galeria`.
+- `app/src/i18n/`: dictionaries built from `i18n/*.json` by `scripts/i18n.mjs` with the same precedence as `build.sh`, loaded on demand.
+- `design/redesign/`: UX model, reimplementation specification, wireframes, Prumo brand book and mockups (from branch `redesign-v14`).
+
+### Changed
+- Versioning: the redesign uses the `0.1.x` line (`0.1.0-alpha.1` engine and components, `0.1.0-alpha.2` screens, `0.1.0` publication). The `0.0.x` line remains the stable tool until `0.1.0` replaces it.
+
 ## [0.0.14] - 2026-10-27
 
 ### Added

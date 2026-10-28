@@ -1,0 +1,31 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-27T18:40:00Z"},
+  "title": "Wireframes — três narrativas",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1280, "h": 800, "title": "A1 · Início", "is_interactive": true},
+    "A2-Pergunta.dc.html": {"x": 1360, "y": 0, "w": 1280, "h": 800, "title": "A2 · Pergunta (tamanho do teste)", "is_interactive": true},
+    "A3-Pergunta.dc.html": {"x": 2720, "y": 0, "w": 1280, "h": 800, "title": "A3 · Pergunta (internet) · plano reage", "is_interactive": true},
+    "A4-Plano.dc.html": {"x": 4080, "y": 0, "w": 1280, "h": 800, "title": "A4 · Plano inteiro", "is_interactive": true},
+
+    "B1-Mapa.dc.html": {"x": 0, "y": 1040, "w": 1280, "h": 800, "title": "B1 · Início · mapa da jornada", "is_interactive": true},
+    "B2-Abertura.dc.html": {"x": 1360, "y": 1040, "w": 1280, "h": 800, "title": "B2 · Abertura do capítulo 2", "is_interactive": true},
+    "B3-Pergunta.dc.html": {"x": 2720, "y": 1040, "w": 1280, "h": 800, "title": "B3 · Pergunta (tamanho do teste)", "is_interactive": true},
+    "B4-Sintese.dc.html": {"x": 4080, "y": 1040, "w": 1280, "h": 800, "title": "B4 · Fechamento do capítulo · até aqui", "is_interactive": true},
+    "B5-Plano.dc.html": {"x": 5440, "y": 1040, "w": 1280, "h": 800, "title": "B5 · Chegada · capa do plano", "is_interactive": true},
+
+    "C1-Convite.dc.html": {"x": 0, "y": 2080, "w": 1280, "h": 800, "title": "C1 · Convite", "is_interactive": true},
+    "C2-Pergunta.dc.html": {"x": 1360, "y": 2080, "w": 1280, "h": 800, "title": "C2 · Pergunta (tamanho do teste)", "is_interactive": true},
+    "C3-Pergunta.dc.html": {"x": 2720, "y": 2080, "w": 1280, "h": 800, "title": "C3 · Pergunta (internet) · entendi até aqui", "is_interactive": true},
+    "C4-Entrega.dc.html": {"x": 4080, "y": 2080, "w": 1280, "h": 800, "title": "C4 · Preparei o seu plano", "is_interactive": true}
+  },
+  "order": ["Main.dc.html", "A2-Pergunta.dc.html", "A3-Pergunta.dc.html", "A4-Plano.dc.html", "B1-Mapa.dc.html", "B2-Abertura.dc.html", "B3-Pergunta.dc.html", "B4-Sintese.dc.html", "B5-Plano.dc.html", "C1-Convite.dc.html", "C2-Pergunta.dc.html", "C3-Pergunta.dc.html", "C4-Entrega.dc.html"],
+  "notes": {
+    "tA": {"x": 0, "y": -300, "text": "A · O plano se escreve enquanto você responde — aperte Play em A1 e clique nos botões", "kind": "title1", "maxW": 5280},
+    "tB": {"x": 0, "y": 740, "text": "B · Uma jornada em quatro capítulos — aperte Play em B1", "kind": "title1", "maxW": 6640},
+    "tC": {"x": 0, "y": 1780, "text": "C · Uma conversa com um consultor — aperte Play em C1", "kind": "title1", "maxW": 5280}
+  },
+  "designSystems": []
+}

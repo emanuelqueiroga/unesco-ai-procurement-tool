@@ -1,0 +1,28 @@
+<!-- @dsCard group="Formulário" height=120 -->
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Chip</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+html,body{margin:0;background:var(--surface-1);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:20px}
+*{box-sizing:border-box}
+.row{display:flex;gap:var(--space-4);align-items:center;flex-wrap:wrap;padding:var(--space-4)}
+.col{display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-4)}
+.muted{color:var(--muted)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.chips{display:flex;flex-wrap:wrap;gap:var(--space-2);padding:var(--space-4);max-width:600px}
+.chip{display:inline-flex;align-items:center;gap:var(--space-2);height:36px;padding:0 var(--space-3);border:1px solid var(--line-control);border-radius:var(--radius-pill);background:var(--surface-1);font:inherit;font-size:14px;color:var(--ink);cursor:pointer}
+.chip[aria-pressed=true]{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.chip.sug{background:var(--accent-tint);border-color:var(--accent);color:var(--accent-ink)}
+</style></head>
+<body>
+
+<div class="chips">
+  <button class="chip" aria-pressed="true">Reduzir a defasagem em matemática</button>
+  <button class="chip" aria-pressed="false">Ampliar o tempo do professor para planejar</button>
+  <button class="chip sug" aria-pressed="false">~ Apoiar a alfabetização</button>
+  <button class="chip" aria-pressed="false">Melhorar a comunicação com famílias</button>
+  <button class="chip" aria-pressed="false">Outro…</button>
+</div>
+
+</body></html>

@@ -1,0 +1,28 @@
+<!-- @dsCard group="Percurso" height=110 -->
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>ChapterBar</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+html,body{margin:0;background:var(--surface-1);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:20px}
+*{box-sizing:border-box}
+.row{display:flex;gap:var(--space-4);align-items:center;flex-wrap:wrap;padding:var(--space-4)}
+.col{display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-4)}
+.muted{color:var(--muted)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.bar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-2);padding:var(--space-4);max-width:720px}
+.seg{height:6px;border-radius:var(--radius-pill);background:var(--line);overflow:hidden}
+.seg i{display:block;height:100%}
+.lab{font-size:12px;line-height:16px;margin-top:6px;color:var(--muted)}
+.lab.cur{color:var(--ink);font-weight:600}
+</style></head>
+<body>
+
+<div class="bar" role="group" aria-label="Capítulos">
+  <div><div class="seg"><i style="width:100%;background:var(--phase-1)"></i></div><div class="lab">1 · Sua rede ✓</div></div>
+  <div><div class="seg"><i style="width:55%;background:var(--phase-2)"></i></div><div class="lab cur">2 · O teste</div></div>
+  <div><div class="seg"><i style="width:0;background:var(--phase-3)"></i></div><div class="lab">3 · Primeira etapa</div></div>
+  <div><div class="seg"><i style="width:0;background:var(--phase-4)"></i></div><div class="lab">4 · Toda a rede</div></div>
+</div>
+
+</body></html>

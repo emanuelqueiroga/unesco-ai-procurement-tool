@@ -1,0 +1,31 @@
+<!-- @dsCard group="Formulário" height=150 -->
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>TextField</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+html,body{margin:0;background:var(--surface-1);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:20px}
+*{box-sizing:border-box}
+.row{display:flex;gap:var(--space-4);align-items:center;flex-wrap:wrap;padding:var(--space-4)}
+.col{display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-4)}
+.muted{color:var(--muted)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.field{display:flex;flex-direction:column;gap:var(--space-2);min-width:160px}
+.field label{font-size:13px;line-height:18px;color:var(--muted)}
+.field input{height:44px;border:1px solid var(--line-control);border-radius:var(--radius-md);padding:0 var(--space-4);font:inherit;font-size:16px;background:var(--surface-1);color:var(--ink)}
+.field.suggested input{background:var(--accent-tint);border-color:var(--accent)}
+.field.error input{border-color:var(--crit)}
+.hint{font-size:13px;line-height:18px;color:var(--muted)}
+.hint.sug{color:var(--accent-ink)}
+.hint.err{color:var(--crit)}
+</style></head>
+<body>
+
+<div class="row">
+  <div class="field"><label for="a">Escolas</label><input id="a" value="12"><span class="hint">informado</span></div>
+  <div class="field suggested"><label for="b">Duração (meses)</label><input id="b" value="4"><span class="hint sug">~ sugerido · 5% de 48 escolas</span></div>
+  <div class="field"><label for="c">Nome da rede</label><input id="c" placeholder="Ex.: Rede Municipal de Exemplo"><span class="hint">padrão: em branco</span></div>
+  <div class="field error"><label for="d">Participantes</label><input id="d" value="-3"><span class="hint err">Informe um número maior que zero</span></div>
+</div>
+
+</body></html>

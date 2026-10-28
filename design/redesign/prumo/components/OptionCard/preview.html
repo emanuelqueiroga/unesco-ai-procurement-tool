@@ -1,0 +1,28 @@
+<!-- @dsCard group="Formulário" height=230 -->
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>OptionCard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+html,body{margin:0;background:var(--surface-1);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:20px}
+*{box-sizing:border-box}
+.row{display:flex;gap:var(--space-4);align-items:center;flex-wrap:wrap;padding:var(--space-4)}
+.col{display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-4)}
+.muted{color:var(--muted)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.opts{display:flex;flex-direction:column;gap:var(--space-2);padding:var(--space-4);max-width:560px}
+.opt{display:flex;align-items:center;gap:var(--space-3);min-height:56px;padding:0 var(--space-4);border:1px solid var(--line-control);border-radius:var(--radius-md);background:var(--surface-1);cursor:pointer;font-size:15px}
+.opt:hover{box-shadow:var(--shadow-sm)}
+.opt input{width:18px;height:18px;margin:0;accent-color:var(--primary)}
+.opt.selected{border:2px solid var(--primary);background:var(--primary-tint);font-weight:600}
+.opt .sub{color:var(--muted);font-weight:400;font-size:13px;margin-left:auto}
+</style></head>
+<body>
+
+<div class="opts">
+  <label class="opt"><input type="radio" name="n">Sim, em todas as escolas</label>
+  <label class="opt selected"><input type="radio" name="n" checked>Parcialmente<span class="sub">em 30 de 48 escolas</span></label>
+  <label class="opt"><input type="radio" name="n">Não</label>
+</div>
+
+</body></html>

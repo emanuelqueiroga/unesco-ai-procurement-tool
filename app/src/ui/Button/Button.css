@@ -1,0 +1,101 @@
+.pr-button {
+  position: relative;
+  height: 44px;
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 200ms ease-out;
+}
+
+.pr-button--primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.pr-button--primary:hover,
+.pr-button--primary:active {
+  background: var(--primary-strong);
+  color: var(--on-primary);
+}
+
+.pr-button--secondary {
+  background: var(--surface-1);
+  color: var(--ink);
+  border-color: var(--line-control);
+}
+.pr-button--secondary:hover,
+.pr-button--secondary:active {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.pr-button--link {
+  height: auto;
+  min-height: 44px;
+  background: none;
+  border: 0;
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 0 var(--space-2);
+  font-weight: 500;
+  white-space: normal;
+  text-align: left;
+}
+.pr-button--link:hover,
+.pr-button--link:active {
+  color: var(--primary-strong);
+}
+
+.pr-button--sm {
+  height: 36px;
+  padding: 0 var(--space-3);
+  font-size: 13px;
+  font-weight: 500;
+}
+.pr-button--sm.pr-button--primary {
+  font-weight: 600;
+}
+/* Área de toque de 44 px mesmo no botão de 36 px. */
+.pr-button--sm::before {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+
+.pr-button--icon-only {
+  width: 44px;
+  padding: 0;
+}
+.pr-button--icon-only.pr-button--sm {
+  width: 44px;
+}
+
+.pr-button--full {
+  width: 100%;
+}
+
+.pr-button[disabled],
+.pr-button[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.pr-button[disabled] {
+  pointer-events: auto;
+}
+.pr-button--primary[disabled]:hover {
+  background: var(--primary);
+}
+.pr-button--secondary[disabled]:hover {
+  background: var(--surface-1);
+}

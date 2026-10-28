@@ -1,0 +1,30 @@
+<!-- @dsCard group="Formulário" height=120 -->
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Button</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+html,body{margin:0;background:var(--surface-1);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:20px}
+*{box-sizing:border-box}
+.row{display:flex;gap:var(--space-4);align-items:center;flex-wrap:wrap;padding:var(--space-4)}
+.col{display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-4)}
+.muted{color:var(--muted)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.btn{height:44px;padding:0 var(--space-5);border-radius:var(--radius-md);font:inherit;font-weight:600;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;gap:var(--space-2);border:1px solid transparent}
+.btn-primary{background:var(--primary);color:var(--on-primary)}
+.btn-primary:hover{background:var(--primary-strong)}
+.btn-secondary{background:var(--surface-1);color:var(--ink);border-color:var(--line-control)}
+.btn-secondary:hover{background:var(--surface-2)}
+.btn-link{background:none;border:0;color:var(--primary);text-decoration:underline;text-underline-offset:3px;padding:0 var(--space-2);font-weight:500}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+</style></head>
+<body>
+
+<div class="row">
+  <button class="btn btn-primary">Aceitar a sugestão e continuar</button>
+  <button class="btn btn-secondary">Pular por agora</button>
+  <button class="btn btn-link">Por que perguntamos isso?</button>
+  <button class="btn btn-primary" disabled>Baixar PDF · 12 lacunas</button>
+</div>
+
+</body></html>

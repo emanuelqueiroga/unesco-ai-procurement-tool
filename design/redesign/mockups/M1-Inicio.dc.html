@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Início · celular</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="prumo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 400px; height: 860px; display: flex; flex-direction: column; background: var(--surface-1); color: var(--ink); font-family: var(--font-sans);">
+  <header class="hdr" style="height: 56px; padding: 0 16px; gap: 12px;">
+    <div class="plate" style="padding: 3px 6px; gap: 8px;"><img src="/_blob/6aadb5f01370e7f5951491fe2e04165d" alt="Cátedra UNESCO UNITWIN" style="height: 28px;"><img src="/_blob/852d4b415c6948a65978a764476b287a" alt="IA.EDU" style="height: 28px;"></div>
+    <div style="flex-grow: 1;"></div>
+    <button class="btn btn-secondary btn-sm" aria-label="Menu" style="width: 44px; padding: 0; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </header>
+  <main style="flex-grow: 1; padding: 28px 16px 16px; display: flex; flex-direction: column; gap: 16px; overflow: hidden;">
+    <div class="t-label">Plano de contratação com custo do ciclo de vida</div>
+    <h1 style="font-family: var(--font-serif); font-size: 30px; line-height: 36px; font-weight: 600;">Seu plano de contratação de IA se escreve enquanto você responde</h1>
+    <p class="t-body16 ink2">Cerca de 24 perguntas sobre a sua rede, o problema e o teste. A cada resposta, o plano ganha um número, uma frase ou uma recomendação.</p>
+    <a href="M2-Pergunta.dc.html" class="btn btn-primary" style="height: 48px; justify-content: center;">Começar</a>
+    <div style="display: flex; gap: 8px;">
+      <a href="M4-Plano.dc.html" class="btn btn-secondary" style="flex-grow: 1; justify-content: center; height: 44px; padding: 0 12px; font-size: 14px;">Ver um exemplo</a>
+      <button class="btn btn-secondary" style="flex-grow: 1; justify-content: center; height: 44px; padding: 0 12px; font-size: 14px;">Importar caso</button>
+    </div>
+    <div class="t-cap muted">Leva uns 20 minutos. As respostas ficam salvas só neste navegador.</div>
+    <div style="border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--surface-plan); display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+      <div class="t-label">Seu plano · em branco</div>
+      <div style="font-family: var(--font-serif); font-weight: 600; font-size: 16px; color: var(--line-control);">Rede: ———</div>
+      <div class="kpis2">
+        <div class="kpi-s empty"><div class="l">Custo do teste</div><div class="v">—</div></div>
+        <div class="kpi-s empty"><div class="l">Total, 3 anos</div><div class="v">—</div></div>
+      </div>
+      <div class="t-cap muted" style="font-size: 12px;">A primeira resposta escreve a primeira linha.</div>
+    </div>
+    <div style="flex-grow: 1;"></div>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;">
+      <div style="height: 6px; border-radius: 999px; background: var(--phase-1);"></div><div style="height: 6px; border-radius: 999px; background: var(--phase-2);"></div><div style="height: 6px; border-radius: 999px; background: var(--phase-3);"></div><div style="height: 6px; border-radius: 999px; background: var(--phase-4);"></div>
+    </div>
+    <div class="t-cap muted" style="font-size: 12px;">Quatro capítulos: sua rede e o problema · o teste · a primeira etapa · toda a rede. Valores ilustrativos; a ferramenta não fala em nome da UNESCO.</div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":400,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

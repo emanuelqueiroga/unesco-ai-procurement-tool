@@ -1,0 +1,94 @@
+.pr-optioncard-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 600px;
+}
+
+.pr-optioncard {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--line-control);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--ink);
+  transition: box-shadow 200ms ease-out;
+}
+.pr-optioncard:hover {
+  box-shadow: var(--shadow-sm);
+}
+.pr-optioncard:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.pr-optioncard-input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+}
+.pr-optioncard-input:focus-visible {
+  outline: none;
+}
+
+.pr-optioncard-label {
+  flex-grow: 1;
+}
+
+.pr-optioncard--selected {
+  border: 2px solid var(--primary);
+  background: var(--primary-tint);
+  font-weight: 600;
+  padding: 0 calc(var(--space-4) - 1px);
+}
+
+.pr-optioncard--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pr-optioncard-sub,
+.pr-optioncard-caption {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 18px;
+}
+.pr-optioncard-sub {
+  margin-left: auto;
+}
+
+.pr-optioncard-extra {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+  padding: 6px 0;
+}
+
+.pr-optioncard-field {
+  width: 72px;
+  height: 36px;
+  border: 1px solid var(--line-control);
+  border-radius: var(--radius-md);
+  padding: 0 10px;
+  font-size: 16px;
+  font-weight: 400;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  background: var(--surface-1);
+  color: var(--ink);
+}
+.pr-optioncard-field:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}

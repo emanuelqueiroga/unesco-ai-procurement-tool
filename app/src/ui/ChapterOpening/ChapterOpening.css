@@ -1,0 +1,71 @@
+.pr-chapteropening {
+  padding: var(--space-7) var(--space-6);
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.pr-chapteropening-phase {
+  width: 48px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+}
+
+.pr-chapteropening-kicker {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+}
+
+.pr-chapteropening-title {
+  font-family: var(--font-serif);
+  font-size: 48px;
+  line-height: 54px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.pr-chapteropening-guide {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  line-height: 30px;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--ink-2);
+  max-width: 600px;
+}
+
+.pr-chapteropening-text {
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--ink-2);
+  max-width: 600px;
+}
+
+.pr-chapteropening-meta {
+  display: flex;
+  gap: var(--space-5);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+}
+.pr-chapteropening-meta b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.pr-chapteropening-action {
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 640px) {
+  .pr-chapteropening {
+    padding: var(--space-6) var(--space-4);
+  }
+  .pr-chapteropening-title {
+    font-size: 32px;
+    line-height: 38px;
+  }
+}

@@ -12,6 +12,7 @@ The tool follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`
 - **Review builds**: pre-release versions such as `0.0.15-rc.1` or `0.0.16-alpha.b3`, published under `docs/revisao/` with a yellow banner and `noindex`. They are built with `CANAL=revisao bash build.sh` and keep their saved case under their own browser key, so they never change the case saved by the stable version.
 - Earlier labels ("version 9" to "version 13") correspond to `0.0.9` to `0.0.13`.
 - Release notes are kept in `CHANGELOG.md` (Keep a Changelog format).
+- **Redesign (`develop` branch)**: the new implementation lives in `app/` (React, TypeScript, Vite; design system Prumo) and uses the `0.1.x` line: `0.1.0-alpha.1` (engine, state and components), `0.1.0-alpha.2` (screens), `0.1.0` (publication, replacing the `0.0.x` line). Its version is the `version` field of `app/package.json`; `VERSION` keeps the stable number. See `app/README.md` and `design/redesign/`.
 
 ## Use
 

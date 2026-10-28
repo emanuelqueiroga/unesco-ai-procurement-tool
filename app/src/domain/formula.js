@@ -1,0 +1,526 @@
+// =====================================================================
+// v10 (R3): "Como o custo é calculado" — a fórmula do custo em linguagem simples.
+// explicacaoCusto(cfg) monta os dados a partir da cfg recebida, calcular() e avaliar():
+//   1. fórmula geral com os números do caso (teste + uso + saída = custo total, igual a ctEco);
+//   2. por ano, as linhas que somam ao menos 90% do ano, cada uma como conta
+//      "quantidade × preço = valor" (ou "valor fixo da premissa"), e o resto em "Outros itens";
+//   3. de onde vêm as quantidades principais; 4. três frases de leitura.
+// secaoFormula(cfg) → seções do plano e do PDF (A2). A parte HTML (renderFormula, fxTrocarAno, fxCss, CSS_FORMULA)
+// fica fora do domínio (tela "Como o custo é calculado" da reimplementação).
+// v11: linhas novas em linguagem simples (internet por escola, dispositivos pelo modelo de uso, formação por
+// papel × horas × custo-hora e programa pelo formato, suporte do fornecedor por usuário ativo, licenças de cada
+// ferramenta) e o caminho da demanda: teste (Ano 0) → primeira etapa da implantação (Ano 1) → expansão.
+// Não altera o motor (custos.js): lê r.linhas (q, p, un, v), av.linhas (eco), av.saida e cfg.
+// Os textos saem traduzidos (tr) e os números no formato do idioma (LOC).
+// =====================================================================
+import { clone, opcoes, ano, fatorAdapt, arquitetura, calcular, avaliar, somaPorCamada } from './custos.js';
+import { OPC } from './framework.js';
+import { PREMISSAS_V11 } from './casos.js';
+import { CAMADAS } from './fluxo_dados.js';
+import { tr, LOC } from './i18n.js';
+import { moedaInfo, din, grande } from './custos_ui.js';
+import { PRESET_ARQ } from './fluxo.js';
+
+const FX_LIMIAR = 0.9;   // as linhas mostradas somam ao menos 90% do custo do ano
+
+// unidades do motor → palavras simples: [singular, plural] da quantidade e sufixo do preço
+const FX_UNID = {
+  'licença-mês': { q: ['licença-mês', 'licenças-mês'], p: 'por licença por mês' },
+  'interação': { q: ['interação', 'interações'], p: 'por interação' },
+  'milhão de tokens': { q: ['milhão de tokens', 'milhões de tokens'], p: 'por milhão de tokens' },
+  'página': { q: ['página', 'páginas'], p: 'por página' },
+  'hora de GPU': { q: ['hora de servidor com GPU', 'horas de servidor com GPU'], p: 'por hora' },
+  'hora de instância': { q: ['hora de servidor', 'horas de servidor'], p: 'por hora' },
+  'mês': { q: ['mês', 'meses'], p: 'por mês' },
+  'FTE-ano': { q: ['pessoa em tempo integral no ano', 'pessoas em tempo integral no ano'], p: 'por pessoa por ano' },
+  'pessoa formada': { q: ['pessoa formada', 'pessoas formadas'], p: 'por pessoa formada' },
+  'pessoa': { q: ['pessoa', 'pessoas'], p: 'por pessoa' },
+  // v11
+  'escola': { q: ['escola sem internet adequada', 'escolas sem internet adequada'], p: 'por escola por ano' },
+  'escola-ano': { q: ['escola sem internet adequada', 'escolas sem internet adequada'], p: 'por escola por ano' },
+  'dispositivo': { q: ['dispositivo novo', 'dispositivos novos'], p: 'por dispositivo' },
+  'usuário ativo': { q: ['usuário ativo', 'usuários ativos'], p: 'por usuário ativo por ano' },
+  'usuário-ano': { q: ['usuário ativo', 'usuários ativos'], p: 'por usuário ativo por ano' },
+  'usuário ativo por ano': { q: ['usuário ativo', 'usuários ativos'], p: 'por usuário ativo por ano' },
+};
+// nomes de linha com parte livre (nome da ferramenta digitado): traduz só o prefixo
+function fxNome(n) {
+  const s = String(n || '');
+  const m = s.match(/^(Licenças|Tempo de formação): (.+)$/);
+  if (m && m[1] === 'Licenças') return fxT('Licenças:') + ' ' + m[2];
+  return fxT(s);
+}
+const FX_TIPO = { D: 'pagamento', C: 'tempo da equipe interna', O: 'cedido sem custo' };
+const FX_FIXO = 'valor fixo da premissa:';
+
+// ----------------------------------------------------------- formatos
+function fxT(s) { return typeof tr === 'function' ? tr(s) : s; }
+function fxLoc() { return typeof LOC === 'function' ? LOC() : 'pt-BR'; }
+function fxNum(x, max) { return (+x || 0).toLocaleString(fxLoc(), { maximumFractionDigits: max == null ? 2 : max }); }
+// quantidade: inteiro quando é inteiro ou grande; até 3 casas para frações (0,3 pessoa)
+function fxQtd(x) {
+  const a = Math.abs(x);
+  if (Math.abs(x - Math.round(x)) < 1e-6) return fxNum(Math.round(x), 0);
+  if (a >= 100) return fxNum(x, 1);
+  return fxNum(x, a < 10 ? 3 : 1);
+}
+// preço unitário na moeda de exibição, com casas suficientes para a conta fechar (US$ 9,36; US$ 0,0137)
+function fxPreco(x) {
+  if (typeof moedaInfo !== 'function') return 'US$ ' + fxNum(x, 4);
+  const m = moedaInfo(), v = x * m.f, a = Math.abs(v);
+  let min = 2, max;
+  if (a >= 1000) { min = 0; max = 0; }
+  else if (a >= 100) { const inteiro = Math.abs(v - Math.round(v)) < 1e-9; min = inteiro ? 0 : 2; max = 2; }
+  else if (a === 0) max = 2;
+  else max = Math.min(6, Math.max(2, 4 - Math.floor(Math.log10(a))));
+  return m.pre + ' ' + v.toLocaleString(fxLoc(), { minimumFractionDigits: min, maximumFractionDigits: max });
+}
+function fxDin(x) { return typeof din === 'function' ? din(x, 0) : 'US$ ' + fxNum(x, 0); }
+function fxGrande(x) { return typeof grande === 'function' ? grande(x) : fxDin(x); }
+function fxPct(x, d) { return (100 * (x || 0)).toLocaleString(fxLoc(), { maximumFractionDigits: d == null ? 1 : d }) + '%'; }
+function fxFator(x) { return fxNum(x, 4); }
+function fxAno(arr, t) { return typeof ano === 'function' ? ano(arr, t) : (Array.isArray(arr) ? arr[Math.min(t, arr.length - 1)] : arr); }
+// valor na moeda de exibição, arredondado à unidade (para que as parcelas mostradas somem o total mostrado)
+function fxFatorMoeda() { return typeof moedaInfo === 'function' ? moedaInfo().f : 1; }
+// Arredonda parcelas para que somem o total arredondado (maior resto vai para a maior parcela). Devolve valores em US$.
+function fxFechar(partes, total) {
+  const f = fxFatorMoeda();
+  const alvo = Math.round(total * f);
+  const bruto = partes.map(x => x * f);
+  const pr = bruto.map(x => Math.round(x));
+  let dif = alvo - pr.reduce((a, b) => a + b, 0);
+  if (dif && pr.length) {
+    // a diferença de arredondamento vai para as parcelas com maior resto (nunca para contas exatas, se houver outra)
+    const ordem = pr.map((_, i) => i).sort((a, b) => dif > 0 ? (bruto[b] - pr[b]) - (bruto[a] - pr[a]) : (bruto[a] - pr[a]) - (bruto[b] - pr[b]));
+    let k = 0;
+    while (dif !== 0 && k < 10 * pr.length) { const i = ordem[k % ordem.length]; const d = dif > 0 ? 1 : -1; pr[i] += d; dif -= d; k++; }
+  }
+  return { partes: pr.map(x => x / f), total: alvo / f };
+}
+function fxUnid(un, q) {
+  const u = FX_UNID[un];
+  if (!u) return { q: un || '', p: '' };
+  const sing = Math.abs(q) <= 1 + 1e-9 || (un === 'FTE-ano' && Math.abs(q) < 2);
+  return { q: u.q[sing ? 0 : 1], p: u.p };
+}
+
+// ----------------------------------------------------------- linhas de um ano
+// Monta a conta de uma linha do motor no ano t. e = valor na conta econômica (preços do Ano 0).
+// Itens cotados em dólar (moeda USD) mostram o preço de contrato do ano e "÷ (1 + inflação)^t".
+function fxContaLinha(l, t, ctx) {
+  const e = l.eco[t];
+  const defl = ctx.defl[t];
+  const out = { nome: fxNome(l.nome), id: l.id, s: l.s, k: l.k, tipo: l.nat, tipoTxt: fxT(FX_TIPO[l.nat] || FX_TIPO.D), valor: e, qtd: null, unid: '', preco: null, divisor: 1, base: null, fator: null, fixo: false };
+  // fonte das quantidades: a própria linha ou, para o que é cedido sem custo, a linha de origem
+  let src = l;
+  if (!(l.q && l.q[t] > 0)) {
+    if (l.tag === 'doado' && l.s === 'K2.1') src = ctx.linhas.find(x => x.tag === 'licenca') || l;
+    else if (String(l.id || '').startsWith('cedido: ')) src = ctx.linhas.find(x => x.id === String(l.id).slice(8)) || l;
+  }
+  const q = src.q ? src.q[t] : 0;
+  if (src !== l && l.tag === 'doado' && l.s !== 'K2.1') out.nome = fxT('Uso cedido sem custo') + ': ' + fxNome(src.nome);
+  if (q > 0) {
+    out.qtd = q; out.unid = l.un || src.un;
+    // v11: suporte do fornecedor no Ano 0 = taxa anual × parte do ano em que o teste dura (meses ÷ 12)
+    const v11 = ctx.cfg.v11 || {};
+    let mult = 1;
+    if (t === 0 && l.nome === 'Suporte do fornecedor' && +v11.m0 > 0 && +v11.m0 < 12) { mult = +v11.m0 / 12; out.mult = mult; out.multTxt = fxNum(v11.m0, 1) + '/12'; }
+    if (l.moeda === 'USD' && Math.abs(defl - 1) > 1e-12) { out.preco = e * defl / q / mult; out.divisor = defl; }
+    else out.preco = e / q / mult;
+    return out;
+  }
+  // manutenção: percentual da implantação
+  if (l.tag === 'manutencao') {
+    const im = (ctx.r.impl || []).find(x => (x.nomeManut || ('Manutenção: ' + String(x.nome).toLowerCase())) === l.nome);
+    if (im && im.manutPct > 0) { out.base = e / im.manutPct; out.fator = im.manutPct; out.fatorTxt = 'da implantação'; out.pctFator = true; return out; }
+  }
+  // implantação e itens escalados pelo nível de adaptação (passo 2.3.4)
+  const fa = typeof fatorAdapt === 'function' ? fatorAdapt(ctx.cfg, l.s) : 1;
+  const prob = l.prob != null ? +l.prob : 1;
+  const sig = l.nat === 'C' ? (ctx.o.sigmaCap != null ? ctx.o.sigmaCap : 1) : 1;
+  if ((l.tag === 'implantacao' || ['K3.1', 'K3.2'].includes(l.s)) && Math.abs(fa - 1) > 1e-9 && fa > 0) {
+    out.base = e / fa; out.fator = fa; out.fatorTxt = 'nível de adaptação, passo 2.3.7'; return out;
+  }
+  // v11: programa de formação (K4.3) × fator do formato (presencial 1; híbrida 0,8; online 0,5)
+  const vf = (ctx.cfg.v11 || {}).formacao;
+  if (l.s === 'K4.3' && vf && Math.abs(vf.fatorFormato - 1) > 1e-9 && vf.fatorFormato > 0 && Math.abs(prob - 1) < 1e-9 && !(l.moeda === 'USD' && Math.abs(defl - 1) > 1e-12)) {
+    out.base = e / vf.fatorFormato; out.fator = vf.fatorFormato; out.fatorTxt = 'formato da formação, passo 2.5.3'; return out;
+  }
+  if (Math.abs(prob - 1) > 1e-9 && prob > 0) { out.base = e / prob; out.fator = prob; out.fatorTxt = 'probabilidade'; out.pctFator = true; return out; }
+  if (l.moeda === 'USD' && Math.abs(defl - 1) > 1e-12) { out.base = e * defl; out.divisor = defl; out.fixo = true; return out; }
+  out.fixo = true; out.base = e;
+  return out;
+}
+// texto "quantidade × preço = valor" (valor já arredondado para fechar a soma)
+function fxTexto(x, valorMostrado) {
+  const v = fxDin(valorMostrado != null ? valorMostrado : x.valor);
+  const div = x.divisor && Math.abs(x.divisor - 1) > 1e-12 ? ' ÷ ' + fxFator(x.divisor) : '';
+  if (x.qtd != null) {
+    const u = fxUnid(x.unid, x.qtd);
+    const mult = x.mult && Math.abs(x.mult - 1) > 1e-12 ? ' × ' + x.multTxt + ' (' + fxT('meses do teste') + ')' : '';
+    return fxQtd(x.qtd) + ' ' + fxT(u.q) + ' × ' + fxPreco(x.preco) + (u.p ? ' ' + fxT(u.p) : '') + mult + div + ' = ' + v;
+  }
+  if (x.fator != null) {
+    const f = x.pctFator ? fxPct(x.fator) : fxFator(x.fator);
+    return fxDin(x.base) + ' × ' + f + ' (' + fxT(x.fatorTxt) + ')' + div + ' = ' + v;
+  }
+  if (div) return fxT(FX_FIXO) + ' ' + fxDin(x.base) + div + ' = ' + v;
+  return fxT(FX_FIXO) + ' ' + v;
+}
+// parte da conta antes do "=" (a coluna de valor mostra o resultado); valor fixo: só a etiqueta
+function fxConta(x) {
+  if (x.fixo && !(x.divisor && Math.abs(x.divisor - 1) > 1e-12)) return fxT(FX_FIXO).replace(/\s*:$/, '');
+  const t = fxTexto(x, x.mostrado); const i = t.lastIndexOf(' = ');
+  return i > 0 ? t.slice(0, i) : t;
+}
+
+// Seleciona as maiores linhas até cobrir 90% e agrupa o resto
+function fxSelecionar(itens, total) {
+  const pos = itens.filter(x => Math.abs(x.valor) > 1e-9).sort((a, b) => b.valor - a.valor);
+  const mostrar = []; let acc = 0;
+  for (const x of pos) {
+    if (total > 0 && acc >= FX_LIMIAR * total - 1e-9) break;
+    mostrar.push(x); acc += x.valor;
+  }
+  let resto = pos.slice(mostrar.length);
+  if (resto.length === 1) { mostrar.push(resto[0]); resto = []; }
+  return { mostrar, resto };
+}
+
+// ----------------------------------------------------------- saída
+function fxContaSaida(x, ctx) {
+  const o = ctx.o, H = ctx.H, defl = ctx.defl[H];
+  const sig = x.nat === 'C' ? (o.sigmaCap != null ? o.sigmaCap : 1) : 1;
+  const e = x.valor / defl * sig;                    // preços do Ano 0, antes da probabilidade de saída e do desconto
+  const out = { nome: fxNome(x.nome), s: x.s, k: x.k, tipo: x.nat, tipoTxt: fxT(FX_TIPO[x.nat] || FX_TIPO.D), valor: e, qtd: null, unid: '', preco: null, divisor: 1, base: null, fator: null, fixo: false };
+  const sa = ctx.cfg.saida || {};
+  const usd = x.moeda === 'USD' && Math.abs(defl - 1) > 1e-12;
+  if (/^Reconstrução/.test(x.nome) && ctx.r.impl && ctx.r.impl[0] && sa.reconstrucaoPct > 0) {
+    out.base = e / sa.reconstrucaoPct; out.fator = sa.reconstrucaoPct; out.fatorTxt = 'da implantação'; out.pctFator = true; return out;
+  }
+  if (/^Operação paralela/.test(x.nome) && sa.mesesParalelo > 0) {
+    out.qtd = sa.mesesParalelo; out.unid = 'mês';
+    if (usd) { out.preco = x.valor * sig / out.qtd; out.divisor = defl; } else out.preco = e / out.qtd;
+    return out;
+  }
+  if (/^Tempo de retreinamento/.test(x.nome) && ctx.r.U[H] > 0) { out.qtd = ctx.r.U[H]; out.unid = 'pessoa'; out.preco = e / out.qtd; return out; }
+  if (/^Tempo interno/.test(x.nome) && (sa.internos || []).length) {
+    const fte = sa.internos.reduce((s, [, f]) => s + (+f || 0), 0);
+    if (fte > 0) { out.qtd = fte; out.unid = 'FTE-ano'; out.preco = e / fte; return out; }
+  }
+  if (usd) { out.base = x.valor * sig; out.divisor = defl; out.fixo = true; return out; }
+  out.fixo = true; out.base = e;
+  return out;
+}
+
+// ----------------------------------------------------------- dados
+function explicacaoCusto(cfg) {
+  if (!cfg) return null;
+  const r = calcular(cfg), av = avaliar(r), o = r.opc, H = r.H, T = r.anos;
+  const disc = av.disc, defl = av.defl;
+  const ctx = { cfg, r, av, o, H, defl, linhas: r.linhas };
+  const comDesconto = T.some(t => Math.abs(disc[t] - 1) > 1e-12);
+  const arq = typeof arquitetura === 'function' ? arquitetura(cfg) : 'outra';
+
+  // 1. fórmula geral
+  const anoVP = T.map(t => av.ecoAno[t] * disc[t]);
+  const teste = anoVP[0];
+  const usoAnos = T.slice(1).map(t => anoVP[t]);
+  const uso = usoAnos.reduce((a, b) => a + b, 0);
+  const saida = av.saidaEco;
+  const residual = av.vr || 0;
+  const total = av.ctEco;
+  const termos = [
+    { id: 'teste', rotulo: fxT('Custo do teste'), quando: fxT('Ano 0'), valor: teste },
+    { id: 'uso', rotulo: fxT('Custo de uso'), quando: fxT(H === 1 ? 'Ano 1' : 'Anos 1 a ' + H), valor: uso, anos: T.slice(1).map(t => ({ t, rotulo: fxT('Ano ' + t), valor: anoVP[t] })) },
+    { id: 'saida', rotulo: fxT('Custo de saída'), quando: fxT('fim do Ano ' + H), valor: saida },
+  ];
+  if (residual > 1e-9) termos.push({ id: 'residual', sinal: -1, rotulo: fxT('Valor que ainda resta da implantação'), quando: fxT('fim do Ano ' + H), valor: residual });
+  const fech = fxFechar(termos.map(x => (x.sinal || 1) * x.valor), total);
+  termos.forEach((x, i) => { x.mostrado = Math.abs(fech.partes[i]); });
+  const usoT = termos[1];
+  if (usoT.anos.length) { const fu = fxFechar(usoT.anos.map(a => a.valor), usoT.mostrado); usoT.anos.forEach((a, i) => { a.mostrado = fu.partes[i]; }); }
+  const sinal = x => (x.sinal === -1 ? ' − ' : ' + ');
+  const formula = {
+    total, totalMostrado: fech.total, termos, comDesconto, taxa: o.r,
+    texto: fxT('Custo total do ciclo de vida') + ' = ' + termos.map((x, i) => (i ? sinal(x) : '') + x.rotulo.toLowerCase() + ' (' + x.quando + ')').join(''),
+    numeros: fxDin(fech.total) + ' = ' + termos.map((x, i) => (i ? sinal(x) : '') + fxDin(x.mostrado)).join(''),
+    usoTexto: usoT.anos.length > 1 ? usoT.rotulo + ' = ' + usoT.anos.map(a => a.rotulo + ' ' + fxDin(a.mostrado)).join(' + ') : '',
+    notaVP: comDesconto ? fxT('Valores trazidos a valor presente, com taxa de desconto de ' + fxPct(o.r) + ' ao ano: cada ano é dividido por (1 + taxa) elevado ao número do ano.') : '',
+  };
+
+  // 2. linhas por ano
+  const anos = T.map(t => {
+    const itens = av.linhas.map(l => fxContaLinha(l, t, ctx)).filter(x => Math.abs(x.valor) > 1e-9);
+    const soma = av.ecoAno[t];
+    const { mostrar, resto } = fxSelecionar(itens, soma);
+    const outrosV = resto.reduce((s, x) => s + x.valor, 0);
+    const partes = mostrar.map(x => x.valor).concat(resto.length ? [outrosV] : []);
+    const fA = fxFechar(partes, soma);
+    mostrar.forEach((x, i) => { x.mostrado = fA.partes[i]; x.texto = fxTexto(x, x.mostrado); x.conta = fxConta(x); });
+    const fR = fxFechar(resto.map(x => x.valor), resto.length ? fA.partes[fA.partes.length - 1] : 0);
+    resto.forEach((x, i) => { x.mostrado = fR.partes[i]; x.texto = fxTexto(x, x.mostrado); x.conta = fxConta(x); });
+    const outros = resto.length ? { n: resto.length, rotulo: fxT('Outros itens (' + resto.length + ')'), valor: outrosV, mostrado: fA.partes[fA.partes.length - 1], itens: resto } : null;
+    return {
+      t, id: String(t), rotulo: fxT('Ano ' + t), sub: fxT(t === 0 ? 'teste' : 'uso'), linhas: mostrar, outros, soma, somaMostrada: fA.total,
+      fatorVP: disc[t], total: soma * disc[t], totalMostrado: t === 0 ? termos[0].mostrado : usoT.anos[t - 1].mostrado,
+      cobertura: soma ? mostrar.reduce((s, x) => s + x.valor, 0) / soma : 1,
+    };
+  });
+  // saída
+  const sItens = r.saida.map(x => fxContaSaida(x, ctx)).filter(x => Math.abs(x.valor) > 1e-9);
+  const fechou = o.fechamento === 'continuidade';
+  const sSoma = fechou ? 0 : sItens.reduce((s, x) => s + x.valor, 0);
+  const pS = fechou ? 1 : (o.pSaida != null ? o.pSaida : 1);
+  const sSel = fechou ? { mostrar: [], resto: [] } : fxSelecionar(sItens, sSoma);
+  const sOutV = sSel.resto.reduce((s, x) => s + x.valor, 0);
+  const sF = fxFechar(sSel.mostrar.map(x => x.valor).concat(sSel.resto.length ? [sOutV] : []), sSoma);
+  sSel.mostrar.forEach((x, i) => { x.mostrado = sF.partes[i]; x.texto = fxTexto(x, x.mostrado); x.conta = fxConta(x); });
+  const sR = fxFechar(sSel.resto.map(x => x.valor), sSel.resto.length ? sF.partes[sF.partes.length - 1] : 0);
+  sSel.resto.forEach((x, i) => { x.mostrado = sR.partes[i]; x.texto = fxTexto(x, x.mostrado); x.conta = fxConta(x); });
+  anos.push({
+    t: 'saida', id: 'saida', rotulo: fxT('Saída'), sub: fxT('fim do Ano ' + H), linhas: sSel.mostrar,
+    outros: sSel.resto.length ? { n: sSel.resto.length, rotulo: fxT('Outros itens (' + sSel.resto.length + ')'), valor: sOutV, mostrado: sF.partes[sF.partes.length - 1], itens: sSel.resto } : null,
+    soma: sSoma, somaMostrada: sF.total, pSaida: pS, fatorVP: disc[H], total: saida, totalMostrado: termos[2].mostrado, continuidade: fechou, residual,
+  });
+
+  // 3. de onde vêm os números
+  const origem = fxOrigem(ctx, arq);
+  // 4. leitura
+  const leitura = fxLeitura(ctx, av, arq);
+  return { H, arq, formula, anos, origem, leitura, nota: fxT('Valores ilustrativos. Mude as premissas na calculadora completa.'), defl, disc };
+}
+
+// ----------------------------------------------------------- de onde vêm os números
+function fxOrigem(ctx, arq) {
+  const { cfg, r, av, o, H } = ctx;
+  const d = cfg.demanda || {}, L = [];
+  const t1 = Math.min(1, H);
+  const E = r.E, U = r.U;
+  // pessoas e adoção
+  const iguais = E.slice(1).every(x => x === E[1]);
+  if (iguais) L.push(fxT('Pessoas que poderiam usar: ' + fxQtd(E[0]) + ' no teste (Ano 0) e ' + fxQtd(E[1]) + ' a partir do Ano 1.'));
+  else L.push(fxT('Pessoas que poderiam usar:') + ' ' + [fxT(fxQtd(E[0]) + ' no teste (Ano 0)')].concat(r.anos.slice(1).map(t => fxT('Ano ' + t + ': ' + fxQtd(E[t])))).join('; ') + '.');
+  L.push(fxT('Nem todas usam. Adoção (parte que de fato usa):') + ' ' + r.anos.map(t => fxT('Ano ' + t + ': ' + fxPct(fxAno(d.adocao, t)))).join('; ') + '.');
+  L.push(fxT('Usuários ativos no Ano ' + t1 + ': ' + fxQtd(E[t1]) + ' pessoas × ' + fxPct(fxAno(d.adocao, t1)) + ' = ' + fxQtd(U[t1]) + '.'));
+  // v11: caminho da demanda (teste → primeira etapa da implantação → expansão) e linhas novas
+  const v = cfg.v11;
+  if (v) fxOrigemV11(ctx, v, L, t1);
+  // licenças
+  if (arq === 'saas' && cfg.saas && cfg.saas.ativo) {
+    const s = cfg.saas, q = fxAno(s.qtd, t1), m = fxAno(s.mesesCobr, t1);
+    L.push(fxT('Licenças no Ano ' + t1 + ': ' + fxQtd(q) + ' licenças × ' + fxQtd(m) + ' meses = ' + fxQtd(q * m) + ' licenças-mês (uma licença-mês é uma licença paga durante um mês).'));
+    if (Math.abs(q - E[t1]) < 0.5 && U[t1] < E[t1]) L.push(fxT('A licença institucional é paga para todas as pessoas que poderiam usar, não só para as que usam.'));
+    else if (s.fatorNominal && Math.abs(q - Math.ceil(U[t1] * s.fatorNominal)) < 0.5) L.push(fxT('Licenças por usuário: usuários ativos + ' + fxPct(s.fatorNominal - 1, 0) + ' de folga.'));
+    if (+s.preco > 0) L.push(fxT('Preço da licença:') + ' ' + fxPreco(s.preco) + ' ' + fxT('por licença por mês no Ano 1, com reajuste de ' + fxPct(s.reajuste) + ' ao ano.'));
+    else L.push(fxT('Licença incluída em contrato existente, sem preço adicional.'));
+    if (fxAno(s.fatorPreco, 0) === 0 && +s.preco > 0) L.push(fxT('No Ano 0 as licenças são cedidas sem custo: entram pelo valor de mercado, como cedidas.'));
+  }
+  // consumo do modelo
+  if ((arq === 'api' || arq === 'ow') && +d.s > 0) {
+    const m = fxAno(d.meses, t1);
+    L.push(fxT('Interações no Ano ' + t1 + ': ' + fxQtd(U[t1]) + ' usuários ativos × ' + fxNum(d.s) + ' sessões por mês × ' + fxNum(d.i) + ' interações por sessão × ' + fxQtd(m) + ' meses = ' + fxQtd(r.I[t1]) + '.'));
+  }
+  if (arq === 'api' && cfg.api && r.extra.cMain != null) {
+    const a = cfg.api;
+    L.push(fxT('Custo de uma interação com o modelo:') + ' ' + fxPreco(r.extra.cMain) + ' (' + fxT(fxNum(a.k) + ' chamadas por interação, com ' + fxQtd(a.Tin) + ' tokens de entrada e ' + fxQtd(a.Tout) + ' de saída por chamada') + '; ' + fxT('preço por milhão de tokens de entrada e de saída:') + ' ' + fxPreco(a.Pin) + ' / ' + fxPreco(a.Pout) + ').');
+    L.push(fxT('Tokens são os pedaços de texto que o modelo lê e escreve; o fornecedor cobra por milhão de tokens.'));
+  }
+  if (arq === 'ow' && cfg.ow && r.extra.G) {
+    const ow = cfg.ow;
+    L.push(fxT('Servidores com GPU no Ano ' + t1 + ': ' + fxQtd(r.extra.G[t1]) + ' nas horas de pico e ' + fxQtd(ow.minFora) + ' no resto do tempo = ' + fxQtd(r.extra.horasGpu[t1]) + ' horas.') + ' ' + fxT('Preço da hora de GPU:') + ' ' + fxPreco(ow.Pgpu) + '.');
+  }
+  // tempo das equipes
+  const fte = av.linhas.filter(l => l.un === 'FTE-ano' && l.q && l.q[t1] > 0 && l.eco[t1] > 0).sort((a, b) => b.eco[t1] - a.eco[t1])[0];
+  if (fte) {
+    const q = fte.q[t1], p = fte.eco[t1] / q;
+    L.push(fxT('Tempo das equipes: cada função é uma fração de uma pessoa em tempo integral × o custo anual dessa pessoa.') + ' ' + fxT('Exemplo:') + ' ' + fxT(fte.nome) + ', ' + fxQtd(q) + ' ' + fxT(fxUnid('FTE-ano', q).q) + ' (' + fxT(fxPct(q, 0) + ' do tempo de uma pessoa') + ') × ' + fxPreco(p) + ' = ' + fxDin(q * p) + '.');
+  }
+  if (av.linhas.some(l => l.nat === 'C' && l.ecoVP > 0)) L.push(fxT('Tempo da equipe interna: pessoas que a rede já paga. Não é gasto novo, mas entra no custo, porque esse tempo deixa de ir para outras tarefas.'));
+  // formação
+  if (cfg.formacaoTempo && cfg.formacaoTempo.ativo) {
+    const f = cfg.formacaoTempo, cp = f.horas * f.custoHora;
+    if (f.modo === 'razao') L.push(fxT('Pessoas formadas: 1 para cada ' + fxQtd(f.razao) + ' pessoas que poderiam usar.'));
+    else L.push(fxT('Pessoas formadas a cada ano: os novos usuários ativos, mais ' + fxPct(f.rot, 0) + ' dos já formados (quem sai e é substituído).'));
+    L.push(fxT('Custo por pessoa formada:') + ' ' + fxT(fxNum(f.horas) + ' horas') + ' × ' + fxPreco(f.custoHora) + ' ' + fxT('por hora') + ' = ' + fxPreco(cp) + '.');
+  }
+  // suporte
+  if (cfg.suporte && cfg.suporte.ativo && (cfg.suporte.faixas || []).length) {
+    const s = cfg.suporte, fx0 = s.faixas[0];
+    L.push(fxT('Suporte: ' + fxQtd(fx0[1]) + ' pessoa em tempo integral até ' + fxQtd(fx0[0]) + ' usuários ativos; ' + fxQtd(s.acima) + ' acima disso.'));
+  }
+  // implantação e adaptação
+  const im = (cfg.implantacao || [])[0];
+  if (im) {
+    const fa = typeof fatorAdapt === 'function' ? fatorAdapt(cfg, im.s || 'K3.1') : 1;
+    L.push(fxT('Implantação (Ano 0):') + ' ' + fxDin(im.valor) + ' ' + fxT('no exemplo do guia') + ' × ' + fxFator(fa) + ' (' + fxT('nível de adaptação, passo 2.3.7') + ') = ' + fxDin(im.valor * fa) + '.' + (im.manutPct > 0 ? ' ' + fxT('Manutenção: ' + fxPct(im.manutPct, 0) + ' desse valor por ano.') : ''));
+  }
+  // serviços mensais
+  (cfg.mensais || []).slice(0, 3).forEach(x => L.push(fxT(x.nome) + ': ' + fxPreco(x.valor) + ' ' + fxT('por mês') + '.'));
+  // preços do Ano 0 e desconto
+  if (o.correcoes && o.pi > 0) {
+    const temUSD = av.linhas.some(l => l.moeda === 'USD' && r.anos.some(t => t > 0 && Math.abs(l.eco[t]) > 1e-9));
+    L.push(fxT('Todos os valores estão em preços do Ano 0: a ferramenta retira a inflação ilustrativa de ' + fxPct(o.pi) + ' ao ano.') +
+      (temUSD ? ' ' + fxT('Itens pagos em dólar (licenças, uso do modelo, nuvem) usam o preço de contrato de cada ano, dividido pela inflação acumulada:') + ' ' +
+        r.anos.slice(1, 3).map(t => fxT('÷ ' + fxFator(ctx.defl[t]) + ' no Ano ' + t)).join(', ') + '.' : ''));
+  }
+  if (o.r > 0) L.push(fxT('Taxa de desconto de ' + fxPct(o.r) + ' ao ano: um valor pago mais tarde pesa menos no total (valor presente).'));
+  if ((av.fac || {}).doado > 0) L.push(fxT('O que é cedido sem custo (doação, piloto gratuito) entra pelo valor de mercado: gratuito para a rede não quer dizer sem custo.'));
+  // origem dos preços
+  const orig = ({ A: 'saas', B: 'api', C: 'ow' })[cfg.origem] || arq;
+  const FX_ORIG = { saas: 'Exemplo A do guia (cap. 12): produto pronto por licença', api: 'Exemplo B do guia (cap. 12): aplicação com modelo por API e base de conhecimento', ow: 'Exemplo C do guia (cap. 12): modelo de pesos abertos em infraestrutura contratada' };
+  const origPT = (typeof PRESET_ARQ !== 'undefined' && PRESET_ARQ[orig]) || FX_ORIG[orig];
+  const origTxt = origPT ? fxT(origPT) : '';
+  L.push(fxT('Preços e quantidades de partida:') + ' ' + (origTxt ? origTxt + ', ' : '') + fxT('ajustados às suas respostas. São ilustrativos.'));
+  return L;
+}
+
+// v11: de onde vêm as linhas novas, em linguagem simples (cfg.v11 vem de cfgDoCaso, casos.js)
+function fxOpc(lista, k) { const L = (typeof OPC !== 'undefined' && OPC[lista]) || []; const o = L.find(x => String(x[0]) === String(k)); return o ? fxT(o[1]) : ''; }
+function fxOrigemV11(ctx, v, L, t1) {
+  const { cfg, r, H } = ctx;
+  const E = r.E;
+  const P = typeof PREMISSAS_V11 !== 'undefined' ? PREMISSAS_V11 : {};
+  // caminho da demanda
+  const k = 1 + (+v.anosExpansao || 1);
+  L.push(fxT('Caminho da demanda: o teste (Ano 0), a primeira etapa da implantação (Ano 1) e a expansão até todas as pessoas que usariam.'));
+  const m0 = fxNum(v.m0, 1);
+  if (v.teste === 'ambos') L.push(fxT('Ano 0: prova de conceito e depois piloto. Pessoas no teste: ' + fxQtd(E[0]) + ' (participantes do piloto); meses de uso: ' + m0 + ', a soma da prova de conceito e do piloto (no máximo 12).'));
+  else if (v.teste === 'poc') L.push(fxT('Ano 0: prova de conceito com ' + fxQtd(E[0]) + ' pessoas durante ' + m0 + ' meses.'));
+  else L.push(fxT('Ano 0: piloto com ' + fxQtd(E[0]) + ' participantes durante ' + m0 + ' meses.'));
+  if (H >= 1) L.push(fxT('Ano 1: primeira etapa da implantação, com ' + fxQtd(E[1]) + ' pessoas') + (v.implantacaoPadrao ? ' ' + fxT('(um terço das pessoas que usariam, sugestão ilustrativa)') : '') + '.');
+  if (H >= 2) L.push(k <= H ? fxT('Depois, o uso cresce em partes iguais até ' + fxQtd(v.E) + ' pessoas no Ano ' + k + '.') : fxT('Depois, o uso cresce em partes iguais e chegaria a ' + fxQtd(v.E) + ' pessoas no Ano ' + k + ', depois do horizonte da estimativa.'));
+  // internet (K1.1)
+  const vi = v.internet || {};
+  const semI = vi.escolasSemInternet || [];
+  if (semI.some(n => n > 0)) {
+    const tI = semI[t1] > 0 ? t1 : semI.findIndex(n => n > 0);
+    L.push(fxT('Internet (passo 2.4): escolas sem internet adequada × custo anual de conexão por escola.') + ' ' +
+      (vi.resposta === 'parcial' ? fxT('Escolas sem internet adequada: ' + fxPct(vi.fracaoSem, 0) + ' das escolas do escopo.') + ' ' : '') +
+      fxT('Ano ' + tI + ': ' + fxQtd(semI[tI]) + ' escolas') + ' × ' + fxPreco(vi.conectEscolaAno) + ' ' + fxT('por escola por ano') + ' = ' + fxDin(semI[tI] * vi.conectEscolaAno) + '.');
+  } else if (vi.resposta === 'sim') L.push(fxT('Internet: as escolas já têm internet adequada (passo 2.4), sem custo de conexão na estimativa.'));
+  // dispositivos (K1.2)
+  const vd = v.dispositivos || {};
+  if (vd.modelo) {
+    const regra = {
+      um_por_aluno: 'um dispositivo para cada estudante que usa',
+      compartilhado: '1 dispositivo para cada ' + fxNum(P.estudantesPorDispositivo || 3, 0) + ' estudantes',
+      rotativo: fxNum(P.dispositivosPorEscolaRotativo || 30, 0) + ' dispositivos por escola do escopo',
+      por_professor: 'um dispositivo para cada professor',
+      proprio: 'nenhum dispositivo comprado: cada pessoa usa o seu',
+      um_por_usuario: 'um dispositivo para cada pessoa que usa',
+    }[vd.modelo];
+    const comp = vd.comprados || [];
+    if (vd.modelo === 'proprio') L.push(fxT('Dispositivos (passo 2.4): dispositivos próprios das pessoas, sem compra na estimativa.'));
+    else if (comp.some(n => n > 0)) {
+      const tD = comp[0] > 0 ? 0 : comp.findIndex(n => n > 0);
+      L.push(fxT('Dispositivos (passo 2.4): necessários pelo modelo de uso × parte que falta × preço por dispositivo, só para os novos usuários de cada ano.') + ' ' +
+        (vd.resposta ? fxT('Modelo de uso:') + ' ' + fxOpc('modeloDisp', vd.modelo) + ' (' + fxT(regra) + '). ' : '') +
+        fxT('Parte que falta: ' + fxPct(vd.lacuna, 0) + '.') + ' ' +
+        fxT('Ano ' + tD + ': ' + fxQtd(comp[tD]) + ' dispositivos') + ' × ' + fxPreco(vd.precoDisp) + ' = ' + fxDin(comp[tD] * vd.precoDisp) + '.');
+    } else if (vd.existem === 'sim') L.push(fxT('Dispositivos: já existem nas escolas (passo 2.4), sem compra na estimativa.'));
+  }
+  // formação (K4.4 e K4.3)
+  const vf = v.formacao || {};
+  if ((vf.papeis || []).length && vf.horas > 0) {
+    const papeis = vf.papeis.map(p => fxOpc('formados', p) || p).join(', ');
+    L.push(fxT('Formação (passo 2.5): pessoas formadas de cada papel × horas por pessoa × custo de uma hora.') + ' ' + fxT('Papéis:') + ' ' + papeis + '. ' +
+      fxT(fxNum(vf.horas, 1) + ' horas por pessoa') + (vf.horas === vf.horasEstimadas ? ' (' + fxT('estimativa ilustrativa') + ')' : '') + ' × ' + fxPreco(vf.custoHora) + ' ' + fxT('por hora') + ' = ' + fxPreco(vf.horas * vf.custoHora) + ' ' + fxT('por pessoa formada') + '.');
+    if ((vf.extras || []).length) L.push(fxT('Quem não usa a ferramenta, mas é formado (gestores, equipe técnica, equipe administrativa), é contado por escola do escopo; a equipe técnica tem no mínimo ' + fxNum(P.equipeTecnicaMin || 3, 0) + ' pessoas e mais 1 a cada ' + fxNum(P.escolasPorTecnico || 50, 0) + ' escolas.'));
+  }
+  if (vf.formato) L.push(fxT('Programa de formação: valor do exemplo do guia × ' + fxNum(vf.fatorFormato, 2) + ' pelo formato') + ' (' + fxOpc('formacaoFormato', vf.formato) + ').' +
+    (vf.cedida ? ' ' + fxT('Como o fornecedor ou um parceiro paga, o programa entra como cedido sem custo: conta no custo total, mas não na dotação da rede.') : ''));
+  // suporte (K4.2) e acompanhamento (K4.1, K5.3)
+  const vs = v.suporte || {};
+  if (vs.nivel) L.push(fxT('Suporte (passo 2.6): nível') + ' ' + fxOpc('suporteNivel', vs.nivel).toLowerCase() + ' = ' + fxT(fxNum(vs.fatorNivel, 2) + ' × as pessoas do exemplo do guia.') +
+    (vs.quem === 'fornecedor' || vs.quem === 'ambos' ? ' ' + fxT('A equipe da rede fica com ' + fxPct(vs.fatorNivel ? vs.fatorInterno / vs.fatorNivel : 0, 0) + ' desse tempo.') : ''));
+  if (vs.taxaFornecedor > 0) L.push(fxT('Suporte do fornecedor: usuários ativos × ' + fxPreco(vs.taxaFornecedor) + ' por usuário ativo por ano') + (+v.m0 < 12 ? '; ' + fxT('no Ano 0, só os meses do teste') : '') + '.');
+  const va = v.acompanhamento || {};
+  if (va.nivel && Math.abs((va.fator || 1) - 1) > 1e-9) L.push(fxT('Acompanhamento do uso (passo 2.6):') + ' ' + fxOpc('acompanhamento', va.nivel).toLowerCase() + ' = ' + fxT('tempo de gestão e de monitoramento × ' + fxNum(va.fator, 2) + '.'));
+  // licenças de outras ferramentas (K2.1)
+  (v.ferramentas || []).forEach(f => {
+    const lic = (f.licencas || [])[t1] || 0;
+    L.push(fxNome(f.nome) + ': ' + fxT(fxQtd(lic) + ' licenças × 12 meses') + ' × ' + fxPreco(f.preco) + ' ' + fxT('por licença por mês') + ' (' + fxT(f.precoInformado ? 'preço informado no passo 2.3' : 'preço de exemplo do guia; peça cotação') + ', ' + fxT('Ano ' + t1) + ').');
+  });
+}
+
+// ----------------------------------------------------------- leitura
+function fxLeitura(ctx, av, arq) {
+  const { cfg } = ctx;
+  const L = [];
+  const total = av.ctEco;
+  // 1. o que mais pesa
+  let pesa = '';
+  try {
+    if (typeof somaPorCamada === 'function' && typeof CAMADAS !== 'undefined') {
+      const cam = somaPorCamada(av);
+      const [k, nome] = CAMADAS.slice().sort((a, b) => (cam.total[b[0]] || 0) - (cam.total[a[0]] || 0))[0];
+      pesa = fxT('O que mais pesa: a camada ' + k + ',') + ' ' + fxT(nome) + ' (' + fxT(fxPct(total ? cam.total[k] / total : 0, 0) + ' do custo total') + ').';
+    }
+  } catch (e) { pesa = ''; }
+  const porNome = {};
+  av.linhas.forEach(l => { if (l.ecoVP > 0) porNome[l.nome] = (porNome[l.nome] || 0) + l.ecoVP; });
+  const maior = Object.keys(porNome).sort((a, b) => porNome[b] - porNome[a])[0];
+  if (maior) pesa = (pesa ? pesa + ' ' + fxT('A maior linha é') : fxT('O que mais pesa: a maior linha é')) + ' ' + fxNome(maior) + ': ' + fxGrande(porNome[maior]) + ' ' + fxT('no ciclo') + ' (' + fxPct(total ? porNome[maior] / total : 0, 0) + ').';
+  if (pesa) L.push(pesa);
+  // 2. o que mais muda o custo: +10% em cada direcionador
+  const dr = fxDirecionadores(cfg, arq, total);
+  if (dr.length) L.push(fxT('O que mais muda o custo, com 10% a mais em cada premissa:') + ' ' + dr.map(x => fxT(x.nome) + ' +' + fxGrande(x.delta) + ' (+' + fxPct(total ? x.delta / total : 0) + ')').join('; ') + '. ' + fxT('O nível de adaptação (passo 2.3.7) muda sobretudo o custo do Ano 0.'));
+  // 3. onde editar
+  L.push(fxT('Para mudar uma premissa (preço, quantidade, equipe ou item), abra a calculadora completa, logo abaixo. As respostas das fases 2, 3 e 4 também mudam estes números.'));
+  return L;
+}
+function fxDirecionadores(cfg, arq, base) {
+  if (typeof clone !== 'function') return [];
+  const H = (typeof opcoes === 'function' ? opcoes(cfg) : cfg.opc || {}).H || 3;
+  const tot = c => { try { return avaliar(calcular(c)).ctEco; } catch (e) { return base; } };
+  const out = [];
+  const add = (nome, f) => { const c = clone(cfg); f(c); const d = tot(c) - base; if (Number.isFinite(d) && Math.abs(d) > 1e-6) out.push({ nome, delta: d }); };
+  const anos = Array.from({ length: H + 1 }, (_, t) => t);
+  add('número de pessoas que poderiam usar (passo 4.1.1)', c => {
+    c.demanda.E = anos.map(t => t === 0 ? fxAno(cfg.demanda.E, 0) : fxAno(cfg.demanda.E, t) * 1.1);
+    if (c.saas && c.saas.ativo) c.saas.qtd = anos.map(t => t === 0 ? fxAno(cfg.saas.qtd, 0) : fxAno(cfg.saas.qtd, t) * 1.1);
+  });
+  add('adoção', c => {
+    c.demanda.adocao = anos.map(t => t === 0 ? fxAno(cfg.demanda.adocao, 0) : Math.min(1, fxAno(cfg.demanda.adocao, t) * 1.1));
+    if (c.saas && c.saas.ativo && cfg.saas.fatorNominal && anos.slice(1).every(t => Math.abs(fxAno(cfg.saas.qtd, t) - Math.ceil(fxAno(cfg.demanda.E, t) * fxAno(cfg.demanda.adocao, t) * cfg.saas.fatorNominal)) < 0.5))
+      c.saas.qtd = anos.map(t => t === 0 ? fxAno(cfg.saas.qtd, 0) : Math.ceil(fxAno(cfg.demanda.E, t) * Math.min(1, fxAno(cfg.demanda.adocao, t) * 1.1) * cfg.saas.fatorNominal));
+  });
+  if (arq === 'saas' && cfg.saas && +cfg.saas.preco > 0) add('preço da licença', c => { c.saas.preco *= 1.1; });
+  if (arq === 'api') add('preço por token', c => { c.mult = Object.assign({ fx: 1, pessoas: 1, preco: 1 }, c.mult || {}); c.mult.preco *= 1.1; });
+  if (arq === 'ow') add('preço da hora de GPU', c => { c.mult = Object.assign({ fx: 1, pessoas: 1, preco: 1 }, c.mult || {}); c.mult.preco *= 1.1; });
+  add('custo das equipes (salários)', c => { c.mult = Object.assign({ fx: 1, pessoas: 1, preco: 1 }, c.mult || {}); c.mult.pessoas *= 1.1; });
+  out.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  return out.slice(0, 3);
+}
+
+// ----------------------------------------------------------- plano e PDF (formato de secoesPlano)
+function secaoFormula(cfg) {
+  let ex;
+  try { ex = explicacaoCusto(cfg); } catch (e) { console.warn(e); return []; }
+  if (!ex) return [];
+  const f = ex.formula;
+  const kv = f.termos.map(x => [x.rotulo + ' (' + x.quando + ')', (x.sinal === -1 ? '− ' : '') + fxDin(x.mostrado)]).concat([[fxT('Custo total do ciclo de vida'), fxDin(f.totalMostrado)]]);
+  const rows = [];
+  ex.anos.forEach(a => {
+    const col = a.id === 'saida' ? a.rotulo : fxNum(a.t, 0);   // coluna estreita: só o número do ano
+    a.linhas.forEach(x => rows.push([col, x.nome, x.conta, fxDin(x.mostrado)]));
+    if (a.outros) rows.push([col, a.outros.rotulo, fxT('itens menores, somados'), fxDin(a.outros.mostrado)]);
+    if (a.id === 'saida' && a.continuidade) rows.push([col, fxT('A estimativa supõe que a rede continua com a solução: não há custo de saída.'), '', fxDin(0)]);
+    else {
+      const aj = [];
+      if (a.id === 'saida' && Math.abs(a.pSaida - 1) > 1e-9) aj.push('× ' + fxPct(a.pSaida, 0) + ' (' + fxT('probabilidade de trocar de solução') + ')');
+      if (Math.abs(a.fatorVP - 1) > 1e-12) aj.push('÷ ' + fxFator(1 / a.fatorVP) + ' (' + fxT('valor presente') + ')');
+      rows.push([col, a.id === 'saida' ? fxT('Custo de saída') : fxT('Total do ' + (a.t === 0 ? 'Ano 0' : 'Ano ' + a.t)), aj.join(' '), fxDin(a.totalMostrado)]);
+    }
+  });
+  return [
+    { sub: true, h: fxT('Como o custo é calculado'), p: [fxT('Cada custo é uma conta simples: quantidade × preço. As contas somam o custo de cada ano, e os anos somam o custo total.'), f.texto + '.', f.numeros + '.'].concat(f.usoTexto ? [f.usoTexto + '.'] : []).concat(f.notaVP ? [f.notaVP] : []), kv },
+    { sub: true, h: fxT('As contas de cada ano'), table: { head: [fxT('Ano'), fxT('Item'), fxT('Cálculo'), fxT('Valor')], rows, num: [3] },
+      pos: [fxT('Em cada ano aparecem os itens que somam ao menos 90% do custo do ano; os demais estão somados em "Outros itens".')] },
+    { sub: true, h: fxT('De onde vêm os números'), list: ex.origem.slice() },
+    { sub: true, h: fxT('Como ler a estimativa'), list: ex.leitura.slice(), pos: [ex.nota] },
+  ];
+}
+
+export { explicacaoCusto, secaoFormula, fxTexto, fxSelecionar, fxFechar, fxConta, fxContaLinha, fxContaSaida, fxUnid, fxNome, fxOrigem, fxLeitura, fxDirecionadores, FX_UNID, FX_FIXO, FX_TIPO, FX_LIMIAR };

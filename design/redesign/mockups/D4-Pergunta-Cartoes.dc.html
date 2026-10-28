@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Pergunta com cartões: internet</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="prumo.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1360px; height: 860px; display: flex; flex-direction: column; background: var(--surface-1); color: var(--ink); font-family: var(--font-sans);">
+  <dc-import name="PartHeader" hint-size="1360px,64px"></dc-import>
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+    <dc-import name="PartNavCap2b" hint-size="260px,700px"></dc-import>
+    <main style="flex-grow: 1; padding: 40px 56px; display: flex; flex-direction: column; gap: 20px;">
+      <div class="t-cap muted">Capítulo 2 · O teste · pergunta 7 de 11</div>
+      <h1 class="t-question" style="max-width: 600px;">As escolas têm internet adequada para o uso previsto?</h1>
+      <p class="t-body16 ink2" style="max-width: 560px;">Conexão e dispositivos costumam custar mais do que a ferramenta. A resposta define o que entra no custo do teste.</p>
+      <div style="display: flex; flex-direction: column; gap: 10px; max-width: 600px;">
+        <label class="opt"><input type="radio" name="net">Sim, em todas as escolas</label>
+        <label class="opt selected"><input type="radio" name="net" checked>Parcialmente<span style="flex-grow: 1;"></span><span class="t-cap muted" style="font-weight: 400;">Em quantas?</span><input value="30" style="width: 72px; height: 36px; border: 1px solid var(--line-control); border-radius: 8px; padding: 0 10px; font-size: 16px; text-align: right; background: var(--surface-1);"><span class="t-cap muted" style="font-weight: 400;">de 48</span></label>
+        <label class="opt"><input type="radio" name="net">Não</label>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center; margin-top: 8px;">
+        <a href="D7-Sintese.dc.html" class="btn btn-primary">Continuar</a>
+        <a href="D7-Sintese.dc.html" class="btn btn-secondary">Pular por agora</a>
+        <button class="btn btn-link">Por que perguntamos isso?</button>
+      </div>
+      <div style="flex-grow: 1;"></div>
+      <div class="t-cap muted" style="border-top: 1px solid var(--line); padding-top: 12px;">Esta resposta muda no plano: custo de internet e dispositivos (Ano 0) · 1 recomendação nova</div>
+    </main>
+    <dc-import name="PartPlanRec" hint-size="400px,760px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

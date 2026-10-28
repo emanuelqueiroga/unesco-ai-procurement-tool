@@ -1,0 +1,74 @@
+.pr-textfield {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.pr-textfield-label {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+}
+
+.pr-textfield-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pr-textfield-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--line-control);
+  border-radius: var(--radius-md);
+  padding: 10px var(--space-4);
+  font-size: 16px;
+  line-height: 22px;
+  background: var(--surface-1);
+  color: var(--ink);
+}
+.pr-textfield-input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+.pr-textfield-input--area {
+  resize: vertical;
+}
+.pr-textfield-input[size] {
+  width: auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-textfield--suggested .pr-textfield-input {
+  background: var(--accent-tint);
+  border-color: var(--accent);
+}
+.pr-textfield--error .pr-textfield-input {
+  border-color: var(--crit);
+}
+.pr-textfield--disabled .pr-textfield-input {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pr-textfield-suffix {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.pr-textfield-hint {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+}
+.pr-textfield-hint--suggested {
+  color: var(--accent-ink);
+}
+.pr-textfield-hint--error {
+  color: var(--crit);
+}

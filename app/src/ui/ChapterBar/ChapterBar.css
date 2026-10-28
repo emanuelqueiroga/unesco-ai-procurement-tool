@@ -1,0 +1,66 @@
+.pr-chapterbar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  max-width: 720px;
+}
+
+.pr-chapterbar-item {
+  display: block;
+  text-decoration: none;
+  color: var(--muted);
+  /* Área de toque de 44 px: o trilho tem 6 px, o rótulo 16 px. */
+  padding: 8px 0;
+  border-radius: var(--radius-sm);
+}
+.pr-chapterbar-item:hover {
+  color: var(--ink);
+}
+
+.pr-chapterbar-track {
+  display: block;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+  overflow: hidden;
+}
+.pr-chapterbar-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width 200ms ease-out;
+}
+
+.pr-chapterbar-label {
+  display: block;
+  font-size: 12px;
+  line-height: 16px;
+  margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pr-chapterbar-item--current .pr-chapterbar-label {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.pr-chapterbar-short {
+  display: none;
+}
+/* Compacto: só o capítulo atual mantém o nome; os outros viram números. */
+.pr-chapterbar--compact .pr-chapterbar-item:not(.pr-chapterbar-item--current) .pr-chapterbar-full {
+  display: none;
+}
+.pr-chapterbar--compact .pr-chapterbar-item:not(.pr-chapterbar-item--current) .pr-chapterbar-short {
+  display: inline;
+}
+
+@media (max-width: 400px) {
+  .pr-chapterbar-full {
+    display: none;
+  }
+  .pr-chapterbar-short {
+    display: inline;
+  }
+}

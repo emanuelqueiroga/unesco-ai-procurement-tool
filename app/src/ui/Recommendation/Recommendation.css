@@ -1,0 +1,107 @@
+.pr-recommendation {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-1);
+  transition: border-color 200ms ease-out;
+}
+.pr-recommendation--fresh {
+  border: 2px solid var(--accent);
+  padding: calc(var(--space-3) - 1px) calc(var(--space-4) - 1px);
+}
+.pr-recommendation--compact {
+  padding: 10px 14px;
+}
+
+.pr-recommendation-n {
+  font-weight: 600;
+  color: var(--muted);
+  width: 20px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  line-height: 22px;
+}
+.pr-recommendation--compact .pr-recommendation-n {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.pr-recommendation-body {
+  min-width: 0;
+  flex-grow: 1;
+}
+
+.pr-recommendation-action {
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--ink);
+}
+.pr-recommendation--compact .pr-recommendation-action {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.pr-recommendation-why {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-2);
+  margin-top: 2px;
+}
+
+.pr-recommendation-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.pr-recommendation-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pr-recommendation-pill--alta {
+  background: var(--high-bg);
+  color: var(--high);
+}
+.pr-recommendation-pill--media {
+  background: var(--info-bg);
+  color: var(--info);
+}
+.pr-recommendation-pill--line {
+  border: 1px solid var(--line-control);
+  color: var(--muted);
+}
+
+.pr-recommendation-link {
+  position: relative;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font-size: 13px;
+  line-height: 18px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.pr-recommendation-link:hover {
+  color: var(--primary-strong);
+}
+.pr-recommendation-link::before {
+  content: '';
+  position: absolute;
+  inset: -13px 0;
+}

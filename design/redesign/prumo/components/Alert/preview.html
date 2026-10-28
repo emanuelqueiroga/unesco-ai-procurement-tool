@@ -1,0 +1,26 @@
+<!-- @dsCard group="Leitura" height=170 -->
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Alert</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+html,body{margin:0;background:var(--surface-1);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:20px}
+*{box-sizing:border-box}
+.row{display:flex;gap:var(--space-4);align-items:center;flex-wrap:wrap;padding:var(--space-4)}
+.col{display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-4)}
+.muted{color:var(--muted)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.al{display:flex;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);max-width:640px;margin:0 var(--space-4) var(--space-2);font-size:14px;line-height:20px;align-items:flex-start}
+.al b{display:block}
+.info{background:var(--info-bg);color:var(--info)} .aten{background:var(--warn-bg);color:var(--warn)} .bloq{background:var(--crit-bg);color:var(--crit)}
+.al svg{flex-shrink:0;margin-top:2px}
+</style></head>
+<body>
+
+<div style="padding-top:16px">
+<div class="al info"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg><div><b>Você está vendo um caso ilustrativo</b>As respostas são fictícias. Comece um caso em branco para usar os seus dados.</div></div>
+<div class="al aten"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg><div><b>Plano parcial: 12 perguntas sem resposta</b>A estimativa usa premissas padrão onde faltam respostas.</div></div>
+<div class="al bloq"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 8l8 8M16 8l-8 8"/></svg><div><b>Nenhum problema marcado pede uma tarefa de IA</b>Volte ao capítulo 1 ou escolha a tarefa manualmente.</div></div>
+</div>
+
+</body></html>

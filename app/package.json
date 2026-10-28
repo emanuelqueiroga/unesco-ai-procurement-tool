@@ -1,0 +1,33 @@
+{
+  "name": "ai-education-procurement-tool",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "AI in Education Procurement Tool — reimplementação (React + TypeScript + Vite) com o design system Prumo",
+  "scripts": {
+    "dev": "vite",
+    "predev": "node scripts/tokens.mjs && node scripts/i18n.mjs",
+    "prebuild": "node scripts/tokens.mjs && node scripts/i18n.mjs",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint:domain": "node scripts/check-domain.mjs",
+    "tokens": "node scripts/tokens.mjs",
+    "i18n": "node scripts/i18n.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  }
+}

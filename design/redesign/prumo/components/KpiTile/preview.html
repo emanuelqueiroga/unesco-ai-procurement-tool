@@ -1,0 +1,29 @@
+<!-- @dsCard group="O plano" height=150 -->
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>KpiTile</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+html,body{margin:0;background:var(--surface-1);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:20px}
+*{box-sizing:border-box}
+.row{display:flex;gap:var(--space-4);align-items:center;flex-wrap:wrap;padding:var(--space-4)}
+.col{display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-4)}
+.muted{color:var(--muted)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3);padding:var(--space-4);max-width:720px}
+.kpi{border:1px solid var(--line);border-radius:var(--radius-md);padding:var(--space-4);background:var(--surface-1);box-shadow:var(--shadow-sm)}
+.kpi .l{font-size:13px;line-height:18px;color:var(--muted)}
+.kpi .v{font-size:32px;line-height:36px;font-weight:600;font-variant-numeric:tabular-nums;margin:4px 0}
+.kpi .o{font-size:13px;color:var(--muted)} .kpi .o a{color:var(--primary)}
+.kpi.fresh{border:2px solid var(--accent)} .kpi.fresh .f{color:var(--accent-ink);font-weight:600}
+.kpi.empty .v{color:var(--line-control)}
+</style></head>
+<body>
+
+<div class="kpis">
+  <div class="kpi fresh"><div class="l">Custo do teste (Ano 0)</div><div class="v">R$ 184 mil</div><div class="o"><span class="f">atualizado agora</span> · <a href="#">de onde vem?</a></div></div>
+  <div class="kpi"><div class="l">Custo total, 3 anos</div><div class="v">R$ 2,1 mi</div><div class="o">padrão em 4 premissas · <a href="#">de onde vem?</a></div></div>
+  <div class="kpi empty"><div class="l">Por estudante por ano</div><div class="v">—</div><div class="o">aparece no capítulo 4</div></div>
+</div>
+
+</body></html>
