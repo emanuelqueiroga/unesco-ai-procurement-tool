@@ -6,6 +6,7 @@ import { lerRota, href } from '../../src/percurso/rota';
 import { painelDe, temNumeros, origemKpi, recsPlano, tituloCaso, fatosCaso } from '../../src/percurso/painel';
 import { sinteseCapitulo } from '../../src/percurso/sintese';
 import { LEAD, CURTO, linhaAfeta, plural } from '../../src/percurso/textos';
+import { resultadoRecomendacoes } from '../../src/domain';
 
 const S = () => useCaso.getState();
 const rede = () => S().responder('etapas', { fund2: { on: true, escolas: 48, alunos: 9000, soTotal: true } });
@@ -74,13 +75,16 @@ describe('painel do plano', () => {
     S().carregarExemplo('A');
     expect(origemKpi(S().estado(), 'kpi.ano0')).toBe('informado');
   });
-  it('num exemplo, o plano está completo e com recomendações ordenadas por prioridade', () => {
+  it('num exemplo, o plano está completo, com as recomendações na ordem do motor e o veredito', () => {
     S().carregarExemplo('B');
     const p = painelDe(S().estado());
     expect(p.estado).toBe('complete');
     expect(p.recs.length).toBeGreaterThan(5);
-    const i = p.recs.findIndex((r) => r.prioridade === 'media');
-    if (i >= 0) expect(p.recs.slice(i).every((r) => r.prioridade === 'media')).toBe(true);
+    // R6: a ordem é a do motor (pontuação da seção 4.1), a mesma de resultadoRecomendacoes
+    expect(p.recs.map((r) => r.id)).toEqual((resultadoRecomendacoes(S().estado()).recs as any[]).map((r) => r.id));
+    expect(p.cartoes.length).toBe(5);
+    expect(p.veredito).toMatch(/^Próxima decisão: /);
+    expect(JSON.stringify(p.recs)).not.toMatch(/prioridade alta|"Alta"|"Média"/);
     expect(p.titulo).toContain(' · ');
   });
   it('os quatro exemplos respondem todas as 25 telas do Essencial', () => {
@@ -93,9 +97,13 @@ describe('painel do plano', () => {
   });
   it('as recomendações apontam para a tela que as originou, quando está no Essencial', () => {
     S().carregarExemplo('B');
-    const r = recsPlano(S().estado()).find((x) => x.id.startsWith('g-'));
+    const r = recsPlano(S().estado()).find((x) => x.id === 'R-83');   // R2: a ação da 1.3.1 (era g-comite)
     expect(r && r.tela).toBe('governanca');
-    expect(r && r.porque).toMatch(/^Por quê: você respondeu/);
+    // R6 (REC-10): o "Por quê" é a razão da regra; a pergunta e a resposta vão para a origem
+    expect(r && r.porque).not.toMatch(/você respondeu/);
+    expect(r && r.origem).toMatch(/^1\.3\.1 /);
+    expect(r && r.quem).toMatch(/\S/);
+    expect(r && r.rotuloNivel).toMatch(/^(Condição|Recomendada|Para acompanhar)/);
   });
   it('título e fatos do caso', () => {
     S().responder('local', 'Rede Municipal de Exemplo');
@@ -127,6 +135,26 @@ describe('sínteses de capítulo', () => {
     expect(s2.paragrafos.join(' ')).toMatch(/O teste será/);
     expect(s4.paragrafos.join(' ')).toMatch(/Em toda a rede/);
     expect(s2.nRecs).toBeGreaterThan(0);
+  });
+  it('REC-42: o capítulo 4 do B termina com "Seu próximo passo" (veredito, 3 ações, Ano 0, cuidado)', () => {
+    S().carregarExemplo('B');
+    const e = S().estado();
+    const s4 = sinteseCapitulo(4, e);
+    const v = (resultadoRecomendacoes(e) as any).veredito;
+    expect(s4.proximo).toBeTruthy();
+    const p = s4.proximo!;
+    expect(p.titulo).toBe('Seu próximo passo');
+    expect(p.veredito).toBe(painelDe(e).veredito);              // a mesma frase da capa, do Em resumo e do PDF
+    expect(p.veredito).toContain('Ainda não avance para o piloto');
+    expect(v.codigo).toBe('nao');
+    expect(p.porque).toMatch(/^Por quê: /);
+    expect(p.acoes.length).toBe(3);
+    p.acoes.forEach((a) => { expect(a.quem).toMatch(/\S/); expect(a.marco).toMatch(/\S/); expect(a.id).toMatch(/^R-\d+$/); });
+    expect(p.custo).toMatch(/^Custo do Ano 0: US\$ .+ Dotação do Ano 0: US\$ /);
+    expect(p.cuidado).toMatch(/^Cuidado (limitado|moderado|elevado|crítico)/);
+    expect(p.pdf).toBe('Baixar o plano (PDF)');
+    expect(p.faltam).toBe(0);
+    expect(sinteseCapitulo(3, e).proximo).toBeNull();
   });
   it('sem respostas, a síntese diz que usa as premissas padrão e nunca mostra "undefined" ou NaN', () => {
     ([1, 2, 3, 4] as const).forEach((n) => {

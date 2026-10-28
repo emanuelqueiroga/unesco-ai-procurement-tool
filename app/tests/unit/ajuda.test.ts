@@ -141,8 +141,8 @@ describe('ajuda das perguntas (AJU-04, AJU-05)', () => {
 });
 
 describe('dicas (AJU-09)', () => {
-  it('são as 23 da 0.0.15, de campos que existem, com até 170 caracteres sem as marcas', () => {
-    expect(Object.keys(DICAS)).toHaveLength(23);
+  it('são as 23 da 0.0.15 e as 13 das perguntas novas do Refinar (R8), de campos que existem, com até 170 caracteres sem as marcas', () => {
+    expect(Object.keys(DICAS)).toHaveLength(23 + 13);
     Object.entries(DICAS).forEach(([id, d]) => {
       expect((CAMPO_POR_ID as any)[id], id).toBeTruthy();
       expect(glossarioSemMarcas(d).length, id).toBeLessThanOrEqual(170);

@@ -324,7 +324,9 @@ function cfgAtual(estado) {
 const CAMPOS_CUSTO = ['tarefas', 'usuarios', 'afetados', 'consequencias', 'testes', 'tipoTec', 'pagamento', 'licenca', 'adaptacao', 'piloto', 'poc',
   'nFerramentas', 'conheceFerramentas', 'ferramentas', 'internet', 'escolasInternet', 'modeloDisp', 'dispExistem', 'formados', 'formacaoTipo', 'formacaoFormato',
   'formacaoHoras', 'formacaoPaga', 'suporteQuem', 'suporteNivel', 'acompanhamento', 'implantacao', 'arquitetura', 'elegiveis', 'expansao', 'horizonte',
-  'curva', 'ondas', 'reposicaoDisp', 'rotacaoFormacao', 'pais', 'editados'];
+  'curva', 'ondas', 'reposicaoDisp', 'rotacaoFormacao', 'pais', 'editados',
+  // R8 (REC-52): respostas do Refinar que mudam o risco (e a governança proporcional) ou a revisão por volume
+  'publico', 'contestacaoExiste', 'treino', 'verificacao', 'revisao'];
 
 export { CAMPO_POR_ID, CAMPOS_SUGERIDOS, CAMPOS_PROB, PASSOS_VER, PRESET_ARQ, SUB_OBJ, objVazio, testesDe, modoTeste, descidos, passoDe, irCampo, visivel, respondido,
   etapasAtivas, alunosEtapa, totaisCtx, rotulo, listaOpc, valorCampo, vazio, textoCampo,

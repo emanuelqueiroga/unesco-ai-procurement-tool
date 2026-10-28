@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const DIRS = [path.join(RAIZ, 'src', 'domain'), path.join(RAIZ, 'src', 'plano')];
+const DIRS = [path.join(RAIZ, 'src', 'domain'), path.join(RAIZ, 'src', 'domain', 'regras'), path.join(RAIZ, 'src', 'plano')];
 const IGNORADOS = new Set(['fontes_pdf.generated.js']);
 
 // [descrição, regex]. Para S: qualquer acesso `S.` ou `typeof S` que não seja de uma variável local

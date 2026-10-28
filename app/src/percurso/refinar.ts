@@ -23,14 +23,15 @@ export function erroNumero(v: unknown, o: { max?: number; permiteZero?: boolean 
 }
 
 // ----------------------------------------------------------- listas de opções
-const EXCLUSIVAS: Record<string, string> = { consequencias: 'nenhuma' };
-/** Marca ou desmarca uma opção mantendo a ordem do catálogo; a opção exclusiva (2.2.3, "nenhuma") limpa as demais e vice-versa (PER-21). */
+// opções exclusivas por campo: marcar uma limpa as demais e marcar outra a desmarca (2.2.3 "nenhuma"; 1.1.6 "nenhum" e "não sei")
+const EXCLUSIVAS: Record<string, string[]> = { consequencias: ['nenhuma'], publico: ['nenhum', 'nao_sei'] };
+/** Marca ou desmarca uma opção mantendo a ordem do catálogo; as opções exclusivas (2.2.3, "nenhuma"; 1.1.6, "nenhum" e "não sei") limpam as demais e vice-versa (PER-21). */
 export function alternarOpcao(campo: string, atual: string[], ordem: string[], id: string, on: boolean): string[] {
-  const excl = EXCLUSIVAS[campo];
+  const excl = EXCLUSIVAS[campo] || [];
   let s = new Set(atual || []);
   if (on) {
-    if (excl && id === excl) s = new Set([id]);
-    else { if (excl) s.delete(excl); s.add(id); }
+    if (excl.includes(id)) s = new Set([id]);
+    else { excl.forEach((x) => s.delete(x)); s.add(id); }
   } else s.delete(id);
   return ordem.filter((k) => s.has(k));
 }

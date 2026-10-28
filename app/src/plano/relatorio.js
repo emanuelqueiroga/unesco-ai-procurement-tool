@@ -14,12 +14,15 @@
 // =====================================================================
 import {
   tr, grande, din, mil, pct, unidMil, fmtInt, LOC, clone,
-  simular, tornado, cenarios, avaliar, numerosCusto, cfgAtual, FASES_MOTOR, TIPO_REC, QUANDO_REC,
+  numerosCusto, cfgAtual, FASES_MOTOR, TIPO_REC, QUANDO_REC, trRec, rotuloQuem,
 } from '../domain/index.ts';
 import { temNumeros } from '../percurso/painel.ts';
+// R5 (REC-32 a REC-37): números ligados às recomendações, P50/P90, indicadores rotulados, avaliabilidade, limiar e
+// parcela sem faixa; a simulação, o tornado e os cenários são os mesmos das regras (um cálculo por caso)
+import { numerosRec, pesadoRec, recCacheTamanho, faixaRec, frasesIndicadoresRec, valeOQueCusta, REC_N_SIM, REC_SEMENTE } from '../domain/rec_numeros.js';
 
-export const REL_N_SIM = 1500;
-export const REL_SEMENTE = 20261003;
+export const REL_N_SIM = REC_N_SIM;
+export const REL_SEMENTE = REC_SEMENTE;
 
 // módulos opcionais (pacotes C e E): {} enquanto o arquivo não existe
 const OPCIONAIS = import.meta.glob(['../domain/referencias.js', '../domain/glossario.js', '../domain/ajuda.js'], { eager: true });
@@ -39,8 +42,9 @@ export const TXT_REL = {
   // títulos-achado
   h2: 'Os custos recorrentes são {0} do total',
   h3: 'O custo total pode ficar entre {0} e {1}',
-  h4Sair: 'Sair do contrato custaria {0}, ou {1} anos de custo recorrente',
-  h4SairV: 'Sair do contrato custaria {0}',
+  // REC-12: o mesmo valor de "Quanto custa" (camada de saída do custo total) e o desembolso com o seu rótulo
+  h4Sair: 'Sair do contrato custaria {0} no custo total, com desembolso de transição de {1} ({2} anos de custo recorrente)',
+  h4SairV: 'Sair do contrato custaria {0} no custo total',
   h4Req: 'O contrato deve cobrir {0} requisitos e cláusulas deste caso',
   h5Nenhuma: 'Nenhuma das {0} condições de governança está confirmada',
   h5Algumas: 'Estão confirmadas {0} de {1} condições de governança',
@@ -52,6 +56,11 @@ export const TXT_REL = {
   kTcoNota0: 'Soma dos custos de todos os anos, em preços do Ano 0 e sem desconto. A faixa vem de {0} simulações; o valor central é o cenário esperado.',
   kTco80: 'Em 80% dos cenários simulados, o custo total fica dentro da faixa.',
   kCentral: 'valor central',
+  // R5 (decisão 3, REC-36): o central é o cenário-base; o P50 vai ao lado como "valor para orçar"
+  kTcoNotaD5: 'Soma dos custos de todos os anos, em preços do Ano 0 e descontada à taxa de {0} ao ano. A faixa vem de {1} simulações; o valor central é o cenário-base, com cada premissa no valor mais provável.',
+  kTcoNota05: 'Soma dos custos de todos os anos, em preços do Ano 0 e sem desconto. A faixa vem de {0} simulações; o valor central é o cenário-base, com cada premissa no valor mais provável.',
+  kP50P90: 'Valor para orçar (P50): {0}. Teto prudente (P90): {1}.',
+  kDot0: 'Dotação do Ano 0: {0}.',
   kAno0: 'Custo do Ano 0 (prova de conceito ou piloto)',
   kAprAcesso: 'Por aprendiz com acesso por ano',
   kProfAcesso: 'Por professor com acesso por ano',
@@ -96,12 +105,12 @@ export const TXT_REL = {
   enGov: 'Condições de governança confirmadas antes de contratar ({0} de {1} hoje).',
   inRes: 'Resultado: {0}',
   inBase: 'Linha de base: {0}',
-  inCusto: 'Custo por ano, sem passar de {0} por estudante, professor ou usuário (estimativa central).',
   inAdo: 'Adoção: parcela das pessoas com acesso que usam de fato (estimativa: {0} no Ano {1}).',
   inGov: 'Governança: condições confirmadas ({0} de {1} hoje).',
   // ações
   acoesAbre: 'Cada ação responde a seis perguntas. A lista sai das respostas deste caso: se uma resposta mudar, a ação muda.',
   acPorqueResp: 'A resposta “{1}” à pergunta {0} ({2}).',
+  acOrigemCurta: 'Pergunta {0}: {1}.',
   acParaCustoT: 'Evitar que o teste comece sem as condições para medir resultado e custo.',
   acParaCustoC: 'Contratar com custo conhecido, preço previsível e saída possível.',
   acParaCustoM: 'Manter o custo sob controle durante a implantação e a expansão.',
@@ -135,7 +144,7 @@ export const TXT_REL = {
   comoLer: 'Como ler este plano',
   comoLer2: 'Os valores são ilustrativos, a menos que o anexo de premissas cite uma fonte. Todos estão em preços do Ano 0.',
   comoLer3: 'Custo pago uma vez: implantação e compras iniciais. Custo recorrente: o que se repete todo ano. A faixa P10 a P90 mostra a incerteza: em 80% dos cenários simulados o custo fica dentro dela.',
-  comoLer4: 'Em “Quem?”, a área indicada é a que costuma saber responder à pergunta que originou a ação; confirme com a sua equipe.',
+  comoLer4: 'Em “Quem?”, a área indicada é a que age; confirme os nomes com a sua equipe.',
   comoLer5: 'Os termos técnicos estão explicados no glossário, no fim.',
   // custo por fase (MOT-03: as chaves do motor, i18n/v15_motor_*)
   sFases: 'Custo por fase', fFase: 'Fase', fAnos: 'Anos', fUnico: 'Pagamento único', fRecorr: 'Recorrente', fTotal: 'Total',
@@ -170,6 +179,7 @@ export const TXT_REL = {
   gTornadoL: 'O direcionador que mais pesa é {0}: do mínimo ao máximo da faixa, o custo total muda de {1} a {2}.',
   gReduz: 'No mínimo da faixa', gAumenta: 'No máximo da faixa', gBase: 'Custo central: {0}',
   sSimula: 'Simulação de incerteza',
+  simP50: 'P50 (valor para orçar)', simP90: 'P90 (teto prudente)',
   simSaida: 'Saída', simCt: 'Custo total do ciclo de vida', simDot: 'Dotação total nos exercícios', simRisco: 'Custo em risco (P90 menos P50)',
   simNota: '{0} cenários, com semente fixa {1}: o mesmo caso dá sempre o mesmo resultado. Em cada cenário, os direcionadores variam dentro das suas faixas (distribuição triangular, com o valor mais provável no valor central). As faixas são convenções do guia, não medidas.',
   // premissas e fontes
@@ -207,26 +217,13 @@ const nomeFase = id => tr((FASES_MOTOR.find(z => z[0] === id) || ['', id])[1]);
 const anosTxt = anos => (anos.length === 1 ? R('anoUm', anos[0]) : R('anosAte', anos[0], anos[anos.length - 1]));
 
 // ----------------------------------------------------------- números (uma simulação por caso)
-const CACHE = new Map();   // JSON da cfg → { sim, tor, cen }
-/** Parte cara (simulação, tornado, cenários), guardada por caso: a página, o PDF e os testes chamam várias vezes. */
-export function relPesado(cfg) {
-  const chave = JSON.stringify(cfg);
-  const ja = CACHE.get(chave);
-  if (ja) return ja;
-  const sim = simular(cfg, REL_N_SIM, REL_SEMENTE);
-  const tor = tornado(cfg);
-  const cs = cenarios(cfg);
-  const cen = ['Esperado', 'Alta adoção', 'Estresse'].map(nome => {
-    const a = avaliar(cs[nome]);
-    return { nome, ct: a.ctEco, unico: a.fases.unico, rec: a.fases.recorrente };
-  });
-  const v = { chave, sim, tor, cen };
-  CACHE.set(chave, v);
-  while (CACHE.size > 4) CACHE.delete(CACHE.keys().next().value);
-  return v;
-}
+/**
+ * Parte cara (simulação, tornado, cenários), guardada por caso: a página, o PDF, as regras (k.d) e os testes chamam
+ * várias vezes. R5: o cache é o de domain/rec_numeros.js (pesadoRec), o mesmo das recomendações.
+ */
+export function relPesado(cfg) { return pesadoRec(cfg); }
 /** quantas simulações já rodaram (testes: a segunda chamada do mesmo caso não roda de novo) */
-export const relCacheTamanho = () => CACHE.size;
+export const relCacheTamanho = () => recCacheTamanho();
 
 function copiaEstado(estado) {
   const e = Object.assign({}, estado || {});
@@ -247,29 +244,40 @@ export function relDados(estado, pre) {
     const av = n.av, tco = av.tco;
     const P = relPesado(cfg);
     const central = tco.tcoDescontado;
+    // R5: o mesmo seletor das regras (k.d), com P50/P90, indicadores rotulados, avaliabilidade, limiar e sem faixa
+    const rec = numerosRec(estado, { cfg, custo: n });
     // a faixa nunca exclui o valor central (a distribuição é assimétrica)
     const lo = Math.min(P.sim.ct.p10, central), hi = Math.max(P.sim.ct.p90, central);
     const fases = av.fases.ids.map(id => av.fases.porFase[id]).filter(f => f.anos.length);
     return { n, cfg, av, tco, H: av.r.H, T: av.r.anos, E: av.r.E, U: av.r.U, sim: P.sim, tor: P.tor, cen: P.cen,
       central, lo, hi, fases, ano0: (av.ecoAno || [])[0] || 0, anual: tco.anual,
       aprendiz: tco.custoPorAprendizAno, professor: tco.custoPorProfessorAno, usuario: n.porAluno,
-      saida: n.orc ? n.orc.saida || 0 : 0, anosParaSair: (n.ind || {}).anosParaSair || 0 };
+      saida: n.orc ? n.orc.saida || 0 : 0, saidaEco: av.saidaEco || 0, anosParaSair: (n.ind || {}).anosParaSair || 0, rec };
   } catch (e) { console.warn(e); return null; }
 }
 
 // ----------------------------------------------------------- TCO, faixa e indicadores
 /** O TCO com a faixa P10–P90 e as posições (0–100) da barra com o marcador do valor central. */
+// R5 (decisão 3, REC-36, REC-37): o valor central continua na manchete e o P50 vai ao lado como "valor para orçar",
+// com o P90 como "teto prudente" (p50Rot, p90Rot, pP50); a nota abre com os dois. aviso: itens sem faixa > 25% do
+// custo total; notaEstresse: por que o estresse passa do P90. Campos novos para a página e o PDF (pacote R6).
 export function relFaixa(d) {
   if (!d) return null;
   const w = Math.max(d.hi - d.lo, d.central * 0.02), a = d.lo - 0.5 * w, b = d.hi + 0.5 * w;
   const pos = v => Math.max(0, Math.min(100, (100 * (v - a)) / (b - a)));
   const r = d.tco.r;
+  const fr = faixaRec(d.rec) || {};
+  const p50 = d.rec ? d.rec.p50 : d.sim.ct.p50, p90 = d.rec ? d.rec.p90 : d.sim.ct.p90;
+  const soma = r ? R('kTcoNotaD5', pct(r, r < 0.1 ? 1 : 0), fmtInt(d.sim.N)) : R('kTcoNota05', fmtInt(d.sim.N));
   return {
     central: d.central, lo: d.lo, hi: d.hi, rotulo: R('kTco'),
     centralTxt: grande(d.central), loTxt: grande(d.lo), hiTxt: grande(d.hi), faixaTxt: R('kTcoFaixa', grande(d.lo), grande(d.hi)),
-    nota: (r ? R('kTcoNotaD', pct(r, r < 0.1 ? 1 : 0), fmtInt(d.sim.N)) : R('kTcoNota0', fmtInt(d.sim.N))) + ' ' + R('kTco80'),
-    alt: R('kTcoFaixa', grande(d.lo), grande(d.hi)) + '; ' + R('kCentral') + ': ' + grande(d.central),
-    pLo: pos(d.lo), pHi: pos(d.hi), pCentral: pos(d.central),
+    nota: R('kP50P90', grande(p50), grande(p90)) + ' ' + soma + ' ' + R('kTco80'),
+    alt: R('kTcoFaixa', grande(d.lo), grande(d.hi)) + '; ' + R('kCentral') + ': ' + grande(d.central) + '; ' + R('kP50P90', grande(p50), grande(p90)),
+    pLo: pos(d.lo), pHi: pos(d.hi), pCentral: pos(d.central), pP50: pos(p50),
+    p50, p90, p50Txt: grande(p50), p90Txt: grande(p90), p50Rot: fr.p50Rot || '', p90Rot: fr.p90Rot || '',
+    p50Delta: fr.p50Delta || 0, p50DeltaTxt: fr.p50DeltaTxt || '', notaBase: fr.notaBase || '',
+    aviso: fr.aviso || '', notaEstresse: fr.notaEstresse || '',
   };
 }
 function notaRegime(an) {
@@ -279,12 +287,23 @@ function notaRegime(an) {
   return R('regimePlena');
 }
 /**
- * Indicadores ao lado do TCO: Ano 0, custo anual em regime e o custo por pessoa com os DOIS denominadores, cada um
- * com o seu nome (decisão 3): por aprendiz (ou professor) com acesso e por usuário ativo.
- * kpi: o KPI do painel cujo "de onde vem?" explica o número.
+ * Indicadores ao lado do TCO (R5, REC-35; seção 5.1): o custo do Ano 0 com a dotação do Ano 0 e os indicadores
+ * rotulados pela pergunta que respondem (domain/rec_numeros.js:indicadoresRec): média do ciclo por pessoa com acesso,
+ * custo em regime por pessoa com acesso (ou por estudante atendido, quando quem usa não é quem recebe o efeito),
+ * custo em regime por usuário ativo e custo do teste por participante. `pergunta`: a pergunta que cada um responde.
+ * kpi: o KPI do painel cujo "de onde vem?" explica o número. Sai a frase "sem passar de US$ x" (ECO-10).
  */
 export function relIndicadores(d) {
   if (!d) return [];
+  if (d.rec && d.rec.indicadores) {
+    const dot0 = (d.rec.dot || [])[0];
+    const L = [{ id: 'ano0', kpi: 'kpi.ano0', rotulo: R('kAno0'), valor: grande(d.ano0), cheio: din(d.ano0), bruto: d.ano0,
+      nota: dot0 != null ? R('kDot0', grande(dot0)) : '' }];
+    // o indicador da média do ciclo mantém o id do papel ('aprendiz' | 'professor' | 'pessoa'), como antes do R5
+    d.rec.indicadores.forEach(x => L.push({ id: x.id === 'mediaAcesso' ? x.papel : x.id, kpi: x.id === 'teste' ? 'kpi.ano0' : 'kpi.porAluno', rotulo: x.rotulo, pergunta: x.pergunta,
+      valor: x.valor, cheio: x.valor, bruto: x.bruto, nota: x.nota || '' }));
+    return L;
+  }
   const L = [
     { id: 'ano0', kpi: 'kpi.ano0', rotulo: R('kAno0'), valor: grande(d.ano0), cheio: din(d.ano0), bruto: d.ano0 },
     { id: 'regime', kpi: 'kpi.anual', rotulo: R('kRegime', d.anual.ano), valor: grande(d.anual.eco), cheio: din(d.anual.eco), bruto: d.anual.eco,
@@ -302,6 +321,16 @@ export function relDirecionadores(d, n = 3) {
   const mx = Math.max(1e-9, ...rows.map(r => Math.max(Math.abs(r.lo), Math.abs(r.hi))));
   return rows.map(r => ({ id: r.id, nome: tr(r.nome), faixa: vezes(r.min) + ' – ' + vezes(r.max), lo: r.lo, hi: r.hi,
     loTxt: relSinal(r.lo), hiTxt: relSinal(r.hi), txt: R('direcionadorFaixa', relSinal(r.lo), relSinal(r.hi)), w: Math.max(Math.abs(r.lo), Math.abs(r.hi)) / mx }));
+}
+
+/**
+ * R5 (REC-33, REC-34): dados de "Como testar e avaliar" para a página e o PDF (pacote R6): o tamanho mínimo de efeito
+ * detectável do piloto e da 1ª etapa, com as premissas e o rótulo "ilustrativo, a confirmar", e o bloco "Vale o que
+ * custa?" (fórmula com o custo do caso quando falta resposta). estado: o mesmo de relDados. null sem números.
+ */
+export function relAvaliacao(d, estado) {
+  if (!d || !d.rec) return null;
+  return { aval: d.rec.aval || null, vale: valeOQueCusta(estado, d.rec) };
 }
 
 // ----------------------------------------------------------- icebergs por fase
@@ -382,6 +411,8 @@ export function relCenarios(d) {
   const esp = d.cen[0], est = d.cen[2], u = ' (' + unidMil() + ')';
   const desc = { 'Esperado': R('cenEsperado'), 'Alta adoção': R('cenAlta'), 'Estresse': R('cenEstresse') };
   return {
+    // R5 (REC-37): por que o estresse pode passar do P90 ('' quando não passa)
+    nota: d.rec ? (faixaRec(d.rec) || {}).notaEstresse || '' : '',
     leitura: est.ct - esp.ct > 1 ? R('gCenariosL', grande(est.ct), pct((est.ct - esp.ct) / esp.ct), grande(esp.ct)) : R('gCenariosL0', grande(esp.ct)),
     table: { head: [R('cenario'), R('gUnico') + u, R('gRecorr') + u, R('fTotal') + u],
       rows: d.cen.map(c => [tr(c.nome) + '. ' + desc[c.nome], mil(c.unico), mil(c.rec), mil(c.ct)]), num: [1, 2, 3], b0: true, pronto: true },
@@ -401,9 +432,14 @@ export function relTornado(d) {
 export function relSimulacao(d) {
   if (!d || !d.sim) return null;
   const lin = (rot, a) => [rot, mil(a.p10), mil(a.p50), mil(a.p90), mil(a.p90 - a.p50)];
+  // R5 (REC-37): aviso de itens sem faixa (> 25% do custo total) e nota sobre o estresse; pos = as notas na ordem de leitura
+  const fr = d.rec ? faixaRec(d.rec) || {} : {};
+  const nota = R('simNota', fmtInt(d.sim.N), d.sim.seed);
   return {
-    nota: R('simNota', fmtInt(d.sim.N), d.sim.seed),
-    table: { head: [R('simSaida') + ' (' + unidMil() + ')', 'P10', 'P50', 'P90', R('simRisco')], rows: [lin(R('simCt'), d.sim.ct), lin(R('simDot'), d.sim.dotTot)], num: [1, 2, 3, 4], b0: true, pronto: true },
+    aviso: fr.aviso || '', notaEstresse: fr.notaEstresse || '', pos: [fr.aviso, nota, fr.notaEstresse].filter(Boolean),
+    nota,
+    // R6 (5.2, decisão 3): P50 e P90 rotulados
+    table: { head: [R('simSaida') + ' (' + unidMil() + ')', 'P10', R('simP50'), R('simP90'), R('simRisco')], rows: [lin(R('simCt'), d.sim.ct), lin(R('simDot'), d.sim.dotTot)], num: [1, 2, 3, 4], b0: true, pronto: true },
   };
 }
 
@@ -415,7 +451,8 @@ export function relAchados(d, ex) {
   if (d) {
     o.custa = R('h2', pct(d.tco.pRecorrente));
     o.incerteza = R('h3', grande(d.lo), grande(d.hi));
-    if (d.saida > 0) o.exigir = d.anosParaSair ? R('h4Sair', grande(d.saida), numP(d.anosParaSair, 1)) : R('h4SairV', grande(d.saida));
+    const sEco = d.saidaEco > 0 ? d.saidaEco : d.saida;
+    if (sEco > 0) o.exigir = d.anosParaSair && d.saida > 0 ? R('h4Sair', grande(sEco), grande(d.saida), numP(d.anosParaSair, 1)) : R('h4SairV', grande(sEco));
   }
   if (!o.exigir && ex.nReq > 0) o.exigir = R('h4Req', fmtInt(ex.nReq));
   if (ex.nG > 0) o.fazer = ex.nSim === 0 ? R('h5Nenhuma', ex.nG) : ex.nSim >= ex.nG ? R('h5Todas', ex.nG) : R('h5Algumas', ex.nSim, ex.nG);
@@ -451,48 +488,50 @@ export function relExecutivo(resKv, d, ex) {
   dim('entreg', 'exEntreg', 'exEntregP', '2.0', 'testes', [teste && R('enTeste'), ex.nReq > 0 && R('enContrato', fmtInt(ex.nReq)),
     UH > 0 && R('enUso', fmtInt(Math.round(UH)), d.H, pct(EH ? UH / EH : 0)), formados && R('enForm', relPonto(formados)),
     ex.nG > 0 && R('enGov', ex.nSim, ex.nG)]);
-  const porPessoa = d ? (d.aprendiz != null ? d.aprendiz : d.professor != null ? d.professor : d.usuario) : null;
+  // R5 (ECO-10, REC-35): sem "sem passar de US$ x" (a estimativa central não é teto); o custo em regime por usuário
+  // ativo com o limite "a definir pela rede" e o limiar "vale o que custa" (fórmula com o custo do caso se faltar resposta)
+  const indRec = d && d.rec ? frasesIndicadoresRec(d.rec) : [];
   dim('ind', 'exInd', 'exIndP', '1.2', 'resultado', [g('Resultado esperado e como medir') && R('inRes', g('Resultado esperado e como medir')),
-    g('Linha de base') && R('inBase', g('Linha de base')), porPessoa != null && R('inCusto', din(porPessoa, 2)),
+    g('Linha de base') && R('inBase', g('Linha de base')), ...indRec,
     UH > 0 && R('inAdo', pct(EH ? UH / EH : 0), d.H), ex.nG > 0 && R('inGov', ex.nSim, ex.nG)]);
   return L;
 }
 
 // ----------------------------------------------------------- cinco ações em cartões (O quê, Por quê, Para quê, Como, Quem, Quando)
-// "Por quê" dá a razão: a frase depois dos dois-pontos quando ela explica ("sem linha de base, não há como saber…");
-// sem razão no texto, a resposta que originou a ação, com a pergunta. Nunca os dois iguais (defeito da 0.0.15).
-const RE_RAZAO = /\b(sem|não|pelas respostas|dependem?|crescem?|costuma|mudam?|muda|trata|usa|são|deixa|fica|basta|desperdício|cobrado|têm|só começa|é cobrado)\b/i;
-function partesAcao(ptTexto, txt) {
-  const m = String(ptTexto || '').match(/^(.*?):\s+(.+)$/s);
-  if (!m || /^quem\b/i.test(m[2]) || !RE_RAZAO.test(m[2])) return null;
-  const mt = String(txt).match(/^(.*?)\s?[:：]\s+(.+)$/s);
-  return mt ? { oque: mt[1], razao: relCap(mt[2]) } : null;
-}
+// R1 (REC-05, REC-06, REC-10): o "O quê" é a ação da regra (sem corte no ":"), o "Por quê" é a razão da regra (nunca a
+// resposta nem códigos crus), a pergunta e a resposta vão para "Origem", e "Quem" é quem age (mapa da regra, seção 3.4);
+// quemSabe (ajuda.js) fica só como reserva para itens sem esse mapa.
 /**
- * recs: recomendações do caso (recomendacoesCaso, com porque.resposta já em rótulo); n: quantas (5).
- * quem(n) → área que costuma saber a pergunta n (ajuda.js:quemSabe), quando existir.
+ * recs: recomendações do caso (recomendacoesCaso, com origem/porque.resposta já em rótulo); n: quantas (5).
  */
 export function relAcoes(recs, n = 5) {
   const quemSabe = opcional('ajuda', 'quemSabe');
+  const juntaQuem = L => (L.length <= 1 ? L.join('') : L.slice(0, -1).join(', ') + ' ' + tr('e') + ' ' + L[L.length - 1]);
   return (recs || []).slice(0, n).map((r, i) => {
-    const txt = String(tr(r.texto)), p = r.porque || {};
-    const resp = Array.isArray(p.resposta) ? p.resposta.map(z => tr(z)).join('; ') : String(tr(p.resposta || ''));
-    const origem = p.n ? R('acPorqueResp', p.n, resp, String(tr(p.pergunta || ''))) : '';
-    const pa = partesAcao(r.texto, txt);
+    const p = r.origem || r.porque || {};
+    const resp = Array.isArray(p.resposta) ? p.resposta.map(z => tr(z)).join('; ') : String(p.resposta || '').split('; ').map(z => tr(z)).join('; ');
+    const origem = p.n ? R('acPorqueResp', p.n, resp, String(tr(p.pergunta || ''))) + (p.sugerido ? ' (' + tr('sugerido') + ')' : '') : '';
     const q = r.quando === 'antes_teste' ? 'T' : r.quando === 'antes_contratar' ? 'C' : 'M';
     const pagina = tr(r.tipo === 'custo' ? 'O que exigir' : 'O que fazer');
-    let quem = '';
-    if (quemSabe && p.n) { try { const z = quemSabe(String(p.n)); if (z) quem = relCap(tr(z)); } catch (e) { console.warn(e); } }
+    const oque = r.chaves ? trRec(r, 'oque') : String(tr(r.texto || ''));
+    const razao = r.chaves ? trRec(r, 'razao') : String(tr(r.razao || ''));
+    const passos = r.chaves ? trRec(r, 'como') : [];
+    let quem = r.quem && r.quem.length ? relCap(juntaQuem(rotuloQuem(r.quem))) : '';
+    if (!quem && quemSabe && p.n) { try { const z = quemSabe(String(p.n)); if (z) quem = relCap(tr(z)); } catch (e) { console.warn(e); } }
+    const etiqueta = r.etiqueta ? ' ' + tr(r.etiqueta) : '';
     return {
       n: i + 1, id: String(r.id), tipo: r.tipo, prioridade: r.prioridade, quando: r.quando, nPergunta: p.n ? String(p.n) : '',
       tipoTxt: String(tr(TIPO_REC[r.tipo] || r.tipo || '')), quandoRot: String(tr((QUANDO_REC.find(z => z[0] === r.quando) || ['', r.quando || ''])[1])),
-      oque: pa ? pa.oque : txt, texto: txt,
-      porque: pa ? pa.razao : origem,
-      origem: pa ? origem : '',
-      paraque: R((r.tipo === 'politica' ? 'acParaPol' : 'acParaCusto') + q),
-      como: p.n ? R('acComo', p.n, String(tr(p.pergunta || '')), pagina) : R('acComo0', pagina),
+      oque: oque + etiqueta, texto: oque,
+      porque: razao,
+      origem, origemCurta: p.n ? R('acOrigemCurta', p.n, resp) + (p.sugerido ? ' (' + tr('sugerido') + ')' : '') : '',
+      paraque: r.chaves && r.chaves.paraque ? trRec(r, 'paraque') : R((r.tipo === 'politica' ? 'acParaPol' : 'acParaCusto') + q),
+      como: passos.length ? passos.join(' ') : p.n ? R('acComo', p.n, String(tr(p.pergunta || '')), pagina) : R('acComo0', pagina),
+      passos,
       quem: quem || R('acQuem0'),
       quandoTxt: R('acQuando' + q),
+      // R2: novos campos para os pacotes R3 e R6
+      marco: r.marco || '', nivel: r.nivel || '', pronto: r.chaves && r.chaves.pronto ? trRec(r, 'pronto') : '', etiqueta: r.etiqueta ? tr(r.etiqueta) : '',
     };
   });
 }

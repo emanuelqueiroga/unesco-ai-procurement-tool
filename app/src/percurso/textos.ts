@@ -133,3 +133,16 @@ export const plural = (n: number, um: string, varios: string) => (n === 1 ? t(um
 export const minusc = (s: string) => String(s ?? '').split(/(\s+)/).map((w) => ((w.match(/\p{Lu}/gu) || []).length >= 2 ? w : w.toLocaleLowerCase())).join('');
 /** Só a primeira letra em minúscula (para frases que já trazem nomes próprios). */
 export const minusc1 = (s: string) => { const v = String(s ?? ''); return /^\p{Lu}\p{Lu}/u.test(v) ? v : v.charAt(0).toLocaleLowerCase() + v.slice(1); };
+
+/**
+ * Textos novos das telas do pacote R6 (recomendações no relatório; chaves de tradução para o orquestrador). Os do
+ * relatório e do PDF estão em plano/recplano.js (TEXTOS_REC_R6), plano/secoes.js (TEXTOS_REC_R6_SECOES),
+ * plano/relatorio.js (TXT_REL: simP50, simP90) e plano/pdf.js (PDF_TXT: verSeq, cuidado, proxima).
+ */
+export const TEXTOS_REC_R6_TELAS = [
+  'Ver a sequência de decisões e o plano de ação', 'Contadores do plano', 'Ainda sem recomendações',
+  'Ver todas as {n} recomendações, por pacote', 'Como testar e avaliar', 'cenário-base',
+  'A próxima decisão, o que responder antes, os portões entre as etapas, como testar e avaliar e as ações deste caso por pacote. Cada ação tem o seu número (R-nn) e a pergunta que a originou: se mudar a resposta, a lista muda.',
+  'Nenhuma condição aberta', '1 condição aberta', '{0} condições abertas', '{n} condição', '{n} condições',
+  'Como a arquitetura não foi definida, o modelo usa {arq} como ponto de partida (presumida; confirme na pergunta 3.2.1).',
+];

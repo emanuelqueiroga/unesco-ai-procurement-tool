@@ -1,204 +1,60 @@
 // =====================================================================
-// Recomendações para você (v10, decisão C; v11): motor de regras que transforma as
-// respostas DESTE caso numa lista curta e priorizada de ações.
-// Cada item: { id, quando, tipo, prioridade, texto, porque: { n, pergunta, resposta, sugerido }, ir }
-//   quando: 'antes_teste' | 'antes_contratar' | 'manter'
-//   tipo: 'custo' (custo e compra) | 'politica' (política e governança)
-//   prioridade: 'alta' | 'media'
-//   ir: 'fase:passo:n' (n com hífens), o mesmo formato de data-ir do percurso.
-// Mostradas no passo 4.3 (renderRecomendacoes, chamado por fluxo.js) e como
-// primeira seção do plano de contratação (secaoRecomendacoes, em resumo.js).
-// v11: sem fonte de recursos; regras novas para ferramentas, internet, dispositivos, formação,
-// suporte, acompanhamento, prova de conceito e piloto juntos, implantação, arquitetura e expansão.
-// Páginas citadas: Krueger e Jackson (2026), só as já usadas no plano (ver plano/2_tco_unesco.md).
-// O texto em português é a chave de tradução (i18n/v10_r2_*.json e i18n/v11_s3_*.json).
-// v13 (pacote B3, i18n/v13_b3_*.json): plano de formação, problemas sem tarefa de IA, metas com lacunas, linha de base
-// sem medida e, nas 1.3.x "Em parte", a ação cita o "O que falta?" (estado.respDet).
-// Reimplementação: só as regras (parte pura). A global S virou o parâmetro `estado` de recValor, recRotulos,
-// recPorque, recContexto, recomendacoesCaso e secaoRecomendacoes; renderRecomendacoes, htmlRecs e cssRecs
-// (HTML) ficam fora do domínio (ui/Recommendation).
+// Recomendações do caso: motor que transforma as respostas DESTE caso em ações (v10–v13; pacote R2 do sistema de
+// recomendações, design/redesign/05-requisitos-recomendacoes.md, seções 3 e 6).
+// O catálogo de regras fica em ./regras/ (um arquivo por pacote, formato e lint em regras/index.js e regras/lint.js);
+// aqui ficam o contexto das regras (recContexto), a avaliação e a saída pública; a pontuação, os cartões, o veredito
+// e os grupos (pacote R3) vêm de rec_selecao.js:
+//   resultadoRecomendacoes(estado) → { recs, pend, suspensas, proxMarco, nivel, forma, arqEf, arqPresumida,
+//                                      cartoes, veredito, avisoCondicoes, grupos, baseComum, condicoes, vazio }
+//   recomendacoesCaso(estado)      → recs (a mesma lista; é o que as telas e o PDF já usam)
+// Cada item de `recs` (ordem da seção 4.1: pontos, marco mais próximo, pacote e número do R-nn; nunca a posição
+// no catálogo):
+//   id ('R-26'), versao, pacote, lente, titulo (do pacote), tipo ('custo'|'politica'|'uso'), substitui, variante,
+//   oque, razao, como[], paraque, pronto (textos em português, com os marcadores {…} preenchidos),
+//   quem[] (códigos de 3.4) e quemRot[] (rótulos), marco ('M1'..'M5') e marcoNome, pd, condicao (bool),
+//   nivel ('condicao'|'recomendada'|'acompanhar') e rotuloNivel ("Condição para autorizar o teste"; rotuloNivel(item, true)
+//   traduz), pontos (0–14) e criterio { bloqueio, pessoas, dinheiro, urgencia, dependencia, especificidade, semNumero }
+//   (4.1, auditoria), curto, depende, numero, exige, semExige, indicador, base, exemplosNorma,
+//   provisoria, etiqueta ("(presumida: confirme na 3.2.1)" ou ''), confirmar ("(a confirmar na pergunta n)" ou ''),
+//   generica, semNumero,
+//   origem { campo, n, pergunta, resposta, sugerido } (a pergunta e a resposta que dispararam a regra),
+//   chaves { oque, razao, como, paraque, pronto, vars } (para traduzir: trRec(item, campo)),
+//   e os campos antigos, mantidos até o pacote R6: quando ('antes_teste'|'antes_contratar'|'manter', do marco),
+//   prioridade (do nível: 'alta' = Condição, 'media' = as outras; PRIO_REC dá 'Condição' ou 'Recomendada', nunca
+//   "Alta"/"Média"; para os três níveis use `nivel` e `rotuloNivel`), texto (= oque), porque (= origem, sem o campo), ir ('fase:passo:n').
+// O texto em português é a chave de tradução (tr no domínio, t nas telas).
+// Reimplementação: só a parte pura (sem DOM); a global S virou o parâmetro `estado`.
 // =====================================================================
-import { OPC, tarefasDe, recomendarTeste, fmtInt } from './framework.js';
+import { OPC, tarefasDe, recomendarTeste, fmtInt, formaSupervisao, alertas, arquiteturaEscolhida } from './framework.js';
+import { numerosRec } from './rec_numeros.js';
 import { horasFormacaoEstimada } from './casos.js';
+import { clone } from './custos.js';
 import { PRIORIDADES, problemasMarcados, sugestoesProblemas, temLacuna } from './prioridades.js';
-import { RECS, ACOES_G, PRIORIDADE_G } from './plano_dados.js';
-import { QUESTOES_G, CAMPOS } from './fluxo_dados.js';
-import { tr } from './i18n.js';
-import { CAMPO_POR_ID, respondido, listaOpc, textoCampo, sugerido, fasePasso, casoAtual, perfil } from './fluxo.js';
+import { CAMPOS } from './fluxo_dados.js';
+import { tr, LOC } from './i18n.js';
+import { CAMPO_POR_ID, respondido, listaOpc, textoCampo, sugerido, fasePasso, casoAtual, perfil, cfgAtual, numerosCusto } from './fluxo.js';
+import {
+  REGRAS, REGRA_POR_ID, PENDENCIAS, PACOTES, LENTES, AREAS, MARCOS, EXIGE, ORDEM_PACOTE, ORDEM_MARCO, LENTE_PACOTE, TITULO_PACOTE,
+  NOME_MARCO, QUANDO_MARCO, mapaLegado, textosRegras,
+} from './regras/index.js';
+import { lintRegra, lintCatalogo } from './regras/lint.js';
+import {
+  pontuar, compararPontos, selecao, rotuloNivel, rotuloNivelCurto, trVeredito, trAviso, pendenciasSugeridas as pendenciasSugeridasSel, TEXTOS_REC_R3 as TEXTOS_SEL_R3,
+} from './rec_selecao.js';
 
 const QUANDO_REC = [['antes_teste', 'Antes do teste'], ['antes_contratar', 'Antes de contratar'], ['manter', 'Para manter e ampliar']];
 const TIPO_REC = { custo: 'Custo e compra', politica: 'Política e governança' };
-const PRIO_REC = { alta: 'Alta', media: 'Média' };
+// rótulo do nível pelo campo de compatibilidade `prioridade` (REC-19: sem "Alta", "Média" nem "Normal")
+const PRIO_REC = { alta: 'Condição', media: 'Recomendada', condicao: 'Condição', recomendada: 'Recomendada', acompanhar: 'Para acompanhar' };
 const TIT_REC = 'Recomendações para você';
 const TXT_REC = {
-  intro: 'Ações para este caso, geradas a partir das suas respostas. Comece pelas de prioridade alta. Cada ação mostra a pergunta e a resposta que a originou: se mudar a resposta, a lista muda.',
-  introPlano: 'Ações geradas a partir das respostas deste caso, por momento e prioridade. As listas dos blocos A e B, a seguir, servem de referência completa.',
+  intro: 'Ações para este caso, geradas a partir das suas respostas. Comece pelas condições. Cada ação mostra a pergunta e a resposta que a originou: se mudar a resposta, a lista muda.',
+  introPlano: 'Ações geradas a partir das respostas deste caso, por momento e prioridade. As listas do guia, nas seções seguintes, servem de referência completa.',
   vazio: 'Ainda não há respostas suficientes para recomendar ações. Responda às perguntas das fases 1 a 4.',
-  negrito: 'Em negrito: prioridade alta.',
+  negrito: 'Em negrito: condições para avançar.',
   ir: 'Ir à pergunta',
   porque: 'Por quê:',
 };
-
-// Ações que não dependem de texto novo vêm de plano_dados.js (já traduzidas)
-const recTxt = id => ((typeof RECS !== 'undefined' ? RECS : []).find(r => r.id === id) || {}).texto || '';
-
-// Regras do caso. se(k): condição; campo: pergunta que originou a ação; vals(k): respostas a citar.
-// quando, prioridade e texto podem ser funções de k.
-const REGRAS_REC = [
-  // 1.2 Prioridade e impacto
-  { id: 'linha-base', campo: 'linhaBase', tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('linhaBase') === 'nao',
-    texto: 'Medir o problema antes do teste, por escola ou turma: sem linha de base, não há como saber se a IA ajudou.' },
-  { id: 'linha-base-parcial', campo: 'linhaBase', tipo: 'politica', quando: 'antes_teste', prioridade: 'media', se: k => k.v('linhaBase') === 'parcial',
-    texto: 'Completar a linha de base com dados medidos nas escolas do teste antes de começar.' },
-  { id: 'alternativa', campo: 'alternativa', tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.v('alternativa') === 'nao',
-    texto: 'Comparar ao menos uma alternativa sem IA, em custo e resultado esperado, antes de decidir a compra.' },
-  // v13: regras que nascem das prioridades, dos problemas e dos detalhes do passo 1.2 (RQ-09, RQ-10, RQ-20)
-  { id: 'formacao-plano', campo: k => k.formacaoDe.campo, vals: k => k.formacaoDe.vals, tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => !!(k.sp && k.sp.formacao),
-    texto: 'Montar um plano de formação antes do teste, com público, conteúdo, horas e responsáveis: os problemas marcados dependem de formar pessoas (camada 6).' },
-  { id: 'sem-ferramenta', campo: 'problemas', vals: k => k.probs.map(q => q.t), tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => !!(k.sp && k.sp.semFerramenta),
-    texto: 'Considerar resolver os problemas marcados com regras e processos antes de comprar uma ferramenta de IA: eles não dependem de uma tarefa feita pela IA.' },
-  { id: 'metas-lacunas', campo: 'resultado', vals: () => ['Com lacunas a completar'], tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.metasLacuna,
-    texto: 'Completar as metas com os números da rede (valores atuais, metas e prazos) antes do teste: sem eles, não há critério de sucesso.' },
-  { id: 'linha-base-medida', campo: 'linhaBase', tipo: 'politica', quando: 'antes_teste', prioridade: 'media', se: k => ['sim', 'parcial'].includes(k.v('linhaBase')) && !k.medidaBase,
-    texto: 'Registrar qual medida serve de linha de base (instrumento, ano e turmas): sem ela, não há como comparar o resultado do teste.' },
-  // 2.0 Prova de conceito e/ou piloto (recomendarTeste, guia cap. 14)
-  { id: 'teste-recomendado', campo: 'testes', vals: k => k.testes, tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.teste === 'recomendar',
-    texto: k => k.rec.modo === 'poc' ? 'Começar por uma prova de conceito, como indicam as respostas, antes de envolver escolas e estudantes.'
-      : k.rec.modo === 'ambos' ? 'Começar por uma prova de conceito e, se ela cumprir os critérios de sucesso, fazer um piloto em poucas escolas.'
-      : 'Começar por um piloto em poucas escolas, com critérios de sucesso e de parada definidos antes.' },
-  { id: 'teste-rever', campo: 'testes', vals: k => k.testes, tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.teste === 'piloto' && ['poc', 'ambos'].includes(k.rec.modo),
-    texto: 'Rever a escolha do piloto: pelas respostas, uma prova de conceito deveria vir antes.' },
-  { id: 'teste-piloto-possivel', campo: 'testes', vals: k => k.testes, tipo: 'politica', quando: 'antes_teste', prioridade: 'media', se: k => k.teste === 'poc' && k.rec.modo === 'piloto',
-    texto: 'As respostas já permitem um piloto: mantenha a prova de conceito só se houver uma dúvida técnica a resolver.' },
-  { id: 'teste-ambos', campo: 'testes', vals: k => k.testes, tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.teste === 'ambos' || (k.teste === 'recomendar' && k.rec.modo === 'ambos'),
-    texto: 'Tratar prova de conceito e piloto como decisões separadas, com critérios de sucesso próprios: o piloto só começa se a prova de conceito cumprir os seus.' },
-  { id: 'teste-ambos-contrato', campo: 'testes', vals: k => k.testes, tipo: 'custo', quando: 'antes_teste', prioridade: 'media', se: k => k.teste === 'ambos',
-    texto: 'Acordar com o fornecedor que a prova de conceito não obriga a fazer o piloto nem a comprar, e o preço de cada etapa.' },
-  // 2.3 Adoção: ferramentas
-  { id: 'ferramentas-levantar', campo: k => k.v('conheceFerramentas') === 'nao' ? 'conheceFerramentas' : 'nFerramentas', tipo: 'custo', quando: 'antes_teste', prioridade: 'media',
-    se: k => k.v('conheceFerramentas') === 'nao' || k.v('nFerramentas') === 'nao_sei',
-    texto: 'Listar as ferramentas candidatas e as tarefas de cada uma antes do teste: o custo depende de quantas forem e de como são pagas.' },
-  { id: 'ferramentas-interop', campo: k => k.ferr.length > 1 ? 'ferramentas' : 'nFerramentas', vals: k => k.ferr.length > 1 ? k.ferr.map(f => f.nome) : [k.v('nFerramentas')],
-    tipo: 'politica', quando: 'antes_contratar', prioridade: 'alta', se: k => k.variasFerr,
-    texto: 'Exigir interoperabilidade entre as ferramentas e aplicar uma só política de dados a todas elas: acesso, guarda, exclusão e proibição de treinar modelos.' },
-  { id: 'ferramentas-sobrepostas', campo: k => k.ferr.length > 1 ? 'ferramentas' : 'nFerramentas', vals: k => k.ferr.length > 1 ? k.ferr.map(f => f.nome) : [k.v('nFerramentas')],
-    tipo: 'custo', quando: 'antes_contratar', prioridade: k => k.sobrepostas ? 'alta' : 'media', se: k => k.variasFerr,
-    texto: 'Verificar se as ferramentas cobrem as mesmas tarefas e evitar pagar licenças sobrepostas.' },
-  { id: 'ferramentas-cotacao', campo: 'ferramentas', vals: k => k.semPreco.map(f => f.nome), tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.semPreco.length > 0,
-    texto: 'Pedir cotação por escrito das ferramentas pagas sem preço informado: até lá, a estimativa usa um preço de exemplo.' },
-  // 2.3 Adoção: tecnologia, pagamento, licença e adaptação da ferramenta principal
-  { id: 'tecnologia', campo: 'tipoTec', tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('tipoTec') === 'nao_sei',
-    texto: 'Fazer uma consulta ao mercado e uma prova de conceito para escolher a tecnologia antes de qualquer piloto.' },
-  { id: 'gratis-adiados', campo: k => k.v('pagamento') === 'gratuito' ? 'pagamento' : 'tipoTec', tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.gratis,
-    texto: 'Listar os custos que a gratuidade não cobre e apenas adia: formação, integração, proteção de dados e suporte (Krueger e Jackson, 2026, p. 7–8).' },
-  { id: 'gratis-fim', campo: 'pagamento', tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('pagamento') === 'gratuito',
-    texto: 'Acordar por escrito o preço e as condições para quando o período gratuito terminar, antes de começar o teste.' },
-  { id: 'gratis-ativos', campo: 'pagamento', tipo: 'politica', quando: 'antes_teste', prioridade: 'media', se: k => k.v('pagamento') === 'gratuito',
-    texto: () => recTxt('r-ativos') || 'Acordar o destino dos dados e dos materiais se o fornecedor não for escolhido.' },
-  { id: 'publica', campo: 'tipoTec', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('tipoTec') === 'publica',
-    texto: 'Confirmar quem mantém a plataforma pública, por quanto tempo e o que fica a cargo da rede.' },
-  { id: 'termos', campo: 'licenca', tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.v('licenca') === 'termos',
-    texto: 'Termos de uso padrão não bastam: negocie um contrato em que termos online não alterem as condições materiais.' },
-  { id: 'licenca-indefinida', campo: 'licenca', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('licenca') === 'nao_sei',
-    texto: 'Definir o tipo de licença antes de contratar: quem pode usar, por quanto tempo e o que acontece com os dados.' },
-  { id: 'lic-usuario', campo: 'pagamento', tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.v('pagamento') === 'usuario',
-    texto: 'Comparar o custo por licença paga com o custo por pessoa que de fato usa: licenças não usadas são desperdício (Krueger e Jackson, 2026, p. 3).' },
-  { id: 'lic-usuario-rever', campo: 'pagamento', tipo: 'custo', quando: 'manter', prioridade: 'media', se: k => k.v('pagamento') === 'usuario',
-    texto: 'Rever a cada semestre as licenças sem uso e cancelar ou realocar as que sobram.' },
-  { id: 'lic-institucional', campo: 'pagamento', tipo: 'custo', quando: 'manter', prioridade: 'media', se: k => k.v('pagamento') === 'institucional',
-    texto: 'Acompanhar quantas pessoas usam de fato e renegociar o valor se a adoção ficar abaixo do previsto.' },
-  { id: 'consumo-limites', campo: 'pagamento', tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.v('pagamento') === 'consumo',
-    texto: 'Exigir no contrato limite de gasto, alertas e relatório mensal de consumo, visíveis antes da fatura.' },
-  { id: 'consumo-monitorar', campo: 'pagamento', tipo: 'custo', quando: 'manter', prioridade: 'alta', se: k => k.v('pagamento') === 'consumo',
-    texto: 'Monitorar o custo de uso todo mês: cada uso é cobrado e o valor cresce com a adoção (Krueger e Jackson, 2026, p. 6).' },
-  { id: 'incluida', campo: 'pagamento', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('pagamento') === 'incluida',
-    texto: 'Verificar se o preço da plataforma que a rede já paga muda com a IA e em que unidade passa a ser cobrado.' },
-  { id: 'aberta-operacao', campo: 'tipoTec', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('tipoTec') === 'aberta',
-    texto: 'Definir quem vai operar o modelo aberto: se um só integrador fizer tudo, a dependência apenas muda de lugar.' },
-  { id: 'sob-medida', campo: 'adaptacao', tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.v('adaptacao') === 'sob_medida',
-    texto: 'Garantir no contrato que código e configurações são da rede, com documentação e transferência de conhecimento à equipe.' },
-  { id: 'integracao', campo: 'adaptacao', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('adaptacao') === 'integracao',
-    texto: 'Exigir interoperabilidade com os sistemas da rede e exportação de dados e configurações em formato aberto.' },
-  // 2.4 Infraestrutura e dispositivos (camada 3). Condições de base: Krueger e Jackson (2026, p. 7)
-  { id: 'internet-parcial', campo: 'internet', vals: k => k.valsInternet, tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('internet') === 'parcial',
-    texto: 'Levantar as escolas sem internet adequada e orçar a conexão antes do teste: as condições de base costumam ser o primeiro custo (Krueger e Jackson, 2026, p. 7).' },
-  { id: 'internet-nao', campo: 'internet', tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('internet') === 'nao',
-    texto: 'Orçar a conexão das escolas antes do teste ou escolher uma ferramenta que funcione sem internet (Krueger e Jackson, 2026, p. 7).' },
-  { id: 'internet-teste', campo: 'internet', vals: k => k.valsInternet, tipo: 'politica', quando: 'antes_teste', prioridade: 'media', se: k => ['parcial', 'nao'].includes(k.v('internet')) && !k.poc,
-    texto: 'Escolher as escolas do piloto incluindo algumas com internet fraca, para que o resultado valha também para elas.' },
-  { id: 'disp-nao', campo: 'dispExistem', tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('dispExistem') === 'nao' && k.v('modeloDisp') !== 'proprio',
-    texto: 'Orçar a compra dos dispositivos e planejar a reposição ao longo dos anos de uso: dispositivos têm vida útil e precisam de manutenção.' },
-  { id: 'disp-parcial', campo: 'dispExistem', tipo: 'custo', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('dispExistem') === 'parcial' && k.v('modeloDisp') !== 'proprio',
-    texto: 'Levantar quantos dispositivos faltam em cada escola e incluir a compra e a reposição no orçamento.' },
-  { id: 'disp-proprio', campo: 'modeloDisp', tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('modeloDisp') === 'proprio',
-    texto: 'Garantir acesso a quem não tem dispositivo próprio: depender de soluções das famílias pode ampliar desigualdades (Krueger e Jackson, 2026, p. 12).' },
-  { id: 'disp-compartilhado', campo: 'modeloDisp', tipo: 'politica', quando: 'antes_teste', prioridade: 'media', se: k => ['compartilhado', 'rotativo'].includes(k.v('modeloDisp')),
-    texto: 'Organizar a agenda de uso dos dispositivos compartilhados e definir quem os mantém carregados, atualizados e com contas separadas.' },
-  { id: 'disp-renovar', campo: 'dispExistem', tipo: 'custo', quando: 'manter', prioridade: 'media', se: k => ['nao', 'parcial'].includes(k.v('dispExistem')) && k.v('modeloDisp') !== 'proprio',
-    texto: () => recTxt('s-renovacao') || 'Planejar a renovação de dispositivos e infraestrutura.' },
-  // 2.5 Formação e capacidade das equipes (camada 6)
-  { id: 'formacao-pagador', campo: 'formacaoPaga', tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.v('formacaoPaga') === 'indefinido',
-    texto: 'Definir quem paga a formação antes de contratar: sem isso, ela costuma ficar fora do orçamento.' },
-  { id: 'formacao-contrato', campo: 'formacaoPaga', tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.v('formacaoPaga') === 'fornecedor',
-    texto: 'Incluir a formação no contrato, com horas por pessoa, conteúdo, público e formato definidos, e a formação de quem entrar depois.' },
-  { id: 'formacao-parceiro', campo: 'formacaoPaga', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('formacaoPaga') === 'parceiro',
-    texto: 'Formalizar com o parceiro o que a formação cobre e quem a mantém quando o apoio terminar.' },
-  { id: 'formacao-papeis', campo: 'formados', tipo: 'politica', quando: 'antes_teste', prioridade: 'media',
-    se: k => { const f = k.arr('formados'); return f.length > 0 && !f.includes('gestores') && !f.includes('tecnica'); },
-    texto: 'Formar também as equipes técnicas e de gestão que vão governar e manter a IA, e não só quem a usa (Krueger e Jackson, 2026, p. 3 e p. 12).' },
-  { id: 'formacao-dados', campo: 'formacaoTipo', tipo: 'politica', quando: 'antes_teste', prioridade: 'alta',
-    se: k => k.dadosEst && k.arr('formacaoTipo').length > 0 && !k.arr('formacaoTipo').includes('dados_etica'),
-    texto: 'Incluir proteção de dados e uso responsável na formação: o caso trata dados de estudantes.' },
-  { id: 'formacao-horas', campo: 'formacaoHoras', vals: k => [k.valHoras], tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => !!k.c.formacaoEstimativa && !!k.valHoras,
-    texto: 'Confirmar as horas de formação por pessoa com quem vai oferecer a formação: a estimativa usa um valor ilustrativo.' },
-  { id: 'formacao-continua', campo: 'formacaoTipo', tipo: 'politica', quando: 'manter', prioridade: 'media', se: k => k.arr('formacaoTipo').length > 0,
-    texto: 'Planejar formação contínua, e não única: as ferramentas mudam e as equipes se renovam (Krueger e Jackson, 2026, p. 6).' },
-  // 2.6 Operação e suporte (camada 7)
-  { id: 'suporte-sla', campo: 'suporteQuem', tipo: 'custo', quando: 'antes_contratar', prioridade: 'alta', se: k => k.v('suporteQuem') === 'fornecedor',
-    texto: 'Fixar no contrato os níveis de serviço do suporte: horário, canais, prazos de resposta e de solução, e o que acontece se não forem cumpridos.' },
-  { id: 'suporte-divisao', campo: 'suporteQuem', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('suporteQuem') === 'ambos',
-    texto: 'Dividir por escrito o que o suporte do fornecedor e o da rede atendem, com prazos de resposta para cada um.' },
-  { id: 'suporte-dedicado', campo: 'suporteNivel', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('suporteNivel') === 'dedicado' && k.v('suporteQuem') !== 'fornecedor',
-    texto: 'Reservar o tempo da equipe que fará o suporte dedicado: a estimativa conta essas pessoas como custo, mesmo que já sejam da rede.' },
-  { id: 'acomp-intensivo', campo: 'acompanhamento', tipo: 'custo', quando: 'antes_teste', prioridade: 'media', se: k => k.v('acompanhamento') === 'intensivo',
-    texto: 'Nomear quem faz o acompanhamento intensivo do uso e reservar o tempo dessa equipe no orçamento.' },
-  { id: 'acomp-reforcar', campo: 'acompanhamento', tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.v('acompanhamento') === 'leve' && (k.alto || k.consDecide.length > 0),
-    texto: 'Reforçar o acompanhamento do uso: com risco elevado ou decisões sobre estudantes, acompanhamento leve não basta.' },
-  // 2.1 e 2.2: dados de estudantes, decisões sobre estudantes, crianças
-  { id: 'dados-acordo', campo: k => k.campoDados, vals: k => k.valsDados, tipo: 'politica', quando: k => k.poc ? 'antes_contratar' : 'antes_teste', prioridade: 'alta', se: k => k.dadosEst,
-    texto: () => recTxt('r-acordo') || 'Assinar acordo de tratamento de dados que proíba usar os dados para treinar modelos.' },
-  { id: 'dados-base-legal', campo: k => k.campoDados, vals: k => k.valsDados, tipo: 'politica', quando: k => k.poc ? 'antes_contratar' : 'antes_teste', prioridade: 'alta', se: k => k.dadosEst,
-    texto: () => recTxt('r-baselegal') || 'Confirmar a base legal ou obter consentimento para usar os dados.' },
-  { id: 'dados-impacto', campo: k => k.campoDados, vals: k => k.valsDados, tipo: 'politica', quando: 'antes_contratar', prioridade: 'alta', se: k => k.dadosEst,
-    texto: () => recTxt('i-dpia') || 'Concluir a avaliação de impacto sobre a proteção de dados.' },
-  { id: 'supervisao', campo: 'consequencias', vals: k => k.consDecide, tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.consDecide.length > 0,
-    texto: 'Definir a supervisão humana: quem revisa cada saída antes de uma decisão sobre estudantes, com autoridade para mudá-la.' },
-  { id: 'contestacao', campo: 'consequencias', vals: k => k.consDecide, tipo: 'politica', quando: 'antes_teste', prioridade: 'alta', se: k => k.consDecide.length > 0,
-    texto: () => recTxt('i-contestacao') || 'Criar um caminho para contestar saídas e corrigir erros, com prazo e autoridade para rever.' },
-  { id: 'criancas', campo: 'afetados', vals: () => ['criancas'], tipo: 'politica', quando: 'antes_teste', se: k => (k.ce.afetados || []).includes('criancas'),
-    prioridade: k => (k.ce.usuarios || []).includes('estudantes') || k.pesoMax > 0 ? 'alta' : 'media',
-    texto: 'Aplicar as regras de proteção de crianças e adolescentes: uso adequado à idade e famílias informadas antes do teste.' },
-  // 3.1 Primeira etapa da implantação: começar por todo o sistema
-  { id: 'etapas', campo: 'implantacao', vals: k => [k.valImpl], tipo: 'custo', quando: 'antes_contratar', se: k => k.implTudo && k.eleg >= 5000,
-    prioridade: k => k.eleg >= 50000 ? 'alta' : 'media',
-    texto: 'Contratar por etapas: começar a implantação por um grupo de escolas, com critérios para avançar, em vez de todo o sistema de uma vez.' },
-  { id: 'implantacao-criterios', campo: 'implantacao', vals: k => [k.valImpl], tipo: 'politica', quando: 'antes_contratar', prioridade: 'media', se: k => k.implP > 0 && !k.implTudo,
-    texto: 'Definir antes da implantação os critérios para passar da primeira etapa à expansão: uso, resultado, custo por usuário e suporte.' },
-  // 3.2 Arquitetura e integração
-  { id: 'arquitetura-decidir', campo: 'arquitetura', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('arquitetura') === 'nao_sei',
-    texto: 'Decidir a arquitetura antes de contratar a implantação: ela muda quem integra, opera e paga cada parte.' },
-  { id: 'arquitetura-saas', campo: 'arquitetura', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('arquitetura') === 'saas',
-    texto: 'Exigir aviso prévio de mudanças do produto e direito de exportar dados e configurações ao final do contrato.' },
-  { id: 'arquitetura-api', campo: 'arquitetura', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('arquitetura') === 'api',
-    texto: 'Definir quem integra e governa a aplicação: com o modelo por API, essa parte fica com a rede ou com um integrador contratado.' },
-  { id: 'aberta-operacao', campo: 'arquitetura', tipo: 'custo', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('arquitetura') === 'ow',
-    texto: 'Definir quem vai operar o modelo aberto: se um só integrador fizer tudo, a dependência apenas muda de lugar.' },
-  // 4.1 Expansão
-  { id: 'expansao-rapida', campo: 'expansao', tipo: 'politica', quando: 'antes_contratar', prioridade: 'media', se: k => k.v('expansao') === 'ano1' && k.eleg >= 50000,
-    texto: 'Vincular a expansão aos resultados da primeira etapa: chegar a todos em um ano deixa pouco tempo para corrigir problemas.' },
-  { id: 'expansao-recorrente', campo: 'elegiveis', vals: k => [k.valEleg], tipo: 'custo', quando: 'manter', prioridade: 'media', se: k => k.eleg > 0,
-    texto: 'Prever e monitorar a cada ano o custo recorrente da expansão: licenças, suporte e formação crescem com o número de usuários (Krueger e Jackson, 2026, p. 6).' },
-];
 
 // ----------------------------------------------------------- respostas
 // Valor respondido de um campo ('' se não respondido). Campos com valor padrão só contam depois que a pessoa responde.
@@ -222,8 +78,9 @@ function recCampo(id) {
 }
 function recOpcoes(f, id) {
   if (!f) return (typeof OPC !== 'undefined' && id && OPC[id]) || [];
-  if (typeof listaOpc === 'function') return listaOpc(f);
-  return typeof f.opc === 'string' ? ((typeof OPC !== 'undefined' && OPC[f.opc]) || []) : (f.opc || []);
+  const L = typeof listaOpc === 'function' ? listaOpc(f) : typeof f.opc === 'string' ? ((typeof OPC !== 'undefined' && OPC[f.opc]) || []) : (f.opc || []);
+  // perguntas sem lista própria (3.2.1 é do tipo 'arq'): as opções de OPC com o mesmo id (REC-10: nunca "nao_sei" cru)
+  return L.length ? L : ((typeof OPC !== 'undefined' && OPC[f.id || id]) || []);
 }
 // Rótulo (PT) de cada valor da resposta
 // Rótulo (PT) de cada valor da resposta
@@ -234,7 +91,7 @@ function recRotulos(id, vals, estado) {
   return [].concat(vals == null ? [] : vals).map(v => {
     if (id === 'tarefas' && v === 'outra' && c.tarefaOutra) return c.tarefaOutra;
     const o = L.find(x => String(x[0]) === String(v));
-    return o ? o[1] : String(v);
+    return o ? o[1] : v === 'nao_sei' ? 'Não sei' : String(v);
   }).filter(Boolean);
 }
 function recIr(f) {
@@ -312,7 +169,9 @@ function recContexto(estado) {
   // horas de formação
   let h = +c.formacaoHoras || 0;
   if (c.formacaoEstimativa) { try { h = typeof horasFormacaoEstimada === 'function' ? horasFormacaoEstimada(ce) : h; } catch (e) { } }
-  const valHoras = h ? tr((c.formacaoEstimativa ? '{0} horas por pessoa (estimativa)' : '{0} horas por pessoa').replace('{0}', fmtR(h))) : '';
+  // horas com até uma casa decimal ("1,5 horas por pessoa", e não "2"): a estimativa por tarefa pode dar meia hora
+  const fmtH = x => (+x || 0).toLocaleString(LOC(), { maximumFractionDigits: 1 });
+  const valHoras = h ? tr((c.formacaoEstimativa ? '{0} horas por pessoa (estimativa)' : '{0} horas por pessoa').replace('{0}', fmtH(h))) : '';
   // primeira etapa da implantação (3.1)
   const im = c.implantacao || {};
   const implP = +im.pessoas || 0, implE = +im.escolas || 0;
@@ -330,56 +189,279 @@ function recContexto(estado) {
   const formacaoDe = pForm.length ? { campo: 'problemas', vals: pForm.map(q => q.t) } : { campo: 'prioridades', vals: prForm.map(z => z.nome) };
   const metasLacuna = typeof temLacuna === 'function' && temLacuna(c.resultado);
   const medidaBase = String(c.linhaBaseMedida || '').trim();
-  return { c, ce, rec, v, arr, p, alto: !!(p && p.alto), testes, teste, poc: modo === 'poc',
+  // R2 (REC-17): perfil de risco, supervisão, alertas, arquitetura efetiva, classes, escala e situação
+  const nivel = p ? p.agregado : '';
+  let forma = '';
+  try { forma = p ? formaSupervisao(ce, p) : ''; } catch (e) { console.warn(e); }
+  let als = [];
+  try { als = p ? alertas(ce, p) : []; } catch (e) { console.warn(e); }
+  // 'ow_api' (modelo aberto servido por API de terceiros) segue as regras de API; 'preditivo' ainda não tem exemplo de
+  // partida no motor e usa a arquitetura presumida (R8)
+  const arqEf = c.arquitetura === 'ow_api' ? 'api' : ['saas', 'api', 'ow'].includes(ce.arquitetura) ? ce.arquitetura : 'saas';
+  const arqPresumida = !arquiteturaEscolhida(c);
+  const usuarios = ce.usuarios || [], afetados = ce.afetados || [];
+  const impactos = arr('impactos');
+  const situacao = String(c.situacao || '');
+  const temPiloto = ['piloto', 'ambos'].includes(teste) || (['recomendar', ''].includes(teste) && ['piloto', 'ambos'].includes(rec.modo));
+  const resp = id => String((estado.resp || {})[id] || '');
+  const falta = id => String((((estado.respDet || {})[id]) || {}).falta || '').trim().replace(/\.$/, '');
+  const k = { c, ce, rec, v, arr, p, alto: !!(p && p.alto), testes, teste, poc: modo === 'poc', temPiloto,
     gratis: v('pagamento') === 'gratuito' || v('tipoTec') === 'publica',
     consDecide, pesoMax, dadosEst, campoDados, valsDados, eleg, ferr, variasFerr, sobrepostas, semPreco,
-    valsInternet, valHoras, implP, implTudo, valImpl, valEleg, probs, sp, formacaoDe, metasLacuna, medidaBase };
-}
-const recF = (x, k) => (typeof x === 'function' ? x(k) : x);
-const ORD_PRIO = { alta: 0, media: 1 };
-const ordQuando = q => QUANDO_REC.findIndex(z => z[0] === q);
-
-// Lista de recomendações do caso, sem duplicatas, por prioridade e depois por momento
-function recomendacoesCaso(estado) {
-  if (!estado || !estado.caso) return [];
-  const k = recContexto(estado);
-  const out = [], vistos = new Set();
-  const add = r => {
-    if (!r.texto || vistos.has(r.id) || vistos.has('t:' + r.texto)) return;
-    vistos.add(r.id); vistos.add('t:' + r.texto); out.push(r);
-  };
-  // 1.3 Governança: cada resposta Não, Em parte ou Não sei vira uma ação (textos de ACOES_G)
-  const gq = typeof QUESTOES_G !== 'undefined' ? QUESTOES_G : [];
-  gq.forEach(q => {
-    const resp = (estado.resp || {})[q.id];
-    if (!['nao', 'parcial', 'nao_sei'].includes(resp) || !(typeof ACOES_G !== 'undefined' && ACOES_G[q.id])) return;
-    const alta = typeof PRIORIDADE_G !== 'undefined' && PRIORIDADE_G[q.id] === 'alta';
-    const cedo = ['g-legislacao', 'g-dados'].includes(q.id) && k.dadosEst && !k.poc;
-    // v13 (RQ-11): com "Em parte" e o "O que falta?" preenchido, a ação cita o que falta (texto já traduzido)
-    const falta = resp === 'parcial' ? String((((estado.respDet || {})[q.id]) || {}).falta || '').trim().replace(/\.$/, '') : '';
-    add({ id: q.id, quando: cedo ? 'antes_teste' : 'antes_contratar', tipo: q.id === 'g-compras' ? 'custo' : 'politica', prioridade: alta ? 'alta' : 'media',
-      texto: falta ? tr(ACOES_G[q.id]) + ' ' + tr('O que falta:') + ' ' + falta + '.' : ACOES_G[q.id], porque: recPorque(q.id, [resp], estado), ir: recIr(recCampo(q.id)) });
-  });
-  REGRAS_REC.forEach(r => {
+    valsInternet, valHoras, implP, implTudo, valImpl, valEleg, probs, sp, formacaoDe, metasLacuna, medidaBase,
+    nivel, determinantes: p ? p.determinantes || [] : [], forma, alertas: als, arqEf, arqPresumida, classes: ce.classes || [],
+    tarefas: Array.isArray(c.tarefas) ? c.tarefas : [], usuarios, usaEst, afetados, criancas: afetados.includes('criancas'),
+    impactos, impactoEducacional: impactos.some(z => ['aprendizagem', 'permanencia', 'desigualdade', 'tempo_docente'].includes(z)),
+    escRede: +ce.escolasRede || 0, situacao, resp, falta, proxMarco: marcoDaSituacao(situacao, teste), pend: [], pendCampos: [],
+    // subproblemas marcados no passo 1.2 (estado.ctx.subs), para as regras que leem C4b e afins (R-52)
+    subs: Array.isArray(x.subs) ? x.subs : [] };
+  // números do caso: só quando alguma regra pede (cálculo do motor), uma vez por contexto
+  let memo = null;
+  Object.defineProperty(k, 'd', { enumerable: true, get() { if (!memo) memo = { d: numerosRec(estado) }; return memo.d; } });
+  // pendências (3.3, item 4): suspendem as regras que as `requer`em
+  PENDENCIAS.forEach(pd => {
     let ok = false;
-    try { ok = !!r.se(k); } catch (e) { console.warn(e); }
+    try { ok = !!pd.se(k); } catch (e) { console.warn(e); }
     if (!ok) return;
-    const campo = recF(r.campo, k);
-    const vals = r.vals ? r.vals(k) : k.v(campo);
-    add({ id: r.id, quando: recF(r.quando, k), tipo: r.tipo, prioridade: recF(r.prioridade, k), texto: recF(r.texto, k),
-      porque: recPorque(campo, vals, estado), ir: recIr(recCampo(campo)) });
+    const pq = recPorque(pd.campo, k.v(pd.campo), estado);
+    k.pend.push({ id: pd.id, campo: pd.campo, n: pq.n, pergunta: pq.pergunta, resposta: pq.resposta, motivo: pd.motivo, suspende: [], ir: recIr(recCampo(pd.campo)) });
+    k.pendCampos.push(pd.campo);
   });
-  return out.map((r, i) => [r, i])
-    .sort((a, b) => (ORD_PRIO[a[0].prioridade] - ORD_PRIO[b[0].prioridade]) || (ordQuando(a[0].quando) - ordQuando(b[0].quando)) || (a[1] - b[1]))
-    .map(z => z[0]);
+  return k;
 }
+
+// marco pela situação do caso (1.1.3), quando não há Condição aberta (3.5)
+function marcoDaSituacao(situacao, teste) {
+  if (situacao === 'renovar') return 'M5';
+  if (situacao === 'orcamento') return teste ? 'M1' : 'M3';
+  return 'M1';
+}
+
+// Números do caso para as regras (k.d): rec_numeros.js (pacote R5).
+
+// ----------------------------------------------------------- avaliação das regras
+const ETIQUETA_PRESUMIDA = '(presumida: confirme na 3.2.1)';
+const A_CALCULAR = 'a calcular';
+const TXT_FALTA = 'O que falta:';
+function seguro(f, ...a) { try { return f(...a); } catch (e) { console.warn(e); return undefined; } }
+const valorDe = (x, k) => (typeof x === 'function' ? seguro(x, k) : x);
+// {nome} → vars[nome]; sem valor, "a calcular" (traduzido quando `trad`)
+function preencher(s, vars, trad) {
+  let falta = false;
+  const out = String(s == null ? '' : s).replace(/\{([a-zA-Z0-9_]+)\}/g, (m, n) => {
+    if (vars && vars[n] != null && vars[n] !== '') return String(vars[n]);
+    falta = true; return trad ? tr(A_CALCULAR) : A_CALCULAR;
+  });
+  return { s: out, falta };
+}
+// passo: texto (chave) ou { texto, falta } (com o "O que falta?" de uma resposta "Em parte")
+function textoPasso(p, vars, trad) {
+  const T = x => (trad ? tr(x) : x);
+  if (p && typeof p === 'object') return preencher(T(p.texto), vars, trad).s + (p.falta ? ' ' + T(TXT_FALTA) + ' ' + p.falta + '.' : '');
+  return preencher(T(p), vars, trad).s;
+}
+const numId = id => +String(id).replace(/\D/g, '') || 0;
+const nivelDe = (condicao, marco) => (condicao ? 'condicao' : marco === 'M5' ? 'acompanhar' : 'recomendada');
+
+/** escolhe a variante: a primeira cujo quando(k) é verdadeiro; a última (sem quando) é a padrão */
+function varianteDe(r, k) {
+  const V = r.variantes || [];
+  const i = V.findIndex(v => !v.quando || !!seguro(v.quando, k));
+  return i < 0 ? null : { v: V[i], i };
+}
+
+/** monta o item de saída de uma regra disparada */
+function montarItem(r, esc, k, estado) {
+  const { v, i } = esc;
+  const marco = v.marco || valorDe(r.marco, k) || 'M1';
+  const condicao = r.condicao ? !!seguro(r.condicao, k) : false;
+  const nivel = nivelDe(condicao, marco);
+  const o = (v.origem || r.origem) ? seguro(v.origem || r.origem, k) : null;
+  const campo = (o && o.campo) || r.campos[0];
+  const vals = o && o.vals != null ? o.vals : k.v(campo);
+  const porque = recPorque(campo, vals, estado);
+  const vars = r.vars ? seguro(r.vars, k, k.d) || {} : {};
+  const numero = r.numero ? seguro(r.numero, k, k.d) || null : null;
+  const passosCaso = r.passos ? seguro(r.passos, k) || [] : [];
+  const comoChaves = (v.como || []).concat(passosCaso);
+  const fOque = preencher(v.oque, vars), fRazao = preencher(v.porque, vars);
+  const quem = (v.quem || r.quem || []).slice();
+  const provisoria = r.provisoria ? !!seguro(r.provisoria, k) : false;
+  const paraque = v.paraque || r.paraque || '', pronto = v.pronto || r.pronto || '';
+  const curto = v.curto || r.curto || '';
+  return {
+    id: r.id, versao: r.versao, pacote: r.pacote, lente: LENTE_PACOTE[r.pacote], titulo: TITULO_PACOTE[r.pacote], tipo: r.tipo,
+    substitui: (r.substitui || []).slice(), variante: i,
+    oque: fOque.s, razao: fRazao.s, como: comoChaves.map(z => textoPasso(z, vars, false)),
+    paraque: preencher(paraque, vars).s, pronto: preencher(pronto, vars).s,
+    quem, quemRot: quem.map(q => AREAS[q] || q), marco, marcoNome: NOME_MARCO[marco] || '', pd: r.pd || null,
+    condicao, nivel, rotuloNivel: rotuloNivel(nivel, marco), pontos: 0, criterio: null, curto: preencher(curto, vars).s,
+    depende: (r.depende || []).slice(), numero,
+    exige: (r.exige || []).slice(), semExige: r.semExige || '', indicador: r.indicador || null, base: (r.base || []).slice(),
+    exemplosNorma: r.exemplosNorma || null, provisoria, etiqueta: provisoria && k.arqPresumida ? ETIQUETA_PRESUMIDA : '',
+    confirmar: '', generica: !!r.generica, semNumero: fOque.falta || fRazao.falta,
+    origem: Object.assign({ campo }, porque),
+    chaves: { oque: v.oque, razao: v.porque, como: comoChaves, paraque, pronto, curto, vars },
+    // compatibilidade (telas, PDF e seções atuais)
+    quando: QUANDO_MARCO[marco] || 'antes_teste', prioridade: PRIORIDADE_NIVEL[nivel], texto: fOque.s, porque, ir: recIr(recCampo(campo)),
+  };
+}
+
+// campo de compatibilidade `prioridade` (telas e PDF atuais destacam 'alta'): 'alta' só para as Condições; as outras
+// ficam 'media' (o rótulo do nível de verdade é `rotuloNivel`/`nivel`; o pacote R6 troca as telas e o PDF)
+const PRIORIDADE_NIVEL = { condicao: 'alta', recomendada: 'media', acompanhar: 'media' };
+
+// ----------------------------------------------------------- pendências (3.3, item 4)
+const ARQS_EFEITO = ['saas', 'api', 'ow'];
+/**
+ * Efeito no custo de responder a 3.2.1: o custo total do caso em cada arquitetura (3.3, item 4; TEC-03). null quando o
+ * custo foi editado no Refinar ou parte de um modelo pronto (o efeito não seria o do caso) ou quando não há números.
+ */
+function efeitoArquitetura(estado) {
+  const sc = estado.custo;
+  if (sc && (sc.editado || (sc.base && sc.base !== 'caso'))) return null;
+  const rot = a => ((typeof OPC !== 'undefined' && OPC.arquitetura) || []).find(x => x[0] === a);
+  const valores = ARQS_EFEITO.map(a => {
+    const E = Object.assign({}, estado, { caso: Object.assign({}, estado.caso, { arquitetura: a }), custo: undefined });
+    const n = numerosRec(E);
+    return n ? { arq: a, rotulo: (rot(a) || [a, a])[1], total: n.total, ano0: n.ano0 } : null;
+  });
+  if (valores.some(x => !x)) return null;
+  return { rotulo: TXT_PEND.efeitoArq, valores };
+}
+const TXT_PEND = {
+  efeitoArq: 'Custo total do caso em cada arquitetura',
+};
+// tipo da pendência: premissa que o custo já usa (arquitetura presumida) ou resposta "não sei"
+const TIPO_PEND = { arquitetura: 'premissa' };
+/** Completa as pendências: tipo, efeito no custo (arquitetura, calculado só quando lido) e as respostas sugeridas. */
+function completarPendencias(pend, estado) {
+  pend.forEach(p => {
+    p.tipo = TIPO_PEND[p.campo] || 'nao_sei';
+    if (p.campo === 'arquitetura') {
+      let memo;
+      Object.defineProperty(p, 'efeito', { enumerable: true, configurable: true, get() { if (memo === undefined) memo = efeitoArquitetura(estado); return memo; } });
+    }
+  });
+  return pend;
+}
+// caso em branco (3.3, item 4): as 3 perguntas que mais liberam ações
+const PERGUNTAS_VAZIO = ['testes', 'tarefas', 'pagamento'];
+function perguntasVazio(estado) {
+  return PERGUNTAS_VAZIO.map(id => {
+    const f = recCampo(id);
+    const pergunta = f ? (typeof textoCampo === 'function' ? textoCampo(f, (estado || {}).caso) : f.t) : '';
+    return { campo: id, n: f ? f.n : '', pergunta, ir: recIr(f) };
+  });
+}
+
+/**
+ * Resultado completo das recomendações do caso. `regras` (opcional) troca o catálogo (testes de ordem e de regras novas).
+ * → { recs, pend, suspensas: [{ id, campos }], proxMarco, nivel, forma, arqEf, arqPresumida,
+ *     cartoes, veredito, avisoCondicoes, grupos, baseComum, condicoes, vazio }  (formato em rec_selecao.js)
+ */
+function resultadoRecomendacoes(estado, regras) {
+  if (!estado || !estado.caso) {
+    const sel = selecao([], { proxMarco: 'M1' }, { perguntas: perguntasVazio(estado) });
+    return { recs: [], pend: [], suspensas: [], proxMarco: 'M1', nivel: '', forma: '', arqEf: '', arqPresumida: false,
+      cartoes: [], veredito: sel.veredito, avisoCondicoes: null, grupos: [], baseComum: [], condicoes: [], vazio: sel.vazio };
+  }
+  const k = recContexto(estado);
+  const R = regras || REGRAS;
+  // 1ª passada: gatilho, suspensão por pendência, variante, marco e condição
+  const disparadas = [], suspensas = [];
+  R.forEach(r => {
+    if (!seguro(r.se, k)) return;
+    const req = (r.requer || []).filter(c => k.pendCampos.includes(c));
+    if (req.length) {
+      suspensas.push({ id: r.id, campos: req });
+      k.pend.forEach(p => { if (req.includes(p.campo) && !p.suspende.includes(r.id)) p.suspende.push(r.id); });
+      return;
+    }
+    if (!varianteDe(r, k)) return;
+    disparadas.push(r);
+  });
+  const porId = Object.fromEntries(R.map(r => [r.id, r]));
+  // próximo marco: o primeiro com Condição aberta; sem nenhuma, o da situação do caso (3.5)
+  const marcosCond = disparadas.filter(r => r.condicao && seguro(r.condicao, k)).map(r => { const e = varianteDe(r, k); return (e && e.v.marco) || valorDe(r.marco, k) || 'M1'; });
+  if (marcosCond.length) k.proxMarco = marcosCond.sort((a, b) => ORDEM_MARCO[a] - ORDEM_MARCO[b])[0];
+  // 2ª passada: textos (as variantes podem ler k.proxMarco)
+  const itens = disparadas.map(r => { const e = varianteDe(r, k); return e ? montarItem(r, e, k, estado) : null; }).filter(Boolean);
+  // pontuação de 4.1 (REC-18) e a ordem que dela decorre
+  pontuar(itens, k, id => porId[id]);
+  itens.sort((a, b) => compararPontos(a, b, k.proxMarco));
+  const out = [], vistos = new Set();
+  itens.forEach(it => { if (!it.oque || vistos.has(it.id) || vistos.has('t:' + it.oque)) return; vistos.add(it.id); vistos.add('t:' + it.oque); out.push(it); });
+  // pendências: tipo, efeito no custo e as respostas sugeridas que disparam ações (3.3, item 4)
+  const pend = completarPendencias(k.pend, estado).concat(pendenciasSugeridasDe(out));
+  // cartões, veredito, aviso, grupos e caso em branco (REC-20 a REC-24)
+  const sel = selecao(out, k, { perguntas: perguntasVazio(estado) });
+  return { recs: out, pend, suspensas: suspensas.sort((a, b) => numId(a.id) - numId(b.id)), proxMarco: k.proxMarco,
+    nivel: k.nivel, forma: k.forma, arqEf: k.arqEf, arqPresumida: k.arqPresumida,
+    cartoes: sel.cartoes, veredito: sel.veredito, avisoCondicoes: sel.avisoCondicoes, grupos: sel.grupos, baseComum: sel.baseComum,
+    condicoes: sel.condicoes, vazio: sel.vazio };
+}
+
+// Lista de recomendações do caso (a mesma de resultadoRecomendacoes(estado).recs)
+function recomendacoesCaso(estado) { return resultadoRecomendacoes(estado).recs; }
+
+/**
+ * Texto traduzido de um campo do item: 'oque' | 'razao' | 'paraque' | 'pronto' → texto; 'como' → lista de passos.
+ * Traduz a chave e depois preenche os marcadores (o texto em português do item já vem preenchido).
+ */
+function trRec(item, campo) {
+  const ch = (item && item.chaves) || null;
+  if (!ch) { const x = item ? item[campo === 'oque' ? 'texto' : campo] : ''; return campo === 'como' ? (x || []).map(z => tr(z)) : tr(x || ''); }
+  if (campo === 'como') return (ch.como || []).map(z => textoPasso(z, ch.vars, true));
+  return preencher(tr(ch[campo] || ''), ch.vars, true).s;
+}
+/**
+ * Cartão traduzido (para as telas e o PDF): { titulo, rotuloNivel, oque, razao, paraque, pronto, como[], quem[], etiqueta,
+ * passos: [{ id, oque, origem }] } — a origem como "n Pergunta — Resposta".
+ */
+function trCartao(c) {
+  if (!c) return null;
+  const L = c.lider;
+  return {
+    titulo: tr(c.titulo), rotuloNivel: rotuloNivel(c.nivel, c.marco, true), oque: trRec(L, 'oque'), razao: trRec(L, 'razao'),
+    paraque: trRec(L, 'paraque'), pronto: trRec(L, 'pronto'), como: trRec(L, 'como'), quem: rotuloQuem(c.quem),
+    etiqueta: trEtiqueta(c.etiqueta), origem: recPorqueTexto(L),
+    passos: (c.passos || []).map(p => ({ id: p.id, oque: trRec(p.item, 'oque'), origem: recPorqueTexto(p.item) })),
+  };
+}
+// "(presumida: confirme na 3.2.1) (a confirmar na pergunta 2.1.1)" traduzido parte a parte
+function trEtiqueta(s) {
+  return String(s || '').split(/(?<=\))\s+(?=\()/).filter(Boolean).map(x => {
+    const m = x.match(/^\(a confirmar na pergunta (.+)\)$/);
+    return m ? tr('(a confirmar na pergunta {n})').replace('{n}', m[1]) : tr(x);
+  }).join(' ');
+}
+/** rótulos traduzidos de "quem age" (3.4) */
+function rotuloQuem(codigos) { return (codigos || []).map(q => tr(AREAS[q] || q)); }
+
+// Vista de compatibilidade do catálogo para o store (perguntas.ts:afetadosPor) e testes antigos: uma entrada por campo
+// de origem, { id, campo, tipo, pacote }. O catálogo de verdade é REGRAS (ids únicos).
+const REGRAS_REC = REGRAS.flatMap(r => (r.campos || []).map(campo => ({ id: r.id, campo, tipo: r.tipo, pacote: r.pacote })));
+
+// Textos novos do pacote R2 (chaves de tradução para o orquestrador): catálogo, pendências, rótulos e mensagens do motor
+// e as frases novas do R1 fora do catálogo (plano/secoes.js, plano_dados.js; as de plano/relatorio.js estão em TXT_REL)
+// pendências das respostas sugeridas (rec_selecao.js)
+function pendenciasSugeridasDe(itens) { return pendenciasSugeridasSel(itens); }
+
+const TEXTOS_REC_R2 = textosRegras().concat([ETIQUETA_PRESUMIDA, A_CALCULAR, TXT_REC.introPlano,
+  'Camada de saída do custo total:', 'Desembolso de transição e saída, em preços correntes:',
+  'Confirmar a base legal para usar os dados; o consentimento só cabe se o uso for opcional e recusar não trouxer prejuízo.',
+  'Usar o checklist “O que exigir” deste plano neste caso e, depois, adotar uma orientação de compras de IA da rede, com custo do ciclo de vida, diligência e cláusulas de dados e de saída.']);
+
+// Textos novos do pacote R3: seleção e veredito (rec_selecao.js), pendências e as frases trocadas em TXT_REC
+const TEXTOS_REC_R3 = TEXTOS_SEL_R3.concat([TXT_PEND.efeitoArq, TXT_REC.intro, TXT_REC.negrito, 'Para acompanhar']);
 
 // ----------------------------------------------------------- textos traduzidos
 const recTrPartes = s => String(s || '').split('; ').map(z => tr(z)).join('; ');
-// "1.3.2 Pergunta? → Resposta" já traduzido
+// "1.3.2 Pergunta? — Resposta" já traduzido (origem da ação; REC-11: sem "→", que o PDF trocava por "->")
 function recPorqueTexto(r) {
   const p = r.porque || {};
-  return [p.n, tr(p.pergunta)].filter(Boolean).join(' ') + (p.resposta ? ' → ' + recTrPartes(p.resposta) : '') + (p.sugerido ? ' (' + tr('sugerido') + ')' : '');
+  return [p.n, tr(p.pergunta)].filter(Boolean).join(' ') + (p.resposta ? ' — ' + recTrPartes(p.resposta) : '') + (p.sugerido ? ' (' + tr('sugerido') + ')' : '');
 }
 function recContagem(recs) {
   const n = { custo: 0, politica: 0 };
@@ -403,4 +485,13 @@ function secaoRecomendacoes(recs, estado) {
     pos: rows.length ? [TXT_REC.negrito] : null };
 }
 
-export { QUANDO_REC, TIPO_REC, PRIO_REC, TIT_REC, TXT_REC, REGRAS_REC, REC_CAMPO_V13, recValor, recCampo, recOpcoes, recRotulos, recIr, recPorque, recTestes, recTesteDe, recFerramentas, recPagaFerr, recContexto, recomendacoesCaso, recPorqueTexto, recContagem, secaoRecomendacoes };
+export {
+  QUANDO_REC, TIPO_REC, PRIO_REC, TIT_REC, TXT_REC, REGRAS_REC, REC_CAMPO_V13, recValor, recCampo, recOpcoes, recRotulos, recIr, recPorque, recTestes,
+  recTesteDe, recFerramentas, recPagaFerr, recContexto, recomendacoesCaso, recPorqueTexto, recContagem, secaoRecomendacoes,
+  // R2: catálogo, saída completa e apoio aos pacotes seguintes
+  REGRAS, REGRA_POR_ID, resultadoRecomendacoes, trRec, rotuloQuem, marcoDaSituacao, mapaLegado, textosRegras, lintRegra, lintCatalogo,
+  TEXTOS_REC_R2, PACOTES as PACOTES_REC, LENTES as LENTES_REC, AREAS as AREAS_REC, MARCOS as MARCOS_REC, EXIGE as EXIGE_REC,
+  PENDENCIAS as PENDENCIAS_REC,
+  // R3: pontuação, níveis, cartões, veredito e grupos (rec_selecao.js)
+  rotuloNivel, rotuloNivelCurto, trVeredito, trAviso, trCartao, efeitoArquitetura, TEXTOS_REC_R3,
+};

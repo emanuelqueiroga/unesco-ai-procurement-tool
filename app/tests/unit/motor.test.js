@@ -38,7 +38,8 @@ const EXP = {
   A: { arq: 'saas', nivel: 'moderado', E0: 600, m0: 4, preset: 'A' },
   B: { arq: 'ow', nivel: 'elevado', E0: 6000, m0: 4 },
   C: { arq: 'saas', nivel: 'elevado', E0: 120, m0: 6 },
-  D: { arq: 'api', nivel: 'limitado', E0: 150, m0: 3, preset: 'B' },
+  // R7 (REC-46, E1): com verificabilidade "parcial" para API, a opacidade de D vai a moderado e D passa de limitado a moderado
+  D: { arq: 'api', nivel: 'moderado', E0: 150, m0: 3, preset: 'B' },
 };
 const RES = {};
 
@@ -154,7 +155,8 @@ chk('OPC.arquitetura tem nao_sei; arquiteturaPergunta sem indefinida', OPC.arqui
 const presumida = c => casoEfetivo(Object.assign(clone(CASO_VAZIO), c), {}).__arqPresumida;
 chk('__arqPresumida com tecnologia em branco', presumida({}) === true);
 chk('__arqPresumida com "Ainda não sei"', presumida({ tipoTec: 'nao_sei' }) === true);
-chk('sem __arqPresumida com tecnologia escolhida', presumida({ tipoTec: 'paga' }) === false);
+// R7 (REC-13, E6): sem arquitetura na 3.2.1, a arquitetura é presumida mesmo com a tecnologia escolhida (antes: false)
+chk('__arqPresumida com tecnologia escolhida e 3.2.1 em branco', presumida({ tipoTec: 'paga' }) === true);
 chk('sem __arqPresumida com arquitetura escolhida', presumida({ tipoTec: 'nao_sei', arquitetura: 'api' }) === false);
   });
 });
@@ -186,7 +188,8 @@ TAREFAS.forEach(x => {
   chk('alcance = estudantes do contexto quando crianças são afetadas', ce2.alcance === 5000);
   chk('contestação formal quando a saída afeta pessoas', ce2.contestacao === 'formal');
   chk('verificabilidade: termos de uso → não', casoEfetivo(Object.assign(clone(CASO_VAZIO), { tipoTec: 'paga', licenca: 'termos' }), {}).verificabilidade === 'nao');
-  chk('verificabilidade: API → sim', casoEfetivo(Object.assign(clone(CASO_VAZIO), { pagamento: 'consumo', licenca: 'termos' }), {}).verificabilidade === 'sim');
+  // R7 (REC-46, decisão 2 opção b): api e pesos abertos valem "parcial" (antes: "sim"), também com termos de uso padrão
+  chk('verificabilidade: API → parcial', casoEfetivo(Object.assign(clone(CASO_VAZIO), { pagamento: 'consumo', licenca: 'termos' }), {}).verificabilidade === 'parcial');
   chk('elegíveis informados prevalecem', casoEfetivo(Object.assign(clone(CASO_VAZIO), { elegiveis: '700' }), { alunos: 9 }).elegiveis === 700);
   chk('idiomas derivado da adaptação', casoEfetivo(Object.assign(clone(CASO_VAZIO), { adaptacao: 'conteudo' }), {}).idiomas === true);
   chk('piloto gratuito e alternativa', (() => { const e = casoEfetivo(Object.assign(clone(CASO_VAZIO), { pagamento: 'gratuito', alternativa: 'sim' }), {}); return e.pilotoGratuito && e.alternativaSemIA; })());
@@ -206,7 +209,9 @@ for (const k of ['A', 'B', 'C', 'D']) {
   chk(k + ': E0 = ' + EXP[k].E0, cfg.demanda.E[0] === EXP[k].E0, cfg.demanda.E);
   chk(k + ': meses do Ano 0 = ' + EXP[k].m0, cfg.demanda.meses[0] === EXP[k].m0, cfg.demanda.meses);
   const a = av(cfg);
-  if (EXP[k].preset) eq(k + ': K3 igual ao preset ' + EXP[k].preset, a.porK.K3, av(clone(PRESETS[EXP[k].preset])).porK.K3);
+  // R7 (E2): K3.4 (teste local, US$ 12 mil no Ano 0) entra em todos os níveis de risco; o resto de K3 é o do preset
+  if (EXP[k].preset) { const ap = av(clone(PRESETS[EXP[k].preset]));
+    eq(k + ': K3 = preset ' + EXP[k].preset + ' sem a K3.4 dele + K3.4 do teste local (12 mil)', a.porK.K3, ap.porK.K3 - (ap.porS['K3.4'] || 0) + 12000); }
   verCamadas('exemplo ' + k, cfg);
   chk(k + ': motor sem NaN', Number.isFinite(a.ctEco) && a.finAno.every(Number.isFinite) && a.linhas.every(l => l.v.every(Number.isFinite)));
   chk(k + ': exemplo sem campos removidos na v11', ['teste', 'pagaDepois', 'fonte', 'infra', 'arquiteturaManual'].every(f => !(f in c)));
@@ -221,14 +226,17 @@ chk('B: demanda [6000, 50000, 150000, 150000] (preset C)', JSON.stringify(RES.B.
 chk('A: sem K1 (internet e dispositivos: sim)', RES.A.a.porK.K1 === 0);
 // exemplos A–C com os campos novos neutros: mesmos números da v10 (conta econômica, K e dotação)
 {
-  const V10 = { A: [4747846, [94080, 1407079, 1435089, 1514809]], B: [1770133, [300357, 319354, 336675, 279765]], C: [1643396, [78204, 426641, 441560, 389177]] };
+  // R7 (seção 8, E2 e E3): v10 + US$ 12 mil de K3.4 no Ano 0 em A, B e C; B + US$ 45 mil de K5.4 no Ano 0 (crianças em contato direto)
+  // (com a dotação do Ano 0 subindo 1,05 × o aumento: contingência de 5%)
+  const V10 = { A: [4759846, [106680, 1407079, 1435089, 1514809]], B: [1827133, [360207, 319354, 336675, 279765]], C: [1655396, [90804, 426641, 441560, 389177]] };
   for (const k of ['A', 'B', 'C']) {
     eq(k + ': conta econômica igual à da v10 (campos novos neutros)', RES[k].a.ctEco, V10[k][0], 1e-6);
     orcamento(RES[k].cfg).dot.forEach((v, t) => eq(k + ': dotação do Ano ' + t + ' igual à da v10', v, V10[k][1][t], 1e-6));
   }
   // D: formação online (mais realista) muda só o programa de formação (K4.3 × 0,5)
   const dP = cfgDoCaso(Object.assign(clone(RES.D.ce), { formacaoFormato: 'presencial' }), RES.D.p);
-  eq('D presencial: conta econômica igual à da v10', av(dP).ctEco, 577607, 1e-6);
+  // R7 (E1): D passa de limitado a moderado (verificabilidade "parcial" com API): v10 577.607 → 637.907
+  eq('D presencial: conta econômica igual à da v10 com a mudança de E1', av(dP).ctEco, 637907, 1e-6);
   eq('D online: K4.3 = metade do presencial', RES.D.a.porS['K4.3'], av(dP).porS['K4.3'] * 0.5, 1e-9);
 }
 chk('A: licença paga no piloto (fatorPreco[0] = 1)', RES.A.cfg.saas.fatorPreco[0] === 1 && RES.A.cfg.saas.mesesCobr[0] === 4);
@@ -343,7 +351,11 @@ describe('(9) recomendação de prova de conceito ou piloto', () => {
   chk('C → prova de conceito e depois piloto (tecnologia não escolhida; professores usam)', rC.modo === 'ambos' && rC.poc && rC.piloto && rC.motivos.includes('a tecnologia ainda não foi escolhida') && rC.ids.includes('pessoas_reais'), rC);
   const rA = recomendarTeste(RES.A.ce);
   chk('A → piloto', rA.modo === 'piloto' && rA.motivos[0] === 'a tecnologia está escolhida' && rA.motivos.includes('há linha de base parcial'), rA);
-  chk('D → só prova de conceito (sob medida; só servidores e gestores)', (() => { const r = recomendarTeste(RES.D.ce); return r.modo === 'poc' && r.ids.includes('sob_medida') && !r.piloto; })());
+  // REC-26: servidores e gestores com implantação em escolas são usuários reais; sem implantação em escolas, só a prova de conceito
+  chk('D → prova de conceito e depois piloto (sob medida; servidores e gestores, com implantação em 270 escolas); sem implantação em escolas, só a prova de conceito', (() => {
+    const r = recomendarTeste(RES.D.ce), s = recomendarTeste(Object.assign({}, RES.D.ce, { implantacao: { escolas: '', pessoas: '' } }));
+    return r.modo === 'ambos' && r.ids.includes('sob_medida') && r.ids.includes('servidores_reais') && r.poc && r.piloto && s.modo === 'poc' && !s.piloto && !s.ids.includes('servidores_reais');
+  })());
   chk('A → piloto sem prova de conceito', rA.piloto && !rA.poc);
   chk('tarefa fora da lista e sem linha de base → PoC com dois motivos', (() => { const r = recomendarTeste({ tipoTec: 'paga', tarefas: ['outra'], linhaBase: 'nao' }); return r.modo === 'poc' && r.motivos.length === 2; })());
   chk('motivos são chaves de MOTIVOS_TESTE', [rA, rC].every(r => r.motivos.every(m => Object.values(MOTIVOS_TESTE).includes(m))));
@@ -378,10 +390,10 @@ describe('(12) v11: parâmetros novos movem a linha certa na direção certa', (
     teste: 'poc,piloto,recomendar', testes: 'poc,piloto,recomendar', testeEfetivo: 'poc,piloto,ambos,recomendar',
     nFerramentas: '1,2,3mais,nao_sei', conheceFerramentas: 'sim,nao', internet: 'sim,parcial,nao',
     modeloDisp: 'um_por_aluno,compartilhado,rotativo,por_professor,proprio', dispExistem: 'sim,parcial,nao',
-    formados: 'professores,gestores,tecnica,administrativo', formacaoTipo: 'tecnologia,pedagogico,piloto,dados_etica',
+    formados: 'professores,gestores,coordenacao,tecnica,administrativo', formacaoTipo: 'tecnologia,pedagogico,piloto,dados_etica',
     formacaoFormato: 'presencial,online,hibrida', formacaoPaga: 'fornecedor,rede,parceiro,indefinido',
     suporteQuem: 'fornecedor,rede,ambos', suporteNivel: 'basico,ampliado,dedicado', acompanhamento: 'leve,regular,intensivo',
-    arquitetura: 'saas,api,ow,nao_sei,indefinida', arquiteturaPergunta: 'saas,api,ow,nao_sei', expansao: 'ano1,ano2,ano3',
+    arquitetura: 'saas,api,ow,preditivo,ow_api,nao_sei,indefinida', arquiteturaPergunta: 'saas,api,ow,preditivo,ow_api,nao_sei', expansao: 'ano1,ano2,ano3',
   };
   it('contrato de opções, CASO_VAZIO v11, PREMISSAS_V11 e horasFormacaoEstimada', () => {
   Object.entries(CONTRATO_OPC).forEach(([k, v]) => chk('OPC.' + k + ' = ' + v, OPC[k] && ids(k) === v, OPC[k] && ids(k)));
@@ -545,7 +557,8 @@ describe('(12) v11: parâmetros novos movem a linha certa na direção certa', (
         tipoTec: 'paga', pagamento: 'gratuito', licenca: 'termos', adaptacao: 'sob_medida', infra: 'sim', piloto: { escolas: '', participantes: 150, meses: 3 }, arquiteturaManual: 'api',
         elegiveis: 3000, expansao: 'ano1', pagaDepois: 'rede', fonte: 'sim' }),
     };
-    const NUM10 = { A: 4747846, B: 1770133, C: 1643396, D: 577607 };
+    // R7 (seção 8, E1–E3): A, B e C + K3.4; B + K5.4 no Ano 0; D moderado (verificabilidade "parcial" com API)
+    const NUM10 = { A: 4759846, B: 1827133, C: 1655396, D: 637907 };
     for (const k of ['A', 'B', 'C', 'D']) {
       const velho = clone(V10[k]), antes = JSON.stringify(velho);
       const m = migrarCasoV10(velho);
@@ -587,9 +600,9 @@ describe('(11) traduções das cadeias novas (PT → EN, ES, FR)', () => {
   it('nenhuma cadeia nova sem tradução', () => {
   const RE_NUM = /(?<![\p{L}\d.,])[-−+]?\d+(?:[.,  ]\d+)*/gu;
   const norm = s => { let i = 0; return s.replace(RE_NUM, () => '{' + (i++) + '}').replace(/\s+/g, ' ').trim(); };
-    // mesmos arquivos que o build.sh junta: <l>.json, extra_<l>.json e i18n/v9_… a v13_…_<l>.json
+    // mesmos arquivos que scripts/i18n.mjs junta: <l>.json, extra_<l>.json e i18n/v9_… a v15_…_<l>.json
     const dirI18n = path.join(RAIZ, 'i18n');
-  const versoes = l => ['v9_', 'v10_', 'v11_', 'v12_', 'v13_'].flatMap(v => fs.readdirSync(dirI18n).filter(f => f.startsWith(v) && f.endsWith('_' + l + '.json')).sort());
+  const versoes = l => ['v9_', 'v10_', 'v11_', 'v12_', 'v13_', 'v14_', 'v15_'].flatMap(v => fs.readdirSync(dirI18n).filter(f => f.startsWith(v) && f.endsWith('_' + l + '.json')).sort());
   const dic = l => Object.assign({}, ...[l + '.json', 'extra_' + l + '.json', ...versoes(l)].map(f => {
     const p = path.join(dirI18n, f); return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : {};
   }));
@@ -609,7 +622,9 @@ describe('(11) traduções das cadeias novas (PT → EN, ES, FR)', () => {
   for (const l of ['en', 'es', 'fr']) {
     const d = dic(l);
     const falta = [...txt].filter(s => d[s] == null && d[norm(s)] == null);
-    chk('traduções ' + l + ': nenhuma cadeia nova sem tradução', falta.length === 0, falta);
+    // expect.soft: uma língua sem tradução não pula a verificação das outras (a contagem de 508 continua valendo)
+    verificacoes++;
+    expect.soft(falta.length === 0, 'traduções ' + l + ': nenhuma cadeia nova sem tradução ' + JSON.stringify(falta)).toBe(true);
   }
   });
 });

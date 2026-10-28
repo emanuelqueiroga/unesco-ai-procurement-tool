@@ -89,9 +89,16 @@ describe('(2) valores-padrão lidos da base = v13', () => {
     expect({ precoDispositivo: PREMISSAS_K1.precoDispositivo, conectEscolaAno: PREMISSAS_K1.conectEscolaAno }).toEqual(V13.PREMISSAS_K1);
     expect({ horasFormacao: PREMISSAS_V11.horasFormacao, horasFormacaoPorArq: PREMISSAS_V11.horasFormacaoPorArq, taxaFornecedor: PREMISSAS_V11.taxaFornecedor }).toEqual(V13.PREMISSAS_V11);
   });
-  it.each(['critico', 'elevado', 'moderado', 'limitado', 'minimo'])('governança por risco "%s" igual à v13', (n) => {
+  // R7 (decisão 2, opção b; seção 8, E2): a única diferença em relação à v13 é a linha K3.4 "Teste local e conjunto de
+  // avaliação" (US$ 12 mil no Ano 0), que antes só existia no risco limitado e agora entra em todos os níveis. O resto
+  // tem de ser igual à v13; sem opts (sem crianças em contato direto nem revisão por volume), K5.4 não muda.
+  const semK34 = (g) => ({ pessoas: g.pessoas, itens: g.itens.filter((x) => x.s !== 'K3.4') });
+  it.each(['critico', 'elevado', 'moderado', 'limitado', 'minimo'])('governança por risco "%s" igual à v13, com K3.4 em todos os níveis', (n) => {
     const c = { pessoas: [], itens: [] }; governancaPorRisco(c, n);
-    expect(semRef({ pessoas: c.pessoas, itens: c.itens })).toEqual(V13.governanca[n]);
+    const g = semRef({ pessoas: c.pessoas, itens: c.itens });
+    expect(semK34(g)).toEqual(semK34(V13.governanca[n]));
+    const k34 = g.itens.filter((x) => x.s === 'K3.4');
+    expect(k34).toEqual([{ cat: 'Avaliação', s: 'K3.4', nome: 'Teste local e conjunto de avaliação', nat: 'D', v: [12000, 0, 0, 0] }]);
   });
   it('faixas do tornado e comparação de arquiteturas iguais às da v13', () => {
     ['A', 'B', 'C'].forEach((k) => expect(direcionadores(PRESETS[k]).map((d) => ({ id: d.id, min: d.min, max: d.max }))).toEqual(V13.direcionadores[k]));

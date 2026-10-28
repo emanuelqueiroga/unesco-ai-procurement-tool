@@ -101,7 +101,8 @@ const OPC = {
     ['nao', 'Não', 'Será preciso comprar ou alugar os dispositivos.'],
   ],
   // v11: 2.5 Formação e capacidade das equipes (camada 6)
-  formados: [['professores', 'Professores'], ['gestores', 'Gestores escolares'], ['tecnica', 'Equipe técnica'], ['administrativo', 'Equipe administrativa']],
+  // R8 (REC-52, PED-12): 'coordenacao' é opção nova; casos.js ainda não calcula o tempo de formação desse papel (ROTULO_PAPEL), então não muda o custo
+  formados: [['professores', 'Professores'], ['gestores', 'Gestores escolares'], ['coordenacao', 'Coordenação pedagógica'], ['tecnica', 'Equipe técnica'], ['administrativo', 'Equipe administrativa']],
   formacaoTipo: [
     ['tecnologia', 'Uso da tecnologia', 'Como acessar e usar a ferramenta no dia a dia.'],
     ['pedagogico', 'Uso pedagógico', 'Como usar a ferramenta para ensinar e acompanhar os estudantes.'],
@@ -182,6 +183,10 @@ const OPC = {
     ['saas', 'Produto pronto (SaaS) por licença', 'Um produto pronto, usado pela internet e pago por licença ou assinatura. O fornecedor cuida da tecnologia.'],
     ['api', 'Aplicação própria ou contratada usando modelo por API, com base de conhecimento (RAG)', 'Uma aplicação feita para a rede, que usa um modelo de IA de uma empresa, pago pelo uso, e consulta documentos da rede.'],
     ['ow', 'Modelo de pesos abertos em infraestrutura contratada', 'Um modelo aberto instalado em servidores contratados, com custo de infraestrutura e de uma equipe que o opera.'],
+    // R8 (REC-52, decisão 10): opções novas. arquiteturaEscolhida() só conhece saas, api e ow: com estas duas o custo usa a arquitetura
+    // presumida (como em "Ainda não sei"), até o motor ganhar um exemplo de partida próprio (E5).
+    ['preditivo', 'Modelo preditivo treinado com dados da rede', 'Um modelo treinado com os dados da rede para prever um resultado, como o risco de abandono.'],
+    ['ow_api', 'Modelo aberto usado pela API de uma empresa', 'Uma aplicação usa pela internet um modelo aberto oferecido por uma empresa, que cobra pelo uso.'],
     ['nao_sei', 'Ainda não sei (usar a arquitetura presumida)', 'A ferramenta usa a arquitetura deduzida das respostas sobre tecnologia, pagamento e licença.'],
     ['indefinida', 'Ainda não definida'],
   ],
@@ -300,6 +305,30 @@ function derivarArquitetura(c, ignorarManual) {
   return 'saas';
 }
 
+// R7 (REC-13, TEC-19): de que respostas veio a arquitetura presumida, na ordem de derivarArquitetura.
+// Devolve os campos usados ('tipoTec', 'licenca', 'pagamento') ou ['padrao'] quando nenhuma resposta decidiu (SaaS).
+function motivoArquitetura(c) {
+  c = c || {};
+  const m = [];
+  if (c.tipoTec === 'aberta') m.push('tipoTec');
+  if (c.licenca === 'aberta') m.push('licenca');
+  if (m.length) return m;
+  if (c.pagamento === 'consumo') return ['pagamento'];
+  return ['padrao'];
+}
+
+// R7 (REC-46, E1; decisão 2, opção b). api e pesos abertos → 'parcial' (a rede não vê o modelo, os dados de treino
+// nem as trocas de versão, a menos que contrate isso); termos de uso padrão (fora de api/ow) → 'nao'; o resto → 'parcial'.
+// Uma resposta futura sobre o que o contrato garante (pergunta `verificacao` do Refinar, seção 7) entra aqui:
+// 'sim' → 'sim', 'nao' → 'nao'. Sem ela, vale a premissa acima.
+const VERIF_RESPOSTA = { sim: 'sim', parcial: 'parcial', nao: 'nao' };
+function verificabilidadeDe(c) {
+  c = c || {};
+  if (VERIF_RESPOSTA[c.verificacao]) return VERIF_RESPOSTA[c.verificacao];
+  if (['api', 'ow'].includes(c.arquitetura)) return 'parcial';
+  return c.licenca === 'termos' ? 'nao' : 'parcial';
+}
+
 // v11: teste derivado da 2.0 (múltipla). testes ⊂ {'poc','piloto'} ou ['recomendar'] (exclusiva).
 // Os dois marcados → 'ambos'; um só → 'poc' | 'piloto'; ['recomendar'] → 'recomendar'; vazio → ''.
 // Compatibilidade: com testes vazio e c.teste antigo preenchido, usa c.teste.
@@ -355,7 +384,8 @@ function casoEfetivo(c, tot) {
   let dados = uniaoOrd(OPC.dados, dd);
   if (dados.length > 1) dados = dados.filter(x => x !== 'nenhum');
   ce.dados = dados.length ? dados : ['nenhum'];
-  ce.treino = 'nao_sei';  // premissa: o plano pede a cláusula de proibição
+  // R8 (REC-52): a resposta da pergunta 2.3.9 (treino) troca a premissa; sem resposta (ou "não sei"), vale a premissa de antes
+  ce.treino = ['sim', 'nao'].includes(c && c.treino) ? c.treino : 'nao_sei';   // premissa: o plano pede a cláusula de proibição
   ce.reversibilidade = piorDe(ORDEM_REV, T.map(x => x.reversibilidade), 'tempo');
   ce.cumulativo = piorDe(ORDEM_CUM, T.map(x => x.cumulativo), 'possivel');
   // arquitetura: escolha da 3.2.1 (ou a manual antiga) ou a presumida
@@ -363,12 +393,21 @@ function casoEfetivo(c, tot) {
   ce.arquiteturaResposta = (c && c.arquitetura) || '';
   ce.arquitetura = escolhida || derivarArquitetura(ce, true);
   ce.__arqEscolhida = !!escolhida;
-  ce.__arqPresumida = !escolhida && ['', 'nao_sei', undefined, null].includes(ce.tipoTec);
-  ce.verificabilidade = ['api', 'ow'].includes(ce.arquitetura) ? 'sim' : ce.licenca === 'termos' ? 'nao' : 'parcial';
+  // R7 (REC-13, E6): sem arquitetura escolhida na 3.2.1 (em branco ou "Ainda não sei"), a arquitetura usada pelo custo é
+  // sempre presumida, tenha ou não a tecnologia sido escolhida (antes só valia com tipoTec vazio ou "não sei").
+  ce.__arqPresumida = !escolhida;
+  ce.__arqMotivo = escolhida ? [] : motivoArquitetura(ce);
+  // R7 (REC-46, E1, decisão 2 opção b): a verificabilidade não vem da arquitetura. Pela API ou com pesos abertos a rede
+  // só verifica o que contratar (registro de versão, registros de uso, conjunto de teste reexecutável): vale "parcial"
+  // até haver resposta. Fora delas, termos de uso padrão → "não"; o resto → "parcial" (como antes).
+  ce.verificabilidade = verificabilidadeDe(ce);
   const pesoMax = Math.max(0, ...cons.map(k => (OPC.consequencias.find(x => x[0] === k) || [0, 0, 0])[2]));
-  ce.contestacao = pesoMax === 0 ? 'na' : 'formal';
-  ce.vulneraveis = false;
-  ce.idiomas = T.some(x => x.id === 'acessibilidade') || ['conteudo', 'integracao', 'sob_medida'].includes(ce.adaptacao);
+  // R8 (REC-52, E7): a pergunta 2.2.5 (contestacaoExiste) troca a premissa "formal"; "não sei" e a falta de resposta a mantêm
+  ce.contestacao = pesoMax === 0 ? 'na' : (['efetiva', 'formal', 'nao'].includes(c && c.contestacaoExiste) ? c.contestacaoExiste : 'formal');
+  // R8 (REC-52): a pergunta 1.1.6 (publico) alimenta vulneraveis (antes fixo em falso) e idiomas; sem resposta, vale a premissa de antes
+  const pub = Array.isArray(c && c.publico) ? c.publico : [];
+  ce.vulneraveis = pub.some(v => /defici|acolh/i.test(String(v)));
+  ce.idiomas = T.some(x => x.id === 'acessibilidade') || ['conteudo', 'integracao', 'sob_medida'].includes(ce.adaptacao) || pub.some(v => /lingu|idioma/i.test(String(v)));
   // pessoas que usariam (E): informado; senão estudantes das etapas (se estudantes usam) ou
   // 1 professor para cada 25 estudantes (se só professores usam, convenção ilustrativa); senão 1.000
   const usaEst = us.includes('estudantes'), soProf = !usaEst && us.includes('professores');
@@ -412,6 +451,7 @@ const MOTIVOS_TESTE = {
   outra: 'há uma tarefa fora da lista, sem referência de uso',
   linha_base: 'sem linha de base, um piloto ainda não conseguiria medir mudança',
   pessoas_reais: 'depois, a solução será usada por professores ou estudantes, o que pede um piloto antes da implantação',
+  servidores_reais: 'depois, a solução será usada por servidores nas escolas, e só um piloto mostra se as respostas servem a quem atende',
   escolhida: 'a tecnologia está escolhida',
   adapt_config: 'a adaptação se limita à configuração',
   adapt_conteudo: 'a adaptação se limita a conteúdo e idioma',
@@ -419,6 +459,15 @@ const MOTIVOS_TESTE = {
   base_sim: 'há linha de base medida',
   base_parcial: 'há linha de base parcial',
 };
+// REC-26: servidores (gestores e administrativos) também são usuários reais quando a implantação chega às escolas;
+// `implantacao.escolas` informado, ou pessoas informadas numa rede com escolas (a 3.1.1 conta o que a pessoa respondeu,
+// não a sugestão de casoEfetivo)
+function servidoresEmEscolas(ce) {
+  const us = ce.usuarios || [];
+  if (!(us.includes('gestores') || us.includes('administrativo'))) return false;
+  const im = ce.implantacao || {};
+  return +im.escolas > 0 || (+im.pessoas > 0 && +ce.escolasRede > 0);
+}
 function recomendarTeste(ce) {
   ce = ce || {};
   const poc = [];
@@ -430,7 +479,9 @@ function recomendarTeste(ce) {
   if (poc.length) {
     const us = ce.usuarios || [];
     const reais = us.includes('professores') || us.includes('estudantes');
-    return reais ? fim('ambos', poc.concat('pessoas_reais')) : fim('poc', poc);
+    if (reais) return fim('ambos', poc.concat('pessoas_reais'));
+    // REC-26: servidores com implantação em escolas são usuários reais (D: prova de conceito e depois piloto)
+    return servidoresEmEscolas(ce) ? fim('ambos', poc.concat('servidores_reais')) : fim('poc', poc);
   }
   const ok = ['escolhida'];
   if (['config', 'conteudo', 'integracao'].includes(ce.adaptacao)) ok.push('adapt_' + ce.adaptacao);
@@ -821,8 +872,12 @@ function alertas(c, perfil) {
   if ((c.classes || []).includes('previsao')) add('atencao', 'Previsão não é explicação causal: a associação não diz o que fazer. Defina a ação útil depois do alerta e quem a executa.', 4);
   if ((c.classes || []).includes('tutoria') || ((c.classes || []).length >= 3)) add('atencao', 'Rótulos como "tutor" ou "plataforma" escondem vários casos de uso. Preencha um canvas para cada função e aprove-as separadamente.', 5);
   if (c.verificabilidade === 'nao') add('atencao', 'A instituição não consegue verificar como as saídas são produzidas. Sem registro de versões e fontes, a evidência não pode ser vinculada à configuração em uso.', 9);
-  if ((c.__arqPresumida || c.arquitetura === 'indefinida') && ['proposta', 'renovar', 'orcamento'].includes(c.situacao))
-    add('atencao', 'A tecnologia ainda não foi escolhida. A estimativa usa um produto pago por licença como premissa; o custo e a dependência mudam muito entre as opções.', 9);
+  // R7 (REC-13, E6): o alerta cita a arquitetura de fato presumida (não sempre "produto pago por licença"). Com uma
+  // decisão perto (proposta, renovação, orçamento) é ponto de atenção; nos outros casos, informação.
+  if (c.__arqPresumida || c.arquitetura === 'indefinida') {
+    const txt = alertaArqPresumida(c);
+    if (txt) add(['proposta', 'renovar', 'orcamento'].includes(c.situacao) ? 'atencao' : 'info', txt, 9);
+  }
   if (perfil.alto && Math.max(+c.elegiveis || 0, +c.alcance || 0) >= 10000 && ['caso', 'critica'].includes(formaSupervisao(c, perfil)))
     add('atencao', 'Revisão humana caso a caso em grande volume: teste se há tempo real para revisar no volume previsto após a expansão.', 17);
   if (c.situacao === 'renovar') add('info', 'Renovar é uma nova decisão pública. Compare com as alternativas de hoje, não com a situação de antes da contratação.', 19);
@@ -830,6 +885,83 @@ function alertas(c, perfil) {
   const ordem = { bloqueio: 0, atencao: 1, info: 2 };
   return A.sort((a, b) => ordem[a.nivel] - ordem[b.nivel]);
 }
+
+// R7 (REC-13): texto do alerta de arquitetura presumida, por arquitetura e por haver ou não tecnologia escolhida.
+// Frases inteiras (e não montadas por partes) para a tradução por frase.
+const ALERTA_ARQ_PRESUMIDA = {
+  semTec: {
+    saas: 'A tecnologia ainda não foi escolhida. A estimativa presume um produto pronto pago por licença (SaaS); o custo e a dependência mudam muito entre as opções. Confirme a arquitetura na pergunta 3.2.1.',
+    api: 'A tecnologia ainda não foi escolhida. A estimativa presume uma aplicação que usa um modelo de IA por API, pago pelo uso; o custo e a dependência mudam muito entre as opções. Confirme a arquitetura na pergunta 3.2.1.',
+    ow: 'A tecnologia ainda não foi escolhida. A estimativa presume um modelo de pesos abertos em servidores contratados; o custo e a dependência mudam muito entre as opções. Confirme a arquitetura na pergunta 3.2.1.',
+  },
+  comTec: {
+    saas: 'A arquitetura não foi informada na pergunta 3.2.1. A estimativa presume um produto pronto pago por licença (SaaS), deduzido das respostas sobre tecnologia, pagamento e licença. Confirme, porque o custo e a dependência mudam muito entre as opções.',
+    api: 'A arquitetura não foi informada na pergunta 3.2.1. A estimativa presume uma aplicação que usa um modelo de IA por API, pago pelo uso, deduzida das respostas sobre tecnologia, pagamento e licença. Confirme, porque o custo e a dependência mudam muito entre as opções.',
+    ow: 'A arquitetura não foi informada na pergunta 3.2.1. A estimativa presume um modelo de pesos abertos em servidores contratados, deduzido das respostas sobre tecnologia, pagamento e licença. Confirme, porque o custo e a dependência mudam muito entre as opções.',
+  },
+};
+function alertaArqPresumida(c) {
+  c = c || {};
+  const arq = ['saas', 'api', 'ow'].includes(c.arquitetura) ? c.arquitetura : 'saas';   // 'indefinida' → SaaS (cfgDoCaso)
+  const semTec = !c.tipoTec || c.tipoTec === 'nao_sei';
+  return ALERTA_ARQ_PRESUMIDA[semTec ? 'semTec' : 'comTec'][arq];
+}
+
+// ----------------------------------------------------------- nota normativa (R7, REC-50, E13; ETI-14)
+// Data de aplicação das obrigações do Regulamento Europeu de IA para os sistemas de alto risco do Anexo III.
+// A data só entra no texto quando `verificadoEm` está preenchido (AAAA-MM-DD) por quem conferiu a fonte; sem isso,
+// a nota manda verificar a data na legislação aplicável (as referências "a verificar" não entram no texto: decisão do
+// painel). Situação em 28/10/2026: o art. 113 do Regulamento (UE) 2024/1689 fixa 2 de agosto de 2026, e a proposta de
+// simplificação (Digital Omnibus) adia a data para até 2 de dezembro de 2027; a versão anterior da ferramenta citava
+// "dezembro de 2027". Não foi possível conferir se o adiamento foi publicado, por isso `verificadoEm` fica vazio.
+// Para citar a data: preencha `data`, `rotulo` (frase em português, traduzida por tr()) e `verificadoEm`.
+const AI_ACT_APLICACAO = {
+  data: '2027-12-02',
+  rotulo: 'dezembro de 2027',
+  fonte: 'Regulamento (UE) 2024/1689, art. 113, com a alteração proposta pelo pacote de simplificação Digital Omnibus (a verificar)',
+  verificadoEm: '',
+};
+const dataAiActVerificada = (k = AI_ACT_APLICACAO) => !!(k && /^\d{4}-\d{2}-\d{2}$/.test(k.verificadoEm || '') && k.data && k.rotulo);
+// Perfilamento: previsão ou classificação individual de estudantes com dados pessoais (ex.: alerta precoce de
+// abandono). Não está listado de forma expressa no Anexo III, ponto 3, mas o perfilamento torna de alto risco qualquer
+// uso do Anexo III (art. 6(3)) e, com decisão de efeito relevante, há o direito de revisão de decisão automatizada.
+function perfilamento(c) {
+  c = c || {};
+  const dd = c.dados || [];
+  return (c.classes || []).includes('previsao') && (dd.includes('pessoais_est') || dd.includes('sensiveis'));
+}
+const CONSEQ_RELEVANTE = ['nota', 'acesso', 'disciplina', 'apoio_est', 'recursos'];
+/**
+ * Nota normativa do caso, ou null. { categorias: anexoIII(c), perfilamento, decisao, data: AI_ACT_APLICACAO | null,
+ * paragrafos: [frases em PT, para tr()] }. A primeira frase muda se há categorias do Anexo III; a de perfilamento
+ * entra quando há perfilamento; a última cita a data só se ela foi verificada.
+ */
+function notaNormativa(c) {
+  c = c || {};
+  const cat = anexoIII(c), perf = perfilamento(c);
+  if (!cat.length && !perf) return null;
+  const decisao = (c.consequencias || []).some(k => CONSEQ_RELEVANTE.includes(k));
+  const P = [];
+  if (cat.length) P.push('O uso descrito corresponde a categorias que o Regulamento Europeu de IA classifica como de alto risco na educação (Anexo III, ponto 3):');
+  if (perf) P.push(decisao
+    ? 'O uso faz perfilamento de estudantes (previsão individual com dados pessoais) e apoia decisões com efeito sobre eles. Na legislação europeia, o perfilamento torna de alto risco os usos do Anexo III, e a pessoa afetada tem direito a pedir revisão humana de decisões automatizadas. Confirme a classificação com a assessoria jurídica.'
+    : 'O uso faz perfilamento de estudantes (previsão individual com dados pessoais). Na legislação europeia, o perfilamento torna de alto risco os usos do Anexo III. Confirme a classificação com a assessoria jurídica.');
+  const ok = dataAiActVerificada();
+  P.push(ok ? 'Obrigações aplicáveis a partir de ' + AI_ACT_APLICACAO.rotulo + '. Verifique a legislação da jurisdição aplicável.'
+    : 'Verifique na legislação da jurisdição aplicável a partir de quando essas obrigações valem.');
+  return { categorias: cat, perfilamento: perf, decisao, data: ok ? AI_ACT_APLICACAO : null, paragrafos: P };
+}
+
+// Frases novas do pacote R7 (para a extração de traduções)
+const TEXTOS_REC_R7 = [
+  ...Object.values(ALERTA_ARQ_PRESUMIDA.semTec), ...Object.values(ALERTA_ARQ_PRESUMIDA.comTec),
+  'O uso faz perfilamento de estudantes (previsão individual com dados pessoais) e apoia decisões com efeito sobre eles. Na legislação europeia, o perfilamento torna de alto risco os usos do Anexo III, e a pessoa afetada tem direito a pedir revisão humana de decisões automatizadas. Confirme a classificação com a assessoria jurídica.',
+  'O uso faz perfilamento de estudantes (previsão individual com dados pessoais). Na legislação europeia, o perfilamento torna de alto risco os usos do Anexo III. Confirme a classificação com a assessoria jurídica.',
+  'Verifique na legislação da jurisdição aplicável a partir de quando essas obrigações valem.',
+  'Análise jurídica da classificação na jurisdição aplicável (o uso envolve perfilamento de estudantes)',
+  'Revisão caso a caso dos alertas (volume)',
+  'Testes adversariais antes do teste com crianças',
+];
 
 function formaSupervisao(c, perfil) {
   const alto = perfil.alto;
@@ -852,6 +984,7 @@ function extrasPD(n, c, perfil) {
     if (crianca) X.push('Mecanismo de contestação utilizável por crianças e famílias, com linguagem adequada à idade');
     if ((c.dados || []).includes('sensiveis')) X.push('Inferências sensíveis tratadas como dado sensível, inclusive em registros e saídas');
     if (anexoIII(c).length) X.push('Análise jurídica da classificação na jurisdição aplicável (o uso corresponde a categorias de alto risco do Regulamento Europeu)');
+    else if (perfilamento(c)) X.push('Análise jurídica da classificação na jurisdição aplicável (o uso envolve perfilamento de estudantes)');
   }
   if (n === 4) {
     if (alto) X.push('Evidência independente, testes por grupo e piloto com desenho comparativo');
@@ -891,4 +1024,4 @@ function instrumentosCaso(c, perfil) {
 // ----------------------------------------------------------- utilitários de formato
 function fmtInt(x) { return Math.round(+x || 0).toLocaleString(LOC()); }
 
-export { TAREFAS, tarefasDe, IMPACTO_TAREFAS, MOTIVOS_TESTE, perfisSugeridos, derivarArquitetura, arquiteturaEscolhida, testeDe, papeisUsuarios, RAZAO_EST_PROF, casoEfetivo, recomendarTeste, NIVEIS, NIVEL_NOME, NIVEL_CRIT, OPC, DIMENSOES, perfilAutomatico, perfilFinal, anexoIII, DILIGENCIA, PDS, DOSSIE, INSTRUMENTOS, CAPITULOS, ROTAS, ESCADA, SUPERVISAO, CONTESTACAO, FORMAS_SUP, DADOS_REQ, CONTRATO, MUDANCA, METRICAS, SEVERIDADE, PACOTE, LOCKIN, alertas, formaSupervisao, extrasPD, instrumentosCaso, fmtInt, maxNivel, ETAPAS_CRIANCAS, ORDEM_FREQ, ORDEM_REV, ORDEM_CUM, uniaoOrd, piorDe, ARQS, opcNivel };
+export { TAREFAS, tarefasDe, IMPACTO_TAREFAS, MOTIVOS_TESTE, perfisSugeridos, derivarArquitetura, arquiteturaEscolhida, testeDe, papeisUsuarios, RAZAO_EST_PROF, casoEfetivo, recomendarTeste, NIVEIS, NIVEL_NOME, NIVEL_CRIT, OPC, DIMENSOES, perfilAutomatico, perfilFinal, anexoIII, AI_ACT_APLICACAO, dataAiActVerificada, perfilamento, notaNormativa, ALERTA_ARQ_PRESUMIDA, alertaArqPresumida, motivoArquitetura, verificabilidadeDe, TEXTOS_REC_R7, DILIGENCIA, PDS, DOSSIE, INSTRUMENTOS, CAPITULOS, ROTAS, ESCADA, SUPERVISAO, CONTESTACAO, FORMAS_SUP, DADOS_REQ, CONTRATO, MUDANCA, METRICAS, SEVERIDADE, PACOTE, LOCKIN, alertas, formaSupervisao, extrasPD, instrumentosCaso, fmtInt, maxNivel, ETAPAS_CRIANCAS, ORDEM_FREQ, ORDEM_REV, ORDEM_CUM, uniaoOrd, piorDe, ARQS, opcNivel };

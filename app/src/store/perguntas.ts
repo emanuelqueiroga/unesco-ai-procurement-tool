@@ -92,6 +92,32 @@ const KPI_POR_CAMPO: Record<string, string[]> = {
   // v15 (MOT-02): perguntas opcionais do motor, só no Refinar do capítulo 4 (curva, ondas, reposição dos dispositivos, rotatividade)
   curva: ['kpi.anual', 'kpi.total', 'A2'], ondas: ['kpi.anual', 'kpi.total', 'A2'],
   reposicaoDisp: ['kpi.anual', 'kpi.total', 'A2'], rotacaoFormacao: ['kpi.anual', 'kpi.total', 'A2'],
+  // R8 (REC-52): respostas do Refinar que mudam o risco, e com ele a governança proporcional (casoEfetivo), ou a revisão por volume (K5.3).
+  // As demais perguntas novas só mudam recomendações e números ligados a elas (REC_DAS_PERGUNTAS_REC).
+  publico: KPIS_TODOS, contestacaoExiste: KPIS_TODOS, treino: KPIS_TODOS, verificacao: KPIS_TODOS,
+  revisao: ['kpi.ano0', 'kpi.anual', 'kpi.total'],
+};
+/**
+ * R8 (REC-52): as 13 perguntas novas do Refinar (seção 7 de design/redesign/05-requisitos-recomendacoes.md), por capítulo.
+ * Todas são `opcional` em CAMPOS, ficam fora do Essencial (que continua com 25 telas) e, sem resposta, valem "não informado":
+ * a regra dispara na variante "Decidir…" e o motor mantém a premissa de antes. `revisao` só aparece com a tarefa de alerta precoce.
+ */
+export const CAMPOS_REC: Record<Capitulo, string[]> = {
+  1: ['publico', 'altCustoEfeito', 'volumeResultado'],
+  2: ['instrumentoTeste', 'contestacaoExiste', 'momentoUso', 'treino', 'tempoJornada', 'apoioEscola', 'revisao'],
+  3: ['estrategiaCompra', 'dotacao', 'verificacao'],
+  4: [],
+};
+/** todas as perguntas de CAMPOS_REC, em ordem de capítulo */
+export const CAMPOS_REC_TODOS: string[] = ([1, 2, 3, 4] as Capitulo[]).flatMap(c => CAMPOS_REC[c]);
+/**
+ * Regras (ids do catálogo, `rec:<id>`) que leem uma pergunta nova sem que ela conste em `campos` da regra (REGRAS_REC): R-32 (contestacaoExiste),
+ * R-73 (dotacao), R-55 (estrategiaCompra), R-56 (instrumentoTeste), R-31 (revisao, as horas da revisão caso a caso) e R-17 (altCustoEfeito e
+ * volumeResultado, o efeito de empate e o custo por unidade). tempoJornada, apoioEscola e publico já entram por `campos` (R-46, R-47, R-52, R-53).
+ */
+export const REC_DAS_PERGUNTAS_REC: Record<string, string[]> = {
+  contestacaoExiste: ['rec:R-32'], dotacao: ['rec:R-73'], estrategiaCompra: ['rec:R-55'], instrumentoTeste: ['rec:R-56'],
+  revisao: ['rec:R-31'], altCustoEfeito: ['rec:R-17'], volumeResultado: ['rec:R-17'],
 };
 /** perguntas opcionais do motor (4.1.4 a 4.1.7): só no Refinar; nunca são lacuna e, sem resposta, valem os padrões da v13 */
 export const CAMPOS_MOTOR = ['curva', 'ondas', 'reposicaoDisp', 'rotacaoFormacao'];
@@ -129,6 +155,7 @@ export function afetadosPor(campo: string): string[] {
   const add = (x: string) => { if (!out.includes(x)) out.push(x); };
   (KPI_POR_CAMPO[base] || []).forEach(add);
   if (GOV.includes(base)) add('rec:' + base);   // cada resposta Não/Em parte/Não sei vira uma ação (ACOES_G)
+  (REC_DAS_PERGUNTAS_REC[base] || []).forEach(add);
   (REGRAS_REC as any[]).forEach(r => {
     const c = typeof r.campo === 'function' ? (REGRAS_CAMPO_FN[r.id] || []) : [r.campo];
     if (c.includes(base)) add('rec:' + r.id);

@@ -88,7 +88,9 @@ describe('secoesPlano', () => {
       expect(a2.graf.total).toBeCloseTo(n.total, 6);
       expect(a2.graf.anual).toBeCloseTo(n.anual, 6);
       expect(a2.graf.tot0).toBeCloseTo(n.ano0, 2);
-      expect(a2.kv[1]).toEqual(['Custo total do ciclo de vida', grande(n.total)]);
+      // R6 (5.2, decisão 3): o central é o cenário-base; o P50 e o P90 vêm rotulados nos dois últimos cartões
+      expect(a2.kv[1]).toEqual(['Custo total, cenário-base (valor central)', grande(n.total)]);
+      expect(a2.kv.slice(-2).map((z: any) => z[0])).toEqual(['Valor para orçar (P50 do custo total)', 'Teto prudente (P90 do custo total)']);
       expect(a2.kv[2]).toEqual(['Dotação média por ano de operação', grande(n.anual)]);
       expect(a2.kv[3]).toEqual(['Por usuário ativo por ano', din(n.porAluno, 2)]);
       const P = painelPlano(e);
@@ -154,7 +156,7 @@ describe('secoesPlano', () => {
     expect(de('exigir')).toEqual(['A4', 'A5', 'A6', 'A7', 'B5', 'B6']);
     expect(de('apendice')).toEqual(['perfil', 'matriz', 'premissas', 'glossario', 'refs']);
     expect(secoesDaPagina(secs, 'apendice').map((s: any) => s.id || s.h)).toEqual(['perfil', 'Ferramentas', 'Etapas, escolas e estudantes', 'matriz', 'fig-tco',
-      'premissas', 'Premissas desta estimativa', 'Como o modelo funciona hoje', 'glossario', 'refs']);
+      'premissas', 'Premissas desta estimativa', 'Premissas da ferramenta', 'Como o modelo funciona hoje', 'Exemplos de norma', 'glossario', 'refs']);
     expect(PAGINAS_PLANO.reduce((n, pg) => n + secoesDaPagina(secs, pg).length, 0)).toBe(secs.length);
   });
 
@@ -176,7 +178,7 @@ describe('PDF', () => {
   });
 
   it('pdfTxt troca o que está fora do WinAnsi (Helvetica)', () => {
-    expect(pdfTxt('a → b ≥ c − d')).toBe('a -> b >= c - d');
+    expect(pdfTxt('a → b ≥ c − d')).toBe('a » b >= c - d');   // REC-11: "→" não vira mais "->"
     expect(pdfTxt('€ “x” ç')).toBe('€ “x” ç');
     expect(pdfTxt(undefined)).toBe('');
     expect(quebrarCJK('采购计划生命周期总成本', 30, (s: string) => s.length * 10).every(l => l.length <= 3)).toBe(true);
@@ -269,4 +271,118 @@ describe('PDF', () => {
     expect(txt).not.toContain('/BaseFont /NotoSC');
     expect(txt).toContain('preliminary translation');   // aviso de tradução preliminar (em inglês, na segunda linha)
   }, 120000);
+});
+
+// R6 (REC-38 a REC-45): recomendações no relatório, as mesmas na página, no PDF e na síntese
+describe('R6: recomendações no relatório', () => {
+  const rec = (e: any) => (secoesPlano(e).find((s: any) => s.id === 'resumo') as any).sumario.rec;
+  const pdfTexto = async (e: any) => {
+    const doc: any = await gerarPDF(e, { versao: '0.1.0', comprimir: false });
+    const pag: string[] = [];
+    for (let i = 1; i <= doc.getNumberOfPages(); i++) pag.push(doc.internal.pages[i].join('\n'));
+    return pag;
+  };
+  // texto de um PDF não comprimido: os trechos entre parênteses dos operadores Tj, juntos
+  const pdfFrases = (pag: string) => (pag.match(/\((?:[^()\\]|\\.)*\)\s*Tj/g) || []).map(z => z.replace(/\)\s*Tj$/, '').slice(1).replace(/\\(.)/g, '$1')).join(' ');
+
+  it('REC-21: o veredito é a mesma frase na capa, em "Em resumo", no painel e na síntese do capítulo 4', async () => {
+    for (const k of ['A', 'B', 'C', 'D']) {
+      const e = exemplo(k);
+      const P = rec(e);
+      expect(P.veredito.texto, k).toMatch(/^Próxima decisão: /);
+      expect(painelPlano(e).principal, k).toBe(P.veredito.texto);
+      expect(painelDe(e).veredito, k).toBe(P.veredito.texto);
+      expect(P.proximo.veredito, k).toBe(P.veredito.texto);
+    }
+    const e = exemplo('B');
+    const P = rec(e);
+    expect(P.veredito.texto).toContain('Ainda não avance para o piloto');
+    const pag = await pdfTexto(e);
+    const capa = pdfFrases(pag[0]), resumo = pdfFrases(pag[1]);
+    const ini = pdfTxt(P.veredito.texto.slice(0, 40));
+    expect(capa).toContain(ini);
+    expect(resumo).toContain(ini);
+  }, 60000);
+
+  it('REC-38: nível de cuidado em 3 frases, contadores e os 5 cartões com todos os campos', () => {
+    const B = rec(exemplo('B'));
+    expect(B.cuidado.length).toBe(3);
+    expect(B.cuidado[0]).toMatch(/^Cuidado elevado/);
+    expect(B.contadores.uso.texto).toBe('Condições de uso nas escolas: 0 de 4');
+    expect(B.contadores.gov.texto).toBe('Governança: 1 de 6');
+    expect(B.cartoes.length).toBe(5);
+    B.cartoes.forEach((c: any) => ['oque', 'razao', 'paraque', 'quem', 'marco', 'pronto', 'origem'].forEach(f => expect(c[f], c.id + ' ' + f).toMatch(/\S/)));
+    // D: servidores usam; sem o contador de uso nas escolas; o cuidado diz o nível (moderado depois do R7, decisão 2)
+    const D = rec(exemplo('D'));
+    expect(D.contadores.uso).toBeNull();
+    expect(D.cuidado[0]).toMatch(/^Cuidado (limitado|moderado)/);
+  });
+
+  it('REC-39: sequência de decisões com portões e os pontos de decisão do guia em ordem 1–9 com R-nn', async () => {
+    const e = exemplo('B');
+    const S = rec(e).sequencia;
+    expect(S.portoes.map((g: any) => g.id)).toEqual(['G1', 'G2', 'G3', 'GM', 'G4']);
+    const g3 = S.portoes.find((g: any) => g.id === 'G3').criterios.map((k: any) => k.criterio);
+    ['Adoção igual ou acima da meta', 'Efeito igual ou acima do limiar, com margem', 'Custo por usuário ativo em regime dentro do teto', 'Nenhum grupo fica pior'].forEach(c => expect(g3).toContain(c));
+    S.portoes.forEach((g: any) => g.criterios.forEach((k: any) => expect(['pronto', 'falta', 'premissa', 'impossivel']).toContain(k.estado)));
+    expect(S.pds.map((p: any) => p.n)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    // PDF: os nove pontos de decisão em ordem (seção B9 e a sequência)
+    const tudo = (await pdfTexto(e)).map(pdfFrases).join(' ');
+    let pos = -1;
+    for (let n = 1; n <= 9; n++) { const i = tudo.indexOf(pdfTxt(tr('Ponto de decisão ' + n))); expect(i, 'PD ' + n).toBeGreaterThan(pos); pos = i; }
+  }, 60000);
+
+  it('REC-40: "Como testar e avaliar" com fichas diferentes por classe de tarefa, avaliação e quem pode ficar para trás', () => {
+    const classes: Record<string, string> = {};
+    for (const k of ['A', 'B', 'C', 'D']) {
+      const e = exemplo(k);
+      const a1 = secoesPlano(e).find((s: any) => s.id === 'A1') as any;
+      expect(a1.h).toBe('Como testar e avaliar');
+      const X = a1.avaliacao;
+      classes[k] = X.ficha.classe;
+      expect(X.ficha.linhas.length + X.ficha.blocos.length, k).toBeGreaterThan(0);
+      [...X.ficha.linhas, ...X.ficha.blocos.flatMap((b: any) => b.linhas)].forEach((l: any) => expect(l.rotulo).toBe('ilustrativo, ajuste'));
+      expect(X.grupos.linhas.length).toBe(6);
+    }
+    expect(classes).toEqual({ A: 'geracao', B: 'tutoria', C: 'previsao', D: 'duvidas' });
+  });
+
+  it('REC-41: "O que exigir" só com as linhas do caso, 5 colunas e o R-nn; cláusulas-padrão recolhidas', () => {
+    const e = exemplo('B');
+    const X = rec(e).exigir;
+    expect(X.head.length).toBe(6);
+    X.linhas.forEach((l: any) => { expect(l.vem).toMatch(/R-\d+|perfil/i); expect(l.onde).toMatch(/\S/); expect(l.verificar).toMatch(/\S/); });
+    const consumo = X.linhas.find((l: any) => l.id === 'CONTRATO.custo-consumo');
+    expect(consumo.valor).toMatch(/US\$/);
+    expect(consumo.verificar).toContain('alertas a 70% e 90%');
+    expect(consumo.onde).toMatch(/Termo de referência/);
+    const a5 = secoesPlano(e).find((s: any) => s.id === 'A5') as any;
+    expect(a5.table.rows.length).toBe(X.n);
+    const pad = secoesPlano(e).find((s: any) => s.h === X.padraoTitulo) as any;
+    expect(pad.det).toBeTruthy();
+  });
+
+  it('REC-43, REC-44: listas do guia citam o R-nn; premissas da ferramenta rotuladas; normas recolhidas', () => {
+    const e = exemplo('B');
+    const secs = secoesPlano(e).map(trSecao) as any[];
+    const ref = textos(secs.filter(s => ['B3', 'B4', 'B6', 'B7', 'B8'].includes(s.id) || (s.sub && s.pagina === 'fazer')));
+    expect(ref.filter(t => /^Definir a supervisão humana/.test(t))).toEqual([]);
+    expect(ref.some(t => /^Ver R-31\b/.test(t))).toBe(true);
+    const b5 = secs.filter(s => s.pagina === 'exigir' && s.sub && Array.isArray(s.list)).flatMap(s => s.list);
+    expect(b5.find((t: string) => /^Contestação: /.test(t))).toContain('premissa da ferramenta');
+    const normas = secs.find(s => s.h === 'Exemplos de norma');
+    expect(normas.det).toBeTruthy();
+    expect(normas.p.join(' ')).toContain('Confirme com a assessoria jurídica');
+  });
+
+  it('REC-19: nenhum "Alta", "Média", "Normal" nem "prioridade alta" nas páginas e no PDF', async () => {
+    for (const k of ['A', 'B']) {
+      const e = exemplo(k);
+      const txt = textos((secoesPlano(e) as any[]).map(trSecao));
+      const ruins = txt.filter(t => /^(Alta|Média|Normal)$/.test(t) || /prioridade alta/i.test(t));
+      expect(ruins, k).toEqual([]);
+      const pdf = (await pdfTexto(e)).map(pdfFrases).join(' ');
+      expect(pdf, k).not.toMatch(/prioridade alta|\bAlta\b(?! adoção)|\bNormal\b/);   // "Alta adoção" é o nome de um cenário
+    }
+  }, 60000);
 });

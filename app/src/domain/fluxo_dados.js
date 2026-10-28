@@ -105,6 +105,43 @@ const QUESTOES_G = [
 ];
 
 // ---------------------------------------------------------------------
+// R8 (REC-52): opções das perguntas novas do Refinar (seção 7 de design/redesign/05-requisitos-recomendacoes.md). Os ids são os
+// que as regras de src/domain/regras/ e o motor leem (publico: /defici/, /lingu|idioma/, /rural|remot/; apoioEscola: vazio ou
+// começando por ninguem|nenhum|nao = sem referência; verificacao: sim|parcial|nao; dotacao e contestacaoExiste: ver as regras).
+// ---------------------------------------------------------------------
+const OPC_PUBLICO = [
+  ['rural', 'Escolas rurais ou remotas'], ['tradicionais', 'Comunidades tradicionais (indígenas, quilombolas)'],
+  ['deficiencia', 'Estudantes com deficiência'], ['lingua', 'Outra língua em casa'], ['acolhimento', 'Crianças em acolhimento'],
+  ['nenhum', 'Nenhum destes'], ['nao_sei', 'Não sei'],
+];
+const OPC_CONTESTACAO_EXISTE = [
+  ['efetiva', 'Existe caminho efetivo, com prazo e autoridade para rever'], ['formal', 'Existe apenas formalmente'], ['nao', 'Não existe'], ['nao_sei', 'Não sei'],
+];
+const OPC_TREINO = [['sim', 'Sim, os termos permitem'], ['nao', 'Não, o contrato ou a conta institucional proíbe'], ['nao_sei', 'Não sei']];
+const OPC_VERIFICACAO = [['sim', 'Sim, os dois'], ['parcial', 'Em parte'], ['nao', 'Não']];
+const OPC_INSTRUMENTO_TESTE = [
+  ['contratado', 'Contratado à parte, com preço próprio'], ['gratuito', 'Gratuito, por doação ou cooperação do fornecedor'],
+  ['fase_contrato', 'Como fase do contrato principal'], ['parceria', 'Parceria de pesquisa com universidade ou instituto'], ['nao_sei', 'Não sei'],
+];
+const OPC_ESTRATEGIA_COMPRA = [
+  ['licitacao', 'Licitação de produto pronto'], ['licitacao_demo', 'Licitação com etapa de demonstração'],
+  ['dialogo', 'Diálogo com o mercado ou instrumento de inovação'], ['ata', 'Ata de preços, acordo-quadro ou compra conjunta'],
+  ['direta', 'Contratação direta'], ['nao_sei', 'Não sei'],
+];
+const OPC_DOTACAO = [['sim', 'Sim, prevista'], ['parcial', 'Em parte'], ['nao', 'Não prevista'], ['nao_sei', 'Não sei']];
+const OPC_TEMPO_JORNADA = [['sim', 'Sim, dentro da jornada'], ['parcial', 'Em parte'], ['nao', 'Não, fora do horário pago']];
+const OPC_MOMENTO_USO = [
+  ['aula', 'Na aula regular, dentro da grade'], ['contraturno', 'No contraturno'], ['casa', 'Em casa'], ['planejamento', 'No tempo de planejamento do professor'],
+];
+const OPC_APOIO_ESCOLA = [
+  ['coordenacao', 'Coordenação pedagógica'], ['formador', 'Formador da secretaria'], ['referencia', 'Professor de referência'],
+  ['ninguem', 'Ninguém definido'], ['nao_sei', 'Não sei'],
+];
+// volumeResultado.unidade: as que o cálculo do custo por unidade de resultado entende (rec_numeros.js)
+const OPC_UNIDADE_RESULTADO = [['solicitacoes', 'Solicitações respondidas'], ['estudantes', 'Estudantes atendidos']];
+const OPC_PERIODO_RESULTADO = [['mes', 'Por mês'], ['ano', 'Por ano']];
+
+// ---------------------------------------------------------------------
 // Registro declarativo de todas as perguntas do percurso.
 // { passo, n, id, onde: 'ctx'|'caso'|'resp', tipo, opc, t, h, ex, ph, opcional, padrao, outro, se }
 // tipo: radio | chips | multi (cartões com subtexto) | seg | texto | area | num | grade | etapas
@@ -129,6 +166,7 @@ const CAMPOS = [
   { passo: '1a', n: '1.1.3', id: 'situacao', onde: 'caso', tipo: 'radio', opc: 'situacao', cols: true, padrao: true, t: 'Em que ponto você está?', h: 'Isso ajusta o plano de contratação.' },
   { passo: '1a', n: '1.1.4', id: 'etapas', onde: 'ctx', tipo: 'etapas', t: 'Quais etapas de ensino serão atendidas?', h: 'Marque uma ou mais.' },
   { passo: '1a', n: '1.1.5', id: 'grade', onde: 'ctx', tipo: 'grade', t: 'Quantas escolas e quantos estudantes há em cada etapa, por ano ou série?', h: 'Informe os estudantes de cada ano ou série; o total da etapa é calculado.', ex: 'Exemplo: 6º ano 40.000; 7º ano 38.000.' },
+  { passo: '1a', n: '1.1.6', id: 'publico', onde: 'caso', tipo: 'chips', opc: OPC_PUBLICO, opcional: true, t: 'O público atendido inclui algum destes grupos?', h: 'Marque todos os que valem para a rede. Eles pedem acessibilidade, línguas e conexão adequadas e entram na análise de equidade. "Nenhum destes" e "Não sei" não se combinam com os outros.', ex: 'Exemplo: escolas rurais com internet instável e estudantes com deficiência visual.' },
   // 1.2 Prioridade e impacto (v13: prioridades e problemas no lugar de domínio e componentes)
   { passo: '1b', n: '1.2.1', id: 'prioridades', onde: 'ctx', tipo: 'prior', t: 'Qual é a prioridade da sua rede para a IA na educação?', h: 'Marque uma ou mais.' },
   { passo: '1b', n: '1.2.2', id: 'problemas', onde: 'ctx', tipo: 'problemas', t: 'Quais problemas você quer resolver?', h: 'Marque um ou mais, ou todos de uma prioridade. Os objetivos já vêm escritos; você completa os números da sua rede.' },
@@ -139,10 +177,13 @@ const CAMPOS = [
   { passo: '1b', n: '1.2.7', id: 'linhaBase', onde: 'caso', tipo: 'radio', opc: 'linhaBase', padrao: true,
     detalhe: { v: ['sim', 'parcial'], problemas: 'Para quais problemas?', medida: 'Qual medida?', exMedida: 'Ex.: avaliação estadual de leitura do 5º ano, 2025' }, t: 'Você tem uma medida atual do problema (linha de base)?', ex: 'Exemplo: resultados da avaliação de leitura do ano passado, por escola.' },
   { passo: '1b', n: '1.2.8', id: 'alternativa', onde: 'caso', tipo: 'radio', opc: 'simNao', t: 'Você já comparou ao menos uma alternativa sem IA?', ex: 'Exemplo: reforço escolar no contraturno, redesenho do processo ou um software convencional de exercícios.' },
+  { passo: '1b', n: '1.2.9', id: 'altCustoEfeito', onde: 'caso', tipo: 'faixa', opcional: true, t: 'Quanto custa e que efeito tem a alternativa sem IA que você comparou?', h: 'Dê uma faixa: mínimo, mais provável e máximo. O custo é por pessoa por ano e o efeito é o ganho médio de aprendizagem, em desvios-padrão da avaliação. Sem isso, o plano mostra só a fórmula.', ex: 'Exemplo: reforço no contraturno, US$ 40 por estudante por ano, com efeito esperado de 0,10 desvio-padrão.' },
+  { passo: '1b', n: '1.2.10', id: 'volumeResultado', onde: 'caso', tipo: 'volume', opcional: true, t: 'Qual resultado a ferramenta entrega, e em que volume?', h: 'Escolha a unidade e informe o volume esperado, por mês ou por ano. Com isso o plano calcula o custo por unidade de resultado.', ex: 'Exemplo: 3.000 solicitações por mês.' },
   // 1.3 Governança (camada 1)
   ...QUESTOES_G.map(q => ({ passo: '1c', n: q.n, id: q.id, onde: 'resp', tipo: 'seg', opc: RESP_G, t: q.t, h: q.h, ex: q.ex, detalhe: { qual: q.detalhe, falta: 'O que falta?' } })),
   // 2.0 Prova de conceito ou piloto (múltipla: as duas podem ser marcadas; "Não sei, recomende para mim" é exclusiva)
   { passo: '20', n: '2.0', id: 'testes', onde: 'caso', tipo: 'testes', opc: 'teste', cols: true, t: 'Você vai começar por uma prova de conceito, por um piloto ou pelos dois?', h: 'As duas servem para aprender antes de comprar. A diferença é com quem e em que condições se testa. Você pode marcar as duas: primeiro a prova de conceito, depois o piloto.' },
+  { passo: '20', n: '2.0.1', id: 'instrumentoTeste', onde: 'caso', tipo: 'radio', opc: OPC_INSTRUMENTO_TESTE, cols: true, opcional: true, t: 'Como o teste será contratado ou viabilizado?', h: 'O instrumento define se o teste cria direito de continuar com o fornecedor. Sem resposta, a ferramenta o deduz das respostas sobre teste, pagamento e situação.', ex: 'Exemplo: um contrato pequeno e separado, sem direito de continuar.' },
   // 2.1 Aplicações
   { passo: '2a', n: '2.1.1', id: 'tarefas', onde: 'caso', tipo: 'multi', opc: 'tarefas', sugDe: 'problemas', t: 'O que você quer que a IA faça?', h: 'Escolha uma ou mais tarefas. Cada tarefa já sugere quem usa e quem é afetado no passo 2.2.', outro: { v: 'outra', id: 'tarefaOutra', t: 'Qual tarefa?' } },
   { passo: '2a', n: '2.1.2', id: 'titulo', onde: 'caso', tipo: 'texto', opcional: true, t: 'Como você vai chamar esta aplicação?', h: 'Aparece no plano de contratação.' },
@@ -151,6 +192,8 @@ const CAMPOS = [
   { passo: '2b', n: '2.2.2', id: 'afetados', onde: 'caso', tipo: 'chips', opc: 'afetados', sugere: true, t: 'Quem recebe ou é afetado pelo que a ferramenta produz?', ex: 'Exemplo: os estudantes que recebem as atividades preparadas pelo professor.' },
   { passo: '2b', n: '2.2.3', id: 'consequencias', onde: 'caso', tipo: 'chips', opc: 'consequencias', sugere: true, padrao: true, t: 'O que as pessoas vão fazer com a resposta da ferramenta?', ex: 'Exemplo: o professor revisa o plano de aula e decide o que usar.' },
   { passo: '2b', n: '2.2.4', id: 'frequencia', onde: 'caso', tipo: 'radio', opc: 'frequencia', cols: true, sugere: true, padrao: true, t: 'Com que frequência cada pessoa vai usar?' },
+  { passo: '2b', n: '2.2.5', id: 'contestacaoExiste', onde: 'caso', tipo: 'radio', opc: OPC_CONTESTACAO_EXISTE, cols: true, opcional: true, t: 'Existe um caminho para contestar o que a ferramenta produz e rever a decisão?', h: 'Contestar é pedir a revisão a uma pessoa com prazo e autoridade para mudar o resultado. Sem resposta, a ferramenta presume que o caminho existe só no papel e diz isso no plano.', ex: 'Exemplo: a família pede revisão à direção da escola, que responde em até 10 dias e pode mudar o resultado.' },
+  { passo: '2b', n: '2.2.6', id: 'momentoUso', onde: 'caso', tipo: 'radio', opc: OPC_MOMENTO_USO, cols: true, opcional: true, t: 'Em que momento a ferramenta será usada?', h: 'O momento diz de onde sai o tempo de uso: da grade, do contraturno, de casa ou do planejamento do professor. Sem resposta, o plano pede para decidir.', ex: 'Exemplo: duas sessões de 30 minutos por semana, na aula de matemática.' },
   // 2.3 Adoção (ferramentas; as perguntas 2.3.4 a 2.3.7 valem para a ferramenta principal, a primeira da lista)
   { passo: '2c', n: '2.3.1', id: 'nFerramentas', onde: 'caso', tipo: 'radio', opc: 'nFerramentas', cols: true, sugDe: 'testes', t: 'Quantas ferramentas você pretende usar?', h: 'Conte as ferramentas de IA que as pessoas vão usar neste caso.', ex: 'Exemplo: um assistente para planejar aulas e outra ferramenta para corrigir redações são duas ferramentas.' },
   { passo: '2c', n: '2.3.2', id: 'conheceFerramentas', onde: 'caso', tipo: 'radio', opc: 'conheceFerramentas', cols: true, t: 'Você já sabe quais?' },
@@ -163,6 +206,7 @@ const CAMPOS = [
     t: 'De que tamanho e por quanto tempo será o piloto?', h: 'Participantes são as pessoas que usam a ferramenta.', ex: 'Exemplo: 20 escolas, 600 professores, 4 meses.',
     tPoc: 'Quantas pessoas vão testar e por quanto tempo?', hPoc: 'Na prova de conceito testam a equipe e algumas pessoas convidadas, sem usuários reais.', exPoc: 'Exemplo: 15 pessoas, 2 meses.',
     tAmbos: 'De que tamanho e por quanto tempo serão a prova de conceito e o piloto?', hAmbos: 'Primeiro a prova de conceito, com a equipe e algumas pessoas convidadas; depois o piloto, com usuários reais em poucas escolas.', exAmbos: 'Exemplo: prova de conceito com 15 pessoas por 2 meses; piloto com 20 escolas, 600 professores, 4 meses.' },
+  { passo: '2c', n: '2.3.9', id: 'treino', onde: 'caso', tipo: 'radio', opc: OPC_TREINO, cols: true, opcional: true, t: 'O fornecedor pode usar os dados da rede para treinar ou melhorar os modelos dele?', h: 'Proibir esse uso é obrigação do contrato, e não uma configuração da conta. Sem resposta, a ferramenta presume que não se sabe e pede a cláusula de proibição.', ex: 'Exemplo: o contrato diz que os dados dos estudantes não treinam modelos do fornecedor.' },
   // 2.4 Infraestrutura e dispositivos (camada 3): internet e dispositivos separados
   { passo: '2d', n: '2.4.1', id: 'internet', onde: 'caso', tipo: 'radio', opc: 'internet', cols: true, t: 'As escolas têm internet adequada para o uso previsto?', h: 'Adequada: aguenta todas as pessoas que vão usar a ferramenta ao mesmo tempo, por exemplo uma turma inteira conectada.', ex: 'Exemplo: em metade das escolas a conexão cai quando duas turmas usam a internet ao mesmo tempo (parcialmente).' },
   { passo: '2d', n: '2.4.2', id: 'escolasInternet', onde: 'caso', tipo: 'num', se: c => c.internet === 'parcial', t: 'Quantas escolas da rede têm internet adequada?', h: 'A estimativa considera o custo de conexão para as demais escolas.', ex: 'Exemplo: 400 das 600 escolas.' },
@@ -174,14 +218,20 @@ const CAMPOS = [
   { passo: '2e', n: '2.5.3', id: 'formacaoFormato', onde: 'caso', tipo: 'radio', opc: 'formacaoFormato', cols: true, t: 'Em que formato?' },
   { passo: '2e', n: '2.5.4', id: 'formacaoHoras', onde: 'caso', tipo: 'horas', t: 'Quantas horas de formação por pessoa?', h: 'Some todas as atividades de formação previstas para cada pessoa.', ex: 'Exemplo: 4 horas de oficina e 4 horas de acompanhamento em sala = 8 horas.' },
   { passo: '2e', n: '2.5.5', id: 'formacaoPaga', onde: 'caso', tipo: 'radio', opc: 'formacaoPaga', cols: true, t: 'Quem paga a formação?' },
+  { passo: '2e', n: '2.5.6', id: 'tempoJornada', onde: 'caso', tipo: 'radio', opc: OPC_TEMPO_JORNADA, cols: true, opcional: true, t: 'A formação e o uso cabem na jornada paga dos professores?', h: 'Formação fora do horário de trabalho tem pouca adesão e pode criar problema trabalhista. O tempo do professor é custo mesmo quando não é gasto novo.', ex: 'Exemplo: a formação usa as horas de trabalho pedagógico coletivo da escola.' },
   // 2.6 Operação e suporte (camada 7)
   { passo: '2f', n: '2.6.1', id: 'suporteQuem', onde: 'caso', tipo: 'radio', opc: 'suporteQuem', cols: true, t: 'Quem vai dar suporte aos usuários?', ex: 'Exemplo: o fornecedor atende pelo chat e a equipe de tecnologia da rede resolve o acesso e as contas (as duas).' },
   { passo: '2f', n: '2.6.2', id: 'suporteNivel', onde: 'caso', tipo: 'radio', opc: 'suporteNivel', cols: true, t: 'Que nível de suporte?' },
   { passo: '2f', n: '2.6.3', id: 'acompanhamento', onde: 'caso', tipo: 'radio', opc: 'acompanhamento', cols: true, t: 'Que nível de acompanhamento do uso?', h: 'Acompanhar o uso é verificar quem usa, como usa e com que resultado.' },
+  { passo: '2f', n: '2.6.4', id: 'apoioEscola', onde: 'caso', tipo: 'radio', opc: OPC_APOIO_ESCOLA, cols: true, opcional: true, t: 'Quem apoia os professores na escola, no dia a dia, no uso da ferramenta?', h: 'O suporte técnico resolve acesso e senha. A dúvida sobre como usar na aula precisa de alguém na escola que conheça a turma.', ex: 'Exemplo: um professor de referência por escola, com 2 a 4 horas por semana para apoiar os colegas.' },
+  { passo: '2f', n: '2.6.5', id: 'revisao', onde: 'caso', tipo: 'revisao', se: c => (c.tarefas || []).includes('alerta_precoce'), opcional: true, t: 'Quanto trabalho de revisão os alertas vão dar?', h: 'Cada alerta precisa da revisão de uma pessoa antes de virar ação. Com a taxa e os minutos, a estimativa soma as horas de revisão ao custo; sem eles, essa linha não entra.', ex: 'Exemplo: 5% dos estudantes alcançados sinalizados por mês, 15 minutos para revisar cada alerta.' },
   // 3.1 Primeira etapa da implantação
   { passo: '3a', n: '3.1.1', id: 'implantacao', onde: 'caso', tipo: 'implant', sugDe: 'elegiveis', t: 'Na primeira etapa, quantas escolas e quantas pessoas vão usar?', h: 'É o primeiro ano de uso depois do teste (Ano 1 da estimativa).', ex: 'Exemplo: 200 escolas e 4.000 professores no primeiro ano.' },
+  { passo: '3a', n: '3.1.2', id: 'estrategiaCompra', onde: 'caso', tipo: 'radio', opc: OPC_ESTRATEGIA_COMPRA, cols: true, opcional: true, t: 'Como a necessidade vai ao mercado?', h: 'O instrumento certo depende da maturidade da solução: um produto pronto ou algo a desenvolver. Sem resposta, a ferramenta o deduz do tipo de tecnologia e da adaptação.', ex: 'Exemplo: diálogo com o mercado para uma solução ainda sem produto pronto.' },
+  { passo: '3a', n: '3.1.3', id: 'dotacao', onde: 'caso', tipo: 'radio', opc: OPC_DOTACAO, cols: true, opcional: true, t: 'A despesa dos próximos exercícios está prevista no orçamento?', h: 'Um contrato de vários anos sem previsão orçamentária é um vício comum. Responda sobre os exercícios depois do teste.', ex: 'Exemplo: a despesa do Ano 1 está no orçamento, e a dos anos seguintes ainda não (em parte).' },
   // 3.2 Arquitetura e integração (antes ficava no 2.3)
   { passo: '3b', n: '3.2.1', id: 'arquitetura', onde: 'caso', tipo: 'arq', t: 'Qual arquitetura a ferramenta principal vai usar?', h: 'Mude só se souber; senão, use a arquitetura presumida.' },
+  { passo: '3b', n: '3.2.2', id: 'verificacao', onde: 'caso', tipo: 'radio', opc: OPC_VERIFICACAO, cols: true, opcional: true, t: 'O contrato garante o registro da versão do modelo e os registros de uso?', h: 'Sem esses registros a rede não consegue refazer testes nem explicar uma saída. A resposta define a verificabilidade da ferramenta no cálculo do risco.', ex: 'Exemplo: o fornecedor avisa cada troca de versão e entrega os registros de uso todo mês.' },
   // 4.1 Escala e horizonte
   { passo: '4a', n: '4.1.1', id: 'elegiveis', onde: 'caso', tipo: 'num', sugDe: 'usuarios', t: 'Se der certo, quantas pessoas usariam a ferramenta em toda a rede?', h: 'Base da estimativa de custo depois da implantação.', ex: 'Exemplo: 12.000 professores ou 150.000 estudantes.' },
   { passo: '4a', n: '4.1.2', id: 'expansao', onde: 'caso', tipo: 'radio', opc: 'expansao', cols: true, padrao: true, t: 'Em quanto tempo, depois da implantação, você pretende chegar a todas essas pessoas?' },
@@ -198,6 +248,10 @@ const ARQ_DESC = {
   saas: 'A rede assina um produto pronto, usado pelo navegador ou por aplicativo; o fornecedor opera tudo.',
   api: 'Uma aplicação, própria ou contratada, usa pela internet o modelo de IA de uma empresa e paga pelo uso; pode consultar documentos da rede.',
   ow: 'Um modelo aberto roda numa nuvem contratada pela rede, que responde pela operação e pela segurança.',
+  // R8 (REC-52, decisão 10): opções novas; a estimativa de custo ainda não tem exemplo de partida próprio para elas
+  preditivo: 'Um modelo treinado com os dados da rede para prever um resultado, como o risco de abandono.',
+  ow_api: 'Uma aplicação usa pela internet um modelo aberto oferecido por uma empresa, que cobra pelo uso.',
 };
 
-export { FASES, PASSOS, PASSO_INFO, CAMADAS, CAMADA_PASSOS, CAMADAS_INFO, REF_TCO, FIG_INFO, NIVEIS_ADM, ETAPAS_ENS, RESP_G, QUESTOES_G, CAMPOS, ARQ_DESC };
+export { OPC_PUBLICO, OPC_CONTESTACAO_EXISTE, OPC_TREINO, OPC_VERIFICACAO, OPC_INSTRUMENTO_TESTE, OPC_ESTRATEGIA_COMPRA, OPC_DOTACAO, OPC_TEMPO_JORNADA, OPC_MOMENTO_USO, OPC_APOIO_ESCOLA,
+  OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO, FASES, PASSOS, PASSO_INFO, CAMADAS, CAMADA_PASSOS, CAMADAS_INFO, REF_TCO, FIG_INFO, NIVEIS_ADM, ETAPAS_ENS, RESP_G, QUESTOES_G, CAMPOS, ARQ_DESC };

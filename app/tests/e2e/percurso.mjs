@@ -88,7 +88,7 @@ async function percorrer(b, largura) {
     if (!m) break;
     if (m[2] === 'sintese') {
       const n = +m[1];
-      ok(await p.getByRole('heading', { name: n === 4 ? 'O plano está completo' : 'Até aqui, o que você já sabe' }).isVisible(), `${rotulo}: síntese ${n} sem título`);
+      ok(await p.getByRole('heading', { name: n === 4 ? 'Seu próximo passo' : 'Até aqui, o que você já sabe' }).isVisible(), `${rotulo}: síntese ${n} sem título`);
       if (n >= 2) ok(/US\$/.test(await p.locator('.pr-chaptersummary, main').first().innerText()), `${rotulo}: síntese ${n} sem número`);
       await semRolagemHorizontal(p, `${rotulo} síntese ${n}`);
       await p.getByRole('link', { name: n < 4 ? new RegExp(`^Capítulo ${n + 1}:`) : /^Abrir o plano$/ }).click();
@@ -413,6 +413,32 @@ async function arabe(b) {
   await ctx.close();
 }
 
+// 7. R6 (REC-45, REC-21, REC-42): o plano do exemplo B a 360 × 740 sem rolagem horizontal, com todas as sanfonas
+// abertas; o veredito é a mesma frase em "Em resumo" e na síntese do capítulo 4 ("Seu próximo passo")
+async function recomendacoes360(b) {
+  const { ctx, p, erros } = await abrirPt(b, 360, '#/plano', true);
+  await p.setViewportSize({ width: 360, height: 740 });
+  const veredito = (await p.locator('.pc-veredito-texto').first().innerText()).trim();
+  ok(/^Próxima decisão: /.test(veredito), `R6: "Em resumo" sem o veredito (${veredito.slice(0, 60)})`);
+  ok(/Condições de uso nas escolas: 0 de 4/.test(await p.locator('.pc-contadores').innerText()), 'R6: B sem "Condições de uso nas escolas: 0 de 4"');
+  ok(await p.locator('.pc-rc').count() === 5, `R6: esperava 5 cartões, achou ${await p.locator('.pc-rc').count()}`);
+  for (const pg of ['#/plano', '#/plano/fazer', '#/plano/exigir', '#/plano/custa']) {
+    await irPara(p, pg);
+    await p.locator('.pc-plano-pagina').waitFor({ timeout: 5000 });
+    await p.evaluate(() => document.querySelectorAll('details').forEach((d) => { d.open = true; }));
+    await p.waitForTimeout(200);
+    await semRolagemHorizontal(p, `R6 360px ${pg}`);
+  }
+  await irPara(p, '#/capitulo/4/sintese');
+  const prox = p.locator('[data-proximo]');
+  await prox.waitFor({ timeout: 5000 });
+  ok((await prox.locator('.pc-proximo-v').innerText()).trim() === veredito, 'R6: o veredito da síntese do capítulo 4 difere do de "Em resumo"');
+  ok(await prox.getByRole('button', { name: 'Baixar o plano (PDF)' }).count() === 1, 'R6: síntese sem o botão "Baixar o plano (PDF)"');
+  await semRolagemHorizontal(p, 'R6 360px síntese do capítulo 4');
+  ok(erros.length === 0, `R6: erros na página: ${erros.join(' | ')}`);
+  await ctx.close();
+}
+
 const b = await chromium.launch();
 try {
   for (const w of [1360, 400]) { console.log(`percurso em ${w}px`); await percorrer(b, w); }
@@ -424,6 +450,7 @@ try {
   console.log('refinar'); await refinar(b);
   console.log('de onde vem?'); await deOndeVem(b);
   console.log('árabe'); await arabe(b);
+  console.log('recomendações a 360 px'); await recomendacoes360(b);
 } finally { await b.close(); servidor.close(); }
 console.log(`${verificacoes - falhas} de ${verificacoes} verificações ok`);
 process.exit(falhas ? 1 : 0);

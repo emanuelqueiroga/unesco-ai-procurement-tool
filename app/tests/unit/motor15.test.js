@@ -24,8 +24,30 @@ const mk = (k, muda) => cfgDe(Object.assign(clone(CASOS[k]), muda || {}), CTX_EX
 const av = cfg => avaliar(calcular(cfg));
 const soma = a => a.reduce((x, y) => x + y, 0);
 
-// ------------------------------------------------------------------ (1) linear = v13, para os exemplos e o fixture da v10
-const base = JSON.parse(fs.readFileSync(path.join(RAIZ, 'app', 'tests', 'fixtures', 'baseline_v13_motor.json'), 'utf8'));
+// ------------------------------------------------------------------ (1) linear = v13 (+ R7), para os exemplos e o fixture da v10
+// R7 (decisão 2, opção b; seção 8, E1–E3; REC-51): a referência passa a ser baseline_r7_motor.json, gerado com o motor
+// do R7. baseline_v13_motor.json fica como estava, e o bloco (1b) abaixo confere que a diferença entre os dois está só
+// onde a seção 8 prevê: K3.4 (teste local, US$ 12 mil no Ano 0) em A, B, C e no fixture da v10; K5.4 no Ano 0 (US$ 45 mil,
+// crianças em contato direto com tutoria) em B e no fixture da v10; e D de limitado a moderado (verificabilidade
+// "parcial" com API), com a governança do nível moderado (K5 sobe, K6.2 de reexecução sai). Nada mais muda.
+const base = JSON.parse(fs.readFileSync(path.join(RAIZ, 'app', 'tests', 'fixtures', 'baseline_r7_motor.json'), 'utf8'));
+const baseV13 = JSON.parse(fs.readFileSync(path.join(RAIZ, 'app', 'tests', 'fixtures', 'baseline_v13_motor.json'), 'utf8'));
+{
+  const delta = (n, k) => (base[n].porK[k] || 0) - (baseV13[n].porK[k] || 0);
+  Object.keys(baseV13).forEach(n => {
+    const ex = n.split('_')[0];   // A, B, C, D ou poc
+    igual(n + ': R7 não muda as pessoas por ano', base[n].E, baseV13[n].E);
+    eq(n + ': R7 não muda a saída', base[n].saida, baseV13[n].saida, 1e-12);
+    ['K1', 'K2', 'K4'].forEach(k => eq(n + ': R7 não muda ' + k, base[n].porK[k], baseV13[n].porK[k], 1e-12));
+    eq(n + ': R7: K3 + teste local (K3.4) só fora do D', delta(n, 'K3'), ex === 'D' ? 0 : 12000, 1e-9);
+    if (ex === 'D') chk(n + ': R7: D moderado (K5 sobe, K6.2 de reexecução sai)', delta(n, 'K5') > 0 && delta(n, 'K6') < 0, [delta(n, 'K5'), delta(n, 'K6')]);
+    else {
+      eq(n + ': R7: K5 + testes adversariais no Ano 0 só com crianças em contato direto', delta(n, 'K5'), ['B', 'poc'].includes(ex) ? 45000 : 0, 1e-9);
+      eq(n + ': R7 não muda K6 fora do D', delta(n, 'K6'), 0, 1e-12);
+    }
+    eq(n + ': R7: a conta econômica muda só pelos componentes', base[n].ctEco - baseV13[n].ctEco, ['K3', 'K5', 'K6'].reduce((x, k) => x + delta(n, k), 0), 1e-9);
+  });
+}
 const instantaneo = (cfg) => {
   const a = av(cfg), o = orcamento(cfg), ind = indicadores(cfg, a);
   return { E: cfg.demanda.E, ctEco: a.ctEco, ecoAno: a.ecoAno, finAno: a.finAno, dot: o.dot, icu: ind.icu, porK: a.porK, saida: a.saidaTotalNominal };
@@ -33,7 +55,7 @@ const instantaneo = (cfg) => {
 const cmpBase = (nome, atual) => {
   const b = base[nome];
   igual(nome + ': E por ano igual à v13', atual.E, b.E);
-  eq(nome + ': ctEco igual à v13', atual.ctEco, b.ctEco, 1e-12);
+  eq(nome + ': ctEco igual à v13 + R7', atual.ctEco, b.ctEco, 1e-12);
   atual.ecoAno.forEach((v, t) => eq(nome + ': conta econômica do Ano ' + t, v, b.ecoAno[t], 1e-12));
   atual.finAno.forEach((v, t) => eq(nome + ': desembolso do Ano ' + t, v, b.finAno[t], 1e-12));
   atual.dot.forEach((v, t) => eq(nome + ': dotação do Ano ' + t, v, b.dot[t], 1e-12));

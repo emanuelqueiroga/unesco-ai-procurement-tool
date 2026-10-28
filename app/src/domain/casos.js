@@ -37,6 +37,20 @@ const CASO_VAZIO = {
   // (4.1.7, em %; vazio = padrão da ferramenta, 10% ao ano)
   curva: 'linear', ondas: [{ ano: '', pct: '' }, { ano: '', pct: '' }, { ano: '', pct: '' }, { ano: '', pct: '' }],
   reposicaoDisp: 'nao', rotacaoFormacao: '',
+  // R8 (REC-52): perguntas novas do Refinar (seção 7 de design/redesign/05-requisitos-recomendacoes.md). Em branco = "não informado":
+  // as regras disparam na variante "Decidir…" e o motor mantém a premissa de antes. Só valores neutros; nenhuma conta usa estes
+  // campos enquanto não houver resposta.
+  //  publico (1.1.6): ids de OPC_PUBLICO; altCustoEfeito (1.2.9): faixa { min, provavel, max } do custo (US$ por pessoa por ano) e do efeito (DP);
+  //  volumeResultado (1.2.10): { unidade: 'solicitacoes' | 'estudantes', volume, periodo: 'mes' | 'ano' };
+  //  instrumentoTeste (2.0.1), contestacaoExiste (2.2.5), momentoUso (2.2.6), treino (2.3.9), tempoJornada (2.5.6), apoioEscola (2.6.4),
+  //  revisao (2.6.5: { taxaAlerta: % dos estudantes alcançados sinalizados por mês, minutos por alerta }), estrategiaCompra (3.1.2),
+  //  dotacao (3.1.3) e verificacao (3.2.2): ids de OPC_* em fluxo_dados.js.
+  publico: [],
+  altCustoEfeito: { custo: { min: '', provavel: '', max: '' }, efeito: { min: '', provavel: '', max: '' } },
+  volumeResultado: { unidade: '', volume: '', periodo: 'mes' },
+  instrumentoTeste: '', contestacaoExiste: '', momentoUso: '', treino: '', tempoJornada: '', apoioEscola: '',
+  revisao: { taxaAlerta: '', minutos: '' },
+  estrategiaCompra: '', dotacao: '', verificacao: '',
   ajustes: {}, degrau: 2,
 };
 // Uma linha da lista de ferramentas (2.3.3). preco: US$ por usuário por mês (opcional).
@@ -271,7 +285,29 @@ function migrarCasoV10(c) {
 // ---------------------------------------------------------------------
 // Governança proporcional ao risco (Tab. 11.x) em linhas de custo
 // ---------------------------------------------------------------------
-function governancaPorRisco(cfg, nivel, esc) {
+// R7 (decisão 2, opção b; seção 8, E2 e E3):
+//  - K3.4 "Teste local e conjunto de avaliação" entra no Ano 0 em todos os níveis de risco (antes só no limitado), com o
+//    valor da convenção gov.testeLocal. O "valor maior no risco elevado" do TEC-07 espera uma convenção própria na base.
+//  - K5.4 (testes adversariais) começa no Ano 0 quando há crianças em contato direto com IA generativa ou tutoria
+//    (opts.contatoCriancas): antes do piloto com crianças, e não depois dele.
+//  - K5.3 por volume (E4, P2): com opts.revisao = { alcancados: [por ano], meses: [por ano], taxaAlerta (% dos estudantes
+//    alcançados sinalizados por mês), minutos (por alerta revisado) }, entra uma linha de K5.3 com as horas de revisão
+//    caso a caso: alcançados × taxa × meses × minutos ÷ 60 ÷ horas por pessoa por ano (conv.horasAno). Sem taxa e minutos
+//    informados (nenhuma pergunta ainda os pede), a linha não entra e os números não mudam.
+// opts é opcional: sem ele, só a mudança de K3.4 vale.
+function revisaoPorVolume(rev, esc) {
+  if (!rev) return null;
+  const tx = +rev.taxaAlerta, min = +rev.minutos;
+  if (!(tx > 0) || !(min > 0) || !Array.isArray(rev.alcancados)) return null;
+  const hAno = _refValor('conv.horasAno', esc);
+  const meses = Array.isArray(rev.meses) ? rev.meses : [];
+  const alertasMes = rev.alcancados.map(n => Math.max(0, +n || 0) * tx / 100);
+  const horas = alertasMes.map((a, t) => a * Math.min(12, Math.max(0, +ano(meses, t) || 12)) * min / 60);
+  return { taxaAlerta: tx, minutos: min, alertasMes, horas, fte: horas.map(h => h / hAno), horasAno: hAno,
+    horasSemana: horas.map((h, t) => h / Math.max(1, (Math.min(12, Math.max(0, +ano(meses, t) || 12)) * 52 / 12))) };
+}
+function governancaPorRisco(cfg, nivel, esc, opts) {
+  opts = opts || {};
   const R = id => _refValor(id, esc);
   const alto = nivel === 'elevado' || nivel === 'critico';
   const mod = nivel === 'moderado';
@@ -284,19 +320,34 @@ function governancaPorRisco(cfg, nivel, esc) {
   cfg.pessoas.push({ cat: 'Governança', s: 'K5.1', nome: 'Gestão contratual e de fornecedor', nat: 'C', partes: [['gestor_contrato', fte(0, alto ? 0.15 : mod ? 0.1 : 0.05)]] });
   cfg.pessoas.push({ cat: 'Governança', s: 'K5.2', nome: 'Privacidade, segurança e conformidade', nat: 'C', partes: [['analista_privacidade', fte(alto ? 0.15 : 0.05, alto ? 0.3 : mod ? 0.1 : 0.05)]] });
   if (alto || mod) cfg.pessoas.push({ cat: 'Monitoramento', s: 'K5.3', nome: 'Monitoramento e revisão de saídas', nat: 'C', partes: [['especialista_pedagogico', fte(alto ? 0.5 : 0, alto ? 1.0 : 0.2)]] });
+  const vol = revisaoPorVolume(opts.revisao, esc);
+  if (vol && vol.fte.some(x => x > 0))
+    cfg.pessoas.push({ cat: 'Monitoramento', s: 'K5.3', nome: 'Revisão caso a caso dos alertas (volume)', nat: 'C', tag: 'revisaoVolume', partes: [['especialista_pedagogico', vol.fte.slice()]] });
+  // K3.4 em todos os níveis (E2): o teste local vem antes do uso com pessoas
+  cfg.itens.push({ cat: 'Avaliação', s: 'K3.4', nome: 'Teste local e conjunto de avaliação', nat: 'D', v: [R('gov.testeLocal'), 0, 0, 0], refs: ['gov.testeLocal', null, null, null] });
+  const adv0 = !!opts.contatoCriancas;
   if (alto) {
     cfg.itens.push({ cat: 'Avaliação', s: 'K5.5', nome: 'Avaliação de impacto com comparador', nat: 'D', v: [0, R('gov.avaliacaoImpacto'), R('gov.avaliacaoImpacto'), 0], refs: [null, 'gov.avaliacaoImpacto', 'gov.avaliacaoImpacto', null] });
-    cfg.itens.push({ cat: 'Governança', s: 'K5.4', nome: 'Testes adversariais externos e auditoria anual', nat: 'D', v: [0, R('gov.testesAdversariais'), R('gov.testesAdversariais'), R('gov.testesAdversariais')], refs: [null, 'gov.testesAdversariais', 'gov.testesAdversariais', 'gov.testesAdversariais'] });
+    cfg.itens.push({ cat: 'Governança', s: 'K5.4', nome: 'Testes adversariais externos e auditoria anual', nat: 'D', v: [adv0 ? R('gov.testesAdversariais') : 0, R('gov.testesAdversariais'), R('gov.testesAdversariais'), R('gov.testesAdversariais')], refs: [adv0 ? 'gov.testesAdversariais' : null, 'gov.testesAdversariais', 'gov.testesAdversariais', 'gov.testesAdversariais'] });
     cfg.itens.push({ cat: 'Mudança tecnológica', s: 'K6.2', nome: 'Reavaliação por mudança material, com testes por grupo', nat: 'D', v: [0, R('gov.reavaliacao.alto'), R('gov.reavaliacao.alto'), R('gov.reavaliacao.alto')], refs: [null, 'gov.reavaliacao.alto', 'gov.reavaliacao.alto', 'gov.reavaliacao.alto'] });
   } else if (mod) {
     cfg.itens.push({ cat: 'Avaliação', s: 'K5.5', nome: 'Avaliação externa na expansão', nat: 'D', v: [0, R('gov.avaliacaoExterna.ano1'), 0, R('gov.avaliacaoExterna.ano3')], refs: [null, 'gov.avaliacaoExterna.ano1', null, 'gov.avaliacaoExterna.ano3'] });
     cfg.itens.push({ cat: 'Governança', s: 'K5.4', nome: 'Auditoria pontual (valor a estimar)', nat: 'D', v: [0, 0, 0, 0], aEstimar: true });
   } else {
-    cfg.itens.push({ cat: 'Avaliação', s: 'K3.4', nome: 'Teste local e conjunto de avaliação', nat: 'D', v: [R('gov.testeLocal'), 0, 0, 0], refs: ['gov.testeLocal', null, null, null] });
     cfg.itens.push({ cat: 'Mudança tecnológica', s: 'K6.2', nome: 'Reexecução dos testes a cada versão', nat: 'D', v: [0, R('gov.reexecucaoTestes'), R('gov.reexecucaoTestes'), R('gov.reexecucaoTestes')], refs: [null, 'gov.reexecucaoTestes', 'gov.reexecucaoTestes', 'gov.reexecucaoTestes'] });
   }
+  // K5.4 no Ano 0 com crianças em contato direto (E3), também fora do risco elevado (só com ajuste manual do perfil, porque
+  // o contato direto já põe "Pessoas afetadas" em elevado)
+  if (adv0 && !alto)
+    cfg.itens.push({ cat: 'Governança', s: 'K5.4', nome: 'Testes adversariais antes do teste com crianças', nat: 'D', v: [R('gov.testesAdversariais'), 0, 0, 0], refs: ['gov.testesAdversariais', null, null, null] });
+  opts.volume = vol;   // detalhe da revisão por volume (ou null), para cfgDoCaso guardar em cfg.v11
   return cfg;
 }
+
+// R7 (E3, TEC-08): crianças em contato direto com IA generativa ou tutoria (estudantes usam, crianças afetadas e
+// tarefa de geração ou tutoria): a mesma condição do alerta "Interação generativa direta com crianças".
+const contatoCriancasGen = ce => !!ce && (ce.usuarios || []).includes('estudantes') && (ce.afetados || []).includes('criancas')
+  && (ce.classes || []).some(k => ['geracao', 'tutoria'].includes(k));
 
 // ---------------------------------------------------------------------
 // Caso efetivo (casoEfetivo) → premissas do motor de custo (plano v9, B.10; v11, "Custo")
@@ -585,17 +636,28 @@ function cfgDoCaso(ce, perfil) {
     });
   }
   // 12. governança proporcional ao risco
-  governancaPorRisco(cfg, agregado, escop);
+  {
+    // R7 (E4): revisão por volume só com taxa de alerta e minutos informados (ce.revisao); estudantes alcançados por ano
+    // proporcionais às pessoas que usam (Et ÷ E) sobre o alcance do caso (estudantes das etapas)
+    const rv = ce.revisao || {};
+    const alc = +ce.alcance > 0 ? +ce.alcance : 0;
+    const revisao = (+rv.taxaAlerta > 0 && +rv.minutos > 0 && alc > 0)
+      ? { taxaAlerta: +rv.taxaAlerta, minutos: +rv.minutos, alcancados: Et.map(n => Math.round(alc * Math.min(1, n / E))), meses: cfg.demanda.meses.slice() } : null;
+    const og = { contatoCriancas: contatoCriancasGen(ce), revisao };
+    governancaPorRisco(cfg, agregado, escop, og);
+    meta.governanca = { contatoCriancas: og.contatoCriancas, testeLocalAno0: true };
+    if (og.volume) meta.revisaoVolume = og.volume;
+  }
   // 13. K4.1 e K5.3 (gestão e monitoramento) × nível de acompanhamento; a operação técnica do modelo não muda
   {
     const fA = P.fatorAcompanhamento[ce.acompanhamento] || 1;
     meta.acompanhamento = { nivel: ce.acompanhamento || '', fator: fA };
     if (fA !== 1) (cfg.pessoas || []).forEach(pp => {
-      if (!['K4.1', 'K5.3'].includes(pp.s) || pp.tag === 'opmodelo') return;
+      if (!['K4.1', 'K5.3'].includes(pp.s) || pp.tag === 'opmodelo' || pp.tag === 'revisaoVolume') return;
       pp.partes = pp.partes.map(([sal, f]) => [sal, Array.isArray(f) ? f.map(x => x * fA) : f * fA]);
     });
   }
   return cfg;
 }
 
-export { premissasK1, premissasV11, CASO_VAZIO, FERRAMENTA_VAZIA, CASOS, CTX_EX, RESP_EX, ADAPTACAO, fatoresAdaptacao, PREMISSAS_K1, PREMISSAS_V11, horasFormacaoEstimada, migrarCasoV10, cfgDoCaso, governancaPorRisco, novoCaso, formadosDoEstoque, ROTULO_PAPEL, trajetoriaPessoas, ondasValidas };
+export { premissasK1, premissasV11, CASO_VAZIO, FERRAMENTA_VAZIA, CASOS, CTX_EX, RESP_EX, ADAPTACAO, fatoresAdaptacao, PREMISSAS_K1, PREMISSAS_V11, horasFormacaoEstimada, migrarCasoV10, cfgDoCaso, governancaPorRisco, revisaoPorVolume, contatoCriancasGen, novoCaso, formadosDoEstoque, ROTULO_PAPEL, trajetoriaPessoas, ondasValidas };

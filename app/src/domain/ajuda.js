@@ -147,6 +147,20 @@ const PERGUNTAS = {
   '4.1.1': { como: P['4.1'].como, exemplo: P['4.1'].ex },
   '4.1.2': { como: 'Pense no ritmo em que a rede consegue ampliar o uso depois da primeira etapa.', exemplo: P['4.1'].ex },
   '4.1.3': { como: 'Além do Ano 0, que é o da prova de conceito ou do piloto.' },
+  // R8 (REC-52): perguntas novas do Refinar. Só o "Quem costuma saber"; a explicação de cada uma está em DICAS (abaixo do título no Refinar).
+  '1.1.6': { quem: 'inclusão, educação especial e planejamento' },
+  '1.2.9': { quem: 'planejamento e orçamento' },
+  '1.2.10': { quem: 'planejamento e a área que opera o serviço' },
+  '2.0.1': { quem: 'compras e assessoria jurídica' },
+  '2.2.5': { quem: 'ouvidoria, assessoria jurídica e direção das escolas' },
+  '2.2.6': { quem: P['2.2'].quem },
+  '2.3.9': { quem: 'proteção de dados e assessoria jurídica' },
+  '2.5.6': { quem: P['2.5'].quem },
+  '2.6.4': { quem: 'coordenação pedagógica e direção das escolas' },
+  '2.6.5': { quem: 'área pedagógica e equipe que acompanha os alertas' },
+  '3.1.2': { quem: 'compras e assessoria jurídica' },
+  '3.1.3': { quem: P['4.2'].quem },
+  '3.2.2': { quem: P['3.2'].quem },
 };
 // Variantes do tamanho do teste (2.3.8) segundo o tipo de teste: 'poc' (prova de conceito) e 'ambos' (os dois)
 const VARIANTES_TESTE = {
@@ -226,6 +240,20 @@ export const DICAS = {
   arquitetura: 'Produto pronto ([[saas|SaaS]]), aplicação que usa uma [[api|API]] ou modelo de [[pesos|pesos abertos]]: cada um tem custos diferentes.',
   elegiveis: 'Todas as pessoas que usariam a ferramenta: o [[recorrente|custo recorrente]] anual cresce com este número.',
   horizonte: 'Um horizonte maior mostra o custo de manter a ferramenta, e não só o de começar.',
+  // R8 (REC-52): perguntas novas do Refinar
+  publico: 'Estes grupos pedem acessibilidade, línguas e conexão adequadas. Sem resposta, o quadro de equidade mostra "não informado", e não "sem risco".',
+  altCustoEfeito: 'Custo por pessoa por ano, em US$, e ganho de aprendizagem em desvios-padrão, em faixa. Sem isso, o plano mostra só a fórmula do efeito de empate.',
+  volumeResultado: 'Com o volume por mês ou por ano, o plano calcula o custo por solicitação ou por estudante atendido.',
+  instrumentoTeste: 'O instrumento define se o teste cria direito de continuar com o fornecedor. Sem resposta, é deduzido do teste, do pagamento e da situação.',
+  contestacaoExiste: 'Sem resposta, o plano presume um caminho só no papel. Se não existe e a saída afeta pessoas, o plano diz "ainda não avance".',
+  momentoUso: 'O momento diz de onde sai o tempo de uso: da grade, do contraturno, de casa ou do planejamento do professor.',
+  treino: 'Sem resposta, o plano presume que não se sabe e pede a cláusula de proibição. "Sim" gera um alerta de bloqueio.',
+  tempoJornada: 'Formação fora do horário pago tem pouca adesão. O tempo do professor é custo da [[camada]] 6, mesmo quando não é gasto novo.',
+  apoioEscola: 'O suporte técnico resolve acesso e senha; a dúvida de como usar na aula precisa de alguém na escola. "Ninguém definido" pede a recomendação.',
+  revisao: 'A taxa de estudantes sinalizados por mês e os minutos por alerta dão as horas de revisão. Sem os dois, a estimativa não inclui essa linha.',
+  estrategiaCompra: 'O instrumento certo depende da maturidade da solução. Sem resposta, é deduzido do tipo de tecnologia e da adaptação.',
+  dotacao: 'Sem [[dotacao|dotação]] prevista, um contrato de vários anos pode ser cortado no meio. "Não", "Em parte" e "Não sei" tornam a reserva uma condição.',
+  verificacao: 'Registro de versão e registros de uso permitem refazer testes e explicar saídas. Sem eles a verificabilidade cai e o risco sobe.',
 };
 /** campos cuja dica aparece também na tela do Essencial (trazem o que a frase de abertura não traz) */
 export const DICA_NA_TELA = ['testes', 'tipoTec', 'pagamento', 'internet', 'formacaoHoras', 'suporteNivel'];

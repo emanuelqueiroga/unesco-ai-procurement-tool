@@ -2,13 +2,16 @@
 // denominador, icebergs por fase, custo por fase, seis respostas, cinco ações, títulos sem códigos, caso em branco e PDF.
 // Números de referência do exemplo B (design/redesign/paridade-0015/REL.md): P10 1.732.203, central 1.770.133,
 // P90 1.870.698; icebergs 336.234, 416.803 e 1.017.095; custo em regime 469.534.
+// R7 (decisão 2, opção b; seção 8, E2 e E3): o B ganha US$ 12 mil de K3.4 (teste local) e US$ 45 mil de K5.4 (testes
+// adversariais, crianças em contato direto) no Ano 0: +US$ 57 mil só no piloto. Agora: P10 1.789.203, central 1.827.133,
+// P90 1.927.698; icebergs 393.234, 416.803 e 1.017.095; custo em regime 469.534 (igual: o Ano 2 não muda).
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { useCaso } from '../../src/store/caso';
 import { numerosDe } from '../../src/store/selectors';
-import { setLang, setMoeda, setTabelaMoedas, din, tr } from '../../src/domain';
+import { setLang, setMoeda, setTabelaMoedas, din, tr, resultadoRecomendacoes } from '../../src/domain';
 import { secoesPlano, trSecao, secoesDaPagina } from '../../src/plano/secoes.js';
 import { gerarPDF, pdfTxt } from '../../src/plano/pdf.js';
 import { relDados, relFaixa, relIndicadores, relIcebergs, relTabelaFases, relCacheTamanho, relAcoes, R } from '../../src/plano/relatorio.js';
@@ -36,15 +39,15 @@ const sumario = (e: any) => (secoesPlano(e) as any[]).find(s => s.id === 'resumo
 describe('números do exemplo B (REL-20)', () => {
   it('faixa P10–P90, valor central e custo em regime', () => {
     const d: any = relDados(exemplo('B'));
-    expect(Math.round(d.lo)).toBe(1732203);
-    expect(Math.round(d.central)).toBe(1770133);
-    expect(Math.round(d.hi)).toBe(1870698);
+    expect(Math.round(d.lo)).toBe(1789203);
+    expect(Math.round(d.central)).toBe(1827133);
+    expect(Math.round(d.hi)).toBe(1927698);
     expect(d.lo).toBeLessThanOrEqual(d.central);
     expect(d.hi).toBeGreaterThanOrEqual(d.central);
     expect(Math.round(d.anual.eco)).toBe(469534);
     expect(d.anual.ano).toBe(2);
     const f: any = relFaixa(d);
-    expect(f.faixaTxt).toBe('Faixa provável (P10 a P90): US$ 1,73 mi a US$ 1,87 mi');
+    expect(f.faixaTxt).toBe('Faixa provável (P10 a P90): US$ 1,79 mi a US$ 1,93 mi');
     expect(f.pLo).toBeLessThanOrEqual(f.pCentral);
     expect(f.pCentral).toBeLessThanOrEqual(f.pHi);
   });
@@ -53,11 +56,11 @@ describe('números do exemplo B (REL-20)', () => {
     const d: any = relDados(exemplo('B'));
     const I: any = relIcebergs(d);
     expect(I.fases.map((f: any) => f.id)).toEqual(['piloto', 'implantacao', 'expansao']);
-    expect(I.fases.map((f: any) => Math.round(f.tAcima + f.tAbaixo))).toEqual([336234, 416803, 1017095]);
+    expect(I.fases.map((f: any) => Math.round(f.tAcima + f.tAbaixo))).toEqual([393234, 416803, 1017095]);
     I.fases.forEach((f: any) => expect(f.tAcima + f.tAbaixo).toBeCloseTo(d.av.fases.porFase[f.id].total, 6));
     const ws = I.fases.flatMap((f: any) => f.acima.concat(f.abaixo).map((x: any) => x.w));
     expect(Math.max(...ws)).toBeCloseTo(1, 9);
-    expect(I.fases.map((f: any) => f.ocultoTxt)).toEqual(['94% abaixo da linha d’água', '87% abaixo da linha d’água', '89% abaixo da linha d’água']);
+    expect(I.fases.map((f: any) => f.ocultoTxt)).toEqual(['95% abaixo da linha d’água', '87% abaixo da linha d’água', '89% abaixo da linha d’água']);
     expect(I.fases[0].acima.find((x: any) => x.k === 'icComp').nome).toBe('Computação e hospedagem');
   });
 
@@ -65,7 +68,7 @@ describe('números do exemplo B (REL-20)', () => {
     const d: any = relDados(exemplo('B'));
     const t: any = relTabelaFases(d);
     expect(t.rows.map((r: string[]) => r[0])).toEqual(['Prova de conceito ou piloto', 'Implantação', 'Expansão', 'Total']);
-    expect(t.rows[3].slice(2, 5)).toEqual(['446,7', '1.323,5', '1.770,1']);
+    expect(t.rows[3].slice(2, 5)).toEqual(['458,7', '1.368,5', '1.827,1']);
   });
 
   it('a simulação roda uma vez por caso (cache): a segunda chamada não simula de novo', () => {
@@ -81,19 +84,19 @@ describe('números do exemplo B (REL-20)', () => {
 });
 
 describe('indicadores com o nome do denominador (decisão 3)', () => {
-  it('US$ 4,97 por aprendiz com acesso e US$ 12,77 por usuário ativo, sem o mesmo número com dois nomes', () => {
+  it('US$ 5,13 (era 4,97 antes do R7) por aprendiz com acesso e US$ 13,18 (era 12,77) por usuário ativo, sem o mesmo número com dois nomes', () => {
     const e = exemplo('B');
     const n: any = numerosDe(e);
     const L = relIndicadores(relDados(e)) as any[];
     const por = Object.fromEntries(L.map(k => [k.id, k]));
     expect(por.aprendiz.rotulo).toBe('Por aprendiz com acesso por ano');
-    expect(por.aprendiz.valor).toBe('US$ 4,97');
-    expect(por.usuario.rotulo).toBe('Por usuário ativo por ano');
-    expect(por.usuario.valor).toBe(din(n.porAluno, 2));
-    expect(por.usuario.valor).toBe('US$ 12,77');
-    // o mesmo rótulo de A2 (página "Quanto custa" e PDF)
+    expect(por.aprendiz.valor).toBe('US$ 5,13');   // R7: era US$ 4,97 (+US$ 57 mil no Ano 0 do B)
+    // R5 (REC-35): "Em resumo" mostra os indicadores rotulados (média do ciclo, regime por acesso, regime por ativo,
+    // teste por participante; testes em rec_numeros.test.ts); a média do ciclo por usuário ativo (US$ 13,18) fica em A2
+    expect(L.map(k => k.id)).toEqual(['ano0', 'aprendiz', 'regimeAcesso', 'regimeAtivo', 'teste']);
     const a2 = (secoesPlano(e) as any[]).find(s => s.id === 'A2' && !s.sub);
-    expect(a2.kv[3]).toEqual([por.usuario.rotulo, por.usuario.valor]);
+    expect(a2.kv[3]).toEqual(['Por usuário ativo por ano', din(n.porAluno, 2)]);
+    expect(a2.kv[3][1]).toBe('US$ 13,18');   // R7: era US$ 12,77
     // nenhum texto do plano chama o custo por usuário de "por estudante"
     expect(textos((secoesPlano(e) as any[]).map(trSecao)).filter(t => /Por estudante por ano/.test(t))).toEqual([]);
   });
@@ -104,28 +107,40 @@ describe('sumário executivo (REL-03, REL-04)', () => {
     const S = sumario(exemplo('B'));
     expect(S.exec.map((x: any) => x.id)).toEqual(['oque', 'porque', 'paraque', 'como', 'entreg', 'ind']);
     const tudo = S.exec.flatMap((x: any) => x.frases).join(' ');
-    expect(tudo).toContain('Contrato com 26 requisitos');
+    // REC-12: só os requisitos do caso (antes, 26 com o checklist genérico do guia)
+    expect(tudo).not.toContain('Contrato com 26 requisitos');
+    // R6 (REC-41): a contagem é a das linhas do caso em "O que exigir" (cada uma com o R-nn de origem)
+    expect(tudo).toContain('Contrato com ' + S.rec.exigir.n + ' requisitos');
+    expect(S.rec.exigir.n).toBe(S.rec.exigir.linhas.length);
     expect(tudo).toContain('Solução em uso por 60.000 pessoas no Ano 3 (40% das que têm acesso)');
     expect(tudo).toContain('Alcance previsto: 150.000 pessoas');
   });
 
-  it('cinco ações: Por quê dá a razão (nunca igual à origem), Quem e Quando preenchidos', () => {
+  it('cinco cartões: Por quê dá a razão (nunca igual à origem), Quem age, Marco e Pronto quando preenchidos', () => {
     const S = sumario(exemplo('B'));
-    expect(S.acoes.length).toBe(5);
-    expect(S.acoes.map((a: any) => a.n)).toEqual([1, 2, 3, 4, 5]);
-    S.acoes.forEach((a: any) => {
-      expect(a.porque).toMatch(/\S/);
-      expect(a.porque).not.toBe(a.origem);
+    // R6 (5.1): os 5 cartões são os da seleção de 4.3 (sumario.rec.cartoes)
+    const C = S.rec.cartoes;
+    expect(C.length).toBe(5);
+    expect(C.map((a: any) => a.n)).toEqual([1, 2, 3, 4, 5]);
+    C.forEach((a: any) => {
+      expect(a.razao).toMatch(/\S/);
+      expect(a.razao).not.toBe(a.origem);
       expect(a.quem).toMatch(/\S/);
-      expect(a.quandoTxt).toMatch(/^Antes|^Para manter/);
-      expect(a.como).not.toMatch(/anexo/);
+      expect(a.marco).toMatch(/\S/);
+      expect(a.pronto).toMatch(/\S/);
+      expect(a.como.length).toBeGreaterThanOrEqual(2);
+      expect(a.rotuloNivel).toMatch(/^(Condição|Recomendada|Para acompanhar)/);
     });
-    const r = S.acoes.find((a: any) => a.id === 'teste-rever');
-    expect(r.oque).toBe('Rever a escolha do piloto');
-    expect(r.porque).toBe('Pelas respostas, uma prova de conceito deveria vir antes.');
-    // sem razão no texto, a resposta que originou a ação
-    expect(relAcoes([{ id: 'x', texto: 'Fazer algo.', quando: 'manter', tipo: 'custo', prioridade: 'media', porque: { n: '2.1.1', pergunta: 'P?', resposta: 'R' } }])[0].porque)
-      .toBe(R('acPorqueResp', '2.1.1', 'R', 'P?'));
+    // REC-06: sem corte no ":"; o antigo teste-rever é a R-07 e começa por um verbo de ação (relAcoes, compatibilidade)
+    const r = relAcoes((resultadoRecomendacoes(exemplo('B')).recs as any[]).filter((x: any) => x.id === 'R-07'))[0];
+    expect(r.oque).toMatch(/^Fazer a prova de conceito antes do piloto/);
+    expect(r.porque).toMatch(/^Pelas respostas, uma prova de conceito deveria vir antes/);
+    // REC-10: a pergunta e a resposta vão para "Origem"; o "Por quê" nunca é a resposta
+    expect(r.origem).toBe(R('acPorqueResp', '2.0', 'Piloto', 'Você vai começar por uma prova de conceito, por um piloto ou pelos dois?'));
+    // item sem regra (sem razão): "Por quê" vazio, origem com a pergunta
+    const x = relAcoes([{ id: 'x', texto: 'Fazer algo.', quando: 'manter', tipo: 'custo', prioridade: 'media', porque: { n: '2.1.1', pergunta: 'P?', resposta: 'R' } }])[0];
+    expect(x.porque).toBe('');
+    expect(x.origem).toBe(R('acPorqueResp', '2.1.1', 'R', 'P?'));
   });
 
   it('títulos-achado e "Quanto custa" sem códigos A2., A3. nem K3.3 (REL-08)', () => {
@@ -133,8 +148,9 @@ describe('sumário executivo (REL-03, REL-04)', () => {
     const secs = (secoesPlano(e) as any[]).map(trSecao);
     const S = secs.find(s => s.id === 'resumo').sumario;
     expect(S.achados.custa).toBe('Os custos recorrentes são 75% do total');
-    expect(S.achados.incerteza).toBe('O custo total pode ficar entre US$ 1,73 mi e US$ 1,87 mi');
-    expect(S.achados.exigir).toBe('Sair do contrato custaria US$ 112,9 mil, ou 0,47 anos de custo recorrente');
+    expect(S.achados.incerteza).toBe('O custo total pode ficar entre US$ 1,79 mi e US$ 1,93 mi');
+    // REC-12: o mesmo valor da camada de saída de "Quanto custa" e o desembolso com o seu rótulo
+    expect(S.achados.exigir).toBe('Sair do contrato custaria US$ 126,5 mil no custo total, com desembolso de transição de US$ 112,9 mil (0,47 anos de custo recorrente)');
     expect(S.achados.fazer).toBe('Estão confirmadas 1 de 6 condições de governança');
     const custa = secoesDaPagina(secs, 'custa').filter((s: any) => s.tipo !== 'bloco');
     const txt = textos(custa.map((s: any) => ({ h: s.h, p: s.p, list: s.list, kv: s.kv, table: s.table }))).join('\n');
@@ -175,20 +191,24 @@ describe('PDF do exemplo B', () => {
     for (let i = 1; i <= doc.getNumberOfPages(); i++) pag.push(doc.internal.pages[i].join('\n'));
     const tudo = pag.join('\n');
     const tem = (s: string) => tudo.includes('(' + pdfTxt(s).replace(/[()]/g, '\\$&'));
-    expect(tem('Faixa provável (P10 a P90): US$ 1,73 mi a US$ 1,87 mi')).toBe(true);
+    expect(tem('Faixa provável (P10 a P90): US$ 1,79 mi a US$ 1,93 mi')).toBe(true);
     expect(tem('US$ 469,5 mil')).toBe(true);
     expect(tem('Por usuário ativo por ano')).toBe(true);
-    expect(tem('US$ 12,77')).toBe(true);
-    expect(tem('US$ 4,97')).toBe(true);
+    expect(tem('US$ 13,18')).toBe(true);   // R7: era US$ 12,77
+    expect(tem('US$ 5,13')).toBe(true);   // R7: era US$ 4,97
     expect(tudo).not.toContain(pdfTxt('Por estudante por ano'));
     expect(tem('A proposta em seis respostas')).toBe(true);
-    expect(tem('94%')).toBe(true);   // (o ’ vira o byte 0x92 do WinAnsi no arquivo)
+    expect(tem('95%')).toBe(true);   // R7: era 94% (K3.4 e K5.4 do Ano 0 ficam abaixo da linha d’água)   // (o ’ vira o byte 0x92 do WinAnsi no arquivo)
     // "Computação e hospedagem" quebra em duas linhas, nunca "Computação…"
     expect(tudo).not.toContain(pdfTxt('Computação…'));
     expect(tem('Computação e')).toBe(true);
     expect(tudo).not.toMatch(/\((?:[^()\\]|\\.)*\bK3\.3\b/);
     // "Em resumo" (sumário executivo) cabe em até 3 páginas (REL-17): "Quanto custa" começa até a p. 5
+    // R6: a sequência de decisões vem logo depois de "Em resumo" (REC-39); "Em resumo" continua em até 3 páginas
+    const pS = pag.findIndex((p, i) => i > 0 && p.includes('(' + pdfTxt('Sequência de decisões') + ')'));
+    expect(pS).toBeGreaterThan(1);
+    expect(pS).toBeLessThanOrEqual(4);
     const pC = pag.findIndex((p, i) => i > 0 && p.includes('(' + pdfTxt(tr('Quanto custa')) + ')'));
-    expect(pC).toBeLessThanOrEqual(4);
+    expect(pC).toBeGreaterThan(pS);
   }, 60000);
 });

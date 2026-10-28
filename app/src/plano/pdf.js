@@ -6,7 +6,8 @@
 //   capa (faixa em gradiente das fases, logos, título, caso, recomendação principal, 4 KPIs, índice, isenção);
 //   Em resumo (aviso de plano parcial, recomendação principal, KPIs, barras por camada, fatos);
 //   Quanto custa (colunas da dotação por exercício; A2 com a fórmula, custo por camada, dotação e premissas; A3 e pontos de atenção);
-//   O que fazer (recomendações: contagem, 5 cartões de prioridade alta e lista por momento; A1, B1–B4, B7–B9);
+//   O que fazer (R6: antes de decidir, responda; como testar e avaliar; plano de ação por pacote; listas do guia como
+//   referência, B1–B4, B7–B9); R6: a sequência de decisões vem logo depois de "Em resumo";
 //   O que exigir (A4–A7, B5, B6);
 //   Apêndice (perfil do caso em cartões, matriz camadas × fases em duas páginas, Figura 1 em página própria,
 //   referências e respostas que faltam).
@@ -26,11 +27,11 @@
 import {
   tr, LOC, getLang, setLang, avisoTraducao, TXT_VINCULO, FAIXA_PLANO, TIT_PLANO,
   din, mil, grande, pct, unidMil, totaisCtx, etapasAtivas, numerosCusto, cfgAtual, somaPorCamada, fmtInt,
-  TIPO_REC, QUANDO_REC, PRIO_REC, TIT_REC, TXT_REC, recPorqueTexto, recomendacoesCaso, NOTA_MATRIZ_CUSTO, CREDITO_MATRIZ,
+  NOTA_MATRIZ_CUSTO, CREDITO_MATRIZ,
 } from '../domain/index.ts';
 // mesmos critérios da página (percurso/painel.ts): números só com o tipo de tecnologia, origem dos KPIs e lacunas nas duas classes
-import { painelDe, tituloParcial, textoLacunas, rotuloOrigem, campoDoNumero, rotuloResposta } from '../percurso/painel.ts';
-import { NOME_FERRAMENTA, TIT_PAGINAS, ROT_ESTADO, TXT_MATRIZ, secoesPlano, secoesDaPagina, trSecao, copiaEstado, slugPlano, nomeCamada } from './secoes.js';
+import { painelDe, tituloParcial, textoLacunas, textoCondicoes, rotuloOrigem } from '../percurso/painel.ts';
+import { NOME_FERRAMENTA, TIT_PAGINAS, ROT_ESTADO, TXT_MATRIZ, TXT_REF, secoesPlano, secoesDaPagina, trSecao, copiaEstado, slugPlano, nomeCamada } from './secoes.js';
 // 0.0.15: textos do sumário executivo e das aberturas das páginas (os mesmos da página)
 import { TXT_REL } from './relatorio.js';
 
@@ -39,7 +40,8 @@ const FONTES_GERADAS = import.meta.glob('./fontes_pdf.generated.js', { import: '
 // idiomas que pedem fonte embutida (as famílias de tools/subset_fonts.py)
 const IDIOMAS_FONTE = ['ar', 'zh', 'bm'];
 
-const PDF_TROCA = { '→': '->', '←': '<-', '≥': '>=', '≤': '<=', '✓': 'v', '✕': 'x', '−': '-', '≈': '~', 'ⓘ': '(i)', ' ': ' ', ' ': ' ', '‑': '-', '‐': '-', '«': '«', '»': '»', '☐': '', '·': '·' };
+// REC-11: "→" não existe na Helvetica (WinAnsi); "»" é o substituto que lê como seta (antes saía "->")
+const PDF_TROCA = { '→': '»', '←': '<-', '≥': '>=', '≤': '<=', '✓': 'v', '✕': 'x', '−': '-', '≈': '~', 'ⓘ': '(i)', ' ': ' ', ' ': ' ', '‑': '-', '‐': '-', '«': '«', '»': '»', '☐': '', '·': '·' };
 const CP1252_EXTRA = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
 let PDF_FONTE = null;          // família ativa no PDF em geração (null = Helvetica)
 function pdfTxt(x) {
@@ -80,11 +82,12 @@ const PDF_TXT = {
   indice: 'Neste plano', semCusto: 'Não foi possível calcular a estimativa com as respostas atuais.',
   parcial1: 'Plano parcial: 1 resposta pendente.', parcialN: 'Plano parcial: {0} respostas pendentes.',
   verLista: 'Lista na página {0}.', verRecs: 'Detalhes na página {0}.',
-  alta0: 'Nenhuma ação de prioridade alta', alta1: '1 ação de prioridade alta', altaN: '{0} ações de prioridade alta',
+  // R6 (REC-19): sem "prioridade alta"; a capa diz quantas condições estão abertas para a próxima decisão
+  verSeq: 'Sequência de decisões na página {0}.', cuidado: 'Nível de cuidado', proxima: 'Próxima decisão',
   nRecs: '{0} ações no total', ilustr: 'Valores ilustrativos.', gerado: 'Gerado em',
   fEtapas: 'Etapas e estudantes', fApl: 'Aplicações', fQuem: 'Quem usa', fTec: 'Tecnologia e pagamento', fTeste: 'Teste', fEscala: 'Escala',
   estudantes: '{0} estudantes', escolas: '{0} escolas', pessoas: '{0} pessoas na rede', horiz: 'horizonte de {0} anos',
-  acao: 'Ação', prio: 'Prioridade',
+  acao: 'Ação', prio: 'Prioridade', origem: 'Origem',
   semNumeros: 'Ainda sem números', semNumerosDet: 'Os números do plano aparecem quando você disser o tipo de tecnologia da ferramenta (pergunta 2.3.4).',
   premissas1: 'Estimativa com 1 resposta a confirmar (premissa padrão ou sugestão).', premissasN: 'Estimativa com {0} respostas a confirmar (premissa padrão ou sugestão).',
   faltasEss: 'Perguntas do Essencial', faltasRef: 'Perguntas de refinamento',
@@ -162,12 +165,6 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
   const P = painelDe(estado);
   let N = null;
   if (P.temNumeros) { try { N = numerosCusto(cfgAtual(copiaEstado(estado))); if (N && !N.camadas) N.camadas = somaPorCamada(N.av); } catch (e) { console.warn(e); N = null; } }
-  let R = [];
-  try { R = recomendacoesCaso(copiaEstado(estado)) || []; } catch (e) { console.warn(e); R = []; }
-  if (!P.recs.length) R = [];
-  // o "Por quê" mostra o rótulo da resposta, nunca o valor interno (nao_sei)
-  R = R.map(r => { const pq = r.porque || {}; if (!pq.resposta) return r; const campo = campoDoNumero(pq.n); return Object.assign({}, r, { porque: Object.assign({}, pq, { resposta: String(pq.resposta).split('; ').map(z => rotuloResposta(campo, z)).join('; ') }) }); });
-  const altas = R.filter(r => r.prioridade === 'alta');
   const resumoRaw = raw.find(s => s.id === 'resumo') || { kv: [] };
   const KV = {}; (resumoRaw.kv || []).forEach(([k, v]) => { KV[k] = v; });
   const kvT = k => { const v = KV[k]; return v == null || v === '' ? '' : tr(v); };
@@ -179,6 +176,8 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
   const ORIG_A2 = [0, 1, 2, 3, 0, 1].map(i => (KPIS[i] || [])[2]);   // os 6 cartões de A2: os quatro KPIs, o Ano 0 por participante e a saída
   // 0.0.15: sumário executivo (plano/relatorio.js, pela seção "resumo"): os mesmos números e nomes da página
   const SUM = resumoRaw.sumario || null;
+  // R6: recomendações no relatório (plano/recplano.js:planoRec), já traduzidas: as mesmas frases da página
+  const REC = (SUM && SUM.rec) || null;
   const comSum = !!(N && SUM && SUM.numeros && SUM.faixa);
   const origemDe = kpi => { const k = P.kpis.find(z => z.id === kpi); return k ? rotuloOrigem(k.origem) : ''; };
   // capa: o custo total e os indicadores com o nome de cada denominador (decisão 3), sem o custo em regime
@@ -250,7 +249,7 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
 
   // ---------------------------------------------------------------- tabelas (tema único)
   const ALERTA = [tr('Resolver antes de contratar')].map(pdfTxt);
-  const ATENCAO = [tr('Tratar no plano')].map(pdfTxt), MARCAR = [tr('Alta'), tr('Prioridade')].map(pdfTxt);
+  const ATENCAO = [tr('Tratar no plano')].map(pdfTxt), MARCAR = [tr('Condição'), tr('Prioridade')].map(pdfTxt);   // REC-19: sem "Alta"
   const RE_CAM = /^([1-7])\.\s/;
   // altura aproximada da tabela (para não partir tabelas curtas entre páginas)
   const altTabela = (head, rows, t) => {
@@ -298,7 +297,7 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
   };
 
   // ---------------------------------------------------------------- capa
-  let pagRecs = 0, pagFaltas = 0, pagResumo = 0;
+  let pagRecs = 0, pagFaltas = 0, pagResumo = 0, pagSeq = 0;
   const INDICE = [];   // [título, página] para o índice da capa
   // recomendação principal: a frase principal de A1 primeiro; sem ela, as frases de A1 (sem "Por quê:")
   const frasesPrincipais = n => {
@@ -346,27 +345,29 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
     doc.text(pdfTxt([ctx.local, tP('gerado') + ' ' + agora.toLocaleDateString(LOC())].filter(Boolean).join('  ·  ')), M, y + 10);
     y += 30;
 
-    // recomendação principal: as frases de A1 e o número de ações de prioridade alta
-    const frases = frasesPrincipais(2);
+    // R6 (REC-21): recomendação principal = veredito da próxima decisão (a mesma frase da página e da síntese) e o
+    // número de condições abertas para essa decisão (REC-19: sem "prioridade alta")
+    const frases = REC && REC.veredito.texto ? [REC.veredito.texto].concat(REC.porque ? [REC.porque] : []) : frasesPrincipais(2);
     const Lr = frases.map((f, i) => i === 0 ? quebra(f, 11.5, LW - 36, 'bold') : quebra(f, 10.5, LW - 36));
-    const nA = altas.length;
-    const linhaA = nA === 0 ? tP('alta0') : nA === 1 ? tP('alta1') : tPn('altaN', nA);
+    const nA = REC ? REC.nCondicoes : 0;
+    const linhaA = REC && REC.aviso ? REC.aviso.texto : textoCondicoes(nA);
     const hBox = 34 + Lr.reduce((s, L) => s + L.length * 15.5 + 4, 0) + 26;
     doc.setFillColor(...C.fundo); doc.roundedRect(M, y, LW, hBox, 8, 8, 'F');
     doc.setFillColor(...C.marca); doc.rect(M, y + 8, 4, hBox - 16, 'F');
     fonte(8.6, 'bold', C.marca); doc.text(pdfTxt(tP('recPrincipal').toUpperCase()), M + 20, y + 22, { charSpace: 0.5 });
     let yy = y + 34;
     Lr.forEach((L, i) => { fonte(i === 0 ? 11.5 : 10.5, i === 0 ? 'bold' : 'normal', i === 0 ? C.titulo : C.tinta); L.forEach(l => { doc.text(l, M + 20, yy + 11); yy += 15.5; }); yy += 4; });
-    // linha das ações de prioridade alta (com o número da página das recomendações, no fim)
+    // linha das condições abertas (com o número da página da sequência de decisões, no fim)
     const yA = yy + 6;
     doc.setFillColor(...(nA ? C.alta : C.muted)); doc.circle(M + 24, yA + 4.5, 3.4, 'F');
     fonte(10, 'bold', nA ? C.alta : C.muted); doc.text(pdfTxt(linhaA), M + 33, yA + 8);
     const wA = doc.getTextWidth(pdfTxt(linhaA));
     tarde.push(() => {
-      if (!pagRecs) return;
+      const pg = pagSeq || pagRecs;
+      if (!pg) return;
       doc.setPage(1); fonte(10, 'normal', C.muted);
-      const s = pdfTxt(tPn('verRecs', pagRecs));
-      doc.text(s, M + 39 + wA, yA + 8); ehLink(M + 20, yA - 4, wA + 30 + doc.getTextWidth(s), 16, pagRecs);
+      const s = pdfTxt(pagSeq ? tPn('verSeq', pagSeq) : tPn('verRecs', pagRecs));
+      doc.text(s, M + 39 + wA, yA + 8); ehLink(M + 20, yA - 4, wA + 30 + doc.getTextWidth(s), 16, pg);
     });
     y += hBox + 18;
 
@@ -422,7 +423,7 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
   // REL-07, REL-08: a pergunta de decisão (no alto da faixa), o título-achado e o parágrafo de abertura (os da página)
   const ABERTURA = {
     custa: [TXT_REL.q2, N ? ACH.custa : '', TXT_REL.i2],
-    fazer: [TXT_REL.q5, ACH.fazer, 'Ações geradas a partir das respostas deste caso, por momento e prioridade. Cada ação mostra a pergunta que a originou: se mudar a resposta, a lista muda.'],
+    fazer: [TXT_REL.q5, ACH.fazer, 'A próxima decisão, o que responder antes, os portões entre as etapas, como testar e avaliar e as ações deste caso por pacote. Cada ação tem o seu número (R-nn) e a pergunta que a originou: se mudar a resposta, a lista muda.'],
     exigir: [TXT_REL.q4, ACH.exigir, 'O que pedir na contratação: o arranjo de aquisição, as cláusulas de custo, dados e saída, a diligência proporcional ao risco e os documentos do dossiê.'],
     apendice: ['', '', TXT_REL.anexosAbre],
   };
@@ -460,8 +461,9 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
       });
       y += h + 14;
     }
-    // v14: recomendação principal (frase de A1) no alto do Em resumo
-    const fr = frasesPrincipais(1)[0];
+    // R6 (REC-21, REC-38): o veredito da próxima decisão, o nível de cuidado em 3 frases e os contadores
+    if (REC && REC.veredito.texto) vereditoPDF();
+    const fr = REC ? '' : frasesPrincipais(1)[0];
     if (fr) {
       const L = quebra(fr, 10.5, LW - 36, 'bold'), h = 30 + L.length * 14 + 8;
       doc.setFillColor(...C.fundo); doc.roundedRect(M, y, LW, h, 7, 7, 'F');
@@ -470,6 +472,12 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
       fonte(10.5, 'bold', C.titulo); L.forEach((l, i) => doc.text(l, M + 18, y + 33 + i * 14));
       y += h + 14;
     }
+    if (REC && REC.cuidado.length) {
+      cabe(70);
+      fonte(10.5, 'bold', C.titulo); doc.text(pdfTxt(REC.rotulos.cuidado), M, y + 10); y += 16;
+      texto(REC.cuidado.join(' '), { size: 9.2, after: 6 });
+    }
+    if (REC) contadoresPDF();
     if (!comSum) {
       if (P.temNumeros) texto(tP('semCusto'), { cor: C.muted });
       else { texto(tP('semNumeros'), { size: 11, b: true, cor: C.titulo, after: 2 }); texto(tP('semNumerosDet'), { cor: C.muted }); }
@@ -484,8 +492,12 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
       if (oT) { fonte(8, 'bold', C.marca); doc.text(pdfTxt(oT), M + LW - 12, y + 15, { align: 'right' }); }
       fonte(24, 'bold', C.titulo); doc.text(pdfTxt(F.centralTxt), M + 14, y + 41);
       const wV = doc.getTextWidth(pdfTxt(F.centralTxt));
+      // decisão 3: o valor central é o cenário-base; o P50 ("valor para orçar") e o P90 vêm na nota logo abaixo
+      const tBase = pdfTxt('(' + tr('cenário-base') + ')');
+      fonte(8, 'normal', C.muted); doc.text(tBase, M + 14 + wV + 5, y + 41);
+      const wBase = doc.getTextWidth(tBase) + 5;
       fonte(9.6, 'bold', C.titulo); doc.text(pdfTxt(F.faixaTxt), M + 14, y + 56);
-      const xT = Math.max(M + 14 + wV + 20, M + 250), wT = M + LW - 14 - xT, px = v => xT + wT * v / 100;
+      const xT = Math.max(M + 14 + wV + wBase + 16, M + 250), wT = M + LW - 14 - xT, px = v => xT + wT * v / 100;
       doc.setFillColor(...C.cab); doc.roundedRect(xT, y + 28, wT, 9, 4.5, 4.5, 'F');
       doc.setFillColor(...C.fases[1]); doc.roundedRect(px(F.pLo), y + 28, Math.max(3, px(F.pHi) - px(F.pLo)), 9, 4.5, 4.5, 'F');
       doc.setFillColor(...C.titulo); doc.rect(px(F.pCentral) - 1.5, y + 25, 3, 15, 'F');
@@ -530,40 +542,11 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
       });
       y += 10;
     }
-    // REL-04: as cinco ações, cada uma com O quê, Por quê, Para quê, Como, Quem e Quando
-    const AC = (SUM && SUM.acoes) || [];
-    cabe(120);
-    subtitulo(tP('topRecs'), C.alta, 90);
-    if (!AC.length) texto(tr(TXT_REL.semAcoes), { cor: C.muted, size: 9.6 });
-    else {
-      texto(tr(TXT_REL.acoesAbre), { size: 8.6, cor: C.muted, after: 6 });
-      const ROT = ['exOque', 'exPorque', 'exParaque', 'exComo', 'exQuem', 'exQuando'].map(k => tr(TXT_REL[k]));
-      fonte(8.2, 'bold'); const wL = Math.max(62, ...ROT.map(z => doc.getTextWidth(pdfTxt(z)) + 8)), xT = M + 30, wV = LW - 30 - wL - 14;
-      AC.forEach(a => {
-        const campos = [[ROT[0], a.oque, 'bold'], [ROT[1], a.porque], [ROT[2], a.paraque], [ROT[3], a.como], [ROT[4], a.quem], [ROT[5], a.quandoTxt]].filter(z => z[1]);
-        const FF = campos.map(([k, v, st]) => [k, quebra(v, 8.6, wV, st || 'normal'), st]);
-        const h = 8 + FF.reduce((s, f) => s + f[1].length * 10 + 1.6, 0) + 4;
-        cabe(h + 4);
-        doc.setDrawColor(...C.linha); doc.setLineWidth(0.7); doc.setFillColor(...C.branco); doc.roundedRect(M, y, LW, h, 6, 6, 'FD');
-        doc.setFillColor(...(a.prioridade === 'alta' ? C.alta : C.media)); doc.rect(M, y + 1, 4, h - 2, 'F');
-        fonte(16, 'bold', a.prioridade === 'alta' ? C.alta : C.media); doc.text(String(a.n), M + 17, y + 22, { align: 'center' });
-        let yy = y + 10;
-        FF.forEach(([rot, L, st]) => {
-          fonte(8.2, 'bold', C.marca); doc.text(pdfTxt(rot), xT, yy + 8);
-          fonte(8.6, st || 'normal', st ? C.titulo : C.tinta); L.forEach(l => { doc.text(l, xT + wL, yy + 8.4); yy += 10; }); yy += 1.6;
-        });
-        y += h + 4;
-      });
-      texto(tr(TXT_REL.comoLer4), { size: 8.2, i: true, cor: C.muted, after: 8 });
-    }
-    // REL-05, REL-06: o custo em resumo (um iceberg por fase) e os três maiores direcionadores
-    if (comSum && SUM.ice && SUM.ice.fases.length) {
-      cabe(200); y += 6;
-      fonte(13, 'bold', C.titulo); doc.text(pdfTxt(tr(TXT_REL.custoT)), M, y + 13); y += 20;
-      texto(tr(TXT_REL.custoAbre), { size: 8.6, cor: C.muted, after: 4 });
-      icebergs(SUM.ice);
-      direcionadores(SUM.drivers || []);
-    }
+    // R6 (5.1, REC-38): os 5 cartões de "Comece por estas" (O quê, Por quê, Para quê, Como, Quem age, Marco, O que está
+    // em jogo, Pronto quando; a origem numa linha pequena)
+    cartoesPDF();
+    // REL-05, REL-06: o custo em resumo (um iceberg por fase) e os três maiores direcionadores. R6: no PDF eles abrem
+    // "Quanto custa" (custoResumoPDF), para que "Em resumo" caiba em 3 páginas com os 5 cartões
     // REL-16: como ler este plano
     const CL = ['comoLer2', 'comoLer3', 'comoLer4', 'comoLer5'].map(k => tr(TXT_REL[k]));
     const hCL = 26 + CL.reduce((s, z) => s + altTexto(z, 8.6, LW - 40) + 3, 0);
@@ -574,6 +557,177 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
     fonte(10.5, 'bold', C.titulo); doc.text(pdfTxt(tr(TXT_REL.comoLer)), M + 18, y + 17); y += 24;
     CL.forEach(z => texto(z, { size: 8.6, x: M + 18, w: LW - 36, ind: 10, bullet: true, after: 3 }));
     y = y0 + hCL + 10;
+  };
+
+  // ---------------------------------------------------------------- R6: recomendações no relatório
+  const corNivel = n => (n === 'condicao' ? C.alta : n === 'acompanhar' ? C.muted : C.marca);
+  // caixa do veredito (4.4): rótulo, veredito, frase inteira, porquê e o aviso de mais de 5 condições
+  const vereditoPDF = () => {
+    const V = REC.veredito, cor = V.codigo === 'nao' ? C.alta : V.codigo === 'condicoes' ? C.media : C.marca;
+    const L = quebra(V.texto, 10.5, LW - 36, 'bold'), Lp = REC.porque ? quebra(REC.porque, 8.8, LW - 36) : [];
+    const La = REC.aviso ? quebra(REC.aviso.texto + ' ' + tPn('verSeq', '…'), 8.8, LW - 36, 'bold') : [];
+    const h = 30 + 13 + L.length * 14 + Lp.length * 11 + (La.length ? 4 + La.length * 11 : 0) + 8;
+    cabe(h + 10);
+    const y0 = y, p0 = doc.getNumberOfPages();
+    doc.setFillColor(...C.fundo); doc.roundedRect(M, y, LW, h, 7, 7, 'F');
+    doc.setFillColor(...cor); doc.rect(M, y + 7, 4, h - 14, 'F');
+    fonte(8.2, 'bold', C.marca); doc.text(pdfTxt(REC.rotulos.principal.toUpperCase()), M + 18, y + 17, { charSpace: 0.5 });
+    fonte(9.6, 'bold', cor); doc.text(pdfTxt(V.rotulo), M + 18, y + 31);
+    let yy = y + 36;
+    fonte(10.5, 'bold', C.titulo); L.forEach(l => { doc.text(l, M + 18, yy + 10.5); yy += 14; });
+    fonte(8.8, 'normal', C.muted); Lp.forEach(l => { doc.text(l, M + 18, yy + 8.8); yy += 11; });
+    if (La.length) {
+      yy += 4;
+      // o número da página da sequência (onde está a lista) entra no fim, quando é conhecido
+      const ya = yy;
+      tarde.push(() => {
+        doc.setPage(p0); fonte(8.8, 'bold', C.alta);
+        quebra(REC.aviso.texto + ' ' + tPn('verSeq', pagSeq || '—'), 8.8, LW - 36, 'bold').forEach((l, i) => doc.text(l, M + 18, ya + 8.8 + i * 11));
+        if (pagSeq) ehLink(M, y0, LW, h, pagSeq);
+      });
+    }
+    y += h + 12;
+  };
+  // contadores: governança x de 6, condições de uso nas escolas x de 4, respostas que faltam
+  const contadoresPDF = () => {
+    const c = REC.contadores;
+    cabe(26);
+    let x = M;
+    x += etiqueta(x, y, c.gov.texto, C.cab, C.titulo, 8.6) + 6;
+    if (c.uso) x += etiqueta(x, y, c.uso.texto, c.uso.prontas < 4 ? C.ambar : C.cab, c.uso.prontas < 4 ? C.media : C.titulo, 8.6) + 6;
+    etiqueta(x, y, c.faltam.texto, C.cab, C.titulo, 8.6);
+    y += 26;
+  };
+  // os 5 cartões: caixa com o número, o pacote e o nível; rótulo à esquerda e texto à direita
+  const cartoesPDF = () => {
+    const AC = REC ? REC.cartoes : [];
+    cabe(120);
+    subtitulo(tP('topRecs'), C.titulo, 90);
+    if (!AC.length) { texto(REC && REC.vazioInfo ? REC.vazioInfo.texto + '. ' + REC.vazioInfo.explicacao : tr(TXT_REL.semAcoes), { cor: C.muted, size: 9.6 }); return; }
+    const Rt = REC.rotulos;
+    const ROT = [Rt.oque, Rt.porque, Rt.paraque, Rt.como, Rt.quem, Rt.marco, Rt.jogo, Rt.pronto];
+    fonte(8, 'bold'); const wL = Math.max(64, ...ROT.map(z => doc.getTextWidth(pdfTxt(z)) + 8)), xT = M + 14, wV = LW - 14 - wL - 14;
+    AC.forEach(a => {
+      const como = (a.como || []).map((z, i) => (i + 1) + '. ' + z).join('  ');
+      const campos = [[Rt.oque, a.oque + ' (' + a.id + ')' + (a.etiqueta ? ' ' + a.etiqueta : ''), 'bold'], [Rt.porque, a.razao], [Rt.paraque, a.paraque], [Rt.como, como],
+        [Rt.quem, a.quem], [Rt.marco, a.marco], [Rt.jogo, a.emJogo ? a.emJogo.rotulo + ': ' + a.emJogo.valor : ''], [Rt.pronto, a.pronto]].filter(z => z[1]);
+      const tam = 8.2, alt = 9.6;
+      const FF = campos.map(([k, v, st]) => [k, quebra(v, tam, wV, st || 'normal'), st]).filter(f => f[1].length);
+      const Lo = a.origem ? quebra(Rt.origem + ': ' + a.origem, 7.6, LW - 28) : [];
+      const h = 22 + FF.reduce((s0, f) => s0 + f[1].length * alt + 1.4, 0) + (Lo.length ? 2 + Lo.length * 9 : 0) + 6;
+      cabe(h + 4);
+      doc.setDrawColor(...C.linha); doc.setLineWidth(0.7); doc.setFillColor(...C.branco); doc.roundedRect(M, y, LW, h, 6, 6, 'FD');
+      doc.setFillColor(...corNivel(a.nivel)); doc.rect(M, y + 1, 4, h - 2, 'F');
+      fonte(9.4, 'bold', corNivel(a.nivel)); doc.text(String(a.n), xT, y + 14);
+      fonte(8, 'bold', C.muted); doc.text(pdfTxt(String(a.titulo).toUpperCase()), xT + 12, y + 14, { charSpace: 0.3 });
+      fonte(8, 'bold', corNivel(a.nivel)); doc.text(pdfTxt(a.rotuloNivel), M + LW - 10, y + 14, { align: 'right' });
+      let yy = y + 20;
+      FF.forEach(([rot, L, st]) => {
+        fonte(8, 'bold', C.marca); doc.text(pdfTxt(rot), xT, yy + 8);
+        fonte(tam, st || 'normal', st ? C.titulo : C.tinta); L.forEach(l => { doc.text(l, xT + wL, yy + 8); yy += alt; }); yy += 1.4;
+      });
+      if (Lo.length) { yy += 2; fonte(7.6, 'normal', C.muted); Lo.forEach(l => { doc.text(l, xT, yy + 7.6); yy += 9; }); }
+      y += h + 4;
+    });
+    y += 4;
+  };
+  // tabela simples com cores no estado (sequência de decisões)
+  const COR_ESTADO = { pronto: [30, 107, 58], falta: C.alta, premissa: C.media, impossivel: C.alta };
+  const sequenciaPDF = () => {
+    if (!REC || !REC.nRecs) return;
+    const SQ = REC.sequencia, r = SQ.rotulos;
+    novaPag(); pagSeq = doc.getNumberOfPages(); INDICE.push([SQ.titulo, pagSeq, 1]);
+    tituloSec(SQ.titulo, SQ.intro, C.fasesS[2]);
+    // REC-22: o aviso de mais de 5 condições, com a lista (os R-nn; o texto de cada uma está no plano de ação)
+    if (REC.aviso) texto(REC.aviso.texto + ' ' + REC.aviso.lista.map(x => x.id).join(', ') + '.', { size: 9.2, b: true, cor: C.alta, after: 6 });
+    SQ.portoes.forEach(g => {
+      const rows = g.criterios.map(k => [k.criterio, k.valor, k.rotuloEstado, k.ids.join(', ') || '—']);
+      const est = g.criterios.map(k => k.estado);
+      const hT = altTabela([r.criterio], rows, { larg: [150, 0, 88, 64] });
+      // o título do portão fica na mesma página que a tabela
+      subtitulo(g.titulo, C.titulo, Math.min(hT, 260) + 34);
+      texto([r.decisao + ': ' + g.decisao, r.quem + ': ' + g.quem, r.quando + ': ' + g.quando].join('   ·   '), { size: 8.4, cor: C.muted, after: 3 });
+      if (y + hT > BASE) cabe(hT < 260 ? hT + 4 : 70);
+      doc.autoTable({
+        startY: y, rowPageBreak: 'avoid', theme: 'plain', margin: { left: M, right: M, top: TOP, bottom: H - BASE },
+        head: [[r.criterio, r.valor, r.estado, r.vem].map(pdfTxt)], body: rows.map(z => z.map(pdfTxt)),
+        styles: { font: 'helvetica', fontSize: 8.4, cellPadding: 4, textColor: C.tinta, lineColor: C.linha, lineWidth: { bottom: 0.5 }, valign: 'top' },
+        headStyles: { fillColor: C.cab, textColor: C.titulo, fontStyle: 'bold', lineWidth: { bottom: 0.9 }, lineColor: C.marca },
+        columnStyles: { 0: { cellWidth: 150 }, 2: { cellWidth: 88 }, 3: { cellWidth: 64 } },
+        didParseCell: dd => { if (dd.section === 'body' && dd.column.index === 2) { dd.cell.styles.fontStyle = 'bold'; dd.cell.styles.textColor = COR_ESTADO[est[dd.row.index]] || C.tinta; } },
+      });
+      y = doc.lastAutoTable.finalY + 8;
+    });
+    subtitulo(SQ.pdTitulo, C.titulo, 60);
+    SQ.pds.forEach(pd => texto(pd.n + '. ' + pd.titulo + ' · ' + pd.acoes, { size: 8.6, after: 2 }));
+  };
+  // "Antes de decidir, responda" (5.3, bloco 1)
+  const pendPDF = () => {
+    if (!REC) return;
+    const Rt = REC.rotulos;
+    subtitulo(Rt.pendT, C.titulo, 60);
+    if (!REC.pend.length) { texto(Rt.pendVazio, { size: 9, cor: C.muted }); return; }
+    texto(Rt.pendIntro, { size: 8.6, cor: C.muted, after: 4 });
+    REC.pend.forEach(pd => {
+      texto(pd.n + ' ' + pd.pergunta + ' — ' + pd.resposta + ' (' + pd.rotuloTipo + ')', { size: 9.2, b: true, cor: C.titulo, after: 1 });
+      texto(pd.motivo + (pd.linhaIds ? ' ' + pd.linhaIds : ''), { size: 8.6, after: 2 });
+      if (pd.efeito) tabela([pd.efeito.rotulo, ''], pd.efeito.valores.map(v => [v.rotulo + (v.atual ? ' (' + Rt.pendAtual + ')' : ''), v.total]), { num: [1], hl: pd.efeito.valores.map((v, i) => (v.atual ? i : -1)).filter(i => i >= 0) });
+    });
+    if (pagSeq) texto(tPn('verSeq', pagSeq), { size: 8.6, i: true, cor: C.muted });
+  };
+  // "Como testar e avaliar" (5.3, bloco 3): ficha de aceite, desenho de avaliação, quem pode ficar para trás
+  const testePDF = X => {
+    if (!X) return;
+    const F = X.ficha;
+    subtitulo(F.titulo, corB, 80);
+    texto(F.intro, { size: 8.6, cor: C.muted, after: 3 });
+    texto(F.classeTxt, { size: 9.2, b: true, after: 3 });
+    const linhas = L => L.map(l => [l.criterio, l.valor + ' (' + l.rotulo + ')']);
+    if (F.linhas.length) tabela([F.rotulos.criterio, F.rotulos.limiar], linhas(F.linhas), { larg: [0, 170] }, corB);
+    F.blocos.forEach(b => { texto(b.titulo + ' (' + b.id + ')', { size: 9, b: true, cor: C.titulo, after: 1 }); tabela([F.rotulos.criterio, F.rotulos.limiar], linhas(b.linhas), { larg: [0, 170] }, corB); });
+    tabela(null, F.fixos, { larg: [130], b0: true }, corB);
+    if (X.aval) {
+      subtitulo(X.aval.titulo + ' (' + X.aval.rotulo + ')', corB, 50);
+      X.aval.linhas.forEach(z => texto(z, { size: 9, ind: 13, after: 2, bullet: true, corBullet: corB }));
+      if (X.aval.premissas.length) { texto(X.aval.rotuloPrem, { size: 8.4, cor: C.muted, after: 1 }); X.aval.premissas.forEach(z => texto(z, { size: 8.2, ind: 13, after: 1, cor: C.muted })); }
+      if (X.custoAval) texto(X.custoAval, { size: 8.6, i: true, cor: C.muted });
+    }
+    subtitulo(X.grupos.titulo, corB, 50);
+    tabela(null, X.grupos.linhas, { larg: [150], b0: true }, corB);
+    if (X.vale) {
+      subtitulo(X.vale.titulo + ' (' + X.vale.rotulo + ')', corB, 40);
+      texto(X.vale.frase, { size: 9 });
+      X.vale.premissas.forEach(z => texto(z, { size: 8.2, ind: 13, after: 1, cor: C.muted }));
+    }
+  };
+  // "Plano de ação" (5.3, bloco 4): tabela Nº (R-nn), Ação, Quem, Marco, Pronto quando e Origem, por pacote
+  const planoAcaoPDF = () => {
+    if (!REC || !REC.plano.grupos.length) return;
+    const A = REC.plano, r = A.rotulos;
+    novaPag(); pagRecs = doc.getNumberOfPages(); INDICE.push([A.titulo, pagRecs, 1]);
+    tituloSec(A.titulo, A.intro, COR_PAG.fazer);
+    const body = [];
+    A.grupos.forEach((g, gi) => {
+      body.push([{ content: pdfTxt(g.titulo + '  ·  ' + g.rotuloNivel + '  ·  ' + g.contagem), colSpan: 6, styles: { fillColor: mix(C.fases[gi % 4], [255, 255, 255], 0.72), textColor: C.titulo, fontStyle: 'bold', fontSize: 9 } }]);
+      g.marcos.forEach(m => m.itens.forEach(it => body.push([it.id, it.oque + (it.etiqueta ? ' ' + it.etiqueta : ''), it.quem, m.nome, it.pronto, it.origem].map(pdfTxt).concat([]))));
+    });
+    cabe(80);
+    doc.autoTable({
+      startY: y, rowPageBreak: 'avoid', theme: 'plain', margin: { left: M, right: M, top: TOP, bottom: H - BASE },
+      head: [[r.n, r.acao, r.quem, r.marco, r.pronto, r.origem].map(pdfTxt)], body,
+      styles: { font: 'helvetica', fontSize: 7.8, cellPadding: 3.5, textColor: C.tinta, lineColor: C.linha, lineWidth: { bottom: 0.5 }, valign: 'top' },
+      headStyles: { fillColor: C.cab, textColor: C.titulo, fontStyle: 'bold', lineWidth: { bottom: 0.9 }, lineColor: C.marca, fontSize: 8.2 },
+      columnStyles: { 0: { cellWidth: 34, fontStyle: 'bold', textColor: C.titulo }, 2: { cellWidth: 70 }, 3: { cellWidth: 56 }, 4: { cellWidth: 100 }, 5: { cellWidth: 84, textColor: C.muted } },
+    });
+    y = doc.lastAutoTable.finalY + 8;
+    if (A.base.length) texto(A.baseTitulo + ': ' + A.base.map(b => b.id + ' · ' + b.oque).join(' '), { size: 8.4, cor: C.muted });
+  };
+  // abertura das listas do guia (referência)
+  const refPDF = () => {
+    cabe(80); y += 8;
+    fonte(12.5, 'bold', C.titulo); quebra(tr(TXT_REF), 12.5, LW, 'bold').forEach(l => { doc.text(l, M, y + 12.5); y += 16; });
+    y += 2;
+    if (REC) texto(REC.rotulos.refIntro, { size: 8.6, cor: C.muted, after: 6 });
   };
 
   // Icebergs por fase (porte do bloco I.fases de plano_pdf.js da 0.0.15), com a paleta PDF_COR; os nomes das linhas
@@ -661,6 +815,15 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
     y += 6;
   };
 
+  // R6: o custo em resumo (icebergs por fase e os três maiores direcionadores), no alto de "Quanto custa"
+  const custoResumoPDF = () => {
+    if (!(comSum && SUM.ice && SUM.ice.fases.length)) return;
+    cabe(200);
+    fonte(13, 'bold', C.titulo); doc.text(pdfTxt(tr(TXT_REL.custoT)), M, y + 13); y += 20;
+    texto(tr(TXT_REL.custoAbre), { size: 8.6, cor: C.muted, after: 4 });
+    icebergs(SUM.ice);
+    direcionadores(SUM.drivers || []);
+  };
   // colunas por exercício (dotação a solicitar): v14, no alto de "Quanto custa" (na v13, no Em resumo)
   const colunasExercicio = () => {
     if (!N) return;
@@ -775,51 +938,6 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
     });
   };
 
-  // ---------------------------------------------------------------- Recomendações para você (abre "O que fazer")
-  const recomendacoes = () => {
-    const sR = secs.find(s => s.id === 'recs');
-    pagRecs = doc.getNumberOfPages(); INDICE.push([sR ? sR.h : tr(TIT_REC), pagRecs, 1]);
-    tituloSec(sR ? sR.h : tr(TIT_REC), R.length ? tr(TXT_REC.introPlano) : tr(TXT_REC.vazio), COR_PAG.fazer);
-    if (!R.length) return;
-    // contagem
-    const nC = R.filter(r => r.tipo === 'custo').length, nP = R.length - nC;
-    let x = M;
-    x += etiqueta(x, y, tPn('nRecs', R.length), C.cab, C.titulo, 8.6) + 6;
-    if (altas.length) x += etiqueta(x, y, altas.length === 1 ? tP('alta1') : tPn('altaN', altas.length), [250, 232, 230], C.alta, 8.6) + 6;
-    x += etiqueta(x, y, nC + ' · ' + tr(TIPO_REC.custo), C.tintA, C.marca, 8.6) + 6;
-    etiqueta(x, y, nP + ' · ' + tr(TIPO_REC.politica), C.tintB, C.roxo, 8.6);
-    y += 30;
-    // REL-12: as cinco primeiras, em cartões, estão em "Em resumo"; aqui fica a lista completa
-    texto(tr('As cinco primeiras, com o detalhe de cada uma, estão em “Em resumo”.'), { size: 8.6, i: true, cor: C.muted, after: 6 });
-    // lista completa por momento, com caixinha de marcar
-    subtitulo(tP('todas'), C.titulo, 90);
-    const body = [];
-    QUANDO_REC.forEach(([q, nome], gi) => {
-      const L = R.filter(r => r.quando === q); if (!L.length) return;
-      body.push([{ content: pdfTxt(tr(nome) + '  (' + L.length + ')'), colSpan: 4, styles: { fillColor: mix(C.fases[gi], [255, 255, 255], 0.72), textColor: C.titulo, fontStyle: 'bold', fontSize: 9.4 } }]);
-      L.forEach(r => body.push(['', pdfTxt(tr(r.texto)), pdfTxt(recPorqueTexto(r)), pdfTxt(tr(PRIO_REC[r.prioridade] || r.prioridade))]));
-    });
-    cabe(80);
-    doc.autoTable({
-      startY: y, rowPageBreak: 'avoid', theme: 'plain', margin: { left: M, right: M, top: TOP, bottom: H - BASE },
-      head: [['', tP('acao'), tr(TXT_REC.porque).replace(/\s*:$/, ''), tP('prio')].map(pdfTxt)], body,
-      styles: { font: 'helvetica', fontSize: 8.6, cellPadding: 5, textColor: C.tinta, lineColor: C.linha, lineWidth: { bottom: 0.5 }, valign: 'top' },
-      headStyles: { fillColor: C.cab, textColor: C.titulo, fontStyle: 'bold', lineWidth: { bottom: 0.9 }, lineColor: C.marca },
-      columnStyles: { 0: { cellWidth: 20 }, 2: { cellWidth: 170, textColor: C.muted }, 3: { cellWidth: 52 } },
-      didParseCell: dd => {
-        if (dd.section !== 'body' || dd.cell.colSpan > 1) return;
-        const alta = dd.row.raw[3] === pdfTxt(tr(PRIO_REC.alta));
-        if (alta && dd.column.index === 1) dd.cell.styles.fontStyle = 'bold';
-        if (dd.column.index === 3) { dd.cell.styles.fontStyle = 'bold'; dd.cell.styles.textColor = alta ? C.alta : C.media; }
-      },
-      didDrawCell: dd => {
-        if (dd.section !== 'body' || dd.column.index !== 0 || dd.cell.colSpan > 1) return;
-        doc.setDrawColor(...C.muted); doc.setLineWidth(0.8); doc.roundedRect(dd.cell.x + 6, dd.cell.y + 5.5, 8, 8, 1.2, 1.2, 'S');
-      },
-    });
-    y = doc.lastAutoTable.finalY + 12;
-  };
-
   // ---------------------------------------------------------------- Perfil do caso (abre o apêndice)
   const perfil = () => {
     INDICE.push([tP('perfil'), doc.getNumberOfPages(), 1]);
@@ -882,7 +1000,9 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
     const L = quebra(tit, 12.5, LW - 28 - wn, 'bold');
     const h = L.length * 16 + 14;
     // a faixa fica com pelo menos três linhas do que vem depois
-    cabe(h + 18 + altInicio(s)); if (y > TOP + 4) y += 8;
+    cabe(h + 18 + altInicio(s) + (s.ref ? 14 : 0)); if (y > TOP + 4) y += 8;
+    // R6 (REC-43): as listas do guia levam o rótulo "referência"
+    if (s.ref) { fonte(8, 'bold', C.muted); doc.text(pdfTxt(tr(TXT_REF).toUpperCase()), M, y + 8, { charSpace: 0.3 }); y += 13; }
     doc.setFillColor(...tintB); doc.rect(M, y, LW, h, 'F');
     doc.setFillColor(...corB); doc.rect(M, y, 4.5, h, 'F');
     fonte(12.5, 'bold', corB); if (num) doc.text(num, M + 16, y + 19);
@@ -992,15 +1112,24 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
   // ---------------------------------------------------------------- montagem
   doc.setProperties({ title: pdfTxt(NOME_FERRAMENTA + ' - ' + tP('sub') + ' - ' + nomeCaso), subject: pdfTxt(tP('sub')), creator: NOME_FERRAMENTA });
   capa();
-  // Em resumo
+  // Em resumo e, logo depois, a sequência de decisões (R6, 5.3: meia página no PDF)
   emResumo();
+  sequenciaPDF();
   // Quanto custa (A2, A3)
   aberturaPagina('custa');
+  custoResumoPDF();
   colunasExercicio();
   secoesDaPagina(secs, 'custa').forEach(secao);
   // O que fazer (recomendações, A1, B1–B4, B7–B9)
   aberturaPagina('fazer');
-  secoesDaPagina(secs, 'fazer').forEach(s => { if (s.id === 'recs' && !s.sub) recomendacoes(); else secao(s); });
+  // R6 (5.3): antes de decidir, responda; como testar e avaliar (A1 ampliada); plano de ação por pacote; listas do guia
+  // como referência (o bloco B abre a parte de referência)
+  secoesDaPagina(secs, 'fazer').forEach(s => {
+    if (s.id === 'recs' && !s.sub) { pendPDF(); return; }
+    if (s.id === 'B' && !s.sub) { if (REC) { planoAcaoPDF(); refPDF(); } return; }
+    secao(s);
+    if (s.id === 'A1' && !s.sub && s.avaliacao) testePDF(s.avaliacao);
+  });
   // O que exigir (A4–A7, B5, B6)
   aberturaPagina('exigir');
   secoesDaPagina(secs, 'exigir').forEach(secao);

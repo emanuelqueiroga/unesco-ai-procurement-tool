@@ -139,7 +139,7 @@ describe('PER-15: marcar todos por prioridade (Refinar) sem limite', () => {
 describe('PER-03: detalhe da linha de base', () => {
   it('grava problemas e medida em caso, com origem refinado, e o plano deixa de pedir a medida', () => {
     S().responder('linhaBase', 'sim');
-    const tem = () => recomendacoesDe(S().estado()).some((r: any) => r.id === 'linha-base-medida');
+    const tem = () => recomendacoesDe(S().estado()).some((r: any) => r.id === 'R-11');   // R2: era linha-base-medida
     expect(tem()).toBe(true);
     S().refinar('linhaBaseMedida', 'Avaliação estadual de leitura do 5º ano, 2025');
     S().refinar('linhaBaseProblemas', ['C4']);
@@ -243,7 +243,7 @@ describe('PER-05: lista de ferramentas', () => {
     S().refinar('ferramentas', ferramentaAlterada(S().caso.ferramentas, 0, { preco: 40 }));
     const caro = numerosDe(S().estado()).total;
     expect(caro).toBeGreaterThan(barato);
-    const cotacao = () => recomendacoesDe(S().estado()).some((r: any) => r.id === 'ferramentas-cotacao');
+    const cotacao = () => recomendacoesDe(S().estado()).some((r: any) => r.id === 'R-58');   // R2: era ferramentas-cotacao
     expect(cotacao()).toBe(false);
     S().refinar('ferramentas', ferramentaAlterada(S().caso.ferramentas, 0, { preco: '' }));
     expect(cotacao()).toBe(true);

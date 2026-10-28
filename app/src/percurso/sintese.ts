@@ -1,5 +1,8 @@
 // Síntese de fim de capítulo: até dois parágrafos em prosa a partir das respostas, sem veredito, e o número que o
 // capítulo libera (2: custo do teste; 3: custo do primeiro ano; 4: custo total). Pura.
+// R6 (REC-42; seção 5.6): o capítulo 4 termina com "Seu próximo passo" (`proximo`): o veredito e o porquê, as 3
+// primeiras ações com quem age e o marco, o custo e a dotação do Ano 0, o nível de cuidado numa frase e as respostas
+// que faltam; as frases são as de plano/recplano.js, as mesmas de "Em resumo" e do PDF.
 import { totaisCtx, modoTeste, QUESTOES_G, NIVEIS_ADM, tr, rotulo, numerosCusto, pct } from '../domain';
 import type { Estado14, Capitulo } from '../store';
 import { cfgDe, respondido } from '../store';
@@ -7,13 +10,22 @@ import { fmt, sincronizar } from './ambiente';
 import { t, minusc, minusc1 } from './textos';
 import { crescimentoDoCaso } from './motor';
 import { etapasTexto, prioridadesTexto, origemKpi, temNumeros, recsPlano, rotuloOpc, type KpiId } from './painel';
+import { proximoPasso } from '../plano/recplano.js';
 import type { Origem } from '../store';
 
 export interface Sintese {
   paragrafos: string[];
   kpi?: { id: KpiId | 'ano1'; label: string; value: string; fullValue: string; origem: Origem };
   nRecs: number;
-  recsAltas: string[];
+  /** condições abertas (nível Condição; REC-19: sem "prioridade alta") */
+  nCondicoes: number;
+  /** capítulo 4: "Seu próximo passo" (5.6) */
+  proximo?: Proximo | null;
+}
+export interface Proximo {
+  titulo: string; veredito: string; porque: string; acoesTitulo: string;
+  acoes: { id: string; oque: string; quem: string; marco: string; linha: string }[];
+  custo: string; cuidado: string; faltam: number; faltamTxt: string; pdf: string;
 }
 
 const lista = (xs: string[]) => {
@@ -123,5 +135,8 @@ export function sinteseCapitulo(n: Capitulo, e: Estado14): Sintese {
     else if (n === 3) { const v = (num.av.ecoAno || [])[1] || 0; kpi = { id: 'ano1', label: t('Custo do primeiro ano de uso (Ano 1)'), value: fmt.curto(v), fullValue: fmt.cheio(v), origem: origemKpi(e, 'kpi.anual') }; }
     else kpi = { id: 'kpi.total', label: t('Custo total, {H} anos', { H: num.H }), value: fmt.curto(num.total), fullValue: fmt.cheio(num.total), origem: origemKpi(e, 'kpi.total') };
   }
-  return { paragrafos: paragrafos.length ? paragrafos : [t('Este capítulo ainda não tem respostas: o plano usa as premissas padrão.')], kpi, nRecs: recs.length, recsAltas: recs.filter((r) => r.prioridade === 'alta').map((r) => r.texto) };
+  let proximo: Proximo | null = null;
+  if (n === 4) { try { proximo = proximoPasso(e) as Proximo | null; } catch (err) { console.warn(err); } }
+  return { paragrafos: paragrafos.length ? paragrafos : [t('Este capítulo ainda não tem respostas: o plano usa as premissas padrão.')], kpi, nRecs: recs.length,
+    nCondicoes: recs.filter((r) => r.nivel === 'condicao').length, proximo };
 }

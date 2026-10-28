@@ -61,13 +61,13 @@ describe('MOT-02: as quatro perguntas no Refinar do capítulo 4', () => {
     CAMPOS_MOTOR.forEach((c) => expect(CAMPOS_CUSTO).toContain(c));
     S().responder('horizonte', 5);
     const antes = ctEco();
-    expect(antes).toBeCloseTo(2607806, -1);   // exemplo B, H=5, expansão em 1 ano (MOT.md, seção 0)
+    expect(antes).toBeCloseTo(2664806, -1);   // exemplo B, H=5, expansão em 1 ano (MOT.md, seção 0: 2.607.806; R7: + 57 mil de K3.4 e K5.4 no Ano 0)
     S().refinar('curva', 'ondas');
     S().refinar('ondas', ondaEditada(ondaEditada(S().estado().caso.ondas, 0, 'ano', 2), 0, 'pct', 50));
     S().refinar('ondas', ondaEditada(ondaEditada(S().estado().caso.ondas, 1, 'ano', 4), 1, 'pct', 100));
     expect(S().estado().origem.curva).toBe('refinado');
     expect(S().estado().origem.ondas).toBe('refinado');
-    expect(ctEco()).toBeCloseTo(2512891, -1);   // MOT.md: −3,6%
+    expect(ctEco()).toBeCloseTo(2569891, -1);   // MOT.md: 2.512.891 (−3,6%); R7: + 57 mil no Ano 0
   });
   it('4.1.7 aceita uma casa decimal e zero; em branco é diferente de zero', () => {
     S().responder('horizonte', 5);
@@ -284,13 +284,14 @@ describe('MOT-10: custo por fase na calculadora', () => {
     expect(tab.linhas[0].rotuloAnos).toBe('Ano 0');
     expect(tab.linhas[0].pUnico).toBeGreaterThan(0);
   });
-  it('referência do exemplo B (H=3): piloto 336.234 e implantação 416.803', () => {
+  // R7 (seção 8, E2 e E3): o piloto do B sobe US$ 57 mil (K3.4 12 mil + K5.4 45 mil); implantação e expansão não mudam
+  it('referência do exemplo B (H=3): piloto 393.234 (era 336.234) e implantação 416.803', () => {
     const tab = tabelaFases(numerosDe(S().estado()).av)!;
-    expect(tab.linhas[0].total).toBeCloseTo(336234, -1);
-    expect(tab.linhas[0].unico).toBeCloseTo(227880, -1);
+    expect(tab.linhas[0].total).toBeCloseTo(393234, -1);
+    expect(tab.linhas[0].unico).toBeCloseTo(239880, -1);   // R7: 227.880 + 12 mil de K3.4 (único); K5.4 é recorrente
     expect(tab.linhas[1].total).toBeCloseTo(416803, -1);
     expect(tab.linhas[2].total).toBeCloseTo(1017095, -1);
-    expect(tab.total.total).toBeCloseTo(1770133, -1);
+    expect(tab.total.total).toBeCloseTo(1827133, -1);
   });
   it('detalhe por camada e por componente: cada coluna soma o total da fase', () => {
     const av = numerosDe(S().estado()).av;
@@ -368,7 +369,7 @@ describe('MOT-11: edição da cfg (reposição e rotatividade no modo razão)', 
     S().editarCfg('formacaoTempo.rotEstoque', 0.1);
     const comValor = numerosDe(S().estado()).av.ctEco as number;
     expect(comValor).toBeLessThan(emBranco);
-    expect(comValor).toBeCloseTo(2389214, -1);   // MOT.md: B, H=5, 10% digitado
+    expect(comValor).toBeCloseTo(2446214, -1);   // MOT.md: B, H=5, 10% digitado (2.389.214; R7: + 57 mil no Ano 0)
     S().editarCfg('formacaoTempo.rotEstoque', null);
     expect(numerosDe(S().estado()).av.ctEco).toBeCloseTo(emBranco, 0);
   });

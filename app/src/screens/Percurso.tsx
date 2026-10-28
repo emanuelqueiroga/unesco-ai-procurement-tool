@@ -12,7 +12,8 @@ import { TextoComTermos } from '../ui/Termo';
 import { Shell } from './Shell';
 import { BotaoPDF } from './Plano';
 import { ControlesTela, ControleCampo, ControleExtra, ProvedorRefinar, sugeridosDaTela, TIPOS_SIMPLES } from '../percurso/Controles';
-import { sinteseCapitulo } from '../percurso/sintese';
+import { sinteseCapitulo, type Proximo } from '../percurso/sintese';
+import './plano-rec.css';
 import { CAPITULOS_INFO, LEAD, TITULO_TELA, linhaAfeta, plural, minusc, t } from '../percurso/textos';
 import { href, ir } from '../percurso/rota';
 import './percurso-ajuda.css';
@@ -230,6 +231,26 @@ function PremissasCapitulo({ s, n, foco }: { s: CasoStore; n: Capitulo; foco?: s
   );
 }
 
+/** "Seu próximo passo" (5.6, REC-42): veredito, 3 ações com quem age e o marco, custo do Ano 0, cuidado e o que falta. */
+function ProximoPasso({ p, s }: { p: Proximo; s: CasoStore }) {
+  return (
+    <div className="pc-proximo" data-proximo>
+      <span className="pc-proximo-v">{p.veredito}</span>
+      {p.porque ? <span className="pc-nota">{p.porque}</span> : null}
+      {p.acoes.length ? (
+        <>
+          <b>{p.acoesTitulo}</b>
+          <ol>{p.acoes.map((a) => <li key={a.id}>{a.oque} <span className="pc-nota">({a.id} · {a.linha})</span></li>)}</ol>
+        </>
+      ) : null}
+      {p.custo ? <span>{p.custo}</span> : null}
+      {p.cuidado ? <span className="pc-nota">{p.cuidado}</span> : null}
+      {p.faltam ? <a href={href.plano('faltam')}>{p.faltamTxt}</a> : null}
+      <div className="pc-botoes"><BotaoPDF s={s} variante="secondary" tamanho="md" rotulo={p.pdf} /></div>
+    </div>
+  );
+}
+
 export function Sintese({ n, foco }: { n: Capitulo; foco?: string }) {
   const s = useCaso();
   const sin = sinteseCapitulo(n, s);
@@ -241,17 +262,17 @@ export function Sintese({ n, foco }: { n: Capitulo; foco?: string }) {
         <ChapterSummary
           n={n}
           kicker={t('Fim do capítulo {n}', { n })}
-          title={n === 4 ? t('O plano está completo') : t('Até aqui, o que você já sabe')}
+          title={n === 4 && sin.proximo ? sin.proximo.titulo : t('Até aqui, o que você já sabe')}
           paragraphs={sin.paragrafos}
           kpi={sin.kpi ? {
             kicker: n === 2 ? t('O primeiro número do seu plano') : t('O número deste capítulo'),
             label: sin.kpi.label, value: sin.kpi.value, fullValue: sin.kpi.fullValue,
             origin: <SourceTag origin={sin.kpi.origem} label={sin.kpi.origem === 'padrao' ? t('estimativa com premissas padrão') : rotuloOrigem(sin.kpi.origem)} />,
           } : undefined}
-          recommendations={sin.nRecs ? (
+          recommendations={n === 4 && sin.proximo ? <ProximoPasso p={sin.proximo} s={s} /> : sin.nRecs ? (
             <>
               {sin.nRecs === 1 ? t('Já apareceu 1 recomendação') : t('Já apareceram {n} recomendações', { n: sin.nRecs })}
-              {sin.recsAltas.length ? ', ' + plural(sin.recsAltas.length, '{n} de prioridade alta', '{n} de prioridade alta') : ''}
+              {sin.nCondicoes ? ', ' + plural(sin.nCondicoes, '{n} condição', '{n} condições') : ''}
               {' · '}<a href={href.plano('fazer')}>{t('ver no plano')}</a>
             </>
           ) : undefined}
@@ -259,7 +280,7 @@ export function Sintese({ n, foco }: { n: Capitulo; foco?: string }) {
           actions={
             <div className="pc-botoes">
               <Button variant="secondary" href={href.pergunta(n, telas[0].id)}>{t('Revisar o capítulo {n}', { n })}</Button>
-              {n < 4 ? <Button variant="secondary" href={href.plano()}>{t('Ver o plano parcial')}</Button> : <BotaoPDF s={s} variante="secondary" tamanho="md" />}
+              {n < 4 ? <Button variant="secondary" href={href.plano()}>{t('Ver o plano parcial')}</Button> : null}
               <Button href={n < 4 ? href.abertura(n + 1) : href.plano()}>{n < 4 ? t('Capítulo {n}: {nome}', { n: n + 1, nome: minusc(t(prox!.titulo)) }) : t('Abrir o plano')}</Button>
             </div>
           }

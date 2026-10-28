@@ -10,8 +10,9 @@ import { tr } from '../domain';
 import { DataTable, KpiTile, Dialog, Button, useMediaQuery, type DataColumn, type DataRow } from '../ui';
 import { fmt } from '../percurso/ambiente';
 import { t, plural } from '../percurso/textos';
-import { ROT_ESTADO, TXT_MATRIZ } from '../plano/secoes.js';
+import { ROT_ESTADO, TXT_MATRIZ, TXT_REF } from '../plano/secoes.js';
 import './plano.css';
+import './plano-rec.css';
 
 export interface SecaoPlano {
   tipo?: string; id?: string; h?: string; sub?: boolean; det?: string; soPagina?: boolean; alt?: string; img?: string;
@@ -28,6 +29,10 @@ export interface SecaoPlano {
   achado?: string;
   /** o bloco "O que pode mudar o custo" de "Quanto custa" */
   incerteza?: boolean;
+  /** R6 (REC-43): lista de verificação do guia (referência), com o rótulo acima do título */
+  ref?: boolean;
+  /** R6 (REC-40): dados de "Como testar e avaliar" (plano/recplano.js), já traduzidos */
+  avaliacao?: unknown;
 }
 
 /** REL-08: o título sem o código interno da seção ("A2. ", "B6. "), para planos e textos antigos. */
@@ -74,7 +79,8 @@ export function Recolhivel({ resumo, children }: { resumo: string; children: Rea
 function Celula({ v, marca }: { v: string; marca: boolean }) {
   const s = String(v ?? '');
   if (s === String(tr('Resolver antes de contratar'))) return <span className="pc-tag pc-tag--crit">{s}</span>;
-  if (s === String(tr('Tratar no plano')) || (marca && (s === String(tr('Alta')) || s === String(tr('Prioridade'))))) return <span className="pc-tag pc-tag--warn">{s}</span>;
+  // R6 (REC-19): os níveis são Condição, Recomendada e Para acompanhar (sem "Alta")
+  if (s === String(tr('Tratar no plano')) || (marca && (s === String(tr('Condição')) || s === String(tr('Prioridade'))))) return <span className="pc-tag pc-tag--warn">{s}</span>;
   return <Linkado texto={s} />;
 }
 
@@ -275,6 +281,7 @@ export function Secao({ s, extra, kpiOrigem }: { s: SecaoPlano; extra?: ReactNod
   }
   return (
     <section className={'pc-secao' + (s.sub ? ' pc-secao--sub' : '') + (s.incerteza ? ' pc-secao--bloco' : '')} id={id}>
+      {s.ref && !s.sub ? <p className="pc-ref-rotulo">{String(tr(TXT_REF))}</p> : null}
       {s.h ? <Titulo className={s.sub ? 'pc-secao-h3' : 'pc-secao-h'}>{semCodigo(s.h)}</Titulo> : null}
       {corpo}
     </section>

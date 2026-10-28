@@ -57,7 +57,7 @@ const recGratuito = ce => ce.pagamento === 'gratuito' || ce.tipoTec === 'publica
 const RECS = [
   // regras da prova de conceito ou do piloto (ex-r-*)
   { id: 'r-autorizacao', grupo: 'regras', camada: 1, texto: 'Formalizar a autorização do piloto e nomear um responsável.', textoPoc: 'Formalizar a autorização da prova de conceito e nomear um responsável.' },
-  { id: 'r-baselegal', grupo: 'regras', camada: 1, texto: 'Confirmar a base legal ou obter consentimento para usar os dados.', quando: ce => recDadosPessoais(ce), dadosReais: true },
+  { id: 'r-baselegal', grupo: 'regras', camada: 1, texto: 'Confirmar a base legal para usar os dados; o consentimento só cabe se o uso for opcional e recusar não trouxer prejuízo.', quando: ce => recDadosPessoais(ce), dadosReais: true },
   { id: 'r-acordo', grupo: 'regras', camada: 1, texto: 'Assinar acordo de tratamento de dados que proíba usar os dados para treinar modelos.', quando: ce => recDadosPessoais(ce), dadosReais: true },
   { id: 'r-sucesso', grupo: 'regras', camada: 1, texto: 'Medir a linha de base e fixar os critérios de sucesso antes de começar.' },
   { id: 'r-parada', grupo: 'regras', camada: 1, texto: 'Definir critérios de parada e como encerrar o piloto.', textoPoc: 'Definir critérios de parada e como encerrar a prova de conceito.' },
@@ -87,7 +87,7 @@ const RECS = [
   { id: 'i-infra', grupo: 'rede', camada: 3, texto: 'Dimensionar conectividade e dispositivos para toda a rede.' },
   { id: 'i-pico', grupo: 'rede', camada: 3, texto: 'Dimensionar a capacidade para o horário de pico.', quando: ce => ['api', 'ow'].includes(ce.arquitetura) },
   { id: 'i-integra', grupo: 'rede', camada: 4, texto: 'Testar a integração com identidade, matrícula e ambiente virtual.' },
-  { id: 'i-base', grupo: 'rede', camada: 4, texto: 'Nomear responsável e rotina de curadoria da base de conhecimento.', quando: ce => ce.arquitetura === 'api' },
+  { id: 'i-base', grupo: 'rede', camada: 4, texto: 'Nomear responsável e rotina de curadoria da base de conhecimento.', quando: ce => ce.arquitetura === 'api' || (ce.tarefas || []).includes('duvidas') },  // R-54: a base de normas das dúvidas
   { id: 'i-finalidade', grupo: 'rede', camada: 4, texto: 'Limitar os dados pessoais de estudantes a finalidades definidas e com base legal.', quando: ce => recDadosPessoais(ce) },
   { id: 'i-portab', grupo: 'rede', camada: 4, texto: 'Garantir a exportação de dados e configurações em formato aberto.' },
   { id: 'i-dpia', grupo: 'rede', camada: 5, texto: 'Concluir a avaliação de impacto sobre a proteção de dados.', quando: ce => recDadosPessoais(ce) },
@@ -129,7 +129,8 @@ const ACOES_G = {
   'g-legislacao': 'Mapear a legislação aplicável: proteção de dados, regras de IA, direitos de crianças e compras públicas.',
   'g-dados': 'Definir a política de dados educacionais: acesso, compartilhamento, guarda e exclusão.',
   'g-etica': 'Publicar orientações de uso responsável de IA para professores, estudantes e gestores.',
-  'g-compras': 'Adotar orientação de compras de IA com custo do ciclo de vida, diligência e cláusulas de dados e de saída.',
+  // REC-07: o caso usa o checklist deste plano; a orientação geral da rede não é condição para contratar este caso
+  'g-compras': 'Usar o checklist “O que exigir” deste plano neste caso e, depois, adotar uma orientação de compras de IA da rede, com custo do ciclo de vida, diligência e cláusulas de dados e de saída.',
 };
 const PRIORIDADE_G = { 'g-legislacao': 'alta', 'g-dados': 'alta' };
 const RESP_G_NOME = { sim: 'Sim', parcial: 'Em parte', nao: 'Não', nao_sei: 'Não sei' };

@@ -11,6 +11,28 @@ Published under `docs/revisao/` with a yellow banner. Not part of the stable lin
 - **0.0.16-alpha.a / .b / .c**: redesign proposals A (guided assistant), B (workspace with cost panel), C (living document). Branches `v15-proposta-a`, `-b`, `-c`. URLs: `/revisao/a/`, `/revisao/b/`, `/revisao/c/`.
 - **0.0.15-rc.1**: formerly "version 14 review". Step explanations, cost by phase and adoption curve, reference cost base and country profiles, procurement plan with executive summary and icebergs by phase. Branch `v14-revisao`. URL: `/revisao/`.
 
+## [0.1.0-alpha.6] - 2026-10-28
+
+Sixth pre-release of the redesign line (`develop` branch), published as the review build `/revisao/v014/`. New recommendation system, specified by a panel of seven specialists (econometrics, public policy, public procurement, AI technology, ethics and child protection, pedagogy, decision documents) and a coordinator: `design/redesign/05-requisitos-recomendacoes.md` and `design/redesign/recomendacoes/`. All ten decisions follow the panel's recommendation.
+
+### Added
+- A rule catalog of 112 recommendations (R-01 to R-112, `app/src/domain/regras/`, one file per package), each with the action, the reason, what it is for, how (steps), who acts, the process milestone, when it is done, the number of the case at stake and the contract clause it feeds. Texts vary with the risk level, the effective architecture and the task. A lint test checks the format.
+- Auditable scoring and three levels (Condição, Recomendada, Para acompanhar) instead of "alta/média"; the order no longer depends on the position of the rule in the code.
+- Five "Comece por estas" cards chosen for diversity (one per package, people and data lenses guaranteed), and "O que fazer" grouped in at most 11 packages, with the R-nn and the origin of each step.
+- The main recommendation is now the verdict of the next decision ("Pode avançar", "Pode avançar com condições" or "Ainda não avance", only in four triggers), the same on the cover, in "Em resumo", in the PDF, in the live panel and at the end of chapter 4 ("Seu próximo passo"). A warning lists the conditions when there are more than five.
+- Numbers in the recommendations: P50 "valor para orçar" and P90 "teto prudente" beside the central value (now "cenário-base"), minimum detectable effect of the pilot and of the first wave (illustrative), break-even effect ("Vale o que custa?"), cost per learner with access, per active user in steady state and per test participant.
+- Report: "Nível de cuidado deste caso", counters (governance, school-use conditions, missing answers), "Antes de decidir, responda" (pending answers, with the total cost in the three architectures when the architecture is presumed), "Sequência de decisões" with gates G1–G4 and the guide's decision points in order, "Como testar e avaliar" (acceptance sheet by task class, evaluation design, who may be left behind), "O que exigir" with only the case's clauses, each citing its R-nn, norm examples (Brazil and EU) collapsed with "confirme com a assessoria jurídica".
+- 13 optional Refinar questions (contestation path, model training with the network's data, logs and versions, review workload of alerts, time within the teachers' paid hours, support in the school, groups served, budget for later years, procurement strategy, test instrument, cost and effect of the alternative, volume of results, moment of use) and new options (pedagogical coordination; predictive model and open model served by an API, still costed with the presumed architecture). The Essencial keeps 25 questions.
+- All new texts in the nine languages (`i18n/v15_rec*`); Arabic, Chinese, Bambara, isiZulu and Kiswahili remain preliminary.
+- Tests: 781 unit tests (expected and forbidden recommendations per example, scoring independent of catalog order, verdicts, no law citations in the main texts) and 236 end-to-end checks (including 360 px).
+
+### Changed (numbers)
+- Verifiability is "partial" for API and open-weight architectures, the local test set (K3.4) enters Year 0 at every risk level and adversarial tests (K5.4) start in Year 0 when children use the tool directly. Totals: A 4,747,846 → 4,759,846; B 1,770,133 → 1,827,133 (Year 0 336,234 → 393,234); C 1,643,396 → 1,655,396; D 570,107 → 630,407 (risk limited → moderate).
+- The test for the D example is now "proof of concept and pilot" (public servants count as real users when the tool is deployed in schools).
+
+### Fixed
+- Rules that fired out of context (families in a staff-only case, age-appropriate use in a teachers-only copilot, licence rules with the technology still undecided, per-use billing with open weights), a duplicated rule id, "Quem" showing who knows the answer instead of who acts, actions cut at the first colon, legally risky wordings (consent as an alternative, agreeing the future price with the free-trial vendor, "renegotiate", single quote), overlapping labels in the PDF.
+
 ## [0.1.0-alpha.5] - 2026-10-28
 
 Fifth pre-release of the redesign line (`develop` branch), published as the review build `/revisao/v014/`. It brings in what the 0.0.15-rc.1 review (`/revisao/`, branch `v14-revisao`) added on top of 0.0.14, mapped in `design/redesign/04-requisitos-0015.md` and `design/redesign/paridade-0015/` (70 requirements: AJU, MOT, REF, REL). The numbers of the examples and of every regression test are unchanged.

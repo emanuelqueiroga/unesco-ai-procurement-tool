@@ -178,7 +178,8 @@ function OrigemPremissas({ cfg }: { cfg: any }) {
     <p className="rf-nota">
       {t('Premissas montadas a partir do seu caso:')} {t('arquitetura')} {t(ARQ_NOME[arq] || arq)}, {t('{n} elegíveis', { n: eleg })}, {t('governança para perfil')} {nivel}.{' '}
       {t('Os demais valores vêm do Exemplo {x} do guia e precisam ser substituídos por cotações e dados locais.', { x: cfg.origem || 'A' })}
-      {ce.__arqPresumida ? ' ' + t('Como a arquitetura não foi definida, o modelo usa SaaS como ponto de partida.') : ''}
+      {/* R6 (pedido do R7): cita a arquitetura presumida de fato, e não sempre SaaS */}
+      {ce.__arqPresumida ? ' ' + t('Como a arquitetura não foi definida, o modelo usa {arq} como ponto de partida (presumida; confirme na pergunta 3.2.1).', { arq: t(ARQ_NOME[arq] || arq) }) : ''}
     </p>
   );
 }

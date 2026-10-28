@@ -72,11 +72,12 @@ function Conteudo({ p, nov, fluid, soPapel }: { p: Painel; nov: Novidade | null;
         ) : undefined
       }
       recommendationsTitle={t('Comece por estas')}
-      recommendations={p.recs.slice(0, 3).map((r) => ({ id: r.id, text: r.texto, fresh: nov?.rec === r.id }))}
+      // R6: os 3 primeiros cartões de "Comece por estas" (seleção de 4.3), os mesmos de "Em resumo"
+      recommendations={(p.cartoes.length ? p.cartoes : p.recs).slice(0, 3).map((r) => ({ id: r.id, text: r.texto, fresh: nov?.rec === r.id }))}
       recommendationsCount={p.recs.length}
       sections={[
         { id: 'custa', title: t('Quanto custa'), note: p.temNumeros ? plural(p.camadas.filter((c) => c.valor > 0).length, '{n} camada com custo', '{n} camadas com custo') : undefined },
-        { id: 'fazer', title: t('O que fazer'), note: p.recs.length ? plural(p.recs.length, '{n} recomendação', '{n} recomendações') : undefined },
+        { id: 'fazer', title: t('O que fazer'), note: p.recs.length ? (p.nPacotes ? t('{n} ações em {g} pacotes', { n: p.recs.length, g: p.nPacotes }) : plural(p.recs.length, '{n} recomendação', '{n} recomendações')) : undefined },
         { id: 'exigir', title: t('O que exigir') },
       ]}
       footer={p.estado !== 'empty' ? <Button variant="secondary" size="sm" href={href.plano()}>{t('Abrir o plano inteiro')}</Button> : undefined}

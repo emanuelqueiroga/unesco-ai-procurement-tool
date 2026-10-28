@@ -1,8 +1,8 @@
 // Projeção do estado no plano: o que o painel "Seu plano", a gaveta do celular, as sínteses e a página do plano
 // mostram. Pura (recebe o Estado14 e devolve dados prontos para os componentes), testada em tests/unit/painel.test.ts.
-import { ETAPAS_ENS, QUANDO_REC, totaisCtx, modoTeste, PRIORIDADES, OPC, RESP_G, CAMPOS, rotulo, tr, faltasTodas, explicacaoCusto, premissasUnitarias, premissasDoCaso, resumoPremissas, CAMPO_POR_ID } from '../domain';
+import { ETAPAS_ENS, QUANDO_REC, resultadoRecomendacoes, trRec, trVeredito, rotuloQuem, rotuloNivel, MARCOS_REC, totaisCtx, modoTeste, PRIORIDADES, OPC, RESP_G, CAMPOS, rotulo, tr, faltasTodas, explicacaoCusto, premissasUnitarias, premissasDoCaso, resumoPremissas, CAMPO_POR_ID } from '../domain';
 import type { Estado14, Origem } from '../store';
-import { ESSENCIAL, afetadosPor, numerosDe, recomendacoesDe, faltamDe, origemDe, respondido, camposAtivos, cfgDe, telaDoCampo, capituloDoCampo, motorQueAfeta } from '../store';
+import { ESSENCIAL, afetadosPor, numerosDe, faltamDe, origemDe, respondido, camposAtivos, cfgDe, telaDoCampo, capituloDoCampo, motorQueAfeta } from '../store';
 import { fmt, sincronizar } from './ambiente';
 import { t, plural, NOME_TESTE, CURTO, CAPITULOS_INFO, minusc } from './textos';
 import { href } from './rota';
@@ -12,7 +12,20 @@ export const KPI_IDS: KpiId[] = ['kpi.ano0', 'kpi.total', 'kpi.anual', 'kpi.porA
 
 export interface KpiPlano { id: KpiId; label: string; value?: string; fullValue?: string; bruto?: number; origem: Origem }
 export interface RecPlano {
-  id: string; texto: string; prioridade: 'alta' | 'media'; quando: string; quandoRotulo: string; tipo: string; porque: string;
+  /** R-nn (o mesmo id da página, do PDF e da exportação) */
+  id: string;
+  /** a ação ("O quê"), traduzida */
+  texto: string;
+  /** compatibilidade: 'alta' = Condição; os rótulos visíveis vêm de `rotuloNivel` (REC-19: sem "Alta"/"Média") */
+  prioridade: 'alta' | 'media'; quando: string; quandoRotulo: string; tipo: string;
+  /** a razão da regra ("Por quê"), nunca a resposta (REC-10) */
+  porque: string;
+  /** a pergunta e a resposta que dispararam a ação ("2.1.1 Pergunta — Resposta") */
+  origem: string;
+  /** quem age (3.4), o marco (3.5) e o nível com o marco ("Condição para autorizar o teste") */
+  quem: string; marco: string; marcoNome: string; nivel: string; rotuloNivel: string;
+  /** "(presumida: confirme na 3.2.1)" e "(a confirmar na pergunta n)", traduzidos */
+  etiqueta: string;
   /** tela do Essencial que reúne a pergunta (só quando a pergunta está no Essencial) */
   tela?: string;
   /** id do campo da pergunta que originou a recomendação (Essencial ou Refinar) */
@@ -43,8 +56,14 @@ export interface Painel {
   premissas: number;
   /** lacunas do caso, nas duas classes (Essencial e refinamento): a fonte da página e do PDF */
   lacunas: Lacunas;
-  /** ações de prioridade alta */
-  nAlta: number;
+  /** Condições abertas no próximo marco (veredito da próxima decisão, 4.4) */
+  nCondicoes: number;
+  /** o veredito da próxima decisão (4.4), o mesmo da capa, de "Em resumo", do PDF e da síntese */
+  veredito: string;
+  /** os 5 cartões de "Comece por estas" (4.3), na ordem da seleção: id e a ação de cada um */
+  cartoes: { id: string; texto: string; quem: string; marco: string }[];
+  /** pacotes de ação de "O que fazer" (REC-23) */
+  nPacotes: number;
   /** respostas que faltam para o primeiro número (ou para um número mais fiel), com link */
   paraNumero: FaltaNumero[];
 }
@@ -98,7 +117,6 @@ export function fatosCaso(e: Estado14): string {
   return partes.join(' · ');
 }
 
-const ordemQuando = (q: string) => { const i = (QUANDO_REC as any[]).findIndex((x) => x[0] === q); return i < 0 ? 9 : i; };
 const telaDoNumero = (n?: string) => (n ? ESSENCIAL.find((x) => x.n.includes(n))?.id : undefined);
 
 /** número da pergunta ("2.3.7") → id do campo, para qualquer pergunta (Essencial ou Refinar) */
@@ -121,21 +139,37 @@ export function rotuloResposta(campo: string | undefined, valor: string): string
   return v === 'nao_sei' ? t('Não sei') : v.replace(/_/g, ' ');
 }
 
-export function recsPlano(e: Estado14): RecPlano[] {
-  const lista = recomendacoesDe(e) as any[];
-  return lista
-    .map((r) => {
-      const p = r.porque || {};
-      const campo = campoDoNumero(p.n);
-      const resposta = String(p.resposta || '').split('; ').map((z: string) => rotuloResposta(campo, z)).join('; ');
-      const porque = p.pergunta ? t('Por quê: você respondeu "{r}" à pergunta {n}.', { r: resposta || '—', n: p.n || '' }) : '';
-      return {
-        id: String(r.id), texto: String(tr(r.texto)), prioridade: r.prioridade === 'alta' ? 'alta' : 'media', quando: String(r.quando || ''),
-        quandoRotulo: String(tr(rotulo(QUANDO_REC, r.quando) || '')), tipo: String(r.tipo || ''), porque, tela: telaDoNumero(p.n),
-        campo, href: campo ? href.campo(campo) : undefined,
-      } as RecPlano;
-    })
-    .sort((a, b) => (a.prioridade === b.prioridade ? 0 : a.prioridade === 'alta' ? -1 : 1) || ordemQuando(a.quando) - ordemQuando(b.quando));
+const NOME_MARCO: Record<string, string> = Object.fromEntries(((MARCOS_REC as any[]) || []).map((m) => [m[0], m[1]]));
+const juntaQuem = (L: string[]) => (L.length <= 1 ? L.join('') : L.slice(0, -1).join(', ') + ' ' + t('e') + ' ' + L[L.length - 1]);
+const cap1 = (s: string) => s.charAt(0).toLocaleUpperCase() + s.slice(1);
+const etq = (s: string) => { const m = String(s || '').match(/^\(a confirmar na pergunta (.+)\)$/); return m ? String(tr('(a confirmar na pergunta {n})')).replace('{n}', m[1]) : String(tr(s)); };
+
+/** Uma ação do motor como a página e o painel a mostram (R6: razão, origem, quem age, marco e nível; o R-nn é o id). */
+function recPlanoDe(r: any): RecPlano {
+  const p = r.origem || r.porque || {};
+  const campo = (r.origem && r.origem.campo) || campoDoNumero(p.n);
+  const resposta = String(p.resposta || '').split('; ').map((z: string) => rotuloResposta(campoDoNumero(p.n) || campo, z)).join('; ');
+  const origem = p.pergunta || p.n ? [p.n, String(tr(p.pergunta || ''))].filter(Boolean).join(' ') + (resposta && resposta !== '—' ? ' — ' + resposta : '') + (p.sugerido ? ' (' + t('sugerido') + ')' : '') : '';
+  const texto = r.chaves ? String(trRec(r, 'oque')) : String(tr(r.texto || ''));
+  return {
+    id: String(r.id), texto, prioridade: r.prioridade === 'alta' || r.nivel === 'condicao' ? 'alta' : 'media', quando: String(r.quando || ''),
+    quandoRotulo: String(tr(rotulo(QUANDO_REC, r.quando) || '')), tipo: String(r.tipo || ''),
+    porque: r.chaves ? String(trRec(r, 'razao')) : '', origem,
+    quem: cap1(juntaQuem(((rotuloQuem(r.quem || []) as string[]) || []).map(String))), marco: String(r.marco || ''), marcoNome: String(tr(NOME_MARCO[r.marco] || '')),
+    nivel: String(r.nivel || ''), rotuloNivel: r.nivel ? String(rotuloNivel(r.nivel, r.marco, true)) : '',
+    etiqueta: [r.etiqueta ? etq(r.etiqueta) : '', r.confirmar ? etq(r.confirmar) : ''].filter(Boolean).join(' '),
+    tela: telaDoNumero(p.n), campo, href: campo ? href.campo(campo) : undefined,
+  };
+}
+
+/** Resultado do motor (uma vez por estado): as ações na ordem da pontuação (4.1), os cartões e o veredito. */
+function resultadoDe(e: Estado14): any {
+  try { return resultadoRecomendacoes(e); } catch (err) { console.warn(err); return { recs: [], cartoes: [], veredito: null, condicoes: [] }; }
+}
+
+/** As ações do caso, na ordem do motor (pontuação, marco, pacote e R-nn; nunca a posição no catálogo). */
+export function recsPlano(e: Estado14, res?: any): RecPlano[] {
+  return ((res || resultadoDe(e)).recs as any[]).map(recPlanoDe);
 }
 
 // ----------------------------------------------------------- lacunas (a mesma contagem na página e no PDF)
@@ -169,9 +203,9 @@ export const tituloParcial = (l: Pick<Lacunas, 'total'>): string =>
 export const textoLacunas = (l: Pick<Lacunas, 'essencial' | 'refino'>): string =>
   plural(l.essencial, '{n} pergunta do Essencial', '{n} perguntas do Essencial') + '; ' + t('{n} de refinamento', { n: l.refino }) + '.';
 
-/** "3 ações de prioridade alta" */
-export const textoAltas = (n: number): string =>
-  n === 0 ? t('Nenhuma ação de prioridade alta') : n === 1 ? t('1 ação de prioridade alta') : t('{0} ações de prioridade alta', { '0': n });
+/** "3 condições abertas" (REC-19: sem "prioridade alta") */
+export const textoCondicoes = (n: number): string =>
+  n === 0 ? t('Nenhuma condição aberta') : n === 1 ? t('1 condição aberta') : t('{0} condições abertas', { '0': n });
 
 export const rotuloOrigem = (o: string): string =>
   ({ padrao: t('padrão'), sugerido: t('~ sugerido'), informado: t('informado'), refinado: t('refinado') } as Record<string, string>)[o] || o;
@@ -293,11 +327,15 @@ export function painelDe(e: Estado14): Painel {
     const curto = id === 'kpi.porAluno' ? fmt.cheio : fmt.curto;
     return { id, label: ROT[id], bruto: v, value: v === undefined ? undefined : curto(v), fullValue: v === undefined ? undefined : fmt.cheio(v), origem: origemKpi(e, id) };
   });
-  const recs = respondidas > 0 || e.exemplo !== 'novo' ? recsPlano(e) : [];
+  const res = respondidas > 0 || e.exemplo !== 'novo' ? resultadoDe(e) : null;
+  const recs = res ? recsPlano(e, res) : [];
+  const porId = new Map(recs.map((r) => [r.id, r]));
+  const cartoes = res ? (res.cartoes as any[]).map((c) => { const r = porId.get(String(c.id)); return { id: String(c.id), texto: r ? r.texto : '', quem: r ? r.quem : '', marco: r ? r.marcoNome : '' }; }) : [];
+  const vt: any = res && res.veredito && recs.length ? trVeredito(res.veredito) : null;
   return {
     estado: respondidas === 0 && e.exemplo === 'novo' ? 'empty' : faltam === 0 || e.exemplo !== 'novo' ? 'complete' : 'writing',
     titulo: tituloCaso(e), fatos: fatosCaso(e), temNumeros: comNumeros, H, kpis, camadas, recs, respondidas, faltam, premissas,
-    lacunas: lacunasDe(e), nAlta: recs.filter((r) => r.prioridade === 'alta').length, paraNumero: paraNumeroDe(e),
+    lacunas: lacunasDe(e), nCondicoes: res ? (res.condicoes || []).length : 0, veredito: vt ? String(vt.texto) : '', cartoes, nPacotes: res && Array.isArray((res as any).grupos) ? (res as any).grupos.length : 0, paraNumero: paraNumeroDe(e),
   };
 }
 

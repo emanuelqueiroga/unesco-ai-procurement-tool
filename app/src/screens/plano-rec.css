@@ -1,0 +1,103 @@
+/* Recomendações na página do plano (pacote R6): veredito, nível de cuidado, contadores, os 5 cartões, pendências,
+   sequência de decisões com portões, "Como testar e avaliar" e o plano de ação por pacote.
+   Só tokens do Prumo; texto nunca abaixo de 13 px; propriedades lógicas (árabe); nada de rolagem horizontal a
+   360 px (REC-45): a 360 px os rótulos dos cartões ficam acima do conteúdo (COM-22). */
+
+/* ---- veredito (4.4) ---- */
+.pc-veredito { border-left: 1px solid var(--line); border-inline-start: 4px solid var(--primary); gap: var(--space-2); }
+.pc-veredito--nao { border-inline-start-color: var(--high); }
+.pc-veredito--condicoes { border-inline-start-color: var(--warn); }
+.pc-veredito--pode { border-inline-start-color: var(--ok); }
+.pc-veredito-rotulo { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--ink-2); }
+.pc-veredito-texto { font-size: 17px; line-height: 25px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.pc-veredito-aviso { margin-top: var(--space-1); }
+.pc-veredito-aviso > summary { color: var(--high); }
+
+/* ---- contadores ---- */
+.pc-contadores .pc-selo--falta { background: var(--warn-bg); }
+.pc-selo--link { text-decoration: underline; color: var(--primary-strong); }
+.pc-selo--link:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* ---- os 5 cartões (4.3; 5.1) ---- */
+.pc-rcs { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+.pc-rc { border: 1px solid var(--line); border-inline-start: 4px solid var(--primary); border-radius: var(--radius-md); background: var(--surface-1);
+  padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.pc-rc--condicao { border-inline-start-color: var(--high); }
+.pc-rc--acompanhar { border-inline-start-color: var(--muted); }
+.pc-rc-cab { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.pc-rc-n { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; border-radius: var(--radius-pill);
+  background: var(--primary-tint); color: var(--primary-strong); font-weight: 600; font-size: 14px; }
+.pc-rc-pacote { font-size: 13px; line-height: 18px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.pc-rc-nivel { display: inline-block; padding: 1px 8px; border-radius: var(--radius-pill); font-size: 13px; line-height: 18px; font-weight: 600;
+  background: var(--info-bg); color: var(--ink); overflow-wrap: anywhere; }
+.pc-rc-nivel--condicao { background: var(--high-bg); color: var(--high); }
+.pc-rc-nivel--acompanhar { background: var(--surface-2); color: var(--ink-2); }
+.pc-rc-id { font-variant-numeric: tabular-nums; color: var(--primary-strong); white-space: nowrap; font-size: 13px; }
+.pc-rc-dl { display: grid; grid-template-columns: minmax(96px, max-content) minmax(0, 1fr); margin: 0; column-gap: var(--space-4); }
+.pc-rc-l { display: contents; }
+.pc-rc-dl dt, .pc-rc-dl dd { margin: 0; padding: var(--space-1) 0; font-size: 14px; line-height: 20px; border-top: 1px solid var(--line); }
+.pc-rc-dl dt { color: var(--muted); font-weight: 600; font-size: 13px; }
+.pc-rc-dl dd { color: var(--ink); overflow-wrap: anywhere; }
+.pc-rc-dl > .pc-rc-l:first-child > dt, .pc-rc-dl > .pc-rc-l:first-child > dd { border-top: 0; }
+.pc-rc-como { margin: 0; padding-inline-start: var(--space-5); display: flex; flex-direction: column; gap: 2px; }
+.pc-rc-num { font-variant-numeric: tabular-nums; }
+.pc-rc-passos > summary { cursor: pointer; font-size: 14px; font-weight: 600; color: var(--primary-strong); min-height: 32px; display: flex; align-items: center; }
+.pc-rc-passos > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pc-rc-origem { margin: 0; font-size: 13px; line-height: 18px; color: var(--muted); overflow-wrap: anywhere; }
+/* celular: rótulos acima do conteúdo */
+@media (max-width: 560px) {
+  .pc-rc-dl { grid-template-columns: minmax(0, 1fr); }
+  .pc-rc-dl dd { border-top: 0; padding-top: 0; }
+  .pc-rc { padding: var(--space-3); }
+}
+
+/* ---- pendências (5.3, bloco 1) ---- */
+.pc-pends { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.pc-pend { border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); display: flex; flex-direction: column;
+  gap: var(--space-2); background: var(--surface-1); min-width: 0; }
+.pc-pend > .pc-tag { align-self: flex-start; white-space: normal; }
+.pc-tag--info { background: var(--info-bg); color: var(--ink); }
+.pc-pend-q { font-size: 15px; line-height: 22px; overflow-wrap: anywhere; }
+.pc-pend-efeito { max-width: 640px; }
+
+/* ---- sequência de decisões (4.5; 5.3, bloco 2) ---- */
+.pc-portoes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-4); }
+.pc-portao { border-inline-start: 3px solid var(--phase-2); padding-inline-start: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.pc-portao--M1 { border-inline-start-color: var(--phase-1); }
+.pc-portao--M3 { border-inline-start-color: var(--phase-3); }
+.pc-portao--M5 { border-inline-start-color: var(--phase-4); }
+.pc-portao-meta { margin: 0; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: 14px; line-height: 20px; color: var(--ink-2); }
+.pc-portao .pr-datatable { max-width: none; }
+.pc-estado--pendente { background: var(--high-bg); color: var(--high); }
+.pc-portao .pc-estado { white-space: normal; }
+.pc-pds { margin: 0; padding-inline-start: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-1); font-size: 14px; line-height: 20px; }
+
+/* ---- como testar e avaliar ---- */
+.pc-teste { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.pc-teste .pr-datatable { max-width: none; }
+
+/* ---- plano de ação por pacote ---- */
+.pc-pacote > summary { flex-wrap: wrap; gap: var(--space-1) var(--space-3); color: var(--ink); }
+.pc-pacote-t { font-weight: 600; }
+.pc-pacote-marco { display: flex; flex-direction: column; gap: var(--space-2); padding-top: var(--space-2); }
+.pc-acoes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.pc-acao { display: flex; flex-direction: column; gap: var(--space-1); padding-bottom: var(--space-3); border-bottom: 1px solid var(--line); min-width: 0; }
+.pc-acao:last-child { border-bottom: 0; }
+.pc-acao > .pc-rc-nivel { align-self: flex-start; }
+.pc-acao-t { font-size: 15px; line-height: 22px; overflow-wrap: anywhere; }
+
+/* ---- seções que são listas do guia (referência) ---- */
+.pc-ref-rotulo { font-size: 13px; line-height: 18px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.pc-ref-bloco { display: flex; flex-direction: column; gap: var(--space-2); padding-top: var(--space-5); border-top: 2px solid var(--line-control); }
+
+/* ---- faixa do custo total: P50 e P90 rotulados (decisão 3) ---- */
+.pc-tco-rotulos { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); margin: 0; font-size: 14px; line-height: 20px; }
+.pc-tco-base { font-size: 13px; line-height: 18px; color: var(--muted); }
+
+/* ---- síntese do capítulo 4: "Seu próximo passo" (5.6) ---- */
+.pc-proximo { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.pc-proximo-v { font-weight: 600; font-size: 16px; line-height: 23px; overflow-wrap: anywhere; }
+.pc-proximo ol { margin: 0; padding-inline-start: var(--space-5); display: flex; flex-direction: column; gap: var(--space-1); }
+
+/* nada largo demais a 360 px */
+.pc-plano-conteudo, .pc-rcs, .pc-portoes, .pc-pends { max-width: 100%; }

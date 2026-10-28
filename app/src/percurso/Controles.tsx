@@ -6,7 +6,7 @@
 // mostram o detalhe recolhido na própria tela; a lógica pura dessas edições está em refinar.ts.
 import { Fragment, createContext, useContext, useId, useState, type ReactNode } from 'react';
 import {
-  CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA,
+  CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
   listaOpc, totaisCtx, alunosEtapa, etapasAtivas, modoTeste, horasEstimativa, lerNumero, problemasMarcados, sugProblemas, temLacuna, rotulo, pct, tr,
 } from '../domain';
 import { useCaso, origemDe, valorDe, type Estado14, type TelaEssencial } from '../store';
@@ -28,6 +28,10 @@ import {
   etapaEditada, anosDaEtapa, respostaGov, pedeDetalhe, pendenciasRevisar, nomesDoValor, notasPremissa,
   type Ferramenta, type PatchEtapa,
 } from './refinar';
+import {
+  COLUNAS_FAIXA, custoEfeitoDe, faixaEditada, errosDaFaixa, volumeDe, volumeEditado, avisoVolume, revisaoDe, revisaoEditada, errosDaRevisao,
+  revisaoIncompleta, type LinhaFaixa, type ColunaFaixa, type MensagemRec,
+} from './refinar_rec';
 import './controles.css';
 import { Pais } from './Pais';
 
@@ -318,6 +322,96 @@ function Ondas({ e }: { e: Estado14 }) {
   );
 }
 
+// ----------------------------------------------------------- perguntas novas do Refinar (R8, REC-52)
+const msgRec = (m?: MensagemRec): string | undefined => (m ? t(m.k, m.vars) : undefined);
+const rotuloColuna = (c: ColunaFaixa): string => (c === 'min' ? t('Mínimo') : c === 'max' ? t('Máximo') : t('Mais provável'));
+const rotuloLinha = (l: LinhaFaixa): string => (l === 'custo' ? t('Custo por pessoa por ano, em US$') : t('Efeito esperado, em desvios-padrão'));
+
+/** 1.2.9: custo por pessoa por ano e efeito esperado da alternativa sem IA, cada um em faixa (mínimo, mais provável, máximo). */
+function Faixa({ e }: { e: Estado14 }) {
+  const gravar = useGravar();
+  const r = custoEfeitoDe(e.caso.altCustoEfeito);
+  const grava = (linha: LinhaFaixa, coluna: ColunaFaixa, x: number | '') => gravar('altCustoEfeito', faixaEditada(e.caso.altCustoEfeito, linha, coluna, x));
+  return (
+    <div className="pcx-faixas">
+      {(['custo', 'efeito'] as LinhaFaixa[]).map((linha) => {
+        const erro = errosDaFaixa(r[linha]);
+        const rot = rotuloLinha(linha);
+        return (
+          <fieldset key={linha} className="pcx-faixa">
+            <legend className="pcx-faixa-titulo">{rot}</legend>
+            <div className="pcx-faixa-campos">
+              {COLUNAS_FAIXA.map((col) => (
+                <CampoNumero
+                  key={col}
+                  label={rotuloColuna(col)}
+                  decimais
+                  value={r[linha][col]}
+                  size={8}
+                  error={msgRec(erro[col])}
+                  onChange={(x) => grava(linha, col, x)}
+                />
+              ))}
+            </div>
+          </fieldset>
+        );
+      })}
+      <p className="pc-nota">{t('Só o mais provável entra no cálculo do efeito de empate; o mínimo e o máximo ficam registrados como faixa.')}</p>
+    </div>
+  );
+}
+
+/** 1.2.10: unidade do resultado, volume e período. */
+function Volume({ e }: { e: Estado14 }) {
+  const gravar = useGravar();
+  const v = volumeDe(e.caso.volumeResultado);
+  const aviso = avisoVolume(v);
+  const grava = (patch: Partial<typeof v>) => gravar('volumeResultado', volumeEditado(e.caso.volumeResultado, patch));
+  const unidades = (OPC_UNIDADE_RESULTADO as any[]).map((o) => [String(o[0]), String(tr(o[1]))] as [string, string]);
+  const periodos = (OPC_PERIODO_RESULTADO as any[]).map((o) => [String(o[0]), String(tr(o[1]))] as [string, string]);
+  return (
+    <div className="pcx-volume">
+      <div className="pcx-volume-campos">
+        <Selecao label={t('Unidade do resultado')} value={v.unidade} opcoes={unidades} onChange={(x) => grava({ unidade: x })} />
+        <CampoNumero label={t('Volume esperado')} value={v.volume} size={10} error={v.volume !== '' && +v.volume === 0 ? t('Informe um número maior que zero.') : undefined} onChange={(x) => grava({ volume: x })} />
+        <Selecao label={t('Período do volume')} value={v.periodo} opcoes={periodos} onChange={(x) => grava({ periodo: x === 'ano' ? 'ano' : 'mes' })} />
+      </div>
+      {aviso ? <p className="pc-nota">{msgRec(aviso)}</p> : null}
+    </div>
+  );
+}
+
+/** 2.6.5 (só com alerta precoce): estudantes sinalizados por mês, em % dos alcançados, e minutos para revisar cada alerta. */
+function Revisao({ e }: { e: Estado14 }) {
+  const gravar = useGravar();
+  const r = revisaoDe(e.caso.revisao);
+  const erro = errosDaRevisao(r);
+  const grava = (campo: 'taxaAlerta' | 'minutos', x: number | '') => gravar('revisao', revisaoEditada(e.caso.revisao, campo, x));
+  return (
+    <div className="pcx-revisao">
+      <div className="pcx-revisao-campos">
+        <CampoNumero
+          label={t('Estudantes sinalizados por mês, em % dos alcançados')}
+          decimais
+          value={r.taxaAlerta}
+          size={8}
+          suffix="%"
+          error={msgRec(erro.taxaAlerta)}
+          onChange={(x) => grava('taxaAlerta', x)}
+        />
+        <CampoNumero
+          label={t('Minutos para revisar cada alerta')}
+          value={r.minutos}
+          size={8}
+          error={msgRec(erro.minutos)}
+          onChange={(x) => grava('minutos', x)}
+        />
+      </div>
+      {revisaoIncompleta(e.caso.revisao) ? <p className="pc-nota">{t('Falta um dos dois números: a revisão por volume só entra no custo com os dois.')}</p> : null}
+    </div>
+  );
+}
+
 // ----------------------------------------------------------- 2.3.3 ferramentas e 3.2.1 arquitetura (só no Refinar)
 function Ferramentas({ e }: { e: Estado14 }) {
   const refinar = useCaso((s) => s.refinar);
@@ -375,14 +469,19 @@ function Ferramentas({ e }: { e: Estado14 }) {
   );
 }
 
+/** opções da 3.2.1 que a pergunta oferece: as três de sempre e as duas novas (R8, decisão 10) */
+const ARQUITETURAS_PERGUNTA = ['saas', 'api', 'ow', 'preditivo', 'ow_api'];
+/** as duas novas ainda não têm exemplo de partida no motor (E5): o custo usa a arquitetura presumida */
+const ARQUITETURAS_SEM_EXEMPLO = ['preditivo', 'ow_api'];
 function Arquitetura({ e }: { e: Estado14 }) {
   const refinar = useCaso((s) => s.refinar);
   const f: any = (CAMPO_POR_ID as any).arquitetura;
   const o = origemDe(e, 'arquitetura');
   const v = o === 'padrao' && e.exemplo === 'novo' ? '' : str(valorDe(e, 'arquitetura'));
-  const arqs = ((OPC as any).arquitetura as any[]).filter((x) => ['saas', 'api', 'ow'].includes(x[0]));
+  const arqs = ((OPC as any).arquitetura as any[]).filter((x) => ARQUITETURAS_PERGUNTA.includes(x[0]));
   const pres = rotuloArquitetura(arquiteturaPresumida(e.caso));
   return (
+    <>
     <OptionCardGroup label={String(tr(f.t))}>
       {arqs.map((x) => (
         <OptionCard key={x[0]} name="arquitetura" value={x[0]} label={comDescricao(x[1], (ARQ_DESC as any)[x[0]] || x[2])} checked={v === x[0]} onChange={(val) => refinar('arquitetura', val)} />
@@ -398,6 +497,10 @@ function Arquitetura({ e }: { e: Estado14 }) {
         onChange={(val) => refinar('arquitetura', val)}
       />
     </OptionCardGroup>
+    {ARQUITETURAS_SEM_EXEMPLO.includes(v) ? (
+      <p className="pc-nota">{t('A estimativa de custo ainda não tem um exemplo de partida próprio para esta arquitetura e usa a presumida{p}.', { p: pres ? ` (${String(tr(pres))})` : '' })}</p>
+    ) : null}
+    </>
   );
 }
 
@@ -415,10 +518,13 @@ export function ControleCampo({ e, campo }: { e: Estado14; campo: string }) {
     case 'ondas': return <Ondas e={e} />;
     case 'ferramentas': return <Ferramentas e={e} />;
     case 'arq': return <Arquitetura e={e} />;
+    case 'faixa': return <Faixa e={e} />;
+    case 'volume': return <Volume e={e} />;
+    case 'revisao': return <Revisao e={e} />;
     default: return null;
   }
 }
-export const TIPOS_SIMPLES = ['radio', 'chips', 'multi', 'texto', 'area', 'num', 'horas', 'ondas', 'ferramentas', 'arq'];
+export const TIPOS_SIMPLES = ['radio', 'chips', 'multi', 'texto', 'area', 'num', 'horas', 'ondas', 'ferramentas', 'arq', 'faixa', 'volume', 'revisao'];
 
 // ----------------------------------------------------------- telas compostas
 function Etapas({ e }: { e: Estado14 }) {

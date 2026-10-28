@@ -4,7 +4,8 @@
 // app anterior 'navegador-ia-educacao' (v8, formato 4). A derivação de `origem` segue a spec ("Modelo de dados
 // do caso"): respC[campo] → 'informado'; valor ≠ CASO_VAZIO e não confirmado → 'sugerido'; senão 'padrao'.
 import { clone, CASO_VAZIO, CASOS, confirmarGerados, migrarCasoV10, MIGRA_DOMINIO, MIGRA_COMPS, PRIORIDADE_DO_PROBLEMA, PRIORIDADES,
-  CAMPOS, QUESTOES_G, SUB_OBJ, CAMPO_POR_ID } from '../domain';
+  CAMPOS, QUESTOES_G, SUB_OBJ, CAMPO_POR_ID, OPC_PUBLICO, OPC_CONTESTACAO_EXISTE, OPC_TREINO, OPC_VERIFICACAO, OPC_INSTRUMENTO_TESTE, OPC_ESTRATEGIA_COMPRA,
+  OPC_DOTACAO, OPC_TEMPO_JORNADA, OPC_MOMENTO_USO, OPC_APOIO_ESCOLA, OPC_UNIDADE_RESULTADO } from '../domain';
 import type { Estado14, Origem } from './tipos';
 import { ESSENCIAL } from './perguntas';
 
@@ -161,11 +162,22 @@ export function migrarV8(o: any) {
     // num caso em branco, o padrão de 1.000 elegíveis da v8 não foi uma resposta
     elegiveis: resp8('elegiveis') && +c8.elegiveis > 0 ? +c8.elegiveis : '',
   });
+  // R8 (REC-52): três das perguntas de risco da v8 voltam como perguntas do Refinar com o mesmo domínio de respostas
+  // (treino; contestacao → contestacaoExiste; verificabilidade → verificacao). vulneraveis e idiomas eram sim/não e não viram chips.
+  const pelaLista = (L: any[], v: any) => (idsDe(L).includes(String(v)) ? String(v) : '');
+  // só o que a pessoa respondeu (ou o exemplo trazia): num caso em branco, os valores da v8 eram premissas e não respostas
+  const resposta8 = (L: any[], k: string, v: any) => (resp8(k) ? pelaLista(L, v) : '');
+  const treino = resposta8(OPC_TREINO, 'treino', c8.treino), contestacao = resposta8(OPC_CONTESTACAO_EXISTE, 'contestacao', c8.contestacao),
+    verificacao = resposta8(OPC_VERIFICACAO, 'verificabilidade', c8.verificabilidade);
   ['populacao', 'capacidade', 'classes', 'autonomia', 'dados', 'treino', 'vulneraveis', 'idiomas', 'verificabilidade', 'contestacao',
     'reversibilidade', 'cumulativo', 'alcance', 'arquitetura', 'pilotoGratuito', 'alternativaSemIA'].forEach(k => { delete caso[k]; });
+  Object.assign(caso, { treino, contestacaoExiste: contestacao, verificacao });
   // respC: campos que continuam + os que vieram de valores respondidos
   const respC: Record<string, boolean> = {};
-  Object.keys(rc8).forEach(k => { if (rc8[k] && k in CASO_VAZIO) respC[k] = true; });
+  Object.keys(rc8).forEach(k => { if (rc8[k] && k in CASO_VAZIO && k !== 'treino') respC[k] = true; });
+  if (treino) respC.treino = true;
+  if (contestacao) respC.contestacaoExiste = true;
+  if (verificacao) respC.verificacao = true;
   if (resp8('alternativaSemIA')) respC.alternativa = true;
   if (tarefas.length && resp8('classes')) respC.tarefas = true;
   if (tipoTec && resp8('arquitetura')) { respC.tipoTec = true; respC.adaptacao = true; respC.arquiteturaManual = true; }
@@ -185,6 +197,46 @@ export function migrarV8(o: any) {
   };
 }
 
+// ----------------------------------------------------------- perguntas novas do Refinar (R8, REC-52)
+// As 13 respostas novas (CASO_VAZIO) chegam de arquivos antigos em branco e de arquivos editados à mão em qualquer formato: aqui
+// cada uma volta ao formato que as regras e o motor leem; o que não é um id conhecido vira "não informado" (vazio).
+const idsDe = (L: any[]) => (L as any[]).map(o => String(o[0]));
+const ENUMS_REC: Record<string, string[]> = {
+  contestacaoExiste: idsDe(OPC_CONTESTACAO_EXISTE), treino: idsDe(OPC_TREINO), verificacao: idsDe(OPC_VERIFICACAO), instrumentoTeste: idsDe(OPC_INSTRUMENTO_TESTE),
+  estrategiaCompra: idsDe(OPC_ESTRATEGIA_COMPRA), dotacao: idsDe(OPC_DOTACAO), tempoJornada: idsDe(OPC_TEMPO_JORNADA), momentoUso: idsDe(OPC_MOMENTO_USO),
+};
+// apoioEscola é lido por prefixo (ninguem, nenhum, nao = sem referência): fica o que a lista conhece
+ENUMS_REC.apoioEscola = idsDe(OPC_APOIO_ESCOLA);
+const numOuVazio = (v: any): number | '' => (v === '' || v == null || !isFinite(+v) ? '' : Math.max(0, +v));
+const faixaNormal = (x: any) => {
+  if (x != null && typeof x === 'object') return { min: numOuVazio(x.min), provavel: numOuVazio(x.provavel != null ? x.provavel : x.valor), max: numOuVazio(x.max) };
+  return { min: '', provavel: numOuVazio(x), max: '' };
+};
+/** Completa e normaliza as respostas novas do Refinar no caso (no lugar). Não mexe em nada que já esteja no formato certo. */
+export function normalizarRespostasRec(c: any): any {
+  Object.keys(ENUMS_REC).forEach(k => { if (!ENUMS_REC[k].includes(String(c[k]))) c[k] = ''; });
+  // publico: lista de ids conhecidos, na ordem do catálogo; "nenhum" e "não sei" não se combinam com os grupos
+  const bruto: any[] = Array.isArray(c.publico) ? c.publico : (typeof c.publico === 'string' && c.publico ? [c.publico] : []);
+  const ordem = idsDe(OPC_PUBLICO), excl = ['nenhum', 'nao_sei'];
+  const set = new Set(bruto.map(String).filter(v => ordem.includes(v)));
+  const grupos = ordem.filter(v => set.has(v) && !excl.includes(v));
+  c.publico = grupos.length ? grupos : ordem.filter(v => set.has(v)).slice(0, 1);
+  const a = c.altCustoEfeito && typeof c.altCustoEfeito === 'object' ? c.altCustoEfeito : {};
+  c.altCustoEfeito = { custo: faixaNormal(a.custo), efeito: faixaNormal(a.efeito) };
+  const v = c.volumeResultado;
+  if (v != null && typeof v === 'object' && !Array.isArray(v)) {
+    c.volumeResultado = { unidade: idsDe(OPC_UNIDADE_RESULTADO).includes(String(v.unidade)) ? String(v.unidade) : '', volume: numOuVazio(v.volume), periodo: v.periodo === 'ano' ? 'ano' : 'mes' };
+  } else {
+    // um número solto vale como solicitações por mês (o formato que rec_numeros.js também aceita)
+    const x = numOuVazio(v);
+    c.volumeResultado = { unidade: x === '' ? '' : 'solicitacoes', volume: x, periodo: 'mes' };
+  }
+  const r = c.revisao && typeof c.revisao === 'object' ? c.revisao : {};
+  const tx = numOuVazio(r.taxaAlerta);
+  c.revisao = { taxaAlerta: tx === '' ? '' : Math.min(100, tx), minutos: numOuVazio(r.minutos) };
+  return c;
+}
+
 // ----------------------------------------------------------- normalização (v9 → v10 → v11 → v13)
 // completa o estado com os valores padrão e retira o que não existe mais; `o.versao` diz de onde vem
 export function normalizarEstado(o: any) {
@@ -199,6 +251,7 @@ export function normalizarEstado(o: any) {
   o.caso.piloto = Object.assign({ escolas: '', participantes: '', meses: '' }, o.caso.piloto || {});
   o.caso.poc = Object.assign({ participantes: '', meses: '' }, o.caso.poc || {});
   o.caso.implantacao = Object.assign({ escolas: '', pessoas: '' }, o.caso.implantacao || {});
+  normalizarRespostasRec(o.caso);   // R8: perguntas novas do Refinar em branco ou em formato antigo
   if (!Array.isArray(o.caso.testes)) o.caso.testes = [];
   if (!Array.isArray(o.caso.ferramentas)) o.caso.ferramentas = [];
   ['pagaDepois', 'fonte', 'infra', 'arquiteturaManual'].forEach(k => { delete o.caso[k]; });

@@ -4,7 +4,7 @@
 // pontos de referência, para pegar regressões na passagem do estado.
 import { describe, it, expect } from 'vitest';
 import * as D from '../../src/domain/index.ts';
-const MODULOS = ['custos', 'framework', 'casos', 'prioridades', 'plano_dados', 'fluxo_dados', 'i18n', 'custos_ui', 'formula', 'fluxo', 'matriz', 'recomendacoes', 'glossario', 'ajuda', 'referencias', 'pais'];
+const MODULOS = ['custos', 'framework', 'casos', 'prioridades', 'plano_dados', 'fluxo_dados', 'i18n', 'custos_ui', 'formula', 'fluxo', 'matriz', 'recomendacoes', 'glossario', 'ajuda', 'referencias', 'pais', 'rec_numeros'];
 
 function estadoExemplo(k) {
   const caso = k === 'novo' ? D.clone(D.CASO_VAZIO) : D.clone(D.CASOS[k]);
@@ -46,8 +46,9 @@ describe('fluxo.js com estado', () => {
     expect(D.qOk('tarefas', e)).toBe(true);
     expect(D.qOk(D.CAMPO_POR_ID.arquitetura, e)).toBe(false);
     const n = D.numerosCusto(D.cfgAtual(e));
-    expect(Math.round(n.total)).toBe(4747846);
-    expect(Math.round(n.piloto)).toBe(94080);
+    // R7 (seção 8, E2): + US$ 12 mil de K3.4 (teste local) no Ano 0; a dotação do Ano 0 sobe 12.600 (contingência de 5%)
+    expect(Math.round(n.total)).toBe(4759846);
+    expect(Math.round(n.piloto)).toBe(106680);
     expect(D.perfil(e).agregado).toBe('moderado');
     expect(D.premissasUnitarias(e)[0]).toMatch(/^Premissas de partida: Exemplo A/);
     expect(D.cfgAtual(e)).toBe(e.custo.cfg);   // guardada no estado, como no legado
@@ -55,7 +56,8 @@ describe('fluxo.js com estado', () => {
   it('exemplo D: prova de conceito e caso em branco', () => {
     const d = estadoExemplo('D');
     expect(D.padroesGerados(d).poc).toEqual({ participantes: 15, meses: 2 });
-    expect(Math.round(D.numerosCusto(D.cfgAtual(d)).total)).toBe(570107);
+    // R7 (E1, REC-46): verificabilidade "parcial" com API → D moderado: 570.107 → 630.407 (618,4 mil do E1 + 12 mil de K3.4)
+    expect(Math.round(D.numerosCusto(D.cfgAtual(d)).total)).toBe(630407);
     const v = estadoExemplo('novo');
     expect(D.padroesGerados(v)).toEqual({});
     expect(D.faltasTodas(v).length).toBe(47);
@@ -79,16 +81,19 @@ describe('matriz.js e recomendacoes.js com estado', () => {
     expect(v.celulas[1].contexto.estado).toBe('pendente');
   });
   it('recomendacoesCaso: lista ordenada por prioridade e secaoRecomendacoes', () => {
+    // ids R-nn do catálogo (regras/); ordem pela pontuação de 4.1 (rec_selecao.js)
+    // integração do R4: o catálogo completo (regras novas R-01 a R-87) dá 48 ações no A; a primeira é a R-04 (Condição de
+    // 6 pontos, empatada com R-08, R-13, R-20 e R-56; o desempate é a ordem dos pacotes, PROB primeiro)
     const recs = D.recomendacoesCaso(estadoExemplo('A'));
-    expect(recs.length).toBe(13);
-    expect(recs[0].id).toBe('ferramentas-cotacao');
+    expect(recs.length).toBe(49);   // inclui R-01 (meta sem número)
+    expect(recs[0].id).toBe('R-04');
     expect(recs.every((r, i) => !i || D.PRIO_REC[r.prioridade] && (recs[i - 1].prioridade !== 'media' || r.prioridade === 'media'))).toBe(true);
     const d = D.recomendacoesCaso(estadoExemplo('D'));
-    expect(d.slice(0, 3).map(r => r.id)).toEqual(['gratis-adiados', 'gratis-fim', 'disp-proprio']);
+    expect(d.slice(0, 3).map(r => r.id)).toEqual(['R-57', 'R-08', 'R-20']);   // ordem pela pontuação de 4.1 (as três Condições do M1)
     expect(D.recomendacoesCaso(estadoExemplo('novo'))).toEqual([]);
     const sec = D.secaoRecomendacoes(null, estadoExemplo('A'));
     expect(sec.id).toBe('recs');
-    expect(sec.table.rows.length).toBe(13);
+    expect(sec.table.rows.length).toBe(recs.length);
     expect(D.secaoRecomendacoes(null).table).toBe(null);
   });
 });

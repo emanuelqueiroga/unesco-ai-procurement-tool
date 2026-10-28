@@ -76,8 +76,12 @@ import {
   secaoFormula,
   respondido, etapasAtivas, alunosEtapa, totaisCtx, faltasTodas, numerosCusto, premissasUnitarias, casoAtual, perfil, cfgAtual,
   FASES_MATRIZ, CREDITO_MATRIZ, TIT_MATRIZ, NOTA_MATRIZ_CUSTO, matrizCaso,
-  recTestes, recTesteDe, recFerramentas, recPagaFerr, recomendacoesCaso, secaoRecomendacoes,
+  recTestes, recTesteDe, recFerramentas, recPagaFerr, recomendacoesCaso, secaoRecomendacoes, EXIGE_REC,
+  resultadoRecomendacoes, notaNormativa, rotuloNivelCurto,
 } from '../domain/index.ts';
+// R6 (REC-38 a REC-45): recomendações no relatório (veredito, cuidado, cartões, sequência de decisões, como testar,
+// plano de ação, O que exigir, premissas e normas), já traduzidas, as mesmas na página, no PDF e na síntese
+import { planoRec, itemGuia, TXT_R6 } from './recplano.js';
 // critérios compartilhados com a página (P3): lacunas nas duas classes e "sem números" até dizer o tipo de tecnologia (2.3.4)
 import { lacunasDe, temNumeros, tituloParcial, textoLacunas, rotuloResposta, campoDoNumero } from '../percurso/painel.ts';
 // 0.0.15 (BL6): sumário executivo, tabelas novas de "Quanto custa", premissas e glossário (plano/relatorio.js)
@@ -288,6 +292,21 @@ function nomeCamada(n) {
   return x ? (Array.isArray(x) ? x[1] : x.nome) : '';
 }
 const rotuloCamada = n => n + '. ' + tr(nomeCamada(n));
+// REC-13 (pedido do R7): "(presumida: …)" com o motivo da presunção (framework.js:motivoArquitetura), em vez de
+// "(deduzida das respostas)"
+const MOTIVO_ARQ = {
+  tipoTec: 'tecnologia de código aberto, pergunta 2.3.4', licenca: 'licença aberta, pergunta 2.3.6',
+  pagamento: 'pagamento por consumo, pergunta 2.3.5', padrao: 'ponto de partida da ferramenta',
+};
+const TXT_ARQ_PRESUMIDA = 'presumida a partir de: {0}; confirme na pergunta 3.2.1';
+function arqPresumidaTxt(ce) {
+  const m = (ce.__arqMotivo || []).map(x => tr(MOTIVO_ARQ[x] || x)).filter(Boolean);
+  return trN(TXT_ARQ_PRESUMIDA, m.length ? m.join('; ') : tr(MOTIVO_ARQ.padrao));
+}
+// R6 (REC-43): seções que são listas de verificação do guia (referência), com o rótulo na página e no PDF
+const TXT_REF = 'Lista de verificação do guia (referência)';
+const TXT_B9 = 'Critérios do guia para cada ponto de decisão, na ordem de 1 a 9, com os itens adicionais deste caso e as ações deste plano que respondem a cada um.';
+
 function govQuestoes() {
   if (QUESTOES_G && QUESTOES_G.length) return QUESTOES_G;
   return Object.keys(ACOES_G).map((id, i) => ({ id, n: '1.3.' + (i + 1), t: id }));
@@ -313,11 +332,12 @@ function dadosPlano(estado) {
   try { faltas = faltasTodas(E) || []; } catch (e) { console.warn(e); }
   let lacunas = { essencial: 0, refino: 0, total: 0, itens: [] };
   try { lacunas = lacunasDe(estado); } catch (e) { console.warn(e); }
-  let recs = [];
-  try { recs = recomendacoesCaso(E) || []; } catch (e) { console.warn(e); }
+  let recs = [], res = null;
+  try { res = resultadoRecomendacoes(E); recs = (res && res.recs) || []; } catch (e) { console.warn(e); }
   // PLA-19: "nao_sei" e outros valores crus nunca chegam ao "Por quê"
-  recs = recs.map(r => { const pq = r.porque; if (!pq || !pq.resposta) return r; const campo = campoDoNumero(pq.n); return Object.assign({}, r, { porque: Object.assign({}, pq, { resposta: String(pq.resposta).split('; ').map(z => rotuloResposta(campo, z)).join('; ') }) }); });
-  return { E, c, x, t, ce, p, rec, cfg, custo, arq, modo, teste, recs, poc: modo === 'poc' && teste !== 'ambos' && !(['recomendar', ''].includes(teste) && rec.modo === 'ambos'),
+  const rotR = pq => (pq && pq.resposta ? Object.assign({}, pq, { resposta: String(pq.resposta).split('; ').map(z => rotuloResposta(campoDoNumero(pq.n), z)).join('; ') }) : pq);
+  recs = recs.map(r => Object.assign({}, r, { porque: rotR(r.porque), origem: rotR(r.origem) }));
+  return { E, c, x, t, ce, p, rec, cfg, custo, arq, modo, teste, recs, res, poc: modo === 'poc' && teste !== 'ambos' && !(['recomendar', ''].includes(teste) && rec.modo === 'ambos'),
     ambos: teste === 'ambos' || (['recomendar', ''].includes(teste) && rec.modo === 'ambos'), faltas, lacunas, semNumeros,
     afeta: recAfeta(ce), dp: recDadosPessoais(ce), gratis: recGratuito(ce) };
 }
@@ -358,7 +378,7 @@ function secoesPlano(estado, opts) {
   const tarefas = (c.tarefas || []).map(k => k === 'outra' && c.tarefaOutra ? c.tarefaOutra : tr(rotP(OPC.tarefas, k))).filter(Boolean).join('; ');
   const impactos = (c.impactos || []).map(k => k === 'outro' && c.impactoOutro ? c.impactoOutro : tr(rotP(OPC.impactos, k))).filter(Boolean).join('; ');
   const pl = c.piloto || {}, pc = c.poc || {};
-  const arqTxt = tr(rotP(OPC.arquitetura, arq)) + (ce.__arqPresumida ? ' (' + tr('deduzida das respostas') + ')' : '');
+  const arqTxt = tr(rotP(OPC.arquitetura, arq)) + (ce.__arqPresumida ? ' (' + arqPresumidaTxt(ce) + ')' : '');
   const testes = recTestes(c);
   // setup: PoC e piloto com campos próprios quando os dois forem marcados; com "recomende", o setup preenchido
   // com "recomende para mim", só os setups preenchidos
@@ -459,12 +479,22 @@ function secoesPlano(estado, opts) {
   if (sMx) sec(sMx);
 
   // Recomendações para o seu caso (v10, recomendacoes.js): primeira seção depois do resumo, antes dos blocos A e B
-  try { sec(secaoRecomendacoes(d.recs, E)); } catch (e) { console.warn(e); }
+  try { sec(Object.assign(secaoRecomendacoes(d.recs, E), { rec: null })); } catch (e) { console.warn(e); }
 
   // ================= Bloco A
   sec({ tipo: 'bloco', id: 'A', h: 'A. ' + tr(TIT_PLANO.A) });
 
-  // A1
+  // R6: números do relatório (os mesmos das regras) e as recomendações já traduzidas, antes de A1
+  let rel0 = null;
+  if (custo) { try { rel0 = relDados(estado, { cfg, custo }); } catch (e) { console.warn(e); } }
+  let PR = null;
+  try { PR = planoRec(E, rel0 ? rel0.rec : null, { res: d.res }); } catch (e) { console.warn(e); }
+  const idsAcao = PR ? PR.idsAcao : [];
+  { const sR = S_.find(z => z.id === 'recs' && !z.sub); if (sR) sR.rec = PR; }
+  const guia = r => itemGuia(r.id, textoRec(r, d), idsAcao);
+
+  // A1 (REC-40: "Como testar e avaliar": modalidade e motivo, ficha de aceite, desenho de avaliação, quem pode ficar
+  // para trás, "vale o que custa" e o custo da avaliação; os dados vêm em `avaliacao`, já traduzidos)
   const a1p = [];
   const tE = d.teste;
   if (tE === 'recomendar' || !tE) {
@@ -489,7 +519,7 @@ function secoesPlano(estado, opts) {
   }
   // v12: frase principal de A1 (capa da página e do PDF)
   const principal = a1p.find(z => z !== 'Você ainda não escolheu entre prova de conceito e piloto.') || '';
-  sec({ id: 'A1', h: tituloSec('A1'), principal, p: a1p.concat((rec.motivos || []).length ? ['Por quê:'] : []), list: (rec.motivos || []).map(m => capP(tr(m)) + '.'),
+  sec({ id: 'A1', h: TXT_R6.testeT, principal, avaliacao: PR ? PR.teste : null, p: a1p.concat((rec.motivos || []).length ? ['Por quê:'] : []), list: (rec.motivos || []).map(m => capP(tr(m)) + '.'),
     pos: ['Base: guia do projeto, cap. 14 (instrumentos de aprendizagem). O documento de Krueger e Jackson (2026) não define prova de conceito nem piloto.'] });
   sec({ sub: true, h: 'Aprender antes de se comprometer', table: { head: ['Instrumento', 'Pergunta que responde', 'Condições'], rows: APRENDIZAGEM, hl: d.ambos ? [0, 2] : [d.modo === 'poc' ? 0 : 2], b0: true },
     list: TXT_A1.concat(d.poc ? [TXT_A1_POC] : []) });
@@ -497,7 +527,7 @@ function secoesPlano(estado, opts) {
   // A2
   let premLista = [], rel = null;
   if (custo) {
-    rel = relDados(estado, { cfg, custo });
+    rel = rel0;
     const cam = custo.camadas, H = custo.H;
     const tot = [1, 2, 3, 4, 5, 6, 7].reduce((s, n) => s + (cam.total[n] || 0), 0);
     const tot0 = [1, 2, 3, 4, 5, 6, 7].reduce((s, n) => s + (cam.ano0[n] || 0), 0);
@@ -505,15 +535,16 @@ function secoesPlano(estado, opts) {
     const ind = custo.ind || {};
     const kv = [
       ['Custo do Ano 0 (prova de conceito ou piloto)', grande(tot0)],
-      ['Custo total do ciclo de vida', grande(custo.total)],
+      // R6 (5.2, decisão 3): o valor central é o cenário-base; o P50 e o P90 vêm rotulados nos dois últimos cartões
+      ['Custo total, cenário-base (valor central)', grande(custo.total)],
       ['Dotação média por ano de operação', grande(custo.anual)],
       ['Por usuário ativo por ano', din(custo.porAluno, 2)],
       ['Custo do Ano 0 por participante do teste', E0 ? din(tot0 / E0, 0) : '—'],
       ['Custo de sair, em anos de custo recorrente', ind.anosParaSair ? numP(ind.anosParaSair, 1) : '—'],
-    ];
+    ].concat(rel0 && rel0.rec && Number.isFinite(rel0.rec.p50) ? [['Valor para orçar (P50 do custo total)', grande(rel0.rec.p50)], ['Teto prudente (P90 do custo total)', grande(rel0.rec.p90)]] : []);
     const anos = custo.av.r.anos;
     const prem = [];
-    prem.push(tr('Arquitetura considerada:') + ' ' + tr(rotP(OPC.arquitetura, arq)) + (ce.__arqPresumida ? ' (' + tr('deduzida das respostas; mude no passo 3.2 se souber que é outra') + ')' : '') + '.');
+    prem.push(tr('Arquitetura considerada:') + ' ' + tr(rotP(OPC.arquitetura, arq)) + (ce.__arqPresumida ? ' (' + arqPresumidaTxt(ce) + ')' : '') + '.');
     // v10: "Como o custo é calculado" (formula.js, R3). Com a fórmula, quantidades e preços unitários ficam em
     // "De onde vêm os números" e saem desta lista de premissas (eram redundantes).
     let formula = [];
@@ -549,6 +580,10 @@ function secoesPlano(estado, opts) {
       camadas: { ano0: [1, 2, 3, 4, 5, 6, 7].map(n => cam.ano0[n] || 0), total: [1, 2, 3, 4, 5, 6, 7].map(n => cam.total[n] || 0) },
       anos: anos.slice(), dot: anos.map(a => custo.orc.dot[a] || 0) };
     sec({ id: 'A2', h: tituloSec('A2'), pre: padrao ? ['Estimativa baseada em premissas padrão: ' + d.lacunas.total + ' perguntas ainda sem resposta.'] : null, kv, kpis: true, graf, pos: ['Valores ilustrativos. Substitua por cotações e dados locais.'] });
+    // R6 (5.2; TEC-03): com a arquitetura presumida, o custo total do caso em cada uma das três arquiteturas
+    const efA = PR ? (PR.pend.find(z => z.efeito) || {}).efeito : null;
+    if (efA) sec({ sub: true, pronto: true, h: efA.rotulo, p: [arqPresumidaTxt(ce).replace(/^./, z => z.toUpperCase()) + '.'],
+      table: { head: [tr('Arquitetura'), tr('Custo total')], rows: efA.valores.map(v => [v.rotulo + (v.atual ? ' (' + tr(TXT_R6.pendAtual) + ')' : ''), v.total]), num: [1], hl: efA.valores.map((v, i) => (v.atual ? i : -1)).filter(i => i >= 0), pronto: true } });
     // a primeira parte da fórmula ("Como o custo é calculado") tem kv = termos + total: na página vira a equação do passo 4.2
     formula.forEach((f, i) => sec(Object.assign({}, f, { sub: true, id: undefined }, i === 0 && (f.kv || []).length > 1 ? { eq: true } : {})));
     // REL-12: na página, as tabelas que repetem um gráfico ao lado (barras por camada, colunas da dotação) ficam
@@ -572,7 +607,7 @@ function secoesPlano(estado, opts) {
       sec({ sub: true, pronto: true, incerteza: true, h: R15('q3'), achado: R15('h3', grande(rel.lo), grande(rel.hi)), p: [R15('i3')] });
       sec({ sub: true, pronto: true, h: R15('sCenarios'), p: [ce3.leitura], table: ce3.table });
       sec({ sub: true, pronto: true, h: R15('sDirec'), p: [to.leitura], table: to.table, pos: [to.sub] });
-      sec({ sub: true, pronto: true, h: R15('sSimula'), table: si.table, pos: [si.nota] });
+      sec({ sub: true, pronto: true, h: R15('sSimula'), table: si.table, pos: si.pos });
     }
     // REL-13: a lista "Premissas desta estimativa" vai para o apêndice, com "Premissas e fontes"
     premLista = prem;
@@ -639,15 +674,25 @@ function secoesPlano(estado, opts) {
   if (c.formacaoPaga === 'fornecedor') destA5.push('Formação a cargo do fornecedor: inclua no contrato as horas por pessoa, o conteúdo, o público e o formato.');
   if (ferr.length > 1) destA5.push('Várias ferramentas: exija interoperabilidade e as mesmas cláusulas de dados em todos os contratos, e evite licenças sobrepostas.');
   destA5.push(TXT_A5.sempre);
-  sec({ id: 'A5', h: tituloSec('A5'), p: ['Checklist do Instrumento F do guia (cap. 16), filtrado pelas respostas deste caso. Inclua no termo de referência e no contrato.'],
-    list: destA5,
-    table: { head: ['Grupo', 'Requisito ou cláusula', 'Neste caso'], rows: linhasCl.map(xx => [xx[0], xx[1], destaque(xx) ? 'Prioridade' : (xx[2] ? TAG_CONTRATO[xx[2]] : '')]), grupo: true, larg: [80, 300], marca: [2],
-      hl: linhasCl.map((xx, i) => destaque(xx) ? i : -1).filter(i => i >= 0) } });
+  // R6 (REC-41): só as linhas acionadas pelo caso, com "Por que neste caso", "Valor", "Como verificar", "Onde entra" e
+  // "Vem de R-nn"; as cláusulas-padrão do guia ficam recolhidas (referência) e fora da contagem do resumo
+  if (PR) {
+    const X = PR.exigir;
+    sec({ id: 'A5', pronto: true, h: X.titulo, p: [X.intro],
+      table: X.linhas.length ? { head: X.head, rows: X.linhas.map(l => [l.texto, l.porque, l.valor, l.verificar, l.onde, l.vem]), larg: [112, 0, 70, 92, 66, 46], pronto: true } : null,
+      pos: [X.mercado] });
+    if (X.padrao.length) sec({ sub: true, pronto: true, ref: true, det: X.padraoTitulo, h: X.padraoTitulo, p: [X.padraoIntro],
+      table: { head: [tr('Grupo'), tr('Requisito ou cláusula')], rows: X.padrao, grupo: true, larg: [80], pronto: true } });
+  } else {
+    sec({ id: 'A5', h: tituloSec('A5'), p: ['Checklist do Instrumento F do guia (cap. 16), filtrado pelas respostas deste caso. Inclua no termo de referência e no contrato.'],
+      list: destA5, table: { head: ['Grupo', 'Requisito ou cláusula', 'Neste caso'], rows: linhasCl.map(xx => [xx[0], xx[1], xx[2] ? TAG_CONTRATO[xx[2]] : '']), grupo: true, larg: [80, 300] } });
+  }
 
   // A6
   const pacote = PACOTE.filter(xx => !xx[2] || (xx[2] === 'rag' && arq === 'api'));
   const a6p = [];
-  if (custo && custo.orc) a6p.push(tr('Custo estimado de transição e saída:') + ' ' + grande(custo.orc.saida || 0) + '.' + ((custo.ind || {}).anosParaSair ? ' ' + tr('Equivale a ' + numP(custo.ind.anosParaSair, 1) + ' anos de custo recorrente.') : ''));
+  // REC-12: dois valores, cada um com o seu rótulo (o primeiro é o mesmo de "Quanto custa")
+  if (custo && custo.orc) a6p.push(tr('Camada de saída do custo total:') + ' ' + grande((custo.av && custo.av.saidaEco) || 0) + '. ' + tr('Desembolso de transição e saída, em preços correntes:') + ' ' + grande(custo.orc.saida || 0) + '.' + ((custo.ind || {}).anosParaSair ? ' ' + tr('Equivale a ' + numP(custo.ind.anosParaSair, 1) + ' anos de custo recorrente.') : ''));
   sec({ id: 'A6', h: tituloSec('A6'), p: a6p.concat(['Formas de dependência mais comuns na arquitetura considerada:']), list: LOCKIN[arq] || [],
     pos: ['A saída não consta no documento de Krueger e Jackson (2026); entra na estimativa por convenção desta ferramenta (guia, caps. 10 e 11). O documento trata a dependência como custo do ciclo de vida (p. 8).'] });
   sec({ sub: true, h: 'Pacote de transição a definir no contrato', p: ['A saída se prepara na entrada. Defina no contrato o pacote de transição:'], list: pacote.map(xx => tr(xx[0]) + ': ' + tr(xx[1])) });
@@ -667,16 +712,17 @@ function secoesPlano(estado, opts) {
     const dg = detalheGov(q.id, E);
     const det = [['sim', 'parcial'].includes(v) && dg.qual ? tr('Qual:') + ' ' + semPontoP(dg.qual) + '.' : '', v === 'parcial' && dg.falta ? tr('O que falta:') + ' ' + semPontoP(dg.falta) + '.' : ''].filter(Boolean);
     if (det.length) fazer = [tr(fazer)].concat(det).join(' ');
-    const prio = v === 'sim' ? '—' : PRIORIDADE_G[q.id] === 'alta' ? 'Alta' : 'Normal';
+    // REC-11: o mesmo vocabulário das outras tabelas (sem "Normal")
+    const prio = v === 'sim' ? '—' : rotuloNivelCurto(PRIORIDADE_G[q.id] === 'alta' ? 'condicao' : 'recomendada');
     return [q.n || '', q.t, v ? RESP_G_NOME[v] || v : '—', fazer, prio];
   });
-  sec({ id: 'B1', h: tituloSec('B1'), table: { head: ['N.', 'Pergunta', 'Resposta', 'O que fazer', 'Prioridade'], rows: rowsG, larg: [34, 150, 54, 0, 54], marca: [4] }, pos: [TXT_B1_REF] });
+  sec({ id: 'B1', h: tituloSec('B1'), table: { head: ['N.', 'Pergunta', 'Resposta', 'O que fazer', 'Nível'], rows: rowsG, larg: [34, 150, 54, 0, 54], marca: [4] }, pos: [TXT_B1_REF] });
 
   // B2
   sec({ id: 'B2', h: tituloSec('B2'), p: ['Nomeie responsáveis internos para as funções que não podem ser terceirizadas (guia, cap. 2):'], list: FUNCOES_INTERNAS });
 
   // B3
-  const b3 = recsDe('regras', d).map(r => (d.poc && r.dadosReais ? tr('Se usar dados reais:') + ' ' + tr(textoRec(r, d)) : textoRec(r, d)));
+  const b3 = recsDe('regras', d).map(r => { const g = guia(r); return d.poc && r.dadosReais && g === textoRec(r, d) ? tr('Se usar dados reais:') + ' ' + tr(g) : g; });
   const iSuc = recsDe('regras', d).findIndex(r => r.id === 'r-sucesso');
   if (iSuc >= 0) {
     const med = ['sim', 'parcial'].includes(c.linhaBase) ? String(c.linhaBaseMedida || '').trim() : '';
@@ -684,12 +730,12 @@ function secoesPlano(estado, opts) {
     if (impactos) extra.push(tr('Impacto desejado:') + ' ' + impactos + '.');
     b3[iSuc] = tr(b3[iSuc]) + ' ' + extra.join(' ');
   }
-  sec({ id: 'B3', h: tituloSec('B3'), p: [d.poc ? 'Regras para a prova de conceito, antes de começar:' : 'Regras para o piloto, antes de começar:'], list: b3 });
+  sec({ id: 'B3', ref: true, h: tituloSec('B3'), p: [d.poc ? 'Regras para a prova de conceito, antes de começar:' : 'Regras para o piloto, antes de começar:'], list: b3 });
 
   // B4
   const b4 = recsDe('local', d);
-  sec({ id: 'B4', h: tituloSec('B4'), p: [d.poc ? 'Na prova de conceito, só o essencial: o teste é feito pela equipe, sem usuários reais.' : 'O que precisa estar pronto nas escolas do piloto, por camada:'],
-    table: { head: ['Camada', 'O que fazer'], rows: b4.map(r => [rotuloCamada(r.camada), textoRec(r, d)]), grupo: true, larg: [150] } });
+  sec({ id: 'B4', ref: true, h: tituloSec('B4'), p: [d.poc ? 'Na prova de conceito, só o essencial: o teste é feito pela equipe, sem usuários reais.' : 'O que precisa estar pronto nas escolas do piloto, por camada:'],
+    table: { head: ['Camada', 'O que fazer'], rows: b4.map(r => [rotuloCamada(r.camada), guia(r)]), grupo: true, larg: [150] } });
 
   // B5
   const forma = FORMAS_SUP[formaSupervisao(ce, p)];
@@ -699,32 +745,39 @@ function secoesPlano(estado, opts) {
     tr('Dados') + ': ' + nomesP(OPC.dados, ce.dados),
     tr('Reversibilidade') + ': ' + tr(rotP(OPC.reversibilidade, ce.reversibilidade)),
     tr('Efeito cumulativo') + ': ' + tr(rotP(OPC.cumulativo, ce.cumulativo)),
-    tr('Verificação das saídas') + ': ' + tr(rotP(OPC.verificabilidade, ce.verificabilidade)),
-    tr('Contestação') + ': ' + tr(rotP(OPC.contestacao, ce.contestacao)),
-  ];
+    tr('Verificação das saídas') + ': ' + tr(rotP(OPC.verificabilidade, ce.verificabilidade)) + (c.verificacao ? '' : ' (' + tr(TXT_R6.premRotulo) + ')'),
+    // REC-44: o que a ferramenta supõe sem resposta fica rotulado como premissa da ferramenta
+    tr('Contestação') + ': ' + tr(rotP(OPC.contestacao, ce.contestacao)) + (ce.contestacao && ce.contestacao !== 'na' ? ' (' + tr(TXT_R6.premRotulo) + ')' : ''),
+    tr(TXT_R6.premTreino) + ' (' + tr(TXT_R6.premRotulo) + ')',
+  ].concat(ce.vulneraveis ? [] : [tr(TXT_R6.premVuln) + ' (' + tr(TXT_R6.premRotulo) + ')']);
   sec({ id: 'B5', h: tituloSec('B5'), p: [tr('Nível de diligência:') + ' ' + tr(NIVEL_NOME[p.agregado]) + '. ' + tr(NIVEL_CRIT[p.agregado])],
     table: { head: ['Dimensão', 'Nível', 'Justificativa'], rows: DIMENSOES.map(([k, n]) => [n, NIVEL_NOME[p.P[k]], p.J[k]]), b0: true } });
   sec({ sub: true, h: 'Premissas deduzidas das tarefas escolhidas', list: premB5 });
   if (forma) sec({ sub: true, h: 'Forma de supervisão indicada', p: [tr(forma[0]) + '. ' + tr(forma[1])] });
   if (al.length) sec({ sub: true, h: 'Pontos de atenção', table: { head: ['O que fazer', 'Ponto', 'Guia'], rows: al.map(a => [ROT_ALERTA[a.nivel] || a.nivel, a.texto, a.cap ? tr('Cap. ' + a.cap) : '—']), larg: [100, 0, 50] } });
-  const ax = anexoIII(ce);
-  if (ax.length) sec({ sub: true, h: 'Nota normativa', p: ['O uso descrito corresponde a categorias que o Regulamento Europeu de IA classifica como de alto risco na educação (Anexo III, ponto 3):', ax.map(tr).join('; ') + '.', 'Obrigações aplicáveis a partir de dezembro de 2027. Verifique a legislação da jurisdição aplicável.'] });
+  // R7 (REC-50): a nota normativa do framework (Anexo III, perfilamento e a data só quando verificada)
+  let nn = null;
+  try { nn = notaNormativa(ce); } catch (e) { console.warn(e); }
+  if (nn) {
+    const P_ = nn.categorias.length ? [nn.paragrafos[0], nn.categorias.map(tr).join('; ') + '.'].concat(nn.paragrafos.slice(1)) : nn.paragrafos.slice();
+    sec({ sub: true, h: 'Nota normativa', p: P_ });
+  }
 
   // B6
-  const b6 = recsDe('dados', d).filter(r => r.id !== 'i-contestacao').map(r => r.texto);
+  const b6 = recsDe('dados', d).filter(r => r.id !== 'i-contestacao').map(r => guia(r));
   if (ce.verificabilidade === 'nao') b6.push('Prioridade: com termos de uso padrão, a solução tende a ser opaca para a instituição. Peça registro de versões, fontes e configurações.');
   sec({ id: 'B6', h: tituloSec('B6'), list: b6 });
-  sec({ sub: true, h: 'Requisitos de dados', list: DADOS_REQ.filter(z => z[0] !== 'rag' || arq === 'api').map(z => tr(z[1]) + ': ' + tr(z[2]) + (z[0] === 'treino' && ce.treino !== 'nao' ? ' (' + tr('prioridade') + ')' : '')) });
+  sec({ sub: true, det: TXT_REF, h: 'Requisitos de dados', list: DADOS_REQ.filter(z => z[0] !== 'rag' || arq === 'api').map(z => tr(z[1]) + ': ' + tr(z[2]) + (z[0] === 'treino' && ce.treino !== 'nao' ? ' (' + tr('prioridade') + ')' : '')) });
   const clD = clausulas(GRUPOS_DADOS);
-  sec({ sub: true, h: 'Cláusulas de dados e de verificação', table: { head: ['Grupo', 'Requisito ou cláusula', 'Neste caso'], rows: clD.map(xx => [xx[0], xx[1], xx[2] ? TAG_CONTRATO[xx[2]] : '']), grupo: true, larg: [80, 300] } });
+  sec({ sub: true, det: TXT_REF, h: 'Cláusulas de dados e de verificação', table: { head: ['Grupo', 'Requisito ou cláusula', 'Neste caso'], rows: clD.map(xx => [xx[0], xx[1], xx[2] ? TAG_CONTRATO[xx[2]] : '']), grupo: true, larg: [80, 300] } });
   if (d.afeta) {
     const rc = RECS.find(r => r.id === 'i-contestacao');
-    sec({ sub: true, h: 'Contestação', p: [rc.texto, 'Um mecanismo efetivo reúne seis elementos:'], list: CONTESTACAO.map(z => tr(z[0]) + ': ' + tr(z[1])) });
+    sec({ sub: true, h: 'Contestação', p: [itemGuia(rc.id, rc.texto, idsAcao), 'Um mecanismo efetivo reúne seis elementos:'], list: CONTESTACAO.map(z => tr(z[0]) + ': ' + tr(z[1])) });
   }
 
   // B7
-  const tabRecs = g => recsDe(g, d).map(r => [rotuloCamada(r.camada), r.texto]);
-  sec({ id: 'B7', h: tituloSec('B7'), p: ['Recomendações para levar a solução a toda a rede e mantê-la, por camada do custo total.'] });
+  const tabRecs = g => recsDe(g, d).map(r => [rotuloCamada(r.camada), itemGuia(r.id, r.texto, idsAcao)]);
+  sec({ id: 'B7', ref: true, h: tituloSec('B7'), p: ['Recomendações para levar a solução a toda a rede e mantê-la, por camada do custo total.'] });
   sec({ sub: true, h: 'Antes de levar à rede', table: { head: ['Camada', 'O que fazer'], rows: tabRecs('rede'), grupo: true, larg: [150] } });
   sec({ sub: true, h: 'Para manter e ampliar', table: { head: ['Camada', 'O que fazer'], rows: tabRecs('manter'), grupo: true, larg: [150] } });
   sec({ sub: true, det: 'Lista de verificação da supervisão humana', h: 'Lista de verificação da supervisão humana', table: { head: ['Condição', 'Pergunta'], rows: SUPERVISAO, b0: true, larg: [110] } });
@@ -733,43 +786,56 @@ function secoesPlano(estado, opts) {
 
   // B8
   const iM = p.alto ? 3 : 2;
-  sec({ id: 'B8', h: tituloSec('B8'), list: recsDe('aval', d).map(r => r.texto),
+  sec({ id: 'B8', ref: true, h: tituloSec('B8'), list: recsDe('aval', d).map(r => itemGuia(r.id, r.texto, idsAcao)),
     table: { head: ['Tipo', 'O que medir', p.alto ? 'Frequência (risco elevado ou crítico)' : 'Frequência (risco limitado ou moderado)'], rows: METRICAS.map(m => [m[0], m[1], m[iM]]), b0: true, larg: [80, 0, 120] },
     pos: [TXT_B8_REF] });
 
-  // B9
-  sec({ id: 'B9', h: tituloSec('B9'), p: ['Critérios do guia para cada ponto de decisão, com os itens adicionais deste caso.'] });
-  [['Para a compra', [5, 6, 7]], ['Para a política', [1, 2, 3, 4, 8, 9]]].forEach(([grupo, ns]) => {
-    sec({ sub: true, h: grupo });
-    ns.forEach(n => {
-      const pd = PDS.find(z => z.n === n); if (!pd) return;
-      let ex = []; try { ex = extrasPD(n, ce, p) || []; } catch (e) { }
-      sec({ sub: true, det: tr('Ponto de decisão ' + n) + '. ' + tr(pd.titulo), h: tr('Ponto de decisão ' + n) + '. ' + tr(pd.titulo), p: [pd.pergunta],
-        list: pd.criterios.concat(ex.map(z => tr(z) + ' (' + tr('para este caso') + ')')), pos: [tr('Se não:') + ' ' + tr(pd.seNao)] });
-    });
+  // B9 (REC-39): os pontos de decisão do guia na ordem 1 a 9, cada um com as ações deste caso (R-nn), sem repetir o texto
+  sec({ id: 'B9', ref: true, h: tituloSec('B9'), p: [TXT_B9] });
+  const pdsCaso = PR ? PR.sequencia.pds : [];
+  PDS.slice().sort((a, b) => a.n - b.n).forEach(pd => {
+    let ex = []; try { ex = extrasPD(pd.n, ce, p) || []; } catch (e) { }
+    const pc = pdsCaso.find(z => z.n === pd.n);
+    sec({ sub: true, det: tr('Ponto de decisão ' + pd.n) + '. ' + tr(pd.titulo), h: tr('Ponto de decisão ' + pd.n) + '. ' + tr(pd.titulo), p: [pd.pergunta],
+      list: pd.criterios.concat(ex.map(z => tr(z) + ' (' + tr('para este caso') + ')')), pos: [tr('Se não:') + ' ' + tr(pd.seNao)].concat(pc ? [pc.acoes] : []) });
   });
 
   // 0.0.15 (REL-13, REL-14): premissas e fontes, como o modelo funciona hoje e glossário, no apêndice
   const pr = relPremissas(estado);
-  if (pr.table || premLista.length) {
+  if (pr.table || premLista.length || PR) {
     sec({ id: 'premissas', pronto: true, h: R15('aG'), p: pr.table ? [R15('pIntro')] : [], table: pr.table, pos: pr.table ? pr.pos : [] });
     if (premLista.length) sec({ sub: true, h: TXT_REL.pLista, list: premLista });
+    // R6 (REC-44, 5.5): premissas da ferramenta, com rótulo; exemplos de norma recolhidos, filtrados pelo país (decisão 5)
+    if (PR && PR.premissas.lista.length) sec({ sub: true, pronto: true, h: PR.premissas.titulo, p: [PR.premissas.intro], list: PR.premissas.lista });
     sec({ sub: true, pronto: true, h: R15('metodos'), list: pr.metodos, pos: pr.versao ? [pr.versao] : [] });
+    if (PR) {
+      const N_ = PR.normas;
+      sec({ sub: true, pronto: true, det: N_.titulo, h: N_.titulo, p: [N_.intro].concat(N_.vazio ? [N_.vazio] : []),
+        list: N_.itens.map(x => x.id + ' · ' + x.normas.join(' · ')) });
+    }
   }
   const gl = relGlossario();
   if (gl) sec({ id: 'glossario', pronto: true, h: R15('aH'), p: [R15('gIntro')], table: gl });
 
   // 0.0.15 (REL-01 a REL-06, REL-08): sumário executivo de "Em resumo", na seção "resumo" (página e PDF)
-  const nReq = linhasCl.length + destA5.length;
+  // REC-12: só os requisitos acionados por este caso (destaques, cláusulas com etiqueta e itens de A5 do caso), sem o
+  // checklist genérico do guia
+  // e as cláusulas que as recomendações do caso exigem (R2: `exige` das regras), sem contar duas vezes a mesma linha
+  // R6 (REC-41): a contagem é a das linhas do caso em "O que exigir" (as cláusulas-padrão não entram)
+  let nReq = PR ? PR.exigir.n : 0;
+  if (!PR) {
+    const reqCaso = new Set(linhasCl.filter(xx => destaque(xx) || !!xx[2]).map(xx => xx[1]).concat(destA5.filter(z => z !== TXT_A5.sempre)));
+    d.recs.forEach(r => (r.exige || []).forEach(id => { const x = EXIGE_REC[id]; if (x) reqCaso.add(id.startsWith('CONTRATO.') ? x.texto : id); }));
+    nReq = reqCaso.size;
+  }
   const ex = { nReq, nSim, nG: gq.length };
-  const ordemQ = q => { const i = ['antes_teste', 'antes_contratar', 'manter'].indexOf(q); return i < 0 ? 9 : i; };
-  // a mesma ordem de "O que fazer" (percurso/painel.ts:recsPlano): prioridade alta primeiro, depois o momento
-  const recsOrd = d.recs.slice().sort((a, b) => (a.prioridade === b.prioridade ? 0 : a.prioridade === 'alta' ? -1 : 1) || ordemQ(a.quando) - ordemQ(b.quando));
+  // a ordem do motor (pontuação da seção 4.1), a mesma de "O que fazer"
+  const recsOrd = d.recs.slice();
   const sRes = S_.find(z => z.id === 'resumo' && !z.sub);
   if (sRes) sRes.sumario = {
     numeros: !!rel, faixa: relFaixa(rel), indicadores: relIndicadores(rel), exec: relExecutivo(linhasResumo, rel, ex),
     acoes: relAcoes(d.recs.length ? recsOrd : [], 5), nRecs: d.recs.length, ice: relIcebergs(rel), drivers: relDirecionadores(rel, 3),
-    achados: relAchados(rel, ex),
+    achados: relAchados(rel, ex), rec: PR,
   };
 
   // Referências
@@ -799,16 +865,24 @@ function painelPlano(estado, secs) {
   secs = secs || secoesPlano(estado).map(trSecao);
   const by = id => secs.find(z => z.id === id && !z.sub) || {};
   const res = by('resumo'), a1 = by('A1'), a2 = by('A2');
+  const pr0 = (res.sumario && res.sumario.rec) || null;
   let R = [];
-  try { R = recomendacoesCaso(copiaEstado(estado)) || []; } catch (e) { console.warn(e); }
+  if (!pr0) { try { R = recomendacoesCaso(copiaEstado(estado)) || []; } catch (e) { console.warn(e); } }
+  // R6 (REC-21): a recomendação principal é o veredito da próxima decisão (a mesma frase da capa, do PDF e da síntese)
+  const pr = (res.sumario && res.sumario.rec) || null;
   return { kpis: a2.graf ? (a2.kv || []).slice(0, 4) : [], graf: a2.graf || null, semCusto: !a2.graf ? (a2.p || [])[0] || '' : '',
-    fatos: res.fatos || [], cartoes: res.cartoes || [], principal: a1.principal || '', recs: R, nAlta: R.filter(r => r.prioridade === 'alta').length,
+    fatos: res.fatos || [], cartoes: res.cartoes || [], principal: (pr && pr.veredito.texto) || a1.principal || '', principalTeste: a1.principal || '', recs: R,
+    nCondicoes: pr ? pr.nCondicoes : 0,
     faltas: by('faltas').tipo ? by('faltas') : null, semNumeros: !a2.graf && !!a2.semNumeros };
 }
 function perfilCasoCartoes(estado) { return painelPlano(estado).cartoes; }
 const corCamada = n => COR_CAMADA[(+n || 1) - 1] || COR_CAMADA[0];
 
+// Textos novos do pacote R6 em secoes.js (chaves de tradução para o orquestrador)
+const TEXTOS_REC_R6_SECOES = [TXT_ARQ_PRESUMIDA, TXT_REF, TXT_B9, 'Nível', ...Object.values(MOTIVO_ARQ)];
+
 export {
+  TEXTOS_REC_R6_SECOES, TXT_REF,
   NOME_FERRAMENTA, PAGINAS_PLANO, TIT_PAGINAS, PAGINA_SECAO, secoesDaPagina,
   ARRANJOS, NOTA_ARQ, APRENDIZAGEM, GRUPOS_COMPRA, GRUPOS_DADOS, TAG_CONTRATO, ROT_ALERTA, AREAS_PERFIL, COR_CAMADA, corCamada,
   ROT_GOV, ROT_ESTADO, TXT_MATRIZ, TIT_PERFIL, INTRO_PERFIL,

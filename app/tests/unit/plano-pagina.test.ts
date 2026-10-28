@@ -9,7 +9,7 @@ import { useCaso } from '../../src/store/caso';
 import { setDicionarios, setLang, setMoeda, setTabelaMoedas } from '../../src/domain';
 import { lerRota, href } from '../../src/percurso/rota';
 import {
-  painelDe, lacunasDe, paraNumeroDe, rotuloResposta, explicacaoKpi, driversDe, tituloParcial, textoLacunas, textoAltas, KPI_IDS,
+  painelDe, lacunasDe, paraNumeroDe, rotuloResposta, explicacaoKpi, driversDe, tituloParcial, textoLacunas, textoCondicoes, KPI_IDS,
 } from '../../src/percurso/painel';
 import { painelPlano, secoesPlano } from '../../src/plano/secoes.js';
 import { gerarPDF, pdfTxt } from '../../src/plano/pdf.js';
@@ -54,13 +54,15 @@ describe('links das ações recomendadas e das lacunas', () => {
 
 describe('mesmas contagens na página e no PDF', () => {
   for (const k of ['novo', 'A', 'C']) {
-    it(`exemplo ${k}: lacunas, ações e prioridade alta batem`, async () => {
+    it(`exemplo ${k}: lacunas, ações e condições batem`, async () => {
       const e = exemplo(k);
       const P = painelDe(e);
       expect(P.lacunas.total).toBe(P.lacunas.essencial + P.lacunas.refino);
       expect(P.lacunas.itens.length).toBe(P.lacunas.total);
       expect(P.lacunas.itens.filter((l) => l.essencial).length).toBe(P.lacunas.essencial);
-      expect(P.nAlta).toBe(P.recs.filter((r) => r.prioridade === 'alta').length);
+      // R6: condições abertas no próximo marco (veredito) ≤ ações de nível Condição; os cartões são ações do caso
+      expect(P.nCondicoes).toBeLessThanOrEqual(P.recs.filter((r) => r.nivel === 'condicao').length);
+      P.cartoes.forEach((c) => expect(P.recs.some((r) => r.id === c.id), c.id).toBe(true));
       const PP = painelPlano(e);
       if (P.lacunas.total) {
         expect(PP.faltas, 'seção de respostas que faltam').toBeTruthy();
@@ -84,9 +86,9 @@ describe('mesmas contagens na página e no PDF', () => {
   it('textos de contagem concordam em número', () => {
     expect(tituloParcial({ total: 1 })).toBe('Plano parcial: 1 resposta pendente.');
     expect(tituloParcial({ total: 7 })).toBe('Plano parcial: 7 respostas pendentes.');
-    expect(textoAltas(0)).toBe('Nenhuma ação de prioridade alta');
-    expect(textoAltas(1)).toBe('1 ação de prioridade alta');
-    expect(textoAltas(3)).toBe('3 ações de prioridade alta');
+    expect(textoCondicoes(0)).toBe('Nenhuma condição aberta');
+    expect(textoCondicoes(1)).toBe('1 condição aberta');
+    expect(textoCondicoes(3)).toBe('3 condições abertas');
     expect(textoLacunas({ essencial: 2, refino: 0 })).toMatch(/2/);
   });
 });
