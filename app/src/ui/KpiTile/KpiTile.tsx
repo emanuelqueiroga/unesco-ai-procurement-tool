@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import './KpiTile.css';
+import { tx } from '../texto';
 
 export type KpiTileProps = {
   /** Rótulo em `caption-13`, sempre acima do número. */
@@ -29,7 +30,7 @@ export function KpiTile({
   fullValue,
   origin,
   fresh,
-  freshLabel = 'atualizado agora',
+  freshLabel,
   highlight,
   kicker,
   compact,
@@ -55,7 +56,7 @@ export function KpiTile({
       </div>
       {fresh || origin ? (
         <div className="pr-kpitile-origin">
-          {fresh ? <span className="pr-kpitile-fresh">{freshLabel}</span> : null}
+          {fresh ? <span className="pr-kpitile-fresh">{freshLabel ?? tx('atualizado agora')}</span> : null}
           {fresh && origin ? <span aria-hidden="true"> · </span> : null}
           {origin}
         </div>

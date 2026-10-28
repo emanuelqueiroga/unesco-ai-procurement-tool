@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import './ChapterOpening.css';
+import { tx } from '../texto';
 
 export type ChapterOpeningProps = {
   /** Número do capítulo, 1 a 4: define a cor do traço (`phase-N`). */
@@ -35,7 +36,7 @@ export function ChapterOpening({
   return (
     <section className={['pr-chapteropening', className ?? ''].filter(Boolean).join(' ')}>
       <div className="pr-chapteropening-phase" style={{ background: `var(--phase-${n})` }} aria-hidden="true" />
-      <div className="pr-chapteropening-kicker">{kicker ?? `Capítulo ${n} de ${total}`}</div>
+      <div className="pr-chapteropening-kicker">{kicker ?? tx('Capítulo {n} de {total}', { n, total })}</div>
       <h1 className="pr-chapteropening-title">{title}</h1>
       <p className="pr-chapteropening-guide">{guide}</p>
       <p className="pr-chapteropening-text">{children}</p>
@@ -43,12 +44,12 @@ export function ChapterOpening({
         <div className="pr-chapteropening-meta">
           {questions !== undefined ? (
             <span>
-              <b>{questions}</b> perguntas
+              <b>{questions}</b> {questions === 1 ? tx('pergunta') : tx('perguntas')}
             </span>
           ) : null}
           {minutes !== undefined ? (
             <span>
-              <b>~{minutes}</b> minutos
+              <b>~{minutes}</b> {tx('minutos')}
             </span>
           ) : null}
         </div>

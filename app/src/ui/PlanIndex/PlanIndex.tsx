@@ -1,6 +1,7 @@
 import type { MouseEvent, ReactNode } from 'react';
 import { BREAKPOINTS, useMediaQuery } from '../useMediaQuery';
 import './PlanIndex.css';
+import { tx } from '../texto';
 
 export type PlanIndexItem = {
   id: string;
@@ -30,7 +31,7 @@ export type PlanIndexProps = {
 
 /** Índice lateral do plano (240 px); abaixo de 1100 px vira faixa de chips com rolagem horizontal. */
 export function PlanIndex({
-  zoneLabel = 'Neste plano',
+  zoneLabel,
   items,
   secondary = [],
   note,
@@ -57,9 +58,9 @@ export function PlanIndex({
   return (
     <nav
       className={['pr-planindex', strip ? 'pr-planindex--strip' : '', className ?? ''].filter(Boolean).join(' ')}
-      aria-label={zoneLabel}
+      aria-label={zoneLabel ?? tx('Neste plano')}
     >
-      <div className="pr-planindex-zone">{zoneLabel}</div>
+      <div className="pr-planindex-zone">{zoneLabel ?? tx('Neste plano')}</div>
       <div className="pr-planindex-list">
         {items.map(render)}
         {secondary.length > 0 ? <div className="pr-planindex-divider" role="separator" /> : null}

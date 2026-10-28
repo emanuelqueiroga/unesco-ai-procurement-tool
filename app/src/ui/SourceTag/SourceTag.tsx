@@ -1,5 +1,6 @@
 import type { MouseEvent, ReactNode } from 'react';
 import './SourceTag.css';
+import { tx } from '../texto';
 
 /** As quatro origens de um valor, sempre as mesmas palavras. */
 export type Origin = 'padrao' | 'sugerido' | 'informado' | 'refinado';
@@ -22,7 +23,7 @@ export type SourceTagProps = {
 export function SourceTag({ origin, label, className }: SourceTagProps) {
   return (
     <span className={['pr-sourcetag', `pr-sourcetag--${origin}`, className ?? ''].filter(Boolean).join(' ')}>
-      {label ?? ORIGIN_LABELS[origin]}
+      {label ?? tx(ORIGIN_LABELS[origin])}
     </span>
   );
 }
@@ -35,18 +36,18 @@ export type SourceLinkProps = {
 };
 
 /** O link "de onde vem?", companheiro obrigatório da etiqueta: abre a premissa ou leva à pergunta. */
-export function SourceLink({ href, onClick, children = 'de onde vem?', className }: SourceLinkProps) {
+export function SourceLink({ href, onClick, children, className }: SourceLinkProps) {
   const cls = ['pr-sourcelink', className ?? ''].filter(Boolean).join(' ');
   if (href) {
     return (
       <a className={cls} href={href} onClick={onClick}>
-        {children}
+        {children ?? tx('de onde vem?')}
       </a>
     );
   }
   return (
     <button type="button" className={cls} onClick={onClick}>
-      {children}
+      {children ?? tx('de onde vem?')}
     </button>
   );
 }

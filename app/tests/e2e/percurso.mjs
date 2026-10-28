@@ -63,6 +63,12 @@ async function percorrer(b, largura) {
   p.on('pageerror', (e) => erros.push(e.message));
   p.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) erros.push(m.text()); });
   await p.goto(BASE);
+  // a ferramenta abre em inglês (como na v13); o teste percorre em português, pelo seletor de idioma do cabeçalho
+  await p.locator('#sel-lang').waitFor({ state: 'attached' });
+  ok((await p.locator('#sel-lang').inputValue()) === 'en', `${rotulo}: idioma inicial não é o inglês`);
+  ok(/writes itself/i.test(await p.locator('h1').first().innerText()), `${rotulo}: início não está em inglês`);
+  await p.selectOption('#sel-lang', 'pt');
+  await p.getByRole('heading', { level: 1, name: /se escreve enquanto você responde/ }).waitFor({ timeout: 5000 });
   ok(await p.getByRole('heading', { level: 1 }).first().isVisible(), `${rotulo}: início sem título`);
   await semRolagemHorizontal(p, `${rotulo} início`);
   await p.getByRole('link', { name: 'Começar', exact: true }).click();
@@ -118,6 +124,15 @@ async function percorrer(b, largura) {
   ok(guardado.origem.tarefas === 'informado' && guardado.origem['piloto.escolas'] === 'informado', `${rotulo}: sugestões aceitas não viraram 'informado'`);
   ok(guardado.caso.escolasInternet === 30 && guardado.caso.internet === 'parcial', `${rotulo}: internet parcial não gravou 30 escolas`);
 
+  // trocar o idioma no plano: o título e as recomendações mudam juntos
+  await p.selectOption('#sel-lang', 'es');
+  await p.waitForTimeout(300);
+  const planoEs = await p.locator('main').innerText();
+  ok(/Comience por estas|Empiece por estas|Empiece|Comience/.test(planoEs) || !/Comece por estas/.test(planoEs), `${rotulo}: plano não mudou para espanhol`);
+  ok(!/Rever a escolha|Por quê: você respondeu/.test(planoEs), `${rotulo}: recomendações continuaram em português no espanhol`);
+  await p.selectOption('#sel-lang', 'pt');
+  await p.waitForTimeout(300);
+
   // exportar o caso
   await p.getByRole('button', { name: 'Caso', exact: true }).click();
   const [dl] = await Promise.all([p.waitForEvent('download'), p.getByRole('button', { name: 'Exportar caso (.json)' }).click()]);
@@ -129,7 +144,8 @@ async function percorrer(b, largura) {
   // recarregar: o caso continua e o início oferece continuar
   await p.goto(BASE);
   await p.reload();
-  ok(await p.getByText('Há um caso salvo neste navegador.').isVisible(), `${rotulo}: início não ofereceu continuar o caso`);
+  await p.locator('#sel-lang').waitFor({ state: 'attached' });
+  ok(await p.getByText('Há um caso salvo neste navegador.').isVisible(), `${rotulo}: início não ofereceu continuar o caso (o idioma guardado, português, também volta)`);
 
   ok(erros.length === 0, `${rotulo}: erros na página: ${erros.join(' | ')}`);
   await ctx.close();
@@ -139,10 +155,33 @@ async function gavetaCelular(b) {
   const ctx = await b.newContext({ viewport: { width: 400, height: 860 } });
   const p = await ctx.newPage();
   await p.goto(BASE + '#/capitulo/2/internet');
-  await p.getByRole('button', { name: 'Abrir o seu plano' }).click();
-  ok(await p.getByRole('region', { name: 'Seu plano' }).isVisible(), '400px: a gaveta não abriu');
+  await p.locator('.pr-plandrawer-bar').click();   // em inglês, idioma inicial
+  ok(await p.locator('.pr-plandrawer-sheet').isVisible(), '400px: a gaveta não abriu');
+  ok(/plan/i.test(await p.locator('.pr-plandrawer-sheet').getAttribute('aria-label')), '400px: a gaveta sem rótulo traduzido');
   await p.keyboard.press('Escape');
-  ok(!(await p.getByRole('region', { name: 'Seu plano' }).isVisible().catch(() => false)), '400px: a gaveta não fechou com Esc');
+  ok(!(await p.locator('.pr-plandrawer-sheet').isVisible().catch(() => false)), '400px: a gaveta não fechou com Esc');
+  await ctx.close();
+}
+
+// os nove idiomas: a tela troca de idioma, o árabe vira RTL e nenhum deles cria rolagem horizontal
+async function idiomas(b) {
+  const ctx = await b.newContext({ viewport: { width: 1360, height: 900 } });
+  const p = await ctx.newPage();
+  await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());   // sem rede externa: as fontes do sistema bastam
+  await p.goto(BASE + '#/capitulo/2/piloto');
+  await p.locator('#sel-lang').waitFor({ state: 'attached' });
+  const vistos = new Set();
+  for (const l of ['pt', 'en', 'es', 'fr', 'ar', 'zh', 'bm', 'zu', 'sw']) {
+    await p.selectOption('#sel-lang', l);
+    await p.waitForTimeout(250);
+    const h1 = await p.locator('main h1').first().innerText();
+    vistos.add(h1);
+    const dir = await p.evaluate(() => document.documentElement.dir);
+    ok(dir === (l === 'ar' ? 'rtl' : 'ltr'), `${l}: direção ${dir}`);
+    await semRolagemHorizontal(p, `idioma ${l}`);
+    if (['ar', 'zh', 'bm', 'zu', 'sw'].includes(l)) ok(await p.locator('.pc-aviso-trad').isVisible(), `${l}: sem o aviso de tradução preliminar`);
+  }
+  ok(vistos.size === 9, `os nove idiomas deram ${vistos.size} títulos diferentes`);
   await ctx.close();
 }
 
@@ -150,6 +189,7 @@ const b = await chromium.launch();
 try {
   for (const w of [1360, 400]) { console.log(`percurso em ${w}px`); await percorrer(b, w); }
   console.log('gaveta no celular'); await gavetaCelular(b);
+  console.log('nove idiomas'); await idiomas(b);
 } finally { await b.close(); servidor.close(); }
 console.log(`${verificacoes - falhas} de ${verificacoes} verificações ok`);
 process.exit(falhas ? 1 : 0);

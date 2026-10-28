@@ -1,5 +1,5 @@
 // Monta os dicionários de tradução a partir de i18n/*.json (raiz do repositório), com a mesma regra de
-// precedência do build.sh da v13: <l>.json, extra_<l>.json, v9_*, v10_*, v11_*, v12_*, v13_*, v0_* (os últimos
+// precedência do build.sh da v13: <l>.json, extra_<l>.json, v9_*, v10_*, v11_*, v12_*, v13_*, v0_* e, na v14, v14_* (os últimos
 // prevalecem); nos idiomas novos (ar zh bm zu sw), <l>.json e v13_*_<l>.json, e o que falta vem do inglês em
 // tempo de execução (dicionario(), src/domain/i18n.js). Saída: src/i18n/<l>.json, carregados sob demanda por
 // src/i18n/index.ts. Roda no prebuild (`node scripts/i18n.mjs`); a saída não é versionada.
@@ -22,8 +22,8 @@ mkdirSync(DESTINO, { recursive: true });
 const resumo = [];
 for (const l of IDIOMAS) {
   const arqs = NOVOS.includes(l)
-    ? [`${l}.json`, ...porPrefixo('v13', l)]
-    : [`${l}.json`, `extra_${l}.json`, ...['v9', 'v10', 'v11', 'v12', 'v13', 'v0'].flatMap(p => porPrefixo(p, l))];
+    ? [`${l}.json`, ...porPrefixo('v13', l), ...porPrefixo('v14', l)]
+    : [`${l}.json`, `extra_${l}.json`, ...['v9', 'v10', 'v11', 'v12', 'v13', 'v0', 'v14'].flatMap(p => porPrefixo(p, l))];
   const d = {};
   for (const f of arqs) {
     const p = join(ORIGEM, f);

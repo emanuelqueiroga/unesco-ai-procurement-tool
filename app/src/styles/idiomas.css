@@ -1,0 +1,21 @@
+/* Idiomas: fontes por idioma (as folhas do Google Fonts entram por carregarFonteIdioma, src/i18n/index.ts),
+   direção da direita para a esquerda no árabe e as regras de tipografia da v13 (src/idiomas.css). */
+:root:lang(ar) {
+  --font-sans: "IBM Plex Sans", "Noto Sans Arabic", "Noto Sans", system-ui, Tahoma, sans-serif;
+  --font-serif: "IBM Plex Serif", "Noto Naskh Arabic", "Noto Sans Arabic", Georgia, serif;
+}
+:root:lang(zh) {
+  --font-sans: "IBM Plex Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+  --font-serif: "IBM Plex Serif", "Noto Serif SC", "Noto Sans SC", "Songti SC", Georgia, serif;
+}
+:root:lang(bm) {
+  --font-sans: "IBM Plex Sans", "Noto Sans", system-ui, sans-serif;
+  --font-serif: "IBM Plex Serif", "Noto Serif", Georgia, serif;
+}
+/* árabe e chinês não têm itálico nem espaçamento entre letras (no árabe, ele quebra a ligação das letras) */
+:root:is(:lang(ar), :lang(zh)) :is(body, body *) { font-style: normal !important; }
+:root:lang(ar) body * { letter-spacing: 0 !important; text-transform: none !important; }
+:root:lang(ar) body { line-height: 1.6; }
+/* números e valores continuam da esquerda para a direita dentro de um bloco árabe */
+[dir="rtl"] .pr-kpitile-value, [dir="rtl"] .pc-eq-v, [dir="rtl"] input[inputmode="numeric"] { direction: ltr; unicode-bidi: isolate; }
+[dir="rtl"] .pc-paragrafo, [dir="rtl"] .pc-lista li, [dir="rtl"] .pc-kv dd { unicode-bidi: plaintext; }

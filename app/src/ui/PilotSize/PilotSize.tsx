@@ -1,5 +1,6 @@
 import { TextField } from '../TextField/TextField';
 import './PilotSize.css';
+import { tx } from '../texto';
 
 export type PilotMode = 'poc' | 'piloto' | 'ambos';
 
@@ -41,15 +42,16 @@ export function PilotSize({
   suggested,
   errors,
   labels,
-  blockTitles = { poc: 'Prova de conceito', piloto: 'Piloto' },
+  blockTitles,
   className,
 }: PilotSizeProps) {
-  const lab = { ...LABELS, ...labels };
+  const lab = { schools: tx(LABELS.schools), participants: tx(LABELS.participants), months: tx(LABELS.months), ...labels };
+  const titulos = { poc: tx('Prova de conceito'), piloto: tx('Piloto'), ...blockTitles };
   const sug = (b: 'poc' | 'piloto') => (typeof suggested === 'boolean' ? suggested : suggested?.[b]) ?? false;
 
   const block = (b: 'poc' | 'piloto', fields: PilotField[]) => (
-    <div className="pr-pilotsize-block" role="group" aria-label={blockTitles[b]}>
-      {mode === 'ambos' ? <div className="pr-pilotsize-title">{blockTitles[b]}</div> : null}
+    <div className="pr-pilotsize-block" role="group" aria-label={titulos[b]}>
+      {mode === 'ambos' ? <div className="pr-pilotsize-title">{titulos[b]}</div> : null}
       <div className="pr-pilotsize-fields" style={{ gridTemplateColumns: `repeat(${fields.length}, minmax(0, 1fr))` }}>
         {fields.map((f) => {
           const v = (values[b] as Record<string, string> | undefined)?.[f] ?? '';

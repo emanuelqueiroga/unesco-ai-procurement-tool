@@ -17,7 +17,7 @@ Famílias:
          regular: o negrito é simulado no PDF (preenchimento + contorno), para manter o tamanho baixo.
   latin  Noto Sans regular e bold, para o bambara (ɛ ɔ ɲ ŋ e maiúsculas Ɛ Ɔ Ɲ Ŋ).
 
-Caracteres de cada subconjunto: os dos dicionários do idioma (i18n/<l>.json, i18n/v13_*_<l>.json e, com
+Caracteres de cada subconjunto: os dos dicionários do idioma (i18n/<l>.json, i18n/v13_*_<l>.json, i18n/v14_*_<l>.json e, com
 --dic-extra, DIR/<l>.json), os do inglês (fallback), ASCII, Latin-1, pontuação geral e os símbolos que o PDF
 desenha. Se nenhum dicionário do idioma existir, usa um texto de exemplo (AMOSTRA).
 
@@ -65,7 +65,9 @@ def chars_de(obj, out):
 def texto_idioma(langs, extra_dir):
     s, achou = set(), False
     for l in langs:
-        arqs = [os.path.join(RAIZ, 'i18n', l + '.json')] + sorted(glob.glob(os.path.join(RAIZ, 'i18n', 'v13_*_%s.json' % l)))
+        # v13_*: dicionários da v13; v14_*: textos novos da reimplementação (app/), cobertos também no PDF
+        arqs = [os.path.join(RAIZ, 'i18n', l + '.json')] + sorted(glob.glob(os.path.join(RAIZ, 'i18n', 'v13_*_%s.json' % l))) \
+            + sorted(glob.glob(os.path.join(RAIZ, 'i18n', 'v14_*_%s.json' % l)))
         if extra_dir: arqs.append(os.path.join(extra_dir, l + '.json'))
         for f in arqs:
             if os.path.exists(f):

@@ -1,6 +1,6 @@
 {
   "name": "ai-education-procurement-tool",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "private": true,
   "type": "module",
   "description": "AI in Education Procurement Tool — reimplementação (React + TypeScript + Vite) com o design system Prumo",
@@ -15,9 +15,12 @@
     "lint:domain": "node scripts/check-domain.mjs",
     "tokens": "node scripts/tokens.mjs",
     "i18n": "node scripts/i18n.mjs",
+    "fontes-pdf": "node scripts/fontes-pdf.mjs",
     "e2e": "node tests/e2e/percurso.mjs"
   },
   "dependencies": {
+    "jspdf": "2.5.2",
+    "jspdf-autotable": "3.8.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^4.5.5"

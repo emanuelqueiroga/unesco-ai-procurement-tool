@@ -1,5 +1,6 @@
 import type { MouseEvent } from 'react';
 import './ChapterBar.css';
+import { tx } from '../texto';
 
 export type BarChapter = {
   n: number;
@@ -30,7 +31,7 @@ export function ChapterBar({ chapters, compact, bare, onNavigate, className }: C
         .filter(Boolean)
         .join(' ')}
       role="group"
-      aria-label="Capítulos"
+      aria-label={tx('Capítulos')}
     >
       {chapters.map((c) => {
         const pct = Math.round(Math.max(0, Math.min(1, c.progress)) * 100);
@@ -41,7 +42,7 @@ export function ChapterBar({ chapters, compact, bare, onNavigate, className }: C
             key={c.n}
             className={`pr-chapterbar-item pr-chapterbar-item--${state}`}
             href={c.href}
-            aria-label={`Capítulo ${c.n}, ${c.label}: ${pct}% respondido`}
+            aria-label={tx('Capítulo {n}, {nome}: {pct}% respondido', { n: c.n, nome: c.label, pct })}
             aria-current={state === 'current' ? 'step' : undefined}
             onClick={onNavigate ? (e) => onNavigate(c.href, e) : undefined}
           >

@@ -11,6 +11,22 @@ Published under `docs/revisao/` with a yellow banner. Not part of the stable lin
 - **0.0.16-alpha.a / .b / .c**: redesign proposals A (guided assistant), B (workspace with cost panel), C (living document). Branches `v15-proposta-a`, `-b`, `-c`. URLs: `/revisao/a/`, `/revisao/b/`, `/revisao/c/`.
 - **0.0.15-rc.1**: formerly "version 14 review". Step explanations, cost by phase and adoption curve, reference cost base and country profiles, procurement plan with executive summary and icebergs by phase. Branch `v14-revisao`. URL: `/revisao/`.
 
+## [0.1.0-alpha.3] - 2026-10-28
+
+Third pre-release of the redesign line (`develop` branch), published as the review build `/revisao/v014/`. It brings back what the 0.0.14 tool already had at the end of the journey and in every language.
+
+### Added
+- The complete procurement plan in five pages: "Em resumo", "Quanto custa", "O que fazer", "O que exigir" and "Apêndice" (case profile, layers × phases matrix, Figure 1, references, missing answers). All sections A1–A7 and B1–B9 of the 0.0.14 plan are there, ported from `src/resumo.js` to `app/src/plano/secoes.js` as pure functions with a page assigned to each section.
+- The plan as a PDF report ("Baixar o plano em PDF" on every plan page and at the end of chapter 4): port of `src/plano_pdf.js` to `app/src/plano/pdf.js` with jsPDF 2.5.2 and AutoTable 3.8.4 from npm, loaded on demand. The PDF follows the new page order, uses the Prumo colours, and keeps the 0.0.14 features: Arabic shaping and right-to-left lines, Chinese line wrapping, embedded font subsets for Arabic, Chinese and Bambara (`npm run fontes-pdf`), the preliminary-translation notice and the version in the footer.
+- Language selector in the header with the nine languages of 0.0.14 (English, Português, Español, Français, العربية, 中文, Bamanankan, isiZulu, Kiswahili). All 334 new interface texts are translated (`i18n/v14_ui_<lang>.json`, `i18n/v14_ui2_<lang>.json`); Arabic, Chinese, Bambara, isiZulu and Kiswahili remain preliminary translations, with the notice in the language and in English. Arabic switches the whole layout to right-to-left; the language fonts load without blocking the page.
+- `app/scripts/chaves-v14.mjs` lists the interface keys and the ones missing per language; `tests/unit/idiomas.test.ts` fails if any language misses a key or a placeholder.
+- Tests: 171 unit tests (19 for the plan and the PDF) and 151 end-to-end checks, now including the nine languages, right-to-left without horizontal scrolling and the language switch on the plan.
+
+### Changed
+- The tool opens in English when no language was chosen before (the 0.0.14 team decision); the first screen waits for the dictionary, so it never flashes Portuguese.
+- Recommendations and the answers they quote are translated (they were shown in Portuguese in other languages).
+- Labels inserted in sentences keep acronyms (AI, IA) when lowercased.
+
 ## [0.1.0-alpha.2] - 2026-10-28
 
 Second pre-release of the redesign line (`develop` branch): the question journey of the new interface works end to end. Still not published; the stable `0.0.14` is untouched.

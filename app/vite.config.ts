@@ -14,6 +14,6 @@ export default defineConfig({
   base: './',
   // o app lê ../data/moedas.json e ../design (fora de app/) também no servidor de desenvolvimento
   server: { fs: { allow: ['..'] } },
-  build: { outDir: '../docs/app', emptyOutDir: true },
+  build: { outDir: '../docs/app', emptyOutDir: true, chunkSizeWarningLimit: 700 },
   test: { environment: 'node', include: ['tests/unit/**/*.test.{ts,tsx,js}'] },
 });

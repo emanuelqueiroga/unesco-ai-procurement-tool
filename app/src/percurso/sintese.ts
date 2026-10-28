@@ -4,7 +4,7 @@ import { totaisCtx, modoTeste, QUESTOES_G, NIVEIS_ADM, tr, rotulo, numerosCusto 
 import type { Estado14, Capitulo } from '../store';
 import { cfgDe, respondido } from '../store';
 import { fmt, sincronizar } from './ambiente';
-import { t } from './textos';
+import { t, minusc, minusc1 } from './textos';
 import { etapasTexto, prioridadesTexto, origemKpi, temNumeros, recsPlano, rotuloOpc, type KpiId } from './painel';
 import type { Origem } from '../store';
 
@@ -20,7 +20,7 @@ const lista = (xs: string[]) => {
   if (v.length <= 1) return v.join('');
   return v.slice(0, -1).join(', ') + ' ' + t('e') + ' ' + v[v.length - 1];
 };
-const nomesOpc = (k: string, vs: string[]) => (vs || []).map((v) => rotuloOpc(k, v).toLowerCase()).filter(Boolean);
+const nomesOpc = (k: string, vs: string[]) => (vs || []).map((v) => minusc(rotuloOpc(k, v))).filter(Boolean);
 const ponto = (s: string) => (s && !/[.!?]$/.test(s) ? s + '.' : s);
 
 function cap1(e: Estado14): string[] {
@@ -31,9 +31,9 @@ function cap1(e: Estado14): string[] {
   const p1: string[] = [];
   const tamanho = tt.escolas || tt.alunos ? t('tem {e} escolas e {a} estudantes', { e: fmt.int(tt.escolas), a: fmt.int(tt.alunos) }) : '';
   const et = etapasTexto(e);
-  p1.push(ponto([rede, nivel ? `(${String(tr(nivel)).toLowerCase()})` : '', tamanho, et ? t('em {et}', { et }) : ''].filter(Boolean).join(' ')));
-  if (problemas.length) p1.push(ponto(t('O problema a resolver: {p}', { p: lista(problemas.map((s) => s.charAt(0).toLowerCase() + s.slice(1))) })));
-  else if (prioridades.length) p1.push(ponto(t('A prioridade é {p}', { p: lista(prioridades.map((s) => s.toLowerCase())) })));
+  p1.push(ponto([rede, nivel ? `(${minusc(String(tr(nivel)))})` : '', tamanho, et ? t('em {et}', { et }) : ''].filter(Boolean).join(' ')));
+  if (problemas.length) p1.push(ponto(t('O problema a resolver: {p}', { p: lista(problemas.map(minusc1)) })));
+  else if (prioridades.length) p1.push(ponto(t('A prioridade é {p}', { p: lista(prioridades.map(minusc)) })));
   if (respondido(e, 'linhaBase')) p1.push(e.caso.linhaBase === 'nao' ? t('Ainda não há uma medida atual do problema.') : t('Já existe uma medida atual do problema, ao menos em parte.'));
   const g = (QUESTOES_G as any[]).map((q) => e.resp[q.id]).filter(Boolean) as string[];
   const p2: string[] = [];
@@ -49,18 +49,18 @@ function cap2(e: Estado14): string[] {
   const c = e.caso, m = modoTeste(c), p = c.piloto || {}, poc = c.poc || {};
   const p1: string[] = [];
   const tarefas = nomesOpc('tarefas', c.tarefas);
-  const tipo = c.tipoTec ? rotuloOpc('tipoTec', c.tipoTec).toLowerCase() : '';
+  const tipo = c.tipoTec ? minusc(rotuloOpc('tipoTec', c.tipoTec)) : '';
   if (m === 'poc') p1.push(t('O teste será uma prova de conceito com {p} pessoas por {m} meses', { p: fmt.int(poc.participantes), m: fmt.int(poc.meses) }));
   else if (m) p1.push(t('O teste será {qual} em {e} escolas por {m} meses, com cerca de {p} participantes', {
     qual: m === 'ambos' ? t('uma prova de conceito seguida de um piloto') : t('um piloto'), e: fmt.int(p.escolas), m: fmt.int(p.meses), p: fmt.int(p.participantes),
   }));
-  if (tarefas.length) p1.push(t('A IA deve {t}', { t: lista(tarefas.map((s) => s.charAt(0).toLowerCase() + s.slice(1))) }));
+  if (tarefas.length) p1.push(t('A IA deve {t}', { t: lista(tarefas.map(minusc1)) }));
   if (tipo) p1.push(t('A ferramenta principal é do tipo: {t}', { t: tipo }));
   const p2: string[] = [];
   if (c.internet) p2.push(c.internet === 'sim' ? t('As escolas têm internet adequada') : c.internet === 'parcial' ? (+c.escolasInternet ? t('{n} escolas têm internet adequada', { n: fmt.int(c.escolasInternet) }) : t('Só parte das escolas tem internet adequada')) : t('As escolas vão precisar de conexão nova ou melhor'));
   const formados = nomesOpc('formados', c.formados);
   if (formados.length) p2.push(t('{f} recebem {h} horas de formação', { f: lista(formados), h: fmt.int(c.formacaoHoras) }));
-  if (c.suporteNivel) p2.push(t('o suporte é {s}', { s: rotuloOpc('suporteNivel', c.suporteNivel).toLowerCase() }));
+  if (c.suporteNivel) p2.push(t('o suporte é {s}', { s: minusc(rotuloOpc('suporteNivel', c.suporteNivel)) }));
   return [p1.map(ponto).join(' '), p2.length ? ponto(p2.join('; ')).replace(/^./, (x) => x.toUpperCase()) : ''].filter(Boolean);
 }
 
@@ -74,7 +74,7 @@ function cap4(e: Estado14): string[] {
   const c = e.caso;
   const out: string[] = [];
   if (+c.elegiveis) out.push(t('Em toda a rede, {n} pessoas usariam a ferramenta', { n: fmt.int(c.elegiveis) }));
-  if (c.expansao) out.push(t('a meta é chegar a todas {q}', { q: rotuloOpc('expansao', c.expansao).toLowerCase() }));
+  if (c.expansao) out.push(t('a meta é chegar a todas {q}', { q: minusc(rotuloOpc('expansao', c.expansao)) }));
   return out.length ? [ponto(out.join('; '))] : [t('O tamanho da rede inteira ainda não foi informado: o plano usa a estimativa a partir das etapas.')];
 }
 

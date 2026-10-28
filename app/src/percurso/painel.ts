@@ -4,7 +4,7 @@ import { ETAPAS_ENS, QUANDO_REC, totaisCtx, modoTeste, PRIORIDADES, OPC, rotulo,
 import type { Estado14, Origem } from '../store';
 import { ESSENCIAL, afetadosPor, numerosDe, recomendacoesDe, faltamDe, origemDe, respondido, camposAtivos } from '../store';
 import { fmt, sincronizar } from './ambiente';
-import { t, NOME_TESTE } from './textos';
+import { t, NOME_TESTE, minusc } from './textos';
 
 export type KpiId = 'kpi.ano0' | 'kpi.anual' | 'kpi.total' | 'kpi.porAluno';
 export const KPI_IDS: KpiId[] = ['kpi.ano0', 'kpi.total', 'kpi.anual', 'kpi.porAluno'];
@@ -57,7 +57,7 @@ export function tituloCaso(e: Estado14): string {
 export function etapasTexto(e: Estado14): string {
   const ids = totaisCtx(e.ctx).etapas as string[];
   const nomes = ids.map((id) => { const d = (ETAPAS_ENS as any[]).find((x) => x[0] === id); return d ? String(tr(d[1])) : id; });
-  return nomes.map((n) => n.replace(/^Ensino fundamental: /, '').toLowerCase()).join(', ');
+  return nomes.map((n) => minusc(n.replace(/^Ensino fundamental: /, ''))).join(', ');
 }
 
 export function fatosCaso(e: Estado14): string {
@@ -82,9 +82,10 @@ export function recsPlano(e: Estado14): RecPlano[] {
   return lista
     .map((r) => {
       const p = r.porque || {};
-      const porque = p.pergunta ? t('Por quê: você respondeu "{r}" à pergunta {n}.', { r: String(tr(p.resposta || '')) || '—', n: p.n || '' }) : '';
+      const resposta = String(p.resposta || '').split('; ').map((z: string) => String(tr(z))).join('; ');   // como recTrPartes (v13)
+      const porque = p.pergunta ? t('Por quê: você respondeu "{r}" à pergunta {n}.', { r: resposta || '—', n: p.n || '' }) : '';
       return {
-        id: String(r.id), texto: String(r.texto), prioridade: r.prioridade === 'alta' ? 'alta' : 'media', quando: String(r.quando || ''),
+        id: String(r.id), texto: String(tr(r.texto)), prioridade: r.prioridade === 'alta' ? 'alta' : 'media', quando: String(r.quando || ''),
         quandoRotulo: String(tr(rotulo(QUANDO_REC, r.quando) || '')), tipo: String(r.tipo || ''), porque, tela: telaDoNumero(p.n),
       } as RecPlano;
     })

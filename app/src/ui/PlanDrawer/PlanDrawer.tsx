@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { IconChevronUp } from '../icons';
 import { useFocusTrap } from '../focusTrap';
 import './PlanDrawer.css';
+import { tx } from '../texto';
 
 export type PlanDrawerProps = {
   open: boolean;
@@ -33,8 +34,8 @@ export function PlanDrawer({
   summary,
   kpi,
   children,
-  closeLabel = 'Fechar',
-  openLabel = 'Abrir o seu plano',
+  closeLabel,
+  openLabel,
   inline,
   className,
 }: PlanDrawerProps) {
@@ -50,7 +51,7 @@ export function PlanDrawer({
           ref={trigger}
           type="button"
           className="pr-plandrawer-bar"
-          aria-label={openLabel}
+          aria-label={openLabel ?? tx('Abrir o seu plano')}
           aria-expanded={open}
           onClick={() => onOpenChange(true)}
         >
@@ -71,12 +72,12 @@ export function PlanDrawer({
       {open ? (
         <>
           <div className="pr-plandrawer-overlay" onClick={close} aria-hidden="true" />
-          <section ref={sheet} className="pr-plandrawer-sheet" aria-label="Seu plano" tabIndex={-1}>
+          <section ref={sheet} className="pr-plandrawer-sheet" aria-label={tx('Seu plano')} tabIndex={-1}>
             <span className="pr-plandrawer-handle pr-plandrawer-handle--sheet" aria-hidden="true" />
             <div className="pr-plandrawer-head">
               <span className="pr-plandrawer-zone">{zoneLabel}</span>
               <button type="button" className="pr-plandrawer-close" onClick={close}>
-                {closeLabel}
+                {closeLabel ?? tx('Fechar')}
               </button>
             </div>
             <div className="pr-plandrawer-body">{children}</div>

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import './QuestionFrame.css';
+import { tx } from '../texto';
 
 export type QuestionFrameProps = {
   /** "Capítulo 2 · O teste · pergunta 6 de 11". */
@@ -26,7 +27,7 @@ export function QuestionFrame({
   children,
   actions,
   affects,
-  affectsPrefix = 'Esta resposta muda no plano:',
+  affectsPrefix,
   className,
 }: QuestionFrameProps) {
   return (
@@ -38,7 +39,7 @@ export function QuestionFrame({
       {actions ? <div className="pr-questionframe-actions">{actions}</div> : null}
       {affects ? (
         <div className="pr-questionframe-affects">
-          {affectsPrefix} {affects}
+          {affectsPrefix ?? tx('Esta resposta muda no plano:')} {affects}
         </div>
       ) : null}
     </section>

@@ -9,6 +9,7 @@ import { CAPITULOS_INFO, CURTO, t } from '../percurso/textos';
 import { href } from '../percurso/rota';
 import { PlanoVivo } from './PlanoVivo';
 import { CasoDialog } from './CasoDialog';
+import { SeletorIdioma, AvisoTraducao } from './Idioma';
 import './shell.css';
 
 export const LOGOS = [
@@ -67,11 +68,13 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
                 options={[{ value: 'essencial', label: t('Essencial') }, { value: 'refinar', label: t('Refinar') }]}
               />
             ) : null}
-            {respondidas > 0 || s.exemplo !== 'novo' ? <Button variant="secondary" size="sm" href={href.plano()}>{t('Ver o plano')}</Button> : null}
+            <SeletorIdioma compacto={estreito} />
+            {(respondidas > 0 || s.exemplo !== 'novo') && !estreito ? <Button variant="secondary" size="sm" href={href.plano()}>{t('Ver o plano')}</Button> : null}
             <Button variant="secondary" size="sm" onClick={() => setCaso(true)} aria-haspopup="dialog">{t('Caso')}</Button>
           </>
         }
       />
+      <AvisoTraducao />
       {nav && barra ? <div className="pc-barra"><ChapterBar chapters={capitulosBarra(s, pos)} compact={estreito} /></div> : null}
       <div className={['pc-corpo', nav && !barra ? 'pc-corpo--nav' : '', plano ? 'pc-corpo--plano' : ''].filter(Boolean).join(' ')}>
         {nav && !barra ? <aside className="pc-nav"><ChapterNav zoneLabel={t('Seu caminho')} chapters={capitulosNav(s, pos)} /></aside> : null}

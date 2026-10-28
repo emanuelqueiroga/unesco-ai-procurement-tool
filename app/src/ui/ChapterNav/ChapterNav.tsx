@@ -1,5 +1,6 @@
 import type { MouseEvent } from 'react';
 import './ChapterNav.css';
+import { tx } from '../texto';
 
 export type ChapterState = 'done' | 'current' | 'todo';
 export type QuestionState = 'done' | 'current' | 'todo' | 'suggested';
@@ -42,7 +43,7 @@ const MARK_LABEL: Record<QuestionState, string> = {
 /** Lista vertical do percurso: os quatro capítulos e, no capítulo aberto, suas perguntas com estado. */
 export function ChapterNav({ zoneLabel, chapters, onNavigate, legend = true, className }: ChapterNavProps) {
   return (
-    <nav className={['pr-chapternav', className ?? ''].filter(Boolean).join(' ')} aria-label="Capítulos">
+    <nav className={['pr-chapternav', className ?? ''].filter(Boolean).join(' ')} aria-label={tx('Capítulos')}>
       <div className="pr-chapternav-zone">{zoneLabel}</div>
       <ol className="pr-chapternav-list">
         {chapters.map((c) => (
@@ -71,7 +72,7 @@ export function ChapterNav({ zoneLabel, chapters, onNavigate, legend = true, cla
                       onClick={onNavigate ? (e) => onNavigate(q.href, e) : undefined}
                     >
                       <span aria-hidden="true">{MARK[q.state]} </span>
-                      <span className="pr-chapternav-sr">{MARK_LABEL[q.state]}: </span>
+                      <span className="pr-chapternav-sr">{tx(MARK_LABEL[q.state])}: </span>
                       {q.title}
                     </a>
                   </li>
@@ -83,10 +84,10 @@ export function ChapterNav({ zoneLabel, chapters, onNavigate, legend = true, cla
       </ol>
       {legend ? (
         <div className="pr-chapternav-legend">
-          <span>✓ respondida</span>
-          <span>● atual</span>
-          <span>○ pendente</span>
-          <span>~ sugerida</span>
+          <span>✓ {tx('respondida')}</span>
+          <span>● {tx('atual')}</span>
+          <span>○ {tx('pendente')}</span>
+          <span>~ {tx('sugerida')}</span>
         </div>
       ) : null}
     </nav>

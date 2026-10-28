@@ -126,3 +126,8 @@ export const TITULO_TELA: Record<string, string> = {
 
 /** "1 recomendação" / "7 recomendações": as duas formas são chaves de tradução. */
 export const plural = (n: number, um: string, varios: string) => (n === 1 ? t(um, { n }) : t(varios, { n }));
+
+/** Minúsculas para inserir um rótulo no meio da frase, sem estragar siglas: "Educar com a IA" → "educar com a IA". */
+export const minusc = (s: string) => String(s ?? '').split(/(\s+)/).map((w) => ((w.match(/\p{Lu}/gu) || []).length >= 2 ? w : w.toLocaleLowerCase())).join('');
+/** Só a primeira letra em minúscula (para frases que já trazem nomes próprios). */
+export const minusc1 = (s: string) => { const v = String(s ?? ''); return /^\p{Lu}\p{Lu}/u.test(v) ? v : v.charAt(0).toLocaleLowerCase() + v.slice(1); };

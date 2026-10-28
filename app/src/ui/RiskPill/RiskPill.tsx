@@ -1,4 +1,5 @@
 import './RiskPill.css';
+import { tx } from '../texto';
 
 /** Níveis de risco e estados de célula da matriz. */
 export type RiskLevel =
@@ -48,7 +49,7 @@ export function RiskPill({ level, label, className }: RiskPillProps) {
   return (
     <span className={['pr-riskpill', `pr-riskpill--${TONE[level]}`, className ?? ''].filter(Boolean).join(' ')}>
       <i className="pr-riskpill-dot" aria-hidden="true" />
-      {label ?? RISK_LABELS[level]}
+      {label ?? tx(RISK_LABELS[level])}
     </span>
   );
 }

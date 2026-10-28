@@ -1,5 +1,6 @@
 import type { MouseEvent, ReactNode } from 'react';
 import './Recommendation.css';
+import { tx } from '../texto';
 
 export type RecommendationPriority = 'alta' | 'media';
 
@@ -60,7 +61,7 @@ export function Recommendation({
           <div className="pr-recommendation-meta">
             {priority ? (
               <span className={`pr-recommendation-pill pr-recommendation-pill--${priority}`}>
-                {priorityLabel ?? PRIORITY_LABEL[priority]}
+                {priorityLabel ?? tx(PRIORITY_LABEL[priority])}
               </span>
             ) : null}
             {moment ? <span className="pr-recommendation-pill pr-recommendation-pill--line">{moment}</span> : null}
@@ -68,11 +69,11 @@ export function Recommendation({
             {link ? (
               link.href ? (
                 <a className="pr-recommendation-link" href={link.href} onClick={link.onClick}>
-                  {link.label ?? 'Ir à pergunta'}
+                  {link.label ?? tx('Ir à pergunta')}
                 </a>
               ) : (
                 <button type="button" className="pr-recommendation-link" onClick={link.onClick}>
-                  {link.label ?? 'Ir à pergunta'}
+                  {link.label ?? tx('Ir à pergunta')}
                 </button>
               )
             ) : null}

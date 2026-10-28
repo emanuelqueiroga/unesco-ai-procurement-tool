@@ -4,9 +4,10 @@ import { CAMPO_POR_ID, textoCampo, tr } from '../domain';
 import { useCaso, ESSENCIAL, telasDoCapitulo, afetadosPor, camposRefinar, origemDe, type Capitulo, type CasoStore } from '../store';
 import { ChapterOpening, ChapterSummary, QuestionFrame, Button, SourceTag } from '../ui';
 import { Shell } from './Shell';
+import { BotaoPDF } from './Plano';
 import { ControlesTela, ControleCampo, sugeridosDaTela, TIPOS_SIMPLES } from '../percurso/Controles';
 import { sinteseCapitulo } from '../percurso/sintese';
-import { CAPITULOS_INFO, LEAD, TITULO_TELA, linhaAfeta, plural, t } from '../percurso/textos';
+import { CAPITULOS_INFO, LEAD, TITULO_TELA, linhaAfeta, plural, minusc, t } from '../percurso/textos';
 import { href, ir } from '../percurso/rota';
 
 const rotuloOrigem = (o: string) => ({ padrao: t('padrão'), sugerido: t('~ sugerido'), informado: t('informado'), refinado: t('refinado') } as Record<string, string>)[o] || o;
@@ -148,12 +149,12 @@ export function Sintese({ n }: { n: Capitulo }) {
               {' · '}<a href={href.plano('fazer')}>{t('ver no plano')}</a>
             </>
           ) : undefined}
-          next={prox ? { title: t('Próximo capítulo: {nome}', { nome: t(prox.titulo).toLowerCase() }), text: t(prox.guia) } : undefined}
+          next={prox ? { title: t('Próximo capítulo: {nome}', { nome: minusc(t(prox.titulo)) }), text: t(prox.guia) } : undefined}
           actions={
             <div className="pc-botoes">
               <Button variant="secondary" href={href.pergunta(n, telas[0].id)}>{t('Revisar o capítulo {n}', { n })}</Button>
-              {n < 4 ? <Button variant="secondary" href={href.plano()}>{t('Ver o plano parcial')}</Button> : null}
-              <Button href={n < 4 ? href.abertura(n + 1) : href.plano()}>{n < 4 ? t('Capítulo {n}: {nome}', { n: n + 1, nome: t(prox!.titulo).toLowerCase() }) : t('Abrir o plano')}</Button>
+              {n < 4 ? <Button variant="secondary" href={href.plano()}>{t('Ver o plano parcial')}</Button> : <BotaoPDF s={s} variante="secondary" tamanho="md" />}
+              <Button href={n < 4 ? href.abertura(n + 1) : href.plano()}>{n < 4 ? t('Capítulo {n}: {nome}', { n: n + 1, nome: minusc(t(prox!.titulo)) }) : t('Abrir o plano')}</Button>
             </div>
           }
         />

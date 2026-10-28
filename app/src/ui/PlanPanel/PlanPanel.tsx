@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { MouseEvent, ReactNode } from 'react';
 import { KpiTile } from '../KpiTile/KpiTile';
 import './PlanPanel.css';
+import { tx } from '../texto';
 
 export type PlanPanelState = 'empty' | 'writing' | 'complete';
 
@@ -75,16 +76,16 @@ export function PlanPanel({
   stateLabels,
   openHref,
   onOpen,
-  kicker = 'Plano de contratação',
+  kicker = tx('Plano de contratação'),
   title,
   facts,
-  emptyTitle = 'Rede: ———',
-  emptyFacts = 'Problema: ——— · Teste: ———',
-  emptyMessage = 'A primeira resposta escreve a primeira linha.',
-  summaryTitle = 'Em resumo',
+  emptyTitle = tx('Rede: ———'),
+  emptyFacts = tx('Problema: ——— · Teste: ———'),
+  emptyMessage = tx('A primeira resposta escreve a primeira linha.'),
+  summaryTitle = tx('Em resumo'),
   kpis,
   originLine,
-  recommendationsTitle = 'O que fazer',
+  recommendationsTitle = tx('O que fazer'),
   recommendations = [],
   recommendationsCount,
   sections = [],
@@ -106,7 +107,7 @@ export function PlanPanel({
   }, [freshKey]);
 
   const empty = state === 'empty';
-  const zone = stateLabels?.[state] ?? STATE_LABEL[state];
+  const zone = stateLabels?.[state] ?? tx(STATE_LABEL[state]);
 
   const paperEl = (
     <div
@@ -148,7 +149,7 @@ export function PlanPanel({
               >
                 <i className="pr-planpanel-box" aria-hidden="true" />
                 <span>
-                  {r.fresh ? <span className="pr-planpanel-new">Novo: </span> : null}
+                  {r.fresh ? <span className="pr-planpanel-new">{tx('Novo:')} </span> : null}
                   {r.text}
                 </span>
               </li>
@@ -180,13 +181,13 @@ export function PlanPanel({
   return (
     <aside
       className={['pr-planpanel', fluid ? 'pr-planpanel--fluid' : '', className ?? ''].filter(Boolean).join(' ')}
-      aria-label="Seu plano"
+      aria-label={tx('Seu plano')}
     >
       <div className="pr-planpanel-zone">
         <span>{zone}</span>
         {openHref ? (
           <a className="pr-planpanel-open" href={openHref} onClick={onOpen}>
-            Abrir inteiro
+            {tx('Abrir inteiro')}
           </a>
         ) : null}
       </div>

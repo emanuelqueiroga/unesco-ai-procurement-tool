@@ -1,6 +1,7 @@
 import type { MouseEvent } from 'react';
 import { TextField } from '../TextField/TextField';
 import './SchoolsGrid.css';
+import { tx } from '../texto';
 
 export type SchoolStage = {
   id: string;
@@ -40,11 +41,11 @@ export function SchoolsGrid({
   label,
   stages,
   onChange,
-  schoolsLabel = 'Escolas',
-  studentsLabel = 'Estudantes',
+  schoolsLabel,
+  studentsLabel,
   detailHref,
   onDetail,
-  detailLabel = 'Detalhar por ano',
+  detailLabel,
   totals,
   className,
 }: SchoolsGridProps) {
@@ -73,7 +74,7 @@ export function SchoolsGrid({
               <div className="pr-schoolsgrid-fields">
                 <TextField
                   id={`${boxId}-escolas`}
-                  label={schoolsLabel}
+                  label={schoolsLabel ?? tx('Escolas')}
                   type="number"
                   value={s.schools ?? ''}
                   onChange={(v) => onChange?.(s.id, { schools: v })}
@@ -83,7 +84,7 @@ export function SchoolsGrid({
                 />
                 <TextField
                   id={`${boxId}-estudantes`}
-                  label={studentsLabel}
+                  label={studentsLabel ?? tx('Estudantes')}
                   type="number"
                   value={s.students ?? ''}
                   onChange={(v) => onChange?.(s.id, { students: v })}
@@ -113,12 +114,12 @@ export function SchoolsGrid({
         <div className="pr-schoolsgrid-foot">
           {totals ? (
             <span className="pr-schoolsgrid-totals">
-              {totals.label ?? 'Total'}: <b>{totals.schools}</b> escolas · <b>{totals.students}</b> estudantes
+              {totals.label ?? tx('Total')}: <b>{totals.schools}</b> {tx('escolas')} · <b>{totals.students}</b> {tx('estudantes')}
             </span>
           ) : null}
           {detailHref || onDetail ? (
             <a className="pr-schoolsgrid-detail" href={detailHref ?? '#'} onClick={onDetail}>
-              {detailLabel}
+              {detailLabel ?? tx('Detalhar por ano')}
             </a>
           ) : null}
         </div>

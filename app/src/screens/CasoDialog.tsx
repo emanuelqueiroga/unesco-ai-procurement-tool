@@ -1,16 +1,16 @@
 // Caixa "Caso": exportar e importar o caso (JSON, formato 14), carregar um exemplo, começar em branco,
 // idioma e tema. Tudo fica no navegador; nada é enviado.
 import { useRef, useState } from 'react';
-import { CASOS, IDIOMAS, tr } from '../domain';
+import { CASOS, tr } from '../domain';
 import { useCaso, ErroImportacao } from '../store';
 import { textoCaso, nomeArqCaso } from '../export/json';
 import { Dialog, Button, Alert, Segmented, useTheme } from '../ui';
-import { usarIdioma } from '../i18n';
 import { href, ir } from '../percurso/rota';
 import { t } from '../percurso/textos';
 
-export function baixarArquivo(nome: string, texto: string, tipo = 'application/json') {
-  const url = URL.createObjectURL(new Blob([texto], { type: tipo + ';charset=utf-8' }));
+export function baixarArquivo(nome: string, conteudo: string | Blob, tipo = 'application/json') {
+  const blob = typeof conteudo === 'string' ? new Blob([conteudo], { type: tipo + ';charset=utf-8' }) : conteudo;
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -89,18 +89,6 @@ export function CasoDialog({ open, onClose }: { open: boolean; onClose: () => vo
           <h3 className="pc-dialogo-titulo">{t('Modo')}</h3>
           <Segmented label={t('Modo')} value={s.modo} onChange={(m) => s.setModo(m)} options={[{ value: 'essencial', label: t('Essencial') }, { value: 'refinar', label: t('Refinar') }]} />
           <p className="pc-dialogo-texto">{t('Essencial: as perguntas que mudam o plano, com premissas padrão no resto. Refinar: as mesmas telas, com as premissas de cada capítulo abertas para ajuste.')}</p>
-        </section>
-        <section>
-          <h3 className="pc-dialogo-titulo">{t('Idioma')}</h3>
-          <select
-            className="pc-select"
-            aria-label={t('Idioma')}
-            value={s.lang || 'pt'}
-            onChange={async (ev) => { const l = await usarIdioma(ev.target.value); s.setLang(l); }}
-          >
-            {(IDIOMAS as any[]).map((i) => <option key={i[0]} value={i[0]}>{i[1]}</option>)}
-          </select>
-          <p className="pc-dialogo-texto">{t('Os textos novos desta versão ainda estão só em português; as perguntas e os resultados já aparecem traduzidos.')}</p>
         </section>
         <section>
           <h3 className="pc-dialogo-titulo">{t('Aparência')}</h3>

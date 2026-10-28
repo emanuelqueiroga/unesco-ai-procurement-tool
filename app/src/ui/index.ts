@@ -81,3 +81,4 @@ export { useFocusTrap } from './focusTrap';
 export { useMediaQuery, BREAKPOINTS } from './useMediaQuery';
 export { useTheme, applyTheme, initialTheme } from './theme';
 export type { Theme } from './theme';
+export { setTradutorUI, tx } from './texto';

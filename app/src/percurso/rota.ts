@@ -3,18 +3,21 @@
 //   #/capitulo/:n              abertura do capítulo
 //   #/capitulo/:n/:tela        pergunta (id da tela do Essencial, perguntas.ts)
 //   #/capitulo/:n/sintese      síntese do capítulo
-//   #/plano  #/plano/fazer     plano (Em resumo; O que fazer)
+//   #/plano[/custa|fazer|exigir|apendice|faltam]   páginas do plano
 //   #/galeria                  galeria de componentes do Prumo
 import { useEffect, useState } from 'react';
 import type { Capitulo } from '../store';
 import { ESSENCIAL } from '../store';
+
+export type PaginaPlano = 'resumo' | 'custa' | 'fazer' | 'exigir' | 'apendice' | 'faltam';
+const PAGINAS: PaginaPlano[] = ['resumo', 'custa', 'fazer', 'exigir', 'apendice', 'faltam'];
 
 export type Rota =
   | { tipo: 'inicio' }
   | { tipo: 'abertura'; n: Capitulo }
   | { tipo: 'pergunta'; n: Capitulo; tela: string }
   | { tipo: 'sintese'; n: Capitulo }
-  | { tipo: 'plano'; pagina: 'resumo' | 'fazer' | 'faltam' }
+  | { tipo: 'plano'; pagina: PaginaPlano }
   | { tipo: 'galeria' };
 
 const cap = (s: string): Capitulo | null => (['1', '2', '3', '4'].includes(s) ? (+s as Capitulo) : null);
@@ -22,7 +25,7 @@ const cap = (s: string): Capitulo | null => (['1', '2', '3', '4'].includes(s) ? 
 export function lerRota(hash: string): Rota {
   const p = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   if (p[0] === 'galeria') return { tipo: 'galeria' };
-  if (p[0] === 'plano') return { tipo: 'plano', pagina: p[1] === 'fazer' ? 'fazer' : p[1] === 'faltam' ? 'faltam' : 'resumo' };
+  if (p[0] === 'plano') return { tipo: 'plano', pagina: PAGINAS.includes(p[1] as PaginaPlano) ? (p[1] as PaginaPlano) : 'resumo' };
   if (p[0] === 'capitulo') {
     const n = cap(p[1] || '');
     if (!n) return { tipo: 'inicio' };
@@ -39,7 +42,7 @@ export const href = {
   abertura: (n: number) => `#/capitulo/${n}`,
   pergunta: (n: number, tela: string) => `#/capitulo/${n}/${tela}`,
   sintese: (n: number) => `#/capitulo/${n}/sintese`,
-  plano: (pagina: 'resumo' | 'fazer' | 'faltam' = 'resumo') => (pagina === 'resumo' ? '#/plano' : `#/plano/${pagina}`),
+  plano: (pagina: PaginaPlano = 'resumo') => (pagina === 'resumo' ? '#/plano' : `#/plano/${pagina}`),
   tela: (id: string) => {
     const t = ESSENCIAL.find((x) => x.id === id);
     return t ? `#/capitulo/${t.capitulo}/${t.id}` : '#/';

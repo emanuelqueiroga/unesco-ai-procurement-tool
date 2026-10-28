@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { KpiTile } from '../KpiTile/KpiTile';
 import './ChapterSummary.css';
+import { tx } from '../texto';
 
 export type ChapterSummaryProps = {
   n: number;
@@ -40,7 +41,7 @@ export function ChapterSummary({
 }: ChapterSummaryProps) {
   return (
     <section className={['pr-chaptersummary', className ?? ''].filter(Boolean).join(' ')}>
-      <div className="pr-chaptersummary-kicker">{kicker ?? `Fim do capítulo ${n}`}</div>
+      <div className="pr-chaptersummary-kicker">{kicker ?? tx('Fim do capítulo {n}', { n })}</div>
       <h1 className="pr-chaptersummary-title">{title}</h1>
       <div className={['pr-chaptersummary-grid', kpi || next ? '' : 'pr-chaptersummary-grid--single'].join(' ')}>
         <div className="pr-chaptersummary-prose">
