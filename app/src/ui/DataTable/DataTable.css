@@ -14,7 +14,7 @@
 }
 
 .pr-datatable-caption {
-  text-align: left;
+  text-align: start;
   font-size: 13px;
   line-height: 18px;
   color: var(--muted);
@@ -30,7 +30,7 @@
 }
 
 .pr-datatable-table thead th {
-  text-align: left;
+  text-align: start;
   font-weight: 600;
   color: var(--muted);
   font-size: 13px;
@@ -42,7 +42,7 @@
 
 .pr-datatable-table tbody th,
 .pr-datatable-table tbody td {
-  text-align: left;
+  text-align: start;
   font-weight: 400;
   padding: 10px 12px;
   border-bottom: 1px solid var(--line);
@@ -50,8 +50,10 @@
 }
 
 .pr-datatable-num {
-  text-align: right !important;
+  text-align: end !important;
   font-variant-numeric: tabular-nums;
+  /* o valor ("US$ 180,000") nunca quebra entre a moeda e o número */
+  white-space: nowrap;
 }
 
 .pr-datatable-total th,
@@ -71,7 +73,7 @@
   width: 10px;
   height: 10px;
   border-radius: 2px;
-  margin-right: 8px;
+  margin-inline-end: 8px;
   vertical-align: middle;
 }
 
@@ -118,7 +120,7 @@
     content: attr(data-label);
     color: var(--muted);
     font-size: 13px;
-    text-align: left;
+    text-align: start;
     font-weight: 400;
     font-variant-numeric: normal;
   }

@@ -1,24 +1,29 @@
 // Plano de contratação: Em resumo, Quanto custa, O que fazer, O que exigir e Apêndice (D8–D11, M4), com o
 // relatório em PDF e o caso em JSON. As seções vêm de src/plano/secoes.js (porte de src/resumo.js da v13).
-import { useMemo, useState } from 'react';
-import { CAMADAS, QUANDO_REC, getLang, tr } from '../domain';
-import { useCaso, faltamDe, type CasoStore, type Estado14 } from '../store';
-import { PlanIndex, KpiTile, LayerBars, Recommendation, SourceTag, Alert, Button, type PlanIndexItem } from '../ui';
+// P3: links "Rever a resposta" para qualquer pergunta (href.campo), lacunas nas duas classes (as mesmas do PDF),
+// fatos do caso em fichas, "de onde vem?" nos KPIs, gráfico da dotação por exercício, índice interno, impressão.
+import { useEffect, useMemo, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { CAMADAS, QUANDO_REC, TIPO_REC, LOC, getLang, tr, mil, unidMil } from '../domain';
+import { useCaso, type CasoStore, type Estado14 } from '../store';
+import { PlanIndex, KpiTile, LayerBars, Recommendation, SourceTag, Alert, Button, Popover, TextField, useMediaQuery, type PlanIndexItem } from '../ui';
 import { Shell, Rodape } from './Shell';
 import { usePainel } from './PlanoVivo';
-import { baixarArquivo } from './CasoDialog';
-import { Secao, type SecaoPlano } from './Secao';
-import { textoCaso, nomeArqCaso } from '../export/json';
+import { baixarArquivo, exportarCaso } from './acoes';
+import { avisar } from './Confirmar';
+import { Secao, ModoImpressao, ancoraDe, type SecaoPlano } from './Secao';
 import { fmt, sincronizar } from '../percurso/ambiente';
 import { VERSAO } from '../percurso/canal';
-import { CURTO, CAPITULOS_INFO, t, plural, minusc } from '../percurso/textos';
+import { t, plural, minusc } from '../percurso/textos';
 import { href, type PaginaPlano } from '../percurso/rota';
-import type { Painel, RecPlano } from '../percurso/painel';
+import { lacunasDe, tituloParcial, textoLacunas, textoAltas, rotuloOrigem, driversDe, explicacaoKpi, type KpiOuSaida, type Painel, type RecPlano } from '../percurso/painel';
 import { secoesPlano, trSecao, painelPlano } from '../plano/secoes.js';
 import figuraTCO from '../../../assets/fig1_tco.jpg';
+import './plano.css';
 
-const rotuloOrigem = (o: string) => ({ padrao: t('padrão'), sugerido: t('~ sugerido'), informado: t('informado'), refinado: t('refinado') } as Record<string, string>)[o] || o;
 const nomeCamada = (n: number) => String(tr(((CAMADAS as any[]).find((c) => c[0] === n) || [n, ''])[1]));
+const PAGINAS: PaginaPlano[] = ['resumo', 'custa', 'fazer', 'exigir', 'apendice'];
+const TITULO_PAGINA: Record<string, string> = { resumo: 'Em resumo', custa: 'Quanto custa', fazer: 'O que fazer', exigir: 'O que exigir', apendice: 'Apêndice', faltam: 'Respostas que faltam' };
 
 /** Gera o PDF (jsPDF carregado sob demanda) e entrega o arquivo. */
 export async function baixarPDF(e: Estado14): Promise<void> {
@@ -26,13 +31,15 @@ export async function baixarPDF(e: Estado14): Promise<void> {
   const m: any = await import('../plano/pdf.js');
   const recursos = await m.recursosPDF();
   const doc = await m.gerarPDF(e, { versao: VERSAO, lang: getLang(), ...recursos });
-  baixarArquivo(m.nomeArqPDF(e), doc.output('blob'));
+  const como = await baixarArquivo(m.nomeArqPDF(e), doc.output('blob'), 'application/pdf');
+  if (como === 'link') avisar(t('Arquivo enviado para download.'));
 }
 
 export function BotaoPDF({ s, variante = 'primary', tamanho = 'sm' }: { s: CasoStore; variante?: 'primary' | 'secondary'; tamanho?: 'sm' | 'md' }) {
   const [gerando, setGerando] = useState(false);
   const [erro, setErro] = useState('');
-  const faltam = faltamDe(s).length;
+  // a mesma contagem do aviso da página e do PDF: perguntas do Essencial e de refinamento
+  const faltam = lacunasDe(s).total;
   return (
     <>
       <Button
@@ -53,6 +60,7 @@ export function BotaoPDF({ s, variante = 'primary', tamanho = 'sm' }: { s: CasoS
   );
 }
 
+// ----------------------------------------------------------- recomendações
 function Rec({ r, n }: { r: RecPlano; n?: number }) {
   return (
     <Recommendation
@@ -63,11 +71,69 @@ function Rec({ r, n }: { r: RecPlano; n?: number }) {
       priorityLabel={r.prioridade === 'alta' ? t('Prioridade alta') : t('Prioridade média')}
       moment={r.quandoRotulo || undefined}
       kind={r.tipo === 'custo' ? t('Custo e compra') : r.tipo === 'politica' ? t('Política e governança') : undefined}
-      link={r.tela ? { href: href.tela(r.tela), label: t('Rever a resposta') } : undefined}
+      link={r.href ? { href: r.href, label: t('Rever a resposta') } : undefined}
     />
   );
 }
 
+/** o mesmo número de uma recomendação em "Comece por estas" e em "O que fazer": a posição na lista por prioridade */
+const numerar = (recs: RecPlano[]) => new Map(recs.map((r, i) => [r.id, i + 1] as const));
+
+// ----------------------------------------------------------- "de onde vem?" (CUS-02)
+const FRASE_ORIGEM: Record<string, string> = {
+  padrao: 'Este número usa pelo menos uma premissa padrão: confirme as respostas abaixo.',
+  sugerido: 'Este número usa uma sugestão da ferramenta, ainda não confirmada.',
+  informado: 'Este número vem das suas respostas.',
+  refinado: 'Este número usa premissas que você ajustou no Refinar.',
+};
+
+function ConteudoOrigem({ s, id, origem }: { s: CasoStore; id: KpiOuSaida; origem: string }) {
+  // o cálculo só roda quando o popover abre (este componente só monta aberto)
+  const x = useMemo(() => explicacaoKpi(s, id), [s.caso, s.ctx, s.resp, s.origem, s.custo, s.moeda, s.exemplo, s.lang, id]);  // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <>
+      <span className="pc-pop-bloco"><SourceTag origin={origem as any} label={rotuloOrigem(origem)} /> {t(FRASE_ORIGEM[origem] || FRASE_ORIGEM.informado)}</span>
+      {x.conta.length ? (
+        <span className="pc-pop-bloco"><b>{t('Como é calculado')}</b>{x.conta.map((l, i) => <span key={i} className="pc-pop-item">{l}</span>)}</span>
+      ) : null}
+      {x.premissas.length ? (
+        <span className="pc-pop-bloco"><b>{t('Premissas que o alimentam')}</b>{x.premissas.map((l, i) => <span key={i} className="pc-pop-item">{l}</span>)}</span>
+      ) : null}
+      {x.drivers.length ? (
+        <span className="pc-pop-bloco">
+          <b>{t('Respostas que mais pesam')}</b>
+          {x.drivers.slice(0, 4).map((d) => (
+            <span key={d.campo} className="pc-pop-item"><a href={d.href}>{d.label}</a> <SourceTag origin={d.origem} label={rotuloOrigem(d.origem)} /></span>
+          ))}
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+/** Etiqueta de origem do número e o "de onde vem?" com origem, premissas e as ações "Ajustar premissas" e "Ir à pergunta". */
+export function OrigemKpi({ s, id, origem, rotuloKpi, alinharAoFim }: { s: CasoStore; id: KpiOuSaida; origem: string; rotuloKpi: string; alinharAoFim?: boolean }) {
+  const ir = driversDe(s, id)[0];
+  return (
+    <span className="pc-origem-kpi">
+      <SourceTag origin={origem as any} label={rotuloOrigem(origem)} />
+      <Popover
+        title={rotuloKpi}
+        alignEnd={alinharAoFim}
+        actions={(
+          <>
+            <a href={href.refinar('premissas', String(id).startsWith('kpi.') ? String(id) : undefined)}>{t('Ajustar premissas')}</a>
+            {ir ? <a href={ir.href}>{t('Ir à pergunta')}</a> : null}
+          </>
+        )}
+      >
+        <ConteudoOrigem s={s} id={id} origem={origem} />
+      </Popover>
+    </span>
+  );
+}
+
+// ----------------------------------------------------------- gráficos
 function BarrasCamadas({ p }: { p: Painel }) {
   const total = p.camadas.reduce((a, c) => a + c.valor, 0);
   if (!(total > 0)) return null;
@@ -82,62 +148,165 @@ function BarrasCamadas({ p }: { p: Painel }) {
   );
 }
 
-function Resumo({ s, p, secs, principal }: { s: CasoStore; p: Painel; secs: SecaoPlano[]; principal: string }) {
-  const resumo = secs.find((x) => x.id === 'resumo' && !x.sub);
+/** Colunas "Dotação a solicitar por exercício": barras em SVG, valores e anos em texto, cores pelas fases do Prumo. */
+export function GraficoDotacao({ anos, dot }: { anos: number[]; dot: number[] }) {
+  if (!anos.length) return null;
+  const max = Math.max(1, ...dot);
+  const dec = anos.length > 6 ? 0 : 1;
+  const titulo = t('Dotação a solicitar por exercício');
+  return (
+    <figure className={'pc-grafico' + (anos.length > 6 ? ' pc-grafico--largo' : '')} id="sec-dotacao">
+      <figcaption className="pc-grafico-titulo">{titulo} <span className="pc-nota">({unidMil()})</span></figcaption>
+      <ol className="pc-colunas" style={{ gridTemplateColumns: `repeat(${anos.length}, minmax(${anos.length > 6 ? 44 : 0}px, 1fr))` }}>
+        {anos.map((a, i) => {
+          const h = Math.max(0, Math.min(100, ((dot[i] || 0) / max) * 100));
+          return (
+            <li key={a} className="pc-coluna" aria-label={`${tr('Ano ' + a)}: ${fmt.curto(dot[i] || 0)}`}>
+              <span className="pc-coluna-valor" aria-hidden="true">{mil(dot[i] || 0, dec)}</span>
+              <svg className={'pc-coluna-barra pc-coluna-barra--' + (a === 0 ? '0' : a === 1 ? '1' : 'n')} viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                <rect x="0" y={100 - h} width="10" height={h} />
+              </svg>
+              <span className="pc-coluna-ano" aria-hidden="true">{String(tr('Ano ' + a))}</span>
+            </li>
+          );
+        })}
+      </ol>
+    </figure>
+  );
+}
+
+// ----------------------------------------------------------- Em resumo
+function TituloEditavel({ s, p }: { s: CasoStore; p: Painel }) {
+  const [editando, setEditando] = useState(false);
+  const [valor, setValor] = useState('');
+  const abrir = () => { setValor(String(s.caso.titulo || s.ctx.olhando || '')); setEditando(true); };
+  const salvar = () => { s.responder('titulo', valor.trim()); setEditando(false); };
   return (
     <>
-      <header className="pc-plano-capa">
-        <p className="pc-kicker">{p.premissas ? t('Plano de contratação · estimativa com {n} respostas a confirmar', { n: p.premissas }) : t('Plano de contratação')}</p>
-        <h1 className="pc-plano-titulo">{p.titulo || t('Caso sem nome')}</h1>
-        {p.fatos ? <p className="pc-plano-fatos">{p.fatos}</p> : null}
-        {s.exemplo !== 'novo' ? <p className="pc-nota">{t('Exemplo ilustrativo: as respostas não são de uma rede real.')}</p> : null}
-      </header>
-      {principal ? (
-        <div className="pc-callout"><span className="pc-callout-rotulo">{t('Recomendação principal')}</span><span>{principal}</span></div>
-      ) : null}
-      {p.faltam ? (
-        <Alert kind="info" title={plural(p.faltam, 'Plano parcial: 1 pergunta essencial sem resposta.', 'Plano parcial: {n} perguntas essenciais sem resposta.')}>
-          {t('O plano já pode ser usado; o que depende dessas respostas usa premissas padrão.')} <a href={href.plano('faltam')}>{t('Ver o que falta')}</a>
-        </Alert>
-      ) : null}
-      {p.temNumeros ? (
-        <>
-          <div className="pc-kpis">
-            {p.kpis.map((k) => <KpiTile key={k.id} label={k.label} value={k.value} fullValue={k.fullValue} origin={<SourceTag origin={k.origem} label={rotuloOrigem(k.origem)} />} />)}
+      <h1 className="pc-plano-titulo">{p.titulo || t('Caso sem nome')}</h1>
+      {editando ? (
+        <form className="pc-titulo-form" onSubmit={(e) => { e.preventDefault(); salvar(); }} onKeyDown={(e) => { if (e.key === 'Escape') setEditando(false); }}>
+          <TextField label={t('Título do caso')} value={valor} onChange={setValor} inputProps={{ autoFocus: true, maxLength: 120 }} />
+          <div className="pc-botoes">
+            <Button type="submit" size="sm">{t('Salvar')}</Button>
+            <Button type="button" variant="secondary" size="sm" onClick={() => setEditando(false)}>{t('Cancelar')}</Button>
           </div>
-          <BarrasCamadas p={p} />
-        </>
+        </form>
       ) : (
-        <Alert kind="info" title={t('Ainda sem números')}>
-          {t('Os números do plano aparecem quando você disser o tipo de tecnologia da ferramenta (pergunta 2.3.4).')} <a href={href.tela('tipoTec')}>{t('Ir à pergunta')}</a>
-        </Alert>
+        <p className="pc-titulo-editar"><Button type="button" variant="link" size="sm" onClick={abrir}>{t('Editar o título')}</Button></p>
       )}
-      {p.recs.length ? (
-        <section className="pc-plano-sec">
-          <h2 className="pc-plano-h2">{t('Comece por estas')}</h2>
-          <div className="pc-recs">{p.recs.slice(0, 3).map((r, i) => <Rec key={r.id} r={r} n={i + 1} />)}</div>
-          <a href={href.plano('fazer')}>{t('Ver todas as {n} recomendações, por momento', { n: p.recs.length })}</a>
-        </section>
-      ) : null}
-      {resumo ? <Secao s={{ ...resumo, cartoes: undefined, tipo: undefined }} /> : null}
     </>
   );
 }
 
+function KpisResumo({ s, p }: { s: CasoStore; p: Painel }) {
+  const estreito = useMediaQuery('(max-width: 900px)');
+  const cols = estreito ? 2 : 4;
+  return (
+    <div className="pc-kpis">
+      {p.kpis.map((k, i) => (
+        <KpiTile
+          key={k.id}
+          label={k.label}
+          value={k.value}
+          fullValue={k.fullValue}
+          origin={<OrigemKpi s={s} id={k.id} origem={k.origem} rotuloKpi={k.label} alinharAoFim={i % cols >= cols / 2} />}
+        />
+      ))}
+    </div>
+  );
+}
+
+function SemNumeros({ p }: { p: Painel }) {
+  return (
+    <Alert kind="info" title={t('Ainda sem números')}>
+      {t('Os números do plano aparecem quando você disser o tipo de tecnologia da ferramenta (pergunta 2.3.4).')}
+      {p.paraNumero.length ? (
+        <ul className="pc-faltam-numero">
+          {p.paraNumero.map((f) => (
+            <li key={f.campo}><a href={f.href}>{f.n} · {f.label}</a>{f.obrigatoria ? null : <span className="pc-nota"> · {t('deixa o número mais fiel')}</span>}</li>
+          ))}
+        </ul>
+      ) : null}
+    </Alert>
+  );
+}
+
+function Resumo({ s, p, principal, fatos }: { s: CasoStore; p: Painel; principal: string; fatos: [string, string][] }) {
+  const L = p.lacunas;
+  const altas = p.recs.filter((r) => r.prioridade === 'alta');
+  const topo = altas.length ? altas.slice(0, 3) : p.recs.slice(0, 3);
+  const numero = numerar(p.recs);
+  const data = new Date().toLocaleDateString(LOC(), { year: 'numeric', month: 'long', day: 'numeric' });
+  return (
+    <>
+      <header className="pc-plano-capa">
+        <p className="pc-kicker">{p.temNumeros && p.premissas ? t('Plano de contratação · estimativa com {n} respostas a confirmar', { n: p.premissas }) : t('Plano de contratação')}</p>
+        <TituloEditavel s={s} p={p} />
+        {p.fatos ? <p className="pc-plano-fatos">{p.fatos}</p> : null}
+        <p className="pc-nota">{t('Gerado em')} {data}{s.exemplo !== 'novo' ? ' · ' + t('Exemplo ilustrativo: as respostas não são de uma rede real.') : ''}</p>
+      </header>
+      {principal ? (
+        <div className="pc-callout">
+          <span className="pc-callout-rotulo">{t('Recomendação principal')}</span>
+          <span>{principal}</span>
+          {p.recs.length ? <a className="pc-callout-link" href={href.plano('fazer')}>{textoAltas(p.nAlta)}</a> : null}
+        </div>
+      ) : null}
+      {L.total ? (
+        <Alert kind="info" title={tituloParcial(L)}>
+          {textoLacunas(L)} {t('O plano já pode ser usado; o que depende dessas respostas usa premissas padrão.')} <a href={href.plano('faltam')}>{t('Ver o que falta')}</a>
+        </Alert>
+      ) : null}
+      {p.temNumeros ? (
+        <>
+          <KpisResumo s={s} p={p} />
+          <BarrasCamadas p={p} />
+        </>
+      ) : <SemNumeros p={p} />}
+      {fatos.length ? (
+        <section className="pc-plano-sec" id="sec-fatos">
+          <h2 className="pc-plano-h2">{t('Fatos do caso')}</h2>
+          <dl className="pc-fichas">
+            {fatos.map(([k, v]) => <div key={k} className="pc-ficha"><dt>{k}</dt><dd>{v}</dd></div>)}
+          </dl>
+          <a href={href.plano('apendice')}>{t('Ver o perfil completo do caso')}</a>
+        </section>
+      ) : null}
+      {topo.length ? (
+        <section className="pc-plano-sec">
+          <h2 className="pc-plano-h2">{altas.length ? t('Comece por estas') : t('Ações recomendadas')}</h2>
+          <div className="pc-recs">{topo.map((r) => <Rec key={r.id} r={r} n={numero.get(r.id)} />)}</div>
+          <a href={href.plano('fazer')}>{t('Ver todas as {n} recomendações, por momento', { n: p.recs.length })}</a>
+        </section>
+      ) : null}
+    </>
+  );
+}
+
+// ----------------------------------------------------------- O que fazer
 function Fazer({ p, secs }: { p: Painel; secs: SecaoPlano[] }) {
-  let i = 0;
+  const numero = numerar(p.recs);
+  const nCusto = p.recs.filter((r) => r.tipo === 'custo').length, nPol = p.recs.length - nCusto;
   return (
     <>
       <h1 className="pc-plano-titulo">{t('O que fazer')}</h1>
       <p className="pc-lead">{t('Ações geradas a partir das respostas deste caso, por momento e prioridade. Cada ação mostra a pergunta que a originou: se mudar a resposta, a lista muda.')}</p>
-      {!p.recs.length ? <Alert kind="info" title={t('Ainda não há respostas suficientes para recomendar ações.')} /> : null}
+      {!p.recs.length ? <Alert kind="info" title={t('Ainda não há respostas suficientes para recomendar ações.')} /> : (
+        <p className="pc-contagens" aria-label={t('Resumo das ações')}>
+          <span className="pc-selo">{plural(p.recs.length, '{n} ação no total', '{n} ações no total')}</span>
+          <span className="pc-selo pc-selo--alta">{textoAltas(p.nAlta)}</span>
+          <span className="pc-selo">{nCusto} · {String(tr((TIPO_REC as any).custo))}</span>
+          <span className="pc-selo">{nPol} · {String(tr((TIPO_REC as any).politica))}</span>
+        </p>
+      )}
       {(QUANDO_REC as any[]).map(([q, rot]) => {
         const lista = p.recs.filter((r) => r.quando === q);
         if (!lista.length) return null;
         return (
-          <section key={q} className="pc-plano-sec">
+          <section key={q} className="pc-plano-sec" id={'sec-q-' + q}>
             <h2 className="pc-plano-h2">{String(tr(rot))} <span className="pc-contagem">· {lista.length}</span></h2>
-            <div className="pc-recs">{lista.map((r) => <Rec key={r.id} r={r} n={++i} />)}</div>
+            <div className="pc-recs">{lista.map((r) => <Rec key={r.id} r={r} n={numero.get(r.id)} />)}</div>
           </section>
         );
       })}
@@ -146,51 +315,141 @@ function Fazer({ p, secs }: { p: Painel; secs: SecaoPlano[] }) {
   );
 }
 
-function Pagina({ titulo, intro, secs, pagina, antes }: { titulo: string; intro?: string; secs: SecaoPlano[]; pagina: string; antes?: React.ReactNode }) {
+// ----------------------------------------------------------- páginas com seções
+function Pagina({ titulo, intro, secs, pagina, extra, kpiOrigem }: {
+  titulo: string; intro?: string; secs: SecaoPlano[]; pagina: string;
+  /** conteúdo no fim de uma seção (pelo id) */
+  extra?: Record<string, React.ReactNode>;
+  kpiOrigem?: Record<string, (i: number, alinharAoFim: boolean) => React.ReactNode>;
+}) {
   return (
     <>
       <h1 className="pc-plano-titulo">{titulo}</h1>
       {intro ? <p className="pc-lead">{intro}</p> : null}
-      {antes}
-      {secs.filter((x) => x.pagina === pagina && x.id !== 'faltas').map((x, j) => <Secao key={j} s={x} />)}
+      {secs.filter((x) => x.pagina === pagina && x.id !== 'faltas').map((x, j) => (
+        <Secao key={j} s={x} extra={x.id && !x.sub ? extra?.[x.id] : undefined} kpiOrigem={x.id && !x.sub ? kpiOrigem?.[x.id] : undefined} />
+      ))}
     </>
   );
 }
 
-function Faltam({ s }: { s: CasoStore }) {
-  const faltam = faltamDe(s);
+function Faltam({ p, semTitulo }: { p: Painel; semTitulo?: boolean }) {
+  const L = p.lacunas;
+  const ess = L.itens.filter((i) => i.essencial), ref = L.itens.filter((i) => !i.essencial);
+  const lista = (itens: typeof ess, inicio: number) => (
+    <ol className="pc-faltam" start={inicio}>
+      {itens.map((it) => (
+        <li key={it.campo + it.n}>
+          <a href={it.href}>{it.n} · {it.texto}</a>
+          <span className="pc-nota"> · {it.capituloTitulo}</span>
+        </li>
+      ))}
+    </ol>
+  );
   return (
     <section className="pc-plano-sec" id="faltam">
-      <h2 className="pc-plano-h2">{t('Respostas que faltam')}</h2>
-      {!faltam.length ? <p className="pc-nota">{t('Todas as perguntas do Essencial estão respondidas.')}</p> : (
+      {!semTitulo ? <h2 className="pc-plano-h2">{t('Respostas que faltam')}</h2> : null}
+      {!L.total ? <p className="pc-nota">{t('Todas as perguntas do Essencial estão respondidas.')}</p> : (
         <>
+          <p className="pc-paragrafo"><b>{tituloParcial(L)}</b> {textoLacunas(L)}</p>
           <p className="pc-nota">{t('Enquanto uma pergunta não é respondida, o plano usa a premissa padrão ou a sugestão. Nada impede baixar o plano; estas são as respostas que mais o deixariam fiel à sua rede.')}</p>
-          <ol className="pc-faltam">
-            {faltam.map((tela) => (
-              <li key={tela.id}>
-                <a href={href.pergunta(tela.capitulo, tela.id)}>{tela.n.join(' e ')} · {t(CURTO[tela.id] || tela.id)}</a>
-                <span className="pc-nota"> · {t(CAPITULOS_INFO[tela.capitulo].titulo)}</span>
-              </li>
-            ))}
-          </ol>
+          {ess.length ? (
+            <>
+              <h3 className="pc-secao-h3">{plural(ess.length, '{n} pergunta do Essencial', '{n} perguntas do Essencial')}</h3>
+              {lista(ess, 1)}
+            </>
+          ) : null}
+          {ref.length ? (
+            <>
+              <h3 className="pc-secao-h3">{t('{n} de refinamento', { n: ref.length })}</h3>
+              <p className="pc-nota">{t('Estas perguntas ficam no modo Refinar; o plano usa a premissa padrão até você respondê-las.')}</p>
+              {lista(ref, ess.length + 1)}
+            </>
+          ) : null}
         </>
       )}
     </section>
   );
 }
 
+// ----------------------------------------------------------- índice interno das páginas longas (PLA-08)
+interface Entrada { id: string; label: string }
+
+function rolarPara(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const reduz = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ behavior: reduz ? 'auto' : 'smooth', block: 'start' });
+  const alvo = el.querySelector<HTMLElement>('h1, h2, h3') || el;
+  if (!alvo.hasAttribute('tabindex')) alvo.setAttribute('tabindex', '-1');
+  alvo.focus({ preventScroll: true });
+}
+
+function IndiceInterno({ entradas }: { entradas: Entrada[] }) {
+  const [atual, setAtual] = useState('');
+  const chave = entradas.map((e) => e.id).join('|');
+  useEffect(() => {
+    const ids = entradas.map((e) => e.id);
+    const calcular = () => {
+      let cur = ids[0] || '';
+      for (const id of ids) { const el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= 140) cur = id; }
+      setAtual(cur);
+    };
+    calcular();
+    window.addEventListener('scroll', calcular, { passive: true });
+    return () => window.removeEventListener('scroll', calcular);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chave]);
+  if (entradas.length < 3) return null;
+  return (
+    <nav className="pc-plano-interno" aria-label={t('Nesta página')}>
+      <span className="pc-plano-interno-rotulo">{t('Nesta página')}</span>
+      {entradas.map((e) => (
+        <button key={e.id} type="button" className="pc-plano-interno-link" aria-current={atual === e.id ? 'location' : undefined} onClick={() => rolarPara(e.id)}>{e.label}</button>
+      ))}
+    </nav>
+  );
+}
+
+function entradasDe(pagina: PaginaPlano, secs: SecaoPlano[], p: Painel): Entrada[] {
+  const L: Entrada[] = [];
+  if (pagina === 'fazer') (QUANDO_REC as any[]).forEach(([q, rot]) => { if (p.recs.some((r) => r.quando === q)) L.push({ id: 'sec-q-' + q, label: String(tr(rot)) }); });
+  if (pagina === 'custa' && p.temNumeros) L.push({ id: 'sec-dotacao', label: t('Dotação a solicitar por exercício') });
+  secs.filter((x) => x.pagina === pagina && x.tipo !== 'bloco' && x.tipo !== 'faltas' && x.h && x.id !== 'recs').forEach((x) => {
+    if (x.tipo === 'figura') { L.push({ id: 'sec-' + x.id, label: String(x.h) }); return; }
+    if (x.sub && !(pagina === 'custa' && !x.det)) return;
+    L.push({ id: ancoraDe(x), label: String(x.h).replace(/^[AB]\d\.\s*/, '') });
+  });
+  if (pagina === 'apendice' && p.lacunas.total) L.push({ id: 'faltam', label: t('Respostas que faltam') });
+  return L;
+}
+
+// ----------------------------------------------------------- a página
 export function Plano({ pagina }: { pagina: PaginaPlano }) {
   const s = useCaso();
   const p = usePainel(s);
-  const { secs, principal } = useMemo(() => {
+  const dados = useMemo(() => {
     sincronizar(s);
     const brutas = secoesPlano(s, { figura: figuraTCO });
     const secs = (brutas as any[]).map((x) => trSecao(x)) as SecaoPlano[];
-    let principal = '';
-    try { principal = String((painelPlano(s, secs as any) as any).principal || ''); } catch (e) { principal = ''; }
-    return { secs, principal: principal || (p.recs.find((r) => r.prioridade === 'alta') || p.recs[0] || { texto: '' }).texto };
+    let pp: any = {};
+    try { pp = painelPlano(s, secs as any); } catch (e) { pp = {}; }
+    const principal = String(pp.principal || '') || (p.recs.find((r) => r.prioridade === 'alta') || p.recs[0] || { texto: '' }).texto;
+    return { secs, principal, fatos: (pp.fatos || []) as [string, string][], graf: (pp.graf || null) as { anos: number[]; dot: number[] } | null };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.caso, s.ctx, s.resp, s.origem, s.custo, s.moeda, s.exemplo, s.lang, p]);
+  const { secs, principal, fatos, graf } = dados;
+
+  // Ctrl+P: o documento traz as cinco páginas, uma por folha, com tudo aberto (PLA-07)
+  const [imprimindo, setImprimindo] = useState(false);
+  useEffect(() => {
+    const antes = () => flushSync(() => setImprimindo(true));
+    const depois = () => setImprimindo(false);
+    window.addEventListener('beforeprint', antes);
+    window.addEventListener('afterprint', depois);
+    return () => { window.removeEventListener('beforeprint', antes); window.removeEventListener('afterprint', depois); };
+  }, []);
+
   const conta = (pg: string) => secs.filter((x) => x.pagina === pg && !x.sub && x.tipo !== 'bloco').length;
   const itens: PlanIndexItem[] = [
     { id: 'resumo', label: t('Em resumo'), href: href.plano('resumo'), active: pagina === 'resumo' },
@@ -200,35 +459,57 @@ export function Plano({ pagina }: { pagina: PaginaPlano }) {
   ];
   const secundarios: PlanIndexItem[] = [
     { id: 'apendice', label: t('Apêndice'), href: href.plano('apendice'), active: pagina === 'apendice' },
-    { id: 'faltam', label: t('Respostas que faltam'), href: href.plano('faltam'), count: p.faltam || undefined, active: pagina === 'faltam' },
+    { id: 'faltam', label: t('Respostas que faltam'), href: href.plano('faltam'), count: p.lacunas.total || undefined, active: pagina === 'faltam' },
   ];
-  const voltar = faltamDe(s)[0];
+  const voltar = p.lacunas.itens.find((i) => i.essencial);
+
+  // "de onde vem?" dos seis números de "Quanto custa": os quatro KPIs, o Ano 0 por participante e a saída
+  const idsA2: KpiOuSaida[] = ['kpi.ano0', 'kpi.total', 'kpi.anual', 'kpi.porAluno', 'kpi.ano0', 'saida'];
+  const origemA2 = (i: number, fim: boolean) => {
+    const k = p.kpis[[0, 1, 2, 3, 0, 1][i]];
+    return k && p.temNumeros ? <OrigemKpi s={s} id={idsA2[i]} origem={k.origem} rotuloKpi={String((secs.find((x) => x.id === 'A2' && !x.sub)?.kv || [])[i]?.[0] || k.label)} alinharAoFim={fim} /> : undefined;
+  };
+  const extraA2 = (
+    <>
+      {p.temNumeros ? <><BarrasCamadas p={p} />{graf ? <GraficoDotacao anos={graf.anos} dot={graf.dot} /> : null}</> : <a href={href.campo('tipoTec')}>{t('Ir à pergunta')}</a>}
+    </>
+  );
+
+  const conteudo = (pg: PaginaPlano | 'faltam') => (
+    pg === 'resumo' ? <Resumo s={s} p={p} principal={principal} fatos={fatos} />
+      : pg === 'fazer' ? <Fazer p={p} secs={secs} />
+        : pg === 'custa' ? <Pagina titulo={t('Quanto custa')} secs={secs} pagina="custa" extra={{ A2: extraA2 }} kpiOrigem={{ A2: origemA2 }} />
+          : pg === 'exigir' ? <Pagina titulo={t('O que exigir')} intro={t('O que pedir na contratação: o arranjo de aquisição, as cláusulas de custo, dados e saída, a diligência proporcional ao risco e os documentos do dossiê.')} secs={secs} pagina="exigir" />
+            : pg === 'apendice' ? <><Pagina titulo={t('Apêndice')} secs={secs} pagina="apendice" /><Faltam p={p} /></>
+              : <><h1 className="pc-plano-titulo">{t('Respostas que faltam')}</h1><Faltam p={p} semTitulo /></>
+  );
+
   return (
     <Shell nav={false} plano={false} contexto={t('Plano de contratação')}>
-      <div className="pc-plano-pagina">
-        <PlanIndex zoneLabel={t('Neste plano')} items={itens} secondary={secundarios} note={<BotaoPDF s={s} variante="secondary" />} />
-        <div className="pc-plano-conteudo">
-          <div className="pc-botoes pc-plano-acoes">
-            <Button variant="secondary" size="sm" href={voltar ? href.pergunta(voltar.capitulo, voltar.id) : href.abertura(1)}>
-              {voltar ? t('Voltar às perguntas · {n} faltam', { n: p.faltam }) : t('Rever as respostas')}
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => baixarArquivo(nomeArqCaso(s.estado()), textoCaso(s.estado()))}>{t('Exportar caso')}</Button>
-            <BotaoPDF s={s} />
+      <ModoImpressao.Provider value={imprimindo}>
+        <div className="pc-plano-pagina">
+          <PlanIndex zoneLabel={t('Neste plano')} items={itens} secondary={secundarios} note={<BotaoPDF s={s} variante="secondary" />} />
+          <div className="pc-plano-conteudo">
+            <div className="pc-botoes pc-plano-acoes">
+              <Button variant="secondary" size="sm" href={voltar ? voltar.href : href.abertura(1)}>
+                {voltar ? t('Voltar às perguntas · {n} faltam', { n: p.lacunas.essencial }) : t('Rever as respostas')}
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => { void exportarCaso(); }}>{t('Exportar caso')}</Button>
+              <BotaoPDF s={s} />
+            </div>
+            {imprimindo ? null : <IndiceInterno key={pagina} entradas={entradasDe(pagina, secs, p)} />}
+            {imprimindo
+              ? PAGINAS.map((pg) => <div key={pg} className="pc-folha">{conteudo(pg)}</div>)
+              : conteudo(pagina)}
+            <nav className="pc-plano-proxima" aria-label={t('Páginas do plano')}>
+              {PAGINAS.filter((x) => x !== pagina).map((x) => (
+                <a key={x} href={href.plano(x)}>{t(TITULO_PAGINA[x])}</a>
+              ))}
+            </nav>
+            <Rodape />
           </div>
-          {pagina === 'resumo' ? <Resumo s={s} p={p} secs={secs} principal={principal} />
-            : pagina === 'fazer' ? <Fazer p={p} secs={secs} />
-              : pagina === 'custa' ? <Pagina titulo={t('Quanto custa')} secs={secs} pagina="custa" antes={p.temNumeros ? <BarrasCamadas p={p} /> : null} />
-                : pagina === 'exigir' ? <Pagina titulo={t('O que exigir')} intro={t('O que pedir na contratação: o arranjo de aquisição, as cláusulas de custo, dados e saída, a diligência proporcional ao risco e os documentos do dossiê.')} secs={secs} pagina="exigir" />
-                  : pagina === 'apendice' ? <><Pagina titulo={t('Apêndice')} secs={secs} pagina="apendice" /><Faltam s={s} /></>
-                    : <><h1 className="pc-plano-titulo">{t('Respostas que faltam')}</h1><Faltam s={s} /></>}
-          <nav className="pc-plano-proxima" aria-label={t('Páginas do plano')}>
-            {(['resumo', 'custa', 'fazer', 'exigir', 'apendice'] as const).filter((x) => x !== pagina).map((x) => (
-              <a key={x} href={href.plano(x)}>{t(({ resumo: 'Em resumo', custa: 'Quanto custa', fazer: 'O que fazer', exigir: 'O que exigir', apendice: 'Apêndice' } as const)[x])}</a>
-            ))}
-          </nav>
-          <Rodape />
         </div>
-      </div>
+      </ModoImpressao.Provider>
     </Shell>
   );
 }

@@ -1,0 +1,168 @@
+/* Calculadora do modo Refinar (#/refinar). Só tokens do Prumo; propriedades lógicas (árabe); nada passa de 400 px. */
+.rf { display: flex; flex-direction: column; gap: var(--space-5); max-width: 1040px; min-width: 0; }
+.rf-topo { display: flex; flex-direction: column; gap: var(--space-2); }
+.rf-voltar { font-size: 14px; color: var(--primary); align-self: flex-start; text-decoration: none; }
+.rf-voltar:hover { text-decoration: underline; }
+.rf-lead { font-size: 15px; line-height: 23px; color: var(--ink-2); max-width: 75ch; }
+.rf-nota, .rf-dica { font-size: 13px; line-height: 18px; color: var(--muted); max-width: 80ch; margin: 0; }
+.rf-paragrafo { font-size: 15px; line-height: 23px; color: var(--ink-2); max-width: 75ch; margin: 0; }
+.rf-destaque { font-size: 15px; line-height: 22px; color: var(--ink); margin: 0; }
+.rf-mudo { color: var(--muted); font-weight: 400; }
+.rf-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* abas (links: cada aba tem endereço próprio) */
+.rf-abas { display: flex; flex-wrap: wrap; gap: var(--space-1); border-bottom: 1px solid var(--line); }
+.rf-aba {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--space-4); font-size: 15px; font-weight: 600;
+  color: var(--ink-2); text-decoration: none; border-bottom: 3px solid transparent; margin-bottom: -1px;
+}
+.rf-aba:hover { color: var(--ink); background: var(--surface-2); }
+.rf-aba[aria-current='page'] { color: var(--primary); border-bottom-color: var(--primary); }
+.rf-aba:focus-visible, .rf-voltar:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* painel de moeda, base e ações */
+.rf-painel { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-0); }
+.rf-base { display: flex; flex-direction: column; gap: var(--space-2); }
+.rf-moeda { display: flex; flex-direction: column; gap: var(--space-2); }
+.rf-moeda-linha { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: flex-start; }
+.rf-botoes { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+.rf-check { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 44px; font-size: 15px; color: var(--ink); cursor: pointer; }
+.rf-check input { width: 20px; height: 20px; accent-color: var(--primary); }
+.rf-check input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* números-chave */
+.rf-numeros { display: flex; flex-direction: column; gap: var(--space-2); }
+.rf-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-3); }
+.rf-kpis .pr-kpitile-value { font-size: 24px; line-height: 30px; white-space: normal; }
+
+/* campos */
+.rf-rotulo { font-size: 13px; line-height: 18px; color: var(--muted); }
+.rf-campo { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.rf-campo--texto { flex: 2 1 260px; }
+.rf-campo--sel { align-items: flex-start; }
+.rf-campo--sel .rf-select { max-width: min(340px, 100%); }
+.rf-select.rf-select--moeda { max-width: 100%; }
+.rf-campo--texto .pr-textfield-input { min-width: 0; }
+.rf-campo--oculto .pr-textfield-label, .rf-campo--oculto .rf-rotulo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.rf-campo .pr-textfield-input[size] { max-width: 100%; }
+.rf-select {
+  min-height: 44px; max-width: 100%; border: 1px solid var(--line-control); border-radius: var(--radius-md); padding: 0 var(--space-3);
+  background: var(--surface-1); color: var(--ink); font-size: 15px;
+}
+.rf-select:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.rf-select--moeda { width: 340px; }
+.rf-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-4); align-items: start; }
+.rf-pilha { display: flex; flex-direction: column; gap: var(--space-4); }
+.rf-anos { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.rf-anos-legenda { padding: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--ink); margin-bottom: var(--space-2); }
+.rf-anos-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: var(--space-3); }
+.rf-anos-grade .pr-textfield-input[size] { width: 100%; }
+
+/* linhas e cartões editáveis */
+.rf-linha { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-4); align-items: flex-end; min-width: 0; }
+.rf-linha-acao { display: flex; align-items: flex-end; min-height: 44px; }
+.rf-linha-nome { flex: 1 1 220px; font-size: 15px; line-height: 22px; color: var(--ink); align-self: center; }
+.rf-cartao { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-1); min-width: 0; }
+.rf-parte { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); padding-inline-start: var(--space-3); border-inline-start: 3px solid var(--line); }
+.rf-etiqueta { display: inline-block; margin-inline-start: var(--space-2); padding: 0 var(--space-2); border-radius: var(--radius-pill); background: var(--surface-2); color: var(--ink-2); font-size: 13px; line-height: 20px; font-weight: 600; white-space: nowrap; }
+.rf-cartao > .rf-etiqueta { align-self: flex-start; margin-inline-start: 0; }
+.rf-parte > .rf-anos { flex: 1 1 360px; }
+.rf-linha-acao--fim { margin-inline-start: auto; }
+.rf-etiqueta--alerta { background: var(--high-bg); color: var(--ink); }
+
+/* seções */
+.rf-conteudo { display: flex; flex-direction: column; gap: var(--space-5); min-width: 0; }
+.rf-grupo-h { font-family: var(--font-serif); font-size: 24px; line-height: 30px; font-weight: 600; color: var(--ink); margin: var(--space-3) 0 0; }
+.rf-bloco { display: flex; flex-direction: column; gap: var(--space-4); padding-top: var(--space-5); border-top: 1px solid var(--line); min-width: 0; scroll-margin-top: var(--space-6); }
+.rf-bloco-cab { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; justify-content: space-between; }
+.rf-bloco-h { font-size: 20px; line-height: 26px; font-weight: 600; color: var(--ink); margin: 0; }
+.rf-bloco-acoes { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.rf-sub { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; scroll-margin-top: var(--space-6); }
+.rf-sub + .rf-sub { margin-top: var(--space-3); }
+.rf-sub-h { font-size: 16px; line-height: 22px; font-weight: 600; color: var(--ink); margin: 0; }
+.rf-sub-h4 { font-size: 15px; line-height: 20px; font-weight: 600; color: var(--ink-2); margin: var(--space-2) 0 0; }
+.rf-lista { margin: 0; padding-inline-start: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); font-size: 14px; line-height: 21px; color: var(--ink-2); max-width: 80ch; }
+.rf-fim { margin-top: var(--space-2); }
+[id^='rf-'] { scroll-margin-top: var(--space-6); }
+.rf-foco { outline: 3px solid var(--accent); outline-offset: 4px; border-radius: var(--radius-sm); transition: outline-color 400ms ease-out; }
+
+/* tabelas de resultado (a DataTable vira cartões em coluna ≤ 640 px; acima, rolagem só dentro da tabela) */
+.rf-tabela { min-width: 0; max-width: 100%; overflow-x: auto; }
+.rf-tabela .pr-datatable { max-width: none; }
+.rf-arv { display: inline-flex; align-items: flex-start; gap: var(--space-1); }
+.rf-arv--1 { padding-inline-start: var(--space-4); }
+.rf-arv--2 { padding-inline-start: var(--space-7); }
+.rf-arv-tg {
+  display: inline-flex; align-items: center; gap: var(--space-2); min-height: 32px; padding: 0 var(--space-1); border: 0; background: none;
+  color: var(--ink); font: inherit; text-align: start; cursor: pointer; border-radius: var(--radius-sm);
+}
+.rf-arv-tg:hover { background: var(--surface-2); }
+.rf-arv-tg:focus-visible, .rf-aba-ano:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.rf-abre { font-weight: 600; min-height: 44px; align-self: flex-start; }
+.rf-arv-folha { display: inline; }
+
+/* contas de cada ano */
+.rf-formula { font-size: 15px; line-height: 22px; font-weight: 600; color: var(--ink); margin: 0; font-variant-numeric: tabular-nums; }
+.rf-abas-ano { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.rf-aba-ano {
+  min-height: 44px; padding: 0 var(--space-3); border: 1px solid var(--line-control); border-radius: var(--radius-md); background: var(--surface-1);
+  color: var(--ink); font-size: 14px; cursor: pointer;
+}
+.rf-aba-ano[aria-pressed='true'] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); font-weight: 600; }
+.rf-contas { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.rf-conta {
+  display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto; gap: var(--space-2) var(--space-4); align-items: baseline;
+  padding: var(--space-2) 0; border-bottom: 1px solid var(--line); font-size: 14px; line-height: 20px;
+}
+.rf-conta-nome { color: var(--ink); min-width: 0; }
+.rf-conta-calc { color: var(--ink-2); font-variant-numeric: tabular-nums; min-width: 0; overflow-wrap: anywhere; }
+.rf-conta-v { text-align: end; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--ink); }
+.rf-conta--sub .rf-conta-nome { padding-inline-start: var(--space-5); color: var(--ink-2); }
+.rf-conta--soma { font-weight: 600; border-top: 2px solid var(--line-control); }
+@media (max-width: 640px) {
+  .rf-conta { grid-template-columns: minmax(0, 1fr) auto; }
+  .rf-conta-calc { grid-column: 1 / -1; grid-row: 2; }
+}
+
+/* gráficos: barras em SVG, rótulos em HTML */
+.rf-grafico { margin: 0; display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.rf-tornado, .rf-mc, .rf-barras { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.rf-tornado-linha, .rf-mc-linha, .rf-barras-linha {
+  display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); grid-template-areas: 'nome svg' 'nome val'; gap: var(--space-1) var(--space-4); align-items: center;
+}
+.rf-tornado-nome, .rf-mc-nome, .rf-barras-nome { grid-area: nome; font-size: 14px; line-height: 20px; color: var(--ink); }
+.rf-tornado-svg, .rf-mc-svg, .rf-barras-svg { grid-area: svg; width: 100%; height: 20px; display: block; }
+.rf-tornado-val, .rf-mc-val, .rf-barras-val { grid-area: val; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: 13px; line-height: 18px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .rf-tornado-linha, .rf-mc-linha, .rf-barras-linha { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'nome' 'svg' 'val'; }
+}
+.rf-cor-min { fill: var(--primary); }
+.rf-cor-max { fill: var(--accent); }
+.rf-cor-faixa { fill: var(--primary-tint); stroke: var(--primary); stroke-width: 0.3; }
+.rf-cor-mediana { fill: var(--ink); }
+.rf-cor-barra { fill: var(--primary); }
+.rf-eixo { stroke: var(--muted); stroke-width: 1; }
+.rf-amostra { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-inline-end: var(--space-1); vertical-align: middle; }
+.rf-amostra--min { background: var(--primary); }
+.rf-amostra--max { background: var(--accent); }
+.rf-legenda { display: inline-flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); align-items: center; }
+
+@media (max-width: 640px) {
+  .rf-painel { padding: var(--space-3); }
+  .rf-select--moeda { width: 100%; }
+  .rf-moeda-linha > .rf-campo { flex: 1 1 100%; }
+  .rf-grade { grid-template-columns: minmax(0, 1fr); }
+  .rf-anos-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rf-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rf-arv--2 { padding-inline-start: var(--space-4); }
+}
+@media (max-width: 400px) {
+  .rf-kpis { grid-template-columns: minmax(0, 1fr); }
+}
+@media print {
+  .rf-abas, .rf-painel .rf-botoes, .rf-voltar, .rf-fim { display: none; }
+}
+
+/* opções de arquitetura: nome e descrição em bloco */
+.rf-opcao { display: flex; flex-direction: column; gap: var(--space-1); }
+.rf-opcao-desc { font-size: 13px; line-height: 18px; font-weight: 400; color: var(--muted); }

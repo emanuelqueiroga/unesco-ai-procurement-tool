@@ -36,7 +36,7 @@
   cursor: pointer;
   /* rótulos longos quebram dentro do chip em vez de criar rolagem horizontal (largura mínima de 400 px) */
   white-space: normal;
-  text-align: left;
+  text-align: start;
   transition: background-color 200ms ease-out;
 }
 .pr-chip::before {

@@ -11,6 +11,7 @@ import { numerosDe } from '../../src/store/selectors';
 import { nomeArq } from '../../src/export/json';
 import { setDicionarios, setLang, setMoeda, setTabelaMoedas, grande, din, tr, CREDITO_MATRIZ, TIT_MATRIZ } from '../../src/domain';
 import { secoesPlano, painelPlano, trSecao, secoesDaPagina, PAGINAS_PLANO, PAGINA_SECAO, TIT_PAGINAS } from '../../src/plano/secoes.js';
+import { painelDe } from '../../src/percurso/painel';
 import { gerarPDF, nomeArqPDF, pdfTxt, quebrarCJK, carregarFontesPDF } from '../../src/plano/pdf.js';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
@@ -115,12 +116,14 @@ describe('secoesPlano', () => {
   it('caso em branco: plano parcial com as respostas que faltam', () => {
     const e = exemplo('novo');
     const secs = secoesPlano(e);
+    const P0 = painelDe(e);
     const ids = secs.filter((s: any) => !s.sub).map((s: any) => s.id);
     expect(ids).toEqual(['faltas', ...IDS]);
     const f = secs[0];
     expect(f.tipo).toBe('faltas');
     expect(f.pagina).toBe('apendice');
-    expect(f.p[0]).toMatch(/^Plano parcial: \d+ perguntas? sem resposta\.$/);
+    expect(f.p[0]).toMatch(/^Plano parcial: \d+ respostas? pendentes?\.$/);
+    expect(f.nEss + f.nRef).toBe(P0.lacunas.total);
     expect(f.list.length).toBeGreaterThan(5);
     expect(f.list.some((z: string) => /^1\.1\.\d/.test(z))).toBe(true);
     expect(f.irs.length).toBe(f.list.length);
@@ -131,8 +134,10 @@ describe('secoesPlano', () => {
     expect(ap.filter((s: any) => !s.sub).map((s: any) => s.id)).toEqual(['perfil', 'matriz', 'refs', 'faltas']);
     const P = painelPlano(e);
     expect(P.faltas && P.faltas.list.length).toBe(f.list.length);
-    // A2 com aviso de premissas padrão
-    expect(secs.find((s: any) => s.id === 'A2').pre[0]).toMatch(/^Estimativa baseada em premissas padrão: \d+ perguntas ainda sem resposta\.$/);
+    // A2: sem o tipo de tecnologia não há números (nada de valores inventados)
+    const a2 = secs.find((s: any) => s.id === 'A2');
+    expect(a2.semNumeros).toBe(true);
+    expect(P.semNumeros).toBe(true);
   });
 
   it('secoesDaPagina: cada página com as suas seções, na ordem do plano', () => {

@@ -38,6 +38,8 @@ const RESPOSTAS = {
   etapas: async (p) => { await caixa(p, /anos finais/); await p.locator('#pr-schoolsgrid-fund2-escolas').fill('48'); await p.locator('#pr-schoolsgrid-fund2-estudantes').fill('9000'); },
   prioridades: (p) => caixa(p, /^Educar com a IA/),
   problemas: (p) => caixa(p, /^Baixa proficiência em matemática/),
+  // a sugestão do 1.2.4 tem lacunas (____) e só conta como resposta quando a pessoa as preenche (PER-06)
+  problema: (p) => p.locator('[data-tela="problema"] textarea').first().fill('Metade dos estudantes dos anos finais não atinge o nível adequado em matemática; as turmas são grandes e não há reforço no contraturno.'),
   linhaBase: (p) => radio(p, /^Não$/),
   alternativa: (p) => radio(p, /^Ainda não/),
   governanca: async (p) => { const linhas = p.locator('.pc-gov-linha'); const n = await linhas.count(); for (let i = 0; i < n; i++) await linhas.nth(i).getByRole('button', { name: i < 2 ? 'Sim' : 'Em parte' }).click(); },
@@ -109,7 +111,9 @@ async function percorrer(b, largura) {
   ok(numeroApareceu, `${rotulo}: número não apareceu`);
   ok((await p.evaluate(() => location.hash)) === '#/plano', `${rotulo}: não terminou no plano`);
   await p.locator('.pc-plano-pagina').waitFor({ timeout: 5000 });
-  ok(await p.getByRole('link', { name: 'Rever as respostas' }).isVisible(), `${rotulo}: ainda há respostas faltando no fim`);
+  const semFalta = await p.getByRole('link', { name: 'Rever as respostas' }).isVisible();
+  if (!semFalta && process.env.E2E_DEBUG) { await p.evaluate(() => { location.hash = '#/plano/faltam'; }); await p.waitForTimeout(400); console.log((await p.locator('.pc-plano-pagina').innerText()).slice(0, 1200)); await p.evaluate(() => { location.hash = '#/plano'; }); await p.waitForTimeout(300); }
+  ok(semFalta, `${rotulo}: ainda há respostas faltando no fim`);
   const plano = await p.locator('main').innerText();
   ok(plano.includes('Rede Municipal de Exemplo'), `${rotulo}: plano sem o nome da rede`);
   ok(/Custo total, 3 anos/.test(plano), `${rotulo}: plano sem o custo total`);
@@ -185,11 +189,240 @@ async function idiomas(b) {
   await ctx.close();
 }
 
+// ---------------------------------------------------------------- release: rodapé, matriz, confirmação, refinar, "de onde vem?", árabe
+// abre a ferramenta num contexto novo (localStorage vazio), em português, e junta os erros de página
+async function abrirPt(b, largura = 1360, hash = '', exemplo = false) {
+  const ctx = await b.newContext({ viewport: { width: largura, height: 900 } });
+  const p = await ctx.newPage();
+  const erros = [];
+  p.on('pageerror', (e) => erros.push(e.message));
+  p.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) erros.push(m.text()); });
+  await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  await p.goto(BASE);
+  await p.locator('#sel-lang').waitFor({ state: 'attached' });
+  await p.selectOption('#sel-lang', 'pt');
+  await p.getByRole('heading', { level: 1, name: /se escreve enquanto você responde/ }).waitFor({ timeout: 5000 });
+  if (exemplo) {
+    await p.getByRole('button', { name: 'Ver um plano de exemplo' }).click();
+    await p.waitForFunction(() => location.hash === '#/plano', null, { timeout: 5000 });
+    await p.locator('.pc-plano-pagina').waitFor({ timeout: 5000 });
+  }
+  if (hash) { await irPara(p, hash); }
+  return { ctx, p, erros };
+}
+async function irPara(p, hash) {
+  await p.evaluate((h) => { location.hash = h; }, hash);
+  await p.waitForFunction((h) => location.hash === h, hash, { timeout: 5000 });
+  await p.waitForTimeout(250);
+}
+
+// 1. o rodapé institucional aparece no início, numa pergunta, no plano e no refinar
+async function rodape(b) {
+  const { ctx, p, erros } = await abrirPt(b, 1360, '', true);
+  await irPara(p, '#/');
+  for (const [onde, hash] of [['início', '#/'], ['pergunta', '#/capitulo/2/internet'], ['plano', '#/plano'], ['refinar', '#/refinar']]) {
+    await irPara(p, hash);
+    const r = p.locator('[data-testid="rodape"]');
+    await r.first().waitFor({ timeout: 5000 });
+    ok(await r.count() === 1, `rodapé (${onde}): esperava exatamente um rodapé, achou ${await r.count()}`);
+    ok(await r.first().isVisible(), `rodapé (${onde}): não está visível`);
+    ok(/Versão/.test(await p.locator('[data-testid="versao"]').first().innerText()), `rodapé (${onde}): sem a versão`);
+  }
+  ok(erros.length === 0, `rodapé: erros na página: ${erros.join(' | ')}`);
+  await ctx.close();
+}
+
+// 2. a matriz completa abre num diálogo com uma tabela; o Esc fecha e o foco volta ao botão
+async function matriz(b) {
+  const { ctx, p, erros } = await abrirPt(b);
+  const botao = p.getByRole('button', { name: 'Ver a matriz completa', exact: true });
+  await botao.click();
+  const dlg = p.getByRole('dialog');
+  await dlg.first().waitFor({ timeout: 5000 });
+  ok(await dlg.locator('table.pc-matriz-tabela').isVisible(), 'matriz: o diálogo não tem a tabela');
+  ok((await dlg.locator('tbody tr').count()) >= 7, 'matriz: menos de sete linhas de camadas');
+  ok((await dlg.locator('thead th').count()) >= 5, 'matriz: faltam as colunas das fases');
+  await p.keyboard.press('Escape');
+  await p.waitForTimeout(200);
+  ok(!(await p.locator('.pc-matriz').isVisible().catch(() => false)), 'matriz: não fechou com Esc');
+  ok(await botao.evaluate((el) => el === document.activeElement), 'matriz: o foco não voltou ao botão "Ver a matriz completa"');
+  // o botão "Matriz" do cabeçalho abre o mesmo diálogo, e "Ver na matriz" destaca uma fase
+  await p.getByRole('button', { name: 'Matriz', exact: true }).click();
+  await p.locator('.pc-matriz table').waitFor({ timeout: 5000 });
+  await p.keyboard.press('Escape');
+  await p.getByRole('button', { name: 'Ver na matriz', exact: true }).first().click();
+  await p.locator('.pc-matriz table').waitFor({ timeout: 5000 });
+  ok((await p.locator('.pc-matriz th[aria-current="true"]').count()) === 1, 'matriz: "Ver na matriz" não destacou a fase');
+  await p.keyboard.press('Escape');
+  ok(erros.length === 0, `matriz: erros na página: ${erros.join(' | ')}`);
+  await ctx.close();
+}
+
+// 3. "Começar em branco" com um caso editado pede confirmação; Cancelar mantém, confirmar apaga
+async function confirmacao(b) {
+  const { ctx, p, erros } = await abrirPt(b, 1360, '', true);
+  // exemplo ainda não editado: trocar não pergunta
+  await irPara(p, '#/');
+  ok(await p.getByText('Há um exemplo aberto neste navegador.').isVisible(), 'confirmação: início sem o aviso do exemplo aberto');
+  // editar uma resposta: o caso passa a "editado"
+  await irPara(p, '#/capitulo/1/local');
+  await p.locator('[data-tela="local"]').waitFor({ timeout: 5000 });
+  await p.getByLabel('Nome do lugar ou da rede').fill('Rede Editada de Teste');
+  await p.waitForTimeout(400);
+  await irPara(p, '#/');
+  ok(await p.getByText('Há um caso salvo neste navegador.').isVisible(), 'confirmação: após editar, o início não mostra "caso salvo"');
+  ok(await p.getByText(/apaga o caso salvo/).isVisible(), 'confirmação: sem o aviso de que começar em branco apaga o caso');
+  const branco = p.getByRole('button', { name: 'Começar em branco', exact: true });
+  await branco.click();
+  const dlg = p.getByRole('dialog', { name: 'Apagar o caso atual?' });
+  await dlg.waitFor({ timeout: 5000 });
+  ok(await dlg.getByRole('button', { name: 'Cancelar', exact: true }).evaluate((el) => el === document.activeElement), 'confirmação: o foco não começa em "Cancelar"');
+  ok(await dlg.getByRole('button', { name: 'Exportar o caso antes' }).isVisible(), 'confirmação: sem "Exportar o caso antes"');
+  await dlg.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  await p.waitForTimeout(200);
+  ok(!(await dlg.isVisible().catch(() => false)), 'confirmação: Cancelar não fechou o diálogo');
+  ok(await p.getByText('Há um caso salvo neste navegador.').isVisible(), 'confirmação: Cancelar não manteve o caso');
+  ok(!(await p.getByRole('link', { name: 'Começar', exact: true }).isVisible().catch(() => false)), 'confirmação: o link "Começar" apareceu após cancelar');
+  // Esc também cancela e devolve o foco
+  await branco.click();
+  await dlg.waitFor({ timeout: 5000 });
+  await p.keyboard.press('Escape');
+  await p.waitForTimeout(300);
+  ok(!(await dlg.isVisible().catch(() => false)) && await p.getByText('Há um caso salvo neste navegador.').isVisible(), 'confirmação: Esc não cancelou mantendo o caso');
+  ok(await branco.evaluate((el) => el === document.activeElement), 'confirmação: o foco não voltou ao botão "Começar em branco"');
+  // confirmar apaga
+  await branco.click();
+  await dlg.waitFor({ timeout: 5000 });
+  await dlg.getByRole('button', { name: 'Apagar e começar em branco' }).click();
+  await p.getByRole('link', { name: 'Começar', exact: true }).waitFor({ timeout: 5000 });
+  ok(!(await p.getByText('Há um caso salvo neste navegador.').isVisible().catch(() => false)), 'confirmação: o caso continuou depois de confirmar');
+  ok((await p.evaluate(() => location.hash)) === '#/', 'confirmação: não ficou no início');
+  ok(erros.length === 0, `confirmação: erros na página: ${erros.join(' | ')}`);
+  await ctx.close();
+}
+
+// 4. calculadora (Refinar): abas, formatação ao digitar, total que muda, sem rolagem horizontal a 400 px
+async function refinar(b) {
+  const { ctx, p, erros } = await abrirPt(b, 1360, '#/refinar/premissas', true);
+  await p.getByRole('heading', { level: 1, name: 'Custo total e orçamento' }).waitFor({ timeout: 5000 });
+  const abas = p.getByRole('navigation', { name: 'Abas da calculadora' });
+  ok((await abas.getByRole('link').count()) === 3, 'refinar: esperava três abas');
+  const aba = (nome) => abas.getByRole('link', { name: nome, exact: true });
+  ok((await aba('Premissas por ano').getAttribute('aria-current')) === 'page', 'refinar: a aba Premissas não está ativa');
+  ok(await p.locator('#rf-demanda').isVisible(), 'refinar: a aba Premissas não mostra a demanda');
+
+  // digitar em "Pessoas elegíveis, Ano 1": 1.600.000 formatado enquanto se digita e total que muda
+  const numeros = p.locator('.rf-numeros');
+  const antes = await numeros.innerText();
+  const campo = p.locator('[id="rf-demanda.E"]').getByLabel('Ano 1', { exact: true });
+  await campo.click();
+  await campo.press('Control+A');
+  await campo.press('Backspace');
+  await campo.pressSequentially('1600000', { delay: 20 });
+  ok((await campo.inputValue()) === '1.600.000', `refinar: o campo não formatou ao digitar (${await campo.inputValue()})`);
+  await campo.pressSequentially('0', { delay: 20 });
+  ok((await campo.inputValue()) === '16.000.000', `refinar: o campo não reformatou ao digitar mais um dígito (${await campo.inputValue()})`);
+  await campo.press('Backspace');
+  await p.waitForTimeout(300);
+  const depois = await numeros.innerText();
+  ok(depois !== antes, 'refinar: o total não mudou ao editar as pessoas elegíveis');
+  ok(/Custo total do ciclo de vida/.test(depois) && /US\$/.test(depois), 'refinar: números-chave sem o custo total');
+  await campo.blur();
+  ok((await campo.inputValue()) === '1.600.000', `refinar: o campo perdeu a formatação ao sair (${await campo.inputValue()})`);
+  ok(/refinado/.test(await numeros.innerText()), 'refinar: o número não passou a "refinado" depois da edição');
+
+  // as três abas trocam o conteúdo e o endereço
+  await aba('Ferramentas e licenças').click();
+  await p.waitForFunction(() => location.hash === '#/refinar/ferramentas', null, { timeout: 5000 });
+  await p.waitForTimeout(300);
+  ok((await aba('Ferramentas e licenças').getAttribute('aria-current')) === 'page', 'refinar: a aba Ferramentas não ficou ativa');
+  ok(!(await p.locator('#rf-demanda').isVisible().catch(() => false)), 'refinar: a aba Ferramentas ainda mostra a demanda');
+  const textoFerr = await p.locator('.rf-conteudo').innerText();
+  await aba('Cenários e sensibilidade').click();
+  await p.waitForFunction(() => location.hash === '#/refinar/cenarios', null, { timeout: 5000 });
+  await p.waitForTimeout(300);
+  ok((await aba('Cenários e sensibilidade').getAttribute('aria-current')) === 'page', 'refinar: a aba Cenários não ficou ativa');
+  const textoCen = await p.locator('.rf-conteudo').innerText();
+  ok(textoCen.length > 100 && textoCen !== textoFerr, 'refinar: a aba Cenários não trocou o conteúdo');
+  await aba('Premissas por ano').click();
+  await p.waitForFunction(() => location.hash === '#/refinar/premissas', null, { timeout: 5000 });
+  await p.waitForTimeout(300);
+  ok(await p.locator('#rf-demanda').isVisible(), 'refinar: voltar a Premissas não mostrou a demanda');
+  ok(erros.length === 0, `refinar: erros na página: ${erros.join(' | ')}`);
+  await ctx.close();
+
+  // 400 px: nenhuma das abas cria rolagem horizontal
+  const m = await abrirPt(b, 400, '#/refinar/premissas', true);
+  for (const [nome, hash] of [['premissas', '#/refinar/premissas'], ['ferramentas', '#/refinar/ferramentas'], ['cenários', '#/refinar/cenarios']]) {
+    await irPara(m.p, hash);
+    await m.p.locator('.rf-conteudo').waitFor({ timeout: 5000 });
+    ok((await m.p.locator('.rf-conteudo').innerText()).length > 100, `refinar 400px ${nome}: aba vazia`);
+    await semRolagemHorizontal(m.p, `refinar 400px ${nome}`);
+  }
+  ok(m.erros.length === 0, `refinar 400px: erros na página: ${m.erros.join(' | ')}`);
+  await m.ctx.close();
+}
+
+// 5. "de onde vem?" de um KPI do plano: origem, "Ajustar premissas" e Esc
+async function deOndeVem(b) {
+  const { ctx, p, erros } = await abrirPt(b, 1360, '#/plano', true);
+  const gatilho = p.getByRole('button', { name: 'de onde vem?' }).first();
+  await gatilho.scrollIntoViewIfNeeded();
+  ok((await gatilho.getAttribute('aria-expanded')) === 'false', 'de onde vem?: já começa aberto');
+  await gatilho.click();
+  const painel = p.locator('.pr-popover-painel').first();
+  await painel.waitFor({ timeout: 5000 });
+  ok((await gatilho.getAttribute('aria-expanded')) === 'true', 'de onde vem?: aria-expanded não mudou ao abrir');
+  const ajustar = painel.getByRole('link', { name: 'Ajustar premissas' });
+  ok(await ajustar.isVisible(), 'de onde vem?: sem o link "Ajustar premissas"');
+  ok(/^#\/refinar\/premissas/.test((await ajustar.getAttribute('href')) || ''), `de onde vem?: href inesperado (${await ajustar.getAttribute('href')})`);
+  await p.keyboard.press('Escape');
+  await p.waitForTimeout(200);
+  ok(!(await p.locator('.pr-popover-painel').count()), 'de onde vem?: não fechou com Esc');
+  ok(await gatilho.evaluate((el) => el === document.activeElement), 'de onde vem?: o foco não voltou ao gatilho');
+  // seguir o link leva à calculadora, na aba Premissas
+  await gatilho.click();
+  await p.locator('.pr-popover-painel').first().getByRole('link', { name: 'Ajustar premissas' }).click();
+  await p.waitForFunction(() => /^#\/refinar\/premissas/.test(location.hash), null, { timeout: 5000 });
+  await p.getByRole('heading', { level: 1, name: 'Custo total e orçamento' }).waitFor({ timeout: 5000 });
+  ok(true, 'de onde vem?: chegou à calculadora');
+  ok(erros.length === 0, `de onde vem?: erros na página: ${erros.join(' | ')}`);
+  await ctx.close();
+}
+
+// 6. árabe: o plano e a calculadora ficam em RTL, sem rolagem horizontal a 400 px
+async function arabe(b) {
+  const { ctx, p, erros } = await abrirPt(b, 400, '', true);
+  await p.selectOption('#sel-lang', 'ar');
+  await p.waitForTimeout(400);
+  for (const [nome, hash] of [['calculadora', '#/refinar/premissas'], ['plano', '#/plano']]) {
+    await irPara(p, hash);
+    await p.locator(hash === '#/plano' ? '.pc-plano-pagina' : '.rf-conteudo').waitFor({ timeout: 5000 });
+    ok((await p.evaluate(() => document.documentElement.dir)) === 'rtl', `árabe ${nome}: html sem dir="rtl"`);
+    ok((await p.evaluate(() => document.documentElement.lang)) === 'ar', `árabe ${nome}: html sem lang="ar"`);
+    ok((await p.evaluate(() => getComputedStyle(document.body).direction)) === 'rtl', `árabe ${nome}: direção calculada não é rtl`);
+    await semRolagemHorizontal(p, `árabe 400px ${nome}`);
+  }
+  for (const aba of ['ferramentas', 'cenarios']) {
+    await irPara(p, '#/refinar/' + aba);
+    await p.locator('.rf-conteudo').waitFor({ timeout: 5000 });
+    await semRolagemHorizontal(p, `árabe 400px ${aba}`);
+  }
+  ok(erros.length === 0, `árabe: erros na página: ${erros.join(' | ')}`);
+  await ctx.close();
+}
+
 const b = await chromium.launch();
 try {
   for (const w of [1360, 400]) { console.log(`percurso em ${w}px`); await percorrer(b, w); }
   console.log('gaveta no celular'); await gavetaCelular(b);
   console.log('nove idiomas'); await idiomas(b);
+  console.log('rodapé'); await rodape(b);
+  console.log('matriz'); await matriz(b);
+  console.log('confirmação'); await confirmacao(b);
+  console.log('refinar'); await refinar(b);
+  console.log('de onde vem?'); await deOndeVem(b);
+  console.log('árabe'); await arabe(b);
 } finally { await b.close(); servidor.close(); }
 console.log(`${verificacoes - falhas} de ${verificacoes} verificações ok`);
 process.exit(falhas ? 1 : 0);

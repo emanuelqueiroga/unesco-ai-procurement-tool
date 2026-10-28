@@ -22,6 +22,8 @@ import {
   din, mil, grande, pct, unidMil, totaisCtx, etapasAtivas, numerosCusto, cfgAtual, somaPorCamada, fmtInt,
   TIPO_REC, QUANDO_REC, PRIO_REC, TIT_REC, TXT_REC, recPorqueTexto, recomendacoesCaso, NOTA_MATRIZ_CUSTO, CREDITO_MATRIZ,
 } from '../domain/index.ts';
+// mesmos critérios da página (percurso/painel.ts): números só com o tipo de tecnologia, origem dos KPIs e lacunas nas duas classes
+import { painelDe, tituloParcial, textoLacunas, rotuloOrigem, campoDoNumero, rotuloResposta } from '../percurso/painel.ts';
 import { NOME_FERRAMENTA, TIT_PAGINAS, ROT_ESTADO, TXT_MATRIZ, secoesPlano, secoesDaPagina, trSecao, copiaEstado, slugPlano, nomeCamada } from './secoes.js';
 
 // fontes geradas (opcional): import.meta.glob devolve {} quando o arquivo não existe
@@ -75,6 +77,9 @@ const PDF_TXT = {
   fEtapas: 'Etapas e estudantes', fApl: 'Aplicações', fQuem: 'Quem usa', fTec: 'Tecnologia e pagamento', fTeste: 'Teste', fEscala: 'Escala',
   estudantes: '{0} estudantes', escolas: '{0} escolas', pessoas: '{0} pessoas na rede', horiz: 'horizonte de {0} anos',
   acao: 'Ação', prio: 'Prioridade',
+  semNumeros: 'Ainda sem números', semNumerosDet: 'Os números do plano aparecem quando você disser o tipo de tecnologia da ferramenta (pergunta 2.3.4).',
+  premissas1: 'Estimativa com 1 resposta a confirmar (premissa padrão ou sugestão).', premissasN: 'Estimativa com {0} respostas a confirmar (premissa padrão ou sugestão).',
+  faltasEss: 'Perguntas do Essencial', faltasRef: 'Perguntas de refinamento',
 };
 const tP = k => tr(PDF_TXT[k]);
 const tPn = (k, n) => tr(PDF_TXT[k].replace('{0}', String(n))).replace('{0}', String(n));
@@ -145,22 +150,25 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
   const nomeCaso = caso.titulo || ctx.olhando || tr('Caso sem título');
   const raw = secoesPlano(estado, { figura: opts.figura || false });
   const secs = raw.map(trSecao);
+  // P: o painel da página (mesma fonte): números só com o tipo de tecnologia, origem de cada KPI, lacunas e ações
+  const P = painelDe(estado);
   let N = null;
-  try { N = numerosCusto(cfgAtual(copiaEstado(estado))); if (N && !N.camadas) N.camadas = somaPorCamada(N.av); } catch (e) { console.warn(e); N = null; }
+  if (P.temNumeros) { try { N = numerosCusto(cfgAtual(copiaEstado(estado))); if (N && !N.camadas) N.camadas = somaPorCamada(N.av); } catch (e) { console.warn(e); N = null; } }
   let R = [];
   try { R = recomendacoesCaso(copiaEstado(estado)) || []; } catch (e) { console.warn(e); R = []; }
+  if (!P.recs.length) R = [];
+  // o "Por quê" mostra o rótulo da resposta, nunca o valor interno (nao_sei)
+  R = R.map(r => { const pq = r.porque || {}; if (!pq.resposta) return r; const campo = campoDoNumero(pq.n); return Object.assign({}, r, { porque: Object.assign({}, pq, { resposta: String(pq.resposta).split('; ').map(z => rotuloResposta(campo, z)).join('; ') }) }); });
   const altas = R.filter(r => r.prioridade === 'alta');
   const resumoRaw = raw.find(s => s.id === 'resumo') || { kv: [] };
   const KV = {}; (resumoRaw.kv || []).forEach(([k, v]) => { KV[k] = v; });
   const kvT = k => { const v = KV[k]; return v == null || v === '' ? '' : tr(v); };
   const faltas = secs.find(s => s.tipo === 'faltas');
   const a1 = secs.find(s => s.id === 'A1') || { p: [] };
-  const KPIS = N ? [
-    [grande(N.ano0), tr('Custo do Ano 0 (prova de conceito ou piloto)')],
-    [grande(N.total), tr('Custo total do ciclo de vida')],
-    [grande(N.anual), tr('Dotação média por ano de operação')],
-    [din(N.porAluno, 2), tr('Por usuário ativo por ano')],
-  ] : [];
+  // valores e origens do painel da página (mesma formatação); [valor, rótulo, origem em texto]
+  const ROT_KPI = [tr('Custo do Ano 0 (prova de conceito ou piloto)'), tr('Custo total do ciclo de vida'), tr('Dotação média por ano de operação'), tr('Por usuário ativo por ano')];
+  const KPIS = N ? P.kpis.map((k, i) => [k.value || '—', ROT_KPI[i], rotuloOrigem(k.origem)]) : [];
+  const ORIG_A2 = [0, 1, 2, 3, 0, 1].map(i => (KPIS[i] || [])[2]);   // os 6 cartões de A2: os quatro KPIs, o Ano 0 por participante e a saída
   const tarde = [];   // desenhos que dependem de números de página (feitos no fim)
 
   // ---------------------------------------------------------------- primitivas
@@ -205,10 +213,12 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
     fonte(11.5, 'bold', cor || C.marca); L.forEach(l => { doc.text(l, M, y + 11.5); y += 15.5; });
     y += 3;
   };
-  const cartaoKPI = (x, yy, w, h, v, l, cor, sizeV) => {
+  const cartaoKPI = (x, yy, w, h, v, l, cor, sizeV, orig) => {
     doc.setDrawColor(...C.linha); doc.setLineWidth(0.7); doc.setFillColor(...C.branco);
     doc.roundedRect(x, yy, w, h, 6, 6, 'FD');
     doc.setFillColor(...cor); doc.rect(x + 12, yy, 28, 3, 'F');
+    // origem do número (padrão, sugerido, informado, refinado), em texto, no canto do cartão
+    if (orig) { fonte(8, 'bold', C.marca); doc.text(pdfTxt(orig), x + w - 8, yy + 13, { align: 'right' }); }
     fonte(sizeV, 'bold', C.titulo); doc.text(pdfTxt(v), x + 12, yy + 14 + sizeV);
     const L = corta(quebra(l, 8.6, w - 24), 3);
     fonte(8.6, 'normal', C.muted); L.forEach((z, i) => doc.text(z, x + 12, yy + 24 + sizeV + 2 + i * 11.4));
@@ -347,10 +357,18 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
     // KPIs 2×2
     if (KPIS.length) {
       const g = 12, w = (LW - g) / 2, h = 68;
-      KPIS.forEach(([v, l], i) => cartaoKPI(M + (i % 2) * (w + g), y + Math.floor(i / 2) * (h + g), w, h, v, l, C.fasesS[i], 20));
+      KPIS.forEach(([v, l, o], i) => cartaoKPI(M + (i % 2) * (w + g), y + Math.floor(i / 2) * (h + g), w, h, v, l, C.fasesS[i], 20, o));
       y += 2 * h + g;
-      fonte(8, 'italic', C.muted); doc.text(pdfTxt(tP('ilustr')), M, y + 14);
+      fonte(8, 'italic', C.muted);
+      doc.text(pdfTxt(tP('ilustr') + (P.premissas ? ' ' + (P.premissas === 1 ? tP('premissas1') : tPn('premissasN', P.premissas)) : '')), M, y + 14);
       y += 22;
+    } else if (!N) {
+      // sem o tipo de tecnologia (2.3.4) não há números: o PDF diz isso, como a página
+      const h = 60;
+      doc.setFillColor(...C.fundo); doc.roundedRect(M, y, LW, h, 8, 8, 'F');
+      fonte(11, 'bold', C.titulo); doc.text(pdfTxt(tP('semNumeros')), M + 16, y + 22);
+      fonte(9.2, 'normal', C.muted); quebra(P.temNumeros ? tP('semCusto') : tP('semNumerosDet'), 9.2, LW - 32).forEach((l, i) => doc.text(l, M + 16, y + 37 + i * 12));
+      y += h + 12;
     }
     // "Neste plano": índice com páginas e links (preenchido no fim, quando as páginas são conhecidas)
     const yI = y + 14, hIsen = quebra(tr(FAIXA_PLANO), 8.6, LW - 24).length * 11.8 + 16, limI = H - 40 - hIsen - 22;
@@ -400,16 +418,19 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
     novaPag(); pagResumo = doc.getNumberOfPages(); INDICE.push([tP('resumo'), pagResumo, 0]);
     tituloSec(tP('resumo'), tP('introResumo'));
     if (faltas) {
-      const s = faltas.list.length === 1 ? tP('parcial1') : tPn('parcialN', faltas.list.length);
-      const h = 26;
+      const h = 40, L = P.lacunas;
+      const s = tituloParcial(L);
       doc.setFillColor(...C.ambar); doc.setDrawColor(...C.ambarL); doc.setLineWidth(0.6); doc.roundedRect(M, y, LW, h, 5, 5, 'FD');
       fonte(9.6, 'bold', C.media); doc.text(pdfTxt(s), M + 12, y + 16.5);
-      const w1 = doc.getTextWidth(pdfTxt(s)), y0 = y, p0 = pagResumo;
+      fonte(8.6, 'normal', C.media); doc.text(pdfTxt(textoLacunas(L)), M + 12, y + 31);
+      const y0 = y, p0 = pagResumo;
+      fonte(9.6, 'bold', C.media);
+      const w1b = doc.getTextWidth(pdfTxt(s));
       tarde.push(() => {
         if (!pagFaltas) return;
         doc.setPage(p0); fonte(9.6, 'normal', C.media);
         const t = pdfTxt(tPn('verLista', pagFaltas));
-        doc.text(t, M + 18 + w1, y0 + 16.5); ehLink(M, y0, LW, h, pagFaltas);
+        doc.text(t, M + 18 + w1b, y0 + 16.5); ehLink(M, y0, LW, h, pagFaltas);
       });
       y += h + 14;
     }
@@ -423,11 +444,14 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
       fonte(10.5, 'bold', C.titulo); L.forEach((l, i) => doc.text(l, M + 18, y + 33 + i * 14));
       y += h + 14;
     }
-    if (!N) { texto(tP('semCusto'), { cor: C.muted }); }
+    if (!N) {
+      if (P.temNumeros) texto(tP('semCusto'), { cor: C.muted });
+      else { texto(tP('semNumeros'), { size: 11, b: true, cor: C.titulo, after: 2 }); texto(tP('semNumerosDet'), { cor: C.muted }); }
+    }
     else {
       // 4 KPIs
       const g = 10, w = (LW - 3 * g) / 4, h = 68;
-      KPIS.forEach(([v, l], i) => cartaoKPI(M + i * (w + g), y, w, h, v, l, C.fasesS[i], 14.5));
+      KPIS.forEach(([v, l, o], i) => cartaoKPI(M + i * (w + g), y, w, h, v, l, C.fasesS[i], 14.5, o));
       y += h + 18;
       // barras por camada (custo total do ciclo)
       const cam = N.camadas || { total: {} };
@@ -765,7 +789,7 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
     const g = 10, por = 3, w = (LW - (por - 1) * g) / por, h = 62;
     const lin = Math.ceil(kv.length / por);
     cabe(lin * (h + g) + 26);   // com a legenda que vem logo depois
-    kv.forEach(([k, v], i) => cartaoKPI(M + (i % por) * (w + g), y + Math.floor(i / por) * (h + g), w, h, v, k, corB, 13));
+    kv.forEach(([k, v], i) => cartaoKPI(M + (i % por) * (w + g), y + Math.floor(i / por) * (h + g), w, h, v, k, corB, 13, ORIG_A2[i]));
     y += lin * (h + g) + 4;
   };
   // Figura 1 numa página própria: largura total, proporção mantida, legenda e crédito abaixo
@@ -859,7 +883,11 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
     if (s.tipo === 'faltas') {
       novaPag(); pagFaltas = doc.getNumberOfPages(); INDICE.push([s.h, pagFaltas, 1]);
       tituloSec(s.h, (s.p || []).join(' '), C.media);
-      s.list.forEach(z => texto(z, { size: 10, ind: 13, after: 3, bullet: true, corBullet: C.media }));
+      // as duas classes: perguntas do Essencial e de refinamento (a mesma contagem do aviso do Em resumo)
+      const nE = s.nEss == null ? s.list.length : s.nEss;
+      const grupo = (tit, itens) => { if (!itens.length) return; if (s.nEss != null) subtitulo(tit + ' (' + itens.length + ')', C.media, 40); itens.forEach(z => texto(z, { size: 10, ind: 13, after: 3, bullet: true, corBullet: C.media })); };
+      grupo(tP('faltasEss'), s.list.slice(0, nE));
+      grupo(tP('faltasRef'), s.list.slice(nE));
       return;
     }
     secao(s);

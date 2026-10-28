@@ -1,0 +1,96 @@
+@import './shell.css';
+/* Moldura (pacote transversal): faixa de atalhos, faixas de aviso, rodapé institucional, matriz camadas × fases,
+   colar dados e impressão. Só tokens do Prumo; texto nunca abaixo de 13 px; propriedades lógicas (árabe). */
+
+.pc-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* faixa de atalhos sob o cabeçalho (abaixo de 1100 px, quando não cabem no cabeçalho) */
+.pc-atalhos { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--line); background: var(--surface-1); }
+.pc-atalhos .pr-segmented { align-self: center; }
+
+/* faixas de aviso: caso ilustrativo (PER-17) e armazenamento que não salva (TRA-18) */
+.pc-faixa { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); align-items: center; justify-content: center; padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--line); font-size: 14px; line-height: 20px; color: var(--ink); text-align: center; }
+.pc-faixa--exemplo { background: var(--info-bg); }
+.pc-faixa--atencao { background: var(--warn-bg); border-bottom-color: var(--warn); font-weight: 600; }
+
+/* aviso de tradução preliminar, com botão de fechar (TRA-14) */
+.pc-aviso-trad { align-items: flex-start; flex-wrap: nowrap; }
+.pc-aviso-trad-textos { flex: 1 1 auto; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); justify-content: center; min-width: 0; }
+.pc-aviso-trad-fechar { flex: none; width: 36px; height: 36px; margin-block: -6px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--ink); font-size: 22px; line-height: 1; cursor: pointer; }
+.pc-aviso-trad-fechar:hover { background: var(--surface-2); }
+
+/* rodapé institucional (TRA-03, TRA-04): logos, vínculo, isenção, versão */
+.pc-app > .pc-rodape { margin: 0; padding: var(--space-5); border-top: 1px solid var(--line); background: var(--surface-0); max-width: none; display: flex; align-items: flex-start; gap: var(--space-5); font-size: 13px; line-height: 18px; color: var(--ink-2); }
+.pc-rodape-logos { gap: var(--space-3); }
+.pc-rodape-logo { height: 32px; width: auto; display: block; }
+.pc-rodape-texto { display: flex; flex-direction: column; gap: var(--space-2); max-width: 860px; min-width: 0; }
+.pc-rodape-vinculo { font-weight: 600; color: var(--ink); }
+.pc-rodape-aviso { color: var(--ink); }
+.pc-rodape-versao { color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .pc-app > .pc-rodape { flex-direction: column; padding: var(--space-5) var(--space-4); } }
+@media (max-width: 1100px) { .pc-app > .pc-rodape { padding-bottom: 96px; } }   /* a gaveta do plano fica fixa embaixo */
+
+/* início: o que cada capítulo exige */
+.pc-capitulo-matriz.pr-button--link { min-height: 36px; padding-inline: 0; font-size: 13px; text-align: start; align-self: flex-start; }
+.pc-nota .pr-button--link { display: inline-flex; min-height: 36px; padding-inline: 0; }
+
+/* selos de estado das células da matriz: o texto diz o estado; a cor só reforça */
+.pc-selo { display: inline-block; align-self: flex-start; padding: 1px 8px; border-radius: var(--radius-pill); border: 1px solid var(--line-control); background: var(--surface-0); color: var(--ink); font-size: 13px; line-height: 18px; font-weight: 600; }
+.pc-selo--ok { background: var(--ok-bg); border-color: var(--ok); }
+.pc-selo--andamento { background: var(--warn-bg); border-color: var(--warn); }
+.pc-selo--pendente { background: var(--surface-2); }
+.pc-selo--orientacao { background: var(--info-bg); border-color: var(--info); }
+
+/* matriz camadas × fases (diálogo) */
+.pr-dialog.pc-matriz { width: min(1120px, 100%); }
+.pc-matriz-corpo { display: flex; flex-direction: column; gap: var(--space-3); }
+.pc-matriz-tabela { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 20px; color: var(--ink); }
+.pc-matriz-tabela th, .pc-matriz-tabela td { text-align: start; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); font-weight: 400; }
+.pc-matriz-tabela thead th { background: var(--surface-2); font-weight: 600; color: var(--ink); border-bottom-color: var(--line-control); }
+.pc-matriz-tabela tbody th { font-weight: 600; width: 190px; }
+.pc-matriz-tabela .pc-matriz-destaque { background: var(--primary-tint); }
+.pc-matriz-cel { display: flex; flex-direction: column; gap: var(--space-1); }
+.pc-matriz-q { font-size: 13px; line-height: 18px; color: var(--muted); }
+.pc-matriz-custo { font-weight: 600; font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; text-align: start; }
+.pc-matriz-camada { display: flex; gap: var(--space-2); align-items: flex-start; }
+.pc-matriz-amostra { width: 10px; height: 10px; border-radius: 2px; margin-top: 5px; flex: none; }
+.pc-matriz-total th, .pc-matriz-total td { border-top: 2px solid var(--line-control); font-weight: 600; }
+.pc-matriz-nota { font-size: 13px; line-height: 18px; color: var(--muted); }
+.pc-matriz-info { margin-inline-start: auto; }
+.pc-matriz-info svg { width: 18px; height: 18px; flex: none; }
+.pc-matriz-info .pr-popover-gatilho { display: inline-flex; align-items: center; min-height: 24px; }
+@media (max-width: 900px) {
+  .pc-matriz-tabela, .pc-matriz-tabela tbody, .pc-matriz-tabela tr, .pc-matriz-tabela th, .pc-matriz-tabela td { display: block; width: auto; }
+  .pc-matriz-tabela thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .pc-matriz-tabela tr { border: 1px solid var(--line); border-radius: var(--radius-md); margin-bottom: var(--space-3); overflow: hidden; }
+  .pc-matriz-tabela tbody th { width: auto; background: var(--surface-2); }
+  .pc-matriz-tabela td { border-bottom: 1px solid var(--line); }
+  .pc-matriz-tabela td:last-child { border-bottom: 0; }
+  .pc-matriz-tabela td::before { content: attr(data-label); display: block; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--muted); }
+}
+
+/* figura 1 ampliada */
+.pc-figura-ampliada { display: flex; flex-direction: column; gap: var(--space-2); max-width: 100%; }
+.pc-figura-ampliada img { max-width: 100%; max-height: 70vh; width: auto; height: auto; margin-inline: auto; border: 1px solid var(--line); background: #ffffff; object-fit: contain; }
+
+/* colar dados do caso */
+.pc-colar { flex-basis: 100%; display: flex; flex-direction: column; gap: var(--space-3); max-width: 520px; }
+
+/* impressão (TRA-16): só o conteúdo, sem cabeçalho, navegação, gaveta nem botões */
+.pc-so-impressao { display: none; }
+@media print {
+  .pc-pular, .pr-header, .pc-atalhos, .pc-faixa, .pc-faixa-revisao, .pc-aviso-trad, .pc-barra, .pc-nav, .pc-plano, .pr-plandrawer,
+  .pr-dialog-root, .pr-toast, .pr-button, .pr-planindex, .pc-plano-acoes { display: none !important; }
+  .pc-app, .pc-corpo, .pc-corpo--nav, .pc-corpo--plano { display: block; background: transparent; }
+  .pc-main { padding: 0; }
+  .pc-so-impressao { display: block; font-size: 13px; color: var(--muted); margin-bottom: var(--space-3); }
+  .pc-app > .pc-rodape { background: transparent; padding: var(--space-4) 0 0; break-inside: avoid; }
+  body { background: transparent; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* caixa Caso: botões com texto longo (título dos exemplos, em qualquer idioma) quebram a linha em vez de alargar a caixa */
+.pc-dialogo .pc-botoes > .pr-button { max-width: 100%; height: auto; min-height: 44px; padding-block: var(--space-2); white-space: normal; text-align: center; }
+
+/* setas de voltar apontam para o início da linha também no árabe */
+[dir='rtl'] .pc-seta-voltar { display: inline-block; transform: scaleX(-1); }

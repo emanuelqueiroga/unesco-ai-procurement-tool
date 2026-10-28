@@ -17,7 +17,7 @@
   height: 44px;
   padding: 0 var(--space-4);
   border: 0;
-  border-right: 1px solid var(--line-control);
+  border-inline-end: 1px solid var(--line-control);
   background: var(--surface-1);
   font-size: 14px;
   line-height: 20px;
@@ -31,7 +31,7 @@
   padding: 0 var(--space-2);
 }
 .pr-segmented-item:last-child {
-  border-right: 0;
+  border-inline-end: 0;
 }
 .pr-segmented-item:hover {
   background: var(--surface-2);

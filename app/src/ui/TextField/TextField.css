@@ -38,7 +38,7 @@
 }
 .pr-textfield-input[size] {
   width: auto;
-  text-align: right;
+  text-align: end;
   font-variant-numeric: tabular-nums;
 }
 

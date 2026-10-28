@@ -6,12 +6,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  border-left: 1px solid var(--line);
+  border-inline-start: 1px solid var(--line);
   min-height: 0;
 }
 .pr-planpanel--fluid {
   width: auto;
-  border-left: 0;
+  border-inline-start: 0;
   padding: 0;
   background: transparent;
 }
@@ -21,8 +21,8 @@
   justify-content: space-between;
   align-items: center;
   gap: var(--space-2);
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 13px;
+  line-height: 18px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -64,8 +64,8 @@
   padding-bottom: var(--space-3);
 }
 .pr-planpanel-kicker {
-  font-size: 11px;
-  line-height: 14px;
+  font-size: 13px;
+  line-height: 18px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
@@ -78,7 +78,7 @@
   margin-top: 2px;
 }
 .pr-planpanel-title--empty {
-  color: var(--line-control);
+  color: var(--muted);
 }
 .pr-planpanel-facts {
   color: var(--muted);
@@ -105,13 +105,13 @@
 }
 
 .pr-planpanel-origin {
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 13px;
+  line-height: 18px;
   color: var(--muted);
 }
 .pr-planpanel-origin .pr-sourcelink,
 .pr-planpanel-origin a {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .pr-planpanel-recs {

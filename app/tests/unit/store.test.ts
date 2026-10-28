@@ -122,15 +122,31 @@ describe('sugestões em cascata', () => {
     S().marcarRevisado('usuarios');
     expect(S().revisar).not.toContain('usuarios');
   });
+  it('"Manter a minha" fica gravado: a mesma sugestão não volta a pedir revisão (PER-07)', () => {
+    S().responder('usuarios', ['professores']);
+    S().responder('tarefas', ['tutoria']);
+    S().marcarRevisado('usuarios');
+    expect(S().mantidas?.usuarios).toBeTruthy();
+    S().responder('nome', 'Rede X');
+    S().responder('tarefas', ['tutoria']);
+    expect(S().revisar).not.toContain('usuarios');
+    expect(S().caso.usuarios).toEqual(['professores']);
+  });
 });
 
 describe('refinar e modo', () => {
   it('refinar grava com origem refinado e refaz o custo', () => {
-    S().setCusto({ cfg: { x: 1 }, editado: true });
+    S().setCusto({ cfg: { x: 1 }, editado: false });
     S().refinar('horizonte', 5);
     const e = S().estado();
     expect(e.caso.horizonte).toBe(5); expect(e.origem.horizonte).toBe('refinado'); expect(e.respC.horizonte).toBe(true);
     expect(e.custo.editado).toBe(false); expect(e.custo.cfg).toBeNull();
+  });
+  it('com edições da calculadora, refinar não as descarta em silêncio: fica pendente (CUS-10)', () => {
+    S().setCusto({ cfg: { x: 1 }, editado: true });
+    S().refinar('horizonte', 5);
+    const e: any = S().estado();
+    expect(e.custo.editado).toBe(true); expect(e.custo.cfg).toEqual({ x: 1 }); expect(e.custo.pendente).toBe(true);
   });
   it('modo e navegação', () => {
     S().setModo('refinar'); expect(S().modo).toBe('refinar');

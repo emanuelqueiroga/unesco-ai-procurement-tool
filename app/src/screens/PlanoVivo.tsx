@@ -61,7 +61,14 @@ function Conteudo({ p, nov, fluid, soPapel }: { p: Painel; nov: Novidade | null;
             <SourceTag origin={padrao ? 'padrao' : 'informado'} label={padrao ? t('estimativa com premissas padrão') : t('estimativa com as suas respostas')} />
             {p.premissas ? ' · ' + plural(p.premissas, '{n} resposta a confirmar', '{n} respostas a confirmar') : ''}
           </>
-        ) : p.respondidas ? t('Os números aparecem quando você disser o tipo de tecnologia (pergunta 2.3.4).') : undefined
+        ) : p.respondidas ? (
+          p.paraNumero && p.paraNumero.some((f) => f.obrigatoria) ? (
+            <>
+              {t('Para ver os números, falta responder:')}{' '}
+              {p.paraNumero.filter((f) => f.obrigatoria).map((f, i) => <span key={f.campo}>{i ? ' · ' : ''}<a href={f.href}>{f.n} {f.label}</a></span>)}
+            </>
+          ) : t('Os números aparecem quando você disser o tipo de tecnologia (pergunta 2.3.4).')
+        ) : undefined
       }
       recommendationsTitle={t('Comece por estas')}
       recommendations={p.recs.slice(0, 3).map((r) => ({ id: r.id, text: r.texto, fresh: nov?.rec === r.id }))}

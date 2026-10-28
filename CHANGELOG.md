@@ -11,6 +11,30 @@ Published under `docs/revisao/` with a yellow banner. Not part of the stable lin
 - **0.0.16-alpha.a / .b / .c**: redesign proposals A (guided assistant), B (workspace with cost panel), C (living document). Branches `v15-proposta-a`, `-b`, `-c`. URLs: `/revisao/a/`, `/revisao/b/`, `/revisao/c/`.
 - **0.0.15-rc.1**: formerly "version 14 review". Step explanations, cost by phase and adoption curve, reference cost base and country profiles, procurement plan with executive summary and icebergs by phase. Branch `v14-revisao`. URL: `/revisao/`.
 
+## [0.1.0-alpha.4] - 2026-10-28
+
+Fourth pre-release of the redesign line (`develop` branch), published as the review build `/revisao/v014/`. Parity with 0.0.14: the published tool was reverse-engineered area by area and every capability it had and the redesign lacked became a requirement (`design/redesign/03-requisitos-paridade.md`, with the full inventories in `design/redesign/paridade/`: 109 requirements, PER, CUS, PLA and TRA). The rule is that the redesign may change the form but never let people do less than 0.0.14 did.
+
+### Added
+- Cost calculator back as the Refinar screen `#/refinar` in three tabs: "Premissas por ano" (demand, inputs, time and exchange rate, advanced economic account), "Ferramentas e licenças" (tools, licence × architecture, SaaS) and "Cenários e sensibilidade" (scenarios, tornado, Monte Carlo, equity strata, alternatives and cost-effectiveness, price index, LMDI). Currency and exchange rate for the page, the panel and the PDF; costs as CSV. Edits are kept when an answer changes: the calculator says so and offers to keep them or rebuild from the answers.
+- "de onde vem?" on every number of the plan: origin, how it is calculated, the assumptions behind it, and links to adjust them in the calculator or go to the question.
+- Refinar mode asks again what only 0.0.14 asked: the tool list with prices, architecture, problem subcategories, "other problem", baseline detail, "Qual?/O que falta?" for governance and students by year or grade. The three-problem limit stays in Essencial (with the reason on screen); Refinar has "Marcar todos".
+- A warning when a new suggestion differs from an answer already confirmed, with "Manter a minha", which is remembered.
+- Numbers formatted while typing in each language (1.600.000 / 1,600,000), decimals and percentages.
+- Confirmation before erasing the case (start blank, open an example or import over an edited case), with "Exportar o caso antes"; short status messages.
+- Layers × phases matrix and Figure 1 reachable from every screen ("Matriz" in the header, "Ver na matriz" on each chapter).
+- Institutional footer with the disclaimer and the version on every screen; page title per screen; a warning when the browser cannot save.
+- Plan: links "rever a resposta" that always lead to a place where the answer can be given; the same count of gaps on the page and in the PDF; case facts in "Em resumo"; appropriation by fiscal year on the page; enlargeable Figure 1; internal index on long pages; long tables collapsed; minimal print layout. The live plan lists what is missing for the first number.
+- 235 new interface texts translated into the eight other languages (`i18n/v14_par_<lang>.json`).
+- Tests: 303 unit tests and 225 end-to-end checks (new: calculator, "de onde vem?", matrix, confirmation, footer, Arabic on the calculator and the plan).
+
+### Changed
+- A question screen counts as answered only with a real answer (a suggested text with blanks to fill does not count).
+- Minimum text size 13 px and logical CSS properties everywhere, so Arabic keeps values in place; back arrows point the right way in right-to-left.
+
+### Not included (decisions)
+- Markdown, HTML and "Copiar texto" exports of the plan, AI analysis of the description, the mandala and phase accordion of 0.0.14, and the button that reproduces the guide's version-1 numbers (still covered by regression tests).
+
 ## [0.1.0-alpha.3] - 2026-10-28
 
 Third pre-release of the redesign line (`develop` branch), published as the review build `/revisao/v014/`. It brings back what the 0.0.14 tool already had at the end of the journey and in every language.

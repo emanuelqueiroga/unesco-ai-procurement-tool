@@ -178,10 +178,13 @@ export function PlanPanel({
 
   if (paperOnly) return paperEl;
 
+  // Embutido numa moldura que já é o landmark "Seu plano" (modo fluido), o painel é só um bloco: dois `aside`
+  // com o mesmo nome, um dentro do outro, confundem a navegação por landmarks do leitor de tela.
+  const Raiz = fluid ? 'div' : 'aside';
   return (
-    <aside
+    <Raiz
       className={['pr-planpanel', fluid ? 'pr-planpanel--fluid' : '', className ?? ''].filter(Boolean).join(' ')}
-      aria-label={tx('Seu plano')}
+      aria-label={fluid ? undefined : tx('Seu plano')}
     >
       <div className="pr-planpanel-zone">
         <span>{zone}</span>
@@ -192,6 +195,6 @@ export function PlanPanel({
         ) : null}
       </div>
       {paperEl}
-    </aside>
+    </Raiz>
   );
 }

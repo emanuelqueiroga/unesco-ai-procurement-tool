@@ -55,10 +55,10 @@
 }
 
 .pr-kpitile--empty .pr-kpitile-value {
-  color: var(--line-control);
+  color: var(--muted);
 }
 
-/* Compacto, no painel do plano: 11 px só porque acompanha um número de 20 px no mesmo bloco. */
+/* Compacto, no painel do plano: 13 px (mínimo do Prumo) porque acompanha um número de 20 px no mesmo bloco. */
 .pr-kpitile--compact {
   border-radius: var(--radius-sm);
   padding: var(--space-2);
@@ -71,8 +71,8 @@
   border-style: dashed;
 }
 .pr-kpitile--compact .pr-kpitile-label {
-  font-size: 11px;
-  line-height: 14px;
+  font-size: 13px;
+  line-height: 18px;
 }
 .pr-kpitile--compact .pr-kpitile-value {
   font-size: 20px;
@@ -80,6 +80,6 @@
   margin: 0;
 }
 .pr-kpitile--compact .pr-kpitile-origin {
-  font-size: 11px;
-  line-height: 14px;
+  font-size: 13px;
+  line-height: 18px;
 }

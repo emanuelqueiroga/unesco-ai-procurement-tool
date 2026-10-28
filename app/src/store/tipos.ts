@@ -12,7 +12,7 @@ export type Ctx = Record<string, any>;
 export type RespGov = Record<string, string | undefined>;
 export type RespDet = Record<string, { qual?: string; falta?: string } | undefined>;
 
-export interface Custo { base: string; cfg: any; editado: boolean }
+export interface Custo { base: string; cfg: any; editado: boolean; pendente?: boolean }
 export interface Moeda { cod: string; taxa: string | number; taxaDe?: string }
 
 export interface Estado14 {
@@ -24,6 +24,8 @@ export interface Estado14 {
   respC: Record<string, boolean>;
   respDet: RespDet;
   revisar: string[];
+  /** sugestões que a pessoa dispensou com "Manter a minha": campo → valor sugerido (JSON); não voltam a pedir revisão enquanto a sugestão for a mesma (PER-07) */
+  mantidas?: Record<string, string>;
   feitos: Record<string, boolean>;
   custo: Custo;
   moeda: Moeda;

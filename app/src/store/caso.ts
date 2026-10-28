@@ -11,12 +11,83 @@
 // respC continua sendo derivado (informado/refinado = confirmado), para o domínio e a exportação da v13.
 import { create } from 'zustand';
 import { clone, CASO_VAZIO, CASOS, CTX_EX, RESP_EX, CAMPO_POR_ID, CAMPOS_CUSTO, CAMPOS_SUGERIDOS, CAMPOS_PROB, SUB_OBJ,
-  confirmarGerados, horasEstimativa, vazio, tr } from '../domain';
-import type { Estado14, Origem, Modo, Capitulo, DadosCaso14 } from './tipos';
+  confirmarGerados, horasEstimativa, vazio, tr, cfgAtual, direcionadores, PRESETS } from '../domain';
+import type { Estado14, Origem, Modo, Capitulo, DadosCaso14, Custo } from './tipos';
 import { estadoInicial, migrar, ErroImportacao } from './migracoes';
 import { aplicarSugestoes } from './sugestoes';
 import { afetadosPor, telaDoCampo, ESSENCIAL, CAPITULOS } from './perguntas';
 import { dadosCaso } from '../export/json';
+
+// ----------------------------------------------------------- calculadora do modo Refinar (#/refinar)
+// Estado da calculadora guardado em estado.custo, como na v13 (estadoCusto, custos_ui.js): além de base/cfg/editado,
+// a conta exibida na árvore, o modo avançado, os nós abertos, as alternativas, λ, os estratos de equidade e, novo
+// na v14, `pendente` (uma resposta que alimenta o custo mudou depois de editar a calculadora; CUS-10).
+export interface AlternativaCusto { nome: string; impl: number | ''; anual: number | ''; fte: number | ''; efeito: number | '' }
+export interface EstratoCusto { nome: string; part: number; fK1: number; fK4: number }
+export interface CustoCalc extends Custo {
+  pendente?: boolean;
+  conta?: 'eco' | 'fin';
+  avancado?: boolean;
+  abertos?: Record<string, boolean>;
+  alts?: AlternativaCusto[];
+  lambda?: number | '';
+  estratos?: EstratoCusto[];
+  refAlt?: number | null;
+  efeitoCaso?: number | '';
+  lmdi0?: number;
+  lmdi1?: number;
+}
+/** campos da calculadora que a importação preserva (migracoes.ts) */
+export const CAMPOS_CALC = ['pendente', 'conta', 'avancado', 'abertos', 'alts', 'lambda', 'estratos', 'refAlt', 'efeitoCaso', 'lmdi0', 'lmdi1'] as const;
+export const ESTRATOS_PADRAO: EstratoCusto[] = [
+  { nome: 'Escolas urbanas com infraestrutura', part: 0.6, fK1: 1, fK4: 1 },
+  { nome: 'Escolas rurais', part: 0.3, fK1: 1.5, fK4: 1.4 },
+  { nome: 'Escolas de difícil acesso', part: 0.1, fK1: 2.5, fK4: 1.8 },
+];
+export type CalcPadrao = Required<Omit<CustoCalc, 'refAlt'>> & { refAlt: number | null };
+/** o estado da calculadora com os valores padrão da v13 preenchidos (não grava) */
+export function calcDe(custo: Custo | CustoCalc | undefined): CalcPadrao {
+  const c = (custo || {}) as CustoCalc;
+  return {
+    base: c.base || 'caso', cfg: c.cfg ?? null, editado: !!c.editado, pendente: !!c.pendente,
+    conta: c.conta === 'fin' ? 'fin' : 'eco', avancado: !!c.avancado, abertos: c.abertos || {}, alts: c.alts || [],
+    lambda: c.lambda ?? '', estratos: c.estratos && c.estratos.length ? c.estratos : ESTRATOS_PADRAO, refAlt: c.refAlt ?? null,
+    efeitoCaso: c.efeitoCaso ?? '', lmdi0: c.lmdi0 ?? 1, lmdi1: c.lmdi1 ?? 2,
+  };
+}
+/** a cfg em uso na calculadora, numa cópia própria (a semente da primeira edição) */
+function cfgSemente(e: Estado14): any {
+  const sc: any = { ...e.custo, cfg: e.custo.cfg ? clone(e.custo.cfg) : null };
+  const cfg = cfgAtual({ ...e, custo: sc } as any);
+  if (!cfg.__base) cfg.__base = e.custo.base || 'caso';
+  return cfg;
+}
+/** Uma resposta que alimenta o custo mudou: sem edições, a cfg do caso é refeita (como na v13); com edições
+ *  da calculadora, elas ficam e o caso fica `pendente` até a pessoa escolher manter ou refazer (CUS-10). */
+function invalidarCusto(e: Estado14) {
+  if (e.custo.base !== 'caso') return;
+  if (e.custo.editado && e.custo.cfg) { (e.custo as CustoCalc).pendente = true; return; }
+  e.custo = { ...e.custo, editado: false, cfg: null };
+  delete (e.custo as CustoCalc).pendente;
+}
+function getPath(obj: any, path: string): any { return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj); }
+/** Edição de um valor da cfg pelo caminho; arrays por ano são completados até o horizonte (ano() repete o último). */
+export function editarCaminho(cfg: any, caminho: string, valor: any) {
+  const ks = caminho.split('.');
+  let o = cfg;
+  for (let i = 0; i < ks.length - 1; i++) {
+    const k = ks[i], prox = ks[i + 1];
+    if (o[k] == null) o[k] = /^\d+$/.test(prox) ? [] : {};
+    else if (!Array.isArray(o[k]) && typeof o[k] !== 'object' && /^\d+$/.test(prox)) o[k] = [o[k]];   // número único → série por ano
+    o = o[k];
+  }
+  const ult = ks[ks.length - 1];
+  if (Array.isArray(o) && /^\d+$/.test(ult)) {
+    const i = +ult, ultimo = o.length ? o[o.length - 1] : 0;
+    while (o.length < i) o.push(ultimo);
+  }
+  o[ult] = valor;
+}
 
 /** O que acabou de mudar no plano: a interface destaca os trechos por alguns segundos (âmbar). */
 export interface Recente { campo: string; afetados: string[]; em: number }
@@ -39,6 +110,23 @@ export interface CasoStore extends Estado14 {
   setMoeda(moeda: Estado14['moeda']): void;
   setCusto(custo: Partial<Estado14['custo']>): void;
 
+  // calculadora do modo Refinar
+  /** grava um valor da cfg de custo por caminho ('demanda.adocao.1', 'saas.preco', 'opc.H'); a primeira edição copia a cfg montada */
+  editarCfg(caminho: string, valor: any): void;
+  /** acrescenta uma linha a uma lista da cfg ('itens', 'pessoas', 'saida.itens', 'mensais', 'implantacao') */
+  adicionarLinhaCfg(caminho: string, linha: any): void;
+  removerLinhaCfg(caminho: string, i: number): void;
+  /** faixa mín/máx de um direcionador do tornado e do Monte Carlo (cfg.faixas) */
+  editarFaixa(id: string, lado: 'min' | 'max', valor: number): void;
+  /** base de premissas: 'caso' ou um exemplo do guia ('A', 'B', 'C'); descarta as edições */
+  setBaseCusto(base: string): void;
+  /** descarta as edições e refaz a cfg a partir das respostas */
+  refazerCfg(): void;
+  /** mantém as edições depois de uma resposta que alimenta o custo ter mudado */
+  manterEdicoesCfg(): void;
+  /** estado de exibição da calculadora (conta, avançado, nós abertos, alternativas, λ, estratos…) */
+  setCalc(parcial: Partial<CustoCalc>): void;
+
   carregarExemplo(k: string): void;
   limpar(): void;
   /** lança ErroImportacao quando o JSON não é um caso aceito */
@@ -50,7 +138,7 @@ export interface CasoStore extends Estado14 {
   estado(): Estado14;
 }
 
-const CHAVES_ESTADO: (keyof Estado14)[] = ['formato', 'versao', 'caso', 'ctx', 'resp', 'respC', 'respDet', 'revisar', 'feitos', 'custo', 'moeda', 'lang', 'origem', 'sugestoes', 'modo', 'capitulo', 'exemplo'];
+const CHAVES_ESTADO: (keyof Estado14)[] = ['formato', 'versao', 'caso', 'ctx', 'resp', 'respC', 'respDet', 'revisar', 'mantidas', 'feitos', 'custo', 'moeda', 'lang', 'origem', 'sugestoes', 'modo', 'capitulo', 'exemplo'];
 
 export function soEstado(s: Estado14 | CasoStore): Estado14 {
   const o: any = {};
@@ -94,7 +182,7 @@ function marcar(e: Estado14, campo: string, origem: Origem) {
   }
   if (confirmado) { delete e.sugestoes[campo]; e.revisar = e.revisar.filter(k => k !== campo); }
   if (e.exemplo !== 'novo' && confirmado) e.exemplo = 'editado';
-  if (CAMPOS_CUSTO.includes(top) && e.custo.base === 'caso') { e.custo.editado = false; e.custo.cfg = null; }
+  if (CAMPOS_CUSTO.includes(top)) invalidarCusto(e);
 }
 // Efeitos de uma resposta que o percurso da v13 fazia em aoMudarCampo, sem a parte de tela
 function efeitos(e: Estado14, campo: string) {
@@ -111,7 +199,10 @@ function propagar(e: Estado14): string[] {
   const tocados: string[] = [];
   for (let i = 0; i < 5; i++) {
     const r = aplicarSugestoes(e);
-    r.revisar.forEach(x => { if (!e.revisar.includes(x.campo)) e.revisar.push(x.campo); });
+    r.revisar.forEach(x => {
+      if (e.mantidas && e.mantidas[x.campo] === JSON.stringify(x.valor)) return;
+      if (!e.revisar.includes(x.campo)) e.revisar.push(x.campo);
+    });
     if (!r.sugestoes.length) break;
     r.sugestoes.forEach(s => {
       gravar(e, s.campo, s.valor);
@@ -120,7 +211,7 @@ function propagar(e: Estado14): string[] {
       if (!tocados.includes(s.campo)) tocados.push(s.campo);
     });
   }
-  if (tocados.some(k => CAMPOS_CUSTO.includes(k.split('.')[0])) && e.custo.base === 'caso') { e.custo.editado = false; e.custo.cfg = null; }
+  if (tocados.some(k => CAMPOS_CUSTO.includes(k.split('.')[0]))) invalidarCusto(e);
   return tocados;
 }
 function recenteDe(campo: string, tocados: string[]): Recente {
@@ -154,7 +245,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     if (o === 'informado' || o === 'refinado' || e.respC[campo]) return;
     gravar(e, campo, valor);
     e.origem[campo] = 'sugerido'; e.sugestoes[campo] = deQuem; delete e.respC[campo];
-    if (CAMPOS_CUSTO.includes(campo.split('.')[0]) && e.custo.base === 'caso') { e.custo.editado = false; e.custo.cfg = null; }
+    if (CAMPOS_CUSTO.includes(campo.split('.')[0])) invalidarCusto(e);
     set({ ...e, recente: recenteDe(campo, []) });
   },
   confirmar(campo) {
@@ -181,6 +272,8 @@ export const useCaso = create<CasoStore>()((set, get) => ({
   marcarRevisado(campo) {
     const e = copiar(get());
     e.revisar = e.revisar.filter(k => k !== campo);
+    const sug = aplicarSugestoes(e).revisar.find(x => x.campo === campo);
+    if (sug) e.mantidas = { ...(e.mantidas || {}), [campo]: JSON.stringify(sug.valor) };
     set(e);
   },
   setModo(modo) { set({ modo }); },
@@ -191,6 +284,63 @@ export const useCaso = create<CasoStore>()((set, get) => ({
   setLang(lang) { set({ lang }); },
   setMoeda(moeda) { set({ moeda: clone(moeda) }); },
   setCusto(custo) { set({ custo: { ...get().custo, ...custo } }); },
+
+  editarCfg(caminho, valor) {
+    const e = copiar(get());
+    const cfg = cfgSemente(e);
+    if (caminho === 'opc.H') valor = Math.max(1, Math.min(10, Math.round(+valor || 3)));
+    editarCaminho(cfg, caminho, valor);
+    set({ custo: { ...e.custo, cfg, editado: true } });
+  },
+  adicionarLinhaCfg(caminho, linha) {
+    const e = copiar(get());
+    const cfg = cfgSemente(e);
+    const lista = getPath(cfg, caminho);
+    if (Array.isArray(lista)) lista.push(clone(linha)); else editarCaminho(cfg, caminho, [clone(linha)]);
+    set({ custo: { ...e.custo, cfg, editado: true } });
+  },
+  removerLinhaCfg(caminho, i) {
+    const e = copiar(get());
+    const cfg = cfgSemente(e);
+    const lista = getPath(cfg, caminho);
+    if (!Array.isArray(lista) || i < 0 || i >= lista.length) return;
+    lista.splice(i, 1);
+    set({ custo: { ...e.custo, cfg, editado: true } });
+  },
+  editarFaixa(id, lado, valor) {
+    const e = copiar(get());
+    const cfg = cfgSemente(e);
+    cfg.faixas = Array.isArray(cfg.faixas) ? cfg.faixas : [];
+    let f = cfg.faixas.find((x: any) => x.id === id);
+    if (!f) {
+      const d = (direcionadores(cfg) as any[]).find((x) => x.id === id);
+      if (!d) return;
+      f = { id, min: d.min, max: d.max }; cfg.faixas.push(f);
+    }
+    f[lado] = +valor > 0 ? +valor : 1;
+    set({ custo: { ...e.custo, cfg, editado: true } });
+  },
+  setBaseCusto(base) {
+    const b = base === 'caso' || (PRESETS as any)[base] ? base : 'caso';
+    const c: CustoCalc = { ...get().custo, base: b, cfg: null, editado: false };
+    delete c.pendente;
+    set({ custo: c });
+  },
+  refazerCfg() {
+    const c: CustoCalc = { ...get().custo, cfg: null, editado: false };
+    delete c.pendente;
+    set({ custo: c });
+  },
+  manterEdicoesCfg() {
+    const c: CustoCalc = { ...get().custo };
+    delete c.pendente;
+    set({ custo: c });
+  },
+  setCalc(parcial) {
+    const p: any = { ...parcial };
+    delete p.base; delete p.cfg; delete p.editado;   // estes só pelas ações próprias
+    set({ custo: { ...get().custo, ...clone(p) } });
+  },
 
   carregarExemplo(k) {
     const base = estadoInicial();
@@ -234,7 +384,10 @@ export const useCaso = create<CasoStore>()((set, get) => ({
   importar(json) {
     const e = migrar(json);
     e.lang = e.lang || get().lang;
+    const pendente = (e.custo as CustoCalc).pendente;
     propagar(e);
+    // as sugestões refeitas na importação não são mudança de resposta: o aviso de edições fica como veio
+    if (e.custo.cfg) { if (pendente) (e.custo as CustoCalc).pendente = true; else delete (e.custo as CustoCalc).pendente; }
     set({ ...e, recente: null, migradoDe: '' });
   },
   exportar() { return dadosCaso(soEstado(get())); },

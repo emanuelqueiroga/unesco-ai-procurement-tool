@@ -71,6 +71,8 @@ import {
   FASES_MATRIZ, CREDITO_MATRIZ, TIT_MATRIZ, NOTA_MATRIZ_CUSTO, matrizCaso,
   recTestes, recTesteDe, recFerramentas, recPagaFerr, recomendacoesCaso, secaoRecomendacoes,
 } from '../domain/index.ts';
+// critérios compartilhados com a página (P3): lacunas nas duas classes e "sem números" até dizer o tipo de tecnologia (2.3.4)
+import { lacunasDe, temNumeros, tituloParcial, textoLacunas, rotuloResposta, campoDoNumero } from '../percurso/painel.ts';
 
 const NOME_FERRAMENTA = 'AI in Education Procurement Tool';
 
@@ -287,14 +289,22 @@ function dadosPlano(estado) {
   let cfg = null, custo = null;
   try { cfg = cfgAtual(E); } catch (e) { console.warn(e); }
   try { if (cfg) { custo = numerosCusto(cfg); if (custo && !custo.camadas) custo.camadas = somaPorCamada(custo.av); } } catch (e) { console.warn(e); custo = null; }
+  // v14: sem o tipo de tecnologia (2.3.4) não há números, como na página ("Ainda sem números")
+  let semNumeros = false;
+  try { semNumeros = !temNumeros(estado); } catch (e) { console.warn(e); }
+  if (semNumeros) custo = null;
   const arq = ['saas', 'api', 'ow'].includes(ce.arquitetura) ? ce.arquitetura : 'saas';
   const modo = testeEfetivo(c, rec), teste = testeEscolhido(c);
   let faltas = [];
   try { faltas = faltasTodas(E) || []; } catch (e) { console.warn(e); }
+  let lacunas = { essencial: 0, refino: 0, total: 0, itens: [] };
+  try { lacunas = lacunasDe(estado); } catch (e) { console.warn(e); }
   let recs = [];
   try { recs = recomendacoesCaso(E) || []; } catch (e) { console.warn(e); }
+  // PLA-19: "nao_sei" e outros valores crus nunca chegam ao "Por quê"
+  recs = recs.map(r => { const pq = r.porque; if (!pq || !pq.resposta) return r; const campo = campoDoNumero(pq.n); return Object.assign({}, r, { porque: Object.assign({}, pq, { resposta: String(pq.resposta).split('; ').map(z => rotuloResposta(campo, z)).join('; ') }) }); });
   return { E, c, x, t, ce, p, rec, cfg, custo, arq, modo, teste, recs, poc: modo === 'poc' && teste !== 'ambos' && !(['recomendar', ''].includes(teste) && rec.modo === 'ambos'),
-    ambos: teste === 'ambos' || (['recomendar', ''].includes(teste) && rec.modo === 'ambos'), faltas,
+    ambos: teste === 'ambos' || (['recomendar', ''].includes(teste) && rec.modo === 'ambos'), faltas, lacunas, semNumeros,
     afeta: recAfeta(ce), dp: recDadosPessoais(ce), gratis: recGratuito(ce) };
 }
 
@@ -314,11 +324,11 @@ function secoesPlano(estado, opts) {
   };
   const tituloSec = id => id + '. ' + tr(TIT_PLANO[id]);
 
-  // Respostas que faltam
-  if (d.faltas.length) {
-    sec({ tipo: 'faltas', id: 'faltas', h: TIT_PLANO.faltas,
-      p: [d.faltas.length === 1 ? 'Plano parcial: 1 pergunta sem resposta.' : tr('Plano parcial: ' + d.faltas.length + ' perguntas sem resposta.'), 'O plano já pode ser usado; as seções que dependem dessas respostas usam premissas e dizem isso.'],
-      list: d.faltas.map(f => (f.n ? f.n + ' ' : '') + tr(f.texto)), irs: d.faltas.map(f => f.ir || '') });
+  // Respostas que faltam: as lacunas do Essencial (uma por tela) e as de refinamento, a mesma contagem da página
+  if (d.lacunas.total) {
+    sec({ tipo: 'faltas', id: 'faltas', h: TIT_PLANO.faltas, nEss: d.lacunas.essencial, nRef: d.lacunas.refino,
+      p: [tituloParcial(d.lacunas), textoLacunas(d.lacunas), 'O plano já pode ser usado; as seções que dependem dessas respostas usam premissas e dizem isso.'],
+      list: d.lacunas.itens.map(f => (f.n ? f.n + ' ' : '') + f.texto), irs: d.lacunas.itens.map(f => f.href) });
   }
 
   // 0. Resumo do caso
@@ -516,12 +526,12 @@ function secoesPlano(estado, opts) {
     if (ce.__elegPadrao && !unit.length) prem.push(tr('O número de pessoas que usariam na rede não foi informado: a estimativa usa ' + fmtInt(ce.elegiveis) + ' pessoas como premissa padrão.'));
     prem.push(tr('Horizonte da estimativa:') + ' ' + tr('Ano 0') + ' + ' + tr(rotP(OPC.horizonte, H) || (H + ' anos')) + '. ' + tr('Tempo para chegar a todos depois da implantação:') + ' ' + (rotC('expansao', c.expansao || 'ano1') || '—') + '.');
     prem.push('Todas as premissas são ilustrativas e podem ser ajustadas na calculadora completa (passo 4.2).');
-    const padrao = d.faltas.length > 8;
+    const padrao = d.lacunas.total > 8;
     // v12: números para os KPIs e os gráficos do "Em resumo" (página e PDF)
     const graf = { tot0, total: custo.total, anual: custo.anual, porUsuario: custo.porAluno, totCamadas: tot, H,
       camadas: { ano0: [1, 2, 3, 4, 5, 6, 7].map(n => cam.ano0[n] || 0), total: [1, 2, 3, 4, 5, 6, 7].map(n => cam.total[n] || 0) },
       anos: anos.slice(), dot: anos.map(a => custo.orc.dot[a] || 0) };
-    sec({ id: 'A2', h: tituloSec('A2'), pre: padrao ? ['Estimativa baseada em premissas padrão: ' + d.faltas.length + ' perguntas ainda sem resposta.'] : null, kv, kpis: true, graf, pos: ['Valores ilustrativos. Substitua por cotações e dados locais.'] });
+    sec({ id: 'A2', h: tituloSec('A2'), pre: padrao ? ['Estimativa baseada em premissas padrão: ' + d.lacunas.total + ' perguntas ainda sem resposta.'] : null, kv, kpis: true, graf, pos: ['Valores ilustrativos. Substitua por cotações e dados locais.'] });
     // a primeira parte da fórmula ("Como o custo é calculado") tem kv = termos + total: na página vira a equação do passo 4.2
     formula.forEach((f, i) => sec(Object.assign({}, f, { sub: true, id: undefined }, i === 0 && (f.kv || []).length > 1 ? { eq: true } : {})));
     sec({ sub: true, h: 'Custo por camada', table: { head: ['Camada', tr('Ano 0') + ' (' + unidMil() + ')', tr('Total do ciclo') + ' (' + unidMil() + ')', '%'],
@@ -532,7 +542,8 @@ function secoesPlano(estado, opts) {
       rows: [[tr('Dotação a solicitar') + ' (' + unidMil() + ')'].concat(anos.map(a => mil(custo.orc.dot[a] || 0)))], num: anos.map((a, i) => i + 1) } });
     sec({ sub: true, h: 'Premissas desta estimativa', list: prem });
   } else {
-    sec({ id: 'A2', h: tituloSec('A2'), p: ['Não foi possível calcular a estimativa com as respostas atuais. Responda ao passo 2.3 (Adoção) e às fases 3 e 4.'] });
+    sec({ id: 'A2', h: tituloSec('A2'), semNumeros: d.semNumeros,
+      p: [d.semNumeros ? 'Os números do plano aparecem quando você disser o tipo de tecnologia da ferramenta (pergunta 2.3.4).' : 'Não foi possível calcular a estimativa com as respostas atuais. Responda ao passo 2.3 (Adoção) e às fases 3 e 4.'] });
   }
 
   // A3
@@ -732,7 +743,7 @@ function painelPlano(estado, secs) {
   try { R = recomendacoesCaso(copiaEstado(estado)) || []; } catch (e) { console.warn(e); }
   return { kpis: a2.graf ? (a2.kv || []).slice(0, 4) : [], graf: a2.graf || null, semCusto: !a2.graf ? (a2.p || [])[0] || '' : '',
     fatos: res.fatos || [], cartoes: res.cartoes || [], principal: a1.principal || '', recs: R, nAlta: R.filter(r => r.prioridade === 'alta').length,
-    faltas: by('faltas').tipo ? by('faltas') : null };
+    faltas: by('faltas').tipo ? by('faltas') : null, semNumeros: !a2.graf && !!a2.semNumeros };
 }
 function perfilCasoCartoes(estado) { return painelPlano(estado).cartoes; }
 const corCamada = n => COR_CAMADA[(+n || 1) - 1] || COR_CAMADA[0];

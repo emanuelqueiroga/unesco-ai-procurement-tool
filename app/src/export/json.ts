@@ -8,6 +8,7 @@ export function dadosCaso(e: Estado14, agora: Date = new Date()): DadosCaso14 {
   return {
     app: APP_ID, formato: 14, versao: 14, v10: true, salvo: agora.toISOString(), exemplo: e.exemplo,
     caso: e.caso, ctx: e.ctx, resp: e.resp, respC: e.respC, respDet: e.respDet || {}, revisar: e.revisar || [], feitos: e.feitos || {},
+    ...(e.mantidas && Object.keys(e.mantidas).length ? { mantidas: e.mantidas } : {}),
     custo: e.custo, moeda: e.moeda, lang: e.lang,
     origem: e.origem || {}, sugestoes: e.sugestoes || {}, modo: e.modo || 'essencial', capitulo: e.capitulo || { atual: 1, pergunta: '' },
   };

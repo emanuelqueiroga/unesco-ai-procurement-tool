@@ -1,0 +1,101 @@
+/* Controles das perguntas do modo Refinar e detalhes das telas do Essencial (Controles.tsx). Só tokens do Prumo,
+   propriedades lógicas e nada que crie rolagem horizontal a 400 px. Prefixo pcx- para não colidir com shell.css. */
+
+/* ---------- bloco que abre e fecha */
+.pcx-recolher { display: flex; flex-direction: column; gap: var(--space-2); max-width: 620px; }
+.pcx-recolher-botao {
+  display: flex; align-items: center; gap: var(--space-2); width: 100%; min-height: 44px;
+  padding: var(--space-2) var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-md);
+  background: var(--surface-0); color: var(--ink); font: inherit; font-size: 14px; line-height: 20px; font-weight: 600;
+  text-align: start; cursor: pointer;
+}
+.pcx-recolher-botao:hover { background: var(--surface-2); }
+.pcx-recolher-botao:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pcx-recolher-seta { flex-shrink: 0; color: var(--muted); transition: transform 150ms ease-out; transform: rotate(-90deg); }
+.pcx-recolher--aberto .pcx-recolher-seta { transform: rotate(0deg); }
+[dir="rtl"] .pcx-recolher-seta { transform: rotate(90deg); }
+[dir="rtl"] .pcx-recolher--aberto .pcx-recolher-seta { transform: rotate(0deg); }
+.pcx-recolher-titulo { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pcx-recolher-sub { font-size: 13px; line-height: 18px; font-weight: 400; color: var(--muted); }
+.pcx-recolher-extra { font-size: 13px; line-height: 18px; font-weight: 400; color: var(--muted); }
+.pcx-recolher-corpo { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-3) var(--space-1) var(--space-2); }
+.pcx-recolher-corpo[hidden] { display: none; }
+
+/* ---------- notas e etiquetas */
+.pcx-dica { max-width: 620px; display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.pcx-premissa { max-width: 620px; }
+.pcx-premissa span + span { margin-inline-start: var(--space-2); }
+.pcx-etiqueta {
+  display: inline-block; margin-inline-start: var(--space-2); padding: 1px var(--space-2); border-radius: var(--radius-pill);
+  background: var(--accent-tint); color: var(--accent-ink); font-size: 13px; line-height: 18px; font-weight: 600; vertical-align: baseline;
+}
+.pcx-legendas { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-1); font-size: 14px; line-height: 20px; }
+.pcx-legendas dt { font-weight: 600; color: var(--ink); margin-top: var(--space-2); }
+.pcx-legendas dd { margin: 0; color: var(--ink-2); }
+.pcx-obj { font-weight: 600; }
+
+/* ---------- campos nativos com rótulo */
+.pcx-campo { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.pcx-rotulo { font-size: 13px; line-height: 18px; color: var(--muted); }
+.pcx-select {
+  min-height: 44px; width: 100%; max-width: 360px; border: 1px solid var(--line-control); border-radius: var(--radius-md);
+  padding: 0 var(--space-3); background: var(--surface-1); color: var(--ink); font: inherit; font-size: 16px;
+}
+.pcx-select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* ---------- 2.3.3 ferramentas */
+.pcx-ferramentas { display: flex; flex-direction: column; gap: var(--space-4); max-width: 620px; }
+.pcx-ferramenta { display: flex; flex-direction: column; gap: var(--space-3); margin: 0; min-width: 0; padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-1); }
+.pcx-ferramenta-titulo { padding: 0 var(--space-2); font-size: 15px; line-height: 20px; font-weight: 600; color: var(--ink); }
+.pcx-ferramenta-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--space-4); align-items: start; }
+.pcx-tarefas { display: flex; flex-direction: column; gap: var(--space-2); }
+.pcx-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+/* ---------- 1.1.5 estudantes por ano ou série */
+.pcx-anos { display: flex; flex-direction: column; gap: var(--space-4); max-width: 620px; }
+.pcx-etapa { display: flex; flex-direction: column; gap: var(--space-3); margin: 0; min-width: 0; padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-1); }
+.pcx-etapa-titulo { padding: 0 var(--space-2); font-size: 15px; line-height: 20px; font-weight: 600; color: var(--ink); }
+.pcx-anos-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); gap: var(--space-3); }
+.pcx-total { margin: 0; font-size: 14px; line-height: 20px; color: var(--ink-2); }
+.pcx-total-valor { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* ---------- 1.2.1 prioridades com ⓘ */
+.pcx-prio { position: relative; display: flex; flex-direction: column; gap: var(--space-2); }
+.pcx-prio .pr-optioncard { padding-inline-end: 56px; }
+.pcx-info {
+  position: absolute; inset-inline-end: var(--space-2); top: 6px; width: 44px; height: 44px; display: grid; place-items: center;
+  border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--primary); cursor: pointer;
+}
+.pcx-info:hover { background: var(--primary-tint); }
+.pcx-info:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pcx-info[aria-expanded="true"] { background: var(--primary-tint); }
+.pcx-exemplos { padding: var(--space-3) var(--space-4); background: var(--surface-0); border-inline-start: 3px solid var(--primary); border-radius: var(--radius-sm); font-size: 14px; line-height: 20px; color: var(--ink-2); }
+.pcx-exemplos[hidden] { display: none; }
+.pcx-exemplos ul { margin: var(--space-1) 0 0; padding-inline-start: var(--space-5); }
+
+/* ---------- 1.2.2 problemas: cabeçalho do grupo, subcategorias */
+.pcx-grupo-cab { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; }
+.pcx-grupo-cab .pc-grupo-titulo { flex: 1 1 100%; margin: 0; }
+.pcx-grupo-acoes { display: inline-flex; flex-wrap: wrap; gap: var(--space-2); margin-inline-start: auto; }
+.pcx-subs { display: flex; flex-direction: column; gap: var(--space-3); }
+.pcx-sub-grupo { display: flex; flex-direction: column; gap: var(--space-2); }
+.pcx-sub-titulo { margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--ink); }
+.pcx-detalhe { display: flex; flex-direction: column; gap: var(--space-4); max-width: 620px; }
+.pcx-gov-detalhes { display: flex; flex-direction: column; gap: var(--space-5); }
+
+/* ---------- 2.3.8 tamanho do teste, 2.4.2 */
+.pcx-piloto { display: flex; flex-direction: column; gap: var(--space-5); max-width: 600px; }
+.pcx-piloto-bloco { display: flex; flex-direction: column; gap: var(--space-3); }
+.pcx-piloto-titulo { font-size: 15px; line-height: 20px; font-weight: 600; color: var(--ink); }
+.pcx-piloto-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: var(--space-4); align-items: start; }
+.pcx-parcial { margin-top: var(--space-4); }
+
+/* ---------- aviso "revisar" */
+.pcx-revisar-texto { margin: var(--space-1) 0 0; }
+.pcx-revisar { list-style: none; margin: var(--space-3) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.pcx-revisar-item { display: flex; flex-direction: column; gap: var(--space-1); }
+.pcx-revisar-valor { font-size: 13px; line-height: 18px; color: var(--ink-2); }
+.pcx-revisar-acoes { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+
+/* ---------- síntese do capítulo: item em foco */
+.pcx-foco { outline: 2px solid var(--focus); outline-offset: 6px; border-radius: var(--radius-sm); }

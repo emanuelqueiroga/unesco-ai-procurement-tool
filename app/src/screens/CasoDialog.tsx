@@ -1,34 +1,32 @@
-// Caixa "Caso": exportar e importar o caso (JSON, formato 14), carregar um exemplo, começar em branco,
-// idioma e tema. Tudo fica no navegador; nada é enviado.
+// Caixa "Caso": exportar e importar o caso (JSON, formato 14; arquivo ou dados colados), carregar um exemplo,
+// começar em branco, moeda, idioma e tema. Tudo fica no navegador; nada é enviado. Antes de substituir um caso
+// com respostas (exemplos, em branco, importar) pede confirmação (acoes.ts).
 import { useRef, useState } from 'react';
 import { CASOS, tr } from '../domain';
-import { useCaso, ErroImportacao } from '../store';
-import { textoCaso, nomeArqCaso } from '../export/json';
-import { Dialog, Button, Alert, Segmented, useTheme } from '../ui';
-import { href, ir } from '../percurso/rota';
+import { useCaso } from '../store';
+import { Dialog, Button, Alert, Segmented, TextField, useTheme } from '../ui';
 import { t } from '../percurso/textos';
+import { SeletorMoeda } from './refinar/SeletorMoeda';
+import {
+  baixarArquivo, exportarCaso, copiarDadosCaso, importarArquivo, importarTexto, abrirExemplo, comecarEmBranco, temDownloads, confirmacaoAberta,
+  type ResultadoImportacao,
+} from './acoes';
+import './transversal.css';
 
-export function baixarArquivo(nome: string, conteudo: string | Blob, tipo = 'application/json') {
-  const blob = typeof conteudo === 'string' ? new Blob([conteudo], { type: tipo + ';charset=utf-8' }) : conteudo;
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
+// `baixarArquivo` e `importarArquivo` moram em acoes.ts; continuam exportados daqui para quem já os importava (Plano.tsx).
+export { baixarArquivo, importarArquivo };
 
-/** Lê um arquivo .json e importa no store; devolve a mensagem de erro, se houver. */
-export async function importarArquivo(f: File): Promise<string | null> {
-  try {
-    const texto = await f.text();
-    useCaso.getState().importar(texto);
-    return null;
-  } catch (err) {
-    return err instanceof ErroImportacao ? err.message : t('Não foi possível ler o arquivo.');
-  }
-}
-
+/** Arquivo .json ou dados colados (o que "Copiar dados do caso" copia). `onPronto` recebe o erro, se houver. */
 export function CampoImportar({ onPronto, rotulo }: { onPronto?: (erro: string | null) => void; rotulo?: string }) {
   const ref = useRef<HTMLInputElement>(null);
+  const [colando, setColando] = useState(false);
+  const [texto, setTexto] = useState('');
+  const [erroColar, setErroColar] = useState<string | undefined>();
+  const fim = (r: ResultadoImportacao) => {
+    if ('cancelado' in r) return;
+    onPronto?.(r.ok ? null : r.erro);
+    if (r.ok) { setColando(false); setTexto(''); setErroColar(undefined); }
+  };
   return (
     <>
       <Button variant="secondary" onClick={() => ref.current?.click()}>{rotulo || t('Importar caso')}</Button>
@@ -42,9 +40,34 @@ export function CampoImportar({ onPronto, rotulo }: { onPronto?: (erro: string |
           const f = ev.target.files?.[0];
           ev.target.value = '';
           if (!f) return;
-          onPronto?.(await importarArquivo(f));
+          fim(await importarArquivo(f));
         }}
       />
+      <Button variant="secondary" onClick={() => setColando((x) => !x)} aria-expanded={colando}>{t('Colar dados')}</Button>
+      {colando ? (
+        <div className="pc-colar">
+          <TextField
+            multiline
+            label={t('Dados do caso')}
+            value={texto}
+            onChange={(v) => { setTexto(v); setErroColar(undefined); }}
+            hint={t('Cole aqui o texto copiado com "Copiar dados do caso".')}
+            error={erroColar}
+          />
+          <div className="pc-botoes">
+            <Button
+              size="sm"
+              onClick={async () => {
+                if (!texto.trim()) { setErroColar(t('Cole antes os dados do caso.')); return; }
+                const r = await importarTexto(texto.trim());
+                if (!r.ok && 'erro' in r) setErroColar(r.erro);
+                fim(r);
+              }}
+            >{t('Importar dados colados')}</Button>
+            <Button size="sm" variant="secondary" onClick={() => { setColando(false); setErroColar(undefined); }}>{t('Cancelar')}</Button>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
@@ -58,7 +81,8 @@ export function CasoDialog({ open, onClose }: { open: boolean; onClose: () => vo
   return (
     <Dialog
       open={open}
-      onClose={fechar}
+      // com uma confirmação aberta por cima, o Esc fecha só a confirmação
+      onClose={() => { if (!confirmacaoAberta()) fechar(); }}
       title={t('Caso e preferências')}
       actions={<Button variant="secondary" onClick={fechar}>{t('Fechar')}</Button>}
     >
@@ -68,27 +92,40 @@ export function CasoDialog({ open, onClose }: { open: boolean; onClose: () => vo
           <h3 className="pc-dialogo-titulo">{t('Este caso')}</h3>
           <p className="pc-dialogo-texto">{t('As respostas ficam salvas só neste navegador. Exporte o caso para guardar uma cópia ou abrir em outro computador.')}</p>
           <div className="pc-botoes">
-            <Button onClick={() => { baixarArquivo(nomeArqCaso(s.estado()), textoCaso(s.estado())); setMsg({ tipo: 'info', texto: t('Caso exportado.') }); }}>{t('Exportar caso (.json)')}</Button>
-            <CampoImportar onPronto={(erro) => setMsg(erro ? { tipo: 'atencao', texto: erro } : { tipo: 'info', texto: t('Caso importado.') })} />
+            <Button onClick={async () => { if (await exportarCaso()) setMsg({ tipo: 'info', texto: t('Caso exportado.') }); }}>{t('Exportar caso (.json)')}</Button>
+            <Button variant="secondary" onClick={() => { void copiarDadosCaso(); }}>{t('Copiar dados do caso')}</Button>
+          </div>
+          {temDownloads() ? null : <p className="pc-dialogo-texto">{t('Se o download não funcionar neste ambiente, copie os dados do caso e guarde o texto; para abrir de novo, use "Colar dados".')}</p>}
+          <div className="pc-botoes">
+            <CampoImportar
+              onPronto={(erro) => {
+                setMsg(erro ? { tipo: 'atencao', texto: erro } : { tipo: 'info', texto: t('Caso importado.') });
+              }}
+            />
           </div>
         </section>
         <section>
           <h3 className="pc-dialogo-titulo">{t('Exemplos ilustrativos')}</h3>
+          <p className="pc-dialogo-texto">{t('Abrir um exemplo ou começar em branco apaga o caso salvo. Para guardá-lo, exporte antes.')}</p>
           <div className="pc-botoes">
             {exemplos.map((k) => (
-              <Button key={k} variant="secondary" onClick={() => { s.carregarExemplo(k); fechar(); ir(href.plano()); }}>
+              <Button key={k} variant="secondary" onClick={async () => { if (await abrirExemplo(k)) fechar(); }}>
                 {String(tr((CASOS as any)[k].titulo))}
               </Button>
             ))}
           </div>
           <div className="pc-botoes">
-            <Button variant="link" onClick={() => { s.limpar(); fechar(); ir(href.inicio()); }}>{t('Começar um caso em branco')}</Button>
+            <Button variant="link" onClick={async () => { if (await comecarEmBranco()) fechar(); }}>{t('Começar um caso em branco')}</Button>
           </div>
         </section>
         <section>
           <h3 className="pc-dialogo-titulo">{t('Modo')}</h3>
           <Segmented label={t('Modo')} value={s.modo} onChange={(m) => s.setModo(m)} options={[{ value: 'essencial', label: t('Essencial') }, { value: 'refinar', label: t('Refinar') }]} />
           <p className="pc-dialogo-texto">{t('Essencial: as perguntas que mudam o plano, com premissas padrão no resto. Refinar: as mesmas telas, com as premissas de cada capítulo abertas para ajuste.')}</p>
+        </section>
+        <section>
+          <h3 className="pc-dialogo-titulo">{t('Moeda')}</h3>
+          <SeletorMoeda compacto semNota />
         </section>
         <section>
           <h3 className="pc-dialogo-titulo">{t('Aparência')}</h3>

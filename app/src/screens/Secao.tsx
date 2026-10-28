@@ -1,22 +1,61 @@
 // Desenho de uma seção do plano (dados de src/plano/secoes.js, já traduzidos por trSecao): títulos, notas, pares
-// rótulo–valor, a equação do custo, listas, tabelas, cartões do perfil e a Figura 1. Porte da parte HTML de
-// src/resumo.js da v13 (htmlCorpoP, htmlTabelaP, htmlEqP, htmlFiguraP) com os componentes do Prumo.
-import { Fragment, type ReactNode } from 'react';
+// rótulo–valor, a equação do custo, listas, tabelas, cartões do perfil, a matriz camadas × fases e a Figura 1.
+// Porte da parte HTML de src/resumo.js da v13 (htmlCorpoP, htmlTabelaP, htmlEqP, htmlFiguraP) com os componentes do Prumo.
+// Listas com mais de 10 itens e tabelas com mais de 14 linhas começam recolhidas na página (PLA-15) e abertas
+// na impressão e no PDF; a Figura 1 abre ampliada num Dialog (PLA-06).
+import { Fragment, createContext, useContext, useRef, useState, type ReactNode } from 'react';
 import { tr } from '../domain';
-import { DataTable, KpiTile, type DataColumn, type DataRow } from '../ui';
+import { DataTable, KpiTile, Dialog, Button, useMediaQuery, type DataColumn, type DataRow } from '../ui';
+import { fmt } from '../percurso/ambiente';
+import { t } from '../percurso/textos';
+import { ROT_ESTADO, TXT_MATRIZ } from '../plano/secoes.js';
+import './plano.css';
 
 export interface SecaoPlano {
   tipo?: string; id?: string; h?: string; sub?: boolean; det?: string; soPagina?: boolean; alt?: string; img?: string;
   pre?: string[] | null; kv?: [string, string][]; kpis?: boolean; eq?: boolean; p?: string[]; list?: string[]; pos?: string[];
   table?: { head: string[]; rows: string[][]; num?: number[]; grupo?: boolean; b0?: boolean; hl?: number[]; marca?: number[] } | null;
   cartoes?: { id: string; h: string; kv: [string, string][]; hTable?: string; table?: { head: string[]; rows: string[][] } | null }[];
+  mx?: MatrizDados;
   pagina?: string;
+}
+
+interface CelulaMx { fase: string; t: string; n: string[]; na: boolean; estado: string; custo: number | null }
+interface MatrizDados {
+  fases: { id: string; n: number; nome: string }[];
+  linhas: { n: number; nome: string; cel: CelulaMx[] }[];
+  custo: boolean; somas: (number | null)[]; total: number | null;
+}
+
+/** Na impressão (Ctrl+P) as seções recolhidas abrem: o Plano liga este contexto entre `beforeprint` e `afterprint`. */
+export const ModoImpressao = createContext(false);
+
+/** Limites do PLA-15: acima disso a lista ou a tabela começa recolhida na página. */
+export const MAX_ITENS_LISTA = 10;
+export const MAX_LINHAS_TABELA = 14;
+
+/** Âncora de uma seção na página (o índice interno rola até ela). */
+export function ancoraDe(s: Pick<SecaoPlano, 'id' | 'h' | 'sub'>): string {
+  if (!s.sub && s.id) return 'sec-' + s.id;
+  const slug = String(s.h || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+  return 'sub-' + (slug || 'x');
 }
 
 /** texto com endereços web clicáveis */
 export function Linkado({ texto }: { texto: string }) {
   const partes = String(texto ?? '').split(/(https?:\/\/[^\s<]+[^\s<.,;)])/g);
   return <>{partes.map((p, i) => (i % 2 ? <a key={i} href={p} target="_blank" rel="noopener noreferrer" className="pc-url">{p}</a> : <Fragment key={i}>{p}</Fragment>))}</>;
+}
+
+/** Conteúdo longo que começa recolhido na página e aberto na impressão. */
+export function Recolhivel({ resumo, children }: { resumo: string; children: ReactNode }) {
+  const imprimindo = useContext(ModoImpressao);
+  return (
+    <details className="pc-recolhe" open={imprimindo || undefined}>
+      <summary>{resumo}</summary>
+      <div className="pc-recolhe-corpo">{children}</div>
+    </details>
+  );
 }
 
 function Celula({ v, marca }: { v: string; marca: boolean }) {
@@ -26,22 +65,25 @@ function Celula({ v, marca }: { v: string; marca: boolean }) {
   return <Linkado texto={s} />;
 }
 
-export function TabelaPlano({ t, legenda }: { t: NonNullable<SecaoPlano['table']>; legenda?: string }) {
-  if (!t || !(t.rows || []).length) return null;
-  const num = t.num || [], marca = t.marca || [];
-  const linhas = t.grupo ? t.rows.map((r, i) => (i && r[0] === t.rows[i - 1][0] ? [''].concat(r.slice(1)) : r)) : t.rows;
+export function TabelaPlano({ t: tab, legenda }: { t: NonNullable<SecaoPlano['table']>; legenda?: string }) {
+  if (!tab || !(tab.rows || []).length) return null;
+  const num = tab.num || [], marca = tab.marca || [];
+  const linhas = tab.grupo ? tab.rows.map((r, i) => (i && r[0] === tab.rows[i - 1][0] ? [''].concat(r.slice(1)) : r)) : tab.rows;
   const total = String(tr('Total'));
-  const columns: DataColumn[] = t.head.map((h, j) => ({ key: 'c' + j, label: String(h), numeric: num.includes(j) }));
+  const columns: DataColumn[] = tab.head.map((h, j) => ({ key: 'c' + j, label: String(h), numeric: num.includes(j) }));
   const rows: DataRow[] = linhas.map((r, i) => ({
     key: 'r' + i,
     total: r[0] === total && i === linhas.length - 1,
-    selected: (t.hl || []).includes(i),
+    selected: (tab.hl || []).includes(i),
     cells: Object.fromEntries(r.map((v, j) => {
       const c = <Celula v={v} marca={marca.includes(j)} />;
-      return ['c' + j, (t.b0 || t.grupo) && j === 0 && v ? <b>{c}</b> : c];
+      return ['c' + j, v === '' || v == null ? '' : (tab.b0 || tab.grupo) && j === 0 ? <b>{c}</b> : c];
     })),
   }));
-  return <DataTable columns={columns} rows={rows} caption={legenda} />;
+  const tabela = <DataTable columns={columns} rows={rows} caption={legenda} />;
+  return rows.length > MAX_LINHAS_TABELA
+    ? <Recolhivel resumo={t('Mostrar a tabela ({n} linhas)', { n: rows.length })}>{tabela}</Recolhivel>
+    : tabela;
 }
 
 /** "Como o custo é calculado": total = teste + uso + saída − residual */
@@ -82,18 +124,66 @@ function ParesValor({ kv }: { kv: [string, string][] }) {
   );
 }
 
-function Corpo({ s }: { s: SecaoPlano }) {
+/** Estados das respostas da matriz, com a legenda em pílulas */
+const ESTADOS = ['ok', 'andamento', 'pendente', 'orientacao', 'na'];
+const rotuloEstado = (e: string) => String(tr((ROT_ESTADO as Record<string, string>)[e] || e));
+
+/** A matriz camadas × fases: estado de cada célula como pílula, custo em destaque, cor da fase no cabeçalho (PLA-12). */
+function MatrizPlano({ m, legenda }: { m: MatrizDados; legenda?: string }) {
+  const columns: DataColumn[] = [{ key: 'camada', label: String(tr(TXT_MATRIZ.camada)) }].concat(m.fases.map((f, i) => ({ key: 'f' + i, label: f.n + '. ' + String(tr(f.nome)) })));
+  const rows: DataRow[] = m.linhas.map((l) => ({
+    key: 'l' + l.n,
+    layer: l.n,
+    cells: Object.assign({ camada: <b>{l.n + '. ' + String(tr(l.nome))}</b> }, ...l.cel.map((c, i) => ({
+      ['f' + i]: (
+        <div className="pc-mx-cel">
+          <span className={c.na ? 'pc-mx-na' : undefined}>{String(tr(c.t))}</span>
+          {!c.na && c.n.length ? <span className="pc-nota">{String(tr(TXT_MATRIZ.perguntas)) + ' ' + c.n.join(', ')}</span> : null}
+          {!c.na ? (
+            <span className="pc-mx-rodape">
+              <span className={'pc-estado pc-estado--' + c.estado}>{rotuloEstado(c.estado)}</span>
+              {c.custo != null ? <b className="pc-mx-custo">{fmt.curto(c.custo)}</b> : null}
+            </span>
+          ) : null}
+        </div>
+      ),
+    }))),
+  }));
+  if (m.custo) {
+    rows.push({ key: 'total', total: true, cells: Object.assign({ camada: String(tr('Total')) }, ...m.somas.map((v, i) => ({ ['f' + i]: v == null ? '—' : fmt.curto(v) }))) });
+  }
+  return (
+    <div className="pc-matriz">
+      <p className="pc-mx-legenda">
+        <span className="pc-nota">{String(tr(TXT_MATRIZ.legenda)) + ':'}</span>
+        {ESTADOS.map((e) => <span key={e} className={'pc-estado pc-estado--' + e}>{rotuloEstado(e)}</span>)}
+      </p>
+      <DataTable columns={columns} rows={rows} caption={legenda} />
+    </div>
+  );
+}
+
+function Corpo({ s, kpiOrigem }: { s: SecaoPlano; kpiOrigem?: (i: number, alinharAoFim: boolean) => ReactNode }) {
+  const estreito = useMediaQuery('(max-width: 900px)');
+  const lista = s.list && s.list.length ? (
+    <ul className="pc-lista">{s.list.map((x, i) => <li key={i}><Linkado texto={x} /></li>)}</ul>
+  ) : null;
+  // KPIs em grade de 3 (2 no estreito): o "de onde vem?" do terceiro (e do segundo, no estreito) abre para o outro lado
+  const colunas = estreito ? 2 : 3;
+  const fim = (i: number) => i % colunas >= Math.ceil(colunas / 2);
   return (
     <>
       {(s.pre || []).map((x, i) => <p key={'pre' + i} className="pc-nota"><Linkado texto={x} /></p>)}
       {s.kv && s.kv.length ? (
         s.eq ? <Equacao kv={s.kv} />
-          : s.kpis ? <div className="pc-kpis pc-kpis--3">{s.kv.map(([k, v], i) => <KpiTile key={i} label={k} value={v} />)}</div>
+          : s.kpis ? <div className="pc-kpis pc-kpis--3">{s.kv.map(([k, v], i) => <KpiTile key={i} label={k} value={v} origin={kpiOrigem ? kpiOrigem(i, fim(i)) : undefined} />)}</div>
             : <ParesValor kv={s.kv} />
       ) : null}
       {(s.p || []).map((x, i) => <p key={'p' + i} className="pc-paragrafo"><Linkado texto={x} /></p>)}
-      {s.list && s.list.length ? <ul className="pc-lista">{s.list.map((x, i) => <li key={i}><Linkado texto={x} /></li>)}</ul> : null}
-      {s.table ? <TabelaPlano t={s.table} legenda={s.h} /> : null}
+      {lista && s.list!.length > MAX_ITENS_LISTA
+        ? <Recolhivel resumo={t('Mostrar os {n} itens', { n: s.list!.length })}>{lista}</Recolhivel>
+        : lista}
+      {s.mx ? <MatrizPlano m={s.mx} legenda={s.h} /> : s.table ? <TabelaPlano t={s.table} legenda={s.h} /> : null}
       {(s.pos || []).map((x, i) => <p key={'pos' + i} className="pc-nota"><Linkado texto={x} /></p>)}
     </>
   );
@@ -113,36 +203,60 @@ function Cartoes({ s }: { s: SecaoPlano }) {
   );
 }
 
-export function Secao({ s, extra }: { s: SecaoPlano; extra?: ReactNode }) {
+/** Figura 1 em miniatura, com legenda e crédito, e o visualizador ampliado (Esc, fundo e "Fechar" fecham; o foco volta ao botão). */
+function Figura({ s }: { s: SecaoPlano }) {
+  const [aberta, setAberta] = useState(false);
+  const botao = useRef<HTMLButtonElement>(null);
+  if (!s.img) return null;
+  const legenda = (s.pos || []).map((x, i) => <p key={i} className="pc-nota"><Linkado texto={x} /></p>);
+  return (
+    <figure className="pc-figura" id={ancoraDe({ ...s, sub: false, id: s.id })}>
+      <h2 className="pc-secao-h">{s.h}</h2>
+      <img src={s.img} alt={s.alt || ''} width={900} height={1225} loading="lazy" decoding="async" />
+      <figcaption className="pc-figura-legenda">{legenda}</figcaption>
+      <div className="pc-botoes pc-figura-ampliar">
+        <Button ref={botao} variant="secondary" size="sm" aria-haspopup="dialog" onClick={() => setAberta(true)}>{t('Ampliar a figura')}</Button>
+      </div>
+      <Dialog
+        open={aberta}
+        size="figure"
+        title={s.h}
+        returnFocusTo={botao}
+        onClose={() => setAberta(false)}
+        actions={<Button onClick={() => setAberta(false)}>{t('Fechar')}</Button>}
+      >
+        <div className="pc-figura-ampliada">
+          <img src={s.img} alt={s.alt || ''} />
+          {legenda}
+        </div>
+      </Dialog>
+    </figure>
+  );
+}
+
+export function Secao({ s, extra, kpiOrigem }: { s: SecaoPlano; extra?: ReactNode; kpiOrigem?: (i: number, alinharAoFim: boolean) => ReactNode }) {
+  const imprimindo = useContext(ModoImpressao);
   if (s.tipo === 'bloco') return null;
   const Titulo = s.sub ? 'h3' : 'h2';
-  if (s.tipo === 'figura') {
-    if (!s.img) return null;
-    return (
-      <figure className="pc-figura" id={s.id}>
-        <h2 className="pc-secao-h">{s.h}</h2>
-        <img src={s.img} alt={s.alt || ''} width={900} height={1225} loading="lazy" decoding="async" />
-        {(s.pos || []).map((x, i) => <figcaption key={i} className="pc-nota"><Linkado texto={x} /></figcaption>)}
-      </figure>
-    );
-  }
+  if (s.tipo === 'figura') return <Figura s={s} />;
   const corpo = (
     <>
-      {s.tipo === 'perfil' ? <>{(s.p || []).map((x, i) => <p key={i} className="pc-nota">{x}</p>)}<Cartoes s={s} /></> : <Corpo s={s} />}
+      {s.tipo === 'perfil' ? <>{(s.p || []).map((x, i) => <p key={i} className="pc-nota">{x}</p>)}<Cartoes s={s} /></> : <Corpo s={s} kpiOrigem={kpiOrigem} />}
       {extra}
     </>
   );
+  const id = s.id || s.sub ? ancoraDe(s) : undefined;
   // seções de consulta ("Ver todos os arranjos", listas de referência): recolhidas, com a descrição no resumo
   if (s.det) {
     return (
-      <details className={'pc-secao pc-secao--det' + (s.sub ? ' pc-secao--sub' : '')}>
+      <details id={id} className={'pc-secao pc-secao--det' + (s.sub ? ' pc-secao--sub' : '')} open={imprimindo || undefined}>
         <summary><span className="pc-secao-h3">{s.h}</span>{s.det && s.det !== s.h ? <span className="pc-nota"> · {s.det}</span> : null}</summary>
         <div className="pc-secao-corpo">{corpo}</div>
       </details>
     );
   }
   return (
-    <section className={'pc-secao' + (s.sub ? ' pc-secao--sub' : '')} id={s.id && !s.sub ? 'sec-' + s.id : undefined}>
+    <section className={'pc-secao' + (s.sub ? ' pc-secao--sub' : '')} id={id}>
       {s.h ? <Titulo className={s.sub ? 'pc-secao-h3' : 'pc-secao-h'}>{s.h}</Titulo> : null}
       {corpo}
     </section>

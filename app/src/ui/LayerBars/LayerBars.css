@@ -41,14 +41,14 @@
 
 .pr-layerbars-value {
   white-space: nowrap;
-  text-align: right;
+  text-align: end;
   font-variant-numeric: tabular-nums;
   color: var(--ink-2);
 }
 
 .pr-layerbars-caption {
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 13px;
+  line-height: 18px;
   color: var(--muted);
   margin-top: var(--space-2);
 }

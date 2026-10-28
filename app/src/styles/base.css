@@ -7,6 +7,11 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* controles nativos (listas do <select>, barras de rolagem, campos de arquivo) seguem o tema do Prumo */
+  color-scheme: light;
+}
+html[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 body {
@@ -53,6 +58,13 @@ svg {
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
+}
+
+/* O foco que o aplicativo põe no título ao trocar de tela (para o leitor de tela anunciá-lo) não é um alvo de
+   teclado: sem contorno em volta do título nem do conteúdo. O leitor continua lendo o título. */
+main:focus-visible,
+main [tabindex='-1']:focus-visible {
+  outline: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

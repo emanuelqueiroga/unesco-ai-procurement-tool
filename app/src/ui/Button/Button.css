@@ -49,7 +49,7 @@
   padding: 0 var(--space-2);
   font-weight: 500;
   white-space: normal;
-  text-align: left;
+  text-align: start;
 }
 .pr-button--link:hover,
 .pr-button--link:active {

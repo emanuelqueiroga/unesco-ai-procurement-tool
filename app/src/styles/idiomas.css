@@ -17,5 +17,8 @@
 :root:lang(ar) body * { letter-spacing: 0 !important; text-transform: none !important; }
 :root:lang(ar) body { line-height: 1.6; }
 /* números e valores continuam da esquerda para a direita dentro de um bloco árabe */
-[dir="rtl"] .pr-kpitile-value, [dir="rtl"] .pc-eq-v, [dir="rtl"] input[inputmode="numeric"] { direction: ltr; unicode-bidi: isolate; }
+/* valores ("US$ 336.2 k"): a moeda fica à esquerda do número, na mesma linha, e os campos numéricos (inteiros e
+   decimais: o TextField usa inputmode="decimal") ficam da esquerda para a direita */
+[dir="rtl"] :is(.pr-kpitile-value, .pc-eq-v, .pr-datatable-num, .pc-matriz-custo, .pr-layerbars-value),
+[dir="rtl"] input:is([inputmode="numeric"], [inputmode="decimal"]) { direction: ltr; unicode-bidi: isolate; }
 [dir="rtl"] .pc-paragrafo, [dir="rtl"] .pc-lista li, [dir="rtl"] .pc-kv dd { unicode-bidi: plaintext; }

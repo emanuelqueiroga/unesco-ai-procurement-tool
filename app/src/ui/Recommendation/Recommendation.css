@@ -66,8 +66,8 @@
   height: 22px;
   padding: 0 var(--space-2);
   border-radius: var(--radius-pill);
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 13px;
+  line-height: 18px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -86,7 +86,7 @@
 
 .pr-recommendation-link {
   position: relative;
-  margin-left: auto;
+  margin-inline-start: auto;
   padding: 0;
   border: 0;
   background: none;

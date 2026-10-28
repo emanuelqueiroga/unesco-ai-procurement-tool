@@ -76,7 +76,7 @@ export { PilotSize } from './PilotSize/PilotSize';
 export type { PilotSizeProps, PilotMode, PilotValues, PilotHints, PilotField } from './PilotSize/PilotSize';
 
 // Apoio.
-export { IconInfo, IconWarning, IconBlocked, IconMenu, IconChevronUp, IconChevronDown, IconClose } from './icons';
+export { IconInfo, IconWarning, IconBlocked, IconMenu, IconChevronUp, IconChevronDown, IconClose, IconMoon, IconSun } from './icons';
 export { useFocusTrap } from './focusTrap';
 export { useMediaQuery, BREAKPOINTS } from './useMediaQuery';
 export { useTheme, applyTheme, initialTheme } from './theme';

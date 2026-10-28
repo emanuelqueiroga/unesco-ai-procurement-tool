@@ -1,11 +1,14 @@
 // Telas do percurso: abertura de capítulo (D2), pergunta (D3–D6, M2, M3) e síntese de capítulo (D7).
-import { useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { CAMPO_POR_ID, textoCampo, tr } from '../domain';
-import { useCaso, ESSENCIAL, telasDoCapitulo, afetadosPor, camposRefinar, origemDe, type Capitulo, type CasoStore } from '../store';
+import {
+  useCaso, ESSENCIAL, telasDoCapitulo, afetadosPor, camposRefinar, origemDe, extrasDoCapitulo, comparaN, idDoFoco, ajudaDaTela, comLacuna,
+  type Capitulo, type CasoStore, type Origem,
+} from '../store';
 import { ChapterOpening, ChapterSummary, QuestionFrame, Button, SourceTag } from '../ui';
 import { Shell } from './Shell';
 import { BotaoPDF } from './Plano';
-import { ControlesTela, ControleCampo, sugeridosDaTela, TIPOS_SIMPLES } from '../percurso/Controles';
+import { ControlesTela, ControleCampo, ControleExtra, ProvedorRefinar, sugeridosDaTela, TIPOS_SIMPLES } from '../percurso/Controles';
 import { sinteseCapitulo } from '../percurso/sintese';
 import { CAPITULOS_INFO, LEAD, TITULO_TELA, linhaAfeta, plural, minusc, t } from '../percurso/textos';
 import { href, ir } from '../percurso/rota';
@@ -55,10 +58,15 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
   const prox = telas[i + 1] ? href.pergunta(n, telas[i + 1].id) : href.sintese(n);
   const ant = i > 0 ? href.pergunta(n, telas[i - 1].id) : href.abertura(n);
   const sugeridos = sugeridosDaTela(s, tela);
-  const f: any = (CAMPO_POR_ID as any)[tela.campos[0]] || {};
-  const ajuda = [f.h, f.ex].filter(Boolean).map((x: string) => String(tr(x)));
+  const ajuda = ajudaDaTela(s.caso, tela).map((x) => String(tr(x)));
   const afetados = Array.from(new Set(tela.campos.flatMap((c) => afetadosPor(c))));
-  const continuar = () => { sugeridos.forEach((c) => s.confirmar(c)); ir(prox); };
+  // um texto sugerido que ainda tem lacuna (__) não é confirmado: a pessoa precisa completá-lo
+  const confirmaveis = sugeridos.filter((c) => !comLacuna(s, c));
+  const continuar = () => { confirmaveis.forEach((c) => s.confirmar(c)); ir(prox); };
+  // no Refinar não há limite de problemas, então a frase de abertura muda
+  const lead = id === 'problemas' && s.modo === 'refinar'
+    ? t('Marque os problemas que quer resolver; no modo Refinar não há limite. Cada problema já traz uma descrição, impactos e tarefas que a IA pode apoiar; você ajusta depois.')
+    : LEAD[id] ? t(LEAD[id]) : null;
   const numeroGlobal = ESSENCIAL.indexOf(tela) + 1;
   return (
     <Shell pos={{ capitulo: n, tela: id }} contexto={t('Capítulo {n} · {nome}', { n, nome: t(CAPITULOS_INFO[n].titulo) })}>
@@ -68,13 +76,13 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
           title={tituloTela(s, id)}
           explanation={
             <>
-              {LEAD[id] ? t(LEAD[id]) : null}
+              {lead}
               {porque && ajuda.length ? <span className="pc-porque" id="pc-porque">{ajuda.map((a) => <span key={a}>{a}</span>)}</span> : null}
             </>
           }
           actions={
             <div className="pc-botoes">
-              <Button onClick={continuar}>{sugeridos.length ? t('Aceitar a sugestão e continuar') : t('Continuar')}</Button>
+              <Button onClick={continuar}>{confirmaveis.length ? t('Aceitar a sugestão e continuar') : t('Continuar')}</Button>
               <Button variant="secondary" href={prox}>{t('Pular por agora')}</Button>
               {ajuda.length ? (
                 <Button variant="link" aria-expanded={porque} aria-controls="pc-porque" onClick={() => setPorque((x) => !x)}>
@@ -89,7 +97,7 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
           <ControlesTela e={s} tela={tela} />
         </QuestionFrame>
         <nav className="pc-voltar" aria-label={t('Navegação entre perguntas')}>
-          <a href={ant}>← {i > 0 ? t('Pergunta anterior') : t('Abertura do capítulo')}</a>
+          <a href={ant}><span aria-hidden="true" className="pc-seta-voltar">← </span>{i > 0 ? t('Pergunta anterior') : t('Abertura do capítulo')}</a>
           <span className="pc-nota">{t('Pergunta {i} de {n} do Essencial', { i: numeroGlobal, n: ESSENCIAL.length })}</span>
         </nav>
       </div>
@@ -97,34 +105,76 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
   );
 }
 
-/** Modo Refinar: as perguntas deste capítulo que não estão no Essencial, com a premissa padrão aberta para edição. */
-function PremissasCapitulo({ s, n }: { s: CasoStore; n: Capitulo }) {
+/** títulos dos detalhes do Refinar que não são perguntas de CAMPOS (EXTRAS_REFINAR) */
+const TITULO_EXTRA: Record<string, string> = {
+  grade: 'Estudantes por ano ou série',
+  subs: 'Subcategorias dos problemas',
+  problemaOutro: 'Outro problema',
+  linhaBase: 'Para quais problemas e qual medida (linha de base)',
+  governanca: 'Qual documento ou equipe já existe, e o que falta (governança)',
+};
+
+interface ItemPremissa { id: string; n: string; titulo: string; origem: Origem | null; corpo: ReactNode }
+
+/**
+ * Modo Refinar: as perguntas deste capítulo que não estão no Essencial (inclusive a lista de ferramentas e a arquitetura) e os
+ * detalhes das perguntas do Essencial (estudantes por ano, subcategorias, outro problema, medida, governança), gravados com
+ * refinar() (origem "refinado"). Cada item tem o id `prem-<campo>`, o alvo de `#/capitulo/:n/sintese/:campo`.
+ */
+function PremissasCapitulo({ s, n, foco }: { s: CasoStore; n: Capitulo; foco?: string }) {
   const campos = camposRefinar(n).filter((c) => TIPOS_SIMPLES.includes((CAMPO_POR_ID as any)[c].tipo) && (!(CAMPO_POR_ID as any)[c].se || (CAMPO_POR_ID as any)[c].se(s.caso)));
-  if (!campos.length) return null;
+  const itens: ItemPremissa[] = [
+    ...campos.map((c): ItemPremissa => {
+      const f: any = (CAMPO_POR_ID as any)[c];
+      return { id: c, n: f.n, titulo: String(tr(textoCampo(f, s.caso))), origem: origemDe(s, c), corpo: <ControleCampo e={s} campo={c} /> };
+    }),
+    ...extrasDoCapitulo(n).map((x): ItemPremissa => {
+      const o = x.campos.map((c) => origemDe(s, c)).find((v) => v === 'refinado' || v === 'informado');
+      return { id: x.id, n: x.n, titulo: t(TITULO_EXTRA[x.id] || x.id), origem: x.campos.length ? (o || 'padrao') : null, corpo: <ControleExtra e={s} id={x.id} /> };
+    }),
+  ].sort((a, b) => comparaN(a.n, b.n));
+  const alvo = foco ? idDoFoco(foco) : '';
+  // com `foco`, rola até o campo e dá foco nele (depois do foco no título que a rota dá ao trocar de tela)
+  useEffect(() => {
+    if (!alvo) return;
+    let cancelado = false, r2 = 0;
+    const r1 = requestAnimationFrame(() => {
+      r2 = requestAnimationFrame(() => {
+        if (cancelado) return;
+        const el = document.getElementById('prem-' + alvo) || document.getElementById(`pc-refinar-${n}`);
+        if (!el) return;
+        el.scrollIntoView({ block: 'center' });
+        const controle = el.querySelector<HTMLElement>('input, select, textarea, button, a[href]');
+        if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+        (controle || el).focus({ preventScroll: true });
+      });
+    });
+    return () => { cancelado = true; cancelAnimationFrame(r1); cancelAnimationFrame(r2); };
+  }, [alvo, n]);
+  if (!itens.length) return null;
   return (
     <section className="pc-refinar" aria-labelledby={`pc-refinar-${n}`}>
       <h2 id={`pc-refinar-${n}`} className="pc-refinar-titulo">{t('Premissas deste capítulo')}</h2>
       <p className="pc-nota">{t('No modo Essencial estas perguntas usam a premissa padrão. Ajuste o que conhecer; o resto continua padrão.')}</p>
-      <ol className="pc-refinar-lista">
-        {campos.map((c) => {
-          const f: any = (CAMPO_POR_ID as any)[c];
-          return (
-            <li key={c} className="pc-refinar-item">
+      <ProvedorRefinar value>
+        <ol className="pc-refinar-lista">
+          {itens.map((it) => (
+            <li key={it.id} id={`prem-${it.id}`} className={['pc-refinar-item', it.id === alvo ? 'pcx-foco' : ''].filter(Boolean).join(' ')}>
               <div className="pc-refinar-cab">
-                <span className="pc-refinar-n">{f.n}</span>
-                <span className="pc-refinar-q">{String(tr(textoCampo(f, s.caso)))}</span>
-                <SourceTag origin={origemDe(s, c)} label={rotuloOrigem(origemDe(s, c))} />
+                <span className="pc-refinar-n">{it.n}</span>
+                <span className="pc-refinar-q">{it.titulo}</span>
+                {it.origem ? <SourceTag origin={it.origem} label={rotuloOrigem(it.origem)} /> : null}
               </div>
-              <ControleCampo e={s} campo={c} />
+              {it.corpo}
             </li>
-          );
-        })}
-      </ol>
+          ))}
+        </ol>
+      </ProvedorRefinar>
     </section>
   );
 }
 
-export function Sintese({ n }: { n: Capitulo; foco?: string }) {
+export function Sintese({ n, foco }: { n: Capitulo; foco?: string }) {
   const s = useCaso();
   const sin = sinteseCapitulo(n, s);
   const prox = n < 4 ? CAPITULOS_INFO[(n + 1) as Capitulo] : null;
@@ -158,7 +208,7 @@ export function Sintese({ n }: { n: Capitulo; foco?: string }) {
             </div>
           }
         />
-        {s.modo === 'refinar' ? <PremissasCapitulo s={s} n={n} /> : (
+        {s.modo === 'refinar' || foco ? <PremissasCapitulo s={s} n={n} foco={foco} /> : (
           <p className="pc-nota pc-dica-refinar">
             {t('Quer ajustar as premissas padrão deste capítulo?')}{' '}
             <Button variant="link" onClick={() => s.setModo('refinar')}>{t('Mudar para o modo Refinar')}</Button>

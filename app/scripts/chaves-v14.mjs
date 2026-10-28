@@ -36,6 +36,7 @@ const mapas = [
   ['src/ui/ChapterNav/ChapterNav.tsx', /const MARK_LABEL[\s\S]*?\n\};/],
   ['src/ui/PilotSize/PilotSize.tsx', /const LABELS[^\n]*/],
   ['src/plano/secoes.js', /const TIT_PAGINAS[^\n]*/],
+  ['src/screens/Percurso.tsx', /const TITULO_EXTRA[\s\S]*?\n\};/],
 ];
 const reValor = new RegExp(`:\\s*${lit}`, 'g');
 for (const [f, trecho] of mapas) {

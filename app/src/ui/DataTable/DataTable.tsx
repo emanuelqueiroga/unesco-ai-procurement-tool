@@ -70,7 +70,9 @@ export function DataTable({ columns, rows, caption, showCaption, className }: Da
                   </>
                 );
                 const cls = c.numeric ? 'pr-datatable-num' : undefined;
-                return c.key === first ? (
+                // célula de rótulo vazia (grupo repetido): `td`, para não anunciar um cabeçalho de linha sem nome
+                const vazia = c.key === first && (r.cells[c.key] == null || r.cells[c.key] === '' || r.cells[c.key] === false) && !r.layer;
+                return c.key === first && !vazia ? (
                   <th key={c.key} scope="row" className={cls} data-label={c.label}>
                     {content}
                   </th>

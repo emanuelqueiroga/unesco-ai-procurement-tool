@@ -22,7 +22,7 @@ const igual = (a: any, b: any) => JSON.stringify(a === undefined ? null : a) ===
 /** Estado inicial da v14 (porta de estadoInicial, src/app.js, sem fase/passo/vista/boasVindas/info). */
 export function estadoInicial(): Estado14 {
   return {
-    formato: 14, versao: 14, caso: clone(CASO_VAZIO), ctx: {}, resp: {}, respC: {}, respDet: {}, revisar: [], feitos: {}, exemplo: 'novo',
+    formato: 14, versao: 14, caso: clone(CASO_VAZIO), ctx: {}, resp: {}, respC: {}, respDet: {}, revisar: [], mantidas: {}, feitos: {}, exemplo: 'novo',
     custo: { base: 'caso', cfg: null, editado: false }, moeda: { cod: 'USD', taxa: '' }, lang: '',
     origem: {}, sugestoes: {}, modo: 'essencial', capitulo: { atual: 1, pergunta: ESSENCIAL[0].id },
   };
@@ -279,6 +279,32 @@ export function respCDeOrigem(origem: Record<string, Origem>, anterior?: Record<
   return out;
 }
 
+// ----------------------------------------------------------- calculadora (CUS-27)
+// Estado de exibição da calculadora da v13 (estadoCusto, custos_ui.js) e da tela Refinar da v14: conta, modo
+// avançado, nós abertos da árvore, alternativas, λ, estratos de equidade e o aviso de edições pendentes.
+// Só os campos conhecidos, com o tipo conferido; o resto é descartado.
+const ehNum = (v: any) => v === '' || (typeof v === 'number' && isFinite(v));
+export function calcImportado(c: any): Record<string, any> {
+  const out: Record<string, any> = {};
+  if (!c || typeof c !== 'object') return out;
+  if (c.conta === 'eco' || c.conta === 'fin') out.conta = c.conta;
+  if (typeof c.avancado === 'boolean') out.avancado = c.avancado;
+  if (c.pendente === true) out.pendente = true;
+  if (c.abertos && typeof c.abertos === 'object' && !Array.isArray(c.abertos)) out.abertos = Object.fromEntries(Object.entries(c.abertos).filter(([, v]) => typeof v === 'boolean'));
+  if (Array.isArray(c.alts)) out.alts = c.alts.filter((a: any) => a && typeof a === 'object').map((a: any) => ({ nome: String(a.nome ?? ''), impl: num(a.impl), anual: num(a.anual), fte: num(a.fte), efeito: num(a.efeito) }));
+  if (ehNum(c.lambda) || typeof c.lambda === 'string') out.lambda = num(c.lambda);
+  if (Array.isArray(c.estratos) && c.estratos.length) out.estratos = c.estratos.filter((z: any) => z && typeof z === 'object').map((z: any) => ({ nome: String(z.nome ?? ''), part: +z.part || 0, fK1: +z.fK1 || 1, fK4: +z.fK4 || 1 }));
+  if (c.refAlt === null || (typeof c.refAlt === 'number' && c.refAlt >= 0)) out.refAlt = c.refAlt;
+  if (c.efeitoCaso != null) out.efeitoCaso = num(c.efeitoCaso);
+  ['lmdi0', 'lmdi1'].forEach(k => { if (typeof c[k] === 'number' && c[k] >= 0) out[k] = c[k]; });
+  return out;
+}
+function num(v: any): number | '' {
+  if (v === '' || v == null) return '';
+  const n = typeof v === 'number' ? v : Number(String(v).replace(',', '.'));
+  return isFinite(n) ? n : '';
+}
+
 // ----------------------------------------------------------- porta de entrada
 function ehV8(o: any) {
   if (o.app === APP_V8) return true;
@@ -311,7 +337,8 @@ export function migrar(json: any): Estado14 {
   const out: Estado14 = {
     ...e,
     caso: o.caso, ctx: o.ctx, resp: o.resp, respDet: o.respDet, revisar: o.revisar, feitos: o.feitos || {},
-    custo: o.custo && typeof o.custo === 'object' ? { base: o.custo.base || 'caso', cfg: o.custo.cfg || null, editado: !!o.custo.editado } : e.custo,
+    mantidas: o.mantidas && typeof o.mantidas === 'object' && !Array.isArray(o.mantidas) ? o.mantidas : {},
+    custo: o.custo && typeof o.custo === 'object' ? { ...calcImportado(o.custo), base: o.custo.base || 'caso', cfg: o.custo.cfg || null, editado: !!o.custo.editado } : e.custo,
     moeda: o.moeda && o.moeda.cod ? o.moeda : e.moeda, lang: typeof o.lang === 'string' ? o.lang : '',
     exemplo: o.exemplo === 'novo' || !o.exemplo ? 'novo' : (migrouV8 ? 'editado' : (['A', 'B', 'C', 'D'].includes(o.exemplo) && (CASOS as any)[o.exemplo] ? o.exemplo : 'editado')),
     origem, sugestoes: o.sugestoes && typeof o.sugestoes === 'object' ? o.sugestoes : {},
@@ -321,5 +348,6 @@ export function migrar(json: any): Estado14 {
   out.respC = respCDeOrigem(origem, o.respC);
   // um cfg editado na calculadora só vale se veio do caso; presets voltam a ser montados
   if (out.custo.cfg && !out.custo.editado) out.custo.cfg = null;
+  if (!out.custo.cfg) delete (out.custo as any).pendente;
   return out;
 }

@@ -1,6 +1,6 @@
 // Perguntas do modo Essencial e vínculo resposta → trecho do plano
 // (spec, "Mapa das 51 perguntas para as 24 do Essencial" e "Comportamentos que fazem a narrativa").
-import { CAMPOS, QUESTOES_G, REGRAS_REC } from '../domain';
+import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste } from '../domain';
 import type { Capitulo } from './tipos';
 
 export interface TelaEssencial {
@@ -52,10 +52,20 @@ export const CAPITULOS: Capitulo[] = [1, 2, 3, 4];
 export function telasDoCapitulo(n: Capitulo): TelaEssencial[] { return ESSENCIAL.filter(t => t.capitulo === n); }
 export function telaDoCampo(campo: string): TelaEssencial | undefined { return ESSENCIAL.find(t => t.campos.includes(campo)); }
 export function essencial(campo: string): boolean { return CAMPOS_ESSENCIAIS.includes(campo); }
+// Campos que o Refinar grava em ctx/caso mas que não são perguntas de CAMPOS (subcategorias e "Outro problema" do 1.2.2).
+// ondeMora (caso.ts) procura o campo em CAMPO_POR_ID para saber se mora em ctx; sem este registro eles iriam para `caso`.
+{
+  const reg: any = CAMPO_POR_ID;
+  if (!reg.subs) reg.subs = { id: 'subs', onde: 'ctx', tipo: 'extra', passo: '' };
+  if (!reg.problemaOutro) reg.problemaOutro = { id: 'problemaOutro', onde: 'ctx', tipo: 'extra', passo: '' };
+}
+/** capítulo dos campos de detalhe que não são perguntas de CAMPOS */
+const CAPITULO_EXTRA: Record<string, Capitulo> = { subs: 1, problemaOutro: 1, linhaBaseProblemas: 1, linhaBaseProblemaTxt: 1, linhaBaseMedida: 1 };
 /** capítulo de um campo: no Essencial pela tela; fora dele pela fase do passo em CAMPOS (contexto 1, piloto 2, implantacao 3, expansao 4) */
 export function capituloDoCampo(campo: string): Capitulo {
   const t = telaDoCampo(campo);
   if (t) return t.capitulo;
+  if (CAPITULO_EXTRA[campo]) return CAPITULO_EXTRA[campo];
   const f: any = (CAMPOS as any[]).find(c => c.id === campo);
   const p = f ? String(f.passo) : '';
   return (p.startsWith('1') ? 1 : p.startsWith('2') ? 2 : p.startsWith('3') ? 3 : 4) as Capitulo;
@@ -97,6 +107,58 @@ export function afetadosPor(campo: string): string[] {
   (REGRAS_REC as any[]).forEach(r => {
     const c = typeof r.campo === 'function' ? (REGRAS_CAMPO_FN[r.id] || []) : [r.campo];
     if (c.includes(base)) add('rec:' + r.id);
+  });
+  return out;
+}
+
+// ----------------------------------------------------------- perguntas só do Refinar que não são campos de CAMPOS
+/**
+ * Detalhes de perguntas do Essencial que só existem no modo Refinar: estudantes por ano (1.1.5), subcategorias e
+ * "Outro problema" (1.2.2), medida da linha de base (1.2.7) e "Qual?/O que falta?" da governança (1.3.x). `id` é o
+ * que a síntese usa para o âncora (`prem-<id>`); `campos` são os campos do estado que guardam a resposta.
+ */
+export interface ExtraRefinar { id: string; capitulo: Capitulo; n: string; campos: string[] }
+export const EXTRAS_REFINAR: ExtraRefinar[] = [
+  { id: 'grade', capitulo: 1, n: '1.1.5', campos: ['etapas'] },
+  { id: 'subs', capitulo: 1, n: '1.2.2', campos: ['subs'] },
+  { id: 'problemaOutro', capitulo: 1, n: '1.2.2', campos: ['problemaOutro'] },
+  { id: 'linhaBase', capitulo: 1, n: '1.2.7', campos: ['linhaBaseProblemas', 'linhaBaseProblemaTxt', 'linhaBaseMedida'] },
+  { id: 'governanca', capitulo: 1, n: '1.3', campos: [] },
+];
+export function extrasDoCapitulo(capitulo: Capitulo): ExtraRefinar[] { return EXTRAS_REFINAR.filter(x => x.capitulo === capitulo); }
+/** o id de âncora de um campo na síntese (`#/capitulo/:n/sintese/:campo`): campos de detalhe apontam para o seu bloco */
+export function idDoFoco(campo: string): string {
+  const c = String(campo || '');
+  if (/^g-/.test(c)) return 'governanca';
+  if (['linhaBaseProblemas', 'linhaBaseProblemaTxt', 'linhaBaseMedida'].includes(c)) return 'linhaBase';
+  return c;
+}
+/** compara números de pergunta ("1.2.7" < "1.3" < "2.0") */
+export function comparaN(a: string, b: string): number {
+  const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) { const d = (pa[i] || 0) - (pb[i] || 0); if (d) return d; }
+  return 0;
+}
+
+// ----------------------------------------------------------- ajuda da tela ("Por que perguntamos isso?")
+/**
+ * Textos de ajuda (`h` e `ex` do domínio, sem traduzir) de todos os campos da tela, e não só do primeiro: as telas
+ * compostas (2.2.2 + 2.2.3, 1.1.4 + 1.1.5, 2.4.1 + 2.4.2…) mostram a ajuda de cada pergunta, e o tamanho do teste (2.3.8) usa as
+ * variantes da prova de conceito e dos dois (`hPoc/exPoc`, `hAmbos/exAmbos`). Na governança cada linha mostra a sua.
+ */
+export function ajudaDaTela(caso: Record<string, any>, tela: TelaEssencial): string[] {
+  const out: string[] = [];
+  if (tela.id === 'governanca') return out;
+  const add = (x?: unknown) => { if (typeof x === 'string' && x && !out.includes(x)) out.push(x); };
+  tela.campos.forEach(c => {
+    const f: any = (CAMPO_POR_ID as any)[c];
+    if (!f) return;
+    if (f.id === 'piloto') {
+      const m = modoTeste(caso);
+      if (m === 'poc') { add(f.hPoc); add(f.exPoc); } else if (m === 'ambos') { add(f.hAmbos); add(f.exAmbos); } else { add(f.h); add(f.ex); }
+      return;
+    }
+    add(f.h); add(f.ex);
   });
   return out;
 }
