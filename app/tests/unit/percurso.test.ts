@@ -7,6 +7,7 @@ import { painelDe, temNumeros, origemKpi, recsPlano, tituloCaso, fatosCaso } fro
 import { sinteseCapitulo } from '../../src/percurso/sintese';
 import { LEAD, CURTO, linhaAfeta, plural } from '../../src/percurso/textos';
 import { resultadoRecomendacoes } from '../../src/domain';
+import { briefDados } from '../../src/plano/brief.js';
 
 const S = () => useCaso.getState();
 const rede = () => S().responder('etapas', { fund2: { on: true, escolas: 48, alunos: 9000, soTotal: true } });
@@ -136,7 +137,7 @@ describe('sínteses de capítulo', () => {
     expect(s4.paragrafos.join(' ')).toMatch(/Em toda a rede/);
     expect(s2.nRecs).toBeGreaterThan(0);
   });
-  it('REC-42: o capítulo 4 do B termina com "Seu próximo passo" (veredito, 3 ações, Ano 0, cuidado)', () => {
+  it('REC-42 e PB-06: o capítulo 4 do B termina com "Seu próximo passo" (recomendação do brief, 3 ações, Ano 0, cuidado)', () => {
     S().carregarExemplo('B');
     const e = S().estado();
     const s4 = sinteseCapitulo(4, e);
@@ -144,15 +145,20 @@ describe('sínteses de capítulo', () => {
     expect(s4.proximo).toBeTruthy();
     const p = s4.proximo!;
     expect(p.titulo).toBe('Seu próximo passo');
-    expect(p.veredito).toBe(painelDe(e).veredito);              // a mesma frase da capa, do Em resumo e do PDF
-    expect(p.veredito).toContain('Ainda não avance para o piloto');
+    // PB-06: a mesma recomendação do policy brief, de "Em resumo" e do painel "Seu plano"
+    const b: any = briefDados(e);
+    expect(p.veredito).toBe(b.recomendacao.texto);
+    expect(p.porque).toBe(b.recomendacao.porque);
+    expect(p.veredito).toMatch(/^Próxima decisão: /);
+    expect(p.veredito).toContain('Recomendação: começar por uma prova de conceito antes do piloto');
+    expect(p.veredito).not.toMatch(/Ainda não avance/i);   // PB-05: redação construtiva
     expect(v.codigo).toBe('nao');
     expect(p.porque).toMatch(/^Por quê: /);
     expect(p.acoes.length).toBe(3);
     p.acoes.forEach((a) => { expect(a.quem).toMatch(/\S/); expect(a.marco).toMatch(/\S/); expect(a.id).toMatch(/^R-\d+$/); });
     expect(p.custo).toMatch(/^Custo do Ano 0: US\$ .+ Dotação do Ano 0: US\$ /);
     expect(p.cuidado).toMatch(/^Cuidado (limitado|moderado|elevado|crítico)/);
-    expect(p.pdf).toBe('Baixar o plano (PDF)');
+    expect(p.pdf).toBe('Baixar o policy brief (PDF)');
     expect(p.faltam).toBe(0);
     expect(sinteseCapitulo(3, e).proximo).toBeNull();
   });

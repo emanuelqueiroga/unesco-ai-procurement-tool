@@ -13,6 +13,7 @@ import { setDicionarios, setLang, setMoeda, setTabelaMoedas, grande, din, tr, CR
 import { secoesPlano, painelPlano, trSecao, secoesDaPagina, PAGINAS_PLANO, PAGINA_SECAO, TIT_PAGINAS } from '../../src/plano/secoes.js';
 import { painelDe } from '../../src/percurso/painel';
 import { gerarPDF, nomeArqPDF, pdfTxt, quebrarCJK, carregarFontesPDF } from '../../src/plano/pdf.js';
+import { gerarBrief } from '../../src/plano/pdf_brief.js';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const RAIZ = path.join(AQUI, '..', '..', '..');
@@ -196,8 +197,9 @@ describe('PDF', () => {
         expect(txt.startsWith('%PDF-')).toBe(true);
         expect(txt).toContain('v0.1.0-test');
         expect(txt).not.toMatch(/\((?:[^()\\]|\\.)*(?:undefined|NaN|\[object)(?:[^()\\]|\\.)*\)\s*Tj/);
-        setLang(l); const sub = '(' + pdfTxt(tr('Plano de contratação')) + ')'; setLang('pt');
-        // (no francês, o ’ de "Plan d’achat" vira o byte 0x92 do WinAnsi no arquivo)
+        // PB-04: o título é o do anexo técnico (o resumo executivo está no policy brief)
+        setLang(l); const sub = '(' + pdfTxt(tr('Anexo técnico para a contratação')) + ')'; setLang('pt');
+        // (no francês, o ’ vira o byte 0x92 do WinAnsi no arquivo)
         if (l !== 'fr') expect(txt).toContain(sub);
         expect(bytes(doc)).toBeGreaterThan(20000);
       }
@@ -215,9 +217,11 @@ describe('PDF', () => {
     }
     // a capa (página 1, índice 0) lista os títulos no índice "Neste plano": a busca começa na página 2
     const onde = (t: string) => pag.findIndex((p, i) => i > 0 && p.includes('(' + pdfTxt(t) + ')'));
-    const pR = onde('Em resumo'), pC = onde('Quanto custa'), pF = onde('O que fazer'), pE = onde('O que exigir'), pA = onde('Apêndice');
-    expect(pR).toBe(1);
-    expect([pR, pC, pF, pE, pA].every((p, i, L) => p > 0 && (!i || p > L[i - 1]))).toBe(true);
+    // PB-04: sem "Em resumo" no anexo técnico; a sequência de decisões abre o anexo, logo depois da capa
+    const pR = onde('Em resumo'), pS = onde(tr('Sequência de decisões')), pC = onde('Quanto custa'), pF = onde('O que fazer'), pE = onde('O que exigir'), pA = onde('Apêndice');
+    expect(pR).toBe(-1);
+    expect(pS).toBe(1);
+    expect([pS, pC, pF, pE, pA].every((p, i, L) => p > 0 && (!i || p > L[i - 1]))).toBe(true);
     // títulos das seções nas faixas, na página certa, sem os códigos A1–A7 e B1–B9 (REL-08)
     const titPag = (id: string) => pag.findIndex((p, i) => i > 1 && p.includes('(' + pdfTxt(tr((TIT_PLANO as any)[id])).replace(/[()]/g, '\\$&') + ')'));
     expect([titPag('A2'), titPag('A3')].every(p => p >= pC && p < pF)).toBe(true);
@@ -285,7 +289,7 @@ describe('R6: recomendações no relatório', () => {
   // texto de um PDF não comprimido: os trechos entre parênteses dos operadores Tj, juntos
   const pdfFrases = (pag: string) => (pag.match(/\((?:[^()\\]|\\.)*\)\s*Tj/g) || []).map(z => z.replace(/\)\s*Tj$/, '').slice(1).replace(/\\(.)/g, '$1')).join(' ');
 
-  it('REC-21: o veredito é a mesma frase na capa, em "Em resumo", no painel e na síntese do capítulo 4', async () => {
+  it('REC-21: o veredito é a mesma frase no painel, na síntese do capítulo 4 e na página 1 do policy brief', async () => {
     for (const k of ['A', 'B', 'C', 'D']) {
       const e = exemplo(k);
       const P = rec(e);
@@ -296,12 +300,14 @@ describe('R6: recomendações no relatório', () => {
     }
     const e = exemplo('B');
     const P = rec(e);
-    expect(P.veredito.texto).toContain('Ainda não avance para o piloto');
-    const pag = await pdfTexto(e);
-    const capa = pdfFrases(pag[0]), resumo = pdfFrases(pag[1]);
-    const ini = pdfTxt(P.veredito.texto.slice(0, 40));
-    expect(capa).toContain(ini);
-    expect(resumo).toContain(ini);
+    expect(P.veredito.texto).toContain('Recomendação: começar por uma prova de conceito antes do piloto');
+    // PB-04: a recomendação está na página 1 do policy brief (o anexo técnico não repete o resumo executivo)
+    const brief: any = await gerarBrief(e, { versao: '0.1.0', comprimir: false });
+    const p1 = pdfFrases(brief.internal.pages[1].join('\n'));
+    expect(p1).toContain(pdfTxt('Próxima decisão: ' + P.veredito.decisao));
+    expect(p1).toContain(pdfTxt('Recomendação: começar por uma'));
+    const capa = pdfFrases((await pdfTexto(e))[0]);
+    expect(capa).not.toContain(pdfTxt('Recomendação: começar por uma'));
   }, 60000);
 
   it('REC-38: nível de cuidado em 3 frases, contadores e os 5 cartões com todos os campos', () => {

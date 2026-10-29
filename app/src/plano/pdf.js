@@ -3,11 +3,11 @@
 // da v13 (gerarPDF, fontes embutidas, pdfTxt, quebra CJK, árabe e aviso de tradução), sem DOM nem globais:
 //   gerarPDF(estado, opts) → documento jsPDF (não baixa nada); nomeArqPDF(estado) → 'procurement-plan-<slug>.pdf'.
 // v14: o PDF segue as páginas do plano novo (PAGINAS_PLANO, secoes.js), com os títulos A1–A7 e B1–B9 dentro delas:
-//   capa (faixa em gradiente das fases, logos, título, caso, recomendação principal, 4 KPIs, índice, isenção);
-//   Em resumo (aviso de plano parcial, recomendação principal, KPIs, barras por camada, fatos);
+//   capa (faixa em gradiente das fases, logos, título, caso, linha que remete ao policy brief, aviso de plano parcial,
+//   índice, isenção);
 //   Quanto custa (colunas da dotação por exercício; A2 com a fórmula, custo por camada, dotação e premissas; A3 e pontos de atenção);
 //   O que fazer (R6: antes de decidir, responda; como testar e avaliar; plano de ação por pacote; listas do guia como
-//   referência, B1–B4, B7–B9); R6: a sequência de decisões vem logo depois de "Em resumo";
+//   referência, B1–B4, B7–B9); R6: a sequência de decisões vem logo depois da capa;
 //   O que exigir (A4–A7, B5, B6);
 //   Apêndice (perfil do caso em cartões, matriz camadas × fases em duas páginas, Figura 1 em página própria,
 //   referências e respostas que faltam).
@@ -23,6 +23,9 @@
 // Idiomas fora do WinAnsi (ar, zh, bm): fontes de src/plano/fontes_pdf.generated.js (scripts/fontes-pdf.mjs),
 // importadas sob demanda; sem esse arquivo (ou com opts.fontes === null), Helvetica e troca de caracteres, como a
 // v13 com SEM_FONTES=1.
+// PB-04 (policy brief): este PDF é o "Anexo técnico para a contratação", o segundo PDF do plano. Não repete o resumo
+// executivo: "Em resumo" (veredito, cuidado, contadores, faixa, seis respostas, cinco cartões, como ler) saiu daqui e o
+// resumo é a página 1 do policy brief (pdf_brief.js, o PDF principal); a capa traz um índice e remete ao brief.
 // =====================================================================
 import {
   tr, LOC, getLang, setLang, avisoTraducao, TXT_VINCULO, FAIXA_PLANO, TIT_PLANO,
@@ -30,7 +33,7 @@ import {
   NOTA_MATRIZ_CUSTO, CREDITO_MATRIZ,
 } from '../domain/index.ts';
 // mesmos critérios da página (percurso/painel.ts): números só com o tipo de tecnologia, origem dos KPIs e lacunas nas duas classes
-import { painelDe, tituloParcial, textoLacunas, textoCondicoes, rotuloOrigem } from '../percurso/painel.ts';
+import { painelDe, tituloParcial, textoLacunas, rotuloOrigem } from '../percurso/painel.ts';
 import { NOME_FERRAMENTA, TIT_PAGINAS, ROT_ESTADO, TXT_MATRIZ, TXT_REF, secoesPlano, secoesDaPagina, trSecao, copiaEstado, slugPlano, nomeCamada } from './secoes.js';
 // 0.0.15: textos do sumário executivo e das aberturas das páginas (os mesmos da página)
 import { TXT_REL } from './relatorio.js';
@@ -91,6 +94,9 @@ const PDF_TXT = {
   semNumeros: 'Ainda sem números', semNumerosDet: 'Os números do plano aparecem quando você disser o tipo de tecnologia da ferramenta (pergunta 2.3.4).',
   premissas1: 'Estimativa com 1 resposta a confirmar (premissa padrão ou sugestão).', premissasN: 'Estimativa com {0} respostas a confirmar (premissa padrão ou sugestão).',
   faltasEss: 'Perguntas do Essencial', faltasRef: 'Perguntas de refinamento',
+  // PB-04: o PDF de sempre vira o anexo técnico; o resumo executivo está no policy brief (pdf_brief.js)
+  anexo: 'Anexo técnico para a contratação', anexoCurto: 'Anexo técnico', policyBrief: 'Policy brief', indiceAnexo: 'Neste anexo',
+  remeteBrief: 'Este anexo acompanha o policy brief deste caso, que traz em seis páginas a recomendação, o desenho, o custo, os riscos e os próximos passos. Aqui estão os detalhes para a contratação.',
 };
 const tP = k => tr(PDF_TXT[k]);
 const tPn = (k, n) => tr(PDF_TXT[k].replace('{0}', String(n))).replace('{0}', String(n));
@@ -169,7 +175,6 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
   const KV = {}; (resumoRaw.kv || []).forEach(([k, v]) => { KV[k] = v; });
   const kvT = k => { const v = KV[k]; return v == null || v === '' ? '' : tr(v); };
   const faltas = secs.find(s => s.tipo === 'faltas');
-  const a1 = secs.find(s => s.id === 'A1') || { p: [] };
   // valores e origens do painel da página (mesma formatação); [valor, rótulo, origem em texto]
   const ROT_KPI = [tr('Custo do Ano 0 (prova de conceito ou piloto)'), tr('Custo total do ciclo de vida'), tr('Dotação média por ano de operação'), tr('Por usuário ativo por ano')];
   const KPIS = N ? P.kpis.map((k, i) => [k.value || '—', ROT_KPI[i], rotuloOrigem(k.origem)]) : [];
@@ -179,10 +184,7 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
   // R6: recomendações no relatório (plano/recplano.js:planoRec), já traduzidas: as mesmas frases da página
   const REC = (SUM && SUM.rec) || null;
   const comSum = !!(N && SUM && SUM.numeros && SUM.faixa);
-  const origemDe = kpi => { const k = P.kpis.find(z => z.id === kpi); return k ? rotuloOrigem(k.origem) : ''; };
   // capa: o custo total e os indicadores com o nome de cada denominador (decisão 3), sem o custo em regime
-  const KPIS_CAPA = comSum ? [[SUM.faixa.centralTxt, SUM.faixa.rotulo, origemDe('kpi.total')]]
-    .concat(SUM.indicadores.filter(k => k.id !== 'regime').map(k => [k.valor, k.rotulo, origemDe(k.kpi)])).slice(0, 4) : [];
   const ACH = (SUM && SUM.achados) || {};
   const tarde = [];   // desenhos que dependem de números de página (feitos no fim)
 
@@ -297,13 +299,10 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
   };
 
   // ---------------------------------------------------------------- capa
-  let pagRecs = 0, pagFaltas = 0, pagResumo = 0, pagSeq = 0;
+  // PB-04: o PDF é o "Anexo técnico para a contratação"; a capa não repete o resumo executivo (está no policy brief):
+  // título, caso, a linha que remete ao brief, o aviso de plano parcial e o índice com páginas e links
+  let pagRecs = 0, pagFaltas = 0, pagSeq = 0;
   const INDICE = [];   // [título, página] para o índice da capa
-  // recomendação principal: a frase principal de A1 primeiro; sem ela, as frases de A1 (sem "Por quê:")
-  const frasesPrincipais = n => {
-    const fr = (a1.p || []).filter(z => z && z !== tr('Por quê:'));
-    return a1.principal ? [a1.principal].concat(fr.filter(z => z !== a1.principal)).slice(0, n) : fr.slice(0, n + 1);
-  };
   const capa = () => {
     const BH = 128, n = 160;
     for (let i = 0; i < n; i++) {
@@ -331,13 +330,15 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
       });
     }
     fonte(9, 'bold', C.branco);
-    doc.text(pdfTxt(tP('sub').toUpperCase()), W - M, 66, { align: 'right', charSpace: 0.6 });
+    doc.text(pdfTxt(tP('anexoCurto').toUpperCase()), W - M, 66, { align: 'right', charSpace: 0.6 });
     fonte(9, 'normal', C.branco);
     doc.text(pdfTxt(agora.toLocaleDateString(LOC(), { year: 'numeric', month: 'long', day: 'numeric' })), W - M, 80, { align: 'right' });
 
     y = BH + 40;
-    fonte(12, 'bold', C.marca); doc.text(pdfTxt(NOME_FERRAMENTA), M, y); y += 34;
-    fonte(30, 'bold', C.titulo); doc.text(pdfTxt(tP('sub')), M, y); y += 18;
+    fonte(12, 'bold', C.marca); doc.text(pdfTxt(NOME_FERRAMENTA), M, y); y += 30;
+    const LT = corta(quebra(tP('anexo'), 28, LW, 'bold'), 2);
+    fonte(28, 'bold', C.titulo); LT.forEach(l => { doc.text(l, M, y); y += 33; });
+    y -= 15;
     doc.setFillColor(...C.marca); doc.rect(M, y, 46, 3.2, 'F'); y += 22;
     const LC = corta(quebra(nomeCaso, 20, LW, 'bold'), 3);
     fonte(20, 'bold', C.tinta); LC.forEach(l => { doc.text(l, M, y + 16); y += 25; });
@@ -345,41 +346,32 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
     doc.text(pdfTxt([ctx.local, tP('gerado') + ' ' + agora.toLocaleDateString(LOC())].filter(Boolean).join('  ·  ')), M, y + 10);
     y += 30;
 
-    // R6 (REC-21): recomendação principal = veredito da próxima decisão (a mesma frase da página e da síntese) e o
-    // número de condições abertas para essa decisão (REC-19: sem "prioridade alta")
-    const frases = REC && REC.veredito.texto ? [REC.veredito.texto].concat(REC.porque ? [REC.porque] : []) : frasesPrincipais(2);
-    const Lr = frases.map((f, i) => i === 0 ? quebra(f, 11.5, LW - 36, 'bold') : quebra(f, 10.5, LW - 36));
-    const nA = REC ? REC.nCondicoes : 0;
-    const linhaA = REC && REC.aviso ? REC.aviso.texto : textoCondicoes(nA);
-    const hBox = 34 + Lr.reduce((s, L) => s + L.length * 15.5 + 4, 0) + 26;
-    doc.setFillColor(...C.fundo); doc.roundedRect(M, y, LW, hBox, 8, 8, 'F');
-    doc.setFillColor(...C.marca); doc.rect(M, y + 8, 4, hBox - 16, 'F');
-    fonte(8.6, 'bold', C.marca); doc.text(pdfTxt(tP('recPrincipal').toUpperCase()), M + 20, y + 22, { charSpace: 0.5 });
-    let yy = y + 34;
-    Lr.forEach((L, i) => { fonte(i === 0 ? 11.5 : 10.5, i === 0 ? 'bold' : 'normal', i === 0 ? C.titulo : C.tinta); L.forEach(l => { doc.text(l, M + 20, yy + 11); yy += 15.5; }); yy += 4; });
-    // linha das condições abertas (com o número da página da sequência de decisões, no fim)
-    const yA = yy + 6;
-    doc.setFillColor(...(nA ? C.alta : C.muted)); doc.circle(M + 24, yA + 4.5, 3.4, 'F');
-    fonte(10, 'bold', nA ? C.alta : C.muted); doc.text(pdfTxt(linhaA), M + 33, yA + 8);
-    const wA = doc.getTextWidth(pdfTxt(linhaA));
-    tarde.push(() => {
-      const pg = pagSeq || pagRecs;
-      if (!pg) return;
-      doc.setPage(1); fonte(10, 'normal', C.muted);
-      const s = pdfTxt(pagSeq ? tPn('verSeq', pagSeq) : tPn('verRecs', pagRecs));
-      doc.text(s, M + 39 + wA, yA + 8); ehLink(M + 20, yA - 4, wA + 30 + doc.getTextWidth(s), 16, pg);
-    });
-    y += hBox + 18;
-
-    // KPIs 2×2
-    if (KPIS_CAPA.length) {
-      const g = 12, w = (LW - g) / 2, h = 68, nl = Math.ceil(KPIS_CAPA.length / 2);
-      KPIS_CAPA.forEach(([v, l, o], i) => cartaoKPI(M + (i % 2) * (w + g), y + Math.floor(i / 2) * (h + g), w, h, v, l, C.fasesS[i], 20, o));
-      y += nl * h + (nl - 1) * g;
-      fonte(8, 'italic', C.muted);
-      doc.text(pdfTxt(SUM.faixa.faixaTxt + '. ' + tP('ilustr') + (P.premissas ? ' ' + (P.premissas === 1 ? tP('premissas1') : tPn('premissasN', P.premissas)) : '')), M, y + 14, { maxWidth: LW });
-      y += 22;
-    } else if (!N) {
+    // a linha que remete ao policy brief (o resumo executivo, a recomendação e os números principais ficam lá)
+    {
+      const Lb = quebra(tP('remeteBrief'), 10.5, LW - 36);
+      const hBox = 34 + Lb.length * 15 + 12;
+      doc.setFillColor(...C.fundo); doc.roundedRect(M, y, LW, hBox, 8, 8, 'F');
+      doc.setFillColor(...C.marca); doc.rect(M, y + 8, 4, hBox - 16, 'F');
+      fonte(8.6, 'bold', C.marca); doc.text(pdfTxt(tP('policyBrief').toUpperCase()), M + 20, y + 22, { charSpace: 0.5 });
+      fonte(10.5, 'normal', C.tinta); Lb.forEach((l, i) => doc.text(l, M + 20, y + 38 + i * 15));
+      y += hBox + 14;
+    }
+    // plano parcial: o aviso (antes em "Em resumo"), com a página da lista no fim
+    if (faltas) {
+      const h = 40, L = P.lacunas, s = tituloParcial(L), y0 = y;
+      doc.setFillColor(...C.ambar); doc.setDrawColor(...C.ambarL); doc.setLineWidth(0.6); doc.roundedRect(M, y, LW, h, 5, 5, 'FD');
+      fonte(9.6, 'bold', C.media); doc.text(pdfTxt(s), M + 12, y + 16.5);
+      fonte(8.6, 'normal', C.media); doc.text(pdfTxt(textoLacunas(L)), M + 12, y + 31);
+      fonte(9.6, 'bold', C.media);
+      const w1b = doc.getTextWidth(pdfTxt(s));
+      tarde.push(() => {
+        if (!pagFaltas) return;
+        doc.setPage(1); fonte(9.6, 'normal', C.media);
+        doc.text(pdfTxt(tPn('verLista', pagFaltas)), M + 18 + w1b, y0 + 16.5); ehLink(M, y0, LW, h, pagFaltas);
+      });
+      y += h + 14;
+    }
+    if (!N) {
       // sem o tipo de tecnologia (2.3.4) não há números: o PDF diz isso, como a página
       const h = 60;
       doc.setFillColor(...C.fundo); doc.roundedRect(M, y, LW, h, 8, 8, 'F');
@@ -387,16 +379,16 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
       fonte(9.2, 'normal', C.muted); quebra(P.temNumeros ? tP('semCusto') : tP('semNumerosDet'), 9.2, LW - 32).forEach((l, i) => doc.text(l, M + 16, y + 37 + i * 12));
       y += h + 12;
     }
-    // "Neste plano": índice com páginas e links (preenchido no fim, quando as páginas são conhecidas)
+    // índice com páginas e links (preenchido no fim, quando as páginas são conhecidas)
     const yI = y + 14, hIsen = quebra(tr(FAIXA_PLANO), 8.6, LW - 24).length * 11.8 + 16, limI = H - 40 - hIsen - 22;
     tarde.push(() => {
       const itens = INDICE.filter(z => z[1]);
       if (!itens.length) return;
       doc.setPage(1);
       const lin = Math.ceil(itens.length / 2), g = 24, wI = (LW - g) / 2;
-      const hl = Math.min(17, (limI - yI - 16) / lin);
+      const hl = Math.min(19, (limI - yI - 16) / lin);
       if (hl < 14) return;
-      fonte(8.6, 'bold', C.marca); doc.text(pdfTxt(tP('indice').toUpperCase()), M, yI + 8, { charSpace: 0.5 });
+      fonte(8.6, 'bold', C.marca); doc.text(pdfTxt(tP('indiceAnexo').toUpperCase()), M, yI + 8, { charSpace: 0.5 });
       itens.forEach(([t, pg, nivel], i) => {
         const x = M + (i % 2) * (wI + g), yy = yI + 16 + Math.floor(i / 2) * hl;   // por linhas: a ordem de leitura segue a do plano
         fonte(9.6, nivel ? 'normal' : 'bold', nivel ? C.tinta : C.titulo);
@@ -433,210 +425,22 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
     const [perg, achado, intro] = ABERTURA[pg] || [];
     INDICE.push([tit, doc.getNumberOfPages(), 0]);
     doc.setFillColor(...cor); doc.roundedRect(M, y, LW, h, 8, 8, 'F');
-    fonte(9, 'bold', C.branco); doc.text(pdfTxt((perg ? tr(perg) : tP('sub')).toUpperCase()), M + 20, y + 22, { charSpace: 0.5 });
+    fonte(9, 'bold', C.branco); doc.text(pdfTxt((perg ? tr(perg) : tP('anexoCurto')).toUpperCase()), M + 20, y + 22, { charSpace: 0.5 });
     fonte(20, 'bold', C.branco); doc.text(pdfTxt(tit), M + 20, y + 47);
     y += h + 14;
     if (achado) texto(achado, { size: 12.5, b: true, cor: C.titulo, after: 4 });
     if (intro) texto(tr(intro), { size: 10, cor: C.muted, after: 10 });
   };
 
-  // ---------------------------------------------------------------- Em resumo
-  const emResumo = () => {
-    novaPag(); pagResumo = doc.getNumberOfPages(); INDICE.push([tP('resumo'), pagResumo, 0]);
-    tituloSec(tP('resumo'), tr(TXT_REL.sinteseAbre));
-    if (faltas) {
-      const h = 40, L = P.lacunas;
-      const s = tituloParcial(L);
-      doc.setFillColor(...C.ambar); doc.setDrawColor(...C.ambarL); doc.setLineWidth(0.6); doc.roundedRect(M, y, LW, h, 5, 5, 'FD');
-      fonte(9.6, 'bold', C.media); doc.text(pdfTxt(s), M + 12, y + 16.5);
-      fonte(8.6, 'normal', C.media); doc.text(pdfTxt(textoLacunas(L)), M + 12, y + 31);
-      const y0 = y, p0 = pagResumo;
-      fonte(9.6, 'bold', C.media);
-      const w1b = doc.getTextWidth(pdfTxt(s));
-      tarde.push(() => {
-        if (!pagFaltas) return;
-        doc.setPage(p0); fonte(9.6, 'normal', C.media);
-        const t = pdfTxt(tPn('verLista', pagFaltas));
-        doc.text(t, M + 18 + w1b, y0 + 16.5); ehLink(M, y0, LW, h, pagFaltas);
-      });
-      y += h + 14;
-    }
-    // R6 (REC-21, REC-38): o veredito da próxima decisão, o nível de cuidado em 3 frases e os contadores
-    if (REC && REC.veredito.texto) vereditoPDF();
-    const fr = REC ? '' : frasesPrincipais(1)[0];
-    if (fr) {
-      const L = quebra(fr, 10.5, LW - 36, 'bold'), h = 30 + L.length * 14 + 8;
-      doc.setFillColor(...C.fundo); doc.roundedRect(M, y, LW, h, 7, 7, 'F');
-      doc.setFillColor(...C.marca); doc.rect(M, y + 7, 4, h - 14, 'F');
-      fonte(8.2, 'bold', C.marca); doc.text(pdfTxt(tP('recPrincipal').toUpperCase()), M + 18, y + 17, { charSpace: 0.5 });
-      fonte(10.5, 'bold', C.titulo); L.forEach((l, i) => doc.text(l, M + 18, y + 33 + i * 14));
-      y += h + 14;
-    }
-    if (REC && REC.cuidado.length) {
-      cabe(70);
-      fonte(10.5, 'bold', C.titulo); doc.text(pdfTxt(REC.rotulos.cuidado), M, y + 10); y += 16;
-      texto(REC.cuidado.join(' '), { size: 9.2, after: 6 });
-    }
-    if (REC) contadoresPDF();
-    if (!comSum) {
-      if (P.temNumeros) texto(tP('semCusto'), { cor: C.muted });
-      else { texto(tP('semNumeros'), { size: 11, b: true, cor: C.titulo, after: 2 }); texto(tP('semNumerosDet'), { cor: C.muted }); }
-    } else {
-      // 0.0.15 (REL-01, REL-02): o custo total com a faixa P10–P90 e os indicadores, com os nomes da página
-      const F = SUM.faixa, hT = 92;
-      cabe(hT + 80);
-      doc.setDrawColor(...C.linha); doc.setLineWidth(0.7); doc.setFillColor(...C.branco); doc.roundedRect(M, y, LW, hT, 7, 7, 'FD');
-      doc.setFillColor(...C.marca); doc.rect(M + 14, y, 36, 3.6, 'F');
-      fonte(8, 'bold', C.muted); doc.text(pdfTxt(String(F.rotulo).toUpperCase()), M + 14, y + 15, { charSpace: 0.35 });
-      const oT = origemDe('kpi.total');
-      if (oT) { fonte(8, 'bold', C.marca); doc.text(pdfTxt(oT), M + LW - 12, y + 15, { align: 'right' }); }
-      fonte(24, 'bold', C.titulo); doc.text(pdfTxt(F.centralTxt), M + 14, y + 41);
-      const wV = doc.getTextWidth(pdfTxt(F.centralTxt));
-      // decisão 3: o valor central é o cenário-base; o P50 ("valor para orçar") e o P90 vêm na nota logo abaixo
-      const tBase = pdfTxt('(' + tr('cenário-base') + ')');
-      fonte(8, 'normal', C.muted); doc.text(tBase, M + 14 + wV + 5, y + 41);
-      const wBase = doc.getTextWidth(tBase) + 5;
-      fonte(9.6, 'bold', C.titulo); doc.text(pdfTxt(F.faixaTxt), M + 14, y + 56);
-      const xT = Math.max(M + 14 + wV + wBase + 16, M + 250), wT = M + LW - 14 - xT, px = v => xT + wT * v / 100;
-      doc.setFillColor(...C.cab); doc.roundedRect(xT, y + 28, wT, 9, 4.5, 4.5, 'F');
-      doc.setFillColor(...C.fases[1]); doc.roundedRect(px(F.pLo), y + 28, Math.max(3, px(F.pHi) - px(F.pLo)), 9, 4.5, 4.5, 'F');
-      doc.setFillColor(...C.titulo); doc.rect(px(F.pCentral) - 1.5, y + 25, 3, 15, 'F');
-      fonte(8, 'normal', C.muted);
-      quebra(F.nota, 8, LW - 28).slice(0, 3).forEach((l, i) => doc.text(l, M + 14, y + 68 + i * 9.6));
-      y += hT + 8;
-      const IND = SUM.indicadores, g = 10, nI = IND.length, wk = (LW - (nI - 1) * g) / nI;
-      // a nota (custo em regime) começa abaixo do rótulo, que pode ter até três linhas
-      const notaL = IND.map(k => (k.nota ? quebra(k.nota, 8, wk - 24) : []));
-      const y0N = IND.map(k => 24 + 13 + 2 + Math.min(3, quebra(k.rotulo, 8.6, wk - 24).length) * 11.4 + 2);
-      const hk = Math.max(58, ...IND.map((k, i) => y0N[i] + notaL[i].length * 9.6 + 6));
-      cabe(hk + 10);
-      IND.forEach((k, i) => {
-        const x = M + i * (wk + g);
-        cartaoKPI(x, y, wk, hk, k.valor, k.rotulo, C.fasesS[i % 4], 13, origemDe(k.kpi));
-        fonte(8, 'normal', C.muted); notaL[i].forEach((l, j) => doc.text(l, x + 12, y + y0N[i] + j * 9.6));
-      });
-      y += hk + 14;
-    }
-    // REL-03: a proposta em seis respostas
-    const EX = (SUM && SUM.exec) || [];
-    if (EX.length) {
-      cabe(80);
-      fonte(12, 'bold', C.titulo); doc.text(pdfTxt(tr(TXT_REL.exT)), M, y + 11); y += 18;
-      const wR = 112, wA = LW - wR - 12;
-      EX.forEach(x => {
-        const fr = x.frases.length ? x.frases : [x.falta];
-        const LL = fr.map(f => quebra(f, 8.8, wA - (fr.length > 1 ? 10 : 0)));
-        const hA = LL.reduce((a, L) => a + L.length * 10.8 + 1.5, 0);
-        const hR = 6 + Math.max(hA, 24) + 3;
-        cabe(hR + 2);
-        doc.setDrawColor(...C.linha); doc.setLineWidth(0.5); doc.line(M, y + hR, M + LW, y + hR);
-        fonte(9.6, 'bold', C.marca); doc.text(pdfTxt(x.rot), M, y + 13);
-        fonte(8, 'normal', C.muted); corta(quebra(x.perg, 8, wR - 6), 2).forEach((l, i) => doc.text(l, M, y + 24 + i * 9.4));
-        let yy = y + 8;
-        LL.forEach(L => {
-          if (fr.length > 1) { doc.setFillColor(...C.marca); doc.rect(M + wR + 12, yy + 3.6, 3, 3, 'F'); }
-          fonte(8.8, 'normal', x.frases.length ? C.tinta : C.muted);
-          L.forEach(l => { doc.text(l, M + wR + 12 + (fr.length > 1 ? 10 : 0), yy + 8.6); yy += 10.8; }); yy += 1.5;
-        });
-        y += hR + 1;
-      });
-      y += 10;
-    }
-    // R6 (5.1, REC-38): os 5 cartões de "Comece por estas" (O quê, Por quê, Para quê, Como, Quem age, Marco, O que está
-    // em jogo, Pronto quando; a origem numa linha pequena)
-    cartoesPDF();
-    // REL-05, REL-06: o custo em resumo (um iceberg por fase) e os três maiores direcionadores. R6: no PDF eles abrem
-    // "Quanto custa" (custoResumoPDF), para que "Em resumo" caiba em 3 páginas com os 5 cartões
-    // REL-16: como ler este plano
-    const CL = ['comoLer2', 'comoLer3', 'comoLer4', 'comoLer5'].map(k => tr(TXT_REL[k]));
-    const hCL = 26 + CL.reduce((s, z) => s + altTexto(z, 8.6, LW - 40) + 3, 0);
-    cabe(hCL + 6); y += 4;
-    const y0 = y;
-    doc.setFillColor(...C.fundo); doc.roundedRect(M, y, LW, hCL, 7, 7, 'F');
-    doc.setFillColor(...C.marca); doc.rect(M, y + 7, 4, hCL - 14, 'F');
-    fonte(10.5, 'bold', C.titulo); doc.text(pdfTxt(tr(TXT_REL.comoLer)), M + 18, y + 17); y += 24;
-    CL.forEach(z => texto(z, { size: 8.6, x: M + 18, w: LW - 36, ind: 10, bullet: true, after: 3 }));
-    y = y0 + hCL + 10;
-  };
-
-  // ---------------------------------------------------------------- R6: recomendações no relatório
-  const corNivel = n => (n === 'condicao' ? C.alta : n === 'acompanhar' ? C.muted : C.marca);
-  // caixa do veredito (4.4): rótulo, veredito, frase inteira, porquê e o aviso de mais de 5 condições
-  const vereditoPDF = () => {
-    const V = REC.veredito, cor = V.codigo === 'nao' ? C.alta : V.codigo === 'condicoes' ? C.media : C.marca;
-    const L = quebra(V.texto, 10.5, LW - 36, 'bold'), Lp = REC.porque ? quebra(REC.porque, 8.8, LW - 36) : [];
-    const La = REC.aviso ? quebra(REC.aviso.texto + ' ' + tPn('verSeq', '…'), 8.8, LW - 36, 'bold') : [];
-    const h = 30 + 13 + L.length * 14 + Lp.length * 11 + (La.length ? 4 + La.length * 11 : 0) + 8;
-    cabe(h + 10);
-    const y0 = y, p0 = doc.getNumberOfPages();
-    doc.setFillColor(...C.fundo); doc.roundedRect(M, y, LW, h, 7, 7, 'F');
-    doc.setFillColor(...cor); doc.rect(M, y + 7, 4, h - 14, 'F');
-    fonte(8.2, 'bold', C.marca); doc.text(pdfTxt(REC.rotulos.principal.toUpperCase()), M + 18, y + 17, { charSpace: 0.5 });
-    fonte(9.6, 'bold', cor); doc.text(pdfTxt(V.rotulo), M + 18, y + 31);
-    let yy = y + 36;
-    fonte(10.5, 'bold', C.titulo); L.forEach(l => { doc.text(l, M + 18, yy + 10.5); yy += 14; });
-    fonte(8.8, 'normal', C.muted); Lp.forEach(l => { doc.text(l, M + 18, yy + 8.8); yy += 11; });
-    if (La.length) {
-      yy += 4;
-      // o número da página da sequência (onde está a lista) entra no fim, quando é conhecido
-      const ya = yy;
-      tarde.push(() => {
-        doc.setPage(p0); fonte(8.8, 'bold', C.alta);
-        quebra(REC.aviso.texto + ' ' + tPn('verSeq', pagSeq || '—'), 8.8, LW - 36, 'bold').forEach((l, i) => doc.text(l, M + 18, ya + 8.8 + i * 11));
-        if (pagSeq) ehLink(M, y0, LW, h, pagSeq);
-      });
-    }
-    y += h + 12;
-  };
-  // contadores: governança x de 6, condições de uso nas escolas x de 4, respostas que faltam
-  const contadoresPDF = () => {
-    const c = REC.contadores;
-    cabe(26);
-    let x = M;
-    x += etiqueta(x, y, c.gov.texto, C.cab, C.titulo, 8.6) + 6;
-    if (c.uso) x += etiqueta(x, y, c.uso.texto, c.uso.prontas < 4 ? C.ambar : C.cab, c.uso.prontas < 4 ? C.media : C.titulo, 8.6) + 6;
-    etiqueta(x, y, c.faltam.texto, C.cab, C.titulo, 8.6);
-    y += 26;
-  };
-  // os 5 cartões: caixa com o número, o pacote e o nível; rótulo à esquerda e texto à direita
-  const cartoesPDF = () => {
-    const AC = REC ? REC.cartoes : [];
-    cabe(120);
-    subtitulo(tP('topRecs'), C.titulo, 90);
-    if (!AC.length) { texto(REC && REC.vazioInfo ? REC.vazioInfo.texto + '. ' + REC.vazioInfo.explicacao : tr(TXT_REL.semAcoes), { cor: C.muted, size: 9.6 }); return; }
-    const Rt = REC.rotulos;
-    const ROT = [Rt.oque, Rt.porque, Rt.paraque, Rt.como, Rt.quem, Rt.marco, Rt.jogo, Rt.pronto];
-    fonte(8, 'bold'); const wL = Math.max(64, ...ROT.map(z => doc.getTextWidth(pdfTxt(z)) + 8)), xT = M + 14, wV = LW - 14 - wL - 14;
-    AC.forEach(a => {
-      const como = (a.como || []).map((z, i) => (i + 1) + '. ' + z).join('  ');
-      const campos = [[Rt.oque, a.oque + ' (' + a.id + ')' + (a.etiqueta ? ' ' + a.etiqueta : ''), 'bold'], [Rt.porque, a.razao], [Rt.paraque, a.paraque], [Rt.como, como],
-        [Rt.quem, a.quem], [Rt.marco, a.marco], [Rt.jogo, a.emJogo ? a.emJogo.rotulo + ': ' + a.emJogo.valor : ''], [Rt.pronto, a.pronto]].filter(z => z[1]);
-      const tam = 8.2, alt = 9.6;
-      const FF = campos.map(([k, v, st]) => [k, quebra(v, tam, wV, st || 'normal'), st]).filter(f => f[1].length);
-      const Lo = a.origem ? quebra(Rt.origem + ': ' + a.origem, 7.6, LW - 28) : [];
-      const h = 22 + FF.reduce((s0, f) => s0 + f[1].length * alt + 1.4, 0) + (Lo.length ? 2 + Lo.length * 9 : 0) + 6;
-      cabe(h + 4);
-      doc.setDrawColor(...C.linha); doc.setLineWidth(0.7); doc.setFillColor(...C.branco); doc.roundedRect(M, y, LW, h, 6, 6, 'FD');
-      doc.setFillColor(...corNivel(a.nivel)); doc.rect(M, y + 1, 4, h - 2, 'F');
-      fonte(9.4, 'bold', corNivel(a.nivel)); doc.text(String(a.n), xT, y + 14);
-      fonte(8, 'bold', C.muted); doc.text(pdfTxt(String(a.titulo).toUpperCase()), xT + 12, y + 14, { charSpace: 0.3 });
-      fonte(8, 'bold', corNivel(a.nivel)); doc.text(pdfTxt(a.rotuloNivel), M + LW - 10, y + 14, { align: 'right' });
-      let yy = y + 20;
-      FF.forEach(([rot, L, st]) => {
-        fonte(8, 'bold', C.marca); doc.text(pdfTxt(rot), xT, yy + 8);
-        fonte(tam, st || 'normal', st ? C.titulo : C.tinta); L.forEach(l => { doc.text(l, xT + wL, yy + 8); yy += alt; }); yy += 1.4;
-      });
-      if (Lo.length) { yy += 2; fonte(7.6, 'normal', C.muted); Lo.forEach(l => { doc.text(l, xT, yy + 7.6); yy += 9; }); }
-      y += h + 4;
-    });
-    y += 4;
-  };
+  // PB-04: "Em resumo" (veredito, nível de cuidado, contadores, faixa, seis respostas, cinco cartões, como ler) saiu do
+  // anexo técnico: o resumo executivo é a página 1 do policy brief (pdf_brief.js), com a mesma recomendação e os mesmos
+  // números; o nível de cuidado e as cinco ações estão nas páginas 5 e 6 do brief.
   // tabela simples com cores no estado (sequência de decisões)
   const COR_ESTADO = { pronto: [30, 107, 58], falta: C.alta, premissa: C.media, impossivel: C.alta };
   const sequenciaPDF = () => {
     if (!REC || !REC.nRecs) return;
     const SQ = REC.sequencia, r = SQ.rotulos;
-    novaPag(); pagSeq = doc.getNumberOfPages(); INDICE.push([SQ.titulo, pagSeq, 1]);
+    novaPag(); pagSeq = doc.getNumberOfPages(); INDICE.push([SQ.titulo, pagSeq, 0]);   // PB-04: primeiro item do índice (sem "Em resumo")
     tituloSec(SQ.titulo, SQ.intro, C.fasesS[2]);
     // REC-22: o aviso de mais de 5 condições, com a lista (os R-nn; o texto de cada uma está no plano de ação)
     if (REC.aviso) texto(REC.aviso.texto + ' ' + REC.aviso.lista.map(x => x.id).join(', ') + '.', { size: 9.2, b: true, cor: C.alta, after: 6 });
@@ -1110,10 +914,9 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
   };
 
   // ---------------------------------------------------------------- montagem
-  doc.setProperties({ title: pdfTxt(NOME_FERRAMENTA + ' - ' + tP('sub') + ' - ' + nomeCaso), subject: pdfTxt(tP('sub')), creator: NOME_FERRAMENTA });
+  doc.setProperties({ title: pdfTxt(NOME_FERRAMENTA + ' - ' + tP('anexo') + ' - ' + nomeCaso), subject: pdfTxt(tP('anexo')), creator: NOME_FERRAMENTA });
   capa();
-  // Em resumo e, logo depois, a sequência de decisões (R6, 5.3: meia página no PDF)
-  emResumo();
+  // a sequência de decisões logo depois da capa (R6, 5.3; PB-04: sem "Em resumo", que está no policy brief)
   sequenciaPDF();
   // Quanto custa (A2, A3)
   aberturaPagina('custa');
@@ -1164,9 +967,9 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
     doc.setPage(i);
     {
       fonte(8, 'normal', C.muted);
-      let run = pdfTxt(NOME_FERRAMENTA + '  ·  ' + tP('sub') + '  ·  ' + nomeCaso);
+      let run = pdfTxt(NOME_FERRAMENTA + '  ·  ' + tP('anexo') + '  ·  ' + nomeCaso);
       while (doc.getTextWidth(run) > LW && run.length > 20) run = run.slice(0, -2);
-      if (run.length < pdfTxt(NOME_FERRAMENTA + '  ·  ' + tP('sub') + '  ·  ' + nomeCaso).length) run = run.replace(/\s*\S?$/, '') + '…';
+      if (run.length < pdfTxt(NOME_FERRAMENTA + '  ·  ' + tP('anexo') + '  ·  ' + nomeCaso).length) run = run.replace(/\s*\S?$/, '') + '…';
       doc.text(run, M, 30);
       doc.setDrawColor(...C.linha); doc.setLineWidth(0.6); doc.line(M, 38, W - M, 38);
       doc.setFillColor(...C.marca); doc.rect(M, 37.2, 34, 1.6, 'F');
@@ -1460,4 +1263,7 @@ async function paraDataURI(url) {
   } catch (e) { console.warn('recursos do PDF', e); return ''; }
 }
 
-export { gerarPDF, nomeArqPDF, recursosPDF, carregarFontesPDF, pdfTxt, quebrarCJK, inflarPDF, PDF_COR, PDF_TXT, PDF_AREAS, IDIOMAS_FONTE };
+// PB-02: o policy brief (pdf_brief.js) usa as mesmas fontes, o mesmo RTL e a mesma paleta: fontePDF registra a fonte
+// do idioma, limparFontePDF volta à Helvetica no fim (como o finally de gerarPDF) e carregarJsPDF carrega o jsPDF.
+function limparFontePDF() { PDF_FONTE = null; }
+export { gerarPDF, nomeArqPDF, recursosPDF, carregarFontesPDF, carregarJsPDF, fontePDF, limparFontePDF, pdfTxt, quebrarCJK, inflarPDF, PDF_COR, PDF_TXT, PDF_AREAS, IDIOMAS_FONTE };

@@ -26,10 +26,10 @@ const TXT_SEL = {
   comece: 'Comece por: {0}.',
   pode: 'Pode avançar.',
   condicoes: 'Pode avançar com condições.',
-  naoPiloto: 'Ainda não avance para o piloto: comece por uma prova de conceito.',
-  naoProblema: 'Ainda não avance: descreva primeiro o problema e a meta, sem partir da tecnologia.',
-  naoContestacao: 'Ainda não avance: crie antes um caminho para contestar as saídas que afetam pessoas.',
-  naoExcesso: 'Ainda não avance: há {n} condições abertas para {marco}.',
+  naoPiloto: 'Recomendação: começar por uma prova de conceito antes do piloto.',
+  naoProblema: 'Recomendação: descrever primeiro o problema e a meta, sem partir da tecnologia.',
+  naoContestacao: 'Recomendação: criar antes um caminho para contestar as saídas que afetam pessoas.',
+  naoExcesso: 'Recomendação: preparar primeiro as {n} condições abertas para {marco}.',
   porquePode: 'Nenhuma condição aberta para {marco}.',
   porqueCond1: '1 condição aberta para {marco}.',
   porqueCondN: '{n} condições abertas para {marco}.',
@@ -44,7 +44,7 @@ const TXT_SEL = {
   sugerida: 'Resposta sugerida pela ferramenta e ainda não confirmada; as ações que dependem dela ficam marcadas "a confirmar".',
   aCalcular: 'a calcular',
 };
-const ROTULO_VEREDITO = { pode: 'Pode avançar', condicoes: 'Pode avançar com condições', nao: 'Ainda não avance', sem: 'Ainda sem recomendações' };
+const ROTULO_VEREDITO = { pode: 'Pode avançar', condicoes: 'Pode avançar com condições', nao: 'Preparar antes de avançar', sem: 'Ainda sem recomendações' };
 // objeto da próxima decisão (4.4: "Próxima decisão: {marco e objeto}")
 const DECISAO = {
   teste: 'autorizar o teste',
@@ -285,7 +285,8 @@ function decisaoDe(k, prox, gatilhos) {
 
 /**
  * Veredito da próxima decisão (4.4), o mesmo objeto para a capa, "Em resumo", o PDF e a síntese do capítulo 4:
- * "Próxima decisão: {objeto}. {Veredito}. Faltam: {cartões 1–3}." "Ainda não avance" só nos 4 gatilhos:
+ * "Próxima decisão: {objeto}. {Veredito}. Faltam: {cartões 1–3}." O código 'nao' (redação construtiva, decisão 2 do
+ * policy brief: "Recomendação: começar por…", nunca "Ainda não avance") só nos 4 gatilhos:
  * 'problema' (R-05 disparada), 'piloto' (piloto escolhido quando a ferramenta indica prova de conceito antes),
  * 'contestacao' (R-32 como Condição: saída que afeta pessoas sem caminho de contestação) e 'excesso' (> 5 Condições).
  */

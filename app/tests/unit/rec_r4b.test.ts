@@ -229,7 +229,7 @@ describe('R-32 e a pergunta 2.2.5 (contestação)', () => {
       expect(res(e).veredito.gatilhos, String(v)).not.toContain('contestacao');
     });
   });
-  it('só "não existe" torna R-32 Condição, com o texto de criar o caminho antes de usar e o veredito "Ainda não avance"', () => {
+  it('só "não existe" torna R-32 Condição, com o texto de criar o caminho antes de usar e o veredito construtivo (código "nao")', () => {
     const e = variante('C', { [CAMPO_CONTESTACAO]: 'nao' });
     const r = R32(e);
     expect(r.condicao).toBe(true);

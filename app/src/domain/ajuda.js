@@ -245,7 +245,7 @@ export const DICAS = {
   altCustoEfeito: 'Custo por pessoa por ano, em US$, e ganho de aprendizagem em desvios-padrão, em faixa. Sem isso, o plano mostra só a fórmula do efeito de empate.',
   volumeResultado: 'Com o volume por mês ou por ano, o plano calcula o custo por solicitação ou por estudante atendido.',
   instrumentoTeste: 'O instrumento define se o teste cria direito de continuar com o fornecedor. Sem resposta, é deduzido do teste, do pagamento e da situação.',
-  contestacaoExiste: 'Sem resposta, o plano presume um caminho só no papel. Se não existe e a saída afeta pessoas, o plano diz "ainda não avance".',
+  contestacaoExiste: 'Sem resposta, o plano presume um caminho só no papel. Se não existe e a saída afeta pessoas, o plano recomenda criar antes esse caminho.',
   momentoUso: 'O momento diz de onde sai o tempo de uso: da grade, do contraturno, de casa ou do planejamento do professor.',
   treino: 'Sem resposta, o plano presume que não se sabe e pede a cláusula de proibição. "Sim" gera um alerta de bloqueio.',
   tempoJornada: 'Formação fora do horário pago tem pouca adesão. O tempo do professor é custo da [[camada]] 6, mesmo quando não é gasto novo.',

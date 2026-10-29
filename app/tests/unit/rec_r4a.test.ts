@@ -199,7 +199,7 @@ describe('PROB: R-02, R-04 e R-05', () => {
     EX.forEach(k => expect(ids(exemplo(k)), k).not.toContain('R-05'));
     expect(ids(exemplo('novo'))).not.toContain('R-05');
   });
-  it('R-05: o problema que cita a tecnologia gera a Condição e o veredito "Ainda não avance"', () => {
+  it('R-05: o problema que cita a tecnologia gera a Condição e o veredito construtivo (código "nao")', () => {
     const e = variante('B', { problema: 'Os estudantes precisam de um tutor com inteligência artificial para matemática.' });
     const r = item(e, 'R-05');
     expect(r, 'R-05').toBeTruthy();
@@ -208,7 +208,7 @@ describe('PROB: R-02, R-04 e R-05', () => {
     const v = res(e).veredito;
     expect(v.codigo).toBe('nao');
     expect(v.gatilhos).toContain('problema');
-    expect(v.texto).toMatch(/Ainda não avance: descreva primeiro o problema/);
+    expect(v.texto).toMatch(/Recomendação: descrever primeiro o problema/);
   });
   it('R-05: problema vazio num caso já começado gera a variante "descrever"; em branco, nada', () => {
     const r = item(variante('B', { problema: '' }), 'R-05');
@@ -352,7 +352,7 @@ describe('o 4a no conjunto: veredito, aviso e cartões', () => {
     expect(r.cartoes.find((c: any) => c.pacote === 'TESTE').ids).toEqual(expect.arrayContaining(['R-07', 'R-13']));
     expect(r.cartoes.map((c: any) => c.id)).toContain('R-20');
     ['R-09', 'R-12', 'R-13', 'R-14', 'R-20'].forEach(id => expect(r.condicoes, id).toContain(id));
-    expect(r.veredito.texto).toMatch(/Ainda não avance para o piloto/);
+    expect(r.veredito.texto).toMatch(/Recomendação: começar por uma prova de conceito antes do piloto/);
   });
   it('D: R-20 (piloto com usuários reais antes da implantação) entre os 5 cartões; só R-57 e R-20 como Condições do 4a/COMPRA', () => {
     const r = res(exemplo('D'));

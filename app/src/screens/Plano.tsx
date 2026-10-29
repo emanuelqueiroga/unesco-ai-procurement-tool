@@ -5,7 +5,10 @@
 // 0.0.15 (REL-01 a REL-08, REL-12, REL-16): "Em resumo" é o sumário executivo (custo total com a faixa P10–P90,
 // indicadores com o nome de cada denominador, seis respostas, cinco ações em cartões, um iceberg por fase e os três
 // maiores direcionadores); cada página abre com a pergunta de decisão, o parágrafo de abertura e o título-achado.
-import { useEffect, useMemo, useState } from 'react';
+// PB-06 a PB-08: "Em resumo" espelha a página 1 do policy brief (a recomendação, as cinco frases, os três números, as
+// quatro etapas e as cinco ações só com o quê, quem e quando); o resto fica em "Ver detalhes", recolhido no fim.
+// Dois downloads em todas as páginas: o policy brief (principal, plano/pdf_brief.js) e o anexo técnico (plano/pdf.js).
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { CAMADAS, LOC, getLang, tr, mil, unidMil } from '../domain';
 import { useCaso, type CasoStore, type Estado14 } from '../store';
@@ -19,12 +22,14 @@ import { fmt, sincronizar } from '../percurso/ambiente';
 import { VERSAO } from '../percurso/canal';
 import { t, plural, minusc } from '../percurso/textos';
 import { href, type PaginaPlano } from '../percurso/rota';
-import { lacunasDe, tituloParcial, textoLacunas, rotuloOrigem, driversDe, explicacaoKpi, type KpiOuSaida, type Painel } from '../percurso/painel';
+import { tituloParcial, textoLacunas, rotuloOrigem, driversDe, explicacaoKpi, type KpiOuSaida, type Painel } from '../percurso/painel';
 import { secoesPlano, trSecao, painelPlano } from '../plano/secoes.js';
 import { R } from '../plano/relatorio.js';
 import { Iceberg } from './Iceberg';
-import { FaixaTco, IndicadoresResumo, SeisRespostas, Direcionadores, ComoLer, type SumarioPlano } from './Sumario';
-import { VereditoResumo, Cuidado, Contadores, CartoesRec, Pendencias, Sequencia, TesteAvaliar, PlanoAcao } from './PlanoRec';
+import { FaixaTco, IndicadoresResumo, SeisRespostas, Direcionadores, ComoLer, BriefRecomendacao, CincoFrases, TresNumeros, LinhaEtapas, type SumarioPlano } from './Sumario';
+import { VereditoResumo, AvisoCondicoes, Cuidado, Contadores, CartoesBrief, Pendencias, Sequencia, TesteAvaliar, PlanoAcao } from './PlanoRec';
+import { useBrief, type BriefDados } from './brief';
+
 import { TXT_REF } from '../plano/secoes.js';
 import figuraTCO from '../../../assets/fig1_tco.jpg';
 import './plano.css';
@@ -33,21 +38,28 @@ const nomeCamada = (n: number) => String(tr(((CAMADAS as any[]).find((c) => c[0]
 const PAGINAS: PaginaPlano[] = ['resumo', 'custa', 'fazer', 'exigir', 'apendice'];
 const TITULO_PAGINA: Record<string, string> = { resumo: 'Em resumo', custa: 'Quanto custa', fazer: 'O que fazer', exigir: 'O que exigir', apendice: 'Apêndice', faltam: 'Respostas que faltam' };
 
-/** Gera o PDF (jsPDF carregado sob demanda) e entrega o arquivo. */
-export async function baixarPDF(e: Estado14): Promise<void> {
+/** Qual PDF: o policy brief (até 6 páginas, o principal) ou o anexo técnico para a contratação (o relatório completo). */
+export type TipoPDF = 'brief' | 'anexo';
+
+/** Gera o PDF (jsPDF carregado sob demanda) e entrega o arquivo (capacidade `downloads` do ambiente ou link). */
+export async function baixarPDF(e: Estado14, tipo: TipoPDF = 'anexo'): Promise<void> {
   sincronizar(e);
-  const m: any = await import('../plano/pdf.js');
-  const recursos = await m.recursosPDF();
-  const doc = await m.gerarPDF(e, { versao: VERSAO, lang: getLang(), ...recursos });
-  const como = await baixarArquivo(m.nomeArqPDF(e), doc.output('blob'), 'application/pdf');
+  const base: any = await import('../plano/pdf.js');
+  const m: any = tipo === 'brief' ? await import('../plano/pdf_brief.js') : base;
+  // o anexo leva a Figura 1 e os logotipos; o brief não usa imagens
+  const recursos = tipo === 'brief' ? {} : await base.recursosPDF();
+  const opts = { versao: VERSAO, lang: getLang(), ...recursos };
+  const doc = await (tipo === 'brief' ? m.gerarBrief(e, opts) : m.gerarPDF(e, opts));
+  const nome = tipo === 'brief'
+    ? (typeof m.nomeArqBrief === 'function' ? m.nomeArqBrief(e) : String(base.nomeArqPDF(e)).replace(/\.pdf$/i, '') + '-policy-brief.pdf')
+    : (typeof m.nomeArqAnexo === 'function' ? m.nomeArqAnexo(e) : m.nomeArqPDF(e));
+  const como = await baixarArquivo(nome, doc.output('blob'), 'application/pdf');
   if (como === 'link') avisar(t('Arquivo enviado para download.'));
 }
 
-export function BotaoPDF({ s, variante = 'primary', tamanho = 'sm', rotulo }: { s: CasoStore; variante?: 'primary' | 'secondary'; tamanho?: 'sm' | 'md'; rotulo?: string }) {
+export function BotaoPDF({ s, tipo = 'anexo', variante = tipo === 'brief' ? 'primary' : 'secondary', tamanho = 'sm', rotulo }: { s: CasoStore; tipo?: TipoPDF; variante?: 'primary' | 'secondary'; tamanho?: 'sm' | 'md'; rotulo?: string }) {
   const [gerando, setGerando] = useState(false);
   const [erro, setErro] = useState('');
-  // a mesma contagem do aviso da página e do PDF: perguntas do Essencial e de refinamento
-  const faltam = lacunasDe(s).total;
   return (
     <>
       <Button
@@ -55,16 +67,27 @@ export function BotaoPDF({ s, variante = 'primary', tamanho = 'sm', rotulo }: { 
         size={tamanho}
         disabled={gerando}
         aria-busy={gerando || undefined}
+        data-pdf={tipo}
         onClick={async () => {
           setGerando(true); setErro('');
-          try { await baixarPDF(s.estado()); } catch (err) { console.error(err); setErro(t('Não foi possível gerar o PDF. Tente de novo; se continuar, exporte o caso e avise a equipe.')); }
+          try { await baixarPDF(s.estado(), tipo); } catch (err) { console.error(err); setErro(t('Não foi possível gerar o PDF. Tente de novo; se continuar, exporte o caso e avise a equipe.')); }
           finally { setGerando(false); }
         }}
       >
-        {gerando ? t('Gerando o PDF…') : rotulo || (faltam ? t('Baixar o plano em PDF · {n} lacunas', { n: faltam }) : t('Baixar o plano em PDF'))}
+        {gerando ? t('Gerando o PDF…') : rotulo || (tipo === 'brief' ? t('Baixar o policy brief (PDF)') : t('Anexo técnico (PDF)'))}
       </Button>
       {erro ? <span className="pc-erro" role="alert">{erro}</span> : null}
     </>
+  );
+}
+
+/** Os dois downloads (PB-08): o policy brief como ação principal e o anexo técnico como secundária. */
+export function BotoesPDF({ s, tamanho = 'sm', className }: { s: CasoStore; tamanho?: 'sm' | 'md'; className?: string }) {
+  return (
+    <div className={['pc-botoes', 'pc-botoes-pdf', className || ''].filter(Boolean).join(' ')} role="group" aria-label={t('Baixar o plano')}>
+      <BotaoPDF s={s} tipo="brief" tamanho={tamanho} />
+      <BotaoPDF s={s} tipo="anexo" tamanho={tamanho} />
+    </div>
   );
 }
 
@@ -205,52 +228,75 @@ function SemNumeros({ p }: { p: Painel }) {
   );
 }
 
-function Resumo({ s, p, sum }: { s: CasoStore; p: Painel; sum: SumarioPlano | null }) {
+/** O que saiu do topo de "Em resumo" (PB-06): recolhido em "Ver detalhes" no fim da página, aberto na impressão. */
+function DetalhesResumo({ p, sum, origem }: { p: Painel; sum: SumarioPlano | null; origem: (kpi: string, rotulo: string, fim: boolean) => React.ReactNode }) {
+  const imprimindo = useContext(ModoImpressao);
+  const [aberto, setAberto] = useState(false);
   const L = p.lacunas;
-  const data = new Date().toLocaleDateString(LOC(), { year: 'numeric', month: 'long', day: 'numeric' });
-  // "de onde vem?" dos números do sumário: o KPI do painel que os explica (origem e respostas que pesam)
+  const P = sum ? sum.rec : null;
+  const kTotal = p.kpis.find((z) => z.id === 'kpi.total');
+  const comNumeros = p.temNumeros && !!sum && sum.numeros && !!sum.faixa;
+  const mostra = aberto || imprimindo;
+  return (
+    <details className="pc-recolhe pc-resumo-det" id="sec-detalhes" open={mostra || undefined} onToggle={(e) => setAberto((e.currentTarget as HTMLDetailsElement).open)}>
+      <summary>{t('Ver detalhes')}<span className="pc-nota pc-resumo-det-nota">{t('nível de cuidado, governança, faixa de custo, indicadores, a proposta em seis respostas e o custo por fase')}</span></summary>
+      {mostra ? (
+        <div className="pc-recolhe-corpo pc-resumo-det-corpo">
+          <p className="pc-lead">{R('sinteseAbre')}</p>
+          {L.total ? (
+            <Alert kind="info" title={tituloParcial(L)}>
+              {textoLacunas(L)} {t('O plano já pode ser usado; o que depende dessas respostas usa premissas padrão.')} <a href={href.plano('faltam')}>{t('Ver o que falta')}</a>
+            </Alert>
+          ) : null}
+          <AvisoCondicoes P={P} />
+          <Cuidado P={P} />
+          <Contadores P={P} />
+          {comNumeros ? (
+            <section className="pc-plano-sec" id="sec-faixa" aria-label={t('Faixa de custo e indicadores')}>
+              <FaixaTco f={sum!.faixa!} rotulo={kTotal ? kTotal.label : sum!.faixa!.rotulo} origem={origem('kpi.total', sum!.faixa!.rotulo, false)} />
+              <IndicadoresResumo L={sum!.indicadores} origem={origem} />
+            </section>
+          ) : null}
+          {sum ? <SeisRespostas L={sum.exec} /> : null}
+          <a href={href.plano('apendice')}>{t('Ver o perfil completo do caso')}</a>
+          {comNumeros && sum ? (
+            <section className="pc-plano-sec" id="sec-custo-resumo">
+              <h2 className="pc-plano-h2">{R('custoT')}</h2>
+              <p className="pc-nota">{R('custoAbre')}</p>
+              {sum.ice ? <Iceberg ice={sum.ice} /> : null}
+              <Direcionadores L={sum.drivers} />
+            </section>
+          ) : null}
+          <ComoLer />
+        </div>
+      ) : null}
+    </details>
+  );
+}
+
+function Resumo({ s, p, sum, b }: { s: CasoStore; p: Painel; sum: SumarioPlano | null; b: BriefDados | null }) {
+  const data = (b && b.data) || new Date().toLocaleDateString(LOC(), { year: 'numeric', month: 'long', day: 'numeric' });
+  // "de onde vem?" dos números: o KPI do painel que os explica (origem e respostas que pesam)
   const origem = (kpi: string, rotulo: string, fim: boolean) => {
     const k = p.kpis.find((z) => z.id === kpi);
     return k ? <OrigemKpi s={s} id={kpi as KpiOuSaida} origem={k.origem} rotuloKpi={rotulo} alinharAoFim={fim} /> : null;
   };
-  const kTotal = p.kpis.find((z) => z.id === 'kpi.total');
   const P = sum ? sum.rec : null;
-  const comNumeros = p.temNumeros && !!sum && sum.numeros && !!sum.faixa;
+  const fatos = p.fatos;
   return (
     <>
       <header className="pc-plano-capa">
         <p className="pc-kicker">{p.temNumeros && p.premissas ? t('Plano de contratação · estimativa com {n} respostas a confirmar', { n: p.premissas }) : t('Plano de contratação')}</p>
         <TituloEditavel s={s} p={p} />
-        {p.fatos ? <p className="pc-plano-fatos">{p.fatos}</p> : null}
+        {fatos ? <p className="pc-plano-fatos">{fatos}</p> : null}
         <p className="pc-nota">{t('Gerado em')} {data}{s.exemplo !== 'novo' ? ' · ' + t('Exemplo ilustrativo: as respostas não são de uma rede real.') : ''}</p>
       </header>
-      <p className="pc-lead">{R('sinteseAbre')}</p>
-      <VereditoResumo P={P} />
-      {L.total ? (
-        <Alert kind="info" title={tituloParcial(L)}>
-          {textoLacunas(L)} {t('O plano já pode ser usado; o que depende dessas respostas usa premissas padrão.')} <a href={href.plano('faltam')}>{t('Ver o que falta')}</a>
-        </Alert>
-      ) : null}
-      <Cuidado P={P} />
-      <Contadores P={P} />
-      {comNumeros ? (
-        <section className="pc-plano-sec" id="sec-numeros" aria-label={t('Os números principais')}>
-          <FaixaTco f={sum!.faixa!} rotulo={kTotal ? kTotal.label : sum!.faixa!.rotulo} origem={origem('kpi.total', sum!.faixa!.rotulo, false)} />
-          <IndicadoresResumo L={sum!.indicadores} origem={origem} />
-        </section>
-      ) : <SemNumeros p={p} />}
-      <CartoesRec P={P} />
-      {sum ? <SeisRespostas L={sum.exec} /> : null}
-      <a href={href.plano('apendice')}>{t('Ver o perfil completo do caso')}</a>
-      {comNumeros && sum ? (
-        <section className="pc-plano-sec" id="sec-custo-resumo">
-          <h2 className="pc-plano-h2">{R('custoT')}</h2>
-          <p className="pc-nota">{R('custoAbre')}</p>
-          {sum.ice ? <Iceberg ice={sum.ice} /> : null}
-          <Direcionadores L={sum.drivers} />
-        </section>
-      ) : null}
-      <ComoLer />
+      {b ? <BriefRecomendacao b={b} verFazer={!!(P && P.nRecs)} /> : <VereditoResumo P={P} />}
+      {b ? <CincoFrases b={b} /> : null}
+      {p.temNumeros && b ? <TresNumeros b={b} origem={origem} /> : !p.temNumeros ? <SemNumeros p={p} /> : null}
+      {b ? <LinhaEtapas b={b} /> : null}
+      <CartoesBrief acoes={b ? b.acoes : []} P={P} rotulos={b ? b.rotulos : undefined} />
+      <DetalhesResumo p={p} sum={sum} origem={origem} />
     </>
   );
 }
@@ -392,14 +438,8 @@ function IndiceInterno({ entradas }: { entradas: Entrada[] }) {
 
 function entradasDe(pagina: PaginaPlano, secs: SecaoPlano[], p: Painel, sum?: SumarioPlano | null): Entrada[] {
   const L: Entrada[] = [];
-  if (pagina === 'resumo') {
-    if (sum && sum.rec && sum.rec.cuidado.length) L.push({ id: 'sec-cuidado', label: sum.rec.rotulos.cuidado });
-    if (p.temNumeros && sum && sum.numeros) L.push({ id: 'sec-numeros', label: t('Os números principais') });
-    L.push({ id: 'sec-acoes', label: t('Comece por estas') });
-    if (sum && sum.exec.length) L.push({ id: 'sec-seis', label: R('exT') });
-    if (p.temNumeros && sum && sum.numeros) L.push({ id: 'sec-custo-resumo', label: R('custoT') });
-    return L;
-  }
+  // PB-06: "Em resumo" é uma página curta, sem índice interno (o resto está em "Ver detalhes", no fim)
+  if (pagina === 'resumo') return L;
   if (pagina === 'fazer') {
     const P = sum ? sum.rec : null;
     if (P) L.push({ id: 'sec-pend', label: P.rotulos.pendT });
@@ -436,6 +476,7 @@ export function Plano({ pagina }: { pagina: PaginaPlano }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.caso, s.ctx, s.resp, s.origem, s.custo, s.moeda, s.exemplo, s.lang, p]);
   const { secs, sum, graf } = dados;
+  const brief = useBrief(s);
   const ach = (sum && sum.achados) || {};
 
   // Ctrl+P: o documento traz as cinco páginas, uma por folha, com tudo aberto (PLA-07)
@@ -474,7 +515,7 @@ export function Plano({ pagina }: { pagina: PaginaPlano }) {
   );
 
   const conteudo = (pg: PaginaPlano | 'faltam') => (
-    pg === 'resumo' ? <Resumo s={s} p={p} sum={sum} />
+    pg === 'resumo' ? <Resumo s={s} p={p} sum={sum} b={brief} />
       : pg === 'fazer' ? <Fazer secs={secs} achado={ach.fazer} sum={sum} />
         : pg === 'custa' ? <Pagina titulo={t('Quanto custa')} pergunta={R('q2')} achado={p.temNumeros ? ach.custa : undefined} intro={R('i2')} secs={secs} pagina="custa" extra={{ A2: extraA2 }} kpiOrigem={{ A2: origemA2 }} />
           : pg === 'exigir' ? <Pagina titulo={t('O que exigir')} pergunta={R('q4')} achado={ach.exigir} intro={t('O que pedir na contratação: o arranjo de aquisição, as cláusulas de custo, dados e saída, a diligência proporcional ao risco e os documentos do dossiê.')} secs={secs} pagina="exigir" />
@@ -486,14 +527,14 @@ export function Plano({ pagina }: { pagina: PaginaPlano }) {
     <Shell nav={false} plano={false} contexto={t('Plano de contratação')}>
       <ModoImpressao.Provider value={imprimindo}>
         <div className="pc-plano-pagina">
-          <PlanIndex zoneLabel={t('Neste plano')} items={itens} secondary={secundarios} note={<BotaoPDF s={s} variante="secondary" />} />
+          <PlanIndex zoneLabel={t('Neste plano')} items={itens} secondary={secundarios} />
           <div className="pc-plano-conteudo">
             <div className="pc-botoes pc-plano-acoes">
               <Button variant="secondary" size="sm" href={voltar ? voltar.href : href.abertura(1)}>
                 {voltar ? t('Voltar às perguntas · {n} faltam', { n: p.lacunas.essencial }) : t('Rever as respostas')}
               </Button>
               <Button variant="secondary" size="sm" onClick={() => { void exportarCaso(); }}>{t('Exportar caso')}</Button>
-              <BotaoPDF s={s} />
+              <BotoesPDF s={s} />
             </div>
             {imprimindo ? null : <IndiceInterno key={pagina} entradas={entradasDe(pagina, secs, p, sum)} />}
             {imprimindo

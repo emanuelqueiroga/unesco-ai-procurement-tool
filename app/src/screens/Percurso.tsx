@@ -10,7 +10,7 @@ import {
 import { ChapterOpening, ChapterSummary, QuestionFrame, Button, SourceTag, Popover } from '../ui';
 import { TextoComTermos } from '../ui/Termo';
 import { Shell } from './Shell';
-import { BotaoPDF } from './Plano';
+import { BotoesPDF } from './Plano';
 import { ControlesTela, ControleCampo, ControleExtra, ProvedorRefinar, sugeridosDaTela, TIPOS_SIMPLES } from '../percurso/Controles';
 import { sinteseCapitulo, type Proximo } from '../percurso/sintese';
 import './plano-rec.css';
@@ -231,7 +231,8 @@ function PremissasCapitulo({ s, n, foco }: { s: CasoStore; n: Capitulo; foco?: s
   );
 }
 
-/** "Seu próximo passo" (5.6, REC-42): veredito, 3 ações com quem age e o marco, custo do Ano 0, cuidado e o que falta. */
+/** "Seu próximo passo" (5.6, REC-42): a recomendação do brief, 3 ações com quem age e o marco, custo do Ano 0, cuidado e
+ *  o que falta; PB-08: os dois downloads, o policy brief (principal) e o anexo técnico. */
 function ProximoPasso({ p, s }: { p: Proximo; s: CasoStore }) {
   return (
     <div className="pc-proximo" data-proximo>
@@ -246,7 +247,7 @@ function ProximoPasso({ p, s }: { p: Proximo; s: CasoStore }) {
       {p.custo ? <span>{p.custo}</span> : null}
       {p.cuidado ? <span className="pc-nota">{p.cuidado}</span> : null}
       {p.faltam ? <a href={href.plano('faltam')}>{p.faltamTxt}</a> : null}
-      <div className="pc-botoes"><BotaoPDF s={s} variante="secondary" tamanho="md" rotulo={p.pdf} /></div>
+      <BotoesPDF s={s} tamanho="md" />
     </div>
   );
 }

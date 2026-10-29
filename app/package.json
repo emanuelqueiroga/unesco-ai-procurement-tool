@@ -1,6 +1,6 @@
 {
   "name": "ai-education-procurement-tool",
-  "version": "0.1.0-alpha.6",
+  "version": "0.1.0-alpha.7",
   "private": true,
   "type": "module",
   "description": "AI in Education Procurement Tool — reimplementação (React + TypeScript + Vite) com o design system Prumo",

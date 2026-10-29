@@ -11,6 +11,19 @@ Published under `docs/revisao/` with a yellow banner. Not part of the stable lin
 - **0.0.16-alpha.a / .b / .c**: redesign proposals A (guided assistant), B (workspace with cost panel), C (living document). Branches `v15-proposta-a`, `-b`, `-c`. URLs: `/revisao/a/`, `/revisao/b/`, `/revisao/c/`.
 - **0.0.15-rc.1**: formerly "version 14 review". Step explanations, cost by phase and adoption curve, reference cost base and country profiles, procurement plan with executive summary and icebergs by phase. Branch `v14-revisao`. URL: `/revisao/`.
 
+## [0.1.0-alpha.7] - 2026-10-28
+
+Seventh pre-release of the redesign line (`develop` branch), published as the review build `/revisao/v014/`. Policy brief and a cleaner plan, after an external reviewer's feedback ("as clean as possible", "higher level", "rethink the PDF as a policy brief"). Requirements: `design/redesign/06-policy-brief.md`.
+
+### Added
+- The main PDF is now a **policy brief** of six pages: page 1 is a one-page executive summary (the recommendation in one sentence; one sentence each for context, proof of concept or pilot, deployment, scale-up and cost; three numbers; the four stages with the cost of each), followed by one page each for the problem, the design (stages and what must be ready to move on), the cost (what to budget, cost by phase and per person, the three main drivers), risks and safeguards, and next steps (the five actions: what, who, when). Six pages in the four examples and in the nine languages (tested).
+- The previous plan becomes a second PDF, **"Anexo técnico para a contratação"** (action plan, decision sequence, how to test and evaluate, yearly accounts, what to require, the guide's checklists, appendix), without repeating the summary: 43 to 47 pages instead of 46 to 50.
+- "Baixar o policy brief (PDF)" as the main button and "Anexo técnico (PDF)" as the secondary one on every plan page and at the end of chapter 4.
+
+### Changed
+- "Em resumo" mirrors page 1 of the brief: the recommendation, the five sentences, three numbers, the four stages and five short cards (what, who, when; the rest under "Detalhes"). Everything else moved to a single collapsed "Ver detalhes".
+- Constructive wording for the main recommendation everywhere: "Recomendação: começar por uma prova de conceito antes do piloto." instead of "Ainda não avance".
+
 ## [0.1.0-alpha.6] - 2026-10-28
 
 Sixth pre-release of the redesign line (`develop` branch), published as the review build `/revisao/v014/`. New recommendation system, specified by a panel of seven specialists (econometrics, public policy, public procurement, AI technology, ethics and child protection, pedagogy, decision documents) and a coordinator: `design/redesign/05-requisitos-recomendacoes.md` and `design/redesign/recomendacoes/`. All ten decisions follow the panel's recommendation.

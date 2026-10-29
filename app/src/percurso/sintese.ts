@@ -3,6 +3,7 @@
 // R6 (REC-42; seção 5.6): o capítulo 4 termina com "Seu próximo passo" (`proximo`): o veredito e o porquê, as 3
 // primeiras ações com quem age e o marco, o custo e a dotação do Ano 0, o nível de cuidado numa frase e as respostas
 // que faltam; as frases são as de plano/recplano.js, as mesmas de "Em resumo" e do PDF.
+// PB-06: a recomendação e o porquê vêm do policy brief (plano/brief.js), a mesma frase de "Em resumo" e do painel.
 import { totaisCtx, modoTeste, QUESTOES_G, NIVEIS_ADM, tr, rotulo, numerosCusto, pct } from '../domain';
 import type { Estado14, Capitulo } from '../store';
 import { cfgDe, respondido } from '../store';
@@ -11,6 +12,7 @@ import { t, minusc, minusc1 } from './textos';
 import { crescimentoDoCaso } from './motor';
 import { etapasTexto, prioridadesTexto, origemKpi, temNumeros, recsPlano, rotuloOpc, type KpiId } from './painel';
 import { proximoPasso } from '../plano/recplano.js';
+import { briefDados } from '../plano/brief.js';
 import type { Origem } from '../store';
 
 export interface Sintese {
@@ -136,7 +138,15 @@ export function sinteseCapitulo(n: Capitulo, e: Estado14): Sintese {
     else kpi = { id: 'kpi.total', label: t('Custo total, {H} anos', { H: num.H }), value: fmt.curto(num.total), fullValue: fmt.cheio(num.total), origem: origemKpi(e, 'kpi.total') };
   }
   let proximo: Proximo | null = null;
-  if (n === 4) { try { proximo = proximoPasso(e) as Proximo | null; } catch (err) { console.warn(err); } }
+  if (n === 4) {
+    try { proximo = proximoPasso(e) as Proximo | null; } catch (err) { console.warn(err); }
+    if (proximo) {
+      try {
+        const b: any = (briefDados as (x: Estado14) => any)(e);
+        if (b && b.recomendacao && b.recomendacao.texto) proximo = { ...proximo, veredito: String(b.recomendacao.texto), porque: String(b.recomendacao.porque || '') };
+      } catch (err) { console.warn(err); }
+    }
+  }
   return { paragrafos: paragrafos.length ? paragrafos : [t('Este capítulo ainda não tem respostas: o plano usa as premissas padrão.')], kpi, nRecs: recs.length,
     nCondicoes: recs.filter((r) => r.nivel === 'condicao').length, proximo };
 }

@@ -181,7 +181,7 @@ describe('REC-52: sem resposta, "não informado" (a regra usa a variante "Decidi
 });
 
 describe('REC-52: responder muda o resultado das regras', () => {
-  it('contestacaoExiste = "nao": R-32 vira Condição e o veredito "Ainda não avance" cita a contestação (B e C)', () => {
+  it('contestacaoExiste = "nao": R-32 vira Condição e o veredito construtivo (código "nao") cita a contestação (B e C)', () => {
     ['B', 'C'].forEach(k => {
       const antes = com(k);
       expect(rec(antes, 'R-32').nivel, k).toBe('recomendada');

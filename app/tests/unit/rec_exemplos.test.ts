@@ -97,12 +97,12 @@ describe('seção 4.6: cartões e veredito por exemplo (REC-20, REC-21)', () => 
     // professores usam: nenhum cartão sobre dados de estudantes
     expect(emCartao(r)).not.toContain('R-26');
   });
-  it('B: autorizar o teste, "Ainda não avance para o piloto"; TESTE (R-07 + R-08 + R-13), R-26, R-34, R-20 e R-31 ou R-33; aviso de condições', () => {
+  it('B: autorizar o teste, "Recomendação: começar por uma prova de conceito antes do piloto"; TESTE (R-07 + R-08 + R-13), R-26, R-34, R-20 e R-31 ou R-33; aviso de condições', () => {
     const r = R('B');
     expect(r.veredito.decisao).toBe('autorizar o teste');
     expect(r.veredito.codigo).toBe('nao');
     expect(r.veredito.gatilhos[0]).toBe('piloto');
-    expect(r.veredito.texto).toMatch(/Ainda não avance para o piloto/);
+    expect(r.veredito.texto).toMatch(/Recomendação: começar por uma prova de conceito antes do piloto/);
     expect(cartao(r, 'TESTE').length).toBe(1);
     const teste = cartao(r, 'TESTE')[0];
     expect(['R-07', 'R-08', 'R-13']).toContain(teste.id);
@@ -285,13 +285,9 @@ describe('pacote R1: correções imediatas', () => {
     expect(cad.filter(s => s === 'Normal')).toEqual([]);
     // R6: o R-nn tem coluna própria na tabela do plano de ação
     expect(cad.some(s => /^R-\d+$/.test(s))).toBe(true);
-    // nos cartões de "Em resumo", os rótulos "O quê" e "Por quê" ficam em linhas diferentes (antes se sobrepunham)
-    const pos = [...tudo.matchAll(/([\d.-]+) ([\d.-]+) Td\n\(((?:[^()\\]|\\.)*)\) Tj/g)].map(m => ({ x: +m[1], y: +m[2], t: m[3] }));
-    const oque = pdfTxt('O quê'), porque = pdfTxt('Por quê');
-    const iO = pos.findIndex(p => p.t === oque);
-    expect(iO).toBeGreaterThanOrEqual(0);
-    const pq = pos.slice(iO).find(p => p.t === porque);
-    expect(pq && pos[iO].y - pq.y).toBeGreaterThan(8);
+    // PB-04: os cartões de "Em resumo" saíram do anexo técnico; as cinco ações (o quê, quem, quando) estão na página 6
+    // do policy brief
+    expect(cad.filter(s => s === pdfTxt('Em resumo'))).toEqual([]);
   }, 60000);
 });
 

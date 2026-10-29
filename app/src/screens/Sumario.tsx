@@ -2,15 +2,19 @@
 // faixa P10–P90 (R6: com o P50 "valor para orçar" e o P90 "teto prudente" ao lado do cenário-base), os indicadores com
 // o nome de cada denominador, a proposta em seis respostas, os três maiores direcionadores e "Como ler este plano".
 // R6: o veredito, o nível de cuidado, os contadores e os 5 cartões ficam em PlanoRec.tsx (dados em `sumario.rec`).
-// Os dados vêm de plano/relatorio.js pela seção "resumo" (`sumario`), os mesmos do PDF.
+// Os dados vêm de plano/relatorio.js pela seção "resumo" (`sumario`), os mesmos do PDF do anexo técnico.
+// PB-06: o topo de "Em resumo" espelha a página 1 do policy brief (plano/brief.js:briefDados): a recomendação
+// (BriefRecomendacao), as cinco frases (CincoFrases), os três números (TresNumeros) e as quatro etapas (LinhaEtapas).
 import { useContext, type ReactNode } from 'react';
 import { KpiTile, useMediaQuery } from '../ui';
 import { t } from '../percurso/textos';
 import { href } from '../percurso/rota';
 import { R } from '../plano/relatorio.js';
 import { ModoImpressao } from './Secao';
+import { ORDEM_FRASES, KPI_DO_NUMERO, hrefFalta, anosTxt, type BriefDados } from './brief';
 import './plano.css';
 import './plano-rec.css';
+import './plano-brief.css';
 
 export interface FaixaTCO {
   rotulo: string; centralTxt: string; faixaTxt: string; nota: string; alt: string; pLo: number; pHi: number; pCentral: number;
@@ -30,6 +34,76 @@ export interface SumarioPlano {
   rec: any;
 }
 type Origem = (kpi: string, rotulo: string, alinharAoFim: boolean) => ReactNode;
+
+// ----------------------------------------------------------- página 1 do brief (PB-06)
+/** A recomendação do brief em uma frase, com o porquê; a cor da borda segue o veredito interno. */
+export function BriefRecomendacao({ b, verFazer }: { b: BriefDados; verFazer?: boolean }) {
+  return (
+    <div className={'pc-callout pc-veredito pc-brief-rec pc-veredito--' + (b.recomendacao.codigo || 'sem')} id="sec-veredito">
+      <span className="pc-callout-rotulo">{(b.rotulos && b.rotulos.recomendacao) || t('Recomendação')}</span>
+      <span className="pc-veredito-texto">{b.recomendacao.texto}</span>
+      {b.recomendacao.porque ? <span className="pc-nota">{b.recomendacao.porque}</span> : null}
+      {verFazer ? <a className="pc-callout-link" href={href.plano('fazer')}>{t('Ver a sequência de decisões e o plano de ação')}</a> : null}
+    </div>
+  );
+}
+
+/** As cinco frases do resumo executivo (contexto, teste, implantação, expansão e custo), com "Responder" quando falta. */
+export function CincoFrases({ b }: { b: BriefDados }) {
+  const frases = ORDEM_FRASES.map((id) => [id, b.frases[id]] as const).filter(([, f]) => f && f.texto);
+  if (!frases.length) return null;
+  return (
+    <section className="pc-plano-sec" id="sec-frases" aria-label={(b.rotulos && b.rotulos.resumoExec) || t('Resumo executivo')}>
+      <dl className="pc-frases">
+        {frases.map(([id, f]) => (
+          <div key={id} className="pc-frase" data-frase={id}>
+            <dt>{f!.rotulo}</dt>
+            <dd>
+              {f!.texto}
+              {f!.falta ? <> <a className="pc-frase-ir" href={hrefFalta(f!.falta.ir)} aria-label={t('Responder') + ': ' + [f!.falta.n, f!.falta.pergunta].filter(Boolean).join(' ')}>{t('Responder')}</a></> : null}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+/** Os três números do brief: custo total com a faixa, custo do Ano 0 e custo anual em regime. */
+export function TresNumeros({ b, origem }: { b: BriefDados; origem?: Origem }) {
+  if (!b.numeros || !b.numeros.length) return null;
+  return (
+    <section className="pc-plano-sec" id="sec-numeros" aria-label={(b.rotulos && b.rotulos.numeros) || t('Os números principais')}>
+      <div className="pc-kpis pc-brief-numeros">
+        {b.numeros.map((k, i) => (
+          <div key={k.id} className="pc-brief-numero" data-numero={k.id}>
+            <KpiTile label={k.rotulo} value={k.valor} origin={origem ? origem(KPI_DO_NUMERO[k.id] || 'kpi.total', k.rotulo, i > 0) : undefined} />
+            {k.nota ? <p className="pc-nota">{k.nota}</p> : null}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** A linha do tempo das quatro etapas, com os anos e o custo de cada uma. */
+export function LinhaEtapas({ b }: { b: BriefDados }) {
+  if (!b.etapas || !b.etapas.length) return null;
+  return (
+    <section className="pc-plano-sec" id="sec-etapas">
+      <h2 className="pc-plano-h2">{(b.rotulos && b.rotulos.etapas) || t('As quatro etapas e o custo de cada uma')}</h2>
+      <ol className="pc-etapas">
+        {b.etapas.map((e, i) => (
+          <li key={e.id} className={'pc-etapa pc-etapa--' + Math.min(4, i + 1)} data-etapa={e.id}>
+            <span className="pc-etapa-nome">{e.nome}</span>
+            {anosTxt(e.anos) ? <span className="pc-etapa-anos">{anosTxt(e.anos)}</span> : null}
+            {e.custoTxt ? <span className="pc-etapa-custo">{e.custoTxt}</span> : null}
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 /** O custo total com a faixa provável: frase, barra com a faixa e o marcador do valor central, nota de leitura. */
 export function FaixaTco({ f, rotulo, origem }: { f: FaixaTCO; rotulo: string; origem?: ReactNode }) {

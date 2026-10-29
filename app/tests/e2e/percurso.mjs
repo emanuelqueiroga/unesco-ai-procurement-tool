@@ -3,6 +3,9 @@
 // Verifica: o primeiro número aparece ao responder 2.3.4; as sugestões aceitas viram respostas; as sínteses;
 // o plano completo; exportação JSON no formato 14; o caso continua depois de recarregar; nenhuma rolagem
 // horizontal; nenhum erro de página. Uso: npm run build && npm run e2e
+// PB-06 a PB-10 (policy brief): "Em resumo" na ordem da página 1 do brief (recomendação, cinco frases, três números,
+// etapas, cinco cartões curtos com "Detalhes" pelo teclado, "Ver detalhes" recolhido), os dois PDFs baixam (brief e
+// anexo técnico) nas páginas do plano e no fim do percurso, o painel mostra a mesma recomendação, 360 px e árabe.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -116,8 +119,8 @@ async function percorrer(b, largura) {
   ok(semFalta, `${rotulo}: ainda há respostas faltando no fim`);
   const plano = await p.locator('main').innerText();
   ok(plano.includes('Rede Municipal de Exemplo'), `${rotulo}: plano sem o nome da rede`);
-  if (!/Custo total, 3 anos/i.test(plano) && process.env.E2E_DEBUG) console.log(plano.slice(0, 2500));
-  ok(/Custo total, 3 anos/i.test(plano), `${rotulo}: plano sem o custo total`);
+  if (!/Custo total do ciclo de vida/i.test(plano) && process.env.E2E_DEBUG) console.log(plano.slice(0, 2500));
+  ok(/Custo total do ciclo de vida/i.test(plano), `${rotulo}: plano sem o custo total`);
   ok(/Comece por estas/.test(plano), `${rotulo}: plano sem recomendações`);
   await semRolagemHorizontal(p, `${rotulo} plano`);
 
@@ -420,6 +423,9 @@ async function recomendacoes360(b) {
   await p.setViewportSize({ width: 360, height: 740 });
   const veredito = (await p.locator('.pc-veredito-texto').first().innerText()).trim();
   ok(/^Próxima decisão: /.test(veredito), `R6: "Em resumo" sem o veredito (${veredito.slice(0, 60)})`);
+  // PB-06: os contadores saíram do topo e ficam em "Ver detalhes"
+  await p.locator('#sec-detalhes > summary').click();
+  await p.locator('.pc-contadores').waitFor({ timeout: 5000 });
   ok(/Condições de uso nas escolas: 0 de 4/.test(await p.locator('.pc-contadores').innerText()), 'R6: B sem "Condições de uso nas escolas: 0 de 4"');
   ok(await p.locator('.pc-rc').count() === 5, `R6: esperava 5 cartões, achou ${await p.locator('.pc-rc').count()}`);
   for (const pg of ['#/plano', '#/plano/fazer', '#/plano/exigir', '#/plano/custa']) {
@@ -433,10 +439,138 @@ async function recomendacoes360(b) {
   const prox = p.locator('[data-proximo]');
   await prox.waitFor({ timeout: 5000 });
   ok((await prox.locator('.pc-proximo-v').innerText()).trim() === veredito, 'R6: o veredito da síntese do capítulo 4 difere do de "Em resumo"');
-  ok(await prox.getByRole('button', { name: 'Baixar o plano (PDF)' }).count() === 1, 'R6: síntese sem o botão "Baixar o plano (PDF)"');
+  ok(await prox.getByRole('button', { name: 'Baixar o policy brief (PDF)' }).count() === 1, 'PB-08: síntese sem o botão "Baixar o policy brief (PDF)"');
+  ok(await prox.getByRole('button', { name: 'Anexo técnico (PDF)' }).count() === 1, 'PB-08: síntese sem o botão "Anexo técnico (PDF)"');
   await semRolagemHorizontal(p, 'R6 360px síntese do capítulo 4');
   ok(erros.length === 0, `R6: erros na página: ${erros.join(' | ')}`);
   await ctx.close();
+}
+
+// 8. PB-06 a PB-10: "Em resumo" como a página 1 do policy brief; os dois PDFs; o painel; 400 px, 360 px e árabe
+const ORDEM_RESUMO = ['#sec-veredito', '#sec-frases', '#sec-numeros', '#sec-etapas', '#sec-acoes', '#sec-detalhes'];
+async function ordemResumo(p, onde) {
+  const ordem = await p.evaluate((sels) => {
+    const els = sels.map((s) => document.querySelector(s));
+    if (els.some((e) => !e)) return sels.filter((s, i) => !els[i]).map((s) => 'falta ' + s);
+    const fora = [];
+    for (let i = 1; i < els.length; i++) if (!(els[i - 1].compareDocumentPosition(els[i]) & Node.DOCUMENT_POSITION_FOLLOWING)) fora.push(sels[i - 1] + ' depois de ' + sels[i]);
+    return fora;
+  }, ORDEM_RESUMO);
+  ok(ordem.length === 0, `PB-06 ${onde}: ordem de "Em resumo" (${ordem.join('; ')})`);
+}
+async function baixar(p, botao, onde) {
+  const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 60000 }), botao.click()]);
+  const arq = await dl.path();
+  const buf = fs.readFileSync(arq);
+  const txt = buf.toString('latin1');
+  const paginas = (txt.match(/\/Type\s*\/Page[^s]/g) || []).length;
+  ok(buf.slice(0, 5).toString() === '%PDF-' && buf.length > 5000, `PB-08 ${onde}: o arquivo baixado não é um PDF (${dl.suggestedFilename()}, ${buf.length} bytes)`);
+  ok(/\.pdf$/i.test(dl.suggestedFilename()), `PB-08 ${onde}: nome sem .pdf (${dl.suggestedFilename()})`);
+  return { nome: dl.suggestedFilename(), paginas };
+}
+// abre os "Detalhes" de todos os cartões curtos (a lista de botões fechados muda a cada clique)
+async function abrirCartoes(p) {
+  const bts = p.locator('#sec-acoes .pc-rcb-det');
+  const n = await bts.count();
+  for (let i = 0; i < n; i++) if ((await bts.nth(i).getAttribute('aria-expanded')) === 'false') await bts.nth(i).click();
+}
+async function policyBrief(b) {
+  const { ctx, p, erros } = await abrirPt(b, 1360, '#/plano', true);
+  await p.locator('#sec-frases').waitFor({ timeout: 10000 });
+  await ordemResumo(p, '1360px');
+  ok(await p.locator('#sec-frases .pc-frase').count() === 5, `PB-06: esperava 5 frases, achou ${await p.locator('#sec-frases .pc-frase').count()}`);
+  ok(await p.locator('#sec-numeros [data-numero]').count() === 3, `PB-06: esperava 3 números, achou ${await p.locator('#sec-numeros [data-numero]').count()}`);
+  ok(await p.locator('#sec-etapas .pc-etapa').count() === 4, `PB-06: esperava 4 etapas, achou ${await p.locator('#sec-etapas .pc-etapa').count()}`);
+  ok(await p.locator('#sec-acoes .pc-rcb').count() === 5, `PB-07: esperava 5 cartões curtos, achou ${await p.locator('#sec-acoes .pc-rcb').count()}`);
+  // o topo não repete o que foi para "Ver detalhes"
+  const det = p.locator('#sec-detalhes');
+  ok(!(await det.evaluate((d) => d.open)), 'PB-06: "Ver detalhes" já começa aberto');
+  for (const sel of ['.pc-contadores', '.pc-cuidado', '#sec-seis', '.pc-ice', '.pc-dir-bloco', '.pc-comoler', '.pc-tco']) {
+    ok(!(await p.locator(sel).first().isVisible().catch(() => false)), `PB-06: ${sel} visível fora de "Ver detalhes"`);
+  }
+  // cartão curto: o quê, quem e quando; "Detalhes" abre pelo teclado (aria-expanded) e mostra o resto
+  const c1 = p.locator('#sec-acoes .pc-rcb').first();
+  ok(/Quem/.test(await c1.innerText()) && /Quando/.test(await c1.innerText()), 'PB-07: cartão sem "Quem" e "Quando"');
+  ok(!/Por quê/.test(await c1.innerText()), 'PB-07: o cartão já mostra "Por quê" fechado');
+  const tog = c1.getByRole('button', { name: 'Detalhes' });
+  ok((await tog.getAttribute('aria-expanded')) === 'false', 'PB-07: "Detalhes" sem aria-expanded="false"');
+  await tog.focus();
+  await p.keyboard.press('Enter');
+  await p.waitForTimeout(150);
+  const tog2 = c1.locator('button[aria-expanded]');
+  ok((await tog2.getAttribute('aria-expanded')) === 'true', 'PB-07: Enter não abriu os detalhes');
+  ok(/Por quê/.test(await c1.innerText()), 'PB-07: os detalhes abertos sem "Por quê"');
+  ok(await tog2.evaluate((el) => el === document.activeElement), 'PB-07: o foco saiu do botão ao abrir');
+  await p.keyboard.press('Space');
+  await p.waitForTimeout(150);
+  ok((await tog2.getAttribute('aria-expanded')) === 'false' && !/Por quê/.test(await c1.innerText()), 'PB-07: espaço não fechou os detalhes');
+  // "Ver detalhes" abre e traz o que saiu do topo
+  await det.locator(':scope > summary').click();
+  await p.waitForTimeout(200);
+  ok(await p.locator('.pc-contadores').isVisible() && await p.locator('#sec-seis').isVisible(), 'PB-06: "Ver detalhes" sem contadores e seis respostas');
+  await det.locator(':scope > summary').click();
+  const recResumo = (await p.locator('#sec-veredito .pc-veredito-texto').innerText()).trim();
+  ok(!/Ainda não avance/i.test(recResumo), `PB-05: recomendação com "Ainda não avance" (${recResumo.slice(0, 60)})`);
+
+  // PB-08: os dois downloads em todas as páginas do plano; o brief tem no máximo 6 páginas
+  for (const pg of ['#/plano', '#/plano/custa', '#/plano/fazer', '#/plano/exigir', '#/plano/apendice']) {
+    await irPara(p, pg);
+    await p.locator('.pc-plano-pagina').waitFor({ timeout: 5000 });
+    const acoes = p.locator('.pc-plano-acoes');
+    ok(await acoes.getByRole('button', { name: 'Baixar o policy brief (PDF)' }).count() === 1, `PB-08 ${pg}: sem "Baixar o policy brief (PDF)"`);
+    ok(await acoes.getByRole('button', { name: 'Anexo técnico (PDF)' }).count() === 1, `PB-08 ${pg}: sem "Anexo técnico (PDF)"`);
+    ok(/pr-button--primary/.test(await acoes.getByRole('button', { name: 'Baixar o policy brief (PDF)' }).getAttribute('class')), `PB-08 ${pg}: o brief não é a ação principal`);
+  }
+  await irPara(p, '#/plano');
+  const br = await baixar(p, p.locator('.pc-plano-acoes').getByRole('button', { name: 'Baixar o policy brief (PDF)' }), 'brief');
+  ok(br.paginas >= 1 && br.paginas <= 6, `PB-02: o brief tem ${br.paginas} páginas (máximo 6)`);
+  const an = await baixar(p, p.locator('.pc-plano-acoes').getByRole('button', { name: 'Anexo técnico (PDF)' }), 'anexo');
+  ok(an.paginas > br.paginas, `PB-08: o anexo (${an.paginas} p.) não é maior que o brief (${br.paginas} p.)`);
+  ok(br.nome !== an.nome, `PB-08: os dois PDFs têm o mesmo nome (${br.nome})`);
+
+  // fim do percurso: os dois botões e a mesma recomendação; o painel ao lado também
+  await irPara(p, '#/capitulo/4/sintese');
+  const prox = p.locator('[data-proximo]');
+  await prox.waitFor({ timeout: 5000 });
+  ok((await prox.locator('.pc-proximo-v').innerText()).trim() === recResumo, 'PB-06: a recomendação do fim do percurso difere da de "Em resumo"');
+  await baixar(p, prox.getByRole('button', { name: 'Baixar o policy brief (PDF)' }), 'brief no fim do percurso');
+  const painelRec = p.locator('.pc-plano [data-recomendacao]');
+  await painelRec.waitFor({ timeout: 5000 });
+  ok((await painelRec.innerText()).includes(recResumo), 'PB-06: o painel "Seu plano" não mostra a recomendação de "Em resumo"');
+  ok(erros.length === 0, `policy brief: erros na página: ${erros.join(' | ')}`);
+  await ctx.close();
+
+  // PB-10: 400 e 360 px, com tudo aberto, e o árabe a 360 px
+  for (const w of [400, 360]) {
+    const m = await abrirPt(b, w, '#/plano', true);
+    await m.p.locator('#sec-frases').waitFor({ timeout: 10000 });
+    await ordemResumo(m.p, w + 'px');
+    await semRolagemHorizontal(m.p, `PB-10 ${w}px Em resumo`);
+    await m.p.evaluate(() => { document.querySelectorAll('details').forEach((d) => { d.open = true; }); });
+    await abrirCartoes(m.p);
+    await m.p.waitForTimeout(300);
+    await semRolagemHorizontal(m.p, `PB-10 ${w}px Em resumo com tudo aberto`);
+    ok(m.erros.length === 0, `PB-10 ${w}px: erros na página: ${m.erros.join(' | ')}`);
+    await m.ctx.close();
+  }
+  const a = await abrirPt(b, 360, '', true);
+  await a.p.selectOption('#sel-lang', 'ar');
+  await a.p.waitForTimeout(400);
+  await irPara(a.p, '#/plano');
+  await a.p.locator('#sec-frases').waitFor({ timeout: 10000 });
+  ok((await a.p.evaluate(() => document.documentElement.dir)) === 'rtl', 'PB-10 árabe: html sem dir="rtl"');
+  await ordemResumo(a.p, 'árabe 360px');
+  ok(await a.p.locator('#sec-acoes .pc-rcb').count() === 5, 'PB-10 árabe: sem os 5 cartões');
+  // a borda colorida do cartão fica à direita no árabe (propriedades lógicas)
+  const bordas = await a.p.locator('#sec-acoes .pc-rcb').first().evaluate((el) => { const c = getComputedStyle(el); return [parseFloat(c.borderRightWidth), parseFloat(c.borderLeftWidth)]; });
+  ok(bordas[0] > bordas[1], `PB-10 árabe: a borda do cartão não está à direita (${bordas})`);
+  await semRolagemHorizontal(a.p, 'PB-10 árabe 360px Em resumo');
+  await a.p.evaluate(() => { document.querySelectorAll('details').forEach((d) => { d.open = true; }); });
+  await abrirCartoes(a.p);
+  await a.p.waitForTimeout(300);
+  await semRolagemHorizontal(a.p, 'PB-10 árabe 360px com tudo aberto');
+  ok(a.erros.length === 0, `PB-10 árabe: erros na página: ${a.erros.join(' | ')}`);
+  await a.ctx.close();
 }
 
 const b = await chromium.launch();
@@ -451,6 +585,7 @@ try {
   console.log('de onde vem?'); await deOndeVem(b);
   console.log('árabe'); await arabe(b);
   console.log('recomendações a 360 px'); await recomendacoes360(b);
+  console.log('policy brief'); await policyBrief(b);
 } finally { await b.close(); servidor.close(); }
 console.log(`${verificacoes - falhas} de ${verificacoes} verificações ok`);
 process.exit(falhas ? 1 : 0);

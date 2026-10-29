@@ -149,7 +149,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
         <div className={['pc-corpo', nav && !barra ? 'pc-corpo--nav' : '', plano ? 'pc-corpo--plano' : ''].filter(Boolean).join(' ')}>
           {nav && !barra ? <aside className="pc-nav"><ChapterNav zoneLabel={t('Seu caminho')} chapters={capitulosNav(s, pos)} /></aside> : null}
           <main id="conteudo" className="pc-main" tabIndex={-1}>
-            {rota.tipo === 'plano' ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Baixar o plano em PDF".')}</p> : null}
+            {rota.tipo === 'plano' ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Anexo técnico (PDF)".')}</p> : null}
             {children}
           </main>
           {plano ? <PlanoVivo s={s} /> : null}

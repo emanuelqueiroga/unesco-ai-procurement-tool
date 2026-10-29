@@ -14,6 +14,7 @@ import { numerosDe } from '../../src/store/selectors';
 import { setLang, setMoeda, setTabelaMoedas, din, tr, resultadoRecomendacoes } from '../../src/domain';
 import { secoesPlano, trSecao, secoesDaPagina } from '../../src/plano/secoes.js';
 import { gerarPDF, pdfTxt } from '../../src/plano/pdf.js';
+import { gerarBrief } from '../../src/plano/pdf_brief.js';
 import { relDados, relFaixa, relIndicadores, relIcebergs, relTabelaFases, relCacheTamanho, relAcoes, R } from '../../src/plano/relatorio.js';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
@@ -191,23 +192,26 @@ describe('PDF do exemplo B', () => {
     for (let i = 1; i <= doc.getNumberOfPages(); i++) pag.push(doc.internal.pages[i].join('\n'));
     const tudo = pag.join('\n');
     const tem = (s: string) => tudo.includes('(' + pdfTxt(s).replace(/[()]/g, '\\$&'));
-    expect(tem('Faixa provável (P10 a P90): US$ 1,79 mi a US$ 1,93 mi')).toBe(true);
+    // PB-04: a faixa P10–P90 do custo total está na página 1 do policy brief (o anexo não repete o resumo executivo)
+    const brief: any = await gerarBrief(exemplo('B'), { versao: '0.1.0', comprimir: false });
+    const p1 = (brief.internal.pages[1].join('\n').match(/\((?:[^()\\]|\\.)*\)\s*Tj/g) || []).map((z: string) => z.replace(/\)\s*Tj$/, '').slice(1).replace(/\\(.)/g, '$1')).join(' ');
+    expect(p1).toContain(pdfTxt('Faixa provável (P10 a P90): US$ 1,79 mi a US$ 1,93 mi'));
     expect(tem('US$ 469,5 mil')).toBe(true);
     expect(tem('Por usuário ativo por ano')).toBe(true);
     expect(tem('US$ 13,18')).toBe(true);   // R7: era US$ 12,77
     expect(tem('US$ 5,13')).toBe(true);   // R7: era US$ 4,97
     expect(tudo).not.toContain(pdfTxt('Por estudante por ano'));
-    expect(tem('A proposta em seis respostas')).toBe(true);
+    // PB-04: "Em resumo" (e com ele "A proposta em seis respostas") saiu do anexo técnico
+    expect(tem('A proposta em seis respostas')).toBe(false);
+    expect(tem('Em resumo')).toBe(false);
     expect(tem('95%')).toBe(true);   // R7: era 94% (K3.4 e K5.4 do Ano 0 ficam abaixo da linha d’água)   // (o ’ vira o byte 0x92 do WinAnsi no arquivo)
     // "Computação e hospedagem" quebra em duas linhas, nunca "Computação…"
     expect(tudo).not.toContain(pdfTxt('Computação…'));
     expect(tem('Computação e')).toBe(true);
     expect(tudo).not.toMatch(/\((?:[^()\\]|\\.)*\bK3\.3\b/);
-    // "Em resumo" (sumário executivo) cabe em até 3 páginas (REL-17): "Quanto custa" começa até a p. 5
-    // R6: a sequência de decisões vem logo depois de "Em resumo" (REC-39); "Em resumo" continua em até 3 páginas
+    // PB-04: a sequência de decisões (REC-39) abre o anexo técnico, logo depois da capa (o resumo está no policy brief)
     const pS = pag.findIndex((p, i) => i > 0 && p.includes('(' + pdfTxt('Sequência de decisões') + ')'));
-    expect(pS).toBeGreaterThan(1);
-    expect(pS).toBeLessThanOrEqual(4);
+    expect(pS).toBe(1);
     const pC = pag.findIndex((p, i) => i > 0 && p.includes('(' + pdfTxt(tr('Quanto custa')) + ')'));
     expect(pC).toBeGreaterThan(pS);
   }, 60000);

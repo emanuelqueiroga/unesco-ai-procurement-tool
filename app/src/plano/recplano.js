@@ -181,7 +181,7 @@ export const TXT_R6 = {
   proxCusto0: 'Custo do Ano 0: {0}.',
   proxFaltam1: 'Falta 1 resposta para fechar o plano',
   proxFaltamN: 'Faltam {0} respostas para fechar o plano',
-  proxPdf: 'Baixar o plano (PDF)',
+  proxPdf: 'Baixar o policy brief (PDF)',
   quemMarco: '{quem} · {marco}',
 };
 const T = (k, v) => sub(tr(TXT_R6[k] != null ? TXT_R6[k] : k), v);

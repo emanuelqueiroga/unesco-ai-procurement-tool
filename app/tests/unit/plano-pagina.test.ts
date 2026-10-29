@@ -13,6 +13,9 @@ import {
 } from '../../src/percurso/painel';
 import { painelPlano, secoesPlano } from '../../src/plano/secoes.js';
 import { gerarPDF, pdfTxt } from '../../src/plano/pdf.js';
+import { briefDados } from '../../src/plano/brief.js';
+import { dadosBrief, ORDEM_FRASES, KPI_DO_NUMERO, hrefFalta, anosTxt } from '../../src/screens/brief';
+import { sinteseCapitulo } from '../../src/percurso/sintese';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const RAIZ = path.join(AQUI, '..', '..', '..');
@@ -205,5 +208,50 @@ describe('lacunasDe', () => {
   });
   it('exemplos completos: nenhuma lacuna', () => {
     for (const k of ['A', 'B', 'C', 'D']) expect(lacunasDe(exemplo(k)).total, k).toBe(0);
+  });
+});
+
+// PB-06: "Em resumo" desenha os dados de briefDados (a página 1 do brief em PDF): a mesma recomendação, as mesmas
+// cinco frases, os mesmos três números, as quatro etapas e as cinco ações (o quê, quem e quando).
+describe('PB-06: "Em resumo" espelha a página 1 do policy brief', () => {
+  for (const k of ['A', 'B', 'C', 'D', 'novo']) {
+    it(`exemplo ${k}: os dados da tela são os do brief, na ordem da página 1`, () => {
+      const e = exemplo(k);
+      const tela = dadosBrief(e);
+      const pdf: any = briefDados(e);
+      expect(tela, 'dadosBrief não devolveu o brief').toBeTruthy();
+      // só a data pode mudar entre as duas chamadas (o relógio); o resto é idêntico
+      expect({ ...tela!, data: '' }).toEqual({ ...pdf, data: '' });
+      expect(tela!.recomendacao.texto).toMatch(/\S/);
+      expect(tela!.recomendacao.texto).not.toMatch(/Ainda não avance/i);
+      ORDEM_FRASES.forEach((id) => {
+        const f = tela!.frases[id];
+        expect(f, id).toBeTruthy();
+        expect(f!.rotulo, id).toMatch(/\S/);
+        expect(f!.texto, id).toMatch(/\S/);
+        if (f!.falta) expect(lerRota(hrefFalta(f!.falta.ir)).tipo, id).not.toBe('inicio');
+      });
+      expect(tela!.numeros.map((n) => n.id)).toEqual(['total', 'ano0', 'regime']);
+      tela!.numeros.forEach((n) => expect(KPI_DO_NUMERO[n.id], n.id).toMatch(/^kpi\./));
+      expect(tela!.etapas.length).toBe(4);
+      tela!.etapas.forEach((x) => expect(anosTxt(x.anos)).not.toMatch(/undefined|NaN/));
+      expect(tela!.acoes.length).toBeLessThanOrEqual(5);
+      tela!.acoes.forEach((a) => { expect(a.oque, a.id).toMatch(/\S/); expect(a.quem, a.id).toMatch(/\S/); expect(a.quando, a.id).toMatch(/\S/); });
+      if (k !== 'novo') {
+        expect(tela!.acoes.length).toBe(5);
+        // as ações da tela são os cartões de "Comece por estas", na mesma ordem
+        expect(tela!.acoes.map((a) => a.id)).toEqual(painelDe(e).cartoes.slice(0, 5).map((c) => c.id));
+        // o fim do percurso ("Seu próximo passo") mostra a mesma recomendação
+        expect(sinteseCapitulo(4, e).proximo!.veredito).toBe(tela!.recomendacao.texto);
+      }
+      expect(JSON.stringify(tela)).not.toMatch(/undefined|NaN|\[object/);
+    }, 60000);
+  }
+
+  it('"Responder" leva a um endereço do percurso, venha `ir` como endereço ou como campo', () => {
+    expect(hrefFalta('#/capitulo/2/piloto')).toBe('#/capitulo/2/piloto');
+    expect(hrefFalta('tipoTec')).toBe(href.campo('tipoTec'));
+    expect(anosTxt([1, 2])).toBe('1–2');
+    expect(anosTxt('Ano 0')).toBe('Ano 0');
   });
 });

@@ -249,7 +249,7 @@ describe('REC-21: veredito da próxima decisão (4.4)', () => {
   it('três partes; o mesmo texto em todas as chamadas e na versão traduzida (capa, Em resumo, PDF, síntese)', () => {
     for (const k of EX) {
       const v = res(k).veredito;
-      expect(v.texto).toMatch(/^Próxima decisão: .+\. (Pode avançar|Pode avançar com condições|Ainda não avance)/);
+      expect(v.texto).toMatch(/^Próxima decisão: .+\. (Pode avançar|Pode avançar com condições|Recomendação: )/);
       expect(v.texto).toMatch(/(Faltam|Comece por): .+\.$/);
       expect(v.faltam.length).toBe(3);
       expect(v.faltam.map((f: any) => f.id)).toEqual(res(k).cartoes.slice(0, 3).map((c: any) => c.id));
@@ -258,38 +258,38 @@ describe('REC-21: veredito da próxima decisão (4.4)', () => {
       expect(v.porque).toMatch(/\S/);
     }
   });
-  it('B: "Ainda não avance para o piloto" (gatilho ii, mais o iv); C: "Ainda não" por mais de 5 Condições (iv); A e D: com condições', () => {
+  it('B: "Recomendação: começar por uma prova de conceito antes do piloto" (gatilho ii, mais o iv); C: preparar as condições, mais de 5 (iv); A e D: com condições', () => {
     const b = res('B').veredito;
     expect(b.codigo).toBe('nao');
     // integração R4: com as regras novas o B tem mais de 5 Condições; o gatilho do piloto vem primeiro e dá a frase
     expect(b.gatilhos).toEqual(['piloto', 'excesso']);
-    expect(b.texto).toMatch(/^Próxima decisão: autorizar o teste\. Ainda não avance para o piloto/);
+    expect(b.texto).toMatch(/^Próxima decisão: autorizar o teste\. Recomendação: começar por uma prova de conceito antes do piloto\./);
     expect(res('A').veredito.texto).toMatch(/^Próxima decisão: autorizar o piloto em 20 escolas\. Pode avançar com condições\. Faltam: /);
     expect(res('A').veredito.porque).toBe(res('A').condicoes.length + ' condições abertas para autorizar o teste.');
-    // seção 4.6: o C pode sair "com condições" ou "Ainda não" (mais de 5 Condições); com o catálogo completo é "Ainda não"
+    // seção 4.6: o C pode sair "com condições" ou com o código "nao" (mais de 5 Condições); com o catálogo completo é "nao"
     const C = res('C'), c = C.veredito;
     expect(C.condicoes.length).toBeGreaterThan(MAX_CONDICOES);
     expect([c.codigo, c.gatilhos]).toEqual(['nao', ['excesso']]);
-    expect(c.texto).toMatch(new RegExp('^Próxima decisão: autorizar a prova de conceito\\. Ainda não avance: há ' + C.condicoes.length + ' condições abertas para autorizar o teste\\.'));
+    expect(c.texto).toMatch(new RegExp('^Próxima decisão: autorizar a prova de conceito\\. Recomendação: preparar primeiro as ' + C.condicoes.length + ' condições abertas para autorizar o teste\\.'));
     expect(c.porque).toBe('Há ' + C.condicoes.length + ' condições abertas para autorizar o teste, mais do que dá para cumprir antes da decisão.');
     expect(res('D').veredito.texto).toMatch(/^Próxima decisão: autorizar a prova de conceito gratuita\. Pode avançar com condições\./);
   });
-  it('"Ainda não avance" só nos 4 gatilhos: R-05, piloto antes da prova de conceito, R-32 como Condição, mais de 5 Condições', () => {
+  it('o código "nao" (redação construtiva) só nos 4 gatilhos: R-05, piloto antes da prova de conceito, R-32 como Condição, mais de 5 Condições', () => {
     expect(resCom('A', [regra('R-901')]).veredito.codigo).toBe('pode');
     expect(resCom('A', [regra('R-901')]).veredito.texto).toMatch(/Pode avançar\. Comece por: /);
     expect(resCom('A', [regra('R-901', { condicao: cond })]).veredito.codigo).toBe('condicoes');
     const p = resCom('A', [regra('R-05'), regra('R-901', { condicao: cond })]).veredito;
     expect([p.codigo, p.gatilhos]).toEqual(['nao', ['problema']]);
-    expect(p.frase).toMatch(/^Ainda não avance: descreva primeiro o problema/);
+    expect(p.frase).toMatch(/^Recomendação: descrever primeiro o problema/);
     expect(resCom('A', [regra('R-32', { pacote: 'PESSOAS' })]).veredito.codigo).toBe('pode');      // R-32 Recomendada não basta
     const c = resCom('A', [regra('R-32', { pacote: 'PESSOAS', condicao: cond })]).veredito;
     expect([c.codigo, c.gatilhos]).toEqual(['nao', ['contestacao']]);
-    // 5 Condições ainda é "com condições"; 6 é "Ainda não"
+    // 5 Condições ainda é "com condições"; 6 é o código "nao"
     const nConds = (n: number) => Array.from({ length: n }, (_, i) => regra('R-9' + (10 + i), { condicao: cond }));
     expect(resCom('A', nConds(MAX_CONDICOES)).veredito.codigo).toBe('condicoes');
     const x = resCom('A', nConds(6)).veredito;
     expect([x.codigo, x.gatilhos]).toEqual(['nao', ['excesso']]);
-    expect(x.frase).toBe('Ainda não avance: há 6 condições abertas para autorizar o teste.');
+    expect(x.frase).toBe('Recomendação: preparar primeiro as 6 condições abertas para autorizar o teste.');
   });
   it('as Condições de outro marco não contam; o "Faltam" usa o texto curto quando a regra o tem', () => {
     const R = resCom('A', [regra('R-901', { condicao: cond, curto: 'o pacote de dados' }), regra('R-902', { condicao: cond, marco: 'M3', pacote: 'TESTE' })]);
@@ -403,7 +403,7 @@ describe('REC-24: caso incompleto e caso em branco (3.3, item 4)', () => {
 
 describe('textos novos do pacote R3', () => {
   it('TEXTOS_REC_R3 traz as frases do veredito, dos níveis e do caso em branco', () => {
-    ['Pode avançar com condições.', 'Ainda não avance para o piloto: comece por uma prova de conceito.', 'Condição para {marco}',
+    ['Pode avançar com condições.', 'Recomendação: começar por uma prova de conceito antes do piloto.', 'Condição para {marco}',
       'Recomendada antes de {marco}', 'Para acompanhar', 'Faltam {n} condições para {marco}.', 'Ainda sem recomendações', 'autorizar o teste',
       '(a confirmar na pergunta {n})', 'Custo total do caso em cada arquitetura'].forEach(s => expect(TEXTOS_REC_R3).toContain(s));
   });
