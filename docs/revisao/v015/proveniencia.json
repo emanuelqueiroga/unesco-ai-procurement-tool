@@ -1,0 +1,20 @@
+{
+  "version_path": "revisao/v015",
+  "app_version": "0.1.0-alpha.8",
+  "base": "v014 React/Prumo publicada",
+  "base_source_commit": "bd4d4b3bcb1488f9085e64eb5cbe4ae506bc3db7",
+  "source_commit": "e5fb0c8119ca0bdf9c083ad9af00c81dc773b550",
+  "source_branch": "feat/v015-from-v014",
+  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/e5fb0c8119ca0bdf9c083ad9af00c81dc773b550",
+  "v014_publication_tree": "4016e03f1e70e0b5f8436065fca37af4dd439611",
+  "scope": "Página inicial e seu cabeçalho. Questionário, estado, domínio, cálculos e relatórios da v014 preservados.",
+  "build": "VITE_CANAL=revisao npm run build -- --outDir ../docs/revisao/v015",
+  "validation": {
+    "build": "passed",
+    "test_files_passed": 36,
+    "tests_passed": 814,
+    "skipped": 2,
+    "todo": 1
+  },
+  "bamanankan": "Textos novos usam fallback inglês explícito; traduções existentes e aviso de revisão preservados."
+}
