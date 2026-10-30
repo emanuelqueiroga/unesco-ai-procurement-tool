@@ -795,3 +795,10 @@ details.desc-imp > summary:focus-visible { outline: 2px solid var(--focus); outl
   .desc-in { padding: 0 10px 12px; }
   .desc-bloco { padding: 12px; }
 }
+@media (max-width: 480px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  #painel { position: static; top: auto; }
+  #main { gap: 10px; }
+  /* alvos de toque mínimo 24 px (WCAG 2.5.5) */
+  button, .opt, .chip, .seg label, [role="button"], [data-act] { min-height: 24px; min-width: 24px; padding-top: 2px; padding-bottom: 2px; }
+}

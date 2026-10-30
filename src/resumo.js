@@ -145,7 +145,7 @@ function slugPlano() {
 // 2.0 (v11, múltipla): 'poc' | 'piloto' | 'ambos' | 'recomendar' | ''
 function testeEscolhido(c) { return typeof recTesteDe === 'function' ? recTesteDe(c) : (c.teste || ''); }
 // teste que vem primeiro: com os dois marcados, a prova de conceito
-function testeEfetivo(c, rec) { const t = testeEscolhido(c); const m = rec && rec.modo; return t === 'ambos' ? 'poc' : ['poc', 'piloto'].includes(t) ? t : m === 'ambos' ? 'poc' : m || 'piloto'; }
+function testeEfetivo(c, rec) { const t = testeEscolhido(c); const m = rec && rec.modo; if (m === 'nenhum') return 'nenhum'; return t === 'ambos' ? 'poc' : ['poc', 'piloto'].includes(t) ? t : m === 'ambos' ? 'poc' : m || 'piloto'; }
 // rótulos das opções de um campo (OPC pelo nome do campo, v11)
 const opcDe = id => (typeof OPC !== 'undefined' && (OPC[id] || (id === 'testes' ? OPC.teste : null))) || [];
 const rotC = (id, v) => tr(rotP(opcDe(id), v)) || '';
@@ -205,8 +205,9 @@ function dadosPlano() {
   let faltas = [];
   try { faltas = faltasTodas() || []; } catch (e) { console.warn(e); }
   return { c, x, t, ce, p, rec, custo, arq, modo, teste, poc: modo === 'poc' && teste !== 'ambos' && !(['recomendar', ''].includes(teste) && rec.modo === 'ambos'),
-    ambos: teste === 'ambos' || (['recomendar', ''].includes(teste) && rec.modo === 'ambos'), faltas,
-    afeta: recAfeta(ce), dp: recDadosPessoais(ce), gratis: recGratuito(ce) };
+    ambos: teste === 'ambos' || (['recomendar', ''].includes(teste) && rec.modo === 'ambos'),
+    semTeste: modo === 'nenhum',
+    faltas, afeta: recAfeta(ce), dp: recDadosPessoais(ce), gratis: recGratuito(ce) };
 }
 
 // ----------------------------------------------------------- seções (PDF, Markdown, HTML e página)
@@ -219,6 +220,78 @@ function secoesPlano() {
   const sec = o => { S_.push(o); return o; };
   const tituloSec = id => id + '. ' + tr(TIT_PLANO[id]);
 
+  // v15: Executive Summary com faixa P10–P90 (RF-009, RB-010, Decisão D5)
+  if (custo && custo.av) {
+    const av = custo.av, o = av.r.opc, H = av.r.H;
+    let sim = null;
+    try {
+      if (typeof simular === 'function') sim = simular(av.r.cfg, 1500, 20261003);
+    } catch (e) { console.warn(e); }
+    const p50 = sim ? sim.ct.p50 : av.ctEco;
+    const p10 = sim ? sim.ct.p10 : av.ctEco;
+    const p90 = sim ? sim.ct.p90 : av.ctEco;
+    const total = av.ctEco;
+    const faixaLo = Math.min(p10, p50);
+    const faixaHi = Math.max(p90, p50);
+    const pctRecorrente = total > 0 ? (av.fac.variavel / total * 100) : 0;
+    sec({ id: 'executivo', h: tr('Sumário Executivo'),
+      p: [
+        tr('Este plano estima o custo total do ciclo de vida da iniciativa de IA para a sua rede, distribuído por camadas do custo total (Krueger e Jackson, 2026, p. 11) e por fase: prova de conceito ou piloto (Ano 0), implantação (Ano 1) e expansão (anos seguintes).'),
+        tr('Os valores são ilustrativos e baseiam-se em premissas da ferramenta; substitua-os por cotações e dados locais antes de usar o plano para decisões orçamentárias.'),
+      ],
+      kpis: [
+        ['Custo total do ciclo de vida (valor central)', grande(total)],
+        ['Faixa provável (P10 a P90)', grande(faixaLo) + ' – ' + grande(faixaHi)],
+        ['Valor para orçar (P50)', grande(p50)],
+        ['Parte recorrente do custo', pctRecorrente.toFixed(0) + '%'],
+        ['Horizonte da estimativa', H + ' ano' + (H > 1 ? 's' : '')],
+      ],
+      graf: {
+        tot: total, p10: faixaLo, p50: p50, p90: faixaHi, H,
+        camadas: { ano0: [1, 2, 3, 4, 5, 6, 7].map(n => (custo.camadas ? custo.camadas.ano0[n] || 0 : 0)), total: [1, 2, 3, 4, 5, 6, 7].map(n => (custo.camadas ? custo.camadas.total[n] || 0 : 0)) },
+      },
+    });
+  }
+  // v15: Detalhamento por prioridade (Parte B — RF-010, RB-011)
+  // Uma seção por prioridade selecionada: objetivo, beneficiários, estratégia, tecnologias, custos.
+  const priors = prioridadesCaso(x);
+  if (priors.length && custo) {
+    const fases = decomporFases(custo.av);
+    // mapeia problema → prioridade a partir de PRIORIDADES
+    const probParaPrior = {};
+    (typeof PRIORIDADES !== 'undefined' ? PRIORIDADES : []).forEach(z => { (z.problemas || []).forEach(q => { probParaPrior[q.id] = z.id; }); });
+    priors.forEach(z => {
+      const pid = z.id;
+      const probs = (typeof problemasCaso === 'function' ? problemasCaso(x) : []).filter(q => probParaPrior[q.id] === pid);
+      const subs = new Set((x || {}).subs || []);
+      const probTxt = probs.map(q => {
+        const ss = (q.sub || []).filter(([id]) => subs.has(id)).map(([, t]) => tr(t));
+        return semPontoP(tr(q.t)) + (ss.length ? ' (' + ss.join('; ') + ')' : '') + '.';
+      }).join(' ');
+      const objetivo = semPontoP(tr(z.desc || z.nome));
+      const beneficiarios = nomesP(OPC.usuarios, c.usuarios) || nomesP(OPC.afetados, c.afetados) || '—';
+      const estrategia = tr(rotP(OPC.tipoIniciativa, x.tipoIniciativa)) || '—';
+      const tecnologias = [];
+      if (c.tipoTec) tecnologias.push(tr(rotP(OPC.tipoTec, c.tipoTec)));
+      if (c.arquitetura && c.arquitetura !== 'nao_sei') tecnologias.push(tr(rotP(OPC.arquitetura, c.arquitetura)));
+      if (c.pagamento) tecnologias.push(tr(rotP(OPC.pagamento, c.pagamento)));
+      const fasesTxt = [
+        tr('Piloto (Ano 0):') + ' ' + grande(fases.piloto.total),
+        tr('Implantação (Ano 1):') + ' ' + grande(fases.impl.total),
+        tr('Expansão (anos seguintes):') + ' ' + grande(fases.expansao.total),
+      ].filter(Boolean).join(' · ');
+      sec({ id: 'prior-' + pid, h: z.nome + ' — Detalhamento', sub: true,
+        p: [objetivo ? tr('Objetivo:') + ' ' + objetivo : '', probTxt ? tr('Problemas:') + ' ' + probTxt : '', beneficiarios !== '—' ? tr('Beneficiários:') + ' ' + beneficiarios : '', estrategia !== '—' ? tr('Estratégia:') + ' ' + estrategia : '', tecnologias.length ? tr('Tecnologias:') + ' ' + tecnologias.join(', ') : ''].filter(Boolean),
+        kv: [
+          [tr('Custo total da iniciativa'), grande(fases.piloto.total + fases.impl.total + fases.expansao.total)],
+          [tr('Piloto (Ano 0)'), grande(fases.piloto.total)],
+          [tr('Implantação (Ano 1)'), grande(fases.impl.total)],
+          [tr('Expansão (anos seguintes)'), grande(fases.expansao.total)],
+          [tr('Fases'), fasesTxt],
+        ],
+      });
+    });
+  }
   // Respostas que faltam
   if (d.faltas.length) {
     sec({ tipo: 'faltas', id: 'faltas', h: TIT_PLANO.faltas,
@@ -234,7 +307,6 @@ function secoesPlano() {
     return [tr(e[1]), et.escolas ? fmtInt(et.escolas) : '—', anos, fmtInt(alunosEtapa(e[0]))];
   });
   if (linhasEt.length > 1) linhasEt.push([tr('Total'), fmtInt(t.escolas), '', fmtInt(t.alunos)]);
-  const nivel = x.nivel === 'outro' ? (x.nivelOutro || tr('Outro')) : tr(rotP(typeof NIVEIS_ADM !== 'undefined' ? NIVEIS_ADM : [], x.nivel));
   const tarefas = (c.tarefas || []).map(k => k === 'outra' && c.tarefaOutra ? c.tarefaOutra : tr(rotP(OPC.tarefas, k))).filter(Boolean).join('; ');
   const impactos = (c.impactos || []).map(k => k === 'outro' && c.impactoOutro ? c.impactoOutro : tr(rotP(OPC.impactos, k))).filter(Boolean).join('; ');
   const pl = c.piloto || {}, pc = c.poc || {};
@@ -250,7 +322,6 @@ function secoesPlano() {
   const escI = +c.escolasInternet || 0;
   const horas = +c.formacaoHoras || 0;
   const linhasResumo = [
-    ['Nível administrativo', nivel || '—'],
     ['Lugar ou rede', x.local || '—'],
     ['Situação', respP('situacao', tr(rotP(OPC.situacao, c.situacao)) || '—')],
     // v13: prioridades, problemas marcados (com subcategorias) e "Outro problema" (passo 1.2)
@@ -348,7 +419,10 @@ function secoesPlano() {
   // A1
   const a1p = [];
   const tE = d.teste;
-  if (tE === 'recomendar' || !tE) {
+  // v15: política pública/governança não exigem prova de conceito nem piloto (RF-017)
+  if (d.semTeste) {
+    a1p.push(tr('Iniciativa de política pública ou governança: não há exigência de prova de conceito nem piloto.'));
+  } else if (tE === 'recomendar' || !tE) {
     if (!tE) a1p.push('Você ainda não escolheu entre prova de conceito e piloto.');
     a1p.push(rec.modo === 'poc' ? 'Recomendação: começar por uma prova de conceito.' : rec.modo === 'ambos' ? 'Recomendação: começar por uma prova de conceito e, se ela der certo, fazer um piloto.' : 'Recomendação: começar por um piloto.');
     if (rec.modo === 'ambos') a1p.push('São duas decisões separadas, cada uma com critérios de sucesso próprios: o piloto só começa se a prova de conceito cumprir os seus.');
@@ -439,6 +513,37 @@ function secoesPlano() {
     sec({ sub: true, h: 'Dotação a solicitar por exercício', table: { head: ['Exercício'].concat(anos.map(a => tr('Ano ' + a))),
       rows: [[tr('Dotação a solicitar') + ' (' + unidMil() + ')'].concat(anos.map(a => mil(custo.orc.dot[a] || 0)))], num: anos.map((a, i) => i + 1) } });
     sec({ sub: true, h: 'Premissas desta estimativa', list: prem });
+  // v15: Parte C — Consolidação financeira (RF-011, RB-012)
+  if (custo && custo.av) {
+    const av = custo.av, fases = decomporFases(av);
+    const totais = { piloto: fases.piloto.total, impl: fases.impl.total, exp: fases.expansao.total };
+    const totalGeral = totais.piloto + totais.impl + totais.exp;
+    const unico = fases.piloto.unico + fases.impl.unico + fases.expansao.unico;
+    const recorrente = fases.piloto.recorrente + fases.impl.recorrente + fases.expansao.recorrente;
+    sec({ id: 'consolidacao', h: tr('Consolidação financeira'), sub: true,
+      p: [
+        tr('Consolidação dos custos por etapa, tecnologia e total geral. Todos os valores são ilustrativos e baseiam-se nas premissas da ferramenta.'),
+      ],
+      kv: [
+        [tr('Piloto ou prova de conceito (Ano 0)'), grande(totais.piloto)],
+        [tr('Implantação (Ano 1)'), grande(totais.impl)],
+        [tr('Expansão (anos seguintes)'), grande(totais.exp)],
+        [tr('Pagamento único'), grande(unico)],
+        [tr('Pagamento recorrente'), grande(recorrente)],
+        [tr('Total geral do ciclo de vida'), grande(totalGeral)],
+      ],
+      table: {
+        head: [tr('Etapa'), tr('Único'), tr('Recorrente'), tr('Total')],
+        rows: [
+          [tr('Piloto (Ano 0)'), grande(fases.piloto.unico), grande(fases.piloto.recorrente), grande(fases.piloto.total)],
+          [tr('Implantação (Ano 1)'), grande(fases.impl.unico), grande(fases.impl.recorrente), grande(fases.impl.total)],
+          [tr('Expansão (anos seguintes)'), grande(fases.expansao.unico), grande(fases.expansao.recorrente), grande(fases.expansao.total)],
+          [tr('Total geral'), grande(unico), grande(recorrente), grande(totalGeral)],
+        ],
+        num: [1, 2, 3], b0: true,
+      },
+    });
+  }
   } else {
     sec({ id: 'A2', h: tituloSec('A2'), p: ['Não foi possível calcular a estimativa com as respostas atuais. Responda ao passo 2.3 (Adoção) e às fases 3 e 4.'] });
   }
@@ -679,12 +784,12 @@ function htmlFiguraP(s) {
 }
 
 // Dados do painel ("Em resumo", capa e perfil), tirados das seções já traduzidas; o PDF pode usar com typeof
-function painelPlano(secs) {
+function painelPlano(secs, k) {
   secs = secs || secoesPlano().map(trSecao);
   const by = id => secs.find(z => z.id === id && !z.sub) || {};
   const res = by('resumo'), a1 = by('A1'), a2 = by('A2');
   let R = [];
-  try { R = typeof recomendacoesCaso === 'function' ? recomendacoesCaso() : []; } catch (e) { console.warn(e); }
+  try { R = typeof recomendacoesCasoDiversificadas === 'function' ? recomendacoesCasoDiversificadas(k) : (typeof recomendacoesCaso === 'function' ? recomendacoesCaso() : []); } catch (e) { console.warn(e); }
   return { kpis: a2.graf ? (a2.kv || []).slice(0, 4) : [], graf: a2.graf || null, semCusto: !a2.graf ? (a2.p || [])[0] || '' : '',
     fatos: res.fatos || [], cartoes: res.cartoes || [], principal: a1.principal || '', recs: R, nAlta: R.filter(r => r.prioridade === 'alta').length,
     faltas: by('faltas').tipo ? by('faltas') : null };
@@ -851,7 +956,9 @@ function renderPlano() {
   if (typeof fxCss === 'function') fxCss();
   cssPlanoV13();
   const secs = secoesPlano().map(trSecao);
-  const P = painelPlano(secs);
+  let k = null;
+  try { k = typeof recContexto === 'function' ? recContexto() : null; } catch (e) { }
+  const P = painelPlano(secs, k);
   const c = S.caso, x = S.ctx || {};
   let data = '';
   try { data = new Date().toLocaleDateString(LOC(), { day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { data = new Date().toLocaleDateString(); }

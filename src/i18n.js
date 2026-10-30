@@ -189,7 +189,17 @@ function aplicarIdioma(l) {
   textoVersao();
   const t = document.querySelector('title'); if (t) { if (!t.dataset.orig) t.dataset.orig = t.textContent; t.textContent = tr(t.dataset.orig); }
 }
-function idiomaInicial() { return 'en'; }  // decisão da equipe: inglês como padrão nesta etapa
+function idiomaInicial() {
+  // v15: detecta o idioma do navegador entre os revisados (pt, en, es, fr);
+  // inglês como último recurso (RF-013, RNF-004, Decisão D4)
+  try {
+    const langs = (typeof navigator !== 'undefined' && navigator.languages) ? navigator.languages : [];
+    const first = langs.length ? langs[0] : (typeof navigator !== 'undefined' ? (navigator.language || '') : '');
+    const l = String(first || '').split('-')[0].toLowerCase();
+    if (IDIOMAS.some(i => i[0] === l)) return l;
+  } catch (e) { }
+  return 'en';
+}
 
 // ---------------------------------------------------------- números nos campos de entrada
 // Os campos numéricos são <input type="text"> formatados com os separadores do idioma

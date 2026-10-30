@@ -81,7 +81,7 @@ function temRespostas(o) {
   if (Object.keys(o.respC || {}).some(k => o.respC[k])) return true;
   if (Object.keys(o.resp || {}).some(k => o.resp[k])) return true;
   const x = o.ctx || {}, c = o.caso;
-  if (x.nivel || x.local || x.olhando || x.problemaOutro || ['prioridades', 'problemas', 'subs'].some(k => (x[k] || []).length) || Object.values(x.etapas || {}).some(e => e && e.on)) return true;
+  if (x.local || x.olhando || x.problemaOutro || ['prioridades', 'problemas', 'subs'].some(k => (x[k] || []).length) || Object.values(x.etapas || {}).some(e => e && e.on)) return true;
   if (Object.values(o.respDet || {}).some(d => d && (String(d.qual || '').trim() || String(d.falta || '').trim()))) return true;
   return ['titulo', 'problema', 'resultado', 'linhaBaseMedida', 'linhaBaseProblemaTxt', 'teste', 'tipoTec', 'pagamento', 'licenca', 'elegiveis', 'nFerramentas', 'conheceFerramentas', 'internet', 'modeloDisp', 'formacaoFormato', 'formacaoPaga', 'suporteQuem', 'suporteNivel', 'acompanhamento', 'arquitetura'].some(k => c[k]) || ['tarefas', 'impactos', 'usuarios', 'testes', 'ferramentas', 'formados', 'formacaoTipo', 'linhaBaseProblemas'].some(k => (c[k] || []).length);
 }
@@ -524,6 +524,7 @@ function gravarNumCaso(el, path) {
 }
 const NUMERICOS_F = ['degrau', 'horizonte', 'autonomia'];
 
+let debounceNum = null;
 function ligar() {
   ligarCamposNum();
   document.addEventListener('click', e => {
@@ -573,8 +574,13 @@ function ligar() {
   document.addEventListener('input', e => {
     if (eventoFluxo(e)) return;
     const el = e.target; if (!el.dataset) return;
-    // números do caso: atualizam estado e laterais sem redesenhar
-    if (el.dataset.num != null && (el.dataset.fn || el.dataset.f)) { gravarNumCaso(el, el.dataset.fn || el.dataset.f); atualizarLaterais(); return; }
+    // números do caso: atualizam estado e laterais com debounce (evita travamento por tecla)
+    if (el.dataset.num != null && (el.dataset.fn || el.dataset.f)) {
+      gravarNumCaso(el, el.dataset.fn || el.dataset.f);
+      if (debounceNum) clearTimeout(debounceNum);
+      debounceNum = setTimeout(() => { atualizarLaterais(); debounceNum = null; }, 300);
+      return;
+    }
     if (el.dataset.f && (el.tagName === 'TEXTAREA' || el.type === 'text')) { S.caso[el.dataset.f] = el.value; marcarCampo(el.dataset.f); atualizarLaterais(); return; }
     if (el.dataset.cfgs) { setPath(cfgAtual(), el.dataset.cfgs, el.value); editarCfg(); salvar(); }
   });
@@ -588,7 +594,8 @@ function ligar() {
     if (el.id === 'sel-exemplo') { if (el.value) carregarExemplo(el.value); el.value = ''; return; }
     if (el.dataset.num != null && (el.dataset.fn || el.dataset.f)) {
       const top = gravarNumCaso(el, el.dataset.fn || el.dataset.f);
-      if (!gancho(top)) atualizarLaterais();
+      if (debounceNum) clearTimeout(debounceNum);
+      debounceNum = setTimeout(() => { if (!gancho(top)) atualizarLaterais(); debounceNum = null; }, 300);
       return;
     }
     if (el.dataset.f && el.type !== 'text' && el.tagName !== 'TEXTAREA') {

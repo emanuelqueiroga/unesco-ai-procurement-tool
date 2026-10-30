@@ -344,6 +344,139 @@ function somaPorCamada(av) {
   return { ano0, total, fin0, porAno };
 }
 
+// ---------------------------------------------------------------- decomposição por fase
+// Fase Piloto = Ano 0; Fase Implantação = Ano 1; Fase Expansão = Anos 2 a H.
+// Retorna { piloto, impl, expansao }, cada um com { unico, recorrente, total, pessoas, linhas }.
+// Linhas com orc='capital' entram como pagamento único; o restante como recorrente.
+function decomporFases(av) {
+  const r = av.r, o = r.opc, T = r.anos, H = r.H;
+  const soma = (t) => {
+    let u = 0, rec = 0;
+    const linhas = [];
+    av.linhas.forEach(l => {
+      const v = l.v[t] || 0;
+      if (!v) return;
+      if (l.nat === 'O') return; // doados não entram no desembolso
+      const ehUnico = l.orc === 'capital';
+      if (ehUnico) u += v; else rec += v;
+      linhas.push({ nome: l.nome, s: l.s, k: l.k, unico: ehUnico ? v : 0, recorrente: ehUnico ? 0 : v, total: v });
+    });
+    // saída só entra no ano H (fase de expansão)
+    av.saida.forEach(s => { if (s.valor && t === H) { u += s.valor; linhas.push({ nome: s.nome, s: s.s, k: s.k, unico: s.valor, recorrente: 0, total: s.valor }); } });
+    return { unico: u, recorrente: rec, total: u + rec, linhas };
+  };
+  const pessoas = t => r.U[t] || 0;
+  const piloto = soma(0);
+  const impl = H >= 1 ? soma(1) : { unico: 0, recorrente: 0, total: 0, linhas: [] };
+  const expansao = { unico: 0, recorrente: 0, total: 0, pessoas: 0, linhas: [] };
+  for (let t = 2; t <= H; t++) {
+    const s = soma(t);
+    expansao.unico += s.unico; expansao.recorrente += s.recorrente; expansao.total += s.total;
+    expansao.linhas.push(...s.linhas.map(l => Object.assign({}, l, { ano: t })));
+    expansao.pessoas += pessoas(t);
+  }
+  piloto.pessoas = pessoas(0);
+  impl.pessoas = pessoas(1);
+  piloto.total = piloto.unico + piloto.recorrente;
+  impl.total = impl.unico + impl.recorrente;
+  expansao.total = expansao.unico + expansao.recorrente;
+  // subtrai valor residual da expansão (ele foi contado na saída do ano H)
+  if (av.vr) expansao.total -= av.vr;
+  return { piloto, impl, expansao };
+}
+
+// ---------------------------------------------------------------- consolidação financeira por iniciativa
+// v15: consolida custos de múltiplas iniciativas (RF-005, RB-006, RF-011, RB-012).
+// Cada iniciativa tem: { id, prioridadeId, objetivo, beneficiarios, nivelModalidade, estrategia,
+//   dim: { professores, administrativos, beneficiarios, horasFormacao },
+//   custos: { impl, recorrente, total, anos: [ano0, ano1, ...anoH] } }
+// Retorna { iniciativas: [...], consolidacao: { porEtapa: {...}, porTecnologia: {...}, totalGeral } }.
+function consolidarIniciativas(iniciativas, cfg, av) {
+  const fases = av ? decomporFases(av) : null;
+  const out = [];
+  let totalGeral = 0;
+  let unicoTotal = 0;
+  let recorrenteTotal = 0;
+  (iniciativas || []).forEach((ini, i) => {
+    const c = {
+      id: ini.id || 'ini-' + i,
+      prioridadeId: ini.prioridadeId || '',
+      objetivo: ini.objetivo || '',
+      beneficiarios: ini.beneficiarios || 0,
+      nivelModalidade: ini.nivelModalidade || '',
+      estrategia: ini.estrategia || '',
+      dim: Object.assign({ professores: 0, administrativos: 0, beneficiarios: 0, horasFormacao: 0 }, ini.dim || {}),
+      custos: Object.assign({ impl: 0, recorrente: 0, total: 0, anos: [] }, ini.custos || {}),
+    };
+    // Se não há custos informados, usa as fases do motor como estimativa (proporcional às pessoas)
+    if ((c.custos.impl + c.custos.recorrente + c.custos.total) === 0 && fases) {
+      const peso = c.dim.beneficiarios > 0 ? c.dim.beneficiarios : (c.dim.professores > 0 ? c.dim.professores * 25 : 1);
+      const pesoTotal = (iniciativas || []).reduce((s, x) => s + (x.dim && x.dim.beneficiarios > 0 ? x.dim.beneficiarios : (x.dim && x.dim.professores > 0 ? x.dim.professores * 25 : 1)), 0) || 1;
+      const fator = peso / pesoTotal;
+      c.custos.impl = Math.round(fases.piloto.total * fator);
+      c.custos.recorrente = Math.round((fases.impl.total + fases.expansao.total) * fator);
+      c.custos.total = c.custos.impl + c.custos.recorrente;
+      c.custos.anos = [c.custos.impl, Math.round(fases.impl.total * fator), Math.round(fases.expansao.total * fator)];
+    }
+    totalGeral += c.custos.total;
+    unicoTotal += c.custos.impl;
+    recorrenteTotal += c.custos.recorrente;
+    out.push(c);
+  });
+  return {
+    iniciativas: out,
+    consolidacao: {
+      porEtapa: {
+        piloto: out.reduce((s, x) => s + x.custos.impl, 0),
+        impl: out.reduce((s, x) => s + x.custos.recorrente, 0) * 0.33, // aproximação: 1/3 do recorrente é Ano 1
+        expansao: out.reduce((s, x) => s + x.custos.recorrente, 0) * 0.67, // 2/3 do recorrente é expansão
+      },
+      porTecnologia: {}, // preenchido pelo chamador com base na arquitetura de cada iniciativa
+      totalGeral,
+      unico: unicoTotal,
+      recorrente: recorrenteTotal,
+    },
+  };
+}
+
+// ---------------------------------------------------------------- transparência de premissas (RF-012, RB-013)
+// Retorna cada premissa de custo com origem, fonte, ano, grau (A/B/C) e faixa de referência.
+// Grau C = convenção da ferramenta (ilustrativa); A = estatística oficial; B = estudo/registro de compra.
+function premissasComOrigem(cfg) {
+  cfg = cfg || {};
+  const premissas = [];
+  const adicionar = (campo, valor, origem, fonte, ano, grau, faixa, unidade) => {
+    premissas.push({ campo, valor, origem, fonte, ano, grau: grau || 'C', faixa, unidade });
+  };
+  // Salários (SAL em custos.js)
+  Object.entries(SAL || {}).forEach(([chave, valor]) => {
+    adicionar('salario.' + chave, valor, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [valor * 0.5, valor * 1.5], 'US$/ano');
+  });
+  // Preços de licença SaaS (PRESETS)
+  if (PRESETS && PRESETS.A && PRESETS.A.saas) {
+    const s = PRESETS.A.saas;
+    adicionar('saas.preco', s.preco, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [s.preco * 0.95, s.preco * 1.15], 'US$/usuário/mês');
+    adicionar('saas.precoNominal', s.precoNominal, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [s.precoNominal * 0.95, s.precoNominal * 1.15], 'US$/usuário/mês');
+  }
+  // Horas de formação (PREMISSAS_V11)
+  if (typeof PREMISSAS_V11 !== 'undefined') {
+    adicionar('formacao.horas', PREMISSAS_V11.horasFormacao, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [PREMISSAS_V11.horasFormacao * 0.7, PREMISSAS_V11.horasFormacao * 1.5], 'horas/pessoa');
+    adicionar('formacao.rotacao', PREMISSAS_V11.rotacaoFormacao, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [0.05, 0.20], '%/ano');
+  }
+  // Custo de dispositivo (PREMISSAS_K1)
+  if (typeof PREMISSAS_K1 !== 'undefined') {
+    adicionar('dispositivo.preco', PREMISSAS_K1.precoDispositivo, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [PREMISSAS_K1.precoDispositivo * 0.5, PREMISSAS_K1.precoDispositivo * 2], 'US$/dispositivo');
+    adicionar('conectividade.escolaAno', PREMISSAS_K1.conectEscolaAno, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [PREMISSAS_K1.conectEscolaAno * 0.5, PREMISSAS_K1.conectEscolaAno * 2], 'US$/escola/ano');
+  }
+  // Opções padrão (OPC_PADRAO)
+  adicionar('inflacao.pi', OPC_PADRAO.pi, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [0, 0.06], 'a.a.');
+  adicionar('desconto.r', OPC_PADRAO.r, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [0, 0.08], 'a.a.');
+  adicionar('contingencia.contPct', OPC_PADRAO.contPct, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [0.05, 0.10], '%');
+  // Razão estudante/professor (convenção ilustrativa, definida em framework.js como 25)
+  adicionar('razao.estProf', 25, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [20, 30], 'estudantes/professor');
+  return premissas;
+}
+
 // ---------------------------------------------------------------- índices de custo unitário e indicadores
 function anosUsuario(r, disc) { return r.anos.reduce((s, t) => s + r.U[t] * (disc ? disc[t] : 1), 0); }
 function indicadores(cfg, av) {
@@ -699,5 +832,5 @@ const PRESETS = {
 
 const API_CUSTOS = { ARVORE, NOME_K, NOME_S, K_DE_S, MAPA_CAT, SAL, SAL_NOME, OPC_COMPAT, OPC_PADRAO, clone, opcoes, ano, custoChamada, salario, arquitetura,
   calcular, resumo, avaliar, indicadores, cfgAltaAdocao, cfgEstresse, cenarios, direcionadores, tornado, sensibilidade, simular, orcamento, orcamentoDeLinhas,
-  lmdi, laspeyres, cae, comparar, equidade, compLicenca, compArquiteturas, PRESETS, quantil, fatorAdapt, CAMADA_DE_S, somaPorCamada };
+  lmdi, laspeyres, cae, comparar, equidade, compLicenca, compArquiteturas, PRESETS, quantil, fatorAdapt, CAMADA_DE_S, somaPorCamada, decomporFases, consolidarIniciativas, premissasComOrigem };
 if (typeof module !== 'undefined') module.exports = API_CUSTOS;
