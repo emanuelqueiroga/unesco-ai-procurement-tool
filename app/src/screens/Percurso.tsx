@@ -31,9 +31,9 @@ export function Abertura({ n }: { n: Capitulo }) {
         <ChapterOpening
           n={n}
           title={t(info.titulo)}
-          guide={t(info.guia)}
-          questions={telas.length}
-          minutes={info.minutos}
+          guide={n === 1 ? <strong>{t(info.guia)}</strong> : t(info.guia)}
+          questions={n === 1 ? undefined : telas.length}
+          minutes={n === 1 ? undefined : info.minutos}
           action={
             <div className="pc-botoes">
               <Button variant="secondary" href={n === 1 ? href.inicio() : href.sintese((n - 1) as Capitulo)}>{t('Voltar')}</Button>
@@ -41,11 +41,10 @@ export function Abertura({ n }: { n: Capitulo }) {
             </div>
           }
         >
-          {t(info.texto)}
+          {n === 1 ? null : t(info.texto)}
         </ChapterOpening>
-        <ul className="pc-abertura-notas">
+        {n !== 1 ? <ul className="pc-abertura-notas">
           <li>{t('Você sai com: {entrega}', { entrega: t(info.entrega) })}</li>
-          {n === 1 ? <li>{t('Tenha à mão o cadastro de escolas e matrículas, ou os números da sua rede.')}</li> : null}
           <li className="pc-nota">{t('Alimenta: {c}', { c: t(info.alimenta) })}</li>
           {n === 3 ? (
             <li className="pc-nota">
@@ -58,7 +57,7 @@ export function Abertura({ n }: { n: Capitulo }) {
               </Popover>
             </li>
           ) : null}
-        </ul>
+        </ul> : null}
       </div>
     </Shell>
   );

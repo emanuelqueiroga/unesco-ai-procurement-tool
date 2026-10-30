@@ -10,7 +10,7 @@ export type ChapterOpeningProps = {
   kicker?: string;
   title: string;
   /** Pergunta-guia, uma pergunta de verdade em linguagem de educação. */
-  guide: string;
+  guide: ReactNode;
   /** Um parágrafo de no máximo três frases, terminando com o ganho concreto. */
   children: ReactNode;
   questions?: number;
@@ -38,7 +38,7 @@ export function ChapterOpening({
       {kicker ? <div className="pr-chapteropening-kicker">{kicker}</div> : null}
       <h1 className="pr-chapteropening-title">{title}</h1>
       <p className="pr-chapteropening-guide">{guide}</p>
-      <p className="pr-chapteropening-text">{children}</p>
+      {children ? <p className="pr-chapteropening-text">{children}</p> : null}
       {questions !== undefined || minutes !== undefined ? (
         <div className="pr-chapteropening-meta">
           {questions !== undefined ? (
