@@ -47,13 +47,13 @@ describe('textos', () => {
 });
 
 describe('painel do plano', () => {
-  it('em branco: sem números, sem recomendações, 25 lacunas', () => {
+  it('em branco: sem números, sem recomendações, 24 lacunas', () => {
     const p = painelDe(S().estado());
     expect(p.estado).toBe('empty');
     expect(p.temNumeros).toBe(false);
     expect(p.kpis.every((k) => k.value === undefined)).toBe(true);
     expect(p.recs).toEqual([]);
-    expect(p.faltam).toBe(25);
+    expect(p.faltam).toBe(24);
   });
   it('o primeiro número aparece ao responder o tipo de tecnologia (2.3.4)', () => {
     rede();
@@ -88,7 +88,7 @@ describe('painel do plano', () => {
     expect(JSON.stringify(p.recs)).not.toMatch(/prioridade alta|"Alta"|"Média"/);
     expect(p.titulo).toContain(' · ');
   });
-  it('os quatro exemplos respondem todas as 25 telas do Essencial', () => {
+  it('os quatro exemplos respondem todas as 24 telas do Essencial', () => {
     ['A', 'B', 'C', 'D'].forEach((k) => {
       S().carregarExemplo(k);
       const p = painelDe(S().estado());

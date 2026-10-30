@@ -1,3 +1,4 @@
+import { nomeContexto } from '../domain/pais.js';
 // =====================================================================
 // Policy brief (design/redesign/06-policy-brief.md, PB-01): dados do PDF principal e da tela "Em resumo", já
 // traduzidos. Parte pura (sem DOM): lê as mesmas fontes do plano (secoesPlano → resumo e sumário; relDados; planoRec),
@@ -191,7 +192,7 @@ export function briefDados(estado, opts) {
   const rotTeste = pocPrimeiro && comPiloto ? B('rPocPiloto') : pocPrimeiro ? B('rPoc') : comPiloto ? B('rPiloto') : B('rTeste');
 
   // ---------------------------------------------------------------- frases do resumo executivo
-  const local = String(x.local || '').trim();
+  const local = nomeContexto(estado).trim();
   const problema = String(x.olhando || '').trim() || kv('Problemas marcados').split('\n')[0] || String(c.problema || '').trim();
   const medida = String(c.linhaBaseMedida || '').trim();
   let tCtx = '';

@@ -1,3 +1,4 @@
+import { nomePais, paisDoCaso } from '../domain/pais.js';
 // =====================================================================
 // Plano de contratação: seções (dados) da página e do PDF. Porte puro de src/resumo.js da v13 (dadosPlano,
 // secoesPlano, painelPlano, secaoMatriz, trSecao e os utilitários de que dependem); a parte HTML (renderPlano,
@@ -390,8 +391,8 @@ function secoesPlano(estado, opts) {
   const escI = +c.escolasInternet || 0;
   const horas = +c.formacaoHoras || 0;
   const linhasResumo = [
-    ['Nível administrativo', nivel || '—'],
-    ['Lugar ou rede', x.local || '—'],
+    ['País', nomePais(paisDoCaso(c)) || tr('Não informado')],
+    ['Nome da instituição (opcional)', x.local || '—'],
     ['Situação', respP('situacao', tr(rotP(OPC.situacao, c.situacao)) || '—', E)],
     // v13: prioridades, problemas marcados (com subcategorias) e "Outro problema" (passo 1.2)
     ['Prioridades', prioridadesCaso(x).map(z => tr(z.nome)).join('; ') || '—'],

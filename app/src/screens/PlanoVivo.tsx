@@ -69,7 +69,7 @@ function Conteudo({ p, nov, fluid, soPapel, rec }: { p: Painel; nov: Novidade | 
       kicker={t('Plano de contratação')}
       title={p.titulo || undefined}
       facts={p.fatos || undefined}
-      emptyTitle={t('Rede: ———')}
+      emptyTitle={t('País: ———')}
       emptyFacts={t('Problema: ——— · Teste: ———')}
       emptyMessage={t('A primeira resposta escreve a primeira linha.')}
       summaryTitle={t('Em resumo')}

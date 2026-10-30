@@ -21,7 +21,7 @@ afterEach(() => { delete (globalThis as any).window; });
 describe('TRA-01/TRA-13: quando pedir confirmação', () => {
   it('caso em branco: não pede', () => { expect(precisaConfirmar(S())).toBe(false); });
   it('com respostas da pessoa: pede', () => {
-    S().responder('nivel', 'municipal');
+    S().escolherPais('CAN');
     expect(precisaConfirmar(S())).toBe(true);
   });
   it('exemplo A–D aberto e não editado: nada a perder, não pede', () => {
@@ -71,7 +71,7 @@ describe('TRA-08: erros de importação no idioma da interface', () => {
     expect(mensagemErroImportacao(new Error('boom'))).toMatch(/^Não foi possível ler o arquivo\. Escolha/);
   });
   it('importarTexto devolve o erro sem pedir confirmação nem tocar no caso', async () => {
-    S().responder('nivel', 'municipal');
+    S().escolherPais('CAN');
     const antes = S().caso;
     const r = await importarTexto('isto não é json');
     expect(r.ok).toBe(false);
@@ -170,7 +170,7 @@ describe('TRA-17: título da aba por tela', () => {
   it('início: só o nome da ferramenta', () => { expect(tituloDaAba({ tipo: 'inicio' })).toBe(NOME_FERRAMENTA); });
   it('pergunta: número, total e nome curto', () => {
     const t = tituloDaAba({ tipo: 'pergunta', n: 1, tela: ESSENCIAL[0].id });
-    expect(t).toBe(`Pergunta 1 de ${ESSENCIAL.length} · Nível da decisão · ${NOME_FERRAMENTA}`);
+    expect(t).toBe(`Pergunta 1 de ${ESSENCIAL.length} · País · ${NOME_FERRAMENTA}`);
   });
   it('plano, abertura, síntese e refinar identificam a tela', () => {
     expect(tituloDaAba({ tipo: 'plano', pagina: 'custa' })).toBe(`Seu plano · Quanto custa · ${NOME_FERRAMENTA}`);
@@ -178,7 +178,7 @@ describe('TRA-17: título da aba por tela', () => {
     expect(tituloDaAba({ tipo: 'sintese', n: 3 })).toMatch(/^Capítulo 3 · /);
     expect(tituloDaAba({ tipo: 'refinar', aba: 'premissas' })).toBe(`Refinar · ${NOME_FERRAMENTA}`);
   });
-  it('as 25 telas têm títulos diferentes', () => {
+  it('as 24 telas têm títulos diferentes', () => {
     const ts = new Set(ESSENCIAL.map((x) => tituloDaAba({ tipo: 'pergunta', n: x.capitulo, tela: x.id })));
     expect(ts.size).toBe(ESSENCIAL.length);
   });

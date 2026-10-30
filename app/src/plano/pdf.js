@@ -1,3 +1,4 @@
+import { nomeContexto } from '../domain/pais.js';
 // =====================================================================
 // PDF do plano de contratação (jsPDF 2.5.2 + jsPDF-AutoTable 3.8.4, Helvetica/WinAnsi). Porte de src/plano_pdf.js
 // da v13 (gerarPDF, fontes embutidas, pdfTxt, quebra CJK, árabe e aviso de tradução), sem DOM nem globais:
@@ -343,7 +344,7 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
     const LC = corta(quebra(nomeCaso, 20, LW, 'bold'), 3);
     fonte(20, 'bold', C.tinta); LC.forEach(l => { doc.text(l, M, y + 16); y += 25; });
     fonte(10.5, 'normal', C.muted);
-    doc.text(pdfTxt([ctx.local, tP('gerado') + ' ' + agora.toLocaleDateString(LOC())].filter(Boolean).join('  ·  ')), M, y + 10);
+    doc.text(pdfTxt([nomeContexto(estado), tP('gerado') + ' ' + agora.toLocaleDateString(LOC())].filter(Boolean).join('  ·  ')), M, y + 10);
     y += 30;
 
     // a linha que remete ao policy brief (o resumo executivo, a recomendação e os números principais ficam lá)

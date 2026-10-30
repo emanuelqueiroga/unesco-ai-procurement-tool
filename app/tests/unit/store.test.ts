@@ -24,7 +24,7 @@ describe('estado inicial', () => {
     expect(e.formato).toBe(14);
     expect(e.caso).toEqual(CASO_VAZIO);
     expect(e.modo).toBe('essencial');
-    expect(e.capitulo).toEqual({ atual: 1, pergunta: 'nivel' });
+    expect(e.capitulo).toEqual({ atual: 1, pergunta: 'local' });
     expect(e.origem).toEqual({});
     expect(S().recente).toBeNull();
   });
@@ -37,11 +37,11 @@ describe('estado inicial', () => {
 
 describe('responder', () => {
   it('grava no lugar certo (ctx, caso, resp) com origem informado', () => {
-    S().responder('nivel', 'municipal');
+    S().escolherPais('CAN');
     S().responder('titulo', 'Tutor de matemática');
     S().responderGov('g-comite', 'nao');
     const e = S().estado();
-    expect(e.ctx.nivel).toBe('municipal'); expect(e.origem.nivel).toBe('informado'); expect(e.respC.nivel).toBe(true);
+    expect(e.ctx.nivel).toBe('pais'); expect(e.origem.pais).toBe('informado'); expect(e.respC.pais).toBe(true);
     expect(e.caso.titulo).toBe('Tutor de matemática'); expect(e.origem.titulo).toBe('informado');
     expect(e.resp['g-comite']).toBe('nao'); expect(e.origem['g-comite']).toBe('informado'); expect(e.respC['g-comite']).toBeUndefined();
   });
@@ -256,12 +256,12 @@ describe('persistência', () => {
 describe('seletores do plano', () => {
   it('progresso e telas que faltam', () => {
     expect(progressoDe(S().estado()).map(p => p.feitas)).toEqual([0, 0, 0, 0]);
-    expect(faltamDe(S().estado()).length).toBe(25);
-    S().responder('nivel', 'municipal');
+    expect(faltamDe(S().estado()).length).toBe(24);
+    S().escolherPais('CAN');
     S().responder('internet', 'sim');
     const p = progressoDe(S().estado());
-    expect(p[0].feitas).toBe(1); expect(p[1].feitas).toBe(1); expect(p[0].total).toBe(11);
-    expect(faltamDe(S().estado()).length).toBe(23);
+    expect(p[0].feitas).toBe(1); expect(p[1].feitas).toBe(1); expect(p[0].total).toBe(10);
+    expect(faltamDe(S().estado()).length).toBe(22);
   });
   it('internet parcial só conta com as escolas informadas', () => {
     S().responder('internet', 'parcial');
@@ -275,8 +275,8 @@ describe('seletores do plano', () => {
     expect(faltamDe(S().estado()).some(t => t.id === 'governanca')).toBe(false);
   });
   it('tela atual e próxima', () => {
-    expect(telaAtual(S().estado()).id).toBe('nivel');
-    expect(proximaTela(S().estado())!.id).toBe('local');
+    expect(telaAtual(S().estado()).id).toBe('local');
+    expect(proximaTela(S().estado())!.id).toBe('situacao');
     S().irPara(4, 'expansao');
     expect(proximaTela(S().estado())).toBeNull();
   });
@@ -290,6 +290,6 @@ describe('seletores do plano', () => {
     expect(n1.total).not.toBe(n0.total);
     expect(recomendacoesDe(S().estado()).length).toBeGreaterThan(0);
     expect(origemDe(S().estado(), 'horizonte')).toBe('padrao');
-    expect(cabecalhoDe(S().estado()).nivel).toBe('');
+    expect(cabecalhoDe(S().estado()).nivel).toBe('pais');
   });
 });

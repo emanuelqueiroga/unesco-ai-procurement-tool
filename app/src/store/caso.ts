@@ -1,3 +1,4 @@
+import { normalizarContextoPais } from './contextoPais';
 // Store do caso (Zustand): o estado v14 mais as ações do percurso. Substitui a global S e as funções que a
 // mutavam em src/app.js e src/fluxo.js (marcarCampo, gravarNumCaso, aplicarPadroes/Problemas/Sugestoes,
 // carregarExemplo, aplicarImportado). Cada ação trabalha numa cópia profunda do estado e grava o resultado,
@@ -270,6 +271,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
   migradoDe: '',
 
   responder(campo, valor) {
+    if (['nivel', 'nivelOutro'].includes(campo)) return;
     const e = copiar(get());
     gravar(e, campo, valor);
     marcar(e, campo, 'informado');
@@ -294,6 +296,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     set({ ...e, recente: recenteDe(campo, tocados) });
   },
   refinar(campo, valor) {
+    if (['nivel', 'nivelOutro'].includes(campo)) return;
     const e = copiar(get());
     gravar(e, campo, valor);
     marcar(e, campo, 'refinado');
@@ -395,6 +398,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     const antes = String(e.caso.pais || '');
     escolherPaisDoCaso(e.caso, iso);
     const novo = String(e.caso.pais || '');
+    if (novo) marcar(e, 'pais', 'informado'); else { delete e.origem.pais; delete e.respC.pais; }
     const m = moedaAoEscolherPais(e.moeda, novo);
     if (m) e.moeda = m as Estado14['moeda'];
     if (novo !== antes) {
@@ -432,6 +436,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     if (k === 'novo' || !ex) { set({ ...e, recente: null, migradoDe: '' }); return; }
     e.caso = Object.assign(clone(CASO_VAZIO), clone(ex));
     e.exemplo = k;
+    e.caso.pais = e.caso.pais || 'outro'; // exemplos genéricos: país explicitamente não informado
     e.ctx = clone((CTX_EX as any)[k] || {}); e.resp = clone((RESP_EX as any)[k] || {});
     // textos do exemplo no idioma corrente (textosExemplo, src/app.js)
     ['titulo', 'problema', 'resultado', 'linhaBaseMedida', 'tarefaOutra', 'impactoOutro'].forEach(f => { if (ex[f]) (e.caso as any)[f] = tr(ex[f]); });
@@ -461,6 +466,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     Object.keys(rc).forEach(c => { e.origem[c] = 'informado'; });
     Object.keys(e.resp).forEach(g => { if (e.resp[g]) e.origem[g] = 'informado'; });
     e.respC = Object.fromEntries(Object.keys(rc).filter(c => !/^g-/.test(c)).map(c => [c, true]));
+    normalizarContextoPais(e);
     propagar(e);
     set({ ...e, recente: null, migradoDe: '' });
   },
@@ -475,7 +481,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     set({ ...e, recente: null, migradoDe: '' });
   },
   exportar() { return dadosCaso(soEstado(get())); },
-  repor(estado, migradoDe) { set({ ...clone(estado), recente: null, migradoDe: migradoDe || '' }); },
+  repor(estado, migradoDe) { set({ ...normalizarContextoPais(clone(estado)), recente: null, migradoDe: migradoDe || '' }); },
   estado() { return soEstado(get()); },
 }));
 

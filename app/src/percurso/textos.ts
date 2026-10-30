@@ -58,7 +58,7 @@ export const CAPITULOS_INFO: Record<Capitulo, InfoCapitulo> = {
 /** Frase de abertura de cada tela do Essencial (tom explicativo: por que a pergunta importa para o plano). */
 export const LEAD: Record<string, string> = {
   nivel: 'Quem decide e paga define as regras de compra, o orçamento e quem assina o contrato.',
-  local: 'O nome aparece na capa do plano e nos documentos que você levar à equipe.',
+  local: 'O planejamento é sempre nacional. Escolha o país e, se quiser, informe a instituição responsável.',
   situacao: 'Uma proposta já recebida pede outras perguntas que uma iniciativa do zero. O plano ajusta as recomendações a esse ponto.',
   etapas: 'Escolas e estudantes são a base de quase todos os números: tamanho do teste, pessoas na rede e custo por estudante.',
   prioridades: 'A prioridade organiza os problemas que aparecem na próxima pergunta.',
@@ -109,7 +109,7 @@ export const NOME_TESTE: Record<string, string> = { poc: 'Prova de conceito', pi
 
 /** Nome curto de cada tela, para a navegação lateral e a lista de pendências. */
 export const CURTO: Record<string, string> = {
-  nivel: 'Nível da decisão', local: 'Nome da rede', situacao: 'Em que ponto você está', etapas: 'Etapas, escolas e estudantes',
+  nivel: 'Nível da decisão', local: 'País', situacao: 'Em que ponto você está', etapas: 'Etapas, escolas e estudantes',
   prioridades: 'Prioridade', problemas: 'Problemas', problema: 'Situação atual', impactos: 'Impacto esperado', linhaBase: 'Linha de base',
   alternativa: 'Alternativa sem IA', governanca: 'Governança', testes: 'Tipo de teste', tarefas: 'O que a IA faz', usuarios: 'Quem usa',
   afetados: 'Quem é afetado', tipoTec: 'Tipo de tecnologia', pagamento: 'Pagamento', piloto: 'Tamanho do teste', internet: 'Internet',
@@ -119,6 +119,7 @@ export const CURTO: Record<string, string> = {
 
 /** Título de cada tela: a pergunta da v13 (traduzida pelos dicionários existentes) ou um título próprio da tela composta. */
 export const TITULO_TELA: Record<string, string> = {
+  local: 'Qual país você está planejando?',
   etapas: 'Quais etapas de ensino serão atendidas, com quantas escolas e estudantes?',
   governanca: 'Marque o que a sua rede já tem',
   afetados: 'Quem é afetado pelo que a ferramenta produz?',

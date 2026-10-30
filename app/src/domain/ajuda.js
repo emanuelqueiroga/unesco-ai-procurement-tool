@@ -91,7 +91,8 @@ const GOV_COMO = P['1.3'].como, GOV_EX = P['1.3'].ex;
 const PERGUNTAS = {
   // capítulo 1
   '1.1.1': { como: 'O nível que decide e paga.', quem: 'gabinete e planejamento', exemplo: 'Secretaria estadual de educação.' },
-  '1.1.2': { como: 'Escreva o nome como a equipe e os documentos oficiais o chamam.', exemplo: 'Secretaria Municipal de Educação de Vila Nova.' },
+  '1.1.2': { como: 'O planejamento é sempre nacional. Escolha o país e, se quiser, informe a instituição responsável.', exemplo: 'Brasil', quem: 'Equipe de planejamento' },
+  '1.1.2.1': { como: 'Escreva o nome como a equipe e os documentos oficiais o chamam.', exemplo: 'Ex.: Ministério da Educação', quem: 'Equipe de planejamento' },
   '1.1.3': { como: 'Marque a situação mais próxima da sua; o plano ajusta as recomendações.', quem: 'compras e planejamento',
     exemplo: 'Um fornecedor já mandou uma proposta: “Avaliar uma proposta já recebida”.' },
   '1.1.4': { como: P['1.1'].como, exemplo: P['1.1'].ex },

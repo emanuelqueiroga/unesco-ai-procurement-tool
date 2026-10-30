@@ -79,7 +79,7 @@ export function PlanPanel({
   kicker = tx('Plano de contratação'),
   title,
   facts,
-  emptyTitle = tx('Rede: ———'),
+  emptyTitle = tx('País: ———'),
   emptyFacts = tx('Problema: ——— · Teste: ———'),
   emptyMessage = tx('A primeira resposta escreve a primeira linha.'),
   summaryTitle = tx('Em resumo'),

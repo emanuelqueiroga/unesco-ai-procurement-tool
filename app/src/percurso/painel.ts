@@ -1,3 +1,4 @@
+import { nomeContexto } from '../domain/pais.js';
 // Projeção do estado no plano: o que o painel "Seu plano", a gaveta do celular, as sínteses e a página do plano
 // mostram. Pura (recebe o Estado14 e devolve dados prontos para os componentes), testada em tests/unit/painel.test.ts.
 import { ETAPAS_ENS, QUANDO_REC, resultadoRecomendacoes, trRec, trVeredito, rotuloQuem, rotuloNivel, MARCOS_REC, totaisCtx, modoTeste, PRIORIDADES, OPC, RESP_G, CAMPOS, rotulo, tr, faltasTodas, explicacaoCusto, premissasUnitarias, premissasDoCaso, resumoPremissas, CAMPO_POR_ID } from '../domain';
@@ -93,7 +94,7 @@ export function temNumeros(e: Estado14): boolean {
 export function tituloCaso(e: Estado14): string {
   const c = e.caso, x = e.ctx;
   const nome = String(c.titulo || x.olhando || '').trim();
-  const rede = String(x.local || '').trim();
+  const rede = nomeContexto(e).trim();
   return [nome, rede].filter(Boolean).join(' · ');
 }
 

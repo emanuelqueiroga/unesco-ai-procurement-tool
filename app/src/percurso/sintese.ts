@@ -1,3 +1,4 @@
+import { nomeContexto } from '../domain/pais.js';
 // Síntese de fim de capítulo: até dois parágrafos em prosa a partir das respostas, sem veredito, e o número que o
 // capítulo libera (2: custo do teste; 3: custo do primeiro ano; 4: custo total). Pura.
 // R6 (REC-42; seção 5.6): o capítulo 4 termina com "Seu próximo passo" (`proximo`): o veredito e o porquê, as 3
@@ -40,7 +41,7 @@ const ponto = (s: string) => (s && !/[.!?]$/.test(s) ? s + '.' : s);
 
 function cap1(e: Estado14): string[] {
   const x = e.ctx, tt = totaisCtx(x);
-  const rede = String(x.local || '').trim() || t('A rede');
+  const rede = nomeContexto(e).trim() || t('A rede');
   const nivel = x.nivel === 'outro' ? String(x.nivelOutro || '') : x.nivel ? rotulo(NIVEIS_ADM, x.nivel) : '';
   const { prioridades, problemas } = prioridadesTexto(e);
   const p1: string[] = [];

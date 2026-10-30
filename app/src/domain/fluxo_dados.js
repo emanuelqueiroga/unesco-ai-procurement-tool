@@ -161,8 +161,9 @@ const OPC_PERIODO_RESULTADO = [['mes', 'Por mês'], ['ano', 'Por ano']];
 // ---------------------------------------------------------------------
 const CAMPOS = [
   // 1.1 Onde e para quem
-  { passo: '1a', n: '1.1.1', id: 'nivel', onde: 'ctx', tipo: 'radio', opc: NIVEIS_ADM, cols: true, t: 'Em que nível administrativo a decisão será tomada?', h: 'O nível que decide e paga.', ex: 'Exemplo: secretaria estadual de educação.', outro: { v: 'outro', id: 'nivelOutro', t: 'Qual nível?' } },
-  { passo: '1a', n: '1.1.2', id: 'local', onde: 'ctx', tipo: 'texto', t: 'Qual é o nome do lugar ou da rede?', ph: 'Ex.: Rede estadual do Rio Grande do Sul, distrito escolar 3' },
+  { passo: '1a', n: '1.1.1', id: 'nivel', onde: 'ctx', opcional: true, se: () => false, tipo: 'radio', opc: NIVEIS_ADM, cols: true, t: 'Em que nível administrativo a decisão será tomada?', h: 'O nível que decide e paga.', ex: 'Exemplo: secretaria estadual de educação.', outro: { v: 'outro', id: 'nivelOutro', t: 'Qual nível?' } },
+  { passo: '1a', n: '1.1.2', id: 'pais', onde: 'caso', tipo: 'pais', t: 'Qual país você está planejando?', h: 'O planejamento é sempre nacional. Escolha o país e, se quiser, informe a instituição responsável.' },
+  { passo: '1a', n: '1.1.2.1', id: 'local', onde: 'ctx', opcional: true, tipo: 'texto', t: 'Nome da instituição (opcional)', ph: 'Ex.: Ministério da Educação' },
   { passo: '1a', n: '1.1.3', id: 'situacao', onde: 'caso', tipo: 'radio', opc: 'situacao', cols: true, padrao: true, t: 'Em que ponto você está?', h: 'Isso ajusta o plano de contratação.' },
   { passo: '1a', n: '1.1.4', id: 'etapas', onde: 'ctx', tipo: 'etapas', t: 'Quais etapas de ensino serão atendidas?', h: 'Marque uma ou mais.' },
   { passo: '1a', n: '1.1.5', id: 'grade', onde: 'ctx', tipo: 'grade', t: 'Quantas escolas e quantos estudantes há em cada etapa, por ano ou série?', h: 'Informe os estudantes de cada ano ou série; o total da etapa é calculado.', ex: 'Exemplo: 6º ano 40.000; 7º ano 38.000.' },

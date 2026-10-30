@@ -15,12 +15,11 @@ export interface TelaEssencial {
   nota?: string;
 }
 
-// As 25 telas do Essencial, na ordem da spec: 1.1.1, 1.1.2, 1.1.3, 1.1.4+1.1.5, 1.2.1, 1.2.2, 1.2.4, 1.2.5, 1.2.7, 1.2.8,
+// v015: 24 telas; o nível do país é fixo e a primeira pergunta é país. Ordem original restante: 1.1.1, 1.1.2, 1.1.3, 1.1.4+1.1.5, 1.2.1, 1.2.2, 1.2.4, 1.2.5, 1.2.7, 1.2.8,
 // governança (1.3.1–1.3.6, uma tela), 2.0, 2.1.1, 2.2.1, 2.2.2+2.2.3, 2.3.4, 2.3.5, 2.3.8, 2.4.1+2.4.2, 2.4.3, 2.5.1+2.5.4,
 // 2.6.2, 3.1.1, 4.1.1, 4.1.2. As demais perguntas de CAMPOS ficam no modo Refinar com a premissa padrão.
 export const ESSENCIAL: TelaEssencial[] = [
-  { id: 'nivel', capitulo: 1, n: ['1.1.1'], campos: ['nivel'] },
-  { id: 'local', capitulo: 1, n: ['1.1.2'], campos: ['local'] },
+  { id: 'local', capitulo: 1, n: ['1.1.2'], campos: ['pais'] },
   { id: 'situacao', capitulo: 1, n: ['1.1.3'], campos: ['situacao'] },
   { id: 'etapas', capitulo: 1, n: ['1.1.4', '1.1.5'], campos: ['etapas', 'grade'], nota: 'só totais; detalhe por ano em Refinar' },
   { id: 'prioridades', capitulo: 1, n: ['1.2.1'], campos: ['prioridades'] },

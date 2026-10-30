@@ -1,7 +1,7 @@
 // Seletores: derivações puras do estado v14 para a interface (plano, KPIs, recomendações, progresso).
 // Recebem o Estado14 (ou o store) e nunca o mutam: cfgAtual guarda a cfg em estado.custo, por isso recebe uma cópia.
 import { clone, cfgAtual, numerosCusto, casoAtual, perfil, recomendacoesCaso, premissasUnitarias, faltasEstimativa, modoTeste, QUESTOES_G, CAMPO_POR_ID,
-  etapasAtivas, alunosEtapa, problemasMarcados, temLacuna } from '../domain';
+  etapasAtivas, alunosEtapa, problemasMarcados, temLacuna, nomeContexto } from '../domain';
 import type { Estado14, Origem, Capitulo } from './tipos';
 import { ESSENCIAL, telasDoCapitulo, type TelaEssencial } from './perguntas';
 import { soEstado, valorDe } from './caso';
@@ -86,7 +86,7 @@ export function telaAnterior(s: Estado14): TelaEssencial | null {
 /** campos do modo Refinar: os de CAMPOS que não estão em nenhuma tela do Essencial, por capítulo */
 export function camposRefinar(capitulo: Capitulo): string[] {
   const ess = new Set(ESSENCIAL.flatMap(t => t.campos));
-  return Object.keys(CAMPO_POR_ID).filter(id => !ess.has(id) && String((CAMPO_POR_ID as any)[id].passo || '').startsWith(String(capitulo)));
+  return Object.keys(CAMPO_POR_ID).filter(id => !['nivel', 'nivelOutro', 'local'].includes(id) && !ess.has(id) && String((CAMPO_POR_ID as any)[id].passo || '').startsWith(String(capitulo)));
 }
 /** governança: perguntas com a resposta e a origem */
 export function governancaDe(s: Estado14) {
@@ -95,5 +95,5 @@ export function governancaDe(s: Estado14) {
 /** cabeçalho do plano: título, rede e teste (mostrados assim que existem) */
 export function cabecalhoDe(s: Estado14) {
   const c = s.caso, x = s.ctx;
-  return { titulo: c.titulo || x.olhando || '', rede: x.local || '', nivel: x.nivel || '', testes: (c.testes || []) as string[], exemplo: s.exemplo };
+  return { titulo: c.titulo || x.olhando || '', rede: nomeContexto(s), nivel: x.nivel || '', testes: (c.testes || []) as string[], exemplo: s.exemplo };
 }

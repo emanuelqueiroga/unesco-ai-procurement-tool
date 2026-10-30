@@ -1,3 +1,4 @@
+import { normalizarContextoPais } from './contextoPais';
 // Migrações do estado do caso: funções puras portadas de src/app.js (normalizarEstado, migrarEstadoV11,
 // migrarEstadoV13, migrarV8, temRespostas, aplicarImportado) e uma só porta de entrada, migrar(json) → Estado14,
 // que aceita os formatos 9, 11, 13 e 14, os estados guardados no localStorage (v9…v13, sem `app`) e os casos do
@@ -23,7 +24,7 @@ const igual = (a: any, b: any) => JSON.stringify(a === undefined ? null : a) ===
 /** Estado inicial da v14 (porta de estadoInicial, src/app.js, sem fase/passo/vista/boasVindas/info). */
 export function estadoInicial(): Estado14 {
   return {
-    formato: 14, versao: 14, caso: clone(CASO_VAZIO), ctx: {}, resp: {}, respC: {}, respDet: {}, revisar: [], mantidas: {}, feitos: {}, exemplo: 'novo',
+    formato: 14, versao: 14, caso: clone(CASO_VAZIO), ctx: { nivel: 'pais' }, resp: {}, respC: {}, respDet: {}, revisar: [], mantidas: {}, feitos: {}, exemplo: 'novo',
     custo: { base: 'caso', cfg: null, editado: false }, moeda: { cod: 'USD', taxa: '' }, lang: '',
     origem: {}, sugestoes: {}, modo: 'essencial', capitulo: { atual: 1, pergunta: ESSENCIAL[0].id },
   };
@@ -279,9 +280,9 @@ export function temRespostas(o: any): boolean {
   if (Object.keys(o.resp || {}).some(k => o.resp[k])) return true;
   if (o.origem && Object.keys(o.origem).some(k => o.origem[k] === 'informado' || o.origem[k] === 'refinado')) return true;
   const x = o.ctx || {}, c = o.caso;
-  if (x.nivel || x.local || x.olhando || x.problemaOutro || ['prioridades', 'problemas', 'subs'].some(k => (x[k] || []).length) || Object.values(x.etapas || {}).some((e: any) => e && e.on)) return true;
+  if ((x.nivel && x.nivel !== 'pais') || x.local || x.olhando || x.problemaOutro || ['prioridades', 'problemas', 'subs'].some(k => (x[k] || []).length) || Object.values(x.etapas || {}).some((e: any) => e && e.on)) return true;
   if (Object.values(o.respDet || {}).some((d: any) => d && (String(d.qual || '').trim() || String(d.falta || '').trim()))) return true;
-  return ['titulo', 'problema', 'resultado', 'linhaBaseMedida', 'linhaBaseProblemaTxt', 'teste', 'tipoTec', 'pagamento', 'licenca', 'elegiveis', 'nFerramentas', 'conheceFerramentas', 'internet', 'modeloDisp', 'formacaoFormato', 'formacaoPaga', 'suporteQuem', 'suporteNivel', 'acompanhamento', 'arquitetura'].some(k => c[k]) || ['tarefas', 'impactos', 'usuarios', 'testes', 'ferramentas', 'formados', 'formacaoTipo', 'linhaBaseProblemas'].some(k => (c[k] || []).length);
+  return ['titulo', 'problema', 'resultado', 'linhaBaseMedida', 'linhaBaseProblemaTxt', 'teste', 'tipoTec', 'pagamento', 'licenca', 'elegiveis', 'nFerramentas', 'conheceFerramentas', 'pais', 'internet', 'modeloDisp', 'formacaoFormato', 'formacaoPaga', 'suporteQuem', 'suporteNivel', 'acompanhamento', 'arquitetura'].some(k => c[k]) || ['tarefas', 'impactos', 'usuarios', 'testes', 'ferramentas', 'formados', 'formacaoTipo', 'linhaBaseProblemas'].some(k => (c[k] || []).length);
 }
 
 // ----------------------------------------------------------- origem
@@ -310,6 +311,7 @@ function valorPadrao(chave: string) {
 }
 /** origem de um campo pela regra da spec (estado v13): respC → informado; valor ≠ padrão e não confirmado → sugerido; senão padrao */
 export function origemDerivada(o: any, chave: string): Origem {
+  if (chave === 'nivel' && o.ctx?.nivel === 'pais') return 'padrao';
   if (/^g-/.test(chave)) return (o.resp || {})[chave] ? 'informado' : 'padrao';
   if ((o.respC || {})[chave]) return 'informado';
   const v = valorDe(o, chave), p = valorPadrao(chave);
@@ -405,5 +407,5 @@ export function migrar(json: any): Estado14 {
   // um cfg editado na calculadora só vale se veio do caso; presets voltam a ser montados
   if (out.custo.cfg && !out.custo.editado) out.custo.cfg = null;
   if (!out.custo.cfg) delete (out.custo as any).pendente;
-  return out;
+  return normalizarContextoPais(out);
 }

@@ -1,6 +1,6 @@
 // Pacote R8 (REC-52): as perguntas da seção 7 de design/redesign/05-requisitos-recomendacoes.md no Refinar (13 perguntas e 3 opções
 // novas em perguntas que já existem), com "Quem costuma saber"; sem resposta, "não informado" e a regra na variante "Decidir…";
-// o Essencial continua com 25 telas. Responder muda o resultado das regras (R-32, R-46, R-47, R-52, R-53, R-55, R-56, R-73) e do
+// o Essencial continua com 24 telas. Responder muda o resultado das regras (R-32, R-46, R-47, R-52, R-53, R-55, R-56, R-73) e do
 // motor onde a seção 7 e a 8 (E7) preveem (contestação, treino, verificação, público, revisão dos alertas).
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
@@ -55,8 +55,8 @@ const POR_CAPITULO: Record<number, string[]> = {
 const TODAS = [1, 2, 3].flatMap(c => POR_CAPITULO[c]);
 
 describe('REC-52: as 13 perguntas existem, fora do Essencial, numeradas no capítulo certo', () => {
-  it('o Essencial continua com exatamente 25 telas, e nenhuma pergunta nova está nele', () => {
-    expect(ESSENCIAL.length).toBe(25);
+  it('o Essencial continua com exatamente 24 telas, e nenhuma pergunta nova está nele', () => {
+    expect(ESSENCIAL.length).toBe(24);
     TODAS.forEach(c => expect(CAMPOS_ESSENCIAIS, c).not.toContain(c));
   });
   it('são 13, todas em CAMPOS, marcadas `opcional`, do caso, com tipo que o Refinar sabe desenhar', () => {

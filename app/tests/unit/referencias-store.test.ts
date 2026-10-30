@@ -14,14 +14,14 @@ const S = () => useCaso.getState();
 beforeEach(() => { S().carregarExemplo('novo'); S().setMoeda({ cod: 'USD', taxa: '' }); });
 
 describe('escolher o país', () => {
-  it('grava o país, ajusta a moeda (ainda em dólar) e devolve a moeda nova; não é pergunta do Essencial', () => {
+  it('grava o país, ajusta a moeda (ainda em dólar) e devolve a moeda nova; é a primeira pergunta do Essencial', () => {
     const r = S().escolherPais('BRA');
     expect(r.moeda).toBe('BRL');
     expect(S().caso.pais).toBe('BRA');
     expect(S().moeda).toEqual({ cod: 'BRL', taxa: '', taxaDe: '', doPais: 'BRA' });
-    expect(TELAS.some((t: any) => t.campos.includes('pais'))).toBe(false);
-    expect(TELAS.length).toBe(25);
-    expect(S().origem.pais).toBeUndefined();
+    expect(TELAS.some((t: any) => t.campos.includes('pais'))).toBe(true);
+    expect(TELAS.length).toBe(24);
+    expect(S().origem.pais).toBe('informado');
     // outro país: a moeda posta pelo país segue o país novo; "outro" volta ao dólar
     expect(S().escolherPais('MEX').moeda).toBe('MXN');
     expect(S().escolherPais('outro').moeda).toBe('USD');
@@ -115,10 +115,11 @@ describe('importação e exportação (REF-11)', () => {
     const v13 = migrar({ app: 'ai-education-procurement-tool', formato: 13, caso: { titulo: 'x', editados: [1] } });
     expect([v13.caso.pais, v13.caso.editados]).toEqual(['', {}]);
   });
-  it('carregar um exemplo não marca país nem editados como respondidos', () => {
+  it('exemplo genérico declara país não informado e não inventa dados locais', () => {
     S().carregarExemplo('C');
+    expect(S().caso.pais).toBe('outro');
     expect(S().origem.editados).toBeUndefined();
-    expect(S().origem.pais).toBeUndefined();
+    expect(S().origem.pais).toBe('informado');
     expect(S().respC.editados).toBeUndefined();
   });
 });
