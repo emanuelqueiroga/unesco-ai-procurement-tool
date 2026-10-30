@@ -25,7 +25,7 @@ const FIG_ABERTA = {};    // (v11) figura aberta por nota ⓘ; desde a v12 a fig
 const SUB_OBJ = { piloto: ['escolas', 'participantes', 'meses'], poc: ['participantes', 'meses'], implantacao: ['escolas', 'pessoas'] };
 function objVazio(k) { const o = {}; SUB_OBJ[k].forEach(x => { o[x] = ''; }); return o; }
 function estadoFluxo() {
-  S.ctx = Object.assign({ nivel: '', nivelOutro: '', local: '', etapas: {}, prioridades: [], problemas: [], subs: [], problemaOutro: '', olhando: '' }, S.ctx || {});
+  S.ctx = Object.assign({ pais: '', nivel: '', nivelOutro: '', local: '', tipoIniciativa: '', etapas: {}, prioridades: [], problemas: [], subs: [], problemaOutro: '', olhando: '' }, S.ctx || {});
   if (!S.ctx.etapas || typeof S.ctx.etapas !== 'object') S.ctx.etapas = {};
   ['prioridades', 'problemas', 'subs'].forEach(k => { if (!Array.isArray(S.ctx[k])) S.ctx[k] = []; });
   S.respDet = S.respDet && typeof S.respDet === 'object' ? S.respDet : {};
@@ -826,7 +826,7 @@ function corpoPasso(id) { return id === '4b' ? passo4b() : id === '4c' ? passo4c
 // ----------------------------------------------------------- passos, rodapés e fases
 function resumoPasso(id) {
   const x = S.ctx, c = S.caso;
-  if (id === '1a' && passoFeito(id)) { const t = totaisCtx(); return [tr(rotulo(NIVEIS_ADM, x.nivel)), x.local, fmtInt(t.alunos) + ' ' + tr('estudantes')].filter(Boolean).join(' · '); }
+  if (id === '1a' && passoFeito(id)) { const t = totaisCtx(); return [x.local, fmtInt(t.alunos) + ' ' + tr('estudantes')].filter(Boolean).join(' · '); }
   if (id === '1b' && x.olhando) return x.olhando;
   if (id === '2a' && (c.tarefas || []).length) return rotTarefas(3);
   if (id === '20' && testesDe(c).length) return rotTestes();
@@ -1041,10 +1041,11 @@ function confLimpar() {
 
 // ----------------------------------------------------------- render
 function render() {
-  estadoFluxo();
-  if (S.vista !== 'plano' && S.fase === 'expansao' && PASSOS_VER.includes(S.passo)) S.feitos[S.passo] = true;
-  aplicarPadroes();
-  const y = window.scrollY, foco = document.activeElement && document.activeElement.id;
+  try {
+    estadoFluxo();
+    if (S.vista !== 'plano' && S.fase === 'expansao' && PASSOS_VER.includes(S.passo)) S.feitos[S.passo] = true;
+    aplicarPadroes();
+    const y = window.scrollY, foco = document.activeElement && document.activeElement.id;
   const ex = ['A', 'B', 'C', 'D', 'editado'].includes(S.exemplo) && S.boasVindas === false;
   const tituloEx = ['A', 'B', 'C', 'D'].includes(S.exemplo) && typeof CASOS !== 'undefined' && CASOS[S.exemplo] ? CASOS[S.exemplo].titulo : '';
   let corpo;
@@ -1062,6 +1063,17 @@ function render() {
   if (foco) { const f = document.getElementById(foco); if (f) try { f.focus({ preventScroll: true }); } catch (e) { } }
   window.scrollTo(0, y);
   salvar();
+  } catch (e) {
+    console.error('Erro ao renderizar:', e);
+    $('#main').innerHTML = `<section class="card erro" id="erro-boundary" role="alert" aria-label="Erro ao renderizar a página">
+      <h2>${esc(tr('Erro ao exibir a página'))}</h2>
+      <p>${esc(tr('Ocorreu um erro ao renderizar a ferramenta. Você pode baixar o seu caso em JSON para tentar recuperar ou recomeçar do zero.'))}</p>
+      <div class="row"><button type="button" class="btn pri" data-act="exportar-erro">${esc(tr('Baixar meu caso (JSON)'))}</button><button type="button" class="btn" data-act="recomecar-erro">${esc(tr('Recomeçar'))}</button></div>
+      <p class="small muted">${esc(String(e && e.message ? e.message : e))}</p>
+    </section>`;
+    renderStepper(); renderPainel();
+    salvar();
+  }
 }
 function atualizarLaterais() { aplicarPadroes(); renderStepper(); renderPainel(); atualizarFaseViva(); salvar(); }
 // Atualiza marcas de respondida, passos, rodapés e cabeçalho da fase aberta sem redesenhar a página
@@ -1260,6 +1272,13 @@ function eventoFluxo(e) {
     if (act === 'ver-exemplo') { carregarExemplo('B'); S.boasVindas = false; abrirFase('contexto', '1a'); return true; }
     if (act === 'gerar-plano' || act === 'ir-resumo' || act === 'ir-final') { gerarPlano(); return true; }
     if (act === 'voltar-percurso' || act === 'voltar-fases') { S.vista = ''; render(); window.scrollTo({ top: 0, behavior: 'instant' }); return true; }
+    if (act === 'exportar-erro') {
+      const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'meu-caso-aiedu-procurement.json'; a.click();
+      URL.revokeObjectURL(url); return true;
+    }
+    if (act === 'recomecar-erro') { carregarExemplo('novo'); S.boasVindas = false; S.fase = 'contexto'; S.passo = '1a'; render(); return true; }
     if (act === 'pdf') { if (typeof baixarPDF === 'function') baixarPDF(); return true; }
     if (act === 'usar-alunos') { S.caso.elegiveis = totaisCtx().alunos; S.respC.elegiveis = true; if (S.custo) S.custo.editado = false; if (S.exemplo !== 'novo') S.exemplo = 'editado'; render(); toast(tr('Total de estudantes aplicado.')); return true; }
     return false;

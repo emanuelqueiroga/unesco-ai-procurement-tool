@@ -61,6 +61,18 @@ const tPn = (k, n) => tr(PDF_TXT[k].replace('{0}', String(n))).replace('{0}', St
 function gerarPDF() {
   const J = window.jspdf; if (!J || !J.jsPDF) throw new Error('jspdf');
   const doc = new J.jsPDF({ unit: 'pt', format: 'a4', compress: true });
+  // v15: acessibilidade — idioma do documento e título estruturado (HS-10.2, RB-014)
+  const lang = (typeof S !== 'undefined' && S.lang) || 'pt';
+  const langMap = { pt: 'pt-BR', en: 'en-US', es: 'es-ES', fr: 'fr-FR' };
+  const pdfLang = langMap[lang] || 'pt-BR';
+  try {
+    // define o idioma principal do documento no catálogo do PDF
+    const dict = doc.internal.docInfo || doc.internal._catalog || doc.internal;
+    if (doc.internal && doc.internal._catalog) {
+      doc.internal._catalog.setLanguage(pdfLang);
+    }
+  } catch (e) { /* jsPDF pode não expor setLanguage; ignorar em versões antigas */ }
+  doc.setProperties({ title: pdfTxt(NOME_FERRAMENTA + ' - ' + tP('sub') + ' - ' + nomeCaso), subject: pdfTxt(tP('sub')), creator: NOME_FERRAMENTA, keywords: 'IA, educação, planejamento, custo, ciclo de vida' });
   fontePDF(doc);   // v13: fonte embutida nos idiomas fora do WinAnsi (sem efeito em PT/EN/ES/FR)
   const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 46;
   const TOP = 60, BASE = H - 54, LW = W - 2 * M;   // área útil das páginas internas
@@ -83,7 +95,11 @@ function gerarPDF() {
   let N = null;
   try { N = numerosCusto(); if (N && !N.camadas && typeof somaPorCamada === 'function') N.camadas = somaPorCamada(N.av); } catch (e) { console.warn(e); N = null; }
   let R = [];
-  try { R = typeof recomendacoesCaso === 'function' ? recomendacoesCaso() || [] : []; } catch (e) { console.warn(e); R = []; }
+  try {
+    let k = null;
+    if (typeof recContexto === 'function') k = recContexto();
+    R = typeof recomendacoesCasoDiversificadas === 'function' ? recomendacoesCasoDiversificadas(k) : (typeof recomendacoesCaso === 'function' ? recomendacoesCaso() || [] : []);
+  } catch (e) { console.warn(e); R = []; }
   const altas = R.filter(r => r.prioridade === 'alta');
   const resumoRaw = raw.find(s => s.id === 'resumo') || { kv: [] };
   const KV = {}; (resumoRaw.kv || []).forEach(([k, v]) => { KV[k] = v; });

@@ -273,7 +273,7 @@ function recContexto() {
   const arr = id => { const x = v(id); return Array.isArray(x) ? x : x ? [x] : []; };
   const testes = v('testes') ? recTestes(c) : (v('teste') ? recTestes({ teste: c.teste }) : []);
   const teste = testes.length ? recTesteDe({ testes }) : '';
-  const modo = teste === 'poc' ? 'poc' : (teste === 'recomendar' || !teste) && rec.modo === 'poc' ? 'poc' : 'piloto';
+  const modo = rec.modo === 'nenhum' ? 'nenhum' : (teste === 'poc' ? 'poc' : (teste === 'recomendar' || !teste) && rec.modo === 'poc' ? 'poc' : 'piloto');
   const peso = k => ((typeof OPC !== 'undefined' ? OPC.consequencias : []).find(x => x[0] === k) || [0, 0, 0])[2];
   const cons = ce.consequencias || [];
   const consDecide = cons.filter(k => peso(k) >= 2);
@@ -361,6 +361,51 @@ function recomendacoesCaso() {
   return out.map((r, i) => [r, i])
     .sort((a, b) => (ORD_PRIO[a[0].prioridade] - ORD_PRIO[b[0].prioridade]) || (ordQuando(a[0].quando) - ordQuando(b[0].quando)) || (a[1] - b[1]))
     .map(z => z[0]);
+}
+
+// v15: pontuação auditável para recomendações (RF-018, RB-014)
+// Score = peso da prioridade (alta=3, media=2) + risco (alto=2, medio=1) + impacto na decisão (alto=2, medio=1)
+// Score máximo = 7. Usado para desempate e diversificação.
+function scoreRec(r, k) {
+  let s = 0;
+  if (r.prioridade === 'alta') s += 3; else if (r.prioridade === 'media') s += 2;
+  if (k.alto) s += 2; else if (k.pesoMax >= 1) s += 1;
+  if (r.tipo === 'custo' && k.eleg > 0) s += 2; else if (r.tipo === 'custo') s += 1;
+  return s;
+}
+
+// v15: diversificação das 5 primeiras recomendações (não mais de 1 por tipo e pacote)
+// garante que as 5 primeiras cubram áreas diferentes (custo, política, governança, tecnologia, dados)
+function diversificar(recs, k, n = 5) {
+  const usadosTipo = new Set(); const usadosPacote = new Set(); const out = [];
+  const restante = [];
+  recs.forEach((r, i) => {
+    const pacote = (r.id.split('-')[0] || r.id);
+    const chaveTipo = r.tipo;
+    if (out.length < n && !usadosTipo.has(chaveTipo) && !usadosPacote.has(pacote)) {
+      out.push(r); usadosTipo.add(chaveTipo); usadosPacote.add(pacote);
+    } else {
+      restante.push(r);
+    }
+  });
+  // preenche o restante com as recomendações sobrando, respeitando o score
+  restante.forEach(r => { if (out.length < n) out.push(r); });
+  return out;
+}
+
+// Lista de recomendações do caso, com pontuação e diversificação das 5 primeiras
+function recomendacoesCasoDiversificadas(k) {
+  if (!k) {
+    try { k = recContexto(); } catch (e) { k = { alto: false, pesoMax: 0, eleg: 0 }; }
+  }
+  const base = recomendacoesCaso();
+  // adiciona score a cada recomendação
+  const comScore = base.map(r => ({ r, score: scoreRec(r, k) }));
+  // ordena por score desc, depois por prioridade e momento
+  comScore.sort((a, b) => b.score - a.score || (ORD_PRIO[a.r.prioridade] - ORD_PRIO[b.r.prioridade]) || 0);
+  const ordenados = comScore.map(z => z.r);
+  // diversifica as 5 primeiras
+  return diversificar(ordenados, k, 5);
 }
 
 // ----------------------------------------------------------- textos traduzidos

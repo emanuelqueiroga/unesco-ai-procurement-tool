@@ -7,12 +7,12 @@
 // Os textos são PT (chave de tradução): cada texto fica num nó próprio para o MutationObserver de i18n.js.
 // =====================================================================
 const INICIO = {
-  titulo: 'Monte o plano de contratação de IA da sua rede',
-  eyebrow: 'Plano de contratação com custo do ciclo de vida',
-  frase: 'Responda às perguntas de quatro fases, do contexto da rede à expansão, e receba um plano de contratação com o custo de todo o ciclo de vida da IA, camada por camada. Os valores são ilustrativos.',
-  iniciar: 'Iniciar o plano de contratação',
-  mapaSub: 'Clique numa fase para ver o que ela pede em cada camada do custo total.',
-  verMatriz: 'Ver a matriz completa',
+  titulo: 'Planeje a compra de IA para a sua rede de ensino',
+  eyebrow: 'Planejamento de IA na educação',
+  frase: 'Responda algumas perguntas sobre o contexto da sua rede e receba um plano com o custo estimado e as próximas etapas. Comece agora.',
+  iniciar: 'Começar',
+  mapaSub: 'Quatro fases, do contexto ao plano de contratação.',
+  verMatriz: 'Ver a matriz de custo',
 };
 // O que a pessoa recebe ao fim de cada fase (RQ-01)
 const RESULTADO_FASE = {
@@ -75,55 +75,40 @@ function paginaInicial(sv) {
         <p class="ini-lead">${escI(INICIO.frase)}</p>
         <div class="ini-acoes">
           <button type="button" class="btn pri ini-cta" data-act="comecar"><span>${escI(INICIO.iniciar)}</span>${ICO_SETA}</button>
-          <button type="button" class="btn grande" data-act="ver-exemplo">Ver um exemplo preenchido</button>
-          <button type="button" class="btn grande" data-act="imp-json">Importar caso</button>
         </div>
-        <p class="ini-nota">As respostas ficam salvas só neste navegador. Você pode exportar o caso a qualquer momento.</p>
       </div>
       <aside class="ini-doc" aria-labelledby="ini-doc-t">
-        <div class="ini-doc-faixa" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
         <div class="ini-doc-in">
-          <p class="ini-doc-e" id="ini-doc-t">No fim, o plano de contratação traz</p>
-          <ul class="ini-doc-l">${recebe.map(t => `<li><span>${escI(t)}</span></li>`).join('')}</ul>
-          <div class="ini-doc-g" aria-hidden="true"><span class="ini-doc-gt">Custo por camada</span>${barras.map((w, i) => `<i class="cam-${i + 1}" style="width:${w}%"></i>`).join('')}</div>
+          <p class="ini-doc-e" id="ini-doc-t">Você recebe</p>
+          <ul class="ini-doc-l"><li><span>Plano de contratação com o custo estimado, camada por camada</span></li><li><span>Recomendações de próximos passos, por ordem de prioridade</span></li><li><span>PDF para compartilhar com a sua equipe</span></li></ul>
         </div>
       </aside>
     </div>
     ${mapaFases()}
   </section>`;
 }
-// Imagem explicativa das quatro fases (HTML/CSS traduzível): passos, camadas, resultado; fase clicável
+// Mapa simplificado das quatro fases: título, passos e o que a fase entrega
 function mapaFases() {
   const cards = FASES.map(f => {
     const aberta = INICIO_ABERTA === f.id;
     const passos = (PASSOS[f.id] || []).map(([id, nome]) => `<li><span class="ini-pn">${escI((PASSO_INFO[id] || {}).num || '')}</span><span class="ini-pt">${escI(nome)}</span></li>`).join('');
-    const cams = camadasDaFase(f.id).map(k => `<li class="cam-${k}" title="${escI(CAMADAS[k - 1][1])}"><span class="ini-cn" aria-hidden="true">${k}</span><span class="sr">${escI(CAMADAS[k - 1][1])}</span></li>`).join('');
     return `<article class="ini-f f${f.n}${aberta ? ' aberta' : ''}" data-inicio-card="${f.id}">
         <h3 class="ini-f-h"><button type="button" class="ini-f-b" data-inicio-fase="${f.id}" id="ini-b-${f.id}" aria-expanded="${aberta}" aria-controls="ini-p-${f.id}">
           <span class="ini-f-n" aria-hidden="true">${f.n}</span><span class="ini-f-tt"><span class="ini-f-fase">${escI('Fase ' + f.n)}</span><span class="ini-f-nome">${escI(f.nome)}</span></span>${ICO_CHEV}</button></h3>
         <div class="ini-f-corpo">
           <div class="ini-f-bl"><p class="ini-f-l">Passos</p><ol class="ini-passos">${passos}</ol></div>
-          <div class="ini-f-bl"><p class="ini-f-l">Camadas que alimenta</p><ul class="ini-cams">${cams}</ul></div>
-          <div class="ini-f-res"><p class="ini-f-l">O que você recebe</p><p>${escI(RESULTADO_FASE[f.id] || '')}</p></div>
-          <p class="ini-f-mais" aria-hidden="true"><span>${escI(aberta ? 'Fechar o resumo' : 'Ver o resumo da fase')}</span></p>
+          <div class="ini-f-res"><p>${escI(f.abertura || '')}</p></div>
         </div>
       </article>
       ${painelFase(f, aberta)}`;
   }).join('');
   return `<section class="ini-mapa" aria-labelledby="ini-mapa-t">
       <div class="ini-mapa-cab">
-        <p class="ini-kicker"><span>Como funciona</span></p>
-        <h2 id="ini-mapa-t">Do contexto ao plano de contratação, em quatro fases</h2>
-        <p class="ini-mapa-sub">${escI(INICIO.mapaSub)}</p>
+        <h2 id="ini-mapa-t">${escI(INICIO.mapaSub)}</h2>
       </div>
       <div class="ini-fases">${cards}</div>
-      <div class="ini-leg">
-        <p class="ini-leg-t">As sete camadas do custo total</p>
-        <ol class="ini-leg-l">${CAMADAS.map(([k, nome]) => `<li class="cam-${k}"><span class="ini-cn" aria-hidden="true">${k}</span><span>${escI(nome)}</span></li>`).join('')}</ol>
-      </div>
       <div class="ini-mapa-pe">
         <button type="button" class="btn ini-vm" data-act="ver-matriz" aria-haspopup="dialog">${ICO_GRADE}<span>${escI(INICIO.verMatriz)}</span></button>
-        <p class="ini-cred">${escI(typeof CREDITO_MATRIZ !== 'undefined' ? CREDITO_MATRIZ : '')}</p>
       </div>
     </section>`;
 }
@@ -145,12 +130,6 @@ function painelFase(f, aberta) {
         <button type="button" class="btn ini-p-x" data-inicio-fase="${f.id}" aria-controls="ini-p-${f.id}" aria-expanded="true"><span aria-hidden="true">✕</span> <span>Fechar o resumo</span></button>
       </div>
       <p class="ini-p-ab">${escI(f.abertura || '')}</p>
-      <p class="ini-p-l">O que esta fase exige, por camada</p>
-      <ol class="ini-cels">${cels}</ol>
-      <div class="ini-p-pe">
-        <button type="button" class="btn ini-vm" data-act="ver-matriz" aria-haspopup="dialog">${ICO_GRADE}<span>${escI(INICIO.verMatriz)}</span></button>
-        <p class="ini-cred">${escI(typeof CREDITO_MATRIZ !== 'undefined' ? CREDITO_MATRIZ : '')}</p>
-      </div>
     </div>`;
 }
 // Abre ou fecha uma fase na própria página, sem redesenhar (o foco fica onde está)

@@ -24,6 +24,11 @@ const CASO_VAZIO = {
   implantacao: { escolas: '', pessoas: '' }, arquitetura: '',
   // 4 expansão
   elegiveis: '', expansao: 'ano1', horizonte: 3,
+  // v15: iniciativas com dimensionamento próprio (RF-005, RB-006)
+  // Cada iniciativa: { prioridadeId, objetivo, beneficiarios, nivelModalidade, estrategia,
+  //   dim: { professores, administrativos, beneficiarios, horasFormacao },
+  //   custos: { impl, recorrente, total } }
+  iniciativas: [],
   ajustes: {}, degrau: 2,
 };
 // Uma linha da lista de ferramentas (2.3.3). preco: US$ por usuário por mês (opcional).
@@ -239,6 +244,17 @@ function migrarCasoV10(c) {
   out.piloto = Object.assign({ escolas: '', participantes: '', meses: '' }, out.piloto || {});
   out.implantacao = Object.assign({ escolas: '', pessoas: '' }, out.implantacao || {});
   if (!['saas', 'api', 'ow', 'nao_sei'].includes(out.arquitetura)) out.arquitetura = '';
+  // v15: validação e clamp para robustez de importação (RF-019, RB-015)
+  // clamp de horizonte (1-10)
+  if (out.horizonte != null) { const h = Math.round(+out.horizonte || 3); out.horizonte = Math.max(1, Math.min(10, isNaN(h) ? 3 : h)); }
+  // normalizar arrays que podem ter vido como string ou número inválido
+  ['prioridades', 'problemas', 'subs', 'testes', 'tarefas', 'impactos', 'usuarios', 'afetados', 'consequencias', 'formados', 'formacaoTipo', 'linhaBaseProblemas', 'ferramentas'].forEach(k => {
+    if (!Array.isArray(out[k])) out[k] = [];
+  });
+  // normalizar objetos aninhados
+  if (!out.poc || typeof out.poc !== 'object') out.poc = { participantes: '', meses: '' };
+  if (!out.piloto || typeof out.piloto !== 'object') out.piloto = { escolas: '', participantes: '', meses: '' };
+  if (!out.implantacao || typeof out.implantacao !== 'object') out.implantacao = { escolas: '', pessoas: '' };
   return out;
 }
 

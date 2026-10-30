@@ -80,13 +80,21 @@ const FIG_INFO = {
 };
 
 const NIVEIS_ADM = [['pais', 'País'], ['estado', 'Estado ou província'], ['municipio', 'Município ou cidade'], ['distrito', 'Distrito ou região escolar'], ['rede', 'Rede ou grupo de escolas'], ['outro', 'Outro']];
+// Lista de países para o seletor opcional do contexto (RF-002, RB-001). Países ilustrativos; completar com dados oficiais conforme necessário.
+const PAISES = [
+  ['BRA', 'Brasil'], ['MEX', 'México'], ['COL', 'Colômbia'], ['ARG', 'Argentina'], ['CHL', 'Chile'],
+  ['PER', 'Peru'], ['URY', 'Uruguai'], ['CRI', 'Costa Rica'], ['DOM', 'República Dominicana'], ['ECU', 'Equador'],
+  ['USA', 'Estados Unidos'], ['CAN', 'Canadá'], ['ESP', 'Espanha'], ['PRT', 'Portugal'], ['FRA', 'França'],
+  ['KEN', 'Quênia'], ['NGA', 'Nigéria'], ['ZAF', 'África do Sul'], ['EGY', 'Egito'], ['MAR', 'Marrocos'],
+  ['IND', 'Índia'], ['IDN', 'Indonésia'], ['PHL', 'Filipinas'], ['VNM', 'Vietnã'], ['THA', 'Tailândia'],
+  ['outro', 'Outro país ou não listado'],
+];
 const ETAPAS_ENS = [
-  ['infantil', 'Educação infantil', 'Creche e pré-escola', ['Creche', 'Pré-escola']],
-  ['fund1', 'Ensino fundamental: anos iniciais', 'Do 1º ao 5º ano', ['1º ano', '2º ano', '3º ano', '4º ano', '5º ano']],
-  ['fund2', 'Ensino fundamental: anos finais', 'Do 6º ao 9º ano', ['6º ano', '7º ano', '8º ano', '9º ano']],
-  ['medio', 'Ensino médio', 'Da 1ª à 3ª série', ['1ª série', '2ª série', '3ª série']],
+  ['infantil', 'Educação infantil', 'Creche e pré-escola', []],
+  ['basico', 'Ensino básico (anos iniciais e finais)', '1º ao 9º ano', []],
+  ['medio', 'Ensino médio', '1ª à 3ª série', []],
   ['superior', 'Educação superior', 'Graduação e pós-graduação', []],
-  ['eja', 'Educação de jovens e adultos', 'Escolarização de quem não concluiu na idade prevista', []],
+  ['eja', 'Educação de jovens e adultos', 'Quem não concluiu na idade prevista', []],
   ['profissional', 'Educação profissional e técnica', 'Cursos técnicos e de qualificação', []],
 ];
 // v13: os três domínios da v12 (DOMINIOS) deram lugar às quatro prioridades de src/prioridades.js (PRIORIDADES).
@@ -124,9 +132,10 @@ const QUESTOES_G = [
 // ---------------------------------------------------------------------
 const CAMPOS = [
   // 1.1 Onde e para quem
-  { passo: '1a', n: '1.1.1', id: 'nivel', onde: 'ctx', tipo: 'radio', opc: NIVEIS_ADM, cols: true, t: 'Em que nível administrativo a decisão será tomada?', h: 'O nível que decide e paga.', ex: 'Exemplo: secretaria estadual de educação.', outro: { v: 'outro', id: 'nivelOutro', t: 'Qual nível?' } },
-  { passo: '1a', n: '1.1.2', id: 'local', onde: 'ctx', tipo: 'texto', t: 'Qual é o nome do lugar ou da rede?', ph: 'Ex.: Rede estadual do Rio Grande do Sul, distrito escolar 3' },
-  { passo: '1a', n: '1.1.3', id: 'situacao', onde: 'caso', tipo: 'radio', opc: 'situacao', cols: true, padrao: true, t: 'Em que ponto você está?', h: 'Isso ajusta o plano de contratação.' },
+  { passo: '1a', n: '1.1.1', id: 'local', onde: 'ctx', tipo: 'texto', t: 'Qual é o nome do lugar ou da rede?', ph: 'Ex.: Rede estadual do Rio Grande do Sul, distrito escolar 3' },
+  { passo: '1a', n: '1.1.2', id: 'pais', onde: 'ctx', tipo: 'radio', opc: 'PAISES', cols: true, opcional: true, t: 'Em que país fica a rede?', h: 'Opcional. A escolha ajusta a moeda de exibição.', outro: { v: 'outro', id: 'paisOutro', t: 'Qual país?' } },
+  { passo: '1a', n: '1.1.3', id: 'tipoIniciativa', onde: 'ctx', tipo: 'radio', opc: 'tipoIniciativa', cols: true, t: 'Que tipo de iniciativa é esta?', h: 'Isso define quais perguntas serão mostradas nas próximas etapas.' },
+  { passo: '1a', n: '1.1.4', id: 'situacao', onde: 'caso', tipo: 'radio', opc: 'situacao', cols: true, padrao: true, t: 'Em que ponto você está?', h: 'Isso ajusta o plano de contratação.' },
   { passo: '1a', n: '1.1.4', id: 'etapas', onde: 'ctx', tipo: 'etapas', t: 'Quais etapas de ensino serão atendidas?', h: 'Marque uma ou mais.' },
   { passo: '1a', n: '1.1.5', id: 'grade', onde: 'ctx', tipo: 'grade', t: 'Quantas escolas e quantos estudantes há em cada etapa, por ano ou série?', h: 'Informe os estudantes de cada ano ou série; o total da etapa é calculado.', ex: 'Exemplo: 6º ano 40.000; 7º ano 38.000.' },
   // 1.2 Prioridade e impacto (v13: prioridades e problemas no lugar de domínio e componentes)
@@ -140,7 +149,8 @@ const CAMPOS = [
     detalhe: { v: ['sim', 'parcial'], problemas: 'Para quais problemas?', medida: 'Qual medida?', exMedida: 'Ex.: avaliação estadual de leitura do 5º ano, 2025' }, t: 'Você tem uma medida atual do problema (linha de base)?', ex: 'Exemplo: resultados da avaliação de leitura do ano passado, por escola.' },
   { passo: '1b', n: '1.2.8', id: 'alternativa', onde: 'caso', tipo: 'radio', opc: 'simNao', t: 'Você já comparou ao menos uma alternativa sem IA?', ex: 'Exemplo: reforço escolar no contraturno, redesenho do processo ou um software convencional de exercícios.' },
   // 1.3 Governança (camada 1)
-  ...QUESTOES_G.map(q => ({ passo: '1c', n: q.n, id: q.id, onde: 'resp', tipo: 'seg', opc: RESP_G, t: q.t, h: q.h, ex: q.ex, detalhe: { qual: q.detalhe, falta: 'O que falta?' } })),
+// v15: governança aparece apenas para política pública ou governança (RF-004, RB-005)
+  ...QUESTOES_G.map(q => ({ passo: '1c', n: q.n, id: q.id, onde: 'resp', tipo: 'seg', opc: RESP_G, t: q.t, h: q.h, ex: q.ex, detalhe: { qual: q.detalhe, falta: 'O que falta?' }, se: c => c.tipoIniciativa === 'politica' || c.tipoIniciativa === 'governanca' })),
   // 2.0 Prova de conceito ou piloto (múltipla: as duas podem ser marcadas; "Não sei, recomende para mim" é exclusiva)
   { passo: '20', n: '2.0', id: 'testes', onde: 'caso', tipo: 'testes', opc: 'teste', cols: true, t: 'Você vai começar por uma prova de conceito, por um piloto ou pelos dois?', h: 'As duas servem para aprender antes de comprar. A diferença é com quem e em que condições se testa. Você pode marcar as duas: primeiro a prova de conceito, depois o piloto.' },
   // 2.1 Aplicações
@@ -152,22 +162,22 @@ const CAMPOS = [
   { passo: '2b', n: '2.2.3', id: 'consequencias', onde: 'caso', tipo: 'chips', opc: 'consequencias', sugere: true, padrao: true, t: 'O que as pessoas vão fazer com a resposta da ferramenta?', ex: 'Exemplo: o professor revisa o plano de aula e decide o que usar.' },
   { passo: '2b', n: '2.2.4', id: 'frequencia', onde: 'caso', tipo: 'radio', opc: 'frequencia', cols: true, sugere: true, padrao: true, t: 'Com que frequência cada pessoa vai usar?' },
   // 2.3 Adoção (ferramentas; as perguntas 2.3.4 a 2.3.7 valem para a ferramenta principal, a primeira da lista)
-  { passo: '2c', n: '2.3.1', id: 'nFerramentas', onde: 'caso', tipo: 'radio', opc: 'nFerramentas', cols: true, sugDe: 'testes', t: 'Quantas ferramentas você pretende usar?', h: 'Conte as ferramentas de IA que as pessoas vão usar neste caso.', ex: 'Exemplo: um assistente para planejar aulas e outra ferramenta para corrigir redações são duas ferramentas.' },
-  { passo: '2c', n: '2.3.2', id: 'conheceFerramentas', onde: 'caso', tipo: 'radio', opc: 'conheceFerramentas', cols: true, t: 'Você já sabe quais?' },
-  { passo: '2c', n: '2.3.3', id: 'ferramentas', onde: 'caso', tipo: 'ferramentas', se: c => c.conheceFerramentas === 'sim', t: 'Quais ferramentas?', h: 'A primeira da lista é a ferramenta principal: as perguntas 2.3.4 a 2.3.7 se referem a ela. O preço é opcional; sem ele, a estimativa usa um preço ilustrativo.' },
-  { passo: '2c', n: '2.3.4', id: 'tipoTec', onde: 'caso', tipo: 'radio', opc: 'tipoTec', cols: true, t: 'Que tipo de tecnologia é a ferramenta principal?', ex: 'Exemplo: uma plataforma do ministério (pública), um modelo aberto instalado numa nuvem contratada (aberta), a assinatura de um assistente para professores (paga).' },
-  { passo: '2c', n: '2.3.5', id: 'pagamento', onde: 'caso', tipo: 'radio', opc: 'pagamento', cols: true, sugDe: 'tipoTec', t: 'Como vai ser o pagamento da ferramenta principal?', h: 'Pense no período da prova de conceito ou do piloto.', ex: 'Exemplo: um valor por professor por mês (por usuário); um valor anual fixo para todas as escolas (institucional).' },
-  { passo: '2c', n: '2.3.6', id: 'licenca', onde: 'caso', tipo: 'radio', opc: 'licenca', cols: true, sugDe: 'tipoTec', t: 'Que tipo de licença tem a ferramenta principal?', ex: 'Exemplo: os termos aceitos ao criar uma conta gratuita são termos de uso padrão.' },
-  { passo: '2c', n: '2.3.7', id: 'adaptacao', onde: 'caso', tipo: 'radio', opc: 'adaptacao', cols: true, t: 'Quanto a ferramenta principal precisa ser adaptada ao seu contexto?', h: 'Cada nível inclui os anteriores. Mais adaptação aumenta o custo de implantação e de manutenção.', ex: 'Exemplo: traduzir para a língua local e alinhar as atividades ao currículo é adaptação de conteúdo e idioma.' },
+  { passo: '2c', n: '2.3.1', id: 'nFerramentas', onde: 'caso', tipo: 'radio', opc: 'nFerramentas', cols: true, sugDe: 'testes', t: 'Quantas ferramentas você pretende usar?', h: 'Conte as ferramentas de IA que as pessoas vão usar neste caso.', ex: 'Exemplo: um assistente para planejar aulas e outra ferramenta para corrigir redações são duas ferramentas.', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2c', n: '2.3.2', id: 'conheceFerramentas', onde: 'caso', tipo: 'radio', opc: 'conheceFerramentas', cols: true, t: 'Você já sabe quais?', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2c', n: '2.3.3', id: 'ferramentas', onde: 'caso', tipo: 'ferramentas', se: c => c.tipoIniciativa === 'tecnologia' && c.conheceFerramentas === 'sim', t: 'Quais ferramentas?', h: 'A primeira da lista é a ferramenta principal: as perguntas 2.3.4 a 2.3.7 se referem a ela. O preço é opcional; sem ele, a estimativa usa um preço ilustrativo.' },
+  { passo: '2c', n: '2.3.4', id: 'tipoTec', onde: 'caso', tipo: 'radio', opc: 'tipoTec', cols: true, t: 'Que tipo de tecnologia é a ferramenta principal?', ex: 'Exemplo: uma plataforma do ministério (pública), um modelo aberto instalado numa nuvem contratada (aberta), a assinatura de um assistente para professores (paga).', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2c', n: '2.3.5', id: 'pagamento', onde: 'caso', tipo: 'radio', opc: 'pagamento', cols: true, sugDe: 'tipoTec', t: 'Como vai ser o pagamento da ferramenta principal?', h: 'Pense no período da prova de conceito ou do piloto.', ex: 'Exemplo: um valor por professor por mês (por usuário); um valor anual fixo para todas as escolas (institucional).', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2c', n: '2.3.6', id: 'licenca', onde: 'caso', tipo: 'radio', opc: 'licenca', cols: true, sugDe: 'tipoTec', t: 'Que tipo de licença tem a ferramenta principal?', ex: 'Exemplo: os termos aceitos ao criar uma conta gratuita são termos de uso padrão.', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2c', n: '2.3.7', id: 'adaptacao', onde: 'caso', tipo: 'radio', opc: 'adaptacao', cols: true, t: 'Quanto a ferramenta principal precisa ser adaptada ao seu contexto?', h: 'Cada nível inclui os anteriores. Mais adaptação aumenta o custo de implantação e de manutenção.', ex: 'Exemplo: traduzir para a língua local e alinhar as atividades ao currículo é adaptação de conteúdo e idioma.', se: c => c.tipoIniciativa === 'tecnologia' },
   { passo: '2c', n: '2.3.8', id: 'piloto', onde: 'caso', tipo: 'setup', sugDe: 'testes',
     t: 'De que tamanho e por quanto tempo será o piloto?', h: 'Participantes são as pessoas que usam a ferramenta.', ex: 'Exemplo: 20 escolas, 600 professores, 4 meses.',
     tPoc: 'Quantas pessoas vão testar e por quanto tempo?', hPoc: 'Na prova de conceito testam a equipe e algumas pessoas convidadas, sem usuários reais.', exPoc: 'Exemplo: 15 pessoas, 2 meses.',
-    tAmbos: 'De que tamanho e por quanto tempo serão a prova de conceito e o piloto?', hAmbos: 'Primeiro a prova de conceito, com a equipe e algumas pessoas convidadas; depois o piloto, com usuários reais em poucas escolas.', exAmbos: 'Exemplo: prova de conceito com 15 pessoas por 2 meses; piloto com 20 escolas, 600 professores, 4 meses.' },
+    tAmbos: 'De que tamanho e por quanto tempo serão a prova de conceito e o piloto?', hAmbos: 'Primeiro a prova de conceito, com a equipe e algumas pessoas convidadas; depois o piloto, com usuários reais em poucas escolas.', exAmbos: 'Exemplo: prova de conceito com 15 pessoas por 2 meses; piloto com 20 escolas, 600 professores, 4 meses.', se: c => c.tipoIniciativa === 'tecnologia' },
   // 2.4 Infraestrutura e dispositivos (camada 3): internet e dispositivos separados
-  { passo: '2d', n: '2.4.1', id: 'internet', onde: 'caso', tipo: 'radio', opc: 'internet', cols: true, t: 'As escolas têm internet adequada para o uso previsto?', h: 'Adequada: aguenta todas as pessoas que vão usar a ferramenta ao mesmo tempo, por exemplo uma turma inteira conectada.', ex: 'Exemplo: em metade das escolas a conexão cai quando duas turmas usam a internet ao mesmo tempo (parcialmente).' },
-  { passo: '2d', n: '2.4.2', id: 'escolasInternet', onde: 'caso', tipo: 'num', se: c => c.internet === 'parcial', t: 'Quantas escolas da rede têm internet adequada?', h: 'A estimativa considera o custo de conexão para as demais escolas.', ex: 'Exemplo: 400 das 600 escolas.' },
-  { passo: '2d', n: '2.4.3', id: 'modeloDisp', onde: 'caso', tipo: 'radio', opc: 'modeloDisp', cols: true, t: 'Como os dispositivos serão usados?', ex: 'Exemplo: um carrinho com 30 tablets que circula entre as turmas da escola é uso rotativo.' },
-  { passo: '2d', n: '2.4.4', id: 'dispExistem', onde: 'caso', tipo: 'radio', opc: 'dispExistem', cols: true, sugDe: 'modeloDisp', t: 'Esses dispositivos já existem?', h: 'Considere se estão em condições de uso e se rodam a ferramenta.' },
+  { passo: '2d', n: '2.4.1', id: 'internet', onde: 'caso', tipo: 'radio', opc: 'internet', cols: true, t: 'As escolas têm internet adequada para o uso previsto?', h: 'Adequada: aguenta todas as pessoas que vão usar a ferramenta ao mesmo tempo, por exemplo uma turma inteira conectada.', ex: 'Exemplo: em metade das escolas a conexão cai quando duas turmas usam a internet ao mesmo tempo (parcialmente).', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2d', n: '2.4.2', id: 'escolasInternet', onde: 'caso', tipo: 'num', se: c => c.tipoIniciativa === 'tecnologia' && c.internet === 'parcial', t: 'Quantas escolas da rede têm internet adequada?', h: 'A estimativa considera o custo de conexão para as demais escolas.', ex: 'Exemplo: 400 das 600 escolas.' },
+  { passo: '2d', n: '2.4.3', id: 'modeloDisp', onde: 'caso', tipo: 'radio', opc: 'modeloDisp', cols: true, t: 'Como os dispositivos serão usados?', ex: 'Exemplo: um carrinho com 30 tablets que circula entre as turmas da escola é uso rotativo.', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2d', n: '2.4.4', id: 'dispExistem', onde: 'caso', tipo: 'radio', opc: 'dispExistem', cols: true, sugDe: 'modeloDisp', t: 'Esses dispositivos já existem?', h: 'Considere se estão em condições de uso e se rodam a ferramenta.', se: c => c.tipoIniciativa === 'tecnologia' },
   // 2.5 Formação e capacidade das equipes (camada 6)
   { passo: '2e', n: '2.5.1', id: 'formados', onde: 'caso', tipo: 'chips', opc: 'formados', t: 'Quem será formado?', h: 'Marque um ou mais.' },
   { passo: '2e', n: '2.5.2', id: 'formacaoTipo', onde: 'caso', tipo: 'chips', opc: 'formacaoTipo', t: 'Que tipo de formação?', h: 'Marque um ou mais.' },
@@ -175,17 +185,22 @@ const CAMPOS = [
   { passo: '2e', n: '2.5.4', id: 'formacaoHoras', onde: 'caso', tipo: 'horas', t: 'Quantas horas de formação por pessoa?', h: 'Some todas as atividades de formação previstas para cada pessoa.', ex: 'Exemplo: 4 horas de oficina e 4 horas de acompanhamento em sala = 8 horas.' },
   { passo: '2e', n: '2.5.5', id: 'formacaoPaga', onde: 'caso', tipo: 'radio', opc: 'formacaoPaga', cols: true, t: 'Quem paga a formação?' },
   // 2.6 Operação e suporte (camada 7)
-  { passo: '2f', n: '2.6.1', id: 'suporteQuem', onde: 'caso', tipo: 'radio', opc: 'suporteQuem', cols: true, t: 'Quem vai dar suporte aos usuários?', ex: 'Exemplo: o fornecedor atende pelo chat e a equipe de tecnologia da rede resolve o acesso e as contas (as duas).' },
-  { passo: '2f', n: '2.6.2', id: 'suporteNivel', onde: 'caso', tipo: 'radio', opc: 'suporteNivel', cols: true, t: 'Que nível de suporte?' },
-  { passo: '2f', n: '2.6.3', id: 'acompanhamento', onde: 'caso', tipo: 'radio', opc: 'acompanhamento', cols: true, t: 'Que nível de acompanhamento do uso?', h: 'Acompanhar o uso é verificar quem usa, como usa e com que resultado.' },
+  { passo: '2f', n: '2.6.1', id: 'suporteQuem', onde: 'caso', tipo: 'radio', opc: 'suporteQuem', cols: true, t: 'Quem vai dar suporte aos usuários?', ex: 'Exemplo: o fornecedor atende pelo chat e a equipe de tecnologia da rede resolve o acesso e as contas (as duas).', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2f', n: '2.6.2', id: 'suporteNivel', onde: 'caso', tipo: 'radio', opc: 'suporteNivel', cols: true, t: 'Que nível de suporte?', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2f', n: '2.6.3', id: 'acompanhamento', onde: 'caso', tipo: 'radio', opc: 'acompanhamento', cols: true, t: 'Que nível de acompanhamento do uso?', h: 'Acompanhar o uso é verificar quem usa, como usa e com que resultado.', se: c => c.tipoIniciativa === 'tecnologia' },
   // 3.1 Primeira etapa da implantação
   { passo: '3a', n: '3.1.1', id: 'implantacao', onde: 'caso', tipo: 'implant', sugDe: 'elegiveis', t: 'Na primeira etapa, quantas escolas e quantas pessoas vão usar?', h: 'É o primeiro ano de uso depois do teste (Ano 1 da estimativa).', ex: 'Exemplo: 200 escolas e 4.000 professores no primeiro ano.' },
   // 3.2 Arquitetura e integração (antes ficava no 2.3)
-  { passo: '3b', n: '3.2.1', id: 'arquitetura', onde: 'caso', tipo: 'arq', t: 'Qual arquitetura a ferramenta principal vai usar?', h: 'Mude só se souber; senão, use a arquitetura presumida.' },
+  { passo: '3b', n: '3.2.1', id: 'arquitetura', onde: 'caso', tipo: 'arq', t: 'Qual arquitetura a ferramenta principal vai usar?', h: 'Mude só se souber; senão, use a arquitetura presumida.', se: c => c.tipoIniciativa === 'tecnologia' },
   // 4.1 Escala e horizonte
   { passo: '4a', n: '4.1.1', id: 'elegiveis', onde: 'caso', tipo: 'num', sugDe: 'usuarios', t: 'Se der certo, quantas pessoas usariam a ferramenta em toda a rede?', h: 'Base da estimativa de custo depois da implantação.', ex: 'Exemplo: 12.000 professores ou 150.000 estudantes.' },
   { passo: '4a', n: '4.1.2', id: 'expansao', onde: 'caso', tipo: 'radio', opc: 'expansao', cols: true, padrao: true, t: 'Em quanto tempo, depois da implantação, você pretende chegar a todas essas pessoas?' },
   { passo: '4a', n: '4.1.3', id: 'horizonte', onde: 'caso', tipo: 'radio', opc: 'horizonte', cols: true, padrao: true, t: 'Por quantos anos de uso você quer estimar o custo?', h: 'Além do Ano 0, que é o da prova de conceito ou do piloto.' },
+  // 4.2 Dimensionamento por iniciativa (RF-005, RB-006): cada prioridade tem seu próprio dimensionamento
+  { passo: '4b', n: '4.2.1', id: 'dimProfessores', onde: 'caso', tipo: 'num', t: 'Número de professores envolvidos', h: 'Professores que usarão ou serão formados na iniciativa.', se: c => c.tipoIniciativa !== 'politica' },
+  { passo: '4b', n: '4.2.2', id: 'dimAdministrativos', onde: 'caso', tipo: 'num', t: 'Número de profissionais administrativos', h: 'Servidores administrativos envolvidos na gestão da iniciativa.', se: c => c.tipoIniciativa !== 'politica' },
+  { passo: '4b', n: '4.2.3', id: 'dimBeneficiarios', onde: 'caso', tipo: 'num', t: 'Quantidade de beneficiários', h: 'Estudantes ou outras pessoas que se beneficiarão da iniciativa.', se: c => c.tipoIniciativa !== 'politica' },
+  { passo: '4b', n: '4.2.4', id: 'dimHorasFormacao', onde: 'caso', tipo: 'num', t: 'Horas de formação por pessoa', h: 'Total de horas de formação previstas para cada pessoa envolvida.', se: c => c.tipoIniciativa === 'formacao' || c.tipoIniciativa === 'tecnologia' },
 ];
 
 // 3.2.1: as três arquiteturas em linguagem simples

@@ -7,6 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 Published under `docs/revisao/` with a yellow banner. Not part of the stable line.
 
+- **0.1.0-alpha.7**: redesign with the Prumo design system, reimplemented in React (branch `develop`, tag `v0.1.0-alpha.7`): the 25 Essencial questions in four chapters, a plan that writes itself next to the questions, nine languages; parity with 0.0.14 and 0.0.15-rc.1; the recommendation system designed by a panel of seven specialists; and a six-page policy brief as the main PDF (one-page executive summary, then problem, design, cost, risks and next steps), with the full plan as a technical annex. Replaces 0.1.0-alpha.6 at the same address. Built with `VITE_CANAL=revisao` (yellow banner, noindex, its own browser key). URL: `/revisao/v014/`.
 - **0.0.16-alpha.b3**: redesign proposal B3 (workspace layout, easier filling with explanations on every question, three switchable appearances). Branch `v15-proposta-b3`. URL: `/revisao/b3/`.
 - **0.0.16-alpha.a / .b / .c**: redesign proposals A (guided assistant), B (workspace with cost panel), C (living document). Branches `v15-proposta-a`, `-b`, `-c`. URLs: `/revisao/a/`, `/revisao/b/`, `/revisao/c/`.
 - **0.0.15-rc.1**: formerly "version 14 review". Step explanations, cost by phase and adoption curve, reference cost base and country profiles, procurement plan with executive summary and icebergs by phase. Branch `v14-revisao`. URL: `/revisao/`.

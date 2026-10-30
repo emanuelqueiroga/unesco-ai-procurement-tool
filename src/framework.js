@@ -15,6 +15,15 @@ const maxNivel = (...ns) => NIVEIS[Math.max(...ns.map(n => NIVEIS.indexOf(n)))];
 
 // ----------------------------------------------------------- opções do formulário
 const OPC = {
+  // v15: lista de países para o seletor opcional do contexto (RF-002, RB-001)
+  PAISES: typeof PAISES !== 'undefined' ? PAISES : [],
+  // v15: tipo de iniciativa para navegação condicional (RF-004, RB-005)
+  tipoIniciativa: [
+    ['politica', 'Política pública', 'Elaboração, consulta, aprovação e implementação institucional.'],
+    ['governanca', 'Governança', 'Estruturas, processos, responsabilidades e acompanhamento.'],
+    ['formacao', 'Formação', 'Planejamento, execução e avaliação de atividades formativas.'],
+    ['tecnologia', 'Tecnologia', 'Análise de viabilidade, prova de conceito, piloto, implantação e escala.'],
+  ],
   situacao: [
     ['nova', 'Iniciar uma nova iniciativa', 'Ainda não há solução escolhida nem fornecedor.'],
     ['proposta', 'Avaliar uma proposta já recebida', 'Um fornecedor, parceiro ou área interna já apresentou uma solução.'],
@@ -295,6 +304,59 @@ function derivarArquitetura(c, ignorarManual) {
   return 'saas';
 }
 
+// v15: sugere tecnologia compatível com prioridade, tarefas e contexto (RF-008, RB-009)
+// Retorna { arquitetura: 'saas'|'api'|'ow', tipoTec: 'publica'|'aberta'|'paga'|'nao_sei', motivo: string }
+function sugerirTecnologia(c, prioridade, tarefas) {
+  c = c || {};
+  const T = typeof tarefasDe === 'function' ? tarefasDe(tarefas || []) : [];
+  const temDadosPessoais = T.some(t => (t.dados || []).some(d => d === 'pessoais_est' || d === 'sensiveis'));
+  const temPrevisao = T.some(t => (t.classes || []).includes('previsao'));
+  const temGeracao = T.some(t => (t.classes || []).includes('geracao'));
+  const usaEstudantes = (c.usuarios || []).includes('estudantes');
+  const contatoCriancas = usaEstudantes && (c.afetados || []).includes('criancas');
+  let arq, tipoTec, motivo;
+  // Prioridade "governar" -> tecnologia mínima ou nenhuma
+  if (prioridade === 'governar') {
+    arq = 'saas'; tipoTec = 'paga';
+    motivo = 'Para governança, comece com uma plataforma institucional de baixo risco.';
+  }
+  // Prioridade "sobre" (letramento) -> plataforma compartilhada
+  else if (prioridade === 'sobre') {
+    arq = 'saas'; tipoTec = 'publica';
+    motivo = 'Para letramento em IA, uma plataforma pública ou institucional é suficiente.';
+  }
+  // Prioridade "com" (ensino com IA) -> depende dos dados e público
+  else if (prioridade === 'com') {
+    if (contatoCriancas || temDadosPessoais) {
+      arq = 'saas'; tipoTec = 'paga';
+      motivo = 'Com dados de estudantes ou crianças, prefira uma plataforma contratada com cláusulas de proteção de dados.';
+    } else if (temPrevisao) {
+      arq = 'api'; tipoTec = 'paga';
+      motivo = 'Para previsão de risco, um modelo por API com auditoria é adequado.';
+    } else {
+      arq = 'saas'; tipoTec = 'paga';
+      motivo = 'Para ensino com IA, uma plataforma por licença cobre a maioria dos casos.';
+    }
+  }
+  // Prioridade "para" (era da IA) -> API ou pesos abertos
+  else if (prioridade === 'para') {
+    if (temGeracao) {
+      arq = 'api'; tipoTec = 'paga';
+      motivo = 'Para geração de conteúdo, um modelo por API é mais simples de operar.';
+    } else {
+      arq = 'ow'; tipoTec = 'aberta';
+      motivo = 'Para competências da era da IA, pesos abertos permitem maior controle.';
+    }
+  }
+  // fallback: arquitetura presumida
+  if (!arq) {
+    arq = derivarArquitetura(c, true);
+    tipoTec = c.tipoTec || 'nao_sei';
+    motivo = 'A arquitetura presumida com base nas respostas de adoção.';
+  }
+  return { arq, tipoTec, motivo };
+}
+
 // v11: teste derivado da 2.0 (múltipla). testes ⊂ {'poc','piloto'} ou ['recomendar'] (exclusiva).
 // Os dois marcados → 'ambos'; um só → 'poc' | 'piloto'; ['recomendar'] → 'recomendar'; vazio → ''.
 // Compatibilidade: com testes vazio e c.teste antigo preenchido, usa c.teste.
@@ -416,6 +478,10 @@ const MOTIVOS_TESTE = {
 };
 function recomendarTeste(ce) {
   ce = ce || {};
+  // v15: política pública e governança não exigem prova de conceito nem piloto (RF-017, RB-020)
+  if (ce.tipoIniciativa === 'politica' || ce.tipoIniciativa === 'governanca') {
+    return { modo: 'nenhum', ids: [], motivos: [], poc: false, piloto: false };
+  }
   const poc = [];
   if (!ce.tipoTec || ce.tipoTec === 'nao_sei') poc.push('tecnologia');
   if (ce.adaptacao === 'sob_medida') poc.push('sob_medida');
@@ -886,4 +952,4 @@ function instrumentosCaso(c, perfil) {
 // ----------------------------------------------------------- utilitários de formato
 function fmtInt(x) { return Math.round(+x || 0).toLocaleString(LOC()); }
 
-if (typeof module !== 'undefined') module.exports = { TAREFAS, tarefasDe, IMPACTO_TAREFAS, MOTIVOS_TESTE, perfisSugeridos, derivarArquitetura, arquiteturaEscolhida, testeDe, papeisUsuarios, RAZAO_EST_PROF, casoEfetivo, recomendarTeste, NIVEIS, NIVEL_NOME, NIVEL_CRIT, OPC, DIMENSOES, perfilAutomatico, perfilFinal, anexoIII, DILIGENCIA, PDS, DOSSIE, INSTRUMENTOS, CAPITULOS, ROTAS, ESCADA, SUPERVISAO, CONTESTACAO, FORMAS_SUP, DADOS_REQ, CONTRATO, MUDANCA, METRICAS, SEVERIDADE, PACOTE, LOCKIN, alertas, formaSupervisao, extrasPD, instrumentosCaso, fmtInt };
+if (typeof module !== 'undefined') module.exports = { TAREFAS, tarefasDe, IMPACTO_TAREFAS, MOTIVOS_TESTE, perfisSugeridos, derivarArquitetura, arquiteturaEscolhida, sugerirTecnologia, testeDe, papeisUsuarios, RAZAO_EST_PROF, casoEfetivo, recomendarTeste, NIVEIS, NIVEL_NOME, NIVEL_CRIT, OPC, DIMENSOES, perfilAutomatico, perfilFinal, anexoIII, DILIGENCIA, PDS, DOSSIE, INSTRUMENTOS, CAPITULOS, ROTAS, ESCADA, SUPERVISAO, CONTESTACAO, FORMAS_SUP, DADOS_REQ, CONTRATO, MUDANCA, METRICAS, SEVERIDADE, PACOTE, LOCKIN, alertas, formaSupervisao, extrasPD, instrumentosCaso, fmtInt };

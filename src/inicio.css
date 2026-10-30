@@ -237,15 +237,22 @@
 .mt-nota, .mt-cred { font-size: .9rem; line-height: 1.5; color: var(--ini-muted); }
 .mt-cred { font-style: italic; }
 @media (max-width: 640px) {
-  .mt-tab { min-width: 900px; font-size: .92rem; }
-  .mt-c0 { width: 138px; }
+  .mt-tab { min-width: 0; font-size: .92rem; table-layout: auto; }
+  .mt-c0 { width: auto; }
   .mt-tab tbody th { padding: 12px 8px 12px 12px; }
   .mt-tab tbody th .mt-cn { float: none; margin: 0 0 4px; width: 26px; height: 26px; }
-  .mt-tab thead th { padding: 10px; }
-  .mt-fn { float: none; margin: 0 0 4px; width: 28px; height: 28px; font-size: .95rem; }
+  .mt-tab thead th { padding: 10px; white-space: normal; }
+  .mt-fn { float: none; margin: 0 0 4px; width: 26px; height: 26px; font-size: .85rem; }
   .mt-ce { display: none; }
-  .mt-cnome { font-size: .9rem; }
-  .mt-td { padding: 12px; }
+  .mt-cnome { font-size: .85rem; white-space: normal; }
+  .mt-td { padding: 8px 6px; }
+  .mt-tab thead th { font-size: .85rem; }
+  .mt-fnome { font-size: .85rem; }
+}
+@media (max-width: 360px) {
+  .mt-tab { font-size: .85rem; }
+  .mt-td { padding: 6px 4px; }
+  .mt-td.na { font-size: .85rem; }
 }
 
 /* visualizador da matriz: mesmo visor da figura (fluxo.css, dialog.visor), mais largo; a tabela rola dentro */
