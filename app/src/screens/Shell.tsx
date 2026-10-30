@@ -50,7 +50,7 @@ function capitulosBarra(s: CasoStore, pos: Posicao): BarChapter[] {
   }));
 }
 
-export function Shell({ children, pos = {}, nav = true, plano = true, contexto }: { children: ReactNode; pos?: Posicao; nav?: boolean; plano?: boolean; contexto?: ReactNode }) {
+export function Shell({ children, pos = {}, nav = true, plano = true, inicio = false, contexto }: { children: ReactNode; pos?: Posicao; nav?: boolean; plano?: boolean; inicio?: boolean; contexto?: ReactNode }) {
   const s = useCaso();
   const barra = useMediaQuery(BREAKPOINTS.bar);
   const estreito = useMediaQuery(BREAKPOINTS.cards);
@@ -98,7 +98,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   const nomeExemplo = exemploIlustrativo(s) ? nomeDoExemplo(s.exemplo) : '';
   return (
     <DentroDaMoldura.Provider value>
-      <div className="pc-app">
+      <div className={inicio ? 'pc-app pc-app--inicio' : 'pc-app'}>
         <a className="pc-pular" href="#conteudo" onClick={(e) => { e.preventDefault(); document.getElementById('conteudo')?.focus(); }}>{t('Pular para o conteúdo')}</a>
         <Header
           logos={LOGOS}
@@ -106,7 +106,12 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
           compact={estreito}
           context={contexto}
           actions={
-            faixa ? (
+            inicio ? (
+              <>
+                <SeletorIdioma compacto={estreito} />
+                {botaoTema}
+              </>
+            ) : faixa ? (
               <>
                 <SeletorIdioma compacto={estreito} />
                 <Button variant="secondary" size="sm" onClick={() => setCaso(true)} aria-haspopup="dialog">{t('Caso')}</Button>
@@ -123,7 +128,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
             )
           }
         />
-        {faixa ? (
+        {!inicio && faixa ? (
           <nav className="pc-atalhos" aria-label={t('Atalhos')}>
             {atalhos}
             {!estreito ? modo : null}
