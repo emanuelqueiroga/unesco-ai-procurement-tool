@@ -1,0 +1,289 @@
+{
+  "nextQuestion": "situacao",
+  "backCountry": "CAN",
+  "countryPreserved": true,
+  "questions": [
+    {
+      "id": "local",
+      "kicker": "Context · question 1 of 10",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "situacao",
+      "kicker": "Context · question 2 of 10",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "etapas",
+      "kicker": "Context · question 3 of 10",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "prioridades",
+      "kicker": "Context · question 4 of 10",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "problemas",
+      "kicker": "Context · question 5 of 10",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "problema",
+      "kicker": "Context · question 6 of 10",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "impactos",
+      "kicker": "Context · question 7 of 10",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "linhaBase",
+      "kicker": "Context · question 8 of 10",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "alternativa",
+      "kicker": "Context · question 9 of 10",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "governanca",
+      "kicker": "Context · question 10 of 10",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "testes",
+      "kicker": "Proof of concept or pilot · question 1 of 11",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "tarefas",
+      "kicker": "Proof of concept or pilot · question 2 of 11",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "usuarios",
+      "kicker": "Proof of concept or pilot · question 3 of 11",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "afetados",
+      "kicker": "Proof of concept or pilot · question 4 of 11",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "tipoTec",
+      "kicker": "Proof of concept or pilot · question 5 of 11",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "pagamento",
+      "kicker": "Proof of concept or pilot · question 6 of 11",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "piloto",
+      "kicker": "Proof of concept or pilot · question 7 of 11",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "internet",
+      "kicker": "Proof of concept or pilot · question 8 of 11",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "modeloDisp",
+      "kicker": "Proof of concept or pilot · question 9 of 11",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "formados",
+      "kicker": "Proof of concept or pilot · question 10 of 11",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "suporteNivel",
+      "kicker": "Proof of concept or pilot · question 11 of 11",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "implantacao",
+      "kicker": "Deployment · question 1 of 1",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "elegiveis",
+      "kicker": "Scale-up · question 1 of 2",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    },
+    {
+      "id": "expansao",
+      "kicker": "Scale-up · question 2 of 2",
+      "back": 1,
+      "next": 1,
+      "skip": 0,
+      "continue": 0,
+      "passed": true
+    }
+  ],
+  "stages": [
+    {
+      "n": 1,
+      "type": "opening",
+      "title": "Context",
+      "back": 1,
+      "next": 1,
+      "passed": true
+    },
+    {
+      "n": 1,
+      "type": "summary",
+      "kicker": "Context",
+      "backHref": "#/capitulo/1/governanca",
+      "nextHref": "#/capitulo/2",
+      "passed": true
+    },
+    {
+      "n": 2,
+      "type": "opening",
+      "title": "Proof of concept or pilot",
+      "back": 1,
+      "next": 1,
+      "passed": true
+    },
+    {
+      "n": 2,
+      "type": "summary",
+      "kicker": "Proof of concept or pilot",
+      "backHref": "#/capitulo/2/suporteNivel",
+      "nextHref": "#/capitulo/3",
+      "passed": true
+    },
+    {
+      "n": 3,
+      "type": "opening",
+      "title": "Deployment",
+      "back": 1,
+      "next": 1,
+      "passed": true
+    },
+    {
+      "n": 3,
+      "type": "summary",
+      "kicker": "Deployment",
+      "backHref": "#/capitulo/3/implantacao",
+      "nextHref": "#/capitulo/4",
+      "passed": true
+    },
+    {
+      "n": 4,
+      "type": "opening",
+      "title": "Scale-up",
+      "back": 1,
+      "next": 1,
+      "passed": true
+    },
+    {
+      "n": 4,
+      "type": "summary",
+      "kicker": "Scale-up",
+      "backHref": "#/capitulo/4/expansao",
+      "nextHref": "#/plano",
+      "passed": true
+    }
+  ]
+}
