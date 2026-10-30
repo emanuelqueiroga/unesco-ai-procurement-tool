@@ -1,0 +1,22 @@
+{
+  "build": "passed",
+  "test_files_passed": 38,
+  "tests_passed": 832,
+  "skipped": 2,
+  "todo": 1,
+  "final_targeted_tests_passed": 17,
+  "domain_check": "passed",
+  "diff_check": "passed",
+  "interface": [
+    "Priority label corrected to AI governance in education. Sole governance Next goes to Challenges; no Levels screen in navigation and counters show 22 active questions, 8 in Context.",
+    "National total schools/students are required to enable Next, formatted by locale. Entered 12345 schools and 1600000 students in the local test.",
+    "Eight new governance challenges rendered with revised English titles and descriptions.",
+    "With Educating with AI also checked, Next leads to Levels, schools and students, with 23 total questions. Returning to sole governance preserves national totals.",
+    "Direct URL to Levels redirects to Challenges when governance is the sole priority."
+  ],
+  "regressions": [
+    "Round-trip import/export preserves national totals, G1 legacy and G11/G16 new IDs.",
+    "Switching scope preserves stage data separately from national totals. National totals feed summaries and update estimates when an AI use is defined.",
+    "Invalid totals do not complete the Challenges question. All eight translation dictionaries contain the new challenge labels and descriptions."
+  ]
+}
