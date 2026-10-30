@@ -10,7 +10,7 @@ import { OPC } from './framework.js';
 const LACUNA = '__';
 const PRIORIDADES = [
   {
-    id: 'governar', nome: 'Governar a IA na educação',
+    id: 'governar', nome: 'Governança de IA na educação',
     desc: 'Criar as regras, as equipes e os processos para que o uso de IA na rede seja seguro, legal, equitativo e sustentável.',
     ex: ['Uma rede sem orientações para o uso de IA por estudantes', 'Escolas que usam ferramentas gratuitas sem análise de privacidade', 'Contratos de tecnologia assinados sem estimar o custo de vários anos', 'Nenhuma pessoa responsável pelo tema'],
     problemas: [
@@ -119,6 +119,114 @@ const PRIORIDADES = [
     ],
   },
 ];
+// Novos desafios de governança da v015. G1–G10 continuam válidos para casos salvos.
+const DESAFIOS_GOV_V015 = [
+  {
+    "id": "G11",
+    "t": "Criar regulamentação e orientações para IA na educação",
+    "desc": "Definir usos permitidos, responsabilidades e supervisão.",
+    "obj": "Criar regulamentação e orientações para IA na educação: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "uso_responsavel",
+      "gestao"
+    ],
+    "v015": true
+  },
+  {
+    "id": "G12",
+    "t": "Integrar a IA à estratégia nacional de educação",
+    "desc": "Definir objetivos, responsabilidades, recursos e prazos para o país.",
+    "obj": "Integrar a IA à estratégia nacional de educação: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "uso_responsavel",
+      "gestao"
+    ],
+    "v015": true
+  },
+  {
+    "id": "G13",
+    "t": "Fortalecer a soberania e a proteção de dados",
+    "desc": "Definir quem controla, acessa e compartilha os dados educacionais.",
+    "obj": "Fortalecer a soberania e a proteção de dados: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "uso_responsavel",
+      "gestao"
+    ],
+    "v015": true
+  },
+  {
+    "id": "G14",
+    "t": "Desenvolver a capacidade do Estado para governar a IA",
+    "desc": "Preparar equipes públicas para avaliar, contratar e supervisionar IA.",
+    "obj": "Desenvolver a capacidade do Estado para governar a IA: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "uso_responsavel",
+      "gestao"
+    ],
+    "v015": true
+  },
+  {
+    "id": "G15",
+    "t": "Criar um sandbox para experimentação educacional",
+    "desc": "Testar usos de IA em ambiente supervisionado, com salvaguardas e critérios de avaliação.",
+    "obj": "Criar um sandbox para experimentação educacional: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "uso_responsavel",
+      "gestao"
+    ],
+    "v015": true
+  },
+  {
+    "id": "G16",
+    "t": "Proteger a segurança, os direitos e o bem-estar de crianças e adolescentes",
+    "desc": "Prevenir danos e definir supervisão, resposta a incidentes e canais de reclamação.",
+    "obj": "Proteger a segurança, os direitos e o bem-estar de crianças e adolescentes: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "uso_responsavel",
+      "gestao"
+    ],
+    "v015": true
+  },
+  {
+    "id": "G17",
+    "t": "Garantir equidade e inclusão no acesso à IA",
+    "desc": "Considerar acessibilidade, línguas locais e escolas com menos recursos.",
+    "obj": "Garantir equidade e inclusão no acesso à IA: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "inclusao",
+      "desigualdade"
+    ],
+    "v015": true
+  },
+  {
+    "id": "G18",
+    "t": "Garantir transparência, responsabilização e avaliação contínua",
+    "desc": "Definir indicadores, prestação de contas e revisão das decisões sobre IA.",
+    "obj": "Garantir transparência, responsabilização e avaliação contínua: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "uso_responsavel",
+      "gestao"
+    ],
+    "v015": true
+  }
+];
+PRIORIDADES.find(p => p.id === 'governar').problemas.push(...DESAFIOS_GOV_V015);
 const PROBLEMA_POR_ID = {};
 const PRIORIDADE_DO_PROBLEMA = {};
 PRIORIDADES.forEach(p => p.problemas.forEach(q => { PROBLEMA_POR_ID[q.id] = q; PRIORIDADE_DO_PROBLEMA[q.id] = p.id; }));
@@ -151,11 +259,11 @@ function sugestoesProblemas(x, trf) {
   const textos = ps.map(q => t(q.t));
   if (outro) textos.push(outro);
   const olhando = textos.length ? textos[0].replace(/\.$/, '') + (textos.length > 1 ? ' ' + t('(e mais ' + (textos.length - 1) + ')') : '') : '';
-  const objetivos = ps.map(q => t(q.obj));
+  const objetivos = ps.map(q => q.v015 ? t(q.t) + ': __.' : t(q.obj));
   return {
     n: ps.length + (outro ? 1 : 0), problemas: ps.map(q => q.id), tarefas, impactos, olhando,
     resultado: objetivos.join('\n'),
-    problema: textos.length ? t('Na rede, hoje:') + ' ' + textos.join(' ') + ' ' + t('Quem é afetado: __. O que se sabe sobre as causas: __.') : '',
+    problema: textos.length ? t(ps.some(q => q.v015) ? 'Desafios selecionados:' : 'Na rede, hoje:') + ' ' + textos.join(' ') + ' ' + t('Quem é afetado: __. O que se sabe sobre as causas: __.') : '',
     semFerramenta: ps.length > 0 && !outro && ps.every(q => !(q.tarefas || []).length),
     formacao: ps.some(q => q.formacao) || (x && (x.prioridades || []).some(id => (PRIORIDADES.find(p => p.id === id) || {}).formacao)),
   };

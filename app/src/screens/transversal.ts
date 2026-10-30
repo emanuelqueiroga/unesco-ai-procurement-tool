@@ -2,7 +2,7 @@
 // substituir o caso, mensagens de erro de importação no idioma da interface, versão e data do rodapé, título da
 // aba por tela, "continuar de onde parei" e a regra de retradução do exemplo ao trocar de idioma.
 import { CASOS, tr } from '../domain';
-import { ESSENCIAL, temRespostas, ErroImportacao } from '../store';
+import { telasAtivas, temRespostas, ErroImportacao } from '../store';
 import { CAPITULOS_INFO, CURTO, t } from '../percurso/textos';
 import { href, type Rota } from '../percurso/rota';
 
@@ -69,13 +69,14 @@ export function textoVersao(versao: string, canal: 'estavel' | 'revisao', data: 
 
 // ----------------------------------------------------------- título da aba (TRA-17)
 /** Título da aba para a rota: "Pergunta 3 de 25 · Nome da rede · AI in Education Procurement Tool". */
-export function tituloDaAba(rota: Rota): string {
+export function tituloDaAba(rota: Rota, s?: { ctx?: Record<string, any> }): string {
   let parte = '';
   switch (rota.tipo) {
     case 'abertura': parte = t(CAPITULOS_INFO[rota.n].titulo); break;
     case 'pergunta': {
-      const i = ESSENCIAL.findIndex((x) => x.id === rota.tela);
-      parte = `${t('Pergunta {n} de {total}', { n: i + 1, total: ESSENCIAL.length })} · ${t(CURTO[rota.tela] || rota.tela)}`;
+      const telas = telasAtivas(s);
+      const i = telas.findIndex((x) => x.id === rota.tela);
+      parte = `${t('Pergunta {n} de {total}', { n: i + 1, total: telas.length })} · ${t(CURTO[rota.tela] || rota.tela)}`;
       break;
     }
     case 'sintese': parte = t(CAPITULOS_INFO[rota.n].titulo); break;
@@ -90,12 +91,13 @@ export function tituloDaAba(rota: Rota): string {
 // ----------------------------------------------------------- continuar de onde parei (PER-23)
 /** Destino de "Continuar de onde parei": a última pergunta vista (`capitulo`), senão a primeira pendente, senão o plano. */
 export function destinoContinuar(
-  s: { capitulo?: { atual?: number; pergunta?: string } | null },
+  s: { capitulo?: { atual?: number; pergunta?: string } | null; ctx?: Record<string, any> },
   faltam: { capitulo: number; id: string }[],
 ): { href: string; pendente: boolean } {
   if (!faltam.length) return { href: href.plano(), pendente: false };
   const c = s.capitulo;
-  const tela = c && c.pergunta ? ESSENCIAL.find((x) => x.id === c.pergunta && x.capitulo === c.atual) : undefined;
+  if (c?.pergunta === 'etapas' && !telasAtivas(s).some(t => t.id === 'etapas')) return { href: href.pergunta(1, 'problemas'), pendente: true };
+  const tela = c && c.pergunta ? telasAtivas(s).find((x) => x.id === c.pergunta && x.capitulo === c.atual) : undefined;
   if (tela) return { href: href.pergunta(tela.capitulo, tela.id), pendente: true };
   return { href: href.pergunta(faltam[0].capitulo, faltam[0].id), pendente: true };
 }

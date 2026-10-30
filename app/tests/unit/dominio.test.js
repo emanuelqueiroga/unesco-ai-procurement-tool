@@ -4,7 +4,7 @@
 // pontos de referência, para pegar regressões na passagem do estado.
 import { describe, it, expect } from 'vitest';
 import * as D from '../../src/domain/index.ts';
-const MODULOS = ['custos', 'framework', 'casos', 'prioridades', 'plano_dados', 'fluxo_dados', 'i18n', 'custos_ui', 'formula', 'fluxo', 'matriz', 'recomendacoes', 'glossario', 'ajuda', 'referencias', 'pais', 'rec_numeros'];
+const MODULOS = ['escopo', 'custos', 'framework', 'casos', 'prioridades', 'plano_dados', 'fluxo_dados', 'i18n', 'custos_ui', 'formula', 'fluxo', 'matriz', 'recomendacoes', 'glossario', 'ajuda', 'referencias', 'pais', 'rec_numeros'];
 
 function estadoExemplo(k) {
   const caso = k === 'novo' ? D.clone(D.CASO_VAZIO) : D.clone(D.CASOS[k]);

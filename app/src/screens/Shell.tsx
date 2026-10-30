@@ -3,7 +3,7 @@
 // Até 1360 px os atalhos do cabeçalho (Início, Matriz, Calculadora, Modo, Ver o plano, tema) descem para uma
 // faixa própria sob o cabeçalho, para que "Início" e "Matriz" estejam visíveis em qualquer largura.
 import { useEffect, useState, type ReactNode } from 'react';
-import { useCaso, ESSENCIAL, telasDoCapitulo, telaRespondida, origemDe, progressoDe, type Capitulo, type CasoStore } from '../store';
+import { useCaso, telasAtivas, telasDoCapitulo, telaRespondida, origemDe, progressoDe, type Capitulo, type CasoStore } from '../store';
 import { Header, ChapterNav, ChapterBar, Segmented, Button, IconMoon, IconSun, useMediaQuery, useTheme, BREAKPOINTS, type NavChapter, type BarChapter } from '../ui';
 import { CAPITULOS_INFO, CURTO, t } from '../percurso/textos';
 import { href, lerRota } from '../percurso/rota';
@@ -34,7 +34,7 @@ function capitulosNav(s: CasoStore, pos: Posicao): NavChapter[] {
       n, title: t(CAPITULOS_INFO[n].titulo), href: href.abertura(n),
       state: atual ? 'current' : p.completo ? 'done' : 'todo',
       questions: atual
-        ? telasDoCapitulo(n).map((tela) => ({
+        ? telasDoCapitulo(n, s).map((tela) => ({
           id: tela.id, title: t(CURTO[tela.id] || tela.id), href: href.pergunta(n, tela.id),
           state: tela.id === pos.tela ? 'current' : telaRespondida(s, tela) ? 'done' : tela.campos.some((c) => origemDe(s, c) === 'sugerido') ? 'suggested' : 'todo',
         }))
@@ -58,16 +58,16 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
   const [caso, setCaso] = useState(false);
   const [tema, , alternarTema] = useTheme();
   const salvamento = useSalvamento();
-  const respondidas = ESSENCIAL.length - progressoDe(s).reduce((a, p) => a + (p.total - p.feitas), 0);
+  const respondidas = telasAtivas(s).length - progressoDe(s).reduce((a, p) => a + (p.total - p.feitas), 0);
   const rota = lerRota(typeof window === 'undefined' ? '' : window.location.hash);
 
   // título da aba por tela (e no idioma da interface)
   useEffect(() => {
-    const atualizar = () => { document.title = tituloDaAba(lerRota(window.location.hash)); };
+    const atualizar = () => { document.title = tituloDaAba(lerRota(window.location.hash), useCaso.getState()); };
     atualizar();
     window.addEventListener('hashchange', atualizar);
     return () => window.removeEventListener('hashchange', atualizar);
-  }, [s.lang]);
+  }, [s.lang, s.ctx.prioridades]);
 
   const comPlano = respondidas > 0 || s.exemplo !== 'novo';
   const atalhos = (

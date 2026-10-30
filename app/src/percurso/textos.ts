@@ -111,7 +111,7 @@ export const NOME_TESTE: Record<string, string> = { poc: 'Prova de conceito', pi
 export const CURTO: Record<string, string> = {
   nivel: 'Nível da decisão', local: 'País', situacao: 'Em que ponto você está', etapas: 'Etapas, escolas e estudantes',
   prioridades: 'Prioridades', problemas: 'Desafios', problema: 'Situação atual', impactos: 'Impacto esperado', linhaBase: 'Linha de base',
-  alternativa: 'Soluções de política educacional', governanca: 'Governo na educação', testes: 'Tipo de teste', tarefas: 'O que a IA faz', usuarios: 'Quem usa',
+  alternativa: 'Soluções de política educacional', governanca: 'Governança de IA na educação', testes: 'Tipo de teste', tarefas: 'O que a IA faz', usuarios: 'Quem usa',
   afetados: 'Quem é afetado', tipoTec: 'Tipo de tecnologia', pagamento: 'Pagamento', piloto: 'Tamanho do teste', internet: 'Internet',
   modeloDisp: 'Dispositivos', formados: 'Formação', suporteNivel: 'Suporte', implantacao: 'Implantação', elegiveis: 'Pessoas na rede',
   expansao: 'Ritmo de expansão',
@@ -124,7 +124,7 @@ export const TITULO_TELA: Record<string, string> = {
   problemas: 'Quais desafios você quer enfrentar?',
   alternativa: 'Soluções de política educacional',
   etapas: 'Etapas, escolas e estudantes',
-  governanca: 'Governo na educação',
+  governanca: 'Governança de IA na educação',
   afetados: 'Quem é afetado pelo que a ferramenta produz?',
   formados: 'Quem será formado, e por quantas horas?',
   internet: 'As escolas têm internet adequada para o uso previsto?',

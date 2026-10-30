@@ -1,10 +1,10 @@
 // Telas do percurso: abertura de capítulo (D2), pergunta (D3–D6, M2, M3) e síntese de capítulo (D7).
 import { useEffect, useState, type ReactNode } from 'react';
 import {
-  CAMPO_POR_ID, textoCampo, tr, REF_TCO, INFO_C236, modoTeste, ajudaDeTela, dicaDaTela, dicaDoCampo, quemSabe,
+  CAMPO_POR_ID, textoCampo, tr, REF_TCO, INFO_C236, modoTeste, somenteGovernanca, tamanhoRedeValido, ajudaDeTela, dicaDaTela, dicaDoCampo, quemSabe,
 } from '../domain';
 import {
-  useCaso, ESSENCIAL, telasDoCapitulo, afetadosPor, camposRefinar, origemDe, extrasDoCapitulo, comparaN, idDoFoco, comLacuna,
+  useCaso, telasAtivas, telasDoCapitulo, camposAtivos, afetadosPor, camposRefinar, origemDe, extrasDoCapitulo, comparaN, idDoFoco, comLacuna,
   type Capitulo, type CasoStore, type Origem,
 } from '../store';
 import { ChapterOpening, ChapterSummary, QuestionFrame, Button, SourceTag, Popover } from '../ui';
@@ -22,9 +22,9 @@ const rotuloOrigem = (o: string) => ({ padrao: t('padrão'), sugerido: t('~ suge
 
 export function Abertura({ n }: { n: Capitulo }) {
   // A abertura também deve retraduzir seus textos ao trocar o idioma no cabeçalho.
-  useCaso((s) => s.lang);
+  const s = useCaso();
   const info = CAPITULOS_INFO[n];
-  const telas = telasDoCapitulo(n);
+  const telas = telasDoCapitulo(n, s);
   return (
     <Shell pos={{ capitulo: n }} contexto={t(info.titulo)}>
       <div className="pc-abertura" data-abertura={n}>
@@ -90,11 +90,13 @@ function AjudaPergunta({ ajuda }: { ajuda: { como: string | null; quem: string |
   );
 }
 
-export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
+export function Pergunta({ n, tela: pedida }: { n: Capitulo; tela: string }) {
   const s = useCaso();
+  const id = n === 1 && pedida === 'etapas' && somenteGovernanca(s.ctx) ? 'problemas' : pedida;
+  useEffect(() => { if (id !== pedida) ir(href.pergunta(n, id)); }, [id, pedida, n]);
   // sem memória: a explicação começa fechada em cada pergunta (a tela é remontada a cada pergunta) e nunca abre sozinha
   const [porque, setPorque] = useState(false);
-  const telas = telasDoCapitulo(n);
+  const telas = telasDoCapitulo(n, s);
   const i = telas.findIndex((x) => x.id === id);
   const tela = telas[i];
   const prox = telas[i + 1] ? href.pergunta(n, telas[i + 1].id) : href.sintese(n);
@@ -102,7 +104,8 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
   const sugeridos = sugeridosDaTela(s, tela);
   const ajuda = ajudaDeTela(tela.n, { modo: modoTeste(s.caso) });
   const dica = dicaDaTela(tela.campos);
-  const afetados = Array.from(new Set(tela.campos.flatMap((c) => afetadosPor(c))));
+  const faltaRede = id === 'problemas' && somenteGovernanca(s.ctx) && !tamanhoRedeValido(s.ctx);
+  const afetados = Array.from(new Set(camposAtivos(s, tela).flatMap((c) => afetadosPor(c))));
   // um texto sugerido que ainda tem lacuna (__) não é confirmado: a pessoa precisa completá-lo
   const confirmaveis = sugeridos.filter((c) => !comLacuna(s, c));
   const continuar = () => { confirmaveis.forEach((c) => s.confirmar(c)); ir(prox); };
@@ -110,7 +113,7 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
   const lead = id === 'problemas' && s.modo === 'refinar'
     ? 'Marque os problemas que quer resolver; no modo Refinar não há limite. Cada problema já traz uma descrição, impactos e tarefas que a IA pode apoiar; você ajusta depois.'
     : LEAD[id] || null;
-  const numeroGlobal = ESSENCIAL.indexOf(tela) + 1;
+  const numeroGlobal = telasAtivas(s).indexOf(tela) + 1;
   return (
     <Shell pos={{ capitulo: n, tela: id }} contexto={t(CAPITULOS_INFO[n].titulo)}>
       <div className="pc-pergunta" data-tela={id}>
@@ -128,13 +131,14 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
             <>
               <div className="pc-botoes">
                 <Button variant="secondary" href={ant}>{t('Voltar')}</Button>
-                <Button onClick={continuar}>{t('Próximo')}</Button>
+                <Button onClick={continuar} disabled={faltaRede}>{t('Próximo')}</Button>
                 {ajuda ? (
                   <Button variant="link" aria-expanded={porque} aria-controls={porque ? 'pc-ajuda' : undefined} onClick={() => setPorque((x) => !x)}>
                     {porque ? t('Fechar a explicação') : t('Por que perguntamos isso?')}
                   </Button>
                 ) : null}
               </div>
+              {faltaRede ? <p className="pc-nota">{t('Informe os totais da rede para avançar.')}</p> : null}
               {confirmaveis.length ? <p className="pc-nota">{t('Ao avançar, você aceita as sugestões exibidas.')}</p> : null}
             </>
           }
@@ -143,7 +147,7 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
         >
           <ControlesTela e={s} tela={tela} />
         </QuestionFrame>
-        <p className="pc-voltar pc-nota">{t('Pergunta {i} de {n} do Essencial', { i: numeroGlobal, n: ESSENCIAL.length })}</p>
+        <p className="pc-voltar pc-nota">{t('Pergunta {i} de {n} do Essencial', { i: numeroGlobal, n: telasAtivas(s).length })}</p>
       </div>
     </Shell>
   );
@@ -184,7 +188,7 @@ function PremissasCapitulo({ s, n, foco }: { s: CasoStore; n: Capitulo; foco?: s
       const f: any = (CAMPO_POR_ID as any)[c];
       return { id: c, n: f.n, titulo: String(tr(textoCampo(f, s.caso))), origem: origemDe(s, c), corpo: <ControleCampo e={s} campo={c} /> };
     }),
-    ...extrasDoCapitulo(n).map((x): ItemPremissa => {
+    ...extrasDoCapitulo(n).filter(x => x.id !== 'grade' || !somenteGovernanca(s.ctx)).map((x): ItemPremissa => {
       const o = x.campos.map((c) => origemDe(s, c)).find((v) => v === 'refinado' || v === 'informado');
       return { id: x.id, n: x.n, titulo: t(TITULO_EXTRA[x.id] || x.id), origem: x.campos.length ? (o || 'padrao') : null, corpo: <ControleExtra e={s} id={x.id} /> };
     }),
@@ -256,7 +260,7 @@ export function Sintese({ n, foco }: { n: Capitulo; foco?: string }) {
   const s = useCaso();
   const sin = sinteseCapitulo(n, s);
   const prox = n < 4 ? CAPITULOS_INFO[(n + 1) as Capitulo] : null;
-  const telas = telasDoCapitulo(n);
+  const telas = telasDoCapitulo(n, s);
   return (
     <Shell pos={{ capitulo: n, sintese: true }} contexto={t(CAPITULOS_INFO[n].titulo)}>
       <div className="pc-sintese" data-sintese={n}>

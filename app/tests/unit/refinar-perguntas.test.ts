@@ -132,6 +132,7 @@ describe('PER-15: marcar todos por prioridade (Refinar) sem limite', () => {
   });
   it('o store aceita mais de três problemas', () => {
     S().responder('prioridades', ['governar']);
+    S().responder('redeNacional', { escolas: 1000, estudantes: 500000 });
     S().responder('problemas', problemasDoGrupo([], ORDEM_PROBLEMAS, ids, true));
     expect(S().ctx.problemas.length).toBe(ids.length);
     expect(respondida('problemas')).toBe(true);

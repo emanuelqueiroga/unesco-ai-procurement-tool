@@ -1,9 +1,9 @@
 import { nomeContexto } from '../domain/pais.js';
 // Projeção do estado no plano: o que o painel "Seu plano", a gaveta do celular, as sínteses e a página do plano
 // mostram. Pura (recebe o Estado14 e devolve dados prontos para os componentes), testada em tests/unit/painel.test.ts.
-import { ETAPAS_ENS, QUANDO_REC, resultadoRecomendacoes, trRec, trVeredito, rotuloQuem, rotuloNivel, MARCOS_REC, totaisCtx, modoTeste, PRIORIDADES, OPC, RESP_G, CAMPOS, rotulo, tr, faltasTodas, explicacaoCusto, premissasUnitarias, premissasDoCaso, resumoPremissas, CAMPO_POR_ID } from '../domain';
+import { ETAPAS_ENS, QUANDO_REC, resultadoRecomendacoes, trRec, trVeredito, rotuloQuem, rotuloNivel, MARCOS_REC, totaisCtx, modoTeste, PRIORIDADES, OPC, RESP_G, CAMPOS, rotulo, tr, faltasTodas, explicacaoCusto, premissasUnitarias, premissasDoCaso, resumoPremissas, CAMPO_POR_ID, somenteGovernanca } from '../domain';
 import type { Estado14, Origem } from '../store';
-import { ESSENCIAL, afetadosPor, numerosDe, faltamDe, origemDe, respondido, camposAtivos, cfgDe, telaDoCampo, capituloDoCampo, motorQueAfeta } from '../store';
+import { ESSENCIAL, telasAtivas, afetadosPor, numerosDe, faltamDe, origemDe, respondido, camposAtivos, cfgDe, telaDoCampo, capituloDoCampo, motorQueAfeta } from '../store';
 import { fmt, sincronizar } from './ambiente';
 import { t, plural, NOME_TESTE, CURTO, CAPITULOS_INFO, minusc } from './textos';
 import { href } from './rota';
@@ -83,7 +83,8 @@ const DRIVERS: Record<KpiId, string[]> = (() => {
 export function origemKpi(e: Estado14, id: KpiId): Origem {
   if (e.exemplo !== 'novo') return 'informado';
   if (e.custo && e.custo.editado) return 'refinado';
-  return DRIVERS[id].reduce<Origem>((acc, c) => pior(acc, origemDe(e, c)), 'refinado');
+  const drivers = somenteGovernanca(e.ctx) ? [...DRIVERS[id].filter(c => !['etapas', 'grade'].includes(c)), 'redeNacional'] : DRIVERS[id];
+  return drivers.reduce<Origem>((acc, c) => pior(acc, origemDe(e, c)), 'refinado');
 }
 
 /** O plano mostra números depois que a pessoa diz que tipo de tecnologia vai usar (2.3.4), ou num exemplo. */
@@ -306,8 +307,8 @@ export function textoFontesPremissas(r: { total: number; convencao: number; pais
 
 export function painelDe(e: Estado14): Painel {
   sincronizar(e);
-  const faltam = faltamDe(e).length, respondidas = ESSENCIAL.length - faltam;
-  const premissas = ESSENCIAL.filter((tela) => camposAtivos(e, tela).some((c) => origemDe(e, c) === 'padrao' || origemDe(e, c) === 'sugerido')).length;
+  const faltam = faltamDe(e).length, respondidas = telasAtivas(e).length - faltam;
+  const premissas = telasAtivas(e).filter((tela) => camposAtivos(e, tela).some((c) => origemDe(e, c) === 'padrao' || origemDe(e, c) === 'sugerido')).length;
   const comNumeros = temNumeros(e);
   let H = +(e.caso.horizonte || 3) || 3;
   const vazio: Record<KpiId, number | undefined> = { 'kpi.ano0': undefined, 'kpi.anual': undefined, 'kpi.total': undefined, 'kpi.porAluno': undefined };

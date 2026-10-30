@@ -6,7 +6,7 @@
 // mostram o detalhe recolhido na própria tela; a lógica pura dessas edições está em refinar.ts.
 import { Fragment, createContext, useContext, useId, useState, type ReactNode } from 'react';
 import {
-  LOC, CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
+  somenteGovernanca, LOC, CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
   listaOpc, totaisCtx, alunosEtapa, etapasAtivas, modoTeste, horasEstimativa, lerNumero, problemasMarcados, sugProblemas, temLacuna, rotulo, pct, tr,
 } from '../domain';
 import { useCaso, origemDe, valorDe, type Estado14, type TelaEssencial } from '../store';
@@ -40,7 +40,6 @@ import { Pais } from './Pais';
 const num = (v: string): number | '' => inteiro(lerNumero(v) === '' ? '' : +lerNumero(v));
 const str = (v: unknown) => (v == null ? '' : String(v));
 const LIMITE_PROBLEMAS = 3;
-const nomePrioridade = (p: { id: string; nome: string }): string => p.id === 'governar' ? 'Governo na educação' : p.nome;
 /** nome da opção com a explicação embaixo (o subtexto do OptionCard é para legendas curtas à direita) */
 const comDescricao = (nome: unknown, desc?: unknown, extra?: ReactNode): ReactNode =>
   desc || extra ? <>{String(tr(nome))}{desc ? <span className="pr-optioncard-desc">{String(tr(desc))}</span> : null}{extra}</> : String(tr(nome));
@@ -620,14 +619,14 @@ function Prioridades({ e }: { e: Estado14 }) {
               type="checkbox"
               name="prioridades"
               value={p.id}
-              label={comDescricao(nomePrioridade(p), p.desc)}
+              label={comDescricao(p.nome, p.desc)}
               checked={atual.includes(p.id)}
               onChange={(v, on) => {
                 const s = new Set(atual); if (on) s.add(v); else s.delete(v);
                 responder('prioridades', P.map((x) => x.id).filter((k: string) => s.has(k)));
               }}
             />
-            <button type="button" className="pcx-info" aria-expanded={aberta} aria-controls={idEx} aria-label={`${t('Exemplos')}: ${t(nomePrioridade(p))}`} onClick={() => setAbertas((a) => ({ ...a, [p.id]: !a[p.id] }))}>
+            <button type="button" className="pcx-info" aria-expanded={aberta} aria-controls={idEx} aria-label={`${t('Exemplos')}: ${t(p.nome)}`} onClick={() => setAbertas((a) => ({ ...a, [p.id]: !a[p.id] }))}>
               <IconInfo size={20} />
             </button>
             <div id={idEx} className="pcx-exemplos" hidden={!aberta}>
@@ -686,6 +685,22 @@ function OutroProblema({ e }: { e: Estado14 }) {
   );
 }
 
+/** Totais nacionais separados das etapas: trocar de prioridade nunca apaga os dois conjuntos. */
+function TamanhoRedeNacional({ e }: { e: Estado14 }) {
+  const gravar = useGravar();
+  const rede = e.ctx.redeNacional || {};
+  const erro = (v: unknown) => v !== '' && v != null && (!Number.isSafeInteger(v) || Number(v) <= 0)
+    ? t('Informe um número inteiro maior que zero.') : undefined;
+  return <fieldset className="pcx-etapa">
+    <legend className="pcx-etapa-titulo">{t('Tamanho total da rede')}</legend>
+    <p className="pc-nota">{t('Informe os totais de toda a rede nacional, sem separar por etapa de ensino.')}</p>
+    <div className="pcx-anos-campos">
+      <CampoNumero id="gov-rede-escolas" label={t('Total de escolas')} value={rede.escolas} error={erro(rede.escolas)} onChange={v => gravar('redeNacional.escolas', v)} />
+      <CampoNumero id="gov-rede-estudantes" label={t('Total de estudantes')} value={rede.estudantes} error={erro(rede.estudantes)} onChange={v => gravar('redeNacional.estudantes', v)} />
+    </div>
+  </fieldset>;
+}
+
 function Problemas({ e }: { e: Estado14 }) {
   const responder = useCaso((s) => s.responder);
   const refinando = useRefinando();
@@ -694,23 +709,35 @@ function Problemas({ e }: { e: Estado14 }) {
   const P = (PRIORIDADES as any[]).filter((p) => pr.includes(p.id));
   if (!P.length) return <p className="pc-aviso">{t('Escolha uma prioridade para ver os desafios.')}</p>;
   // o limite de três vale só no Essencial; no Refinar volta o "Marcar todos" por prioridade
-  const cheio = !refinando && atual.length >= LIMITE_PROBLEMAS;
+  const idsAtivos = new Set(P.flatMap((p: any) => p.problemas.map((q: any) => q.id)));
+  const nAtivos = atual.filter(id => idsAtivos.has(id)).length;
+  const cheio = !refinando && nAtivos >= LIMITE_PROBLEMAS;
   const grava = (lista: string[]) => responder('problemas', lista);
   return (
     <div className="pc-grupos">
+      {somenteGovernanca(e.ctx) ? <TamanhoRedeNacional e={e} /> : null}
       {refinando ? null : (
         <>
-          <p className="pc-contador" aria-live="polite">{t('{n} de {m} marcados', { n: atual.length, m: LIMITE_PROBLEMAS })}</p>
-          <p className="pc-nota">{t('O limite de três mantém o primeiro teste focado: cada problema acrescenta objetivos, tarefas e custos ao plano. No modo Refinar não há limite.')}</p>
+          <p className="pc-contador" aria-live="polite">{t('{n} de {m} marcados', { n: nAtivos, m: LIMITE_PROBLEMAS })}</p>
+          <p className="pc-nota">{somenteGovernanca(e.ctx) ? t('Selecione até três desafios prioritários para o plano nacional.') : t('O limite de três mantém o primeiro teste focado: cada problema acrescenta objetivos, tarefas e custos ao plano. No modo Refinar não há limite.')}</p>
         </>
       )}
       {P.map((p) => {
+        const atuais = p.id === 'governar' ? p.problemas.filter((q: any) => q.v015) : p.problemas;
+        const legados = p.id === 'governar' ? p.problemas.filter((q: any) => !q.v015) : [];
+        const cartao = (q: any) => {
+          const on = atual.includes(q.id);
+          return <OptionCard key={q.id} type="checkbox" name="problemas" value={q.id}
+            label={<>{t(q.t)}<span className="pr-optioncard-desc">{q.v015 ? t(q.desc) : <><span className="pcx-obj">{t('Objetivo:')}</span> {t(q.obj)}</>}</span></>}
+            checked={on} disabled={cheio && !on}
+            onChange={(v, marcado) => grava(problemasDoGrupo(atual, ORDEM_PROBLEMAS, [v], marcado))} />;
+        };
         const ids: string[] = p.problemas.map((q: any) => q.id);
         const n = ids.filter((k) => atual.includes(k)).length;
         return (
           <section key={p.id} className="pc-grupo">
             <div className="pcx-grupo-cab">
-              <h2 className="pc-grupo-titulo">{t(nomePrioridade(p))}</h2>
+              <h2 className="pc-grupo-titulo">{t(p.nome)}</h2>
               {refinando ? (
                 <>
                   <span className="pc-contador" aria-live="polite">{t('{n} de {m} marcados', { n, m: ids.length })}</span>
@@ -721,23 +748,12 @@ function Problemas({ e }: { e: Estado14 }) {
                 </>
               ) : null}
             </div>
-            <OptionCardGroup label={t(nomePrioridade(p))} type="checkbox">
-              {p.problemas.map((q: any) => {
-                const on = atual.includes(q.id);
-                return (
-                  <OptionCard
-                    key={q.id}
-                    type="checkbox"
-                    name="problemas"
-                    value={q.id}
-                    label={<>{String(tr(q.t))}<span className="pr-optioncard-desc"><span className="pcx-obj">{t('Objetivo:')}</span> {String(tr(q.obj))}</span></>}
-                    checked={on}
-                    disabled={cheio && !on}
-                    onChange={(v, marcado) => grava(problemasDoGrupo(atual, ORDEM_PROBLEMAS, [v], marcado))}
-                  />
-                );
-              })}
+            <OptionCardGroup label={t(p.nome)} type="checkbox">
+              {atuais.map(cartao)}
             </OptionCardGroup>
+            {legados.length ? <Recolher titulo={t('Desafios de versões anteriores')} aberto={legados.some((q: any) => atual.includes(q.id))}>
+              <OptionCardGroup label={t('Desafios de versões anteriores')} type="checkbox">{legados.map(cartao)}</OptionCardGroup>
+            </Recolher> : null}
             {refinando ? <Subcategorias e={e} grupo={p} recolhido /> : null}
           </section>
         );

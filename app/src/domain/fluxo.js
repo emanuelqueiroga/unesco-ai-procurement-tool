@@ -1,3 +1,4 @@
+import { somenteGovernanca, tamanhoRedeValido } from './escopo.js';
 // =====================================================================
 // Percurso em quatro fases (v11): a parte de LÓGICA de src/fluxo.js (dados em fluxo_dados.js), mais os
 // derivados do caso que viviam em src/app.js (casoAtual, perfil, cfgAtual).
@@ -58,7 +59,7 @@ function visivel(f, caso) { try { return !f.se || !!f.se(caso || {}); } catch (e
 function respondido(campo, estado) { return estado.exemplo !== 'novo' || !!(estado.respC || {})[campo]; }
 
 // ----------------------------------------------------------- cálculos
-function etapasAtivas(ctx) { return ETAPAS_ENS.filter(e => (((ctx || {}).etapas || {})[e[0]] || {}).on); }
+function etapasAtivas(ctx) { if (somenteGovernanca(ctx)) return []; return ETAPAS_ENS.filter(e => (((ctx || {}).etapas || {})[e[0]] || {}).on); }
 function alunosEtapa(ctx, id) {
   const e = ((ctx || {}).etapas || {})[id] || {};
   const def = ETAPAS_ENS.find(x => x[0] === id);
@@ -67,6 +68,10 @@ function alunosEtapa(ctx, id) {
   return (Array.isArray(e.anos) ? e.anos : []).reduce((a, b) => a + (+b || 0), 0);
 }
 function totaisCtx(ctx) {
+  if (somenteGovernanca(ctx)) {
+    const r = ctx.redeNacional || {};
+    return { escolas: +r.escolas || 0, alunos: +r.estudantes || 0, n: 0, etapas: [] };
+  }
   if (!ctx || !ctx.etapas) return { escolas: 0, alunos: 0, n: 0, etapas: [] };
   const at = etapasAtivas(ctx);
   return { escolas: at.reduce((a, e) => a + (+(ctx.etapas[e[0]] || {}).escolas || 0), 0), alunos: at.reduce((a, e) => a + alunosEtapa(ctx, e[0]), 0), n: at.length, etapas: at.map(e => e[0]) };
@@ -177,8 +182,8 @@ function qOk(f, estado, semSug) {
   const x = estado.ctx || {}, c = estado.caso || {}, v = valorCampo(f, estado);
   switch (f.tipo) {
     case 'seg': return !!(estado.resp || {})[f.id];
-    case 'etapas': return etapasAtivas(x).length > 0;
-    case 'grade': { const at = etapasAtivas(x); return at.length > 0 && at.every(e => +(x.etapas[e[0]] || {}).escolas > 0 && alunosEtapa(x, e[0]) > 0); }
+    case 'etapas': return somenteGovernanca(x) ? tamanhoRedeValido(x) : etapasAtivas(x).length > 0;
+    case 'grade': { if (somenteGovernanca(x)) return tamanhoRedeValido(x); const at = etapasAtivas(x); return at.length > 0 && at.every(e => +(x.etapas[e[0]] || {}).escolas > 0 && alunosEtapa(x, e[0]) > 0); }
     case 'prior': return (x.prioridades || []).length > 0;
     case 'problemas': return (typeof problemasMarcados === 'function' && problemasMarcados(x).length > 0) || !!String(x.problemaOutro || '').trim();
     // v13: texto com lacunas "__" (objetivos e modelos sugeridos) não conta como respondido
@@ -321,7 +326,7 @@ function cfgAtual(estado) {
   return sc.cfg;
 }
 // campos cuja mudança refaz as premissas de custo montadas a partir do caso
-const CAMPOS_CUSTO = ['tarefas', 'usuarios', 'afetados', 'consequencias', 'testes', 'tipoTec', 'pagamento', 'licenca', 'adaptacao', 'piloto', 'poc',
+const CAMPOS_CUSTO = ['prioridades', 'redeNacional', 'tarefas', 'usuarios', 'afetados', 'consequencias', 'testes', 'tipoTec', 'pagamento', 'licenca', 'adaptacao', 'piloto', 'poc',
   'nFerramentas', 'conheceFerramentas', 'ferramentas', 'internet', 'escolasInternet', 'modeloDisp', 'dispExistem', 'formados', 'formacaoTipo', 'formacaoFormato',
   'formacaoHoras', 'formacaoPaga', 'suporteQuem', 'suporteNivel', 'acompanhamento', 'implantacao', 'arquitetura', 'elegiveis', 'expansao', 'horizonte',
   'curva', 'ondas', 'reposicaoDisp', 'rotacaoFormacao', 'pais', 'editados',
