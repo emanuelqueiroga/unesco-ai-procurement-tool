@@ -7,9 +7,9 @@
 // Os textos são PT (chave de tradução): cada texto fica num nó próprio para o MutationObserver de i18n.js.
 // =====================================================================
 const INICIO = {
-  titulo: 'Planeje a compra de IA para a sua rede de ensino',
+  titulo: 'Planeje a IA na educação a partir do seu contexto',
   eyebrow: 'Planejamento de IA na educação',
-  frase: 'Responda algumas perguntas sobre o contexto da sua rede e receba um plano com o custo estimado e as próximas etapas. Comece agora.',
+  frase: 'Descreva sua rede, defina prioridades e explore os recursos e custos do seu plano.',
   iniciar: 'Começar',
   mapaSub: 'Quatro fases, do contexto ao plano de contratação.',
   verMatriz: 'Ver a matriz de custo',
@@ -57,34 +57,55 @@ const reduzMov = () => { try { return window.matchMedia('(prefers-reduced-motion
 // ----------------------------------------------------------- página inicial
 function paginaInicial(sv) {
   const nome = sv ? (sv.nome || (sv.exemplo ? tr(sv.exemplo) : '')) : '';
-  const salvo = sv ? `<div class="salvo ini-salvo" role="group" aria-labelledby="salvo-t">
+  const exportar = typeof CAP !== 'undefined' && CAP.downloads ? 'Exportar caso' : 'Copiar dados do caso';
+  const salvo = sv ? `<div class="ini-retomar" role="group" aria-labelledby="salvo-t">
       <h2 id="salvo-t">Há um caso salvo neste navegador</h2>
-      <p class="salvo-caso">${nome ? `<b data-notr>${escI(nome)}</b>` : '<b>Caso sem nome</b>'}${sv.lugar ? ` <span class="muted">·</span> <span data-notr>${escI(sv.lugar)}</span>` : ''}${sv.exemplo && !sv.nome ? ' <span class="tag">exemplo</span>' : ''}</p>
-      ${sv.migrou ? '<p class="small muted">Convertido da versão anterior da ferramenta. Revise as respostas de adoção.</p>' : ''}
-      <div class="row"><button type="button" class="btn pri grande" data-act="continuar-salvo">Continuar o caso salvo</button><button type="button" class="btn grande" data-act="comecar">Começar em branco</button></div>
-      <p class="small muted">Começar em branco ou abrir um exemplo apaga o caso salvo. Para guardá-lo, continue o caso e use "Exportar caso" no painel.</p>
+      <p>${nome ? `<b data-notr>${escI(nome)}</b>` : '<b>Caso sem nome</b>'}${sv.lugar ? ` <span aria-hidden="true">·</span> <span data-notr>${escI(sv.lugar)}</span>` : ''}</p>
+      ${sv.migrou ? '<p>Convertido da versão anterior da ferramenta. Revise as respostas de adoção.</p>' : ''}
     </div>` : '';
-  const recebe = ['Custo do teste e de todo o ciclo de vida, por camada', 'Recomendações para você, em ordem de prioridade', 'Diagnóstico de política e governança', 'Plano de contratação em PDF para compartilhar'];
-  const barras = [92, 70, 48, 38, 30, 56, 64];
-  return `<section class="ini${sv ? ' com-salvo' : ''}" id="inicio" aria-labelledby="ini-t">
-    ${salvo}
-    <div class="ini-hero">
-      <div class="ini-hero-txt">
-        <p class="ini-eyebrow"><span>${escI(INICIO.eyebrow)}</span></p>
-        <h1 id="ini-t">${escI(INICIO.titulo)}</h1>
-        <p class="ini-lead">${escI(INICIO.frase)}</p>
-        <div class="ini-acoes">
-          <button type="button" class="btn pri ini-cta" data-act="comecar"><span>${escI(INICIO.iniciar)}</span>${ICO_SETA}</button>
-        </div>
+  return `<section class="ini ini-v015${sv ? ' com-salvo' : ''}" id="inicio" aria-labelledby="ini-t">
+    <div class="ini-intro">
+      <p class="ini-eyebrow"><span>${escI(INICIO.eyebrow)}</span><span class="ini-versao" data-notr>v015</span></p>
+      <h1 id="ini-t">${escI(INICIO.titulo)}</h1>
+      <p class="ini-lead">${escI(INICIO.frase)}</p>
+      ${salvo}
+      <div class="ini-principal">
+        <button type="button" class="btn pri ini-cta" data-act="${sv ? 'continuar-salvo' : 'comecar'}"><span>${escI(sv ? 'Continuar o caso salvo' : INICIO.iniciar)}</span>${ICO_SETA}</button>
+        ${sv ? '' : '<p class="ini-primeiro">Primeiro, descreva seu contexto.</p>'}
       </div>
-      <aside class="ini-doc" aria-labelledby="ini-doc-t">
-        <div class="ini-doc-in">
-          <p class="ini-doc-e" id="ini-doc-t">Você recebe</p>
-          <ul class="ini-doc-l"><li><span>Plano de contratação com o custo estimado, camada por camada</span></li><li><span>Recomendações de próximos passos, por ordem de prioridade</span></li><li><span>PDF para compartilhar com a sua equipe</span></li></ul>
-        </div>
-      </aside>
+      <p class="ini-privacidade">Suas respostas ficam salvas neste navegador. Você pode parar e continuar depois.</p>
     </div>
-    ${mapaFases()}
+    <div class="ini-recursos">
+      <div class="ini-secundarias">
+        ${sv ? '' : '<button type="button" class="link" data-act="ver-exemplo">Ver um exemplo preenchido</button>'}
+        <button type="button" class="link" data-act="imp-json">Importar caso</button>
+        ${sv ? `<button type="button" class="link" data-act="exp-json">${escI(exportar)}</button>` : ''}
+      </div>
+      ${sv ? `<details class="ini-detalhe ini-novo">
+        <summary>Começar outro plano</summary>
+        <div class="ini-detalhe-corpo">
+          <p>Começar em branco ou abrir um exemplo substitui o caso salvo. Exporte uma cópia antes de continuar.</p>
+          <div class="row">
+            <button type="button" class="btn" data-act="comecar">Começar em branco</button>
+            <button type="button" class="link" data-act="ver-exemplo">Ver um exemplo preenchido</button>
+          </div>
+        </div>
+      </details>` : ''}
+      <details class="ini-detalhe">
+        <summary>Como funciona</summary>
+        <div class="ini-detalhe-corpo">
+          <ol class="ini-visao">
+            <li><span class="ini-ordem" aria-hidden="true">1</span><div><h2>Descreva seu contexto</h2><p>Informe o contexto da sua rede e o que você quer melhorar.</p></div></li>
+            <li><span class="ini-ordem" aria-hidden="true">2</span><div><h2>Defina suas prioridades</h2><p>Escolha os objetivos e revise as opções do seu planejamento.</p></div></li>
+            <li><span class="ini-ordem" aria-hidden="true">3</span><div><h2>Revise seu plano</h2><p>Explore os custos estimados, as premissas e os próximos passos.</p></div></li>
+          </ol>
+          <div class="ini-metodo">
+            <p>Os valores são estimativas. Você pode revisar as premissas ao longo do planejamento.</p>
+            <button type="button" class="link" data-act="ver-matriz" aria-haspopup="dialog">${escI(INICIO.verMatriz)}</button>
+          </div>
+        </div>
+      </details>
+    </div>
   </section>`;
 }
 // Mapa simplificado das quatro fases: título, passos e o que a fase entrega

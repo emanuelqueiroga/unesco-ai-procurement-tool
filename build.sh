@@ -1,8 +1,10 @@
 #!/bin/bash
 cd "$(dirname "$0")"
-out=navegador.html
+out=${OUT:-navegador.html}
+mkdir -p "$(dirname "$out")"
 NOVOS="ar zh bm zu sw"   # v13 (RQ-18): idiomas novos
-L1=$(base64 -w0 assets/iaedu.png); L2=$(base64 -w0 assets/catedra.png)
+# GNU e BSD/macOS: ler pela entrada padrão e retirar quebras de linha.
+L1=$(base64 < assets/iaedu.png | tr -d '\r\n'); L2=$(base64 < assets/catedra.png | tr -d '\r\n')
 # ordem dos scripts (plano_dados.js logo depois de fluxo_dados.js; v10: formula.js e recomendacoes.js antes de resumo.js)
 # v13: prioridades.js (catálogo do 1.2) depois de framework.js; matriz.js depois de fluxo_dados.js; inicio.js (página inicial e matriz) depois de fluxo.js
 JS="src/i18n.js src/custos.js src/framework.js src/prioridades.js src/casos.js src/custos_ui.js src/fluxo_dados.js src/matriz.js src/plano_dados.js src/formula.js src/recomendacoes.js src/fluxo.js src/inicio.js src/resumo.js src/plano_pdf.js src/app.js"
@@ -15,13 +17,16 @@ for f in $JS; do
   else echo "faltando: $f" >&2; exit 1; fi
 done
 JS=$JS_OK
-{ sed -e "s#%%LOGO_IAEDU%%#data:image/png;base64,$L1#g" -e "s#%%LOGO_CATEDRA%%#data:image/png;base64,$L2#g" src/shell.html | python3 -c "import sys; t=sys.stdin.read(); sys.stdout.write(t.replace('/*%%FLUXO_CSS%%*/', open('src/fluxo.css').read() + ''.join(open(f).read() for f in ['src/inicio.css', 'src/idiomas.css'] if __import__('os').path.exists(f))))"; echo '<script>';
+{ if [ "${CANAL:-estavel}" = revisao ]; then
+    printf '%s\n' '<!doctype html>' '<meta charset="utf-8">' '<meta name="viewport" content="width=device-width, initial-scale=1">' '<meta name="robots" content="noindex, nofollow">'
+  fi
+  sed -e "s#%%LOGO_IAEDU%%#data:image/png;base64,$L1#g" -e "s#%%LOGO_CATEDRA%%#data:image/png;base64,$L2#g" src/shell.html | python3 -c "import sys; t=sys.stdin.read(); sys.stdout.write(t.replace('/*%%FLUXO_CSS%%*/', open('src/fluxo.css').read() + ''.join(open(f).read() for f in ['src/inicio.css', 'src/idiomas.css'] if __import__('os').path.exists(f))))"; echo '<script>';
   cat vendor/jspdf.umd.min.js; echo; cat vendor/jspdf.plugin.autotable.min.js; echo; echo '</script><script>';
   # 0.0.14: versão (arquivo VERSION, Versionamento Semântico), canal (estavel | revisao) e data do build
-  echo "const VERSAO_APP = '$(tr -d '[:space:]' < VERSION)'; const CANAL_APP = '${CANAL:-estavel}'; const DATA_BUILD = '$(date -u +%Y-%m-%d)';"
+  echo "const VERSAO_APP = '${VERSAO_BUILD:-$(tr -d '[:space:]' < VERSION)}'; const CANAL_APP = '${CANAL:-estavel}'; const DATA_BUILD = '$(date -u +%Y-%m-%d)';"
   echo -n 'const MOEDAS = '; cat data/moedas.json; echo ';';
   # v11: Figura 1 (p. 11) de Krueger e Jackson (2026), sem alteração, como data URI
-  echo -n "const FIG_TCO = 'data:image/jpeg;base64,"; base64 -w0 assets/fig1_tco.jpg; echo "';";
+  echo -n "const FIG_TCO = 'data:image/jpeg;base64,"; base64 < assets/fig1_tco.jpg | tr -d '\r\n'; echo "';";
   # i18n: <l>.json, depois extra_<l>.json, depois i18n/v9_*_<l>.json, i18n/v10_*_<l>.json e i18n/v11_*_<l>.json em ordem alfabética (as últimas prevalecem)
   # v13 (RQ-18): idiomas novos (ar zh bm zu sw): i18n/<l>.json (dicionário completo, quando existir) e depois
   # i18n/v13_*_<l>.json. Sem i18n/<l>.json o build não falha: o que falta usa o inglês (tr(), i18n.js).

@@ -15,8 +15,8 @@ const maxNivel = (...ns) => NIVEIS[Math.max(...ns.map(n => NIVEIS.indexOf(n)))];
 
 // ----------------------------------------------------------- opções do formulário
 const OPC = {
-  // v15: lista de países para o seletor opcional do contexto (RF-002, RB-001)
-  PAISES: typeof PAISES !== 'undefined' ? PAISES : [],
+  // v15: o catálogo é declarado em fluxo_dados.js; resolver somente quando o formulário o consultar.
+  get PAISES() { return typeof PAISES !== 'undefined' ? PAISES : []; },
   // v15: tipo de iniciativa para navegação condicional (RF-004, RB-005)
   tipoIniciativa: [
     ['politica', 'Política pública', 'Elaboração, consulta, aprovação e implementação institucional.'],

@@ -287,3 +287,44 @@
   body.vista-plano .mt-tab thead th { padding: 10px 12px; }
   body.vista-plano .mt-fn { float: none; margin: 0 0 4px; }
 }
+
+/* v015 · primeira entrega: início simples. As regras abaixo só atingem a página inicial.
+   Os controles do percurso reaparecem ao sair do início; matriz e relatórios mantêm seus estilos. */
+body:has(#inicio.ini-v015) .nav-top,
+body:has(#inicio.ini-v015) .ctl:has(#sel-exemplo),
+body:has(#inicio.ini-v015) .brand > span { display: none; }
+body:has(#inicio.ini-v015) .wrap { max-width: 1120px; padding-block: clamp(32px, 6vw, 76px) 56px; }
+#inicio.ini-v015 { max-width: 850px; gap: 36px; padding: 0; }
+#inicio .ini-intro { display: grid; gap: 22px; max-width: 790px; }
+#inicio .ini-eyebrow { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font-size: .86rem; }
+#inicio .ini-versao { border: 1px solid var(--line-2); border-radius: 4px; color: var(--muted); padding: 2px 8px; font-size: .8rem; letter-spacing: .02em; font-weight: 600; }
+#inicio.ini-v015 h1 { color: var(--head); font-size: clamp(2rem, 4.2vw, 3.5rem); line-height: 1.12; max-width: 23ch; }
+#inicio .ini-lead { max-width: 56ch; font-size: 1.15rem; color: var(--ink-2); }
+#inicio .ini-principal { display: flex; align-items: center; flex-wrap: wrap; gap: 14px 20px; margin-top: 6px; }
+#inicio .ini-cta { min-height: 52px; box-shadow: none; }
+#inicio .ini-primeiro { color: var(--muted); font-size: 1rem; }
+#inicio .ini-privacidade { color: var(--muted); font-size: .9rem; max-width: 62ch; }
+#inicio .ini-retomar { border-inline-start: 3px solid var(--brand); padding: 12px 18px; background: var(--brand-tint); border-radius: 0 6px 6px 0; display: grid; gap: 6px; overflow-wrap: anywhere; }
+#inicio .ini-retomar h2 { font: 600 1rem/1.4 var(--f-ui); }
+#inicio .ini-retomar p { font-size: .95rem; }
+#inicio .ini-recursos { display: grid; border-top: 1px solid var(--line); }
+#inicio .ini-secundarias { display: flex; gap: 12px 28px; flex-wrap: wrap; padding: 16px 0; }
+#inicio .ini-secundarias .link { min-height: 44px; font-size: 1rem; }
+#inicio .ini-detalhe { border-top: 1px solid var(--line); }
+#inicio .ini-detalhe > summary { color: var(--head); font-size: 1rem; font-weight: 600; cursor: pointer; padding: 16px 0; min-height: 52px; }
+#inicio .ini-detalhe-corpo { display: grid; gap: 24px; padding: 4px 0 24px; }
+#inicio .ini-detalhe-corpo p { color: var(--ink-2); font-size: 1rem; }
+#inicio .ini-visao { list-style: none; display: grid; gap: 20px; margin: 0; padding: 0; }
+#inicio .ini-visao li { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 14px; }
+#inicio .ini-ordem { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--line-2); border-radius: 50%; color: var(--brand); font-weight: 600; }
+#inicio .ini-visao h2 { font: 600 1.05rem/1.4 var(--f-ui); margin-bottom: 4px; }
+#inicio .ini-metodo { display: grid; gap: 12px; justify-items: start; }
+[dir="rtl"] #inicio .ini-cta .ico { transform: scaleX(-1); }
+@media (max-width: 640px) {
+  body:has(#inicio.ini-v015) .wrap { padding: 28px 20px 40px; }
+  body:has(#inicio.ini-v015) .top-in { gap: 12px; }
+  #inicio .ini-intro { gap: 18px; }
+  #inicio .ini-principal { align-items: stretch; flex-direction: column; gap: 12px; }
+  #inicio .ini-cta { width: 100%; }
+  #inicio .ini-primeiro { text-align: center; }
+}
