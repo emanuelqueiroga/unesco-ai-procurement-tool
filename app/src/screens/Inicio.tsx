@@ -6,7 +6,7 @@ import { Shell } from './Shell';
 import { CampoImportar } from './CasoDialog';
 import { abrirMatriz } from './Matriz';
 import { abrirExemplo, comecarEmBranco, exportarCaso } from './acoes';
-import { precisaConfirmar, destinoContinuar } from './transversal';
+import { destinoContinuar } from './transversal';
 import { CAPITULOS_INFO, t } from '../percurso/textos';
 import { href, ir } from '../percurso/rota';
 import './inicio.css';
@@ -38,7 +38,11 @@ export function Inicio() {
           <Button href={comCaso ? continuar.href : href.abertura(1)}>
             {comCaso ? (continuar.pendente ? t('Continuar de onde parei') : t('Abrir o plano')) : t('Começar')}
           </Button>
-          {!comCaso ? <p>{t('Primeiro, descreva seu contexto.')}</p> : null}
+          {comCaso ? (
+            <Button variant="secondary" onClick={async () => {
+              if (await comecarEmBranco()) ir(href.abertura(1));
+            }}>{t('Começar novo plano')}</Button>
+          ) : <p>{t('Primeiro, descreva seu contexto.')}</p>}
         </div>
         <p className="pc-nota">{t('Suas respostas ficam salvas neste navegador. Você pode parar e continuar depois.')}</p>
         <div className="pc-inicio-opcoes">
@@ -52,15 +56,6 @@ export function Inicio() {
               <CampoImportar onPronto={(e) => { setErro(e); if (!e) ir(href.plano()); }} />
             </div>
           </details>
-          {comCaso ? (
-            <details className="pc-inicio-detalhe">
-              <summary>{t('Começar outro plano')}</summary>
-              <div className="pc-inicio-detalhe-corpo">
-                {precisaConfirmar(s) ? <p>{t('Começar em branco ou abrir um exemplo apaga o caso salvo. Para guardá-lo, exporte o caso.')}</p> : null}
-                <Button variant="secondary" onClick={() => { void comecarEmBranco(); }}>{t('Começar em branco')}</Button>
-              </div>
-            </details>
-          ) : null}
           <details className="pc-inicio-detalhe">
             <summary>{t('Como funciona')}</summary>
             <div className="pc-inicio-detalhe-corpo">
