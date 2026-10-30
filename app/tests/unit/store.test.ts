@@ -256,12 +256,12 @@ describe('persistência', () => {
 describe('seletores do plano', () => {
   it('progresso e telas que faltam', () => {
     expect(progressoDe(S().estado()).map(p => p.feitas)).toEqual([0, 0, 0, 0]);
-    expect(faltamDe(S().estado()).length).toBe(24);
+    expect(faltamDe(S().estado()).length).toBe(23);
     S().escolherPais('CAN');
     S().responder('internet', 'sim');
     const p = progressoDe(S().estado());
-    expect(p[0].feitas).toBe(1); expect(p[1].feitas).toBe(1); expect(p[0].total).toBe(10);
-    expect(faltamDe(S().estado()).length).toBe(22);
+    expect(p[0].feitas).toBe(1); expect(p[1].feitas).toBe(1); expect(p[0].total).toBe(9);
+    expect(faltamDe(S().estado()).length).toBe(21);
   });
   it('internet parcial só conta com as escolas informadas', () => {
     S().responder('internet', 'parcial');
@@ -276,7 +276,7 @@ describe('seletores do plano', () => {
   });
   it('tela atual e próxima', () => {
     expect(telaAtual(S().estado()).id).toBe('local');
-    expect(proximaTela(S().estado())!.id).toBe('situacao');
+    expect(proximaTela(S().estado())!.id).toBe('prioridades');
     S().irPara(4, 'expansao');
     expect(proximaTela(S().estado())).toBeNull();
   });

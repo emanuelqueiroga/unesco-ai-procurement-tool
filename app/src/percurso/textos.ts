@@ -1,7 +1,7 @@
 // Textos do percurso (v14): capítulos, a frase de abertura de cada pergunta e os rótulos dos trechos do plano.
 // Português é a chave de tradução; `t()` traduz quando há dicionário (os textos novos entram nos
 // dicionários em i18n/v14_<l>.json; até lá aparecem em português nos outros idiomas).
-import { tr } from '../domain';
+import { tr, nomePais, paisDoCaso } from '../domain';
 import type { Capitulo } from '../store';
 
 export const t = (s: string, vars?: Record<string, string | number>): string => {
@@ -60,14 +60,14 @@ export const LEAD: Record<string, string> = {
   nivel: 'Quem decide e paga define as regras de compra, o orçamento e quem assina o contrato.',
   local: 'O planejamento é sempre nacional. Escolha o país e, se quiser, informe a instituição responsável.',
   situacao: 'Uma proposta já recebida pede outras perguntas que uma iniciativa do zero. O plano ajusta as recomendações a esse ponto.',
-  etapas: 'Escolas e estudantes são a base de quase todos os números: tamanho do teste, pessoas na rede e custo por estudante.',
-  prioridades: 'A prioridade organiza os problemas que aparecem na próxima pergunta.',
-  problemas: 'Escolha até três. Cada problema já traz uma descrição, impactos e tarefas que a IA pode apoiar; você ajusta depois.',
+  etapas: 'Selecione as etapas e informe escolas e estudantes.',
+  prioridades: 'Escolha uma ou mais prioridades.',
+  problemas: 'Escolha até três desafios. Você poderá ajustar as sugestões depois.',
   problema: 'Um problema bem descrito, sem citar tecnologia, é o que permite comparar a IA com outras soluções.',
   impactos: 'O impacto vira o resultado esperado do teste e os indicadores do plano.',
   linhaBase: 'Sem uma medida de antes, não há como saber se o teste funcionou.',
-  alternativa: 'Comparar com ao menos uma alternativa sem IA é o que justifica a compra perante a equipe e os órgãos de controle.',
-  governanca: 'Nada aqui é avaliado agora. As respostas viram a seção de governança do plano e as primeiras recomendações.',
+  alternativa: 'Você já comparou ao menos uma alternativa sem IA?',
+  governanca: 'Marque o que já existe no país.',
   testes: 'Testar antes de comprar reduz o risco. A escolha muda o tamanho e o custo do teste.',
   tarefas: 'A tarefa define que tipo de ferramenta procurar, quem a usa e que dados ela trata.',
   usuarios: 'Quem usa define quantas licenças, quanta formação e quantos dispositivos entram no custo.',
@@ -110,8 +110,8 @@ export const NOME_TESTE: Record<string, string> = { poc: 'Prova de conceito', pi
 /** Nome curto de cada tela, para a navegação lateral e a lista de pendências. */
 export const CURTO: Record<string, string> = {
   nivel: 'Nível da decisão', local: 'País', situacao: 'Em que ponto você está', etapas: 'Etapas, escolas e estudantes',
-  prioridades: 'Prioridade', problemas: 'Problemas', problema: 'Situação atual', impactos: 'Impacto esperado', linhaBase: 'Linha de base',
-  alternativa: 'Alternativa sem IA', governanca: 'Governança', testes: 'Tipo de teste', tarefas: 'O que a IA faz', usuarios: 'Quem usa',
+  prioridades: 'Prioridades', problemas: 'Desafios', problema: 'Situação atual', impactos: 'Impacto esperado', linhaBase: 'Linha de base',
+  alternativa: 'Soluções de política educacional', governanca: 'Governo na educação', testes: 'Tipo de teste', tarefas: 'O que a IA faz', usuarios: 'Quem usa',
   afetados: 'Quem é afetado', tipoTec: 'Tipo de tecnologia', pagamento: 'Pagamento', piloto: 'Tamanho do teste', internet: 'Internet',
   modeloDisp: 'Dispositivos', formados: 'Formação', suporteNivel: 'Suporte', implantacao: 'Implantação', elegiveis: 'Pessoas na rede',
   expansao: 'Ritmo de expansão',
@@ -120,8 +120,11 @@ export const CURTO: Record<string, string> = {
 /** Título de cada tela: a pergunta da v13 (traduzida pelos dicionários existentes) ou um título próprio da tela composta. */
 export const TITULO_TELA: Record<string, string> = {
   local: 'Qual país você está planejando?',
-  etapas: 'Quais etapas de ensino serão atendidas, com quantas escolas e estudantes?',
-  governanca: 'Marque o que a sua rede já tem',
+  prioridades: 'Prioridades',
+  problemas: 'Quais desafios você quer enfrentar?',
+  alternativa: 'Soluções de política educacional',
+  etapas: 'Etapas, escolas e estudantes',
+  governanca: 'Governo na educação',
   afetados: 'Quem é afetado pelo que a ferramenta produz?',
   formados: 'Quem será formado, e por quantas horas?',
   internet: 'As escolas têm internet adequada para o uso previsto?',
@@ -147,3 +150,19 @@ export const TEXTOS_REC_R6_TELAS = [
   'Nenhuma condição aberta', '1 condição aberta', '{0} condições abertas', '{n} condição', '{n} condições',
   'Como a arquitetura não foi definida, o modelo usa {arq} como ponto de partida (presumida; confirme na pergunta 3.2.1).',
 ];
+
+/** Rótulos da revisão v015; os ids e as respostas de governança continuam os mesmos. */
+export function tituloGovernanca(id: string, caso: Record<string, unknown>, original: string): string {
+  if (id === 'g-politica') return t('Incorporar a IA à estratégia nacional de educação');
+  if (id === 'g-legislacao') {
+    const pais = nomePais(paisDoCaso(caso));
+    return pais ? t('Regulamentação em {pais}', { pais }) : t('Regulamentação no país');
+  }
+  const curtos: Record<string, string> = {
+    'g-comite': 'Há um departamento ou uma equipe designada para IA na educação?',
+    'g-dados': 'Há política de dados educacionais?',
+    'g-etica': 'Há normas de ética ou de uso responsável de IA?',
+    'g-compras': 'Há orientação para comprar e contratar IA?',
+  };
+  return t(curtos[id] || original);
+}

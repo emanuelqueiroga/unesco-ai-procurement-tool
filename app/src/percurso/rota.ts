@@ -39,6 +39,7 @@ export function lerRota(hash: string): Rota {
     if (!p[2]) return { tipo: 'abertura', n };
     // #/capitulo/:n/sintese/<campo>: a síntese com as premissas do capítulo abertas e o campo em foco
     if (p[2] === 'sintese') return p[3] ? { tipo: 'sintese', n, foco: p[3] } : { tipo: 'sintese', n };
+    if (n === 1 && p[2] === 'situacao') return { tipo: 'pergunta', n: 1, tela: 'prioridades' };
     if (n === 1 && p[2] === 'nivel') return { tipo: 'pergunta', n: 1, tela: 'local' };
     const t = ESSENCIAL.find((x) => x.id === p[2] && x.capitulo === n);
     return t ? { tipo: 'pergunta', n, tela: t.id } : { tipo: 'abertura', n };
@@ -55,6 +56,7 @@ export const href = {
   plano: (pagina: PaginaPlano = 'resumo') => (pagina === 'resumo' ? '#/plano' : `#/plano/${pagina}`),
   /** Onde responder um campo qualquer: a tela do Essencial, ou a síntese do capítulo com o campo em foco (Refinar). */
   campo: (campo: string) => {
+    if (campo === 'situacao') return '#/capitulo/1/prioridades';
     if (['nivel', 'nivelOutro', 'local'].includes(campo)) return '#/capitulo/1/local';
     const base = String(campo).split('.')[0];
     const t = telaDoCampo(base);
@@ -62,6 +64,7 @@ export const href = {
     return `#/capitulo/${capituloDoCampo(base)}/sintese/${base}`;
   },
   tela: (id: string) => {
+    if (id === 'situacao') return '#/capitulo/1/prioridades';
     if (id === 'nivel') return '#/capitulo/1/local';
     const t = ESSENCIAL.find((x) => x.id === id);
     return t ? `#/capitulo/${t.capitulo}/${t.id}` : '#/';

@@ -30,7 +30,7 @@ describe('MOT-02: as quatro perguntas no Refinar do capítulo 4', () => {
       expect(camposRefinar(4)).toContain(c);
       expect(TIPOS_SIMPLES).toContain((CAMPO_POR_ID as any)[c].tipo);
     });
-    expect(ESSENCIAL.length).toBe(24);
+    expect(ESSENCIAL.length).toBe(23);
     expect((CAMPO_POR_ID as any).ondas.tipo).toBe('ondas');
     expect(casasDoCampo((CAMPO_POR_ID as any).rotacaoFormacao)).toBe(1);
     expect(casasDoCampo((CAMPO_POR_ID as any).elegiveis)).toBe(0);

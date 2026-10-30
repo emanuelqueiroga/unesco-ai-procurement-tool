@@ -86,7 +86,7 @@ export function telaAnterior(s: Estado14): TelaEssencial | null {
 /** campos do modo Refinar: os de CAMPOS que não estão em nenhuma tela do Essencial, por capítulo */
 export function camposRefinar(capitulo: Capitulo): string[] {
   const ess = new Set(ESSENCIAL.flatMap(t => t.campos));
-  return Object.keys(CAMPO_POR_ID).filter(id => !['nivel', 'nivelOutro', 'local'].includes(id) && !ess.has(id) && String((CAMPO_POR_ID as any)[id].passo || '').startsWith(String(capitulo)));
+  return Object.keys(CAMPO_POR_ID).filter(id => !['nivel', 'nivelOutro', 'local', 'situacao'].includes(id) && !ess.has(id) && String((CAMPO_POR_ID as any)[id].passo || '').startsWith(String(capitulo)));
 }
 /** governança: perguntas com a resposta e a origem */
 export function governancaDe(s: Estado14) {

@@ -1,4 +1,4 @@
-// O Essencial tem 24 telas (24 da spec mais 1.2.8, mantida por decisão de 28/10/2026), todas apontando para
+// O Essencial tem 23 telas (24 da spec mais 1.2.8, mantida por decisão de 28/10/2026), todas apontando para
 // campos que existem no domínio, e cada resposta sabe que trechos do plano pode mudar.
 import { describe, it, expect } from 'vitest';
 import { ESSENCIAL, CAMPOS_ESSENCIAIS, afetadosPor, telaDoCampo, capituloDoCampo, telasDoCapitulo } from '../../src/store/perguntas';
@@ -7,10 +7,10 @@ import { CAMPOS, QUESTOES_G, REGRAS_REC } from '../../src/domain';
 const ids = new Set((CAMPOS as any[]).map(f => f.id).concat((QUESTOES_G as any[]).map(q => q.id)));
 
 describe('perguntas do Essencial', () => {
-  it('são 24 telas, em quatro capítulos, com ids únicos', () => {
-    expect(ESSENCIAL.length).toBe(24);
-    expect(new Set(ESSENCIAL.map(t => t.id)).size).toBe(24);
-    expect(telasDoCapitulo(1).length).toBe(10);
+  it('são 23 telas, em quatro capítulos, com ids únicos', () => {
+    expect(ESSENCIAL.length).toBe(23);
+    expect(new Set(ESSENCIAL.map(t => t.id)).size).toBe(23);
+    expect(telasDoCapitulo(1).length).toBe(9);
     expect(telasDoCapitulo(2).length).toBe(11);
     expect(telasDoCapitulo(3).length).toBe(1);
     expect(telasDoCapitulo(4).length).toBe(2);

@@ -9,13 +9,13 @@ beforeEach(() => { setLang('pt'); S().carregarExemplo('novo'); });
 
 describe('v015: planejamento nacional e catálogo de países', () => {
   it('começa por país, sem nível de decisão nem pergunta escondida em Refinar', () => {
-    expect(ESSENCIAL).toHaveLength(24);
+    expect(ESSENCIAL).toHaveLength(23);
     expect(telasDoCapitulo(1)[0].campos).toEqual(['pais']);
     expect(ESSENCIAL.some(t => t.id === 'nivel')).toBe(false);
     expect(camposRefinar(1)).not.toContain('nivel');
     expect(S().ctx.nivel).toBe('pais');
     expect(temRespostas(S().estado())).toBe(false);
-    expect(faltamDe(S().estado())).toHaveLength(24);
+    expect(faltamDe(S().estado())).toHaveLength(23);
   });
   it('a instituição opcional não responde à pergunta sobre o país', () => {
     S().responder('local', 'Ministério da Educação');

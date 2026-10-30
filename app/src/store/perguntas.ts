@@ -15,14 +15,13 @@ export interface TelaEssencial {
   nota?: string;
 }
 
-// v015: 24 telas; o nível do país é fixo e a primeira pergunta é país. Ordem original restante: 1.1.1, 1.1.2, 1.1.3, 1.1.4+1.1.5, 1.2.1, 1.2.2, 1.2.4, 1.2.5, 1.2.7, 1.2.8,
+// v015: 23 telas; país → prioridades → etapas. A antiga situação fica preservada nos dados, sem tela no percurso.
 // governança (1.3.1–1.3.6, uma tela), 2.0, 2.1.1, 2.2.1, 2.2.2+2.2.3, 2.3.4, 2.3.5, 2.3.8, 2.4.1+2.4.2, 2.4.3, 2.5.1+2.5.4,
 // 2.6.2, 3.1.1, 4.1.1, 4.1.2. As demais perguntas de CAMPOS ficam no modo Refinar com a premissa padrão.
 export const ESSENCIAL: TelaEssencial[] = [
   { id: 'local', capitulo: 1, n: ['1.1.2'], campos: ['pais'] },
-  { id: 'situacao', capitulo: 1, n: ['1.1.3'], campos: ['situacao'] },
-  { id: 'etapas', capitulo: 1, n: ['1.1.4', '1.1.5'], campos: ['etapas', 'grade'], nota: 'só totais; detalhe por ano em Refinar' },
   { id: 'prioridades', capitulo: 1, n: ['1.2.1'], campos: ['prioridades'] },
+  { id: 'etapas', capitulo: 1, n: ['1.1.4', '1.1.5'], campos: ['etapas', 'grade'], nota: 'só totais; detalhe por ano em Refinar' },
   { id: 'problemas', capitulo: 1, n: ['1.2.2'], campos: ['problemas'], nota: 'até 3; subcategorias e "outro problema" em Refinar' },
   { id: 'problema', capitulo: 1, n: ['1.2.4'], campos: ['problema'] },
   { id: 'impactos', capitulo: 1, n: ['1.2.5'], campos: ['impactos'] },

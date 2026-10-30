@@ -5,7 +5,7 @@ import { ESSENCIAL } from '../../src/store/perguntas';
 import { lerRota, href } from '../../src/percurso/rota';
 import { painelDe, temNumeros, origemKpi, recsPlano, tituloCaso, fatosCaso } from '../../src/percurso/painel';
 import { sinteseCapitulo } from '../../src/percurso/sintese';
-import { LEAD, CURTO, linhaAfeta, plural } from '../../src/percurso/textos';
+import { LEAD, CURTO, linhaAfeta, plural, tituloGovernanca } from '../../src/percurso/textos';
 import { resultadoRecomendacoes } from '../../src/domain';
 import { briefDados } from '../../src/plano/brief.js';
 
@@ -24,6 +24,13 @@ describe('rotas', () => {
     expect(lerRota('#/plano/fazer')).toEqual({ tipo: 'plano', pagina: 'fazer' });
     expect(lerRota('#/galeria')).toEqual({ tipo: 'galeria' });
   });
+  it('a antiga tela situacao leva a prioridades sem alterar respostas salvas', () => {
+    S().responder('situacao', 'renovar');
+    expect(lerRota('#/capitulo/1/situacao')).toEqual({ tipo: 'pergunta', n: 1, tela: 'prioridades' });
+    expect(ESSENCIAL.slice(0, 3).map(t => t.id)).toEqual(['local', 'prioridades', 'etapas']);
+    expect(ESSENCIAL.some(t => t.id === 'situacao')).toBe(false);
+    expect(S().caso.situacao).toBe('renovar');
+  });
   it('rotas inválidas caem num lugar seguro', () => {
     expect(lerRota('#/capitulo/9')).toEqual({ tipo: 'inicio' });
     expect(lerRota('#/capitulo/1/piloto')).toEqual({ tipo: 'abertura', n: 1 });   // tela de outro capítulo
@@ -38,6 +45,11 @@ describe('textos', () => {
   it('toda tela do Essencial tem frase de abertura e nome curto', () => {
     ESSENCIAL.forEach((t) => { expect(LEAD[t.id], t.id).toBeTruthy(); expect(CURTO[t.id], t.id).toBeTruthy(); });
   });
+  it('o título de regulamentação usa o país escolhido e tem fallback sem país', () => {
+    expect(tituloGovernanca('g-legislacao', { pais: 'BRA' }, '')).toBe('Regulamentação em Brasil');
+    expect(tituloGovernanca('g-legislacao', { pais: 'outro' }, '')).toBe('Regulamentação no país');
+    expect(tituloGovernanca('g-legislacao', {}, '')).toBe('Regulamentação no país');
+  });
   it('linha "muda no plano"', () => {
     expect(linhaAfeta(['kpi.ano0', 'A1', 'rec:x', 'rec:y'])).toBe('custo do teste (Ano 0) · regras do teste e da implantação (A1) · 2 recomendações possíveis');
     expect(linhaAfeta([])).toBe('perfil do caso');
@@ -47,13 +59,13 @@ describe('textos', () => {
 });
 
 describe('painel do plano', () => {
-  it('em branco: sem números, sem recomendações, 24 lacunas', () => {
+  it('em branco: sem números, sem recomendações, 23 lacunas', () => {
     const p = painelDe(S().estado());
     expect(p.estado).toBe('empty');
     expect(p.temNumeros).toBe(false);
     expect(p.kpis.every((k) => k.value === undefined)).toBe(true);
     expect(p.recs).toEqual([]);
-    expect(p.faltam).toBe(24);
+    expect(p.faltam).toBe(23);
   });
   it('o primeiro número aparece ao responder o tipo de tecnologia (2.3.4)', () => {
     rede();
@@ -88,7 +100,7 @@ describe('painel do plano', () => {
     expect(JSON.stringify(p.recs)).not.toMatch(/prioridade alta|"Alta"|"Média"/);
     expect(p.titulo).toContain(' · ');
   });
-  it('os quatro exemplos respondem todas as 24 telas do Essencial', () => {
+  it('os quatro exemplos respondem todas as 23 telas do Essencial', () => {
     ['A', 'B', 'C', 'D'].forEach((k) => {
       S().carregarExemplo(k);
       const p = painelDe(S().estado());

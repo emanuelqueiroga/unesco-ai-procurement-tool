@@ -20,7 +20,7 @@ describe('escolher o país', () => {
     expect(S().caso.pais).toBe('BRA');
     expect(S().moeda).toEqual({ cod: 'BRL', taxa: '', taxaDe: '', doPais: 'BRA' });
     expect(TELAS.some((t: any) => t.campos.includes('pais'))).toBe(true);
-    expect(TELAS.length).toBe(24);
+    expect(TELAS.length).toBe(23);
     expect(S().origem.pais).toBe('informado');
     // outro país: a moeda posta pelo país segue o país novo; "outro" volta ao dólar
     expect(S().escolherPais('MEX').moeda).toBe('MXN');

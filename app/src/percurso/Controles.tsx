@@ -6,7 +6,7 @@
 // mostram o detalhe recolhido na própria tela; a lógica pura dessas edições está em refinar.ts.
 import { Fragment, createContext, useContext, useId, useState, type ReactNode } from 'react';
 import {
-  CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
+  LOC, CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
   listaOpc, totaisCtx, alunosEtapa, etapasAtivas, modoTeste, horasEstimativa, lerNumero, problemasMarcados, sugProblemas, temLacuna, rotulo, pct, tr,
 } from '../domain';
 import { useCaso, origemDe, valorDe, type Estado14, type TelaEssencial } from '../store';
@@ -16,7 +16,7 @@ import {
 } from '../ui';
 import { fmt } from './ambiente';
 import { CampoNumero } from './CampoNumero';
-import { t, plural } from './textos';
+import { t, plural, tituloGovernanca } from './textos';
 import { href } from './rota';
 import {
   MAX_POR_CAMPO, linhasDeOndas, ondaEditada, errosDaOnda, avisoOndas, casasDoCampo, valorComCasas, erroDeIntervalo, horizonteDoCaso,
@@ -40,6 +40,7 @@ import { Pais } from './Pais';
 const num = (v: string): number | '' => inteiro(lerNumero(v) === '' ? '' : +lerNumero(v));
 const str = (v: unknown) => (v == null ? '' : String(v));
 const LIMITE_PROBLEMAS = 3;
+const nomePrioridade = (p: { id: string; nome: string }): string => p.id === 'governar' ? 'Governo na educação' : p.nome;
 /** nome da opção com a explicação embaixo (o subtexto do OptionCard é para legendas curtas à direita) */
 const comDescricao = (nome: unknown, desc?: unknown, extra?: ReactNode): ReactNode =>
   desc || extra ? <>{String(tr(nome))}{desc ? <span className="pr-optioncard-desc">{String(tr(desc))}</span> : null}{extra}</> : String(tr(nome));
@@ -549,6 +550,7 @@ function Etapas({ e }: { e: Estado14 }) {
     <>
       <SchoolsGrid
         label={t('Etapas de ensino atendidas')}
+        locale={String(LOC())}
         stages={stages}
         totals={tt.n ? { schools: fmt.int(tt.escolas), students: fmt.int(tt.alunos), label: t('Total da rede') } : undefined}
         onChange={(id, patch) => {
@@ -618,14 +620,14 @@ function Prioridades({ e }: { e: Estado14 }) {
               type="checkbox"
               name="prioridades"
               value={p.id}
-              label={comDescricao(p.nome, p.desc)}
+              label={comDescricao(nomePrioridade(p), p.desc)}
               checked={atual.includes(p.id)}
               onChange={(v, on) => {
                 const s = new Set(atual); if (on) s.add(v); else s.delete(v);
                 responder('prioridades', P.map((x) => x.id).filter((k: string) => s.has(k)));
               }}
             />
-            <button type="button" className="pcx-info" aria-expanded={aberta} aria-controls={idEx} aria-label={`${t('Exemplos')}: ${String(tr(p.nome))}`} onClick={() => setAbertas((a) => ({ ...a, [p.id]: !a[p.id] }))}>
+            <button type="button" className="pcx-info" aria-expanded={aberta} aria-controls={idEx} aria-label={`${t('Exemplos')}: ${t(nomePrioridade(p))}`} onClick={() => setAbertas((a) => ({ ...a, [p.id]: !a[p.id] }))}>
               <IconInfo size={20} />
             </button>
             <div id={idEx} className="pcx-exemplos" hidden={!aberta}>
@@ -690,7 +692,7 @@ function Problemas({ e }: { e: Estado14 }) {
   const pr: string[] = e.ctx.prioridades || [];
   const atual: string[] = e.ctx.problemas || [];
   const P = (PRIORIDADES as any[]).filter((p) => pr.includes(p.id));
-  if (!P.length) return <p className="pc-aviso">{t('Escolha antes uma prioridade (pergunta anterior): os problemas aparecem agrupados por prioridade.')}</p>;
+  if (!P.length) return <p className="pc-aviso">{t('Escolha uma prioridade para ver os desafios.')}</p>;
   // o limite de três vale só no Essencial; no Refinar volta o "Marcar todos" por prioridade
   const cheio = !refinando && atual.length >= LIMITE_PROBLEMAS;
   const grava = (lista: string[]) => responder('problemas', lista);
@@ -708,7 +710,7 @@ function Problemas({ e }: { e: Estado14 }) {
         return (
           <section key={p.id} className="pc-grupo">
             <div className="pcx-grupo-cab">
-              <h2 className="pc-grupo-titulo">{String(tr(p.nome))}</h2>
+              <h2 className="pc-grupo-titulo">{t(nomePrioridade(p))}</h2>
               {refinando ? (
                 <>
                   <span className="pc-contador" aria-live="polite">{t('{n} de {m} marcados', { n, m: ids.length })}</span>
@@ -719,7 +721,7 @@ function Problemas({ e }: { e: Estado14 }) {
                 </>
               ) : null}
             </div>
-            <OptionCardGroup label={String(tr(p.nome))} type="checkbox">
+            <OptionCardGroup label={t(nomePrioridade(p))} type="checkbox">
               {p.problemas.map((q: any) => {
                 const on = atual.includes(q.id);
                 return (
@@ -823,18 +825,21 @@ function Governanca({ e }: { e: Estado14 }) {
   return (
     <div className="pc-gov">
       {(QUESTOES_G as any[]).map((q) => {
+        const titulo = tituloGovernanca(q.id, e.caso, q.t);
+        const dica = q.id === 'g-politica' ? t('A IA já está incluída na estratégia nacional de educação?')
+          : q.id === 'g-legislacao' ? t('As normas aplicáveis ao uso de IA nas escolas já foram identificadas?') : q.h ? t(q.h) : '';
         const resp = e.resp[q.id] || '';
         const det = e.respDet[q.id];
         const tem = !!(det && (str(det.qual).trim() || str(det.falta).trim()));
         return (
           <div key={q.id} className="pc-gov-linha">
             <div className="pc-gov-texto">
-              <span className="pc-gov-pergunta">{String(tr(q.t))}</span>
-              {q.h ? <span className="pc-gov-dica">{String(tr(q.h))}</span> : null}
-              {q.ex ? <span className="pc-gov-dica">{String(tr(q.ex))}</span> : null}
+              <span className="pc-gov-pergunta">{titulo}</span>
+              {dica ? <span className="pc-gov-dica">{dica}</span> : null}
+              {q.ex ? <details className="pc-gov-dica"><summary>{t('Exemplo')}</summary>{String(tr(q.ex))}</details> : null}
             </div>
             <Segmented
-              label={String(tr(q.t))}
+              label={titulo}
               options={opcoes}
               value={resp || undefined}
               onChange={(v) => { const r = respostaGov(resp, v, det); responderGov(q.id, r.valor, r.det); }}

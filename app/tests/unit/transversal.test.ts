@@ -178,7 +178,7 @@ describe('TRA-17: título da aba por tela', () => {
     expect(tituloDaAba({ tipo: 'sintese', n: 3 })).toBe(`Implantação · ${NOME_FERRAMENTA}`);
     expect(tituloDaAba({ tipo: 'refinar', aba: 'premissas' })).toBe(`Refinar · ${NOME_FERRAMENTA}`);
   });
-  it('as 24 telas têm títulos diferentes', () => {
+  it('as 23 telas têm títulos diferentes', () => {
     const ts = new Set(ESSENCIAL.map((x) => tituloDaAba({ tipo: 'pergunta', n: x.capitulo, tela: x.id })));
     expect(ts.size).toBe(ESSENCIAL.length);
   });
