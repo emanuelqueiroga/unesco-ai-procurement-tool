@@ -1,0 +1,15 @@
+{
+  "build": "passed",
+  "test_files_passed": 37,
+  "tests_passed": 824,
+  "skipped": 2,
+  "todo": 1,
+  "diff_check": "passed",
+  "interface": [
+    "Country Next → Priorities Next → Levels, schools and students; Back points to Priorities. Navigation has 23 questions and no Where are you now screen.",
+    "Government in education visible in priority card and government page; challenge question and Policy solutions headings verified.",
+    "Regulations in Canada uses the selected country; national strategy item asks whether AI is included. Examples are collapsed.",
+    "Local test input 12345 schools and 1600000 students displays 12,345 and 1,600,000 in English; 12.345 and 1.600.000 in Portuguese after blur; values preserved after reload and navigation."
+  ],
+  "compatibility": "Legacy situacao URL redirects to Priorities; legacy situacao response retained, tested in Vitest. Existing review storage key and app version unchanged."
+}

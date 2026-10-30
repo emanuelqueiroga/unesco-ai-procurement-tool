@@ -3,23 +3,31 @@
   "app_version": "0.1.0-alpha.8",
   "base": "v014 React/Prumo publicada",
   "base_source_commit": "bd4d4b3bcb1488f9085e64eb5cbe4ae506bc3db7",
-  "source_commit": "6cb034b4aebded65a935ed68dfbdbc083f76397a",
+  "source_commit": "6b5257b2a5a697e51f69a1dae8e013c5efc602d6",
   "source_branch": "feat/v015-from-v014",
-  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/6cb034b4aebded65a935ed68dfbdbc083f76397a",
+  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/6b5257b2a5a697e51f69a1dae8e013c5efc602d6",
   "v014_publication_tree": "4016e03f1e70e0b5f8436065fca37af4dd439611",
-  "scope": "Página inicial, quatro etapas, país primeiro com escopo nacional fixo, navegação Back/Next e títulos sem prefixo Chapter. Dados salvos, perguntas, cálculos e relatórios financeiros preservados. Ação Start new plan visível ao lado de continuar/abrir, reutilizando a confirmação e a exportação existentes.",
+  "scope": "v014 React/Prumo como base; quatro etapas; escopo nacional e 249 países; Start new plan visível; Back/Next; Contexto simplificado sem situação inicial, Prioridades antes de etapas, textos solicitados e separadores numéricos nos campos de escolas e estudantes. Respostas salvas e cálculos preservados.",
   "build": "VITE_CANAL=revisao npm run build -- --outDir ../docs/revisao/v015",
   "validation": {
     "build": "passed",
-    "targeted_test_files_passed": 2,
-    "targeted_tests_passed": 43,
+    "test_files_passed": 37,
+    "tests_passed": 824,
+    "skipped": 2,
+    "todo": 1,
     "diff_check": "passed",
-    "interface": "Local browser: saved case shows Continue where I left off and Start new plan side by side; confirmation offers Cancel, Export and Delete; Cancel returns focus to Start new plan and preserves 1/24 answered. Confirm-delete browser test not executed: automatic approval review rejected irreversible deletion. Existing confirmed reset action reused; new Context navigation guarded by its boolean result."
+    "interface": [
+      "Country Next → Priorities Next → Levels, schools and students; Back points to Priorities. Navigation has 23 questions and no Where are you now screen.",
+      "Government in education visible in priority card and government page; challenge question and Policy solutions headings verified.",
+      "Regulations in Canada uses the selected country; national strategy item asks whether AI is included. Examples are collapsed.",
+      "Local test input 12345 schools and 1600000 students displays 12,345 and 1,600,000 in English; 12.345 and 1.600.000 in Portuguese after blur; values preserved after reload and navigation."
+    ],
+    "compatibility": "Legacy situacao URL redirects to Priorities; legacy situacao response retained, tested in Vitest. Existing review storage key and app version unchanged."
   },
   "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
-  "delivery": "05-novo-plano-visivel",
-  "publication_parent": "6638385410de2ca976e2770cc4d3c327205181bd",
-  "previous_delivery_commit": "6638385410de2ca976e2770cc4d3c327205181bd",
+  "delivery": "06-contexto-simplificado",
+  "publication_parent": "9d26d6a88f403c3ed99ab36207e7c53e73089464",
+  "previous_delivery_commit": "9d26d6a88f403c3ed99ab36207e7c53e73089464",
   "phase_names_en": [
     "Context",
     "Proof of concept or pilot",
@@ -33,7 +41,7 @@
     "Expansão"
   ],
   "country_catalog_count": 249,
-  "essential_screens": 24,
+  "essential_screens": 23,
   "national_scope": "pais",
   "navigation_en": [
     "Back",
@@ -45,11 +53,21 @@
   ],
   "previous_validation": {
     "build": "passed",
-    "test_files_passed": 37,
-    "tests_passed": 822,
-    "skipped": 2,
-    "todo": 1,
-    "interface": "All 24 question pages plus 4 stage openings and 4 summaries checked for Back/Next and absence of Continue/Skip and Chapter prefixes. Country preserved after Next then Back. Summary Back links target the last question.",
-    "final_targeted_tests_passed": 17
-  }
+    "targeted_test_files_passed": 2,
+    "targeted_tests_passed": 43,
+    "diff_check": "passed",
+    "interface": "Local browser: saved case shows Continue where I left off and Start new plan side by side; confirmation offers Cancel, Export and Delete; Cancel returns focus to Start new plan and preserves 1/24 answered. Confirm-delete browser test not executed: automatic approval review rejected irreversible deletion. Existing confirmed reset action reused; new Context navigation guarded by its boolean result."
+  },
+  "context_screens": 9,
+  "context_order": [
+    "local",
+    "prioridades",
+    "etapas",
+    "problemas",
+    "problema",
+    "impactos",
+    "linhaBase",
+    "alternativa",
+    "governanca"
+  ]
 }
