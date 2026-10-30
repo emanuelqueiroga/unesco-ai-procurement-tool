@@ -1,0 +1,7 @@
+{
+  "build": "passed",
+  "targeted_test_files_passed": 2,
+  "targeted_tests_passed": 43,
+  "diff_check": "passed",
+  "interface": "Local browser: saved case shows Continue where I left off and Start new plan side by side; confirmation offers Cancel, Export and Delete; Cancel returns focus to Start new plan and preserves 1/24 answered. Confirm-delete browser test not executed: automatic approval review rejected irreversible deletion. Existing confirmed reset action reused; new Context navigation guarded by its boolean result."
+}

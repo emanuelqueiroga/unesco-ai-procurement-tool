@@ -3,25 +3,23 @@
   "app_version": "0.1.0-alpha.8",
   "base": "v014 React/Prumo publicada",
   "base_source_commit": "bd4d4b3bcb1488f9085e64eb5cbe4ae506bc3db7",
-  "source_commit": "b0cbb1c49f839b44b78d8261cc2e97957576c520",
+  "source_commit": "6cb034b4aebded65a935ed68dfbdbc083f76397a",
   "source_branch": "feat/v015-from-v014",
-  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/b0cbb1c49f839b44b78d8261cc2e97957576c520",
+  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/6cb034b4aebded65a935ed68dfbdbc083f76397a",
   "v014_publication_tree": "4016e03f1e70e0b5f8436065fca37af4dd439611",
-  "scope": "Página inicial, quatro etapas, país primeiro com escopo nacional fixo, navegação Back/Next e títulos sem prefixo Chapter. Dados salvos, perguntas, cálculos e relatórios financeiros preservados.",
+  "scope": "Página inicial, quatro etapas, país primeiro com escopo nacional fixo, navegação Back/Next e títulos sem prefixo Chapter. Dados salvos, perguntas, cálculos e relatórios financeiros preservados. Ação Start new plan visível ao lado de continuar/abrir, reutilizando a confirmação e a exportação existentes.",
   "build": "VITE_CANAL=revisao npm run build -- --outDir ../docs/revisao/v015",
   "validation": {
     "build": "passed",
-    "test_files_passed": 37,
-    "tests_passed": 822,
-    "skipped": 2,
-    "todo": 1,
-    "interface": "All 24 question pages plus 4 stage openings and 4 summaries checked for Back/Next and absence of Continue/Skip and Chapter prefixes. Country preserved after Next then Back. Summary Back links target the last question.",
-    "final_targeted_tests_passed": 17
+    "targeted_test_files_passed": 2,
+    "targeted_tests_passed": 43,
+    "diff_check": "passed",
+    "interface": "Local browser: saved case shows Continue where I left off and Start new plan side by side; confirmation offers Cancel, Export and Delete; Cancel returns focus to Start new plan and preserves 1/24 answered. Confirm-delete browser test not executed: automatic approval review rejected irreversible deletion. Existing confirmed reset action reused; new Context navigation guarded by its boolean result."
   },
   "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
-  "delivery": "04-navegacao-back-next",
-  "publication_parent": "7285010217f219bf251c97f96ab61ad05038cc21",
-  "previous_delivery_commit": "7285010217f219bf251c97f96ab61ad05038cc21",
+  "delivery": "05-novo-plano-visivel",
+  "publication_parent": "6638385410de2ca976e2770cc4d3c327205181bd",
+  "previous_delivery_commit": "6638385410de2ca976e2770cc4d3c327205181bd",
   "phase_names_en": [
     "Context",
     "Proof of concept or pilot",
@@ -44,5 +42,14 @@
   "navigation_pt": [
     "Voltar",
     "Próximo"
-  ]
+  ],
+  "previous_validation": {
+    "build": "passed",
+    "test_files_passed": 37,
+    "tests_passed": 822,
+    "skipped": 2,
+    "todo": 1,
+    "interface": "All 24 question pages plus 4 stage openings and 4 summaries checked for Back/Next and absence of Continue/Skip and Chapter prefixes. Country preserved after Next then Back. Summary Back links target the last question.",
+    "final_targeted_tests_passed": 17
+  }
 }
