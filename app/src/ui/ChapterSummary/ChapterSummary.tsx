@@ -5,7 +5,7 @@ import { tx } from '../texto';
 
 export type ChapterSummaryProps = {
   n: number;
-  /** Kicker; o padrão é "Fim do capítulo N". */
+  /** Kicker com o nome da etapa; o padrão é "Em resumo". */
   kicker?: string;
   title: string;
   /** Até dois parágrafos em prosa, gerados das respostas. Sem veredito. */
@@ -22,7 +22,7 @@ export type ChapterSummaryProps = {
   recommendations?: ReactNode;
   /** Cartão de prévia do próximo capítulo, à direita, abaixo do KPI. */
   next?: { title: ReactNode; text: ReactNode };
-  /** Botões: secundário "Revisar o capítulo", primário "Capítulo N+1: nome" ou "Abrir o plano". */
+  /** Ações de navegação: Voltar à última pergunta e Próximo. */
   actions?: ReactNode;
   className?: string;
 };
@@ -41,7 +41,7 @@ export function ChapterSummary({
 }: ChapterSummaryProps) {
   return (
     <section className={['pr-chaptersummary', className ?? ''].filter(Boolean).join(' ')}>
-      <div className="pr-chaptersummary-kicker">{kicker ?? tx('Fim do capítulo {n}', { n })}</div>
+      <div className="pr-chaptersummary-kicker">{kicker ?? tx('Em resumo')}</div>
       <h1 className="pr-chaptersummary-title">{title}</h1>
       <div className={['pr-chaptersummary-grid', kpi || next ? '' : 'pr-chaptersummary-grid--single'].join(' ')}>
         <div className="pr-chaptersummary-prose">

@@ -1,0 +1,12 @@
+{
+  "Voltar": "Back",
+  "Próximo": "Next",
+  "{nome} · pergunta {i} de {total}": "{nome} · question {i} of {total}",
+  "Premissas desta etapa": "Assumptions for this stage",
+  "Estimativa desta etapa": "Estimate for this stage",
+  "Quer ajustar as premissas padrão?": "Want to adjust the default assumptions?",
+  "Ao avançar, você aceita as sugestões exibidas.": "When you go to the next step, you accept the suggestions shown.",
+  "Esta etapa ainda não tem respostas: o plano usa as premissas padrão.": "This stage has no answers yet: the plan uses the default assumptions.",
+  "Essencial: as perguntas que mudam o plano, com premissas padrão no resto. Refinar: as mesmas telas, com as premissas de cada etapa abertas para ajuste.": "Essential: the questions that change the plan, with default assumptions for the rest. Refine: the same screens, with the assumptions for each stage open for adjustment.",
+  "{nome}: {pct}% respondido": "{nome}: {pct}% answered"
+}

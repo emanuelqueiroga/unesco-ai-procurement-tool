@@ -1,0 +1,12 @@
+{
+  "Voltar": "Emuva",
+  "Próximo": "Okulandelayo",
+  "{nome} · pergunta {i} de {total}": "{nome} · umbuzo {i} kwengu-{total}",
+  "Premissas desta etapa": "Izisekelo zesilinganiso zalesi sigaba",
+  "Estimativa desta etapa": "Isilinganiso salesi sigaba",
+  "Quer ajustar as premissas padrão?": "Ufuna ukulungisa izisekelo ezizenzakalelayo?",
+  "Ao avançar, você aceita as sugestões exibidas.": "Uma uqhubekela esinyathelweni esilandelayo, wamukela iziphakamiso ezibonisiwe.",
+  "Esta etapa ainda não tem respostas: o plano usa as premissas padrão.": "Lesi sigaba asinazimpendulo okwamanje: uhlelo lusebenzisa izisekelo ezizenzakalelayo.",
+  "Essencial: as perguntas que mudam o plano, com premissas padrão no resto. Refinar: as mesmas telas, com as premissas de cada etapa abertas para ajuste.": "Okubalulekile: imibuzo eshintsha uhlelo, nezinye izingxenye zisebenzisa izisekelo ezizenzakalelayo. Cwengisisa: izikrini ezifanayo, kodwa izisekelo zesigaba ngasinye zivulekile ukuze zilungiswe.",
+  "{nome}: {pct}% respondido": "{nome}: kuphendulwe {pct}%"
+}

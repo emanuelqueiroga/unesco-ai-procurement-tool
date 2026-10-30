@@ -148,6 +148,6 @@ export function sinteseCapitulo(n: Capitulo, e: Estado14): Sintese {
       } catch (err) { console.warn(err); }
     }
   }
-  return { paragrafos: paragrafos.length ? paragrafos : [t('Este capítulo ainda não tem respostas: o plano usa as premissas padrão.')], kpi, nRecs: recs.length,
+  return { paragrafos: paragrafos.length ? paragrafos : [t('Esta etapa ainda não tem respostas: o plano usa as premissas padrão.')], kpi, nRecs: recs.length,
     nCondicoes: recs.filter((r) => r.nivel === 'condicao').length, proximo };
 }

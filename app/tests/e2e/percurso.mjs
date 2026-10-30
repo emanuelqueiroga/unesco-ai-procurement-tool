@@ -29,7 +29,7 @@ const BASE = `http://127.0.0.1:${servidor.address().port}/`;
 let falhas = 0, verificacoes = 0;
 const ok = (cond, msg) => { verificacoes++; if (!cond) { falhas++; console.error('  ✗ ' + msg); } };
 
-const continuar = (p) => p.getByRole('button', { name: /^(Continuar|Aceitar a sugestão e continuar)$/ }).click();
+const continuar = (p) => p.getByRole('button', { name: 'Próximo', exact: true }).click();
 const radio = (p, nome) => p.getByRole('radio', { name: nome }).check();
 const caixa = (p, nome) => p.getByRole('checkbox', { name: nome }).check();
 
@@ -85,7 +85,7 @@ async function percorrer(b, largura) {
     // espera a tela correspondente ao endereço estar desenhada antes de interagir
     const sel = /^#\/capitulo\/(\d)$/.test(h) ? `[data-abertura="${h.slice(-1)}"]` : /\/sintese$/.test(h) ? `[data-sintese="${h.split('/')[2]}"]` : /^#\/capitulo\/\d\/\w+$/.test(h) ? `[data-tela="${h.split('/')[3]}"]` : null;
     if (sel) await p.locator(sel).waitFor({ timeout: 5000 });
-    if (/^#\/capitulo\/\d$/.test(h)) { capitulo++; await semRolagemHorizontal(p, `${rotulo} abertura ${capitulo}`); await p.getByRole('link', { name: 'Começar o capítulo' }).click(); continue; }
+    if (/^#\/capitulo\/\d$/.test(h)) { capitulo++; await semRolagemHorizontal(p, `${rotulo} abertura ${capitulo}`); await p.getByRole('link', { name: 'Próximo', exact: true }).click(); continue; }
     const m = h.match(/^#\/capitulo\/(\d)\/(\w+)$/);
     if (!m) break;
     if (m[2] === 'sintese') {
@@ -93,7 +93,7 @@ async function percorrer(b, largura) {
       ok(await p.getByRole('heading', { name: n === 4 ? 'Seu próximo passo' : 'Até aqui, o que você já sabe' }).isVisible(), `${rotulo}: síntese ${n} sem título`);
       if (n >= 2) ok(/US\$/.test(await p.locator('.pr-chaptersummary, main').first().innerText()), `${rotulo}: síntese ${n} sem número`);
       await semRolagemHorizontal(p, `${rotulo} síntese ${n}`);
-      await p.getByRole('link', { name: n < 4 ? new RegExp(`^Capítulo ${n + 1}:`) : /^Abrir o plano$/ }).click();
+      await p.getByRole('link', { name: 'Próximo', exact: true }).click();
       continue;
     }
     const tela = m[2];

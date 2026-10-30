@@ -72,13 +72,13 @@ export function textoVersao(versao: string, canal: 'estavel' | 'revisao', data: 
 export function tituloDaAba(rota: Rota): string {
   let parte = '';
   switch (rota.tipo) {
-    case 'abertura': parte = `${t('Capítulo {n}', { n: rota.n })} · ${t(CAPITULOS_INFO[rota.n].titulo)}`; break;
+    case 'abertura': parte = t(CAPITULOS_INFO[rota.n].titulo); break;
     case 'pergunta': {
       const i = ESSENCIAL.findIndex((x) => x.id === rota.tela);
       parte = `${t('Pergunta {n} de {total}', { n: i + 1, total: ESSENCIAL.length })} · ${t(CURTO[rota.tela] || rota.tela)}`;
       break;
     }
-    case 'sintese': parte = `${t('Capítulo {n}', { n: rota.n })} · ${t('Resumo do capítulo')}`; break;
+    case 'sintese': parte = t(CAPITULOS_INFO[rota.n].titulo); break;
     case 'plano': parte = `${t('Seu plano')} · ${t(({ resumo: 'Em resumo', custa: 'Quanto custa', fazer: 'O que fazer', exigir: 'O que exigir', apendice: 'Apêndice', faltam: 'Respostas que faltam' } as Record<string, string>)[rota.pagina] || 'Em resumo')}`; break;
     case 'refinar': parte = t('Refinar'); break;
     case 'galeria': parte = 'Prumo'; break;

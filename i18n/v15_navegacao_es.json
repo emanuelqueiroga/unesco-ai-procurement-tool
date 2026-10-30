@@ -1,0 +1,12 @@
+{
+  "Voltar": "Volver",
+  "Próximo": "Siguiente",
+  "{nome} · pergunta {i} de {total}": "{nome} · pregunta {i} de {total}",
+  "Premissas desta etapa": "Supuestos de esta etapa",
+  "Estimativa desta etapa": "Estimación de esta etapa",
+  "Quer ajustar as premissas padrão?": "¿Quiere ajustar los supuestos predeterminados?",
+  "Ao avançar, você aceita as sugestões exibidas.": "Al avanzar, acepta las sugerencias mostradas.",
+  "Esta etapa ainda não tem respostas: o plano usa as premissas padrão.": "Esta etapa aún no tiene respuestas: el plan utiliza los supuestos predeterminados.",
+  "Essencial: as perguntas que mudam o plano, com premissas padrão no resto. Refinar: as mesmas telas, com as premissas de cada etapa abertas para ajuste.": "Esencial: las preguntas que cambian el plan, con supuestos predeterminados para el resto. Refinar: las mismas pantallas, con los supuestos de cada etapa abiertos para ajustarlos.",
+  "{nome}: {pct}% respondido": "{nome}: {pct}% respondido"
+}

@@ -3,7 +3,7 @@ import './QuestionFrame.css';
 import { tx } from '../texto';
 
 export type QuestionFrameProps = {
-  /** "Capítulo 2 · O teste · pergunta 6 de 11". */
+  /** Nome da etapa e posição da pergunta, sem prefixo de capítulo. */
   kicker: ReactNode;
   /** A pergunta, em `question-26`. Uma por tela. */
   title: string;
@@ -13,7 +13,7 @@ export type QuestionFrameProps = {
   help?: ReactNode;
   /** O controle: TextField, OptionCard, Chip, Segmented, SchoolsGrid ou PilotSize. */
   children: ReactNode;
-  /** Botões: primário, "Pular por agora" e o link "Por que perguntamos isso?". */
+  /** Botões: "Voltar", "Próximo" e o link "Por que perguntamos isso?". */
   actions?: ReactNode;
   /** Rodapé: "Esta resposta muda no plano: custo do teste (Ano 0) · regras do piloto (seção A1)". */
   affects?: ReactNode;

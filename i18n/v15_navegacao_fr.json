@@ -1,0 +1,12 @@
+{
+  "Voltar": "Retour",
+  "Próximo": "Suivant",
+  "{nome} · pergunta {i} de {total}": "{nome} · question {i} sur {total}",
+  "Premissas desta etapa": "Hypothèses de cette étape",
+  "Estimativa desta etapa": "Estimation pour cette étape",
+  "Quer ajustar as premissas padrão?": "Souhaitez-vous ajuster les hypothèses par défaut ?",
+  "Ao avançar, você aceita as sugestões exibidas.": "En passant à la suite, vous acceptez les suggestions affichées.",
+  "Esta etapa ainda não tem respostas: o plano usa as premissas padrão.": "Cette étape n’a pas encore de réponses : le plan utilise les hypothèses par défaut.",
+  "Essencial: as perguntas que mudam o plano, com premissas padrão no resto. Refinar: as mesmas telas, com as premissas de cada etapa abertas para ajuste.": "Essentiel : les questions qui changent le plan, avec des hypothèses par défaut pour le reste. Affiner : les mêmes écrans, avec les hypothèses de chaque étape ouvertes pour les ajuster.",
+  "{nome}: {pct}% respondido": "{nome} : {pct}% de réponses"
+}

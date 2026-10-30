@@ -174,8 +174,8 @@ describe('TRA-17: título da aba por tela', () => {
   });
   it('plano, abertura, síntese e refinar identificam a tela', () => {
     expect(tituloDaAba({ tipo: 'plano', pagina: 'custa' })).toBe(`Seu plano · Quanto custa · ${NOME_FERRAMENTA}`);
-    expect(tituloDaAba({ tipo: 'abertura', n: 2 })).toMatch(/^Capítulo 2 · Prova de conceito ou piloto · /);
-    expect(tituloDaAba({ tipo: 'sintese', n: 3 })).toMatch(/^Capítulo 3 · /);
+    expect(tituloDaAba({ tipo: 'abertura', n: 2 })).toBe(`Prova de conceito ou piloto · ${NOME_FERRAMENTA}`);
+    expect(tituloDaAba({ tipo: 'sintese', n: 3 })).toBe(`Implantação · ${NOME_FERRAMENTA}`);
     expect(tituloDaAba({ tipo: 'refinar', aba: 'premissas' })).toBe(`Refinar · ${NOME_FERRAMENTA}`);
   });
   it('as 24 telas têm títulos diferentes', () => {

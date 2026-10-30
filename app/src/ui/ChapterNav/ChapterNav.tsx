@@ -43,7 +43,7 @@ const MARK_LABEL: Record<QuestionState, string> = {
 /** Lista vertical do percurso: os quatro capítulos e, no capítulo aberto, suas perguntas com estado. */
 export function ChapterNav({ zoneLabel, chapters, onNavigate, legend = true, className }: ChapterNavProps) {
   return (
-    <nav className={['pr-chapternav', className ?? ''].filter(Boolean).join(' ')} aria-label={tx('Capítulos')}>
+    <nav className={['pr-chapternav', className ?? ''].filter(Boolean).join(' ')} aria-label={tx('Seu caminho')}>
       <div className="pr-chapternav-zone">{zoneLabel}</div>
       <ol className="pr-chapternav-list">
         {chapters.map((c) => (

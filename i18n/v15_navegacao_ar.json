@@ -1,0 +1,12 @@
+{
+  "Voltar": "رجوع",
+  "Próximo": "التالي",
+  "{nome} · pergunta {i} de {total}": "{nome} · السؤال {i} من {total}",
+  "Premissas desta etapa": "افتراضات هذه المرحلة",
+  "Estimativa desta etapa": "تقدير هذه المرحلة",
+  "Quer ajustar as premissas padrão?": "هل تريد تعديل الافتراضات الافتراضية؟",
+  "Ao avançar, você aceita as sugestões exibidas.": "بالانتقال إلى الخطوة التالية، تقبل الاقتراحات المعروضة.",
+  "Esta etapa ainda não tem respostas: o plano usa as premissas padrão.": "لم تتم الإجابة عن أسئلة هذه المرحلة بعد: تستخدم الخطة الافتراضات الافتراضية.",
+  "Essencial: as perguntas que mudam o plano, com premissas padrão no resto. Refinar: as mesmas telas, com as premissas de cada etapa abertas para ajuste.": "الأساسي: الأسئلة التي تغيّر الخطة، مع افتراضات افتراضية للباقي. التنقيح: الشاشات نفسها، مع إظهار افتراضات كل مرحلة لتعديلها.",
+  "{nome}: {pct}% respondido": "{nome}: تمت الإجابة عن {pct}%"
+}

@@ -6,7 +6,7 @@ export type ChapterOpeningProps = {
   /** Número do capítulo, 1 a 4: define a cor do traço (`phase-N`). */
   n: number;
   total?: number;
-  /** Kicker; o padrão é "Capítulo N de 4". */
+  /** Kicker opcional; sem ele, exibe apenas o título da etapa. */
   kicker?: string;
   title: string;
   /** Pergunta-guia, uma pergunta de verdade em linguagem de educação. */
@@ -15,7 +15,7 @@ export type ChapterOpeningProps = {
   children: ReactNode;
   questions?: number;
   minutes?: number;
-  /** O único botão primário: "Começar o capítulo". */
+  /** Ações de navegação: Voltar e Próximo. */
   action?: ReactNode;
   className?: string;
 };
@@ -23,7 +23,6 @@ export type ChapterOpeningProps = {
 /** Tela de abertura de capítulo: traço da fase, kicker, título grande, pergunta-guia e metadados. */
 export function ChapterOpening({
   n,
-  total = 4,
   kicker,
   title,
   guide,
@@ -36,7 +35,7 @@ export function ChapterOpening({
   return (
     <section className={['pr-chapteropening', className ?? ''].filter(Boolean).join(' ')}>
       <div className="pr-chapteropening-phase" style={{ background: `var(--phase-${n})` }} aria-hidden="true" />
-      <div className="pr-chapteropening-kicker">{kicker ?? tx('Capítulo {n} de {total}', { n, total })}</div>
+      {kicker ? <div className="pr-chapteropening-kicker">{kicker}</div> : null}
       <h1 className="pr-chapteropening-title">{title}</h1>
       <p className="pr-chapteropening-guide">{guide}</p>
       <p className="pr-chapteropening-text">{children}</p>

@@ -26,19 +26,18 @@ export function Abertura({ n }: { n: Capitulo }) {
   const info = CAPITULOS_INFO[n];
   const telas = telasDoCapitulo(n);
   return (
-    <Shell pos={{ capitulo: n }} contexto={t('Capítulo {n} de 4', { n })}>
+    <Shell pos={{ capitulo: n }} contexto={t(info.titulo)}>
       <div className="pc-abertura" data-abertura={n}>
         <ChapterOpening
           n={n}
-          kicker={t('Capítulo {n} de 4', { n })}
           title={t(info.titulo)}
           guide={t(info.guia)}
           questions={telas.length}
           minutes={info.minutos}
           action={
             <div className="pc-botoes">
-              <Button variant="secondary" href={n === 1 ? href.inicio() : href.sintese((n - 1) as Capitulo)}>{n === 1 ? t('Voltar ao início') : t('Voltar ao capítulo {n}', { n: n - 1 })}</Button>
-              <Button href={href.pergunta(n, telas[0].id)}>{t('Começar o capítulo')}</Button>
+              <Button variant="secondary" href={n === 1 ? href.inicio() : href.sintese((n - 1) as Capitulo)}>{t('Voltar')}</Button>
+              <Button href={href.pergunta(n, telas[0].id)}>{t('Próximo')}</Button>
             </div>
           }
         >
@@ -114,10 +113,10 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
     : LEAD[id] || null;
   const numeroGlobal = ESSENCIAL.indexOf(tela) + 1;
   return (
-    <Shell pos={{ capitulo: n, tela: id }} contexto={t('Capítulo {n} · {nome}', { n, nome: t(CAPITULOS_INFO[n].titulo) })}>
+    <Shell pos={{ capitulo: n, tela: id }} contexto={t(CAPITULOS_INFO[n].titulo)}>
       <div className="pc-pergunta" data-tela={id}>
         <QuestionFrame
-          kicker={t('Capítulo {n} · {nome} · pergunta {i} de {total}', { n, nome: t(CAPITULOS_INFO[n].titulo), i: i + 1, total: telas.length })}
+          kicker={t('{nome} · pergunta {i} de {total}', { nome: t(CAPITULOS_INFO[n].titulo), i: i + 1, total: telas.length })}
           title={tituloTela(s, id)}
           explanation={
             <>
@@ -127,25 +126,25 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
           }
           help={porque && ajuda ? <AjudaPergunta ajuda={ajuda} /> : null}
           actions={
-            <div className="pc-botoes">
-              <Button onClick={continuar}>{confirmaveis.length ? t('Aceitar a sugestão e continuar') : t('Continuar')}</Button>
-              <Button variant="secondary" href={prox}>{t('Pular por agora')}</Button>
-              {ajuda ? (
-                <Button variant="link" aria-expanded={porque} aria-controls={porque ? 'pc-ajuda' : undefined} onClick={() => setPorque((x) => !x)}>
-                  {porque ? t('Fechar a explicação') : t('Por que perguntamos isso?')}
-                </Button>
-              ) : null}
-            </div>
+            <>
+              <div className="pc-botoes">
+                <Button variant="secondary" href={ant}>{t('Voltar')}</Button>
+                <Button onClick={continuar}>{t('Próximo')}</Button>
+                {ajuda ? (
+                  <Button variant="link" aria-expanded={porque} aria-controls={porque ? 'pc-ajuda' : undefined} onClick={() => setPorque((x) => !x)}>
+                    {porque ? t('Fechar a explicação') : t('Por que perguntamos isso?')}
+                  </Button>
+                ) : null}
+              </div>
+              {confirmaveis.length ? <p className="pc-nota">{t('Ao avançar, você aceita as sugestões exibidas.')}</p> : null}
+            </>
           }
           affectsPrefix={t('Esta resposta muda no plano:')}
           affects={linhaAfeta(afetados, +s.caso.horizonte || 3)}
         >
           <ControlesTela e={s} tela={tela} />
         </QuestionFrame>
-        <nav className="pc-voltar" aria-label={t('Navegação entre perguntas')}>
-          <a href={ant}><span aria-hidden="true" className="pc-seta-voltar">← </span>{i > 0 ? t('Pergunta anterior') : t('Abertura do capítulo')}</a>
-          <span className="pc-nota">{t('Pergunta {i} de {n} do Essencial', { i: numeroGlobal, n: ESSENCIAL.length })}</span>
-        </nav>
+        <p className="pc-voltar pc-nota">{t('Pergunta {i} de {n} do Essencial', { i: numeroGlobal, n: ESSENCIAL.length })}</p>
       </div>
     </Shell>
   );
@@ -212,7 +211,7 @@ function PremissasCapitulo({ s, n, foco }: { s: CasoStore; n: Capitulo; foco?: s
   if (!itens.length) return null;
   return (
     <section className="pc-refinar" aria-labelledby={`pc-refinar-${n}`}>
-      <h2 id={`pc-refinar-${n}`} className="pc-refinar-titulo">{t('Premissas deste capítulo')}</h2>
+      <h2 id={`pc-refinar-${n}`} className="pc-refinar-titulo">{t('Premissas desta etapa')}</h2>
       <p className="pc-nota">{t('No modo Essencial estas perguntas usam a premissa padrão. Ajuste o que conhecer; o resto continua padrão.')}</p>
       <ProvedorRefinar value>
         <ol className="pc-refinar-lista">
@@ -260,15 +259,15 @@ export function Sintese({ n, foco }: { n: Capitulo; foco?: string }) {
   const prox = n < 4 ? CAPITULOS_INFO[(n + 1) as Capitulo] : null;
   const telas = telasDoCapitulo(n);
   return (
-    <Shell pos={{ capitulo: n, sintese: true }} contexto={t('Fim do capítulo {n}', { n })}>
+    <Shell pos={{ capitulo: n, sintese: true }} contexto={t(CAPITULOS_INFO[n].titulo)}>
       <div className="pc-sintese" data-sintese={n}>
         <ChapterSummary
           n={n}
-          kicker={t('Fim do capítulo {n}', { n })}
+          kicker={t(CAPITULOS_INFO[n].titulo)}
           title={n === 4 && sin.proximo ? sin.proximo.titulo : t('Até aqui, o que você já sabe')}
           paragraphs={sin.paragrafos}
           kpi={sin.kpi ? {
-            kicker: n === 2 ? t('O primeiro número do seu plano') : t('O número deste capítulo'),
+            kicker: n === 2 ? t('O primeiro número do seu plano') : t('Estimativa desta etapa'),
             label: sin.kpi.label, value: sin.kpi.value, fullValue: sin.kpi.fullValue,
             origin: <SourceTag origin={sin.kpi.origem} label={sin.kpi.origem === 'padrao' ? t('estimativa com premissas padrão') : rotuloOrigem(sin.kpi.origem)} />,
           } : undefined}
@@ -279,18 +278,17 @@ export function Sintese({ n, foco }: { n: Capitulo; foco?: string }) {
               {' · '}<a href={href.plano('fazer')}>{t('ver no plano')}</a>
             </>
           ) : undefined}
-          next={prox ? { title: t('Próximo capítulo: {nome}', { nome: t(prox.titulo) }), text: t(prox.guia) } : undefined}
+          next={prox ? { title: t(prox.titulo), text: t(prox.guia) } : undefined}
           actions={
             <div className="pc-botoes">
-              <Button variant="secondary" href={href.pergunta(n, telas[0].id)}>{t('Revisar o capítulo {n}', { n })}</Button>
-              {n < 4 ? <Button variant="secondary" href={href.plano()}>{t('Ver o plano parcial')}</Button> : null}
-              <Button href={n < 4 ? href.abertura(n + 1) : href.plano()}>{n < 4 ? t('Capítulo {n}: {nome}', { n: n + 1, nome: t(prox!.titulo) }) : t('Abrir o plano')}</Button>
+              <Button variant="secondary" href={href.pergunta(n, telas[telas.length - 1].id)}>{t('Voltar')}</Button>
+              <Button href={n < 4 ? href.abertura(n + 1) : href.plano()}>{t('Próximo')}</Button>
             </div>
           }
         />
         {s.modo === 'refinar' || foco ? <PremissasCapitulo s={s} n={n} foco={foco} /> : (
           <p className="pc-nota pc-dica-refinar">
-            {t('Quer ajustar as premissas padrão deste capítulo?')}{' '}
+            {t('Quer ajustar as premissas padrão?')}{' '}
             <Button variant="link" onClick={() => s.setModo('refinar')}>{t('Mudar para o modo Refinar')}</Button>
           </p>
         )}
