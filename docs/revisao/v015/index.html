@@ -1163,6 +1163,13 @@ details.desc-imp > summary:focus-visible { outline: 2px solid var(--focus); outl
   .desc-in { padding: 0 10px 12px; }
   .desc-bloco { padding: 12px; }
 }
+@media (max-width: 480px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  #painel { position: static; top: auto; }
+  #main { gap: 10px; }
+  /* alvos de toque mínimo 24 px (WCAG 2.5.5) */
+  button, .opt, .chip, .seg label, [role="button"], [data-act] { min-height: 24px; min-width: 24px; padding-top: 2px; padding-bottom: 2px; }
+}
 
 /* =====================================================================
    v13 · Página inicial (RQ-01) e matriz camadas × fases (RQ-03) — src/inicio.js
@@ -1402,15 +1409,22 @@ details.desc-imp > summary:focus-visible { outline: 2px solid var(--focus); outl
 .mt-nota, .mt-cred { font-size: .9rem; line-height: 1.5; color: var(--ini-muted); }
 .mt-cred { font-style: italic; }
 @media (max-width: 640px) {
-  .mt-tab { min-width: 900px; font-size: .92rem; }
-  .mt-c0 { width: 138px; }
+  .mt-tab { min-width: 0; font-size: .92rem; table-layout: auto; }
+  .mt-c0 { width: auto; }
   .mt-tab tbody th { padding: 12px 8px 12px 12px; }
   .mt-tab tbody th .mt-cn { float: none; margin: 0 0 4px; width: 26px; height: 26px; }
-  .mt-tab thead th { padding: 10px; }
-  .mt-fn { float: none; margin: 0 0 4px; width: 28px; height: 28px; font-size: .95rem; }
+  .mt-tab thead th { padding: 10px; white-space: normal; }
+  .mt-fn { float: none; margin: 0 0 4px; width: 26px; height: 26px; font-size: .85rem; }
   .mt-ce { display: none; }
-  .mt-cnome { font-size: .9rem; }
-  .mt-td { padding: 12px; }
+  .mt-cnome { font-size: .85rem; white-space: normal; }
+  .mt-td { padding: 8px 6px; }
+  .mt-tab thead th { font-size: .85rem; }
+  .mt-fnome { font-size: .85rem; }
+}
+@media (max-width: 360px) {
+  .mt-tab { font-size: .85rem; }
+  .mt-td { padding: 6px 4px; }
+  .mt-td.na { font-size: .85rem; }
 }
 
 /* visualizador da matriz: mesmo visor da figura (fluxo.css, dialog.visor), mais largo; a tabela rola dentro */
@@ -2304,7 +2318,17 @@ function aplicarIdioma(l) {
   textoVersao();
   const t = document.querySelector('title'); if (t) { if (!t.dataset.orig) t.dataset.orig = t.textContent; t.textContent = tr(t.dataset.orig); }
 }
-function idiomaInicial() { return 'en'; }  // decisão da equipe: inglês como padrão nesta etapa
+function idiomaInicial() {
+  // v15: detecta o idioma do navegador entre os revisados (pt, en, es, fr);
+  // inglês como último recurso (RF-013, RNF-004, Decisão D4)
+  try {
+    const langs = (typeof navigator !== 'undefined' && navigator.languages) ? navigator.languages : [];
+    const first = langs.length ? langs[0] : (typeof navigator !== 'undefined' ? (navigator.language || '') : '');
+    const l = String(first || '').split('-')[0].toLowerCase();
+    if (IDIOMAS.some(i => i[0] === l)) return l;
+  } catch (e) { }
+  return 'en';
+}
 
 // ---------------------------------------------------------- números nos campos de entrada
 // Os campos numéricos são <input type="text"> formatados com os separadores do idioma
@@ -2876,6 +2900,139 @@ function somaPorCamada(av) {
   return { ano0, total, fin0, porAno };
 }
 
+// ---------------------------------------------------------------- decomposição por fase
+// Fase Piloto = Ano 0; Fase Implantação = Ano 1; Fase Expansão = Anos 2 a H.
+// Retorna { piloto, impl, expansao }, cada um com { unico, recorrente, total, pessoas, linhas }.
+// Linhas com orc='capital' entram como pagamento único; o restante como recorrente.
+function decomporFases(av) {
+  const r = av.r, o = r.opc, T = r.anos, H = r.H;
+  const soma = (t) => {
+    let u = 0, rec = 0;
+    const linhas = [];
+    av.linhas.forEach(l => {
+      const v = l.v[t] || 0;
+      if (!v) return;
+      if (l.nat === 'O') return; // doados não entram no desembolso
+      const ehUnico = l.orc === 'capital';
+      if (ehUnico) u += v; else rec += v;
+      linhas.push({ nome: l.nome, s: l.s, k: l.k, unico: ehUnico ? v : 0, recorrente: ehUnico ? 0 : v, total: v });
+    });
+    // saída só entra no ano H (fase de expansão)
+    av.saida.forEach(s => { if (s.valor && t === H) { u += s.valor; linhas.push({ nome: s.nome, s: s.s, k: s.k, unico: s.valor, recorrente: 0, total: s.valor }); } });
+    return { unico: u, recorrente: rec, total: u + rec, linhas };
+  };
+  const pessoas = t => r.U[t] || 0;
+  const piloto = soma(0);
+  const impl = H >= 1 ? soma(1) : { unico: 0, recorrente: 0, total: 0, linhas: [] };
+  const expansao = { unico: 0, recorrente: 0, total: 0, pessoas: 0, linhas: [] };
+  for (let t = 2; t <= H; t++) {
+    const s = soma(t);
+    expansao.unico += s.unico; expansao.recorrente += s.recorrente; expansao.total += s.total;
+    expansao.linhas.push(...s.linhas.map(l => Object.assign({}, l, { ano: t })));
+    expansao.pessoas += pessoas(t);
+  }
+  piloto.pessoas = pessoas(0);
+  impl.pessoas = pessoas(1);
+  piloto.total = piloto.unico + piloto.recorrente;
+  impl.total = impl.unico + impl.recorrente;
+  expansao.total = expansao.unico + expansao.recorrente;
+  // subtrai valor residual da expansão (ele foi contado na saída do ano H)
+  if (av.vr) expansao.total -= av.vr;
+  return { piloto, impl, expansao };
+}
+
+// ---------------------------------------------------------------- consolidação financeira por iniciativa
+// v15: consolida custos de múltiplas iniciativas (RF-005, RB-006, RF-011, RB-012).
+// Cada iniciativa tem: { id, prioridadeId, objetivo, beneficiarios, nivelModalidade, estrategia,
+//   dim: { professores, administrativos, beneficiarios, horasFormacao },
+//   custos: { impl, recorrente, total, anos: [ano0, ano1, ...anoH] } }
+// Retorna { iniciativas: [...], consolidacao: { porEtapa: {...}, porTecnologia: {...}, totalGeral } }.
+function consolidarIniciativas(iniciativas, cfg, av) {
+  const fases = av ? decomporFases(av) : null;
+  const out = [];
+  let totalGeral = 0;
+  let unicoTotal = 0;
+  let recorrenteTotal = 0;
+  (iniciativas || []).forEach((ini, i) => {
+    const c = {
+      id: ini.id || 'ini-' + i,
+      prioridadeId: ini.prioridadeId || '',
+      objetivo: ini.objetivo || '',
+      beneficiarios: ini.beneficiarios || 0,
+      nivelModalidade: ini.nivelModalidade || '',
+      estrategia: ini.estrategia || '',
+      dim: Object.assign({ professores: 0, administrativos: 0, beneficiarios: 0, horasFormacao: 0 }, ini.dim || {}),
+      custos: Object.assign({ impl: 0, recorrente: 0, total: 0, anos: [] }, ini.custos || {}),
+    };
+    // Se não há custos informados, usa as fases do motor como estimativa (proporcional às pessoas)
+    if ((c.custos.impl + c.custos.recorrente + c.custos.total) === 0 && fases) {
+      const peso = c.dim.beneficiarios > 0 ? c.dim.beneficiarios : (c.dim.professores > 0 ? c.dim.professores * 25 : 1);
+      const pesoTotal = (iniciativas || []).reduce((s, x) => s + (x.dim && x.dim.beneficiarios > 0 ? x.dim.beneficiarios : (x.dim && x.dim.professores > 0 ? x.dim.professores * 25 : 1)), 0) || 1;
+      const fator = peso / pesoTotal;
+      c.custos.impl = Math.round(fases.piloto.total * fator);
+      c.custos.recorrente = Math.round((fases.impl.total + fases.expansao.total) * fator);
+      c.custos.total = c.custos.impl + c.custos.recorrente;
+      c.custos.anos = [c.custos.impl, Math.round(fases.impl.total * fator), Math.round(fases.expansao.total * fator)];
+    }
+    totalGeral += c.custos.total;
+    unicoTotal += c.custos.impl;
+    recorrenteTotal += c.custos.recorrente;
+    out.push(c);
+  });
+  return {
+    iniciativas: out,
+    consolidacao: {
+      porEtapa: {
+        piloto: out.reduce((s, x) => s + x.custos.impl, 0),
+        impl: out.reduce((s, x) => s + x.custos.recorrente, 0) * 0.33, // aproximação: 1/3 do recorrente é Ano 1
+        expansao: out.reduce((s, x) => s + x.custos.recorrente, 0) * 0.67, // 2/3 do recorrente é expansão
+      },
+      porTecnologia: {}, // preenchido pelo chamador com base na arquitetura de cada iniciativa
+      totalGeral,
+      unico: unicoTotal,
+      recorrente: recorrenteTotal,
+    },
+  };
+}
+
+// ---------------------------------------------------------------- transparência de premissas (RF-012, RB-013)
+// Retorna cada premissa de custo com origem, fonte, ano, grau (A/B/C) e faixa de referência.
+// Grau C = convenção da ferramenta (ilustrativa); A = estatística oficial; B = estudo/registro de compra.
+function premissasComOrigem(cfg) {
+  cfg = cfg || {};
+  const premissas = [];
+  const adicionar = (campo, valor, origem, fonte, ano, grau, faixa, unidade) => {
+    premissas.push({ campo, valor, origem, fonte, ano, grau: grau || 'C', faixa, unidade });
+  };
+  // Salários (SAL em custos.js)
+  Object.entries(SAL || {}).forEach(([chave, valor]) => {
+    adicionar('salario.' + chave, valor, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [valor * 0.5, valor * 1.5], 'US$/ano');
+  });
+  // Preços de licença SaaS (PRESETS)
+  if (PRESETS && PRESETS.A && PRESETS.A.saas) {
+    const s = PRESETS.A.saas;
+    adicionar('saas.preco', s.preco, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [s.preco * 0.95, s.preco * 1.15], 'US$/usuário/mês');
+    adicionar('saas.precoNominal', s.precoNominal, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [s.precoNominal * 0.95, s.precoNominal * 1.15], 'US$/usuário/mês');
+  }
+  // Horas de formação (PREMISSAS_V11)
+  if (typeof PREMISSAS_V11 !== 'undefined') {
+    adicionar('formacao.horas', PREMISSAS_V11.horasFormacao, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [PREMISSAS_V11.horasFormacao * 0.7, PREMISSAS_V11.horasFormacao * 1.5], 'horas/pessoa');
+    adicionar('formacao.rotacao', PREMISSAS_V11.rotacaoFormacao, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [0.05, 0.20], '%/ano');
+  }
+  // Custo de dispositivo (PREMISSAS_K1)
+  if (typeof PREMISSAS_K1 !== 'undefined') {
+    adicionar('dispositivo.preco', PREMISSAS_K1.precoDispositivo, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [PREMISSAS_K1.precoDispositivo * 0.5, PREMISSAS_K1.precoDispositivo * 2], 'US$/dispositivo');
+    adicionar('conectividade.escolaAno', PREMISSAS_K1.conectEscolaAno, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [PREMISSAS_K1.conectEscolaAno * 0.5, PREMISSAS_K1.conectEscolaAno * 2], 'US$/escola/ano');
+  }
+  // Opções padrão (OPC_PADRAO)
+  adicionar('inflacao.pi', OPC_PADRAO.pi, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [0, 0.06], 'a.a.');
+  adicionar('desconto.r', OPC_PADRAO.r, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [0, 0.08], 'a.a.');
+  adicionar('contingencia.contPct', OPC_PADRAO.contPct, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [0.05, 0.10], '%');
+  // Razão estudante/professor (convenção ilustrativa, definida em framework.js como 25)
+  adicionar('razao.estProf', 25, 'ilustrativo', 'Convenção da ferramenta (v13)', 2026, 'C', [20, 30], 'estudantes/professor');
+  return premissas;
+}
+
 // ---------------------------------------------------------------- índices de custo unitário e indicadores
 function anosUsuario(r, disc) { return r.anos.reduce((s, t) => s + r.U[t] * (disc ? disc[t] : 1), 0); }
 function indicadores(cfg, av) {
@@ -3231,7 +3388,7 @@ const PRESETS = {
 
 const API_CUSTOS = { ARVORE, NOME_K, NOME_S, K_DE_S, MAPA_CAT, SAL, SAL_NOME, OPC_COMPAT, OPC_PADRAO, clone, opcoes, ano, custoChamada, salario, arquitetura,
   calcular, resumo, avaliar, indicadores, cfgAltaAdocao, cfgEstresse, cenarios, direcionadores, tornado, sensibilidade, simular, orcamento, orcamentoDeLinhas,
-  lmdi, laspeyres, cae, comparar, equidade, compLicenca, compArquiteturas, PRESETS, quantil, fatorAdapt, CAMADA_DE_S, somaPorCamada };
+  lmdi, laspeyres, cae, comparar, equidade, compLicenca, compArquiteturas, PRESETS, quantil, fatorAdapt, CAMADA_DE_S, somaPorCamada, decomporFases, consolidarIniciativas, premissasComOrigem };
 if (typeof module !== 'undefined') module.exports = API_CUSTOS;
 
 // =====================================================================
@@ -3251,6 +3408,15 @@ const maxNivel = (...ns) => NIVEIS[Math.max(...ns.map(n => NIVEIS.indexOf(n)))];
 
 // ----------------------------------------------------------- opções do formulário
 const OPC = {
+  // v15: lista de países para o seletor opcional do contexto (RF-002, RB-001)
+  PAISES: typeof PAISES !== 'undefined' ? PAISES : [],
+  // v15: tipo de iniciativa para navegação condicional (RF-004, RB-005)
+  tipoIniciativa: [
+    ['politica', 'Política pública', 'Elaboração, consulta, aprovação e implementação institucional.'],
+    ['governanca', 'Governança', 'Estruturas, processos, responsabilidades e acompanhamento.'],
+    ['formacao', 'Formação', 'Planejamento, execução e avaliação de atividades formativas.'],
+    ['tecnologia', 'Tecnologia', 'Análise de viabilidade, prova de conceito, piloto, implantação e escala.'],
+  ],
   situacao: [
     ['nova', 'Iniciar uma nova iniciativa', 'Ainda não há solução escolhida nem fornecedor.'],
     ['proposta', 'Avaliar uma proposta já recebida', 'Um fornecedor, parceiro ou área interna já apresentou uma solução.'],
@@ -3531,6 +3697,59 @@ function derivarArquitetura(c, ignorarManual) {
   return 'saas';
 }
 
+// v15: sugere tecnologia compatível com prioridade, tarefas e contexto (RF-008, RB-009)
+// Retorna { arquitetura: 'saas'|'api'|'ow', tipoTec: 'publica'|'aberta'|'paga'|'nao_sei', motivo: string }
+function sugerirTecnologia(c, prioridade, tarefas) {
+  c = c || {};
+  const T = typeof tarefasDe === 'function' ? tarefasDe(tarefas || []) : [];
+  const temDadosPessoais = T.some(t => (t.dados || []).some(d => d === 'pessoais_est' || d === 'sensiveis'));
+  const temPrevisao = T.some(t => (t.classes || []).includes('previsao'));
+  const temGeracao = T.some(t => (t.classes || []).includes('geracao'));
+  const usaEstudantes = (c.usuarios || []).includes('estudantes');
+  const contatoCriancas = usaEstudantes && (c.afetados || []).includes('criancas');
+  let arq, tipoTec, motivo;
+  // Prioridade "governar" -> tecnologia mínima ou nenhuma
+  if (prioridade === 'governar') {
+    arq = 'saas'; tipoTec = 'paga';
+    motivo = 'Para governança, comece com uma plataforma institucional de baixo risco.';
+  }
+  // Prioridade "sobre" (letramento) -> plataforma compartilhada
+  else if (prioridade === 'sobre') {
+    arq = 'saas'; tipoTec = 'publica';
+    motivo = 'Para letramento em IA, uma plataforma pública ou institucional é suficiente.';
+  }
+  // Prioridade "com" (ensino com IA) -> depende dos dados e público
+  else if (prioridade === 'com') {
+    if (contatoCriancas || temDadosPessoais) {
+      arq = 'saas'; tipoTec = 'paga';
+      motivo = 'Com dados de estudantes ou crianças, prefira uma plataforma contratada com cláusulas de proteção de dados.';
+    } else if (temPrevisao) {
+      arq = 'api'; tipoTec = 'paga';
+      motivo = 'Para previsão de risco, um modelo por API com auditoria é adequado.';
+    } else {
+      arq = 'saas'; tipoTec = 'paga';
+      motivo = 'Para ensino com IA, uma plataforma por licença cobre a maioria dos casos.';
+    }
+  }
+  // Prioridade "para" (era da IA) -> API ou pesos abertos
+  else if (prioridade === 'para') {
+    if (temGeracao) {
+      arq = 'api'; tipoTec = 'paga';
+      motivo = 'Para geração de conteúdo, um modelo por API é mais simples de operar.';
+    } else {
+      arq = 'ow'; tipoTec = 'aberta';
+      motivo = 'Para competências da era da IA, pesos abertos permitem maior controle.';
+    }
+  }
+  // fallback: arquitetura presumida
+  if (!arq) {
+    arq = derivarArquitetura(c, true);
+    tipoTec = c.tipoTec || 'nao_sei';
+    motivo = 'A arquitetura presumida com base nas respostas de adoção.';
+  }
+  return { arq, tipoTec, motivo };
+}
+
 // v11: teste derivado da 2.0 (múltipla). testes ⊂ {'poc','piloto'} ou ['recomendar'] (exclusiva).
 // Os dois marcados → 'ambos'; um só → 'poc' | 'piloto'; ['recomendar'] → 'recomendar'; vazio → ''.
 // Compatibilidade: com testes vazio e c.teste antigo preenchido, usa c.teste.
@@ -3652,6 +3871,10 @@ const MOTIVOS_TESTE = {
 };
 function recomendarTeste(ce) {
   ce = ce || {};
+  // v15: política pública e governança não exigem prova de conceito nem piloto (RF-017, RB-020)
+  if (ce.tipoIniciativa === 'politica' || ce.tipoIniciativa === 'governanca') {
+    return { modo: 'nenhum', ids: [], motivos: [], poc: false, piloto: false };
+  }
   const poc = [];
   if (!ce.tipoTec || ce.tipoTec === 'nao_sei') poc.push('tecnologia');
   if (ce.adaptacao === 'sob_medida') poc.push('sob_medida');
@@ -4135,44 +4358,62 @@ const PRIORIDADES = [
   {
     id: 'governar', nome: 'Governar a IA na educação',
     desc: 'Criar as regras, as equipes e os processos para que o uso de IA na rede seja seguro, legal, equitativo e sustentável.',
+    // v15: nível hierárquico = governança (RB-004)
+    nivelHierarquico: 'governanca',
     ex: ['Uma rede sem orientações para o uso de IA por estudantes', 'Escolas que usam ferramentas gratuitas sem análise de privacidade', 'Contratos de tecnologia assinados sem estimar o custo de vários anos', 'Nenhuma pessoa responsável pelo tema'],
     problemas: [
       { id: 'G1', t: 'Não há regras claras para o uso de IA por professores e estudantes.', obj: 'Publicar orientações de uso de IA para __ escolas até __.',
-        sub: [['G1a', 'Uso em sala de aula'], ['G1b', 'Tarefas e avaliações (integridade acadêmica)'], ['G1c', 'Uso por faixa etária'], ['G1d', 'Comunicação com as famílias']], tarefas: ['duvidas'], impactos: ['uso_responsavel', 'gestao'] },
+        sub: [['G1a', 'Uso em sala de aula'], ['G1b', 'Tarefas e avaliações (integridade acadêmica)'], ['G1c', 'Uso por faixa etária'], ['G1d', 'Comunicação com as famílias']], tarefas: ['duvidas'], impactos: ['uso_responsavel', 'gestao'],
+        // v15: categoria conceitual = política pública (RB-004)
+        categoriaConceitual: 'politica_publica' },
       { id: 'G2', t: 'Não há uma equipe ou pessoa responsável por decidir e acompanhar o uso de IA na rede.', obj: 'Instituir uma equipe com __ áreas representadas, que se reúna a cada __ meses.',
-        sub: [['G2a', 'Composição da equipe'], ['G2b', 'Atribuições e decisões'], ['G2c', 'Tempo dedicado e orçamento']], tarefas: [], impactos: ['uso_responsavel'] },
+        sub: [['G2a', 'Composição da equipe'], ['G2b', 'Atribuições e decisões'], ['G2c', 'Tempo dedicado e orçamento']], tarefas: [], impactos: ['uso_responsavel'],
+        categoriaConceitual: 'governanca' },
       { id: 'G3', t: 'As escolas usam ferramentas de IA gratuitas sem análise de privacidade e de proteção de dados.', obj: 'Concluir a análise de dados de __% das ferramentas em uso nas escolas até __.',
-        sub: [['G3a', 'Inventário das ferramentas em uso'], ['G3b', 'Termos de uso e coleta de dados'], ['G3c', 'Dados de crianças e adolescentes'], ['G3d', 'Lista de ferramentas aprovadas']], tarefas: [], impactos: ['uso_responsavel'] },
+        sub: [['G3a', 'Inventário das ferramentas em uso'], ['G3b', 'Termos de uso e coleta de dados'], ['G3c', 'Dados de crianças e adolescentes'], ['G3d', 'Lista de ferramentas aprovadas']], tarefas: [], impactos: ['uso_responsavel'],
+        categoriaConceitual: 'governanca' },
       { id: 'G4', t: 'A rede contrata tecnologia sem estimar o custo de todo o ciclo de vida.', obj: 'Exigir a estimativa de custo de __ anos em todas as contratações de IA a partir de __.',
-        sub: [['G4a', 'Custo do teste e da expansão'], ['G4b', 'Custos escondidos (formação, suporte, infraestrutura)'], ['G4c', 'Custo de saída do contrato']], tarefas: [], impactos: ['gestao'] },
+        sub: [['G4a', 'Custo do teste e da expansão'], ['G4b', 'Custos escondidos (formação, suporte, infraestrutura)'], ['G4c', 'Custo de saída do contrato']], tarefas: [], impactos: ['gestao'],
+        categoriaConceitual: 'politica_publica' },
       { id: 'G5', t: 'Não há regras para os dados educacionais usados ou gerados por ferramentas de IA.', obj: 'Aprovar uma política de dados que cubra acesso, guarda, compartilhamento e exclusão até __.',
-        sub: [['G5a', 'Quem acessa'], ['G5b', 'Por quanto tempo se guarda'], ['G5c', 'Compartilhamento com fornecedores'], ['G5d', 'Exclusão e devolução ao fim do contrato']], tarefas: [], impactos: ['uso_responsavel'] },
+        sub: [['G5a', 'Quem acessa'], ['G5b', 'Por quanto tempo se guarda'], ['G5c', 'Compartilhamento com fornecedores'], ['G5d', 'Exclusão e devolução ao fim do contrato']], tarefas: [], impactos: ['uso_responsavel'],
+        categoriaConceitual: 'politica_publica' },
       { id: 'G6', t: 'A rede não sabe quais normas se aplicam ao uso de IA nas escolas.', obj: 'Ter, até __, um levantamento das normas aplicáveis revisado pela área jurídica.',
-        sub: [['G6a', 'Proteção de dados'], ['G6b', 'Direitos de crianças e adolescentes'], ['G6c', 'Compras públicas'], ['G6d', 'Normas específicas sobre IA']], tarefas: [], impactos: ['uso_responsavel'] },
+        sub: [['G6a', 'Proteção de dados'], ['G6b', 'Direitos de crianças e adolescentes'], ['G6c', 'Compras públicas'], ['G6d', 'Normas específicas sobre IA']], tarefas: [], impactos: ['uso_responsavel'],
+        categoriaConceitual: 'politica_publica' },
       { id: 'G7', t: 'Não há como saber se o uso de IA está dando resultado ou causando problemas.', obj: 'Definir __ indicadores de uso, resultado e incidentes, com relatório a cada __ meses.',
-        sub: [['G7a', 'Indicadores de uso'], ['G7b', 'Resultados de aprendizagem ou de gestão'], ['G7c', 'Incidentes e reclamações'], ['G7d', 'Avaliação independente']], tarefas: ['rotinas'], impactos: ['gestao'] },
+        sub: [['G7a', 'Indicadores de uso'], ['G7b', 'Resultados de aprendizagem ou de gestão'], ['G7c', 'Incidentes e reclamações'], ['G7d', 'Avaliação independente']], tarefas: ['rotinas'], impactos: ['gestao'],
+        categoriaConceitual: 'governanca' },
       { id: 'G8', t: 'O acesso à IA é desigual entre escolas e pode aumentar as diferenças.', obj: 'Garantir as condições mínimas de uso em __% das escolas, incluindo as rurais, até __.',
-        sub: [['G8a', 'Conexão e dispositivos'], ['G8b', 'Escolas rurais e remotas'], ['G8c', 'Estudantes com deficiência'], ['G8d', 'Línguas faladas pelos estudantes']], tarefas: ['acessibilidade'], impactos: ['desigualdade', 'inclusao'] },
+        sub: [['G8a', 'Conexão e dispositivos'], ['G8b', 'Escolas rurais e remotas'], ['G8c', 'Estudantes com deficiência'], ['G8d', 'Línguas faladas pelos estudantes']], tarefas: ['acessibilidade'], impactos: ['desigualdade', 'inclusao'],
+        categoriaConceitual: 'politica_publica' },
       { id: 'G9', t: 'Professores e gestores não sabem a quem recorrer com dúvidas sobre o uso permitido de IA.', obj: 'Responder __% das dúvidas em até __ dias úteis.',
-        sub: [['G9a', 'Canal de atendimento'], ['G9b', 'Perguntas frequentes'], ['G9c', 'Casos que vão para a equipe responsável']], tarefas: ['duvidas'], impactos: ['gestao', 'uso_responsavel'] },
+        sub: [['G9a', 'Canal de atendimento'], ['G9b', 'Perguntas frequentes'], ['G9c', 'Casos que vão para a equipe responsável']], tarefas: ['duvidas'], impactos: ['gestao', 'uso_responsavel'],
+        categoriaConceitual: 'governanca' },
       { id: 'G10', t: 'A rede depende de um único fornecedor e não tem plano para encerrar ou trocar o contrato.', obj: 'Incluir cláusulas de saída e de devolução de dados em __% dos contratos de tecnologia até __.',
-        sub: [['G10a', 'Devolução e formato dos dados'], ['G10b', 'Prazo de transição'], ['G10c', 'Materiais e conteúdos produzidos'], ['G10d', 'Alternativas no mercado']], tarefas: [], impactos: ['gestao'] },
+        sub: [['G10a', 'Devolução e formato dos dados'], ['G10b', 'Prazo de transição'], ['G10c', 'Materiais e conteúdos produzidos'], ['G10d', 'Alternativas no mercado']], tarefas: [], impactos: ['gestao'],
+        categoriaConceitual: 'politica_publica' },
     ],
   },
   {
     id: 'sobre', nome: 'Educar sobre a IA',
     desc: 'Ensinar o que é a IA, como funciona, para que serve e quais são os seus limites e riscos: o letramento em IA de estudantes, professores, gestores e famílias.',
-    ex: ['Estudantes que aceitam qualquer resposta de um chatbot', 'Professores que não sabem explicar por que uma IA erra', 'Nenhuma atividade sobre IA no currículo', 'Famílias preocupadas e sem informação'],
+    nivelHierarquico: 'objetivo_educacional',
     formacao: true,
+    ex: ['Estudantes que aceitam qualquer resposta de um chatbot', 'Professores que não sabem explicar por que uma IA erra', 'Nenhuma atividade sobre IA no currículo', 'Famílias preocupadas e sem informação'],
     problemas: [
       { id: 'A1', t: 'Estudantes usam ferramentas de IA sem entender como funcionam nem por que erram.', obj: 'Até __, __% dos estudantes de __ concluem atividades de letramento em IA.',
-        sub: [['A1a', 'Como a IA aprende com dados'], ['A1b', 'Erros e respostas inventadas'], ['A1c', 'Vieses'], ['A1d', 'Uso crítico das respostas']], tarefas: ['materiais', 'pratica_ia'], impactos: ['letramento_ia', 'aprendizagem'] },
+        sub: [['A1a', 'Como a IA aprende com dados'], ['A1b', 'Erros e respostas inventadas'], ['A1c', 'Vieses'], ['A1d', 'Uso crítico das respostas']], tarefas: ['materiais', 'pratica_ia'], impactos: ['letramento_ia', 'aprendizagem'],
+        categoriaConceitual: 'objetivo_educacional' },
       { id: 'A2', t: 'Professores não se sentem preparados para ensinar sobre IA.', obj: 'Formar __ professores em letramento em IA até __.',
-        sub: [['A2a', 'Conceitos básicos'], ['A2b', 'Uso em sala'], ['A2c', 'Ética e riscos'], ['A2d', 'Avaliação das atividades']], tarefas: ['materiais'], impactos: ['letramento_ia'], formacao: true },
+        sub: [['A2a', 'Conceitos básicos'], ['A2b', 'Uso em sala'], ['A2c', 'Ética e riscos'], ['A2d', 'Avaliação das atividades']], tarefas: ['materiais'], impactos: ['letramento_ia'], formacao: true,
+        categoriaConceitual: 'formacao' },
       { id: 'A3', t: 'O currículo não tem conteúdos nem atividades sobre IA.', obj: 'Incluir atividades sobre IA em __ componentes ou séries até __.',
-        sub: [['A3a', 'Anos iniciais'], ['A3b', 'Anos finais'], ['A3c', 'Ensino médio'], ['A3d', 'Componentes que recebem o tema']], tarefas: ['planos_aula', 'materiais'], impactos: ['letramento_ia'] },
+        sub: [['A3a', 'Anos iniciais'], ['A3b', 'Anos finais'], ['A3c', 'Ensino médio'], ['A3d', 'Componentes que recebem o tema']], tarefas: ['planos_aula', 'materiais'], impactos: ['letramento_ia'],
+        categoriaConceitual: 'objetivo_educacional' },
       { id: 'A4', t: 'Faltam materiais sobre IA adequados à idade e à língua dos estudantes.', obj: 'Disponibilizar __ sequências didáticas sobre IA por etapa até __.',
-        sub: [['A4a', 'Por faixa etária'], ['A4b', 'Em línguas locais'], ['A4c', 'Atividades sem computador'], ['A4d', 'Atividades com computador']], tarefas: ['materiais', 'acessibilidade'], impactos: ['letramento_ia', 'inclusao'] },
+        sub: [['A4a', 'Por faixa etária'], ['A4b', 'Em línguas locais'], ['A4c', 'Atividades sem computador'], ['A4d', 'Atividades com computador']], tarefas: ['materiais', 'acessibilidade'], impactos: ['letramento_ia', 'inclusao'],
+        categoriaConceitual: 'objetivo_educacional' },
       { id: 'A5', t: 'Estudantes não reconhecem conteúdo falso ou manipulado gerado por IA.', obj: 'Até __, __% dos estudantes identificam conteúdo gerado ou manipulado por IA numa avaliação diagnóstica.',
         sub: [['A5a', 'Imagens e vídeos falsos'], ['A5b', 'Textos gerados'], ['A5c', 'Checagem de fontes']], tarefas: ['materiais', 'pratica_ia'], impactos: ['letramento_ia'] },
       { id: 'A6', t: 'Estudantes não conhecem os riscos da IA para a privacidade e os próprios dados.', obj: 'Trabalhar privacidade e dados pessoais com __% dos estudantes de __ até __.',
@@ -4190,51 +4431,71 @@ const PRIORIDADES = [
   {
     id: 'com', nome: 'Educar com a IA',
     desc: 'Usar a IA para apoiar o ensino, a aprendizagem e a gestão: planejar aulas, dar retorno, oferecer prática, identificar quem precisa de apoio e atender as escolas.',
+    nivelHierarquico: 'objetivo_educacional',
     ex: ['Estudantes do 5º ano abaixo do nível esperado em leitura', 'Baixa proficiência em matemática ao fim do ensino fundamental', 'Professores que gastam muitas horas no planejamento', 'Escolas que esperam dias por respostas da secretaria'],
     problemas: [
       { id: 'C1', t: 'Estudantes abaixo do nível esperado em leitura e escrita.', obj: 'Reduzir de __% para __% os estudantes de __ abaixo do nível adequado em leitura em __ anos.',
-        sub: [['C1a', 'Alfabetização inicial'], ['C1b', 'Fluência leitora'], ['C1c', 'Produção de textos'], ['C1d', 'Outras línguas']], tarefas: ['tutoria', 'feedback_redacao', 'materiais'], impactos: ['aprendizagem', 'desigualdade'] },
+        sub: [['C1a', 'Alfabetização inicial'], ['C1b', 'Fluência leitora'], ['C1c', 'Produção de textos'], ['C1d', 'Outras línguas']], tarefas: ['tutoria', 'feedback_redacao', 'materiais'], impactos: ['aprendizagem', 'desigualdade'],
+        categoriaConceitual: 'objetivo_educacional' },
       { id: 'C2', t: 'Baixa proficiência em matemática.', obj: 'Reduzir de __% para __% os estudantes de __ abaixo do nível adequado em matemática em __ anos.',
-        sub: [['C2a', 'Numeracia nos anos iniciais'], ['C2b', 'Anos finais do ensino fundamental'], ['C2c', 'Ensino médio'], ['C2d', 'Resolução de problemas']], tarefas: ['tutoria', 'materiais'], impactos: ['aprendizagem'] },
+        sub: [['C2a', 'Numeracia nos anos iniciais'], ['C2b', 'Anos finais do ensino fundamental'], ['C2c', 'Ensino médio'], ['C2d', 'Resolução de problemas']], tarefas: ['tutoria', 'materiais'], impactos: ['aprendizagem'],
+        categoriaConceitual: 'objetivo_educacional' },
       { id: 'C3', t: 'Pouca prática investigativa nas aulas de ciências.', obj: 'Chegar a __ atividades investigativas de ciências por bimestre em __ escolas.',
-        sub: [['C3a', 'Anos iniciais'], ['C3b', 'Anos finais'], ['C3c', 'Ensino médio']], tarefas: ['planos_aula', 'materiais'], impactos: ['aprendizagem'] },
+        sub: [['C3a', 'Anos iniciais'], ['C3b', 'Anos finais'], ['C3c', 'Ensino médio']], tarefas: ['planos_aula', 'materiais'], impactos: ['aprendizagem'],
+        categoriaConceitual: 'objetivo_educacional' },
       { id: 'C4', t: 'Professores dedicam muitas horas ao planejamento e à adaptação de materiais.', obj: 'Reduzir em __ horas por semana o tempo de planejamento dos professores de __.',
-        sub: [['C4a', 'Planos de aula'], ['C4b', 'Adaptação para estudantes com dificuldades'], ['C4c', 'Atividades e avaliações']], tarefas: ['planos_aula', 'materiais'], impactos: ['tempo_docente'] },
+        sub: [['C4a', 'Planos de aula'], ['C4b', 'Adaptação para estudantes com dificuldades'], ['C4c', 'Atividades e avaliações']], tarefas: ['planos_aula', 'materiais'], impactos: ['tempo_docente'],
+        categoriaConceitual: 'estrategia_implementacao' },
       { id: 'C5', t: 'Estudantes demoram a receber retorno sobre redações e tarefas.', obj: 'Dar retorno a __ redações por estudante por bimestre, em até __ dias.',
-        sub: [['C5a', 'Redação'], ['C5b', 'Tarefas de casa'], ['C5c', 'Avaliações formativas']], tarefas: ['feedback_redacao', 'correcao'], impactos: ['feedback', 'tempo_docente'] },
+        sub: [['C5a', 'Redação'], ['C5b', 'Tarefas de casa'], ['C5c', 'Avaliações formativas']], tarefas: ['feedback_redacao', 'correcao'], impactos: ['feedback', 'tempo_docente'],
+        categoriaConceitual: 'estrategia_implementacao' },
       { id: 'C6', t: 'Estudantes com defasagem não recebem apoio individual a tempo.', obj: 'Oferecer __ horas de prática individual por semana a __ estudantes com defasagem.',
-        sub: [['C6a', 'Recomposição de aprendizagens'], ['C6b', 'Turmas multisseriadas'], ['C6c', 'Reforço no contraturno']], tarefas: ['tutoria', 'alerta_precoce'], impactos: ['aprendizagem', 'desigualdade'] },
+        sub: [['C6a', 'Recomposição de aprendizagens'], ['C6b', 'Turmas multisseriadas'], ['C6c', 'Reforço no contraturno']], tarefas: ['tutoria', 'alerta_precoce'], impactos: ['aprendizagem', 'desigualdade'],
+        categoriaConceitual: 'objetivo_educacional' },
       { id: 'C7', t: 'Alta taxa de abandono escolar.', obj: 'Reduzir de __% para __% o abandono no __ em __ anos.',
-        sub: [['C7a', 'Frequência irregular'], ['C7b', 'Estudantes que trabalham'], ['C7c', 'Transição entre etapas']], tarefas: ['alerta_precoce'], impactos: ['permanencia'] },
+        sub: [['C7a', 'Frequência irregular'], ['C7b', 'Estudantes que trabalham'], ['C7c', 'Transição entre etapas']], tarefas: ['alerta_precoce'], impactos: ['permanencia'],
+        categoriaConceitual: 'objetivo_educacional' },
       { id: 'C8', t: 'Estudantes com deficiência ou que falam outras línguas têm pouco acesso aos materiais.', obj: 'Disponibilizar, até __, __% dos materiais em formatos acessíveis ou em __ línguas.',
-        sub: [['C8a', 'Deficiência visual'], ['C8b', 'Deficiência auditiva'], ['C8c', 'Estudantes migrantes'], ['C8d', 'Línguas indígenas ou locais']], tarefas: ['acessibilidade', 'materiais'], impactos: ['inclusao'] },
+        sub: [['C8a', 'Deficiência visual'], ['C8b', 'Deficiência auditiva'], ['C8c', 'Estudantes migrantes'], ['C8d', 'Línguas indígenas ou locais']], tarefas: ['acessibilidade', 'materiais'], impactos: ['inclusao'],
+        categoriaConceitual: 'publico_beneficiario' },
       { id: 'C9', t: 'Escolas e famílias esperam dias por respostas da secretaria.', obj: 'Responder __% das dúvidas de escolas e famílias em até __ dias.',
-        sub: [['C9a', 'Normas e procedimentos'], ['C9b', 'Matrícula e transferência'], ['C9c', 'Comunicados às famílias']], tarefas: ['duvidas', 'rotinas'], impactos: ['gestao'] },
+        sub: [['C9a', 'Normas e procedimentos'], ['C9b', 'Matrícula e transferência'], ['C9c', 'Comunicados às famílias']], tarefas: ['duvidas', 'rotinas'], impactos: ['gestao'],
+        categoriaConceitual: 'estrategia_implementacao' },
       { id: 'C10', t: 'Rotinas administrativas tomam o tempo de gestores e secretarias escolares.', obj: 'Reduzir em __% o tempo gasto em __ até __.',
-        sub: [['C10a', 'Documentos e relatórios'], ['C10b', 'Frequência e registros'], ['C10c', 'Organização de horários']], tarefas: ['rotinas'], impactos: ['gestao'] },
+        sub: [['C10a', 'Documentos e relatórios'], ['C10b', 'Frequência e registros'], ['C10c', 'Organização de horários']], tarefas: ['rotinas'], impactos: ['gestao'],
+        categoriaConceitual: 'estrategia_implementacao' },
     ],
   },
   {
     id: 'para', nome: 'Educar para a era da IA',
     desc: 'Preparar os estudantes para viver, estudar e trabalhar num mundo transformado pela IA: pensamento crítico, criatividade, resolução de problemas, cidadania digital e escolhas de estudo e de carreira.',
+    nivelHierarquico: 'objetivo_educacional',
     ex: ['Ensino médio que não discute as mudanças no trabalho', 'Estudantes com pouca prática de projetos', 'Avaliações que medem só memorização', 'Cursos técnicos desatualizados'],
     problemas: [
       { id: 'F1', t: 'O currículo não prepara os estudantes para as mudanças no trabalho trazidas pela IA.', obj: 'Revisar __ componentes ou itinerários do ensino médio até __.',
-        sub: [['F1a', 'Itinerários formativos'], ['F1b', 'Educação profissional e técnica'], ['F1c', 'Orientação profissional']], tarefas: ['planos_aula', 'materiais'], impactos: ['competencias'] },
+        sub: [['F1a', 'Itinerários formativos'], ['F1b', 'Educação profissional e técnica'], ['F1c', 'Orientação profissional']], tarefas: ['planos_aula', 'materiais'], impactos: ['competencias'],
+        categoriaConceitual: 'objetivo_educacional' },
       { id: 'F2', t: 'Estudantes têm pouca prática de pensamento crítico e de argumentação.', obj: 'Até __, __% dos estudantes atingem o nível __ numa avaliação de argumentação.',
-        sub: [['F2a', 'Leitura crítica'], ['F2b', 'Argumentação oral e escrita'], ['F2c', 'Análise de fontes']], tarefas: ['feedback_redacao', 'tutoria'], impactos: ['competencias', 'aprendizagem'] },
+        sub: [['F2a', 'Leitura crítica'], ['F2b', 'Argumentação oral e escrita'], ['F2c', 'Análise de fontes']], tarefas: ['feedback_redacao', 'tutoria'], impactos: ['competencias', 'aprendizagem'],
+        categoriaConceitual: 'objetivo_educacional' },
       { id: 'F3', t: 'Há poucas atividades de criatividade, projetos e resolução de problemas reais.', obj: 'Realizar __ projetos por turma por ano em __ escolas.',
-        sub: [['F3a', 'Aprendizagem por projetos'], ['F3b', 'Ciência e tecnologia'], ['F3c', 'Problemas da comunidade']], tarefas: ['planos_aula', 'materiais'], impactos: ['competencias'] },
+        sub: [['F3a', 'Aprendizagem por projetos'], ['F3b', 'Ciência e tecnologia'], ['F3c', 'Problemas da comunidade']], tarefas: ['planos_aula', 'materiais'], impactos: ['competencias'],
+        categoriaConceitual: 'objetivo_educacional' },
       { id: 'F4', t: 'Estudantes têm pouco contato com pensamento computacional e programação.', obj: 'Oferecer __ horas por ano de pensamento computacional a __% dos estudantes de __.',
-        sub: [['F4a', 'Atividades sem computador'], ['F4b', 'Programação'], ['F4c', 'Robótica'], ['F4d', 'Dados e estatística']], tarefas: ['tutoria', 'materiais'], impactos: ['competencias'] },
+        sub: [['F4a', 'Atividades sem computador'], ['F4b', 'Programação'], ['F4c', 'Robótica'], ['F4d', 'Dados e estatística']], tarefas: ['tutoria', 'materiais'], impactos: ['competencias'],
+        categoriaConceitual: 'objetivo_educacional' },
       { id: 'F5', t: 'A educação profissional e técnica não acompanha o uso de IA no trabalho.', obj: 'Atualizar __ cursos técnicos com conteúdos de IA aplicada até __.',
-        sub: [['F5a', 'Cursos técnicos'], ['F5b', 'Estágios e parcerias'], ['F5c', 'Certificações']], tarefas: ['materiais', 'planos_aula'], impactos: ['competencias'] },
+        sub: [['F5a', 'Cursos técnicos'], ['F5b', 'Estágios e parcerias'], ['F5c', 'Certificações']], tarefas: ['materiais', 'planos_aula'], impactos: ['competencias'],
+        categoriaConceitual: 'estrategia_implementacao' },
       { id: 'F6', t: 'As avaliações medem sobretudo memorização e são fáceis de responder com IA.', obj: 'Redesenhar, até __, __% das avaliações de __ para valorizar processo, argumentação e produção própria.',
-        sub: [['F6a', 'Avaliações em sala'], ['F6b', 'Trabalhos e projetos'], ['F6c', 'Avaliações externas da rede']], tarefas: ['correcao', 'materiais'], impactos: ['competencias', 'feedback'] },
+        sub: [['F6a', 'Avaliações em sala'], ['F6b', 'Trabalhos e projetos'], ['F6c', 'Avaliações externas da rede']], tarefas: ['correcao', 'materiais'], impactos: ['competencias', 'feedback'],
+        categoriaConceitual: 'estrategia_implementacao' },
       { id: 'F7', t: 'Estudantes não discutem os efeitos da IA na sociedade, na democracia e no ambiente.', obj: 'Incluir debates sobre IA e sociedade em __ componentes até __.',
-        sub: [['F7a', 'Informação e democracia'], ['F7b', 'Energia e ambiente'], ['F7c', 'Direitos e trabalho']], tarefas: ['materiais'], impactos: ['competencias', 'letramento_ia'] },
+        sub: [['F7a', 'Informação e democracia'], ['F7b', 'Energia e ambiente'], ['F7c', 'Direitos e trabalho']], tarefas: ['materiais'], impactos: ['competencias', 'letramento_ia'],
+        categoriaConceitual: 'objetivo_educacional' },
       { id: 'F8', t: 'Estudantes não têm orientação para escolher estudos e carreiras num mercado em mudança.', obj: 'Oferecer, até __, orientação de estudos e carreira a __% dos estudantes do __.',
-        sub: [['F8a', 'Projeto de vida'], ['F8b', 'Informações sobre profissões'], ['F8c', 'Acompanhamento individual']], tarefas: ['tutoria', 'duvidas'], impactos: ['competencias', 'permanencia'] },
+        sub: [['F8a', 'Projeto de vida'], ['F8b', 'Informações sobre profissões'], ['F8c', 'Acompanhamento individual']], tarefas: ['tutoria', 'duvidas'], impactos: ['competencias', 'permanencia'],
+        categoriaConceitual: 'objetivo_educacional' },
       { id: 'F9', t: 'Professores não sabem como mudar as práticas de ensino para a era da IA.', obj: 'Formar __ professores em metodologias para a era da IA até __.',
         sub: [['F9a', 'Ensino por projetos'], ['F9b', 'Avaliação'], ['F9c', 'Uso pedagógico da IA']], tarefas: ['planos_aula'], impactos: ['competencias'], formacao: true },
       { id: 'F10', t: 'O acesso a oportunidades de tecnologia e IA é desigual entre escolas e grupos.', obj: 'Levar atividades de tecnologia e IA a __% das escolas rurais e periféricas até __.',
@@ -4312,6 +4573,11 @@ const CASO_VAZIO = {
   implantacao: { escolas: '', pessoas: '' }, arquitetura: '',
   // 4 expansão
   elegiveis: '', expansao: 'ano1', horizonte: 3,
+  // v15: iniciativas com dimensionamento próprio (RF-005, RB-006)
+  // Cada iniciativa: { prioridadeId, objetivo, beneficiarios, nivelModalidade, estrategia,
+  //   dim: { professores, administrativos, beneficiarios, horasFormacao },
+  //   custos: { impl, recorrente, total } }
+  iniciativas: [],
   ajustes: {}, degrau: 2,
 };
 // Uma linha da lista de ferramentas (2.3.3). preco: US$ por usuário por mês (opcional).
@@ -4527,6 +4793,17 @@ function migrarCasoV10(c) {
   out.piloto = Object.assign({ escolas: '', participantes: '', meses: '' }, out.piloto || {});
   out.implantacao = Object.assign({ escolas: '', pessoas: '' }, out.implantacao || {});
   if (!['saas', 'api', 'ow', 'nao_sei'].includes(out.arquitetura)) out.arquitetura = '';
+  // v15: validação e clamp para robustez de importação (RF-019, RB-015)
+  // clamp de horizonte (1-10)
+  if (out.horizonte != null) { const h = Math.round(+out.horizonte || 3); out.horizonte = Math.max(1, Math.min(10, isNaN(h) ? 3 : h)); }
+  // normalizar arrays que podem ter vido como string ou número inválido
+  ['prioridades', 'problemas', 'subs', 'testes', 'tarefas', 'impactos', 'usuarios', 'afetados', 'consequencias', 'formados', 'formacaoTipo', 'linhaBaseProblemas', 'ferramentas'].forEach(k => {
+    if (!Array.isArray(out[k])) out[k] = [];
+  });
+  // normalizar objetos aninhados
+  if (!out.poc || typeof out.poc !== 'object') out.poc = { participantes: '', meses: '' };
+  if (!out.piloto || typeof out.piloto !== 'object') out.piloto = { escolas: '', participantes: '', meses: '' };
+  if (!out.implantacao || typeof out.implantacao !== 'object') out.implantacao = { escolas: '', pessoas: '' };
   return out;
 }
 
@@ -5391,13 +5668,21 @@ const FIG_INFO = {
 };
 
 const NIVEIS_ADM = [['pais', 'País'], ['estado', 'Estado ou província'], ['municipio', 'Município ou cidade'], ['distrito', 'Distrito ou região escolar'], ['rede', 'Rede ou grupo de escolas'], ['outro', 'Outro']];
+// Lista de países para o seletor opcional do contexto (RF-002, RB-001). Países ilustrativos; completar com dados oficiais conforme necessário.
+const PAISES = [
+  ['BRA', 'Brasil'], ['MEX', 'México'], ['COL', 'Colômbia'], ['ARG', 'Argentina'], ['CHL', 'Chile'],
+  ['PER', 'Peru'], ['URY', 'Uruguai'], ['CRI', 'Costa Rica'], ['DOM', 'República Dominicana'], ['ECU', 'Equador'],
+  ['USA', 'Estados Unidos'], ['CAN', 'Canadá'], ['ESP', 'Espanha'], ['PRT', 'Portugal'], ['FRA', 'França'],
+  ['KEN', 'Quênia'], ['NGA', 'Nigéria'], ['ZAF', 'África do Sul'], ['EGY', 'Egito'], ['MAR', 'Marrocos'],
+  ['IND', 'Índia'], ['IDN', 'Indonésia'], ['PHL', 'Filipinas'], ['VNM', 'Vietnã'], ['THA', 'Tailândia'],
+  ['outro', 'Outro país ou não listado'],
+];
 const ETAPAS_ENS = [
-  ['infantil', 'Educação infantil', 'Creche e pré-escola', ['Creche', 'Pré-escola']],
-  ['fund1', 'Ensino fundamental: anos iniciais', 'Do 1º ao 5º ano', ['1º ano', '2º ano', '3º ano', '4º ano', '5º ano']],
-  ['fund2', 'Ensino fundamental: anos finais', 'Do 6º ao 9º ano', ['6º ano', '7º ano', '8º ano', '9º ano']],
-  ['medio', 'Ensino médio', 'Da 1ª à 3ª série', ['1ª série', '2ª série', '3ª série']],
+  ['infantil', 'Educação infantil', 'Creche e pré-escola', []],
+  ['basico', 'Ensino básico (anos iniciais e finais)', '1º ao 9º ano', []],
+  ['medio', 'Ensino médio', '1ª à 3ª série', []],
   ['superior', 'Educação superior', 'Graduação e pós-graduação', []],
-  ['eja', 'Educação de jovens e adultos', 'Escolarização de quem não concluiu na idade prevista', []],
+  ['eja', 'Educação de jovens e adultos', 'Quem não concluiu na idade prevista', []],
   ['profissional', 'Educação profissional e técnica', 'Cursos técnicos e de qualificação', []],
 ];
 // v13: os três domínios da v12 (DOMINIOS) deram lugar às quatro prioridades de src/prioridades.js (PRIORIDADES).
@@ -5435,9 +5720,10 @@ const QUESTOES_G = [
 // ---------------------------------------------------------------------
 const CAMPOS = [
   // 1.1 Onde e para quem
-  { passo: '1a', n: '1.1.1', id: 'nivel', onde: 'ctx', tipo: 'radio', opc: NIVEIS_ADM, cols: true, t: 'Em que nível administrativo a decisão será tomada?', h: 'O nível que decide e paga.', ex: 'Exemplo: secretaria estadual de educação.', outro: { v: 'outro', id: 'nivelOutro', t: 'Qual nível?' } },
-  { passo: '1a', n: '1.1.2', id: 'local', onde: 'ctx', tipo: 'texto', t: 'Qual é o nome do lugar ou da rede?', ph: 'Ex.: Rede estadual do Rio Grande do Sul, distrito escolar 3' },
-  { passo: '1a', n: '1.1.3', id: 'situacao', onde: 'caso', tipo: 'radio', opc: 'situacao', cols: true, padrao: true, t: 'Em que ponto você está?', h: 'Isso ajusta o plano de contratação.' },
+  { passo: '1a', n: '1.1.1', id: 'local', onde: 'ctx', tipo: 'texto', t: 'Qual é o nome do lugar ou da rede?', ph: 'Ex.: Rede estadual do Rio Grande do Sul, distrito escolar 3' },
+  { passo: '1a', n: '1.1.2', id: 'pais', onde: 'ctx', tipo: 'radio', opc: 'PAISES', cols: true, opcional: true, t: 'Em que país fica a rede?', h: 'Opcional. A escolha ajusta a moeda de exibição.', outro: { v: 'outro', id: 'paisOutro', t: 'Qual país?' } },
+  { passo: '1a', n: '1.1.3', id: 'tipoIniciativa', onde: 'ctx', tipo: 'radio', opc: 'tipoIniciativa', cols: true, t: 'Que tipo de iniciativa é esta?', h: 'Isso define quais perguntas serão mostradas nas próximas etapas.' },
+  { passo: '1a', n: '1.1.4', id: 'situacao', onde: 'caso', tipo: 'radio', opc: 'situacao', cols: true, padrao: true, t: 'Em que ponto você está?', h: 'Isso ajusta o plano de contratação.' },
   { passo: '1a', n: '1.1.4', id: 'etapas', onde: 'ctx', tipo: 'etapas', t: 'Quais etapas de ensino serão atendidas?', h: 'Marque uma ou mais.' },
   { passo: '1a', n: '1.1.5', id: 'grade', onde: 'ctx', tipo: 'grade', t: 'Quantas escolas e quantos estudantes há em cada etapa, por ano ou série?', h: 'Informe os estudantes de cada ano ou série; o total da etapa é calculado.', ex: 'Exemplo: 6º ano 40.000; 7º ano 38.000.' },
   // 1.2 Prioridade e impacto (v13: prioridades e problemas no lugar de domínio e componentes)
@@ -5451,7 +5737,8 @@ const CAMPOS = [
     detalhe: { v: ['sim', 'parcial'], problemas: 'Para quais problemas?', medida: 'Qual medida?', exMedida: 'Ex.: avaliação estadual de leitura do 5º ano, 2025' }, t: 'Você tem uma medida atual do problema (linha de base)?', ex: 'Exemplo: resultados da avaliação de leitura do ano passado, por escola.' },
   { passo: '1b', n: '1.2.8', id: 'alternativa', onde: 'caso', tipo: 'radio', opc: 'simNao', t: 'Você já comparou ao menos uma alternativa sem IA?', ex: 'Exemplo: reforço escolar no contraturno, redesenho do processo ou um software convencional de exercícios.' },
   // 1.3 Governança (camada 1)
-  ...QUESTOES_G.map(q => ({ passo: '1c', n: q.n, id: q.id, onde: 'resp', tipo: 'seg', opc: RESP_G, t: q.t, h: q.h, ex: q.ex, detalhe: { qual: q.detalhe, falta: 'O que falta?' } })),
+// v15: governança aparece apenas para política pública ou governança (RF-004, RB-005)
+  ...QUESTOES_G.map(q => ({ passo: '1c', n: q.n, id: q.id, onde: 'resp', tipo: 'seg', opc: RESP_G, t: q.t, h: q.h, ex: q.ex, detalhe: { qual: q.detalhe, falta: 'O que falta?' }, se: c => c.tipoIniciativa === 'politica' || c.tipoIniciativa === 'governanca' })),
   // 2.0 Prova de conceito ou piloto (múltipla: as duas podem ser marcadas; "Não sei, recomende para mim" é exclusiva)
   { passo: '20', n: '2.0', id: 'testes', onde: 'caso', tipo: 'testes', opc: 'teste', cols: true, t: 'Você vai começar por uma prova de conceito, por um piloto ou pelos dois?', h: 'As duas servem para aprender antes de comprar. A diferença é com quem e em que condições se testa. Você pode marcar as duas: primeiro a prova de conceito, depois o piloto.' },
   // 2.1 Aplicações
@@ -5463,22 +5750,22 @@ const CAMPOS = [
   { passo: '2b', n: '2.2.3', id: 'consequencias', onde: 'caso', tipo: 'chips', opc: 'consequencias', sugere: true, padrao: true, t: 'O que as pessoas vão fazer com a resposta da ferramenta?', ex: 'Exemplo: o professor revisa o plano de aula e decide o que usar.' },
   { passo: '2b', n: '2.2.4', id: 'frequencia', onde: 'caso', tipo: 'radio', opc: 'frequencia', cols: true, sugere: true, padrao: true, t: 'Com que frequência cada pessoa vai usar?' },
   // 2.3 Adoção (ferramentas; as perguntas 2.3.4 a 2.3.7 valem para a ferramenta principal, a primeira da lista)
-  { passo: '2c', n: '2.3.1', id: 'nFerramentas', onde: 'caso', tipo: 'radio', opc: 'nFerramentas', cols: true, sugDe: 'testes', t: 'Quantas ferramentas você pretende usar?', h: 'Conte as ferramentas de IA que as pessoas vão usar neste caso.', ex: 'Exemplo: um assistente para planejar aulas e outra ferramenta para corrigir redações são duas ferramentas.' },
-  { passo: '2c', n: '2.3.2', id: 'conheceFerramentas', onde: 'caso', tipo: 'radio', opc: 'conheceFerramentas', cols: true, t: 'Você já sabe quais?' },
-  { passo: '2c', n: '2.3.3', id: 'ferramentas', onde: 'caso', tipo: 'ferramentas', se: c => c.conheceFerramentas === 'sim', t: 'Quais ferramentas?', h: 'A primeira da lista é a ferramenta principal: as perguntas 2.3.4 a 2.3.7 se referem a ela. O preço é opcional; sem ele, a estimativa usa um preço ilustrativo.' },
-  { passo: '2c', n: '2.3.4', id: 'tipoTec', onde: 'caso', tipo: 'radio', opc: 'tipoTec', cols: true, t: 'Que tipo de tecnologia é a ferramenta principal?', ex: 'Exemplo: uma plataforma do ministério (pública), um modelo aberto instalado numa nuvem contratada (aberta), a assinatura de um assistente para professores (paga).' },
-  { passo: '2c', n: '2.3.5', id: 'pagamento', onde: 'caso', tipo: 'radio', opc: 'pagamento', cols: true, sugDe: 'tipoTec', t: 'Como vai ser o pagamento da ferramenta principal?', h: 'Pense no período da prova de conceito ou do piloto.', ex: 'Exemplo: um valor por professor por mês (por usuário); um valor anual fixo para todas as escolas (institucional).' },
-  { passo: '2c', n: '2.3.6', id: 'licenca', onde: 'caso', tipo: 'radio', opc: 'licenca', cols: true, sugDe: 'tipoTec', t: 'Que tipo de licença tem a ferramenta principal?', ex: 'Exemplo: os termos aceitos ao criar uma conta gratuita são termos de uso padrão.' },
-  { passo: '2c', n: '2.3.7', id: 'adaptacao', onde: 'caso', tipo: 'radio', opc: 'adaptacao', cols: true, t: 'Quanto a ferramenta principal precisa ser adaptada ao seu contexto?', h: 'Cada nível inclui os anteriores. Mais adaptação aumenta o custo de implantação e de manutenção.', ex: 'Exemplo: traduzir para a língua local e alinhar as atividades ao currículo é adaptação de conteúdo e idioma.' },
+  { passo: '2c', n: '2.3.1', id: 'nFerramentas', onde: 'caso', tipo: 'radio', opc: 'nFerramentas', cols: true, sugDe: 'testes', t: 'Quantas ferramentas você pretende usar?', h: 'Conte as ferramentas de IA que as pessoas vão usar neste caso.', ex: 'Exemplo: um assistente para planejar aulas e outra ferramenta para corrigir redações são duas ferramentas.', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2c', n: '2.3.2', id: 'conheceFerramentas', onde: 'caso', tipo: 'radio', opc: 'conheceFerramentas', cols: true, t: 'Você já sabe quais?', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2c', n: '2.3.3', id: 'ferramentas', onde: 'caso', tipo: 'ferramentas', se: c => c.tipoIniciativa === 'tecnologia' && c.conheceFerramentas === 'sim', t: 'Quais ferramentas?', h: 'A primeira da lista é a ferramenta principal: as perguntas 2.3.4 a 2.3.7 se referem a ela. O preço é opcional; sem ele, a estimativa usa um preço ilustrativo.' },
+  { passo: '2c', n: '2.3.4', id: 'tipoTec', onde: 'caso', tipo: 'radio', opc: 'tipoTec', cols: true, t: 'Que tipo de tecnologia é a ferramenta principal?', ex: 'Exemplo: uma plataforma do ministério (pública), um modelo aberto instalado numa nuvem contratada (aberta), a assinatura de um assistente para professores (paga).', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2c', n: '2.3.5', id: 'pagamento', onde: 'caso', tipo: 'radio', opc: 'pagamento', cols: true, sugDe: 'tipoTec', t: 'Como vai ser o pagamento da ferramenta principal?', h: 'Pense no período da prova de conceito ou do piloto.', ex: 'Exemplo: um valor por professor por mês (por usuário); um valor anual fixo para todas as escolas (institucional).', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2c', n: '2.3.6', id: 'licenca', onde: 'caso', tipo: 'radio', opc: 'licenca', cols: true, sugDe: 'tipoTec', t: 'Que tipo de licença tem a ferramenta principal?', ex: 'Exemplo: os termos aceitos ao criar uma conta gratuita são termos de uso padrão.', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2c', n: '2.3.7', id: 'adaptacao', onde: 'caso', tipo: 'radio', opc: 'adaptacao', cols: true, t: 'Quanto a ferramenta principal precisa ser adaptada ao seu contexto?', h: 'Cada nível inclui os anteriores. Mais adaptação aumenta o custo de implantação e de manutenção.', ex: 'Exemplo: traduzir para a língua local e alinhar as atividades ao currículo é adaptação de conteúdo e idioma.', se: c => c.tipoIniciativa === 'tecnologia' },
   { passo: '2c', n: '2.3.8', id: 'piloto', onde: 'caso', tipo: 'setup', sugDe: 'testes',
     t: 'De que tamanho e por quanto tempo será o piloto?', h: 'Participantes são as pessoas que usam a ferramenta.', ex: 'Exemplo: 20 escolas, 600 professores, 4 meses.',
     tPoc: 'Quantas pessoas vão testar e por quanto tempo?', hPoc: 'Na prova de conceito testam a equipe e algumas pessoas convidadas, sem usuários reais.', exPoc: 'Exemplo: 15 pessoas, 2 meses.',
-    tAmbos: 'De que tamanho e por quanto tempo serão a prova de conceito e o piloto?', hAmbos: 'Primeiro a prova de conceito, com a equipe e algumas pessoas convidadas; depois o piloto, com usuários reais em poucas escolas.', exAmbos: 'Exemplo: prova de conceito com 15 pessoas por 2 meses; piloto com 20 escolas, 600 professores, 4 meses.' },
+    tAmbos: 'De que tamanho e por quanto tempo serão a prova de conceito e o piloto?', hAmbos: 'Primeiro a prova de conceito, com a equipe e algumas pessoas convidadas; depois o piloto, com usuários reais em poucas escolas.', exAmbos: 'Exemplo: prova de conceito com 15 pessoas por 2 meses; piloto com 20 escolas, 600 professores, 4 meses.', se: c => c.tipoIniciativa === 'tecnologia' },
   // 2.4 Infraestrutura e dispositivos (camada 3): internet e dispositivos separados
-  { passo: '2d', n: '2.4.1', id: 'internet', onde: 'caso', tipo: 'radio', opc: 'internet', cols: true, t: 'As escolas têm internet adequada para o uso previsto?', h: 'Adequada: aguenta todas as pessoas que vão usar a ferramenta ao mesmo tempo, por exemplo uma turma inteira conectada.', ex: 'Exemplo: em metade das escolas a conexão cai quando duas turmas usam a internet ao mesmo tempo (parcialmente).' },
-  { passo: '2d', n: '2.4.2', id: 'escolasInternet', onde: 'caso', tipo: 'num', se: c => c.internet === 'parcial', t: 'Quantas escolas da rede têm internet adequada?', h: 'A estimativa considera o custo de conexão para as demais escolas.', ex: 'Exemplo: 400 das 600 escolas.' },
-  { passo: '2d', n: '2.4.3', id: 'modeloDisp', onde: 'caso', tipo: 'radio', opc: 'modeloDisp', cols: true, t: 'Como os dispositivos serão usados?', ex: 'Exemplo: um carrinho com 30 tablets que circula entre as turmas da escola é uso rotativo.' },
-  { passo: '2d', n: '2.4.4', id: 'dispExistem', onde: 'caso', tipo: 'radio', opc: 'dispExistem', cols: true, sugDe: 'modeloDisp', t: 'Esses dispositivos já existem?', h: 'Considere se estão em condições de uso e se rodam a ferramenta.' },
+  { passo: '2d', n: '2.4.1', id: 'internet', onde: 'caso', tipo: 'radio', opc: 'internet', cols: true, t: 'As escolas têm internet adequada para o uso previsto?', h: 'Adequada: aguenta todas as pessoas que vão usar a ferramenta ao mesmo tempo, por exemplo uma turma inteira conectada.', ex: 'Exemplo: em metade das escolas a conexão cai quando duas turmas usam a internet ao mesmo tempo (parcialmente).', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2d', n: '2.4.2', id: 'escolasInternet', onde: 'caso', tipo: 'num', se: c => c.tipoIniciativa === 'tecnologia' && c.internet === 'parcial', t: 'Quantas escolas da rede têm internet adequada?', h: 'A estimativa considera o custo de conexão para as demais escolas.', ex: 'Exemplo: 400 das 600 escolas.' },
+  { passo: '2d', n: '2.4.3', id: 'modeloDisp', onde: 'caso', tipo: 'radio', opc: 'modeloDisp', cols: true, t: 'Como os dispositivos serão usados?', ex: 'Exemplo: um carrinho com 30 tablets que circula entre as turmas da escola é uso rotativo.', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2d', n: '2.4.4', id: 'dispExistem', onde: 'caso', tipo: 'radio', opc: 'dispExistem', cols: true, sugDe: 'modeloDisp', t: 'Esses dispositivos já existem?', h: 'Considere se estão em condições de uso e se rodam a ferramenta.', se: c => c.tipoIniciativa === 'tecnologia' },
   // 2.5 Formação e capacidade das equipes (camada 6)
   { passo: '2e', n: '2.5.1', id: 'formados', onde: 'caso', tipo: 'chips', opc: 'formados', t: 'Quem será formado?', h: 'Marque um ou mais.' },
   { passo: '2e', n: '2.5.2', id: 'formacaoTipo', onde: 'caso', tipo: 'chips', opc: 'formacaoTipo', t: 'Que tipo de formação?', h: 'Marque um ou mais.' },
@@ -5486,17 +5773,22 @@ const CAMPOS = [
   { passo: '2e', n: '2.5.4', id: 'formacaoHoras', onde: 'caso', tipo: 'horas', t: 'Quantas horas de formação por pessoa?', h: 'Some todas as atividades de formação previstas para cada pessoa.', ex: 'Exemplo: 4 horas de oficina e 4 horas de acompanhamento em sala = 8 horas.' },
   { passo: '2e', n: '2.5.5', id: 'formacaoPaga', onde: 'caso', tipo: 'radio', opc: 'formacaoPaga', cols: true, t: 'Quem paga a formação?' },
   // 2.6 Operação e suporte (camada 7)
-  { passo: '2f', n: '2.6.1', id: 'suporteQuem', onde: 'caso', tipo: 'radio', opc: 'suporteQuem', cols: true, t: 'Quem vai dar suporte aos usuários?', ex: 'Exemplo: o fornecedor atende pelo chat e a equipe de tecnologia da rede resolve o acesso e as contas (as duas).' },
-  { passo: '2f', n: '2.6.2', id: 'suporteNivel', onde: 'caso', tipo: 'radio', opc: 'suporteNivel', cols: true, t: 'Que nível de suporte?' },
-  { passo: '2f', n: '2.6.3', id: 'acompanhamento', onde: 'caso', tipo: 'radio', opc: 'acompanhamento', cols: true, t: 'Que nível de acompanhamento do uso?', h: 'Acompanhar o uso é verificar quem usa, como usa e com que resultado.' },
+  { passo: '2f', n: '2.6.1', id: 'suporteQuem', onde: 'caso', tipo: 'radio', opc: 'suporteQuem', cols: true, t: 'Quem vai dar suporte aos usuários?', ex: 'Exemplo: o fornecedor atende pelo chat e a equipe de tecnologia da rede resolve o acesso e as contas (as duas).', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2f', n: '2.6.2', id: 'suporteNivel', onde: 'caso', tipo: 'radio', opc: 'suporteNivel', cols: true, t: 'Que nível de suporte?', se: c => c.tipoIniciativa === 'tecnologia' },
+  { passo: '2f', n: '2.6.3', id: 'acompanhamento', onde: 'caso', tipo: 'radio', opc: 'acompanhamento', cols: true, t: 'Que nível de acompanhamento do uso?', h: 'Acompanhar o uso é verificar quem usa, como usa e com que resultado.', se: c => c.tipoIniciativa === 'tecnologia' },
   // 3.1 Primeira etapa da implantação
   { passo: '3a', n: '3.1.1', id: 'implantacao', onde: 'caso', tipo: 'implant', sugDe: 'elegiveis', t: 'Na primeira etapa, quantas escolas e quantas pessoas vão usar?', h: 'É o primeiro ano de uso depois do teste (Ano 1 da estimativa).', ex: 'Exemplo: 200 escolas e 4.000 professores no primeiro ano.' },
   // 3.2 Arquitetura e integração (antes ficava no 2.3)
-  { passo: '3b', n: '3.2.1', id: 'arquitetura', onde: 'caso', tipo: 'arq', t: 'Qual arquitetura a ferramenta principal vai usar?', h: 'Mude só se souber; senão, use a arquitetura presumida.' },
+  { passo: '3b', n: '3.2.1', id: 'arquitetura', onde: 'caso', tipo: 'arq', t: 'Qual arquitetura a ferramenta principal vai usar?', h: 'Mude só se souber; senão, use a arquitetura presumida.', se: c => c.tipoIniciativa === 'tecnologia' },
   // 4.1 Escala e horizonte
   { passo: '4a', n: '4.1.1', id: 'elegiveis', onde: 'caso', tipo: 'num', sugDe: 'usuarios', t: 'Se der certo, quantas pessoas usariam a ferramenta em toda a rede?', h: 'Base da estimativa de custo depois da implantação.', ex: 'Exemplo: 12.000 professores ou 150.000 estudantes.' },
   { passo: '4a', n: '4.1.2', id: 'expansao', onde: 'caso', tipo: 'radio', opc: 'expansao', cols: true, padrao: true, t: 'Em quanto tempo, depois da implantação, você pretende chegar a todas essas pessoas?' },
   { passo: '4a', n: '4.1.3', id: 'horizonte', onde: 'caso', tipo: 'radio', opc: 'horizonte', cols: true, padrao: true, t: 'Por quantos anos de uso você quer estimar o custo?', h: 'Além do Ano 0, que é o da prova de conceito ou do piloto.' },
+  // 4.2 Dimensionamento por iniciativa (RF-005, RB-006): cada prioridade tem seu próprio dimensionamento
+  { passo: '4b', n: '4.2.1', id: 'dimProfessores', onde: 'caso', tipo: 'num', t: 'Número de professores envolvidos', h: 'Professores que usarão ou serão formados na iniciativa.', se: c => c.tipoIniciativa !== 'politica' },
+  { passo: '4b', n: '4.2.2', id: 'dimAdministrativos', onde: 'caso', tipo: 'num', t: 'Número de profissionais administrativos', h: 'Servidores administrativos envolvidos na gestão da iniciativa.', se: c => c.tipoIniciativa !== 'politica' },
+  { passo: '4b', n: '4.2.3', id: 'dimBeneficiarios', onde: 'caso', tipo: 'num', t: 'Quantidade de beneficiários', h: 'Estudantes ou outras pessoas que se beneficiarão da iniciativa.', se: c => c.tipoIniciativa !== 'politica' },
+  { passo: '4b', n: '4.2.4', id: 'dimHorasFormacao', onde: 'caso', tipo: 'num', t: 'Horas de formação por pessoa', h: 'Total de horas de formação previstas para cada pessoa envolvida.', se: c => c.tipoIniciativa === 'formacao' || c.tipoIniciativa === 'tecnologia' },
 ];
 
 // 3.2.1: as três arquiteturas em linguagem simples
@@ -6771,7 +7063,7 @@ function recContexto() {
   const arr = id => { const x = v(id); return Array.isArray(x) ? x : x ? [x] : []; };
   const testes = v('testes') ? recTestes(c) : (v('teste') ? recTestes({ teste: c.teste }) : []);
   const teste = testes.length ? recTesteDe({ testes }) : '';
-  const modo = teste === 'poc' ? 'poc' : (teste === 'recomendar' || !teste) && rec.modo === 'poc' ? 'poc' : 'piloto';
+  const modo = rec.modo === 'nenhum' ? 'nenhum' : (teste === 'poc' ? 'poc' : (teste === 'recomendar' || !teste) && rec.modo === 'poc' ? 'poc' : 'piloto');
   const peso = k => ((typeof OPC !== 'undefined' ? OPC.consequencias : []).find(x => x[0] === k) || [0, 0, 0])[2];
   const cons = ce.consequencias || [];
   const consDecide = cons.filter(k => peso(k) >= 2);
@@ -6859,6 +7151,51 @@ function recomendacoesCaso() {
   return out.map((r, i) => [r, i])
     .sort((a, b) => (ORD_PRIO[a[0].prioridade] - ORD_PRIO[b[0].prioridade]) || (ordQuando(a[0].quando) - ordQuando(b[0].quando)) || (a[1] - b[1]))
     .map(z => z[0]);
+}
+
+// v15: pontuação auditável para recomendações (RF-018, RB-014)
+// Score = peso da prioridade (alta=3, media=2) + risco (alto=2, medio=1) + impacto na decisão (alto=2, medio=1)
+// Score máximo = 7. Usado para desempate e diversificação.
+function scoreRec(r, k) {
+  let s = 0;
+  if (r.prioridade === 'alta') s += 3; else if (r.prioridade === 'media') s += 2;
+  if (k.alto) s += 2; else if (k.pesoMax >= 1) s += 1;
+  if (r.tipo === 'custo' && k.eleg > 0) s += 2; else if (r.tipo === 'custo') s += 1;
+  return s;
+}
+
+// v15: diversificação das 5 primeiras recomendações (não mais de 1 por tipo e pacote)
+// garante que as 5 primeiras cubram áreas diferentes (custo, política, governança, tecnologia, dados)
+function diversificar(recs, k, n = 5) {
+  const usadosTipo = new Set(); const usadosPacote = new Set(); const out = [];
+  const restante = [];
+  recs.forEach((r, i) => {
+    const pacote = (r.id.split('-')[0] || r.id);
+    const chaveTipo = r.tipo;
+    if (out.length < n && !usadosTipo.has(chaveTipo) && !usadosPacote.has(pacote)) {
+      out.push(r); usadosTipo.add(chaveTipo); usadosPacote.add(pacote);
+    } else {
+      restante.push(r);
+    }
+  });
+  // preenche o restante com as recomendações sobrando, respeitando o score
+  restante.forEach(r => { if (out.length < n) out.push(r); });
+  return out;
+}
+
+// Lista de recomendações do caso, com pontuação e diversificação das 5 primeiras
+function recomendacoesCasoDiversificadas(k) {
+  if (!k) {
+    try { k = recContexto(); } catch (e) { k = { alto: false, pesoMax: 0, eleg: 0 }; }
+  }
+  const base = recomendacoesCaso();
+  // adiciona score a cada recomendação
+  const comScore = base.map(r => ({ r, score: scoreRec(r, k) }));
+  // ordena por score desc, depois por prioridade e momento
+  comScore.sort((a, b) => b.score - a.score || (ORD_PRIO[a.r.prioridade] - ORD_PRIO[b.r.prioridade]) || 0);
+  const ordenados = comScore.map(z => z.r);
+  // diversifica as 5 primeiras
+  return diversificar(ordenados, k, 5);
 }
 
 // ----------------------------------------------------------- textos traduzidos
@@ -6990,7 +7327,7 @@ const FIG_ABERTA = {};    // (v11) figura aberta por nota ⓘ; desde a v12 a fig
 const SUB_OBJ = { piloto: ['escolas', 'participantes', 'meses'], poc: ['participantes', 'meses'], implantacao: ['escolas', 'pessoas'] };
 function objVazio(k) { const o = {}; SUB_OBJ[k].forEach(x => { o[x] = ''; }); return o; }
 function estadoFluxo() {
-  S.ctx = Object.assign({ nivel: '', nivelOutro: '', local: '', etapas: {}, prioridades: [], problemas: [], subs: [], problemaOutro: '', olhando: '' }, S.ctx || {});
+  S.ctx = Object.assign({ pais: '', nivel: '', nivelOutro: '', local: '', tipoIniciativa: '', etapas: {}, prioridades: [], problemas: [], subs: [], problemaOutro: '', olhando: '' }, S.ctx || {});
   if (!S.ctx.etapas || typeof S.ctx.etapas !== 'object') S.ctx.etapas = {};
   ['prioridades', 'problemas', 'subs'].forEach(k => { if (!Array.isArray(S.ctx[k])) S.ctx[k] = []; });
   S.respDet = S.respDet && typeof S.respDet === 'object' ? S.respDet : {};
@@ -7791,7 +8128,7 @@ function corpoPasso(id) { return id === '4b' ? passo4b() : id === '4c' ? passo4c
 // ----------------------------------------------------------- passos, rodapés e fases
 function resumoPasso(id) {
   const x = S.ctx, c = S.caso;
-  if (id === '1a' && passoFeito(id)) { const t = totaisCtx(); return [tr(rotulo(NIVEIS_ADM, x.nivel)), x.local, fmtInt(t.alunos) + ' ' + tr('estudantes')].filter(Boolean).join(' · '); }
+  if (id === '1a' && passoFeito(id)) { const t = totaisCtx(); return [x.local, fmtInt(t.alunos) + ' ' + tr('estudantes')].filter(Boolean).join(' · '); }
   if (id === '1b' && x.olhando) return x.olhando;
   if (id === '2a' && (c.tarefas || []).length) return rotTarefas(3);
   if (id === '20' && testesDe(c).length) return rotTestes();
@@ -8006,10 +8343,11 @@ function confLimpar() {
 
 // ----------------------------------------------------------- render
 function render() {
-  estadoFluxo();
-  if (S.vista !== 'plano' && S.fase === 'expansao' && PASSOS_VER.includes(S.passo)) S.feitos[S.passo] = true;
-  aplicarPadroes();
-  const y = window.scrollY, foco = document.activeElement && document.activeElement.id;
+  try {
+    estadoFluxo();
+    if (S.vista !== 'plano' && S.fase === 'expansao' && PASSOS_VER.includes(S.passo)) S.feitos[S.passo] = true;
+    aplicarPadroes();
+    const y = window.scrollY, foco = document.activeElement && document.activeElement.id;
   const ex = ['A', 'B', 'C', 'D', 'editado'].includes(S.exemplo) && S.boasVindas === false;
   const tituloEx = ['A', 'B', 'C', 'D'].includes(S.exemplo) && typeof CASOS !== 'undefined' && CASOS[S.exemplo] ? CASOS[S.exemplo].titulo : '';
   let corpo;
@@ -8027,6 +8365,17 @@ function render() {
   if (foco) { const f = document.getElementById(foco); if (f) try { f.focus({ preventScroll: true }); } catch (e) { } }
   window.scrollTo(0, y);
   salvar();
+  } catch (e) {
+    console.error('Erro ao renderizar:', e);
+    $('#main').innerHTML = `<section class="card erro" id="erro-boundary" role="alert" aria-label="Erro ao renderizar a página">
+      <h2>${esc(tr('Erro ao exibir a página'))}</h2>
+      <p>${esc(tr('Ocorreu um erro ao renderizar a ferramenta. Você pode baixar o seu caso em JSON para tentar recuperar ou recomeçar do zero.'))}</p>
+      <div class="row"><button type="button" class="btn pri" data-act="exportar-erro">${esc(tr('Baixar meu caso (JSON)'))}</button><button type="button" class="btn" data-act="recomecar-erro">${esc(tr('Recomeçar'))}</button></div>
+      <p class="small muted">${esc(String(e && e.message ? e.message : e))}</p>
+    </section>`;
+    renderStepper(); renderPainel();
+    salvar();
+  }
 }
 function atualizarLaterais() { aplicarPadroes(); renderStepper(); renderPainel(); atualizarFaseViva(); salvar(); }
 // Atualiza marcas de respondida, passos, rodapés e cabeçalho da fase aberta sem redesenhar a página
@@ -8225,6 +8574,13 @@ function eventoFluxo(e) {
     if (act === 'ver-exemplo') { carregarExemplo('B'); S.boasVindas = false; abrirFase('contexto', '1a'); return true; }
     if (act === 'gerar-plano' || act === 'ir-resumo' || act === 'ir-final') { gerarPlano(); return true; }
     if (act === 'voltar-percurso' || act === 'voltar-fases') { S.vista = ''; render(); window.scrollTo({ top: 0, behavior: 'instant' }); return true; }
+    if (act === 'exportar-erro') {
+      const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'meu-caso-aiedu-procurement.json'; a.click();
+      URL.revokeObjectURL(url); return true;
+    }
+    if (act === 'recomecar-erro') { carregarExemplo('novo'); S.boasVindas = false; S.fase = 'contexto'; S.passo = '1a'; render(); return true; }
     if (act === 'pdf') { if (typeof baixarPDF === 'function') baixarPDF(); return true; }
     if (act === 'usar-alunos') { S.caso.elegiveis = totaisCtx().alunos; S.respC.elegiveis = true; if (S.custo) S.custo.editado = false; if (S.exemplo !== 'novo') S.exemplo = 'editado'; render(); toast(tr('Total de estudantes aplicado.')); return true; }
     return false;
@@ -8324,12 +8680,12 @@ function gravarCtxn(el) {
 // Os textos são PT (chave de tradução): cada texto fica num nó próprio para o MutationObserver de i18n.js.
 // =====================================================================
 const INICIO = {
-  titulo: 'Monte o plano de contratação de IA da sua rede',
-  eyebrow: 'Plano de contratação com custo do ciclo de vida',
-  frase: 'Responda às perguntas de quatro fases, do contexto da rede à expansão, e receba um plano de contratação com o custo de todo o ciclo de vida da IA, camada por camada. Os valores são ilustrativos.',
-  iniciar: 'Iniciar o plano de contratação',
-  mapaSub: 'Clique numa fase para ver o que ela pede em cada camada do custo total.',
-  verMatriz: 'Ver a matriz completa',
+  titulo: 'Planeje a compra de IA para a sua rede de ensino',
+  eyebrow: 'Planejamento de IA na educação',
+  frase: 'Responda algumas perguntas sobre o contexto da sua rede e receba um plano com o custo estimado e as próximas etapas. Comece agora.',
+  iniciar: 'Começar',
+  mapaSub: 'Quatro fases, do contexto ao plano de contratação.',
+  verMatriz: 'Ver a matriz de custo',
 };
 // O que a pessoa recebe ao fim de cada fase (RQ-01)
 const RESULTADO_FASE = {
@@ -8392,55 +8748,40 @@ function paginaInicial(sv) {
         <p class="ini-lead">${escI(INICIO.frase)}</p>
         <div class="ini-acoes">
           <button type="button" class="btn pri ini-cta" data-act="comecar"><span>${escI(INICIO.iniciar)}</span>${ICO_SETA}</button>
-          <button type="button" class="btn grande" data-act="ver-exemplo">Ver um exemplo preenchido</button>
-          <button type="button" class="btn grande" data-act="imp-json">Importar caso</button>
         </div>
-        <p class="ini-nota">As respostas ficam salvas só neste navegador. Você pode exportar o caso a qualquer momento.</p>
       </div>
       <aside class="ini-doc" aria-labelledby="ini-doc-t">
-        <div class="ini-doc-faixa" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
         <div class="ini-doc-in">
-          <p class="ini-doc-e" id="ini-doc-t">No fim, o plano de contratação traz</p>
-          <ul class="ini-doc-l">${recebe.map(t => `<li><span>${escI(t)}</span></li>`).join('')}</ul>
-          <div class="ini-doc-g" aria-hidden="true"><span class="ini-doc-gt">Custo por camada</span>${barras.map((w, i) => `<i class="cam-${i + 1}" style="width:${w}%"></i>`).join('')}</div>
+          <p class="ini-doc-e" id="ini-doc-t">Você recebe</p>
+          <ul class="ini-doc-l"><li><span>Plano de contratação com o custo estimado, camada por camada</span></li><li><span>Recomendações de próximos passos, por ordem de prioridade</span></li><li><span>PDF para compartilhar com a sua equipe</span></li></ul>
         </div>
       </aside>
     </div>
     ${mapaFases()}
   </section>`;
 }
-// Imagem explicativa das quatro fases (HTML/CSS traduzível): passos, camadas, resultado; fase clicável
+// Mapa simplificado das quatro fases: título, passos e o que a fase entrega
 function mapaFases() {
   const cards = FASES.map(f => {
     const aberta = INICIO_ABERTA === f.id;
     const passos = (PASSOS[f.id] || []).map(([id, nome]) => `<li><span class="ini-pn">${escI((PASSO_INFO[id] || {}).num || '')}</span><span class="ini-pt">${escI(nome)}</span></li>`).join('');
-    const cams = camadasDaFase(f.id).map(k => `<li class="cam-${k}" title="${escI(CAMADAS[k - 1][1])}"><span class="ini-cn" aria-hidden="true">${k}</span><span class="sr">${escI(CAMADAS[k - 1][1])}</span></li>`).join('');
     return `<article class="ini-f f${f.n}${aberta ? ' aberta' : ''}" data-inicio-card="${f.id}">
         <h3 class="ini-f-h"><button type="button" class="ini-f-b" data-inicio-fase="${f.id}" id="ini-b-${f.id}" aria-expanded="${aberta}" aria-controls="ini-p-${f.id}">
           <span class="ini-f-n" aria-hidden="true">${f.n}</span><span class="ini-f-tt"><span class="ini-f-fase">${escI('Fase ' + f.n)}</span><span class="ini-f-nome">${escI(f.nome)}</span></span>${ICO_CHEV}</button></h3>
         <div class="ini-f-corpo">
           <div class="ini-f-bl"><p class="ini-f-l">Passos</p><ol class="ini-passos">${passos}</ol></div>
-          <div class="ini-f-bl"><p class="ini-f-l">Camadas que alimenta</p><ul class="ini-cams">${cams}</ul></div>
-          <div class="ini-f-res"><p class="ini-f-l">O que você recebe</p><p>${escI(RESULTADO_FASE[f.id] || '')}</p></div>
-          <p class="ini-f-mais" aria-hidden="true"><span>${escI(aberta ? 'Fechar o resumo' : 'Ver o resumo da fase')}</span></p>
+          <div class="ini-f-res"><p>${escI(f.abertura || '')}</p></div>
         </div>
       </article>
       ${painelFase(f, aberta)}`;
   }).join('');
   return `<section class="ini-mapa" aria-labelledby="ini-mapa-t">
       <div class="ini-mapa-cab">
-        <p class="ini-kicker"><span>Como funciona</span></p>
-        <h2 id="ini-mapa-t">Do contexto ao plano de contratação, em quatro fases</h2>
-        <p class="ini-mapa-sub">${escI(INICIO.mapaSub)}</p>
+        <h2 id="ini-mapa-t">${escI(INICIO.mapaSub)}</h2>
       </div>
       <div class="ini-fases">${cards}</div>
-      <div class="ini-leg">
-        <p class="ini-leg-t">As sete camadas do custo total</p>
-        <ol class="ini-leg-l">${CAMADAS.map(([k, nome]) => `<li class="cam-${k}"><span class="ini-cn" aria-hidden="true">${k}</span><span>${escI(nome)}</span></li>`).join('')}</ol>
-      </div>
       <div class="ini-mapa-pe">
         <button type="button" class="btn ini-vm" data-act="ver-matriz" aria-haspopup="dialog">${ICO_GRADE}<span>${escI(INICIO.verMatriz)}</span></button>
-        <p class="ini-cred">${escI(typeof CREDITO_MATRIZ !== 'undefined' ? CREDITO_MATRIZ : '')}</p>
       </div>
     </section>`;
 }
@@ -8462,12 +8803,6 @@ function painelFase(f, aberta) {
         <button type="button" class="btn ini-p-x" data-inicio-fase="${f.id}" aria-controls="ini-p-${f.id}" aria-expanded="true"><span aria-hidden="true">✕</span> <span>Fechar o resumo</span></button>
       </div>
       <p class="ini-p-ab">${escI(f.abertura || '')}</p>
-      <p class="ini-p-l">O que esta fase exige, por camada</p>
-      <ol class="ini-cels">${cels}</ol>
-      <div class="ini-p-pe">
-        <button type="button" class="btn ini-vm" data-act="ver-matriz" aria-haspopup="dialog">${ICO_GRADE}<span>${escI(INICIO.verMatriz)}</span></button>
-        <p class="ini-cred">${escI(typeof CREDITO_MATRIZ !== 'undefined' ? CREDITO_MATRIZ : '')}</p>
-      </div>
     </div>`;
 }
 // Abre ou fecha uma fase na própria página, sem redesenhar (o foco fica onde está)
@@ -8732,7 +9067,7 @@ function slugPlano() {
 // 2.0 (v11, múltipla): 'poc' | 'piloto' | 'ambos' | 'recomendar' | ''
 function testeEscolhido(c) { return typeof recTesteDe === 'function' ? recTesteDe(c) : (c.teste || ''); }
 // teste que vem primeiro: com os dois marcados, a prova de conceito
-function testeEfetivo(c, rec) { const t = testeEscolhido(c); const m = rec && rec.modo; return t === 'ambos' ? 'poc' : ['poc', 'piloto'].includes(t) ? t : m === 'ambos' ? 'poc' : m || 'piloto'; }
+function testeEfetivo(c, rec) { const t = testeEscolhido(c); const m = rec && rec.modo; if (m === 'nenhum') return 'nenhum'; return t === 'ambos' ? 'poc' : ['poc', 'piloto'].includes(t) ? t : m === 'ambos' ? 'poc' : m || 'piloto'; }
 // rótulos das opções de um campo (OPC pelo nome do campo, v11)
 const opcDe = id => (typeof OPC !== 'undefined' && (OPC[id] || (id === 'testes' ? OPC.teste : null))) || [];
 const rotC = (id, v) => tr(rotP(opcDe(id), v)) || '';
@@ -8792,8 +9127,9 @@ function dadosPlano() {
   let faltas = [];
   try { faltas = faltasTodas() || []; } catch (e) { console.warn(e); }
   return { c, x, t, ce, p, rec, custo, arq, modo, teste, poc: modo === 'poc' && teste !== 'ambos' && !(['recomendar', ''].includes(teste) && rec.modo === 'ambos'),
-    ambos: teste === 'ambos' || (['recomendar', ''].includes(teste) && rec.modo === 'ambos'), faltas,
-    afeta: recAfeta(ce), dp: recDadosPessoais(ce), gratis: recGratuito(ce) };
+    ambos: teste === 'ambos' || (['recomendar', ''].includes(teste) && rec.modo === 'ambos'),
+    semTeste: modo === 'nenhum',
+    faltas, afeta: recAfeta(ce), dp: recDadosPessoais(ce), gratis: recGratuito(ce) };
 }
 
 // ----------------------------------------------------------- seções (PDF, Markdown, HTML e página)
@@ -8806,6 +9142,78 @@ function secoesPlano() {
   const sec = o => { S_.push(o); return o; };
   const tituloSec = id => id + '. ' + tr(TIT_PLANO[id]);
 
+  // v15: Executive Summary com faixa P10–P90 (RF-009, RB-010, Decisão D5)
+  if (custo && custo.av) {
+    const av = custo.av, o = av.r.opc, H = av.r.H;
+    let sim = null;
+    try {
+      if (typeof simular === 'function') sim = simular(av.r.cfg, 1500, 20261003);
+    } catch (e) { console.warn(e); }
+    const p50 = sim ? sim.ct.p50 : av.ctEco;
+    const p10 = sim ? sim.ct.p10 : av.ctEco;
+    const p90 = sim ? sim.ct.p90 : av.ctEco;
+    const total = av.ctEco;
+    const faixaLo = Math.min(p10, p50);
+    const faixaHi = Math.max(p90, p50);
+    const pctRecorrente = total > 0 ? (av.fac.variavel / total * 100) : 0;
+    sec({ id: 'executivo', h: tr('Sumário Executivo'),
+      p: [
+        tr('Este plano estima o custo total do ciclo de vida da iniciativa de IA para a sua rede, distribuído por camadas do custo total (Krueger e Jackson, 2026, p. 11) e por fase: prova de conceito ou piloto (Ano 0), implantação (Ano 1) e expansão (anos seguintes).'),
+        tr('Os valores são ilustrativos e baseiam-se em premissas da ferramenta; substitua-os por cotações e dados locais antes de usar o plano para decisões orçamentárias.'),
+      ],
+      kpis: [
+        ['Custo total do ciclo de vida (valor central)', grande(total)],
+        ['Faixa provável (P10 a P90)', grande(faixaLo) + ' – ' + grande(faixaHi)],
+        ['Valor para orçar (P50)', grande(p50)],
+        ['Parte recorrente do custo', pctRecorrente.toFixed(0) + '%'],
+        ['Horizonte da estimativa', H + ' ano' + (H > 1 ? 's' : '')],
+      ],
+      graf: {
+        tot: total, p10: faixaLo, p50: p50, p90: faixaHi, H,
+        camadas: { ano0: [1, 2, 3, 4, 5, 6, 7].map(n => (custo.camadas ? custo.camadas.ano0[n] || 0 : 0)), total: [1, 2, 3, 4, 5, 6, 7].map(n => (custo.camadas ? custo.camadas.total[n] || 0 : 0)) },
+      },
+    });
+  }
+  // v15: Detalhamento por prioridade (Parte B — RF-010, RB-011)
+  // Uma seção por prioridade selecionada: objetivo, beneficiários, estratégia, tecnologias, custos.
+  const priors = prioridadesCaso(x);
+  if (priors.length && custo) {
+    const fases = decomporFases(custo.av);
+    // mapeia problema → prioridade a partir de PRIORIDADES
+    const probParaPrior = {};
+    (typeof PRIORIDADES !== 'undefined' ? PRIORIDADES : []).forEach(z => { (z.problemas || []).forEach(q => { probParaPrior[q.id] = z.id; }); });
+    priors.forEach(z => {
+      const pid = z.id;
+      const probs = (typeof problemasCaso === 'function' ? problemasCaso(x) : []).filter(q => probParaPrior[q.id] === pid);
+      const subs = new Set((x || {}).subs || []);
+      const probTxt = probs.map(q => {
+        const ss = (q.sub || []).filter(([id]) => subs.has(id)).map(([, t]) => tr(t));
+        return semPontoP(tr(q.t)) + (ss.length ? ' (' + ss.join('; ') + ')' : '') + '.';
+      }).join(' ');
+      const objetivo = semPontoP(tr(z.desc || z.nome));
+      const beneficiarios = nomesP(OPC.usuarios, c.usuarios) || nomesP(OPC.afetados, c.afetados) || '—';
+      const estrategia = tr(rotP(OPC.tipoIniciativa, x.tipoIniciativa)) || '—';
+      const tecnologias = [];
+      if (c.tipoTec) tecnologias.push(tr(rotP(OPC.tipoTec, c.tipoTec)));
+      if (c.arquitetura && c.arquitetura !== 'nao_sei') tecnologias.push(tr(rotP(OPC.arquitetura, c.arquitetura)));
+      if (c.pagamento) tecnologias.push(tr(rotP(OPC.pagamento, c.pagamento)));
+      const fasesTxt = [
+        tr('Piloto (Ano 0):') + ' ' + grande(fases.piloto.total),
+        tr('Implantação (Ano 1):') + ' ' + grande(fases.impl.total),
+        tr('Expansão (anos seguintes):') + ' ' + grande(fases.expansao.total),
+      ].filter(Boolean).join(' · ');
+      sec({ id: 'prior-' + pid, h: z.nome + ' — Detalhamento', sub: true,
+        p: [objetivo ? tr('Objetivo:') + ' ' + objetivo : '', probTxt ? tr('Problemas:') + ' ' + probTxt : '', beneficiarios !== '—' ? tr('Beneficiários:') + ' ' + beneficiarios : '', estrategia !== '—' ? tr('Estratégia:') + ' ' + estrategia : '', tecnologias.length ? tr('Tecnologias:') + ' ' + tecnologias.join(', ') : ''].filter(Boolean),
+        kv: [
+          [tr('Custo total da iniciativa'), grande(fases.piloto.total + fases.impl.total + fases.expansao.total)],
+          [tr('Piloto (Ano 0)'), grande(fases.piloto.total)],
+          [tr('Implantação (Ano 1)'), grande(fases.impl.total)],
+          [tr('Expansão (anos seguintes)'), grande(fases.expansao.total)],
+          [tr('Fases'), fasesTxt],
+        ],
+      });
+    });
+  }
   // Respostas que faltam
   if (d.faltas.length) {
     sec({ tipo: 'faltas', id: 'faltas', h: TIT_PLANO.faltas,
@@ -8821,7 +9229,6 @@ function secoesPlano() {
     return [tr(e[1]), et.escolas ? fmtInt(et.escolas) : '—', anos, fmtInt(alunosEtapa(e[0]))];
   });
   if (linhasEt.length > 1) linhasEt.push([tr('Total'), fmtInt(t.escolas), '', fmtInt(t.alunos)]);
-  const nivel = x.nivel === 'outro' ? (x.nivelOutro || tr('Outro')) : tr(rotP(typeof NIVEIS_ADM !== 'undefined' ? NIVEIS_ADM : [], x.nivel));
   const tarefas = (c.tarefas || []).map(k => k === 'outra' && c.tarefaOutra ? c.tarefaOutra : tr(rotP(OPC.tarefas, k))).filter(Boolean).join('; ');
   const impactos = (c.impactos || []).map(k => k === 'outro' && c.impactoOutro ? c.impactoOutro : tr(rotP(OPC.impactos, k))).filter(Boolean).join('; ');
   const pl = c.piloto || {}, pc = c.poc || {};
@@ -8837,7 +9244,6 @@ function secoesPlano() {
   const escI = +c.escolasInternet || 0;
   const horas = +c.formacaoHoras || 0;
   const linhasResumo = [
-    ['Nível administrativo', nivel || '—'],
     ['Lugar ou rede', x.local || '—'],
     ['Situação', respP('situacao', tr(rotP(OPC.situacao, c.situacao)) || '—')],
     // v13: prioridades, problemas marcados (com subcategorias) e "Outro problema" (passo 1.2)
@@ -8935,7 +9341,10 @@ function secoesPlano() {
   // A1
   const a1p = [];
   const tE = d.teste;
-  if (tE === 'recomendar' || !tE) {
+  // v15: política pública/governança não exigem prova de conceito nem piloto (RF-017)
+  if (d.semTeste) {
+    a1p.push(tr('Iniciativa de política pública ou governança: não há exigência de prova de conceito nem piloto.'));
+  } else if (tE === 'recomendar' || !tE) {
     if (!tE) a1p.push('Você ainda não escolheu entre prova de conceito e piloto.');
     a1p.push(rec.modo === 'poc' ? 'Recomendação: começar por uma prova de conceito.' : rec.modo === 'ambos' ? 'Recomendação: começar por uma prova de conceito e, se ela der certo, fazer um piloto.' : 'Recomendação: começar por um piloto.');
     if (rec.modo === 'ambos') a1p.push('São duas decisões separadas, cada uma com critérios de sucesso próprios: o piloto só começa se a prova de conceito cumprir os seus.');
@@ -9026,6 +9435,37 @@ function secoesPlano() {
     sec({ sub: true, h: 'Dotação a solicitar por exercício', table: { head: ['Exercício'].concat(anos.map(a => tr('Ano ' + a))),
       rows: [[tr('Dotação a solicitar') + ' (' + unidMil() + ')'].concat(anos.map(a => mil(custo.orc.dot[a] || 0)))], num: anos.map((a, i) => i + 1) } });
     sec({ sub: true, h: 'Premissas desta estimativa', list: prem });
+  // v15: Parte C — Consolidação financeira (RF-011, RB-012)
+  if (custo && custo.av) {
+    const av = custo.av, fases = decomporFases(av);
+    const totais = { piloto: fases.piloto.total, impl: fases.impl.total, exp: fases.expansao.total };
+    const totalGeral = totais.piloto + totais.impl + totais.exp;
+    const unico = fases.piloto.unico + fases.impl.unico + fases.expansao.unico;
+    const recorrente = fases.piloto.recorrente + fases.impl.recorrente + fases.expansao.recorrente;
+    sec({ id: 'consolidacao', h: tr('Consolidação financeira'), sub: true,
+      p: [
+        tr('Consolidação dos custos por etapa, tecnologia e total geral. Todos os valores são ilustrativos e baseiam-se nas premissas da ferramenta.'),
+      ],
+      kv: [
+        [tr('Piloto ou prova de conceito (Ano 0)'), grande(totais.piloto)],
+        [tr('Implantação (Ano 1)'), grande(totais.impl)],
+        [tr('Expansão (anos seguintes)'), grande(totais.exp)],
+        [tr('Pagamento único'), grande(unico)],
+        [tr('Pagamento recorrente'), grande(recorrente)],
+        [tr('Total geral do ciclo de vida'), grande(totalGeral)],
+      ],
+      table: {
+        head: [tr('Etapa'), tr('Único'), tr('Recorrente'), tr('Total')],
+        rows: [
+          [tr('Piloto (Ano 0)'), grande(fases.piloto.unico), grande(fases.piloto.recorrente), grande(fases.piloto.total)],
+          [tr('Implantação (Ano 1)'), grande(fases.impl.unico), grande(fases.impl.recorrente), grande(fases.impl.total)],
+          [tr('Expansão (anos seguintes)'), grande(fases.expansao.unico), grande(fases.expansao.recorrente), grande(fases.expansao.total)],
+          [tr('Total geral'), grande(unico), grande(recorrente), grande(totalGeral)],
+        ],
+        num: [1, 2, 3], b0: true,
+      },
+    });
+  }
   } else {
     sec({ id: 'A2', h: tituloSec('A2'), p: ['Não foi possível calcular a estimativa com as respostas atuais. Responda ao passo 2.3 (Adoção) e às fases 3 e 4.'] });
   }
@@ -9266,12 +9706,12 @@ function htmlFiguraP(s) {
 }
 
 // Dados do painel ("Em resumo", capa e perfil), tirados das seções já traduzidas; o PDF pode usar com typeof
-function painelPlano(secs) {
+function painelPlano(secs, k) {
   secs = secs || secoesPlano().map(trSecao);
   const by = id => secs.find(z => z.id === id && !z.sub) || {};
   const res = by('resumo'), a1 = by('A1'), a2 = by('A2');
   let R = [];
-  try { R = typeof recomendacoesCaso === 'function' ? recomendacoesCaso() : []; } catch (e) { console.warn(e); }
+  try { R = typeof recomendacoesCasoDiversificadas === 'function' ? recomendacoesCasoDiversificadas(k) : (typeof recomendacoesCaso === 'function' ? recomendacoesCaso() : []); } catch (e) { console.warn(e); }
   return { kpis: a2.graf ? (a2.kv || []).slice(0, 4) : [], graf: a2.graf || null, semCusto: !a2.graf ? (a2.p || [])[0] || '' : '',
     fatos: res.fatos || [], cartoes: res.cartoes || [], principal: a1.principal || '', recs: R, nAlta: R.filter(r => r.prioridade === 'alta').length,
     faltas: by('faltas').tipo ? by('faltas') : null };
@@ -9438,7 +9878,9 @@ function renderPlano() {
   if (typeof fxCss === 'function') fxCss();
   cssPlanoV13();
   const secs = secoesPlano().map(trSecao);
-  const P = painelPlano(secs);
+  let k = null;
+  try { k = typeof recContexto === 'function' ? recContexto() : null; } catch (e) { }
+  const P = painelPlano(secs, k);
   const c = S.caso, x = S.ctx || {};
   let data = '';
   try { data = new Date().toLocaleDateString(LOC(), { day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { data = new Date().toLocaleDateString(); }
@@ -9655,6 +10097,18 @@ const tPn = (k, n) => tr(PDF_TXT[k].replace('{0}', String(n))).replace('{0}', St
 function gerarPDF() {
   const J = window.jspdf; if (!J || !J.jsPDF) throw new Error('jspdf');
   const doc = new J.jsPDF({ unit: 'pt', format: 'a4', compress: true });
+  // v15: acessibilidade — idioma do documento e título estruturado (HS-10.2, RB-014)
+  const lang = (typeof S !== 'undefined' && S.lang) || 'pt';
+  const langMap = { pt: 'pt-BR', en: 'en-US', es: 'es-ES', fr: 'fr-FR' };
+  const pdfLang = langMap[lang] || 'pt-BR';
+  try {
+    // define o idioma principal do documento no catálogo do PDF
+    const dict = doc.internal.docInfo || doc.internal._catalog || doc.internal;
+    if (doc.internal && doc.internal._catalog) {
+      doc.internal._catalog.setLanguage(pdfLang);
+    }
+  } catch (e) { /* jsPDF pode não expor setLanguage; ignorar em versões antigas */ }
+  doc.setProperties({ title: pdfTxt(NOME_FERRAMENTA + ' - ' + tP('sub') + ' - ' + nomeCaso), subject: pdfTxt(tP('sub')), creator: NOME_FERRAMENTA, keywords: 'IA, educação, planejamento, custo, ciclo de vida' });
   fontePDF(doc);   // v13: fonte embutida nos idiomas fora do WinAnsi (sem efeito em PT/EN/ES/FR)
   const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 46;
   const TOP = 60, BASE = H - 54, LW = W - 2 * M;   // área útil das páginas internas
@@ -9677,7 +10131,11 @@ function gerarPDF() {
   let N = null;
   try { N = numerosCusto(); if (N && !N.camadas && typeof somaPorCamada === 'function') N.camadas = somaPorCamada(N.av); } catch (e) { console.warn(e); N = null; }
   let R = [];
-  try { R = typeof recomendacoesCaso === 'function' ? recomendacoesCaso() || [] : []; } catch (e) { console.warn(e); R = []; }
+  try {
+    let k = null;
+    if (typeof recContexto === 'function') k = recContexto();
+    R = typeof recomendacoesCasoDiversificadas === 'function' ? recomendacoesCasoDiversificadas(k) : (typeof recomendacoesCaso === 'function' ? recomendacoesCaso() || [] : []);
+  } catch (e) { console.warn(e); R = []; }
   const altas = R.filter(r => r.prioridade === 'alta');
   const resumoRaw = raw.find(s => s.id === 'resumo') || { kv: [] };
   const KV = {}; (resumoRaw.kv || []).forEach(([k, v]) => { KV[k] = v; });
@@ -10733,7 +11191,7 @@ function temRespostas(o) {
   if (Object.keys(o.respC || {}).some(k => o.respC[k])) return true;
   if (Object.keys(o.resp || {}).some(k => o.resp[k])) return true;
   const x = o.ctx || {}, c = o.caso;
-  if (x.nivel || x.local || x.olhando || x.problemaOutro || ['prioridades', 'problemas', 'subs'].some(k => (x[k] || []).length) || Object.values(x.etapas || {}).some(e => e && e.on)) return true;
+  if (x.local || x.olhando || x.problemaOutro || ['prioridades', 'problemas', 'subs'].some(k => (x[k] || []).length) || Object.values(x.etapas || {}).some(e => e && e.on)) return true;
   if (Object.values(o.respDet || {}).some(d => d && (String(d.qual || '').trim() || String(d.falta || '').trim()))) return true;
   return ['titulo', 'problema', 'resultado', 'linhaBaseMedida', 'linhaBaseProblemaTxt', 'teste', 'tipoTec', 'pagamento', 'licenca', 'elegiveis', 'nFerramentas', 'conheceFerramentas', 'internet', 'modeloDisp', 'formacaoFormato', 'formacaoPaga', 'suporteQuem', 'suporteNivel', 'acompanhamento', 'arquitetura'].some(k => c[k]) || ['tarefas', 'impactos', 'usuarios', 'testes', 'ferramentas', 'formados', 'formacaoTipo', 'linhaBaseProblemas'].some(k => (c[k] || []).length);
 }
@@ -11176,6 +11634,7 @@ function gravarNumCaso(el, path) {
 }
 const NUMERICOS_F = ['degrau', 'horizonte', 'autonomia'];
 
+let debounceNum = null;
 function ligar() {
   ligarCamposNum();
   document.addEventListener('click', e => {
@@ -11225,8 +11684,13 @@ function ligar() {
   document.addEventListener('input', e => {
     if (eventoFluxo(e)) return;
     const el = e.target; if (!el.dataset) return;
-    // números do caso: atualizam estado e laterais sem redesenhar
-    if (el.dataset.num != null && (el.dataset.fn || el.dataset.f)) { gravarNumCaso(el, el.dataset.fn || el.dataset.f); atualizarLaterais(); return; }
+    // números do caso: atualizam estado e laterais com debounce (evita travamento por tecla)
+    if (el.dataset.num != null && (el.dataset.fn || el.dataset.f)) {
+      gravarNumCaso(el, el.dataset.fn || el.dataset.f);
+      if (debounceNum) clearTimeout(debounceNum);
+      debounceNum = setTimeout(() => { atualizarLaterais(); debounceNum = null; }, 300);
+      return;
+    }
     if (el.dataset.f && (el.tagName === 'TEXTAREA' || el.type === 'text')) { S.caso[el.dataset.f] = el.value; marcarCampo(el.dataset.f); atualizarLaterais(); return; }
     if (el.dataset.cfgs) { setPath(cfgAtual(), el.dataset.cfgs, el.value); editarCfg(); salvar(); }
   });
@@ -11240,7 +11704,8 @@ function ligar() {
     if (el.id === 'sel-exemplo') { if (el.value) carregarExemplo(el.value); el.value = ''; return; }
     if (el.dataset.num != null && (el.dataset.fn || el.dataset.f)) {
       const top = gravarNumCaso(el, el.dataset.fn || el.dataset.f);
-      if (!gancho(top)) atualizarLaterais();
+      if (debounceNum) clearTimeout(debounceNum);
+      debounceNum = setTimeout(() => { if (!gancho(top)) atualizarLaterais(); debounceNum = null; }, 300);
       return;
     }
     if (el.dataset.f && el.type !== 'text' && el.tagName !== 'TEXTAREA') {
