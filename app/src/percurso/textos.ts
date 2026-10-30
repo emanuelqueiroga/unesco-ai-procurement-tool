@@ -24,33 +24,33 @@ export interface InfoCapitulo {
 
 export const CAPITULOS_INFO: Record<Capitulo, InfoCapitulo> = {
   1: {
-    n: 1, titulo: 'Sua rede e o problema', minutos: 7,
-    guia: 'Que problema da sua rede vale a pena resolver, e como saber se ele foi resolvido?',
-    texto: 'Antes de falar de tecnologia, o plano precisa saber onde a decisão será tomada, quantas escolas e estudantes estão envolvidos e qual problema você quer resolver. No fim do capítulo, o plano já tem o perfil da rede e as primeiras recomendações de governança.',
-    entrega: 'perfil da rede e problema definido',
+    n: 1, titulo: 'Contexto', minutos: 7,
+    guia: 'Qual é o contexto da sua rede e o que você quer melhorar?',
+    texto: 'Descreva sua rede, suas prioridades e o problema que você quer resolver. Este capítulo reúne o contexto educacional, o alcance pretendido e as primeiras recomendações de governança.',
+    entrega: 'contexto e prioridades do planejamento',
     alimenta: 'governança, políticas e planejamento',
   },
   2: {
-    n: 2, titulo: 'O teste', minutos: 8,
-    guia: 'Como aprender o máximo sobre a ferramenta, com o menor risco e o menor custo?',
-    texto: 'Antes de contratar para a rede inteira, vale testar em poucas escolas. Neste capítulo você diz o que a IA deve fazer, quem vai usar e de que tamanho será o teste. No fim, aparece o primeiro número do plano: quanto custa testar.',
-    entrega: 'quanto custa testar',
+    n: 2, titulo: 'Prova de conceito ou piloto', minutos: 8,
+    guia: 'O que você precisa verificar antes de decidir pela implantação?',
+    texto: 'Defina como avaliar a proposta antes de ampliar seu uso. Escolha uma prova de conceito, um piloto ou ambos e descreva as tarefas, os participantes e os recursos necessários. Ao final, revise a estimativa de custo do teste.',
+    entrega: 'escopo e estimativa de custo da prova de conceito ou do piloto',
     // camadas 2 a 7 (2.2 e 2.3 também alimentam as camadas 4 e 5, segundo a 0.0.15)
     alimenta: 'aplicações, integração de dados, segurança e privacidade, internet e dispositivos, formação, suporte',
   },
   3: {
-    n: 3, titulo: 'A primeira etapa', minutos: 1,
-    guia: 'Se o teste der certo, por onde começar de verdade?',
-    texto: 'Depois do teste vem o primeiro ano de uso real, ainda sem a rede inteira. Uma pergunta só: quantas escolas e quantas pessoas começam. Você sai sabendo o custo do primeiro ano.',
-    entrega: 'custo do primeiro ano',
+    n: 3, titulo: 'Implantação', minutos: 1,
+    guia: 'Como iniciar o uso com o alcance e os recursos planejados?',
+    texto: 'Defina o alcance inicial da implantação: quantas escolas e pessoas serão atendidas no primeiro ano de uso. O plano usa esses dados para estimar o custo dessa etapa.',
+    entrega: 'alcance e estimativa de custo da implantação',
     // a 0.0.15 liga o 3.1 às camadas 2, 3 e 6; a arquitetura (3.2, camadas 4 e 5) só aparece no Refinar
     alimenta: 'aplicações, internet e dispositivos, formação (e, no Refinar, integração de dados e segurança)',
   },
   4: {
-    n: 4, titulo: 'Toda a rede', minutos: 2,
-    guia: 'Quanto custa manter e ampliar a ferramenta ao longo dos anos?',
-    texto: 'O último capítulo leva a estimativa à rede inteira: quantas pessoas usariam a ferramenta e em quanto tempo. Com isso o plano fica completo, com o custo total do ciclo de vida e tudo o que exigir na contratação.',
-    entrega: 'o plano completo',
+    n: 4, titulo: 'Expansão', minutos: 2,
+    guia: 'Como ampliar o alcance e sustentar o uso ao longo dos anos?',
+    texto: 'Informe o público previsto para a expansão e o prazo para alcançá-lo. O plano reúne as estimativas de implantação e expansão para projetar os custos ao longo do horizonte definido e apoiar a contratação.',
+    entrega: 'estimativa de custo da expansão e do ciclo de vida',
     alimenta: 'todas as camadas, ao longo do horizonte',
   },
 };
@@ -113,7 +113,7 @@ export const CURTO: Record<string, string> = {
   prioridades: 'Prioridade', problemas: 'Problemas', problema: 'Situação atual', impactos: 'Impacto esperado', linhaBase: 'Linha de base',
   alternativa: 'Alternativa sem IA', governanca: 'Governança', testes: 'Tipo de teste', tarefas: 'O que a IA faz', usuarios: 'Quem usa',
   afetados: 'Quem é afetado', tipoTec: 'Tipo de tecnologia', pagamento: 'Pagamento', piloto: 'Tamanho do teste', internet: 'Internet',
-  modeloDisp: 'Dispositivos', formados: 'Formação', suporteNivel: 'Suporte', implantacao: 'Primeira etapa', elegiveis: 'Pessoas na rede',
+  modeloDisp: 'Dispositivos', formados: 'Formação', suporteNivel: 'Suporte', implantacao: 'Implantação', elegiveis: 'Pessoas na rede',
   expansao: 'Ritmo de expansão',
 };
 

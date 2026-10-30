@@ -14,13 +14,15 @@ import { BotoesPDF } from './Plano';
 import { ControlesTela, ControleCampo, ControleExtra, ProvedorRefinar, sugeridosDaTela, TIPOS_SIMPLES } from '../percurso/Controles';
 import { sinteseCapitulo, type Proximo } from '../percurso/sintese';
 import './plano-rec.css';
-import { CAPITULOS_INFO, LEAD, TITULO_TELA, linhaAfeta, plural, minusc, t } from '../percurso/textos';
+import { CAPITULOS_INFO, LEAD, TITULO_TELA, linhaAfeta, plural, t } from '../percurso/textos';
 import { href, ir } from '../percurso/rota';
 import './percurso-ajuda.css';
 
 const rotuloOrigem = (o: string) => ({ padrao: t('padrão'), sugerido: t('~ sugerido'), informado: t('informado'), refinado: t('refinado') } as Record<string, string>)[o] || o;
 
 export function Abertura({ n }: { n: Capitulo }) {
+  // A abertura também deve retraduzir seus textos ao trocar o idioma no cabeçalho.
+  useCaso((s) => s.lang);
   const info = CAPITULOS_INFO[n];
   const telas = telasDoCapitulo(n);
   return (
@@ -277,12 +279,12 @@ export function Sintese({ n, foco }: { n: Capitulo; foco?: string }) {
               {' · '}<a href={href.plano('fazer')}>{t('ver no plano')}</a>
             </>
           ) : undefined}
-          next={prox ? { title: t('Próximo capítulo: {nome}', { nome: minusc(t(prox.titulo)) }), text: t(prox.guia) } : undefined}
+          next={prox ? { title: t('Próximo capítulo: {nome}', { nome: t(prox.titulo) }), text: t(prox.guia) } : undefined}
           actions={
             <div className="pc-botoes">
               <Button variant="secondary" href={href.pergunta(n, telas[0].id)}>{t('Revisar o capítulo {n}', { n })}</Button>
               {n < 4 ? <Button variant="secondary" href={href.plano()}>{t('Ver o plano parcial')}</Button> : null}
-              <Button href={n < 4 ? href.abertura(n + 1) : href.plano()}>{n < 4 ? t('Capítulo {n}: {nome}', { n: n + 1, nome: minusc(t(prox!.titulo)) }) : t('Abrir o plano')}</Button>
+              <Button href={n < 4 ? href.abertura(n + 1) : href.plano()}>{n < 4 ? t('Capítulo {n}: {nome}', { n: n + 1, nome: t(prox!.titulo) }) : t('Abrir o plano')}</Button>
             </div>
           }
         />

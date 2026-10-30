@@ -1,4 +1,4 @@
-// v015: primeira entrega sobre a v014 React/Prumo. Apenas a página inicial muda.
+// v015: página inicial sobre a v014 React/Prumo, com as quatro etapas do percurso.
 import { useState } from 'react';
 import { useCaso, faltamDe, temRespostas, ESSENCIAL } from '../store';
 import { Button, Alert } from '../ui';
@@ -7,7 +7,7 @@ import { CampoImportar } from './CasoDialog';
 import { abrirMatriz } from './Matriz';
 import { abrirExemplo, comecarEmBranco, exportarCaso } from './acoes';
 import { precisaConfirmar, destinoContinuar } from './transversal';
-import { t } from '../percurso/textos';
+import { CAPITULOS_INFO, t } from '../percurso/textos';
 import { href, ir } from '../percurso/rota';
 import './inicio.css';
 
@@ -65,9 +65,9 @@ export function Inicio() {
             <summary>{t('Como funciona')}</summary>
             <div className="pc-inicio-detalhe-corpo">
               <ol className="pc-inicio-passos">
-                <li><b>{t('Descreva seu contexto')}</b><p>{t('Informe o contexto da sua rede e o que você quer melhorar.')}</p></li>
-                <li><b>{t('Defina suas prioridades')}</b><p>{t('Escolha os objetivos e revise as opções do seu planejamento.')}</p></li>
-                <li><b>{t('Revise seu plano')}</b><p>{t('Explore os custos estimados, as premissas e os próximos passos.')}</p></li>
+                {Object.values(CAPITULOS_INFO).map((etapa) => (
+                  <li key={etapa.n}><b>{t(etapa.titulo)}</b><p>{t(etapa.guia)}</p></li>
+                ))}
               </ol>
               <p>{t('Os valores são estimativas. Você pode revisar as premissas ao longo do planejamento.')}</p>
               <Button variant="link" onClick={() => abrirMatriz()} aria-haspopup="dialog">{t('Ver a matriz completa')}</Button>
