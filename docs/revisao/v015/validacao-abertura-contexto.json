@@ -1,0 +1,7 @@
+{
+  "build": "passed",
+  "targeted_test_files_passed": 2,
+  "targeted_tests_passed": 27,
+  "diff_check": "passed",
+  "interface": "Local browser: Contexto opening contains only title, bold italic guiding question and Back/Next. Paragraph, question/minute counters and notes removed. Proof of concept or pilot opening keeps its paragraph, counters and notes."
+}
