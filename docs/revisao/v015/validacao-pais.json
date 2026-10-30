@@ -1,0 +1,15 @@
+{
+  "heading": "Which country are you planning for?",
+  "options": 251,
+  "decisionLevelAbsent": true,
+  "searchOptions": [
+    "Choose the country",
+    "Canada",
+    "Not specified"
+  ],
+  "globalReferenceNotice": true,
+  "nextScreen": "situacao",
+  "retainedCountry": "CAN",
+  "decisionLevelAbsentInRefine": true,
+  "countryPresentInPlan": true
+}
