@@ -1,0 +1,71 @@
+{
+  "etapas": [
+    {
+      "phase": 1,
+      "heading": "Context",
+      "passed": true
+    },
+    {
+      "phase": 3,
+      "heading": "Deployment",
+      "passed": true
+    },
+    {
+      "phase": 4,
+      "heading": "Scale-up",
+      "passed": true
+    },
+    {
+      "phase": 2,
+      "heading": "Proof of concept or pilot",
+      "passed": true
+    }
+  ],
+  "idiomas": [
+    {
+      "language": "es",
+      "heading": "Prueba de concepto o piloto",
+      "passed": true
+    },
+    {
+      "language": "fr",
+      "heading": "Preuve de concept ou pilote",
+      "passed": true
+    },
+    {
+      "language": "ar",
+      "heading": "إثبات المفهوم أو المشروع التجريبي",
+      "passed": true
+    },
+    {
+      "language": "zh",
+      "heading": "概念验证或试点",
+      "passed": true
+    },
+    {
+      "language": "bm",
+      "heading": "Hakilina sɛgɛsɛgɛli walima kɔrɔbɔli baara",
+      "passed": true
+    },
+    {
+      "language": "zu",
+      "heading": "Ubufakazi bomqondo noma uhlelo lokuhlola",
+      "passed": true
+    },
+    {
+      "language": "sw",
+      "heading": "Uthibitisho wa dhana au majaribio",
+      "passed": true
+    },
+    {
+      "language": "pt",
+      "heading": "Prova de conceito ou piloto",
+      "passed": true
+    },
+    {
+      "language": "en",
+      "heading": "Proof of concept or pilot",
+      "passed": true
+    }
+  ]
+}
