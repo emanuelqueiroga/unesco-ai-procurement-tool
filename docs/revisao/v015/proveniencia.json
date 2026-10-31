@@ -3,38 +3,48 @@
   "app_version": "0.1.0-alpha.8",
   "base": "v014 React/Prumo publicada",
   "base_source_commit": "bd4d4b3bcb1488f9085e64eb5cbe4ae506bc3db7",
-  "source_commit": "c97a6e4eb221f3eef582a740d28fb70fca668cf8",
+  "source_commit": "2346f0b0c9935d65edebb8b5c5753259e9a2a1a3",
   "source_branch": "feat/v015-from-v014",
-  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/c97a6e4eb221f3eef582a740d28fb70fca668cf8",
+  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/2346f0b0c9935d65edebb8b5c5753259e9a2a1a3",
   "v014_publication_tree": "4016e03f1e70e0b5f8436065fca37af4dd439611",
-  "scope": "v014 React/Prumo como base; revisão v015 com país fixo, quatro etapas, Back/Next, Start new plan visível e abertura mínima de Contexto. Governança de IA isolada cobre toda a rede, pula etapas e pede totais nacionais em Desafios; seleção combinada mantém etapas. Oito desafios novos, traduções e compatibilidade com escolhas e dados anteriores.",
+  "scope": "Percurso institucional de governança, orçamento informado e PDFs próprios; desafios sem limite em todas as prioridades. Projetos de ferramenta exigem identificação explícita quando há governança e mantêm ações, orçamento e relatório separados.",
   "build": "VITE_CANAL=revisao npm run build -- --outDir ../docs/revisao/v015",
   "validation": {
     "build": "passed",
     "test_files_passed": 38,
-    "tests_passed": 832,
+    "tests_passed": 837,
     "skipped": 2,
     "todo": 1,
-    "final_targeted_tests_passed": 17,
     "domain_check": "passed",
     "diff_check": "passed",
+    "translation_keys_and_placeholders": "8 dictionaries verified",
     "interface": [
-      "Priority label corrected to AI governance in education. Sole governance Next goes to Challenges; no Levels screen in navigation and counters show 22 active questions, 8 in Context.",
-      "National total schools/students are required to enable Next, formatted by locale. Entered 12345 schools and 1600000 students in the local test.",
-      "Eight new governance challenges rendered with revised English titles and descriptions.",
-      "With Educating with AI also checked, Next leads to Levels, schools and students, with 23 total questions. Returning to sole governance preserves national totals.",
-      "Direct URL to Levels redirects to Challenges when governance is the sole priority."
+      "Local isolated browser: four governance challenges selected without a limit; Next goes to the institutional diagnosis, with no tool trial screens.",
+      "Governance navigation: Context, Institutional diagnosis, Action plan and resources, Monitoring and review.",
+      "Budget: entering 1234.56 shows the same formatted subtotal in the resource question, live panel and plan, alongside six missing amounts.",
+      "Mixed priorities remain institutional until the user explicitly identifies an AI use project. Separate project and governance buttons preserve each front.",
+      "The tool project report uses the identified project title and excludes governance challenge IDs from its projection. Returning to governance preserves its budget.",
+      "National school/student totals are formatted by locale; the currency already associated with entered governance amounts is retained if the country changes."
     ],
     "regressions": [
-      "Round-trip import/export preserves national totals, G1 legacy and G11/G16 new IDs.",
-      "Switching scope preserves stage data separately from national totals. National totals feed summaries and update estimates when an AI use is defined.",
-      "Invalid totals do not complete the Challenges question. All eight translation dictionaries contain the new challenge labels and descriptions."
-    ]
+      "Sandbox only for G15; saved sandbox data retained when the challenge is unselected.",
+      "All selected challenges create actions; existing G1-G10 IDs remain supported, along with other challenge text.",
+      "National totals and governance budget cannot change tool project costs.",
+      "New institutional answers, previous tool answers, stage data and saved position survive JSON export/import.",
+      "Unknown costs are not zero; zero, partial totals, complete totals and invalid imported amounts are distinguished."
+    ],
+    "pdf": {
+      "brief_pages": 3,
+      "annex_pages": 5,
+      "fixture": "Synthetic case with regulation and child safety challenges; one amount 1234.56 and six unknown amounts",
+      "text": "Numbers and labels match the institutional model; no pilot, PoC, license or procurement annex text in the governance PDFs.",
+      "visual": "All pages rendered and inspected; no overlap or clipping."
+    }
   },
   "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
-  "delivery": "08-governanca-nacional",
-  "publication_parent": "5f81feed233dbdcf6598073a25e80299f7d4067c",
-  "previous_delivery_commit": "5f81feed233dbdcf6598073a25e80299f7d4067c",
+  "delivery": "09-percurso-institucional-governanca",
+  "publication_parent": "610d28fdf8cd0302122ac37334fd51a258d0003d",
+  "previous_delivery_commit": "610d28fdf8cd0302122ac37334fd51a258d0003d",
   "phase_names_en": [
     "Context",
     "Proof of concept or pilot",
@@ -60,10 +70,25 @@
   ],
   "previous_validation": {
     "build": "passed",
-    "targeted_test_files_passed": 2,
-    "targeted_tests_passed": 27,
+    "test_files_passed": 38,
+    "tests_passed": 832,
+    "skipped": 2,
+    "todo": 1,
+    "final_targeted_tests_passed": 17,
+    "domain_check": "passed",
     "diff_check": "passed",
-    "interface": "Local browser: Contexto opening contains only title, bold italic guiding question and Back/Next. Paragraph, question/minute counters and notes removed. Proof of concept or pilot opening keeps its paragraph, counters and notes."
+    "interface": [
+      "Priority label corrected to AI governance in education. Sole governance Next goes to Challenges; no Levels screen in navigation and counters show 22 active questions, 8 in Context.",
+      "National total schools/students are required to enable Next, formatted by locale. Entered 12345 schools and 1600000 students in the local test.",
+      "Eight new governance challenges rendered with revised English titles and descriptions.",
+      "With Educating with AI also checked, Next leads to Levels, schools and students, with 23 total questions. Returning to sole governance preserves national totals.",
+      "Direct URL to Levels redirects to Challenges when governance is the sole priority."
+    ],
+    "regressions": [
+      "Round-trip import/export preserves national totals, G1 legacy and G11/G16 new IDs.",
+      "Switching scope preserves stage data separately from national totals. National totals feed summaries and update estimates when an AI use is defined.",
+      "Invalid totals do not complete the Challenges question. All eight translation dictionaries contain the new challenge labels and descriptions."
+    ]
   },
   "context_screens": 9,
   "context_order": [
@@ -77,8 +102,8 @@
     "alternativa",
     "governanca"
   ],
-  "essential_screens_governance_only": 22,
-  "context_screens_governance_only": 8,
+  "essential_screens_governance_only": 11,
+  "context_screens_governance_only": 3,
   "governance_challenge_ids": [
     "G11",
     "G12",
@@ -92,5 +117,26 @@
   "editorial_references": [
     "https://www.unesco.org/en/articles/guidance-generative-ai-education-and-research",
     "https://www.unicef.org/innocenti/reports/policy-guidance-ai-children"
-  ]
+  ],
+  "essential_screens_governance_with_sandbox": 12,
+  "context_order_governance": [
+    "local",
+    "prioridades",
+    "problemas"
+  ],
+  "mixed_governance_extra_question": "gov-projeto",
+  "governance_phase_names_en": [
+    "Context",
+    "Institutional diagnosis",
+    "Action plan and resources",
+    "Monitoring and review"
+  ],
+  "governance_phase_names_pt": [
+    "Contexto",
+    "Diagnóstico institucional",
+    "Plano de ação e recursos",
+    "Acompanhamento e revisão"
+  ],
+  "challenge_selection_limit": null,
+  "governance_translation_status": "PT/EN/ES/FR new text; existing translations retained for AR/ZH/BM/ZU/SW, with explicit English entries for new text awaiting native review and the existing preliminary-translation notice."
 }
