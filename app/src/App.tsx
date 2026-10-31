@@ -1,6 +1,6 @@
 import { Letramento } from './screens/Letramento';
 import { Governanca } from './screens/Governanca';
-import { percursoGovernanca, percursoLetramento, prioridadeEscolhida } from './domain';
+import { percursoGovernanca, percursoLetramento, percursoEducacao, CAMPOS_EDUCACAO_REMOVIDOS, prioridadeEscolhida } from './domain';
 import { useEffect } from 'react';
 import { Galeria } from './screens/Galeria';
 import { Inicio } from './screens/Inicio';
@@ -27,7 +27,10 @@ export function App() {
   }, [chave]);
   const aguardaPrioridade = !prioridadeEscolhida(ctx) && !(rota.tipo === 'inicio' || rota.tipo === 'galeria' || (rota.tipo === 'abertura' && rota.n === 1) || (rota.tipo === 'pergunta' && rota.n === 1 && ['local','prioridades'].includes(rota.tela)));
   useEffect(() => { if (aguardaPrioridade) ir(href.pergunta(1, 'prioridades')); }, [aguardaPrioridade]);
+  const removida = percursoEducacao(ctx) && (rota.tipo === 'pergunta' && CAMPOS_EDUCACAO_REMOVIDOS.includes(rota.tela) || rota.tipo === 'sintese' && !!rota.foco && CAMPOS_EDUCACAO_REMOVIDOS.includes(rota.foco));
+  useEffect(()=>{if(removida) ir(href.pergunta(1,'impactos'));},[removida]);
   const tela = (() => {
+    if (removida) return <Pergunta n={1} tela="impactos" />;
     if (aguardaPrioridade) return <Pergunta n={1} tela="prioridades" />;
     if (percursoLetramento(ctx) && !['inicio','galeria'].includes(rota.tipo)) return <Letramento key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo} rota={rota} />;
     if (percursoGovernanca(ctx) && !['inicio', 'galeria'].includes(rota.tipo)) return <Governanca key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo === 'abertura' || rota.tipo === 'sintese' ? `${rota.tipo}${rota.n}` : rota.tipo} rota={rota} />;

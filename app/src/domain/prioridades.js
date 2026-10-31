@@ -65,8 +65,8 @@ const PRIORIDADES = [
     ],
   },
   {
-    id: 'com', nome: 'Educar com a IA',
-    desc: 'Usar a IA para apoiar o ensino, a aprendizagem e a gestão: planejar aulas, dar retorno, oferecer prática, identificar quem precisa de apoio e atender as escolas.',
+    id: 'com', nome: 'Educação com e sem IA',
+    desc: 'Planejar melhorias na aprendizagem, na inclusão e no desenvolvimento dos estudantes, com ou sem IA.',
     ex: ['Estudantes do 5º ano abaixo do nível esperado em leitura', 'Baixa proficiência em matemática ao fim do ensino fundamental', 'Professores que gastam muitas horas no planejamento', 'Escolas que esperam dias por respostas da secretaria'],
     problemas: [
       { id: 'C1', t: 'Estudantes abaixo do nível esperado em leitura e escrita.', obj: 'Reduzir de __% para __% os estudantes de __ abaixo do nível adequado em leitura em __ anos.',
@@ -303,6 +303,153 @@ const DESAFIOS_SOBRE_V015 = [
   }
 ];
 PRIORIDADES.find(p => p.id === 'sobre').problemas.push(...DESAFIOS_SOBRE_V015);
+// Opções novas de educação; C1–C10 preservam os significados dos casos anteriores.
+const DESAFIOS_EDUCACAO_V015 = [
+  {
+    "id": "C11",
+    "t": "Alfabetização e numeracia fundamentais",
+    "obj": "Elevar para __% os estudantes que atingem o nível esperado em leitura, escrita e matemática até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "aprendizagem",
+      "desigualdade"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C12",
+    "t": "Educação STEM",
+    "obj": "Ampliar para __ estudantes as oportunidades de aprendizagem em ciências, tecnologia, engenharia e matemática até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "aprendizagem",
+      "competencias_vida"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C13",
+    "t": "Recomposição e recuperação das aprendizagens",
+    "obj": "Oferecer apoio à recuperação das aprendizagens a __ estudantes até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "aprendizagem",
+      "desigualdade"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C14",
+    "t": "Educação de jovens e adultos (EJA)",
+    "obj": "Apoiar __ jovens e adultos na retomada e conclusão dos estudos até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "aprendizagem",
+      "permanencia",
+      "inclusao"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C15",
+    "t": "Estudantes com deficiência",
+    "obj": "Garantir materiais e atividades acessíveis a __% dos estudantes com deficiência até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "inclusao",
+      "desigualdade"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C16",
+    "t": "Educação multilíngue",
+    "obj": "Disponibilizar materiais e atividades nas línguas dos estudantes para __ participantes até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "inclusao",
+      "aprendizagem"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C17",
+    "t": "Futuro do trabalho",
+    "obj": "Oferecer atividades de preparação para as mudanças no trabalho a __ estudantes até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "competencias_vida"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C18",
+    "t": "Educação e formação técnica e profissional (TVET)",
+    "obj": "Ampliar ou atualizar __ cursos de educação técnica e profissional até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "competencias_vida",
+      "permanencia"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C19",
+    "t": "Bem-estar social e emocional",
+    "obj": "Realizar ações de apoio ao bem-estar social e emocional com __ estudantes até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "bem_estar",
+      "socioemocionais"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C20",
+    "t": "Cidadania global",
+    "obj": "Trabalhar cidadania global com __ estudantes por meio de atividades e projetos até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "cidadania_global",
+      "competencias_vida"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C21",
+    "t": "Competências pessoais e interpessoais (soft skills)",
+    "obj": "Desenvolver atividades de comunicação, colaboração e resolução de problemas com __ estudantes até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "socioemocionais",
+      "competencias_vida"
+    ],
+    "v015": true,
+    "educacao": true
+  }
+];
+PRIORIDADES.find(p => p.id === 'com').problemas.push(...DESAFIOS_EDUCACAO_V015);
 const PROBLEMA_POR_ID = {};
 const PRIORIDADE_DO_PROBLEMA = {};
 PRIORIDADES.forEach(p => p.problemas.forEach(q => { PROBLEMA_POR_ID[q.id] = q; PRIORIDADE_DO_PROBLEMA[q.id] = p.id; }));
@@ -335,12 +482,12 @@ function sugestoesProblemas(x, trf) {
   const textos = ps.map(q => t(q.t));
   if (outro) textos.push(outro);
   const olhando = textos.length ? textos[0].replace(/\.$/, '') + (textos.length > 1 ? ' ' + t('(e mais ' + (textos.length - 1) + ')') : '') : '';
-  const objetivos = ps.map(q => q.v015 ? t(q.t) + ': __.' : t(q.obj));
+  const objetivos = ps.map(q => q.v015 && !q.educacao ? t(q.t) + ': __.' : t(q.obj));
   return {
     n: ps.length + (outro ? 1 : 0), problemas: ps.map(q => q.id), tarefas, impactos, olhando,
     resultado: objetivos.join('\n'),
     problema: textos.length ? t(ps.some(q => q.v015) ? 'Desafios selecionados:' : 'Na rede, hoje:') + ' ' + textos.join(' ') + ' ' + t('Quem é afetado: __. O que se sabe sobre as causas: __.') : '',
-    semFerramenta: ps.length > 0 && !outro && ps.every(q => !(q.tarefas || []).length),
+    semFerramenta: ps.length > 0 && !outro && ps.every(q => !(q.tarefas || []).length) && !ps.some(q => q.educacao),
     formacao: ps.some(q => q.formacao) || (x && (x.prioridades || []).some(id => (PRIORIDADES.find(p => p.id === id) || {}).formacao)),
   };
 }

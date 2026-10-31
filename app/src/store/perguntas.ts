@@ -1,7 +1,7 @@
 import { telasLetramento } from '../percurso/letramento';
 // Perguntas do modo Essencial e vínculo resposta → trecho do plano
 // (spec, "Mapa das 51 perguntas para as 24 do Essencial" e "Comportamentos que fazem a narrativa").
-import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoGovernanca, percursoLetramento } from '../domain';
+import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoGovernanca, percursoLetramento, percursoEducacao, CAMPOS_EDUCACAO_REMOVIDOS } from '../domain';
 import type { Capitulo } from './tipos';
 
 export interface TelaEssencial {
@@ -69,7 +69,7 @@ export const LETRAMENTO: TelaEssencial[] = [
 export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id)), ...LETRAMENTO.filter(t => t.id.startsWith('lit-'))];
 export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] {
   if (percursoLetramento(e?.ctx)) { const ids = telasLetramento(e as any); return LETRAMENTO.filter(t => ids.includes(t.id)); }
-  if (!percursoGovernanca(e?.ctx)) return ESSENCIAL;
+  if (!percursoGovernanca(e?.ctx)) return percursoEducacao(e?.ctx) ? ESSENCIAL.filter(t=>!['problema','linhaBase','alternativa'].includes(t.id)) : ESSENCIAL;
   return GOVERNANCA.filter(t => (t.id !== 'gov-projeto' || e?.ctx?.prioridades.some((id: string) => !['governar','sobre'].includes(id)))
     && (t.id !== 'gov-sandbox' || e?.ctx?.problemas?.includes('G15')));
 }
@@ -203,7 +203,7 @@ export const EXTRAS_REFINAR: ExtraRefinar[] = [
   { id: 'linhaBase', capitulo: 1, n: '1.2.7', campos: ['linhaBaseProblemas', 'linhaBaseProblemaTxt', 'linhaBaseMedida'] },
   { id: 'governanca', capitulo: 1, n: '1.3', campos: [] },
 ];
-export function extrasDoCapitulo(capitulo: Capitulo): ExtraRefinar[] { return EXTRAS_REFINAR.filter(x => x.capitulo === capitulo); }
+export function extrasDoCapitulo(capitulo: Capitulo, e?: EscopoPercurso): ExtraRefinar[] { return EXTRAS_REFINAR.filter(x => x.capitulo === capitulo && !(percursoEducacao(e?.ctx) && x.id === 'linhaBase')); }
 /** o id de âncora de um campo na síntese (`#/capitulo/:n/sintese/:campo`): campos de detalhe apontam para o seu bloco */
 export function idDoFoco(campo: string): string {
   const c = String(campo || '');

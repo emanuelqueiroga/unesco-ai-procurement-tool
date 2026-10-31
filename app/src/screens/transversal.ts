@@ -3,7 +3,7 @@ import { telaLetramentoLegada } from '../percurso/letramento';
 // substituir o caso, mensagens de erro de importação no idioma da interface, versão e data do rodapé, título da
 // aba por tela, "continuar de onde parei" e a regra de retradução do exemplo ao trocar de idioma.
 import { telaGovernancaLegada } from '../percurso/governanca';
-import { percursoGovernanca, percursoLetramento, prioridadeEscolhida } from '../domain/escopo.js';
+import { percursoGovernanca, percursoLetramento, percursoEducacao, CAMPOS_EDUCACAO_REMOVIDOS, prioridadeEscolhida } from '../domain/escopo.js';
 import { CASOS, tr } from '../domain';
 import { telasAtivas, temRespostas, ErroImportacao } from '../store';
 import { infoCapitulo, CURTO, t } from '../percurso/textos';
@@ -100,6 +100,7 @@ export function destinoContinuar(
 ): { href: string; pendente: boolean } {
   if (!faltam.length) return { href: href.plano(), pendente: false };
   const c = s.capitulo;
+  if(percursoEducacao(s.ctx) && c?.pergunta && CAMPOS_EDUCACAO_REMOVIDOS.includes(c.pergunta)) return {href:href.pergunta(1,'impactos'),pendente:true};
   if (percursoLetramento(s.ctx) && c?.pergunta) { const id=telaLetramentoLegada(c.pergunta); const alvo=telasAtivas(s).find(t=>t.id===id); if(alvo) return {href:href.pergunta(alvo.capitulo,alvo.id),pendente:true}; }
   const legada = percursoGovernanca(s.ctx) && c?.pergunta ? telaGovernancaLegada(c.pergunta) : null;
   if (legada) return { href: href.pergunta(legada.n, legada.id), pendente: true };

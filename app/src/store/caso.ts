@@ -1,3 +1,4 @@
+import { educacaoAutomatica, impactosEducacao } from '../percurso/educacao';
 import { normalizarContextoPais } from './contextoPais';
 // Store do caso (Zustand): o estado v14 mais as ações do percurso. Substitui a global S e as funções que a
 // mutavam em src/app.js e src/fluxo.js (marcarCampo, gravarNumCaso, aplicarPadroes/Problemas/Sugestoes,
@@ -238,6 +239,15 @@ function efeitos(e: Estado14, campo: string) {
 function propagar(e: Estado14): string[] {
   if (percursoLetramento(e.ctx) || temGovernanca(e.ctx) && !projetoUsoDefinido(e.ctx)) return [];
   const tocados: string[] = [];
+  if (educacaoAutomatica(e.ctx)) {
+    e.ctx.impactosAutomaticosEducacao=true;
+    const ids=impactosEducacao(e);
+    if (JSON.stringify(ids)!==JSON.stringify(e.caso.impactos)) {
+      if (['informado','refinado'].includes(e.origem.impactos) && !e.ctx.impactosAnterioresEducacao) e.ctx.impactosAnterioresEducacao={valores:clone(e.caso.impactos),origem:e.origem.impactos};
+      e.caso.impactos=ids;tocados.push('impactos');
+    }
+    e.origem.impactos='informado';e.respC.impactos=ids.length>0;e.sugestoes.impactos='problemas';
+  }
   for (let i = 0; i < 5; i++) {
     const r = aplicarSugestoes(e);
     r.revisar.forEach(x => {

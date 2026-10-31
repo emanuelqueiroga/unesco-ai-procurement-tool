@@ -1,7 +1,7 @@
 // Telas do percurso: abertura de capítulo (D2), pergunta (D3–D6, M2, M3) e síntese de capítulo (D7).
 import { useEffect, useState, type ReactNode } from 'react';
 import {
-  CAMPO_POR_ID, textoCampo, tr, REF_TCO, INFO_C236, modoTeste, prioridadeEscolhida, somenteGovernanca, tamanhoRedeValido, ajudaDeTela, dicaDaTela, dicaDoCampo, quemSabe,
+  percursoEducacao, CAMPO_POR_ID, textoCampo, tr, REF_TCO, INFO_C236, modoTeste, prioridadeEscolhida, somenteGovernanca, tamanhoRedeValido, ajudaDeTela, dicaDaTela, dicaDoCampo, quemSabe,
 } from '../domain';
 import {
   useCaso, telasAtivas, telasDoCapitulo, camposAtivos, afetadosPor, camposRefinar, origemDe, extrasDoCapitulo, comparaN, idDoFoco, comLacuna,
@@ -64,6 +64,7 @@ export function Abertura({ n }: { n: Capitulo }) {
 }
 
 function tituloTela(s: CasoStore, id: string): string {
+  if(id==='impactos' && percursoEducacao(s.ctx)) return t('Impacto esperado');
   if (TITULO_TELA[id]) return t(TITULO_TELA[id]);
   const f: any = (CAMPO_POR_ID as any)[id];
   return f ? String(tr(textoCampo(f, s.caso))) : id;
@@ -112,7 +113,7 @@ export function Pergunta({ n, tela: pedida }: { n: Capitulo; tela: string }) {
   // no Refinar não há limite de problemas, então a frase de abertura muda
   const lead = id === 'problemas' && s.modo === 'refinar'
     ? 'Selecione todos os desafios que fazem parte do seu plano.'
-    : LEAD[id] || null;
+    : id === 'impactos' && percursoEducacao(s.ctx) ? 'Ajuste a meta ou o resultado esperado. Os impactos acompanham automaticamente os desafios escolhidos.' : LEAD[id] || null;
   const numeroGlobal = telasAtivas(s).indexOf(tela) + 1;
   return (
     <Shell pos={{ capitulo: n, tela: id }} contexto={t(CAPITULOS_INFO[n].titulo)}>
@@ -182,13 +183,13 @@ interface ItemPremissa { id: string; n: string; titulo: string; origem: Origem |
  * refinar() (origem "refinado"). Cada item tem o id `prem-<campo>`, o alvo de `#/capitulo/:n/sintese/:campo`.
  */
 function PremissasCapitulo({ s, n, foco }: { s: CasoStore; n: Capitulo; foco?: string }) {
-  const campos = camposRefinar(n).filter((c) => TIPOS_SIMPLES.includes((CAMPO_POR_ID as any)[c].tipo) && (!(CAMPO_POR_ID as any)[c].se || (CAMPO_POR_ID as any)[c].se(s.caso)));
+  const campos = camposRefinar(n, s).filter((c) => TIPOS_SIMPLES.includes((CAMPO_POR_ID as any)[c].tipo) && (!(CAMPO_POR_ID as any)[c].se || (CAMPO_POR_ID as any)[c].se(s.caso)));
   const itens: ItemPremissa[] = [
     ...campos.map((c): ItemPremissa => {
       const f: any = (CAMPO_POR_ID as any)[c];
       return { id: c, n: f.n, titulo: String(tr(textoCampo(f, s.caso))), origem: origemDe(s, c), corpo: <ControleCampo e={s} campo={c} /> };
     }),
-    ...extrasDoCapitulo(n).filter(x => x.id !== 'grade' || !somenteGovernanca(s.ctx)).map((x): ItemPremissa => {
+    ...extrasDoCapitulo(n, s).filter(x => x.id !== 'grade' || !somenteGovernanca(s.ctx)).map((x): ItemPremissa => {
       const o = x.campos.map((c) => origemDe(s, c)).find((v) => v === 'refinado' || v === 'informado');
       return { id: x.id, n: x.n, titulo: t(TITULO_EXTRA[x.id] || x.id), origem: x.campos.length ? (o || 'padrao') : null, corpo: <ControleExtra e={s} id={x.id} /> };
     }),

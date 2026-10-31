@@ -1,3 +1,4 @@
+import { impactosEducacao } from './educacao';
 // Controles das perguntas: um renderizador por tipo de campo de CAMPOS (radio → OptionCard; chips, multi → Chip
 // ou OptionCard; texto, area → TextField; num, horas → CampoNumero; etapas → SchoolsGrid; setup → campos do teste;
 // ferramentas e arq → listas do Refinar) e as telas do Essencial que juntam mais de um campo (governança, internet,
@@ -6,7 +7,7 @@
 // mostram o detalhe recolhido na própria tela; a lógica pura dessas edições está em refinar.ts.
 import { Fragment, createContext, useContext, useId, useState, type ReactNode } from 'react';
 import {
-  percursoLetramento, temGovernanca, LOC, CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
+  percursoEducacao, percursoLetramento, temGovernanca, LOC, CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
   listaOpc, totaisCtx, alunosEtapa, etapasAtivas, modoTeste, horasEstimativa, lerNumero, problemasMarcados, sugProblemas, temLacuna, rotulo, pct, tr,
 } from '../domain';
 import { useCaso, origemDe, valorDe, type Estado14, type TelaEssencial } from '../store';
@@ -710,12 +711,12 @@ function Problemas({ e }: { e: Estado14 }) {
   return (
     <div className="pc-grupos">
       {temGovernanca(e.ctx) ? <TamanhoRedeNacional e={e} /> : null}
-      <p className="pc-nota">{t('Selecione todos os desafios que fazem parte do seu plano.')}</p>
+      {!percursoEducacao(e.ctx) ? <p className="pc-nota">{t('Selecione todos os desafios que fazem parte do seu plano.')}</p> : null}
       {P.map((p) => {
-        const catalogoNovo = ['governar', 'sobre'].includes(p.id);
+        const catalogoNovo = ['governar', 'sobre', 'com'].includes(p.id);
         const atuais = catalogoNovo ? p.problemas.filter((q: any) => q.v015) : p.problemas;
-        // Em letramento, as escolhas antigas só reaparecem quando já pertencem ao caso salvo.
-        const legados = catalogoNovo ? p.problemas.filter((q: any) => !q.v015 && (p.id !== 'sobre' || atual.includes(q.id))) : [];
+        // Nos catálogos educacionais novos, escolhas antigas só reaparecem se já pertencem ao caso salvo.
+        const legados = catalogoNovo ? p.problemas.filter((q: any) => !q.v015 && (p.id === 'governar' || atual.includes(q.id))) : [];
         const cartao = (q: any) => {
           const on = atual.includes(q.id);
           return <OptionCard key={q.id} type="checkbox" name="problemas" value={q.id}
@@ -749,7 +750,7 @@ function Problemas({ e }: { e: Estado14 }) {
           </section>
         );
       })}
-      {percursoLetramento(e.ctx) ? <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}</summary><TextField label={t('Informações adicionais')} multiline value={str(e.ctx.problemaOutro)} onChange={v=>useCaso.getState().refinar('problemaOutro',v)} /></details> : refinando ? <OutroProblema e={e} /> : <DicaRefinar texto={t('Para marcar subcategorias ou descrever outro problema, use o modo Refinar.')} />}
+      {percursoLetramento(e.ctx) || percursoEducacao(e.ctx) ? <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}</summary><TextField label={t('Informações adicionais')} multiline value={str(e.ctx.problemaOutro)} onChange={v=>useCaso.getState().refinar('problemaOutro',v)} /></details> : refinando ? <OutroProblema e={e} /> : <DicaRefinar texto={t('Para marcar subcategorias ou descrever outro problema, use o modo Refinar.')} />}
     </div>
   );
 }
@@ -1107,7 +1108,7 @@ export function ControlesTela({ e, tela }: { e: Estado14; tela: TelaEssencial })
     case 'prioridades': return <Prioridades e={e} />;
     case 'problemas': return <Problemas e={e} />;
     case 'problema': return <Texto e={e} campo="problema" multiline rotulo={t('Situação atual')} />;
-    case 'impactos': return <><Chips e={e} campo="impactos" /><Origem e={e} campos={['impactos']} /></>;
+    case 'impactos': if (percursoEducacao(e.ctx)) { const ids=impactosEducacao(e); return <><p>{t('Impactos definidos pelos desafios selecionados')}</p>{ids.length ? <ul>{ids.map(id=><li key={id}>{String(tr((OPC.impactos.find((o:any)=>o[0]===id)||[id,id])[1]))}</li>)}</ul> : <p>{t('Selecione desafios para definir os impactos.')}</p>}<Texto e={e} campo="resultado" multiline rotulo={t('Meta ou resultado esperado')} /></>; } return <><Chips e={e} campo="impactos" /><Origem e={e} campos={['impactos']} /></>;
     case 'linhaBase': return (
       <>
         <ControleCampo e={e} campo="linhaBase" />

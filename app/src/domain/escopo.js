@@ -38,3 +38,7 @@ export const FAIXAS_ESTUDANTES = [['ate100000','Até 100.000 estudantes'],['1000
 export function temLetramento(ctx) { return Array.isArray(ctx?.prioridades) && ctx.prioridades.includes('sobre'); }
 export function percursoLetramento(ctx) { return temLetramento(ctx) && !percursoGovernanca(ctx) && !(projetoUsoDefinido(ctx) && ctx.frenteAtiva === 'projeto'); }
 export function percursoInstitucional(ctx) { return percursoGovernanca(ctx) || percursoLetramento(ctx); }
+
+/** A frente educacional conserva as etapas de ensino; os percursos institucionais têm navegação própria. */
+export function percursoEducacao(ctx) { return Array.isArray(ctx?.prioridades) && ctx.prioridades.includes('com') && !percursoInstitucional(ctx); }
+export const CAMPOS_EDUCACAO_REMOVIDOS = ['problema','linhaBase','alternativa','altCustoEfeito','linhaBaseProblemas','linhaBaseProblemaTxt','linhaBaseMedida'];
