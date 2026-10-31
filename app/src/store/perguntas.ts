@@ -1,6 +1,6 @@
 // Perguntas do modo Essencial e vínculo resposta → trecho do plano
 // (spec, "Mapa das 51 perguntas para as 24 do Essencial" e "Comportamentos que fazem a narrativa").
-import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, somenteGovernanca } from '../domain';
+import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoGovernanca } from '../domain';
 import type { Capitulo } from './tipos';
 
 export interface TelaEssencial {
@@ -11,7 +11,7 @@ export interface TelaEssencial {
   n: string[];
   /** ids dos campos de CAMPOS (ou de QUESTOES_G, g-*) que a tela responde */
   campos: string[];
-  /** observação da spec (só totais, até 3, condicional…) */
+  /** observação da spec (só totais, sem limite, condicional…) */
   nota?: string;
 }
 
@@ -22,7 +22,7 @@ export const ESSENCIAL: TelaEssencial[] = [
   { id: 'local', capitulo: 1, n: ['1.1.2'], campos: ['pais'] },
   { id: 'prioridades', capitulo: 1, n: ['1.2.1'], campos: ['prioridades'] },
   { id: 'etapas', capitulo: 1, n: ['1.1.4', '1.1.5'], campos: ['etapas', 'grade'], nota: 'só totais; detalhe por ano em Refinar' },
-  { id: 'problemas', capitulo: 1, n: ['1.2.2'], campos: ['problemas'], nota: 'até 3; subcategorias e "outro problema" em Refinar' },
+  { id: 'problemas', capitulo: 1, n: ['1.2.2'], campos: ['problemas'], nota: 'sem limite; subcategorias e "outro problema" em Refinar' },
   { id: 'problema', capitulo: 1, n: ['1.2.4'], campos: ['problema'] },
   { id: 'impactos', capitulo: 1, n: ['1.2.5'], campos: ['impactos'] },
   { id: 'linhaBase', capitulo: 1, n: ['1.2.7'], campos: ['linhaBase'], nota: 'detalhes em Refinar' },
@@ -48,16 +48,33 @@ export const ESSENCIAL: TelaEssencial[] = [
 export const CAMPOS_ESSENCIAIS: string[] = ESSENCIAL.flatMap(t => t.campos);
 export const CAPITULOS: Capitulo[] = [1, 2, 3, 4];
 export type EscopoPercurso = { ctx?: Record<string, any> };
+export const GOVERNANCA: TelaEssencial[] = [
+  ...ESSENCIAL.filter(t => ['local', 'prioridades', 'problemas'].includes(t.id)),
+  { id: 'gov-projeto', capitulo: 1, n: [], campos: ['projetoIA'] },
+  { id: 'gov-diagnostico', capitulo: 2, n: [], campos: ['govDiagnostico'] },
+  { id: 'gov-instrumentos', capitulo: 2, n: [], campos: ['govInstrumentos'] },
+  { id: 'gov-solucoes', capitulo: 2, n: [], campos: ['govSolucoes'] },
+  { id: 'gov-atores', capitulo: 3, n: [], campos: ['govAtores'] },
+  { id: 'gov-acoes', capitulo: 3, n: [], campos: ['govAcoes'] },
+  { id: 'gov-capacidade', capitulo: 3, n: [], campos: ['govCapacidade'] },
+  { id: 'gov-recursos', capitulo: 3, n: [], campos: ['govOrcamento'] },
+  { id: 'gov-sandbox', capitulo: 3, n: [], campos: ['govSandbox'] },
+  { id: 'gov-revisao', capitulo: 4, n: [], campos: ['govRevisao'] },
+];
+export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id))];
 export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] {
-  return somenteGovernanca(e?.ctx) ? ESSENCIAL.filter(t => t.id !== 'etapas') : ESSENCIAL;
+  if (!percursoGovernanca(e?.ctx)) return ESSENCIAL;
+  return GOVERNANCA.filter(t => (t.id !== 'gov-projeto' || e?.ctx?.prioridades.some((id: string) => id !== 'governar'))
+    && (t.id !== 'gov-sandbox' || e?.ctx?.problemas?.includes('G15')));
 }
 export function telasDoCapitulo(n: Capitulo, e?: EscopoPercurso): TelaEssencial[] { return telasAtivas(e).filter(t => t.capitulo === n); }
-export function telaDoCampo(campo: string): TelaEssencial | undefined { return ESSENCIAL.find(t => t.campos.includes(campo) || (campo === 'redeNacional' && t.id === 'problemas')); }
+export function telaDoCampo(campo: string): TelaEssencial | undefined { return TODAS_TELAS.find(t => t.campos.includes(campo) || (campo === 'redeNacional' && t.id === 'problemas')); }
 export function essencial(campo: string): boolean { return CAMPOS_ESSENCIAIS.includes(campo); }
 // Campos que o Refinar grava em ctx/caso mas que não são perguntas de CAMPOS (subcategorias e "Outro problema" do 1.2.2).
 // ondeMora (caso.ts) procura o campo em CAMPO_POR_ID para saber se mora em ctx; sem este registro eles iriam para `caso`.
 {
   const reg: any = CAMPO_POR_ID;
+  for (const id of [...GOVERNANCA.flatMap(t => t.campos), 'frenteAtiva']) { if (!reg[id]) reg[id] = { id, onde: 'ctx', tipo: 'extra', passo: '' }; }
   reg.redeNacional = { id: 'redeNacional', onde: 'ctx', tipo: 'extra', passo: '' };
   if (!reg.subs) reg.subs = { id: 'subs', onde: 'ctx', tipo: 'extra', passo: '' };
   if (!reg.problemaOutro) reg.problemaOutro = { id: 'problemaOutro', onde: 'ctx', tipo: 'extra', passo: '' };

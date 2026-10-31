@@ -1,9 +1,11 @@
 // Lógica pura do pacote transversal (sem React nem DOM, para testar em Vitest): quando pedir confirmação antes de
 // substituir o caso, mensagens de erro de importação no idioma da interface, versão e data do rodapé, título da
 // aba por tela, "continuar de onde parei" e a regra de retradução do exemplo ao trocar de idioma.
+import { telaGovernancaLegada } from '../percurso/governanca';
+import { percursoGovernanca } from '../domain/escopo.js';
 import { CASOS, tr } from '../domain';
 import { telasAtivas, temRespostas, ErroImportacao } from '../store';
-import { CAPITULOS_INFO, CURTO, t } from '../percurso/textos';
+import { infoCapitulo, CURTO, t } from '../percurso/textos';
 import { href, type Rota } from '../percurso/rota';
 
 export const NOME_FERRAMENTA = 'AI in Education Procurement Tool';
@@ -72,14 +74,14 @@ export function textoVersao(versao: string, canal: 'estavel' | 'revisao', data: 
 export function tituloDaAba(rota: Rota, s?: { ctx?: Record<string, any> }): string {
   let parte = '';
   switch (rota.tipo) {
-    case 'abertura': parte = t(CAPITULOS_INFO[rota.n].titulo); break;
+    case 'abertura': parte = t(infoCapitulo(rota.n, s).titulo); break;
     case 'pergunta': {
       const telas = telasAtivas(s);
       const i = telas.findIndex((x) => x.id === rota.tela);
       parte = `${t('Pergunta {n} de {total}', { n: i + 1, total: telas.length })} · ${t(CURTO[rota.tela] || rota.tela)}`;
       break;
     }
-    case 'sintese': parte = t(CAPITULOS_INFO[rota.n].titulo); break;
+    case 'sintese': parte = t(infoCapitulo(rota.n, s).titulo); break;
     case 'plano': parte = `${t('Seu plano')} · ${t(({ resumo: 'Em resumo', custa: 'Quanto custa', fazer: 'O que fazer', exigir: 'O que exigir', apendice: 'Apêndice', faltam: 'Respostas que faltam' } as Record<string, string>)[rota.pagina] || 'Em resumo')}`; break;
     case 'refinar': parte = t('Refinar'); break;
     case 'galeria': parte = 'Prumo'; break;
@@ -96,6 +98,8 @@ export function destinoContinuar(
 ): { href: string; pendente: boolean } {
   if (!faltam.length) return { href: href.plano(), pendente: false };
   const c = s.capitulo;
+  const legada = percursoGovernanca(s.ctx) && c?.pergunta ? telaGovernancaLegada(c.pergunta) : null;
+  if (legada) return { href: href.pergunta(legada.n, legada.id), pendente: true };
   if (c?.pergunta === 'etapas' && !telasAtivas(s).some(t => t.id === 'etapas')) return { href: href.pergunta(1, 'problemas'), pendente: true };
   const tela = c && c.pergunta ? telasAtivas(s).find((x) => x.id === c.pergunta && x.capitulo === c.atual) : undefined;
   if (tela) return { href: href.pergunta(tela.capitulo, tela.id), pendente: true };

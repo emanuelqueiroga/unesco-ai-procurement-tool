@@ -1,3 +1,4 @@
+import { estadoDoProjeto } from '../domain/escopo.js';
 import { nomeContexto } from '../domain/pais.js';
 // Síntese de fim de capítulo: até dois parágrafos em prosa a partir das respostas, sem veredito, e o número que o
 // capítulo libera (2: custo do teste; 3: custo do primeiro ano; 4: custo total). Pura.
@@ -126,6 +127,7 @@ export function fraseDaFase(n: Capitulo, fases: any): string {
 }
 
 export function sinteseCapitulo(n: Capitulo, e: Estado14): Sintese {
+  e = estadoDoProjeto(e);
   sincronizar(e);
   const paragrafos = n === 1 ? cap1(e) : n === 2 ? cap2(e) : n === 3 ? cap3(e) : cap4(e);
   const recs = recsPlano(e);

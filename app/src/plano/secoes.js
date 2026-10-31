@@ -1,3 +1,4 @@
+import { estadoDoProjeto } from '../domain/escopo.js';
 import { nomePais, paisDoCaso } from '../domain/pais.js';
 // =====================================================================
 // Plano de contratação: seções (dados) da página e do PDF. Porte puro de src/resumo.js da v13 (dadosPlano,
@@ -234,6 +235,7 @@ function secaoMatriz(estado) {
 // ----------------------------------------------------------- utilitários
 // cópia rasa do estado com custo.cfg clonada: cfgAtual e matrizCaso gravam a cfg em estado.custo (como no legado)
 function copiaEstado(estado) {
+  estado = estadoDoProjeto(estado);
   const e = Object.assign({}, estado || {});
   if (e.custo) e.custo = Object.assign({}, e.custo, { cfg: e.custo.cfg ? clone(e.custo.cfg) : null });
   return e;

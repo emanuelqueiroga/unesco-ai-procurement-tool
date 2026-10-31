@@ -1,3 +1,4 @@
+import { estadoDoProjeto } from '../domain/escopo.js';
 import { nomeContexto } from '../domain/pais.js';
 // =====================================================================
 // Policy brief (design/redesign/06-policy-brief.md, PB-01): dados do PDF principal e da tela "Em resumo", já
@@ -146,6 +147,7 @@ const zero = v => !(Math.abs(+v || 0) >= 0.5);
  * Nunca lança: com estado sem caso, devolve o brief vazio (vazio: true) com as frases "a definir".
  */
 export function briefDados(estado, opts) {
+  estado = estadoDoProjeto(estado);
   opts = opts || {};
   estado = estado || {};
   const c = estado.caso || {}, x = estado.ctx || {};

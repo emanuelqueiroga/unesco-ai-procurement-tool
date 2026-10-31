@@ -1,7 +1,7 @@
 // Textos do percurso (v14): capítulos, a frase de abertura de cada pergunta e os rótulos dos trechos do plano.
 // Português é a chave de tradução; `t()` traduz quando há dicionário (os textos novos entram nos
 // dicionários em i18n/v14_<l>.json; até lá aparecem em português nos outros idiomas).
-import { tr, nomePais, paisDoCaso } from '../domain';
+import { tr, nomePais, paisDoCaso, percursoGovernanca } from '../domain';
 import type { Capitulo } from '../store';
 
 export const t = (s: string, vars?: Record<string, string | number>): string => {
@@ -62,7 +62,7 @@ export const LEAD: Record<string, string> = {
   situacao: 'Uma proposta já recebida pede outras perguntas que uma iniciativa do zero. O plano ajusta as recomendações a esse ponto.',
   etapas: 'Selecione as etapas e informe escolas e estudantes.',
   prioridades: 'Escolha uma ou mais prioridades.',
-  problemas: 'Escolha até três desafios. Você poderá ajustar as sugestões depois.',
+  problemas: 'Selecione todos os desafios que fazem parte do seu plano.',
   problema: 'Um problema bem descrito, sem citar tecnologia, é o que permite comparar a IA com outras soluções.',
   impactos: 'O impacto vira o resultado esperado do teste e os indicadores do plano.',
   linhaBase: 'Sem uma medida de antes, não há como saber se o teste funcionou.',
@@ -166,3 +166,18 @@ export function tituloGovernanca(id: string, caso: Record<string, unknown>, orig
   };
   return t(curtos[id] || original);
 }
+
+export const GOVERNANCA_INFO: Record<Capitulo, InfoCapitulo> = {
+  1: CAPITULOS_INFO[1],
+  2: { n: 2, titulo: 'Diagnóstico institucional', guia: 'O que já existe e quais lacunas precisam ser resolvidas?', texto: '', minutos: 5, entrega: '', alimenta: '' },
+  3: { n: 3, titulo: 'Plano de ação e recursos', guia: 'Quem fará o quê, até quando e com quais recursos?', texto: '', minutos: 8, entrega: '', alimenta: '' },
+  4: { n: 4, titulo: 'Acompanhamento e revisão', guia: 'Como acompanhar os resultados e revisar a política?', texto: '', minutos: 3, entrega: '', alimenta: '' },
+};
+export function infoCapitulo(n: Capitulo, s?: { ctx?: Record<string, any> }): InfoCapitulo {
+  return percursoGovernanca(s?.ctx) ? GOVERNANCA_INFO[n] : CAPITULOS_INFO[n];
+}
+Object.assign(CURTO, {
+ 'gov-projeto': 'Projeto de uso de IA', 'gov-diagnostico': 'Lacunas e resultados', 'gov-instrumentos': 'Instrumentos e evidências',
+ 'gov-solucoes': 'Soluções de política educacional', 'gov-atores': 'Instituições e grupos afetados', 'gov-acoes': 'Ações e responsabilidades',
+ 'gov-capacidade': 'Capacidade institucional', 'gov-recursos': 'Recursos e orçamento', 'gov-sandbox': 'Experimentação supervisionada', 'gov-revisao': 'Indicadores e revisão',
+});

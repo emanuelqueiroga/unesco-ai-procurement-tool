@@ -98,7 +98,7 @@ const PERGUNTAS = {
   '1.1.4': { como: P['1.1'].como, exemplo: P['1.1'].ex },
   '1.1.5': { como: P['1.1'].como, exemplo: P['1.1'].ex },
   '1.2.1': { como: 'Marque uma ou mais.' },
-  '1.2.2': { como: 'Marque até três problemas; cada um já vem descrito, e você completa os números da sua rede.', exemplo: P['1.2'].ex },
+  '1.2.2': { como: 'Selecione todos os desafios que fazem parte do seu plano.', exemplo: P['1.2'].ex },
   '1.2.3': { como: 'Vira o título do caso se você não der outro nome.' },
   '1.2.4': { como: 'Situação atual, quem é afetado e o que se sabe sobre as causas. Se, ao retirar a palavra "IA", o texto deixa de explicar o problema, reescreva.',
     exemplo: P['1.2'].ex },

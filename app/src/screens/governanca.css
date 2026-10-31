@@ -1,0 +1,10 @@
+.pc-gov-campos,.pc-gov-lista{display:grid;gap:1.4rem;margin-block:1.4rem}
+.pc-gov-card{border:1px solid var(--pr-line-control,#bdcbd0);border-radius:8px;padding:1.4rem;margin-block:1.4rem;overflow-wrap:anywhere}
+.pc-gov-card h2{font-size:1.2rem;margin-top:0;line-height:1.4}
+.pc-gov-custo{display:grid;grid-template-columns:minmax(10rem,1fr) minmax(12rem,1fr);gap:1rem;padding-block:1rem;border-bottom:1px solid var(--pr-line-control,#bdcbd0)}
+.pc-gov-orcamento{padding:1rem 0;margin-block:1rem;border-block:1px solid var(--pr-line-control,#bdcbd0)}
+.pc-gov-frentes{margin-bottom:2rem;padding-bottom:1rem;border-bottom:1px solid var(--pr-line-control,#bdcbd0)}
+.pc-gov-frentes p{font-size:.9rem}
+.pc-gov-dados{display:grid;gap:1rem}.pc-gov-dados dt{font-weight:600}.pc-gov-dados dd{margin:0;white-space:pre-wrap}
+.pc-gov-card summary{cursor:pointer;font-weight:600}
+@media(max-width:650px){.pc-gov-custo{grid-template-columns:1fr}.pc-gov-card{padding:1rem}}

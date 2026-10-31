@@ -11,14 +11,14 @@ import { normalizarContextoPais } from './contextoPais';
 //   refinar   → 'refinado'    (a pessoa alterou uma premissa no modo Refinar)
 // respC continua sendo derivado (informado/refinado = confirmado), para o domínio e a exportação da v13.
 import { create } from 'zustand';
-import { clone, CASO_VAZIO, CASOS, CTX_EX, RESP_EX, CAMPO_POR_ID, CAMPOS_CUSTO, CAMPOS_SUGERIDOS, CAMPOS_PROB, SUB_OBJ,
+import { temGovernanca, projetoUsoDefinido, clone, CASO_VAZIO, CASOS, CTX_EX, RESP_EX, CAMPO_POR_ID, CAMPOS_CUSTO, CAMPOS_SUGERIDOS, CAMPOS_PROB, SUB_OBJ,
   confirmarGerados, horasEstimativa, vazio, tr, cfgAtual, direcionadores, PRESETS, salario, opcoes,
   escolherPais as escolherPaisDoCaso, editarCampoPais as editarCampoPaisDoCaso, restaurarCampoPais as restaurarCampoPaisDoCaso,
   moedaAoEscolherPais, PAIS_CAMPOS_NO_CUSTO } from '../domain';
 import type { Estado14, Origem, Modo, Capitulo, DadosCaso14, Custo } from './tipos';
 import { estadoInicial, migrar, ErroImportacao } from './migracoes';
 import { aplicarSugestoes } from './sugestoes';
-import { afetadosPor, telaDoCampo, ESSENCIAL, CAPITULOS } from './perguntas';
+import { afetadosPor, telaDoCampo, ESSENCIAL, telasDoCapitulo, CAPITULOS } from './perguntas';
 import { dadosCaso } from '../export/json';
 
 // ----------------------------------------------------------- calculadora do modo Refinar (#/refinar)
@@ -236,6 +236,7 @@ function efeitos(e: Estado14, campo: string) {
 }
 // Sugestões em cascata até o ponto fixo (2.0 → 2.3.8; 2.2.1 → 4.1.1 → 3.1.1…); no máximo 5 voltas.
 function propagar(e: Estado14): string[] {
+  if (temGovernanca(e.ctx) && !projetoUsoDefinido(e.ctx)) return [];
   const tocados: string[] = [];
   for (let i = 0; i < 5; i++) {
     const r = aplicarSugestoes(e);
@@ -320,7 +321,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
   },
   setModo(modo) { set({ modo }); },
   irPara(capitulo, pergunta) {
-    const t = ESSENCIAL.find(x => x.capitulo === capitulo);
+    const t = telasDoCapitulo(capitulo, get())[0];
     set({ capitulo: { atual: capitulo, pergunta: pergunta || (t ? t.id : '') } });
   },
   setLang(lang) { set({ lang }); },

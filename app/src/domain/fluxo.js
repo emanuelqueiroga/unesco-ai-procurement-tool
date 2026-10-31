@@ -1,4 +1,4 @@
-import { somenteGovernanca, tamanhoRedeValido } from './escopo.js';
+import { somenteGovernanca, tamanhoRedeValido, estadoDoProjeto } from './escopo.js';
 // =====================================================================
 // Percurso em quatro fases (v11): a parte de LÓGICA de src/fluxo.js (dados em fluxo_dados.js), mais os
 // derivados do caso que viviam em src/app.js (casoAtual, perfil, cfgAtual).
@@ -307,6 +307,7 @@ function faltasEstimativa(estado) { return ['tarefas', 'tipoTec', 'elegiveis'].m
 // ----------------------------------------------------------- derivados (antes em src/app.js)
 // caso efetivo: o caso com os campos legados deduzidos das tarefas e da adoção (P1)
 function casoAtual(estado) {
+  estado = estadoDoProjeto(estado);
   return typeof casoEfetivo === 'function' ? casoEfetivo(estado.caso, totaisCtx(estado.ctx)) : estado.caso;
 }
 function perfil(estado) { return perfilFinal(casoAtual(estado)); }

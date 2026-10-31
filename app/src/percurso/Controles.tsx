@@ -6,7 +6,7 @@
 // mostram o detalhe recolhido na própria tela; a lógica pura dessas edições está em refinar.ts.
 import { Fragment, createContext, useContext, useId, useState, type ReactNode } from 'react';
 import {
-  somenteGovernanca, LOC, CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
+  temGovernanca, LOC, CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
   listaOpc, totaisCtx, alunosEtapa, etapasAtivas, modoTeste, horasEstimativa, lerNumero, problemasMarcados, sugProblemas, temLacuna, rotulo, pct, tr,
 } from '../domain';
 import { useCaso, origemDe, valorDe, type Estado14, type TelaEssencial } from '../store';
@@ -39,7 +39,6 @@ import { Pais } from './Pais';
 /** inteiro digitado no campo de texto do SchoolsGrid (escolas, estudantes) */
 const num = (v: string): number | '' => inteiro(lerNumero(v) === '' ? '' : +lerNumero(v));
 const str = (v: unknown) => (v == null ? '' : String(v));
-const LIMITE_PROBLEMAS = 3;
 /** nome da opção com a explicação embaixo (o subtexto do OptionCard é para legendas curtas à direita) */
 const comDescricao = (nome: unknown, desc?: unknown, extra?: ReactNode): ReactNode =>
   desc || extra ? <>{String(tr(nome))}{desc ? <span className="pr-optioncard-desc">{String(tr(desc))}</span> : null}{extra}</> : String(tr(nome));
@@ -708,20 +707,11 @@ function Problemas({ e }: { e: Estado14 }) {
   const atual: string[] = e.ctx.problemas || [];
   const P = (PRIORIDADES as any[]).filter((p) => pr.includes(p.id));
   if (!P.length) return <p className="pc-aviso">{t('Escolha uma prioridade para ver os desafios.')}</p>;
-  // o limite de três vale só no Essencial; no Refinar volta o "Marcar todos" por prioridade
-  const idsAtivos = new Set(P.flatMap((p: any) => p.problemas.map((q: any) => q.id)));
-  const nAtivos = atual.filter(id => idsAtivos.has(id)).length;
-  const cheio = !refinando && nAtivos >= LIMITE_PROBLEMAS;
   const grava = (lista: string[]) => responder('problemas', lista);
   return (
     <div className="pc-grupos">
-      {somenteGovernanca(e.ctx) ? <TamanhoRedeNacional e={e} /> : null}
-      {refinando ? null : (
-        <>
-          <p className="pc-contador" aria-live="polite">{t('{n} de {m} marcados', { n: nAtivos, m: LIMITE_PROBLEMAS })}</p>
-          <p className="pc-nota">{somenteGovernanca(e.ctx) ? t('Selecione até três desafios prioritários para o plano nacional.') : t('O limite de três mantém o primeiro teste focado: cada problema acrescenta objetivos, tarefas e custos ao plano. No modo Refinar não há limite.')}</p>
-        </>
-      )}
+      {temGovernanca(e.ctx) ? <TamanhoRedeNacional e={e} /> : null}
+      <p className="pc-nota">{t('Selecione todos os desafios que fazem parte do seu plano.')}</p>
       {P.map((p) => {
         const atuais = p.id === 'governar' ? p.problemas.filter((q: any) => q.v015) : p.problemas;
         const legados = p.id === 'governar' ? p.problemas.filter((q: any) => !q.v015) : [];
@@ -729,7 +719,7 @@ function Problemas({ e }: { e: Estado14 }) {
           const on = atual.includes(q.id);
           return <OptionCard key={q.id} type="checkbox" name="problemas" value={q.id}
             label={<>{t(q.t)}<span className="pr-optioncard-desc">{q.v015 ? t(q.desc) : <><span className="pcx-obj">{t('Objetivo:')}</span> {t(q.obj)}</>}</span></>}
-            checked={on} disabled={cheio && !on}
+            checked={on}
             onChange={(v, marcado) => grava(problemasDoGrupo(atual, ORDEM_PROBLEMAS, [v], marcado))} />;
         };
         const ids: string[] = p.problemas.map((q: any) => q.id);
@@ -758,7 +748,7 @@ function Problemas({ e }: { e: Estado14 }) {
           </section>
         );
       })}
-      {refinando ? <OutroProblema e={e} /> : <DicaRefinar texto={t('Para marcar subcategorias, descrever outro problema ou marcar mais de três, use o modo Refinar.')} />}
+      {refinando ? <OutroProblema e={e} /> : <DicaRefinar texto={t('Para marcar subcategorias ou descrever outro problema, use o modo Refinar.')} />}
     </div>
   );
 }

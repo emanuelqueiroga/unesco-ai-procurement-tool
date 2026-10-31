@@ -5,8 +5,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useCaso, telasAtivas, telasDoCapitulo, telaRespondida, origemDe, progressoDe, type Capitulo, type CasoStore } from '../store';
 import { Header, ChapterNav, ChapterBar, Segmented, Button, IconMoon, IconSun, useMediaQuery, useTheme, BREAKPOINTS, type NavChapter, type BarChapter } from '../ui';
-import { CAPITULOS_INFO, CURTO, t } from '../percurso/textos';
+import { infoCapitulo, CURTO, t } from '../percurso/textos';
 import { href, lerRota } from '../percurso/rota';
+import { percursoGovernanca, temGovernanca } from '../domain';
+import { Frentes, PainelGovernanca } from './Governanca';
 import { PlanoVivo } from './PlanoVivo';
 import { CasoDialog } from './CasoDialog';
 import { SeletorIdioma, AvisoTraducao } from './Idioma';
@@ -31,7 +33,7 @@ function capitulosNav(s: CasoStore, pos: Posicao): NavChapter[] {
     const atual = pos.capitulo === n;
     const p = prog[n - 1];
     return {
-      n, title: t(CAPITULOS_INFO[n].titulo), href: href.abertura(n),
+      n, title: t(infoCapitulo(n, s).titulo), href: href.abertura(n),
       state: atual ? 'current' : p.completo ? 'done' : 'todo',
       questions: atual
         ? telasDoCapitulo(n, s).map((tela) => ({
@@ -45,7 +47,7 @@ function capitulosNav(s: CasoStore, pos: Posicao): NavChapter[] {
 
 function capitulosBarra(s: CasoStore, pos: Posicao): BarChapter[] {
   return progressoDe(s).map((p) => ({
-    n: p.capitulo, label: t(CAPITULOS_INFO[p.capitulo].titulo), progress: p.total ? p.feitas / p.total : 0, href: href.abertura(p.capitulo),
+    n: p.capitulo, label: t(infoCapitulo(p.capitulo, s).titulo), progress: p.total ? p.feitas / p.total : 0, href: href.abertura(p.capitulo),
     state: pos.capitulo === p.capitulo ? 'current' : p.completo ? 'done' : 'todo',
   }));
 }
@@ -73,8 +75,8 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
   const atalhos = (
     <>
       <Button variant="secondary" size="sm" href={href.inicio()}>{t('Início')}</Button>
-      <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={t('Matriz camadas × fases')}>{t('Matriz')}</Button>
-      {s.modo === 'refinar' ? <Button variant="secondary" size="sm" href={href.refinar()}>{t('Calculadora')}</Button> : null}
+      {!percursoGovernanca(s.ctx) ? <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={t('Matriz camadas × fases')}>{t('Matriz')}</Button> : null}
+      {!percursoGovernanca(s.ctx) && s.modo === 'refinar' ? <Button variant="secondary" size="sm" href={href.refinar()}>{t('Calculadora')}</Button> : null}
     </>
   );
   const modo = (
@@ -154,10 +156,11 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
         <div className={['pc-corpo', nav && !barra ? 'pc-corpo--nav' : '', plano ? 'pc-corpo--plano' : ''].filter(Boolean).join(' ')}>
           {nav && !barra ? <aside className="pc-nav"><ChapterNav zoneLabel={t('Seu caminho')} chapters={capitulosNav(s, pos)} /></aside> : null}
           <main id="conteudo" className="pc-main" tabIndex={-1}>
-            {rota.tipo === 'plano' ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Anexo técnico (PDF)".')}</p> : null}
+            {rota.tipo === 'plano' && !percursoGovernanca(s.ctx) ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Anexo técnico (PDF)".')}</p> : null}
+            {temGovernanca(s.ctx) && !inicio ? <Frentes s={s} /> : null}
             {children}
           </main>
-          {plano ? <PlanoVivo s={s} /> : null}
+          {plano ? percursoGovernanca(s.ctx) ? <PainelGovernanca s={s} /> : <PlanoVivo s={s} /> : null}
         </div>
         <RodapeCompleto />
         <CasoDialog open={caso} onClose={() => setCaso(false)} />

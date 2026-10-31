@@ -3,7 +3,7 @@
 // pelo store com sugerir(); só campos ainda 'padrao' ou 'sugerido' entram. Para os campos de experiência de uso
 // (2.2) já informados, a união nova com o que as tarefas sugerem (juntarSugestao) vai em `revisar`, para a
 // interface pedir revisão em vez de substituir a resposta (no legado o valor era trocado e desconfirmado).
-import { CASO_VAZIO, padroesGerados, sugProblemas, juntarSugestao, perfisSugeridos, totaisCtx,
+import { temGovernanca, projetoUsoDefinido, estadoDoProjeto, CASO_VAZIO, padroesGerados, sugProblemas, juntarSugestao, perfisSugeridos, totaisCtx,
   CAMPOS_GERADOS, CAMPOS_PROB, CAMPOS_SUGERIDOS, SUB_OBJ, clone } from '../domain';
 import type { Estado14, Sugestao } from './tipos';
 
@@ -17,6 +17,7 @@ export function aceitaSugestao(estado: Estado14, campo: string): boolean {
 export interface ResultadoSugestoes { sugestoes: Sugestao[]; revisar: { campo: string; valor: any }[] }
 
 export function aplicarSugestoes(estado: Estado14): ResultadoSugestoes {
+  if (temGovernanca(estado.ctx) && !projetoUsoDefinido(estado.ctx)) return { sugestoes: [], revisar: [] };
   const c: any = estado.caso || {}, x: any = estado.ctx || {};
   const out: Sugestao[] = [], revisar: { campo: string; valor: any }[] = [];
   const push = (campo: string, valor: any, deQuem: string, atual: any) => { if (!igual(atual, valor)) out.push({ campo, valor, deQuem }); };
@@ -35,7 +36,8 @@ export function aplicarSugestoes(estado: Estado14): ResultadoSugestoes {
     });
   });
   // 2. problemas marcados no 1.2 → 1.2.3 a 1.2.6 e 2.1.1
-  const sp: any = sugProblemas(x);
+  const contexto = projetoUsoDefinido(x) ? estadoDoProjeto({ ...estado, ctx: { ...x, frenteAtiva: 'projeto' } }).ctx : x;
+  const sp: any = sugProblemas(contexto);
   let tarefasMudam = false;
   if (sp) CAMPOS_PROB.forEach((k: string) => {
     if (!aceitaSugestao(estado, k)) return;

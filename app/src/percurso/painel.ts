@@ -1,3 +1,4 @@
+import { estadoDoProjeto } from '../domain/escopo.js';
 import { nomeContexto } from '../domain/pais.js';
 // Projeção do estado no plano: o que o painel "Seu plano", a gaveta do celular, as sínteses e a página do plano
 // mostram. Pura (recebe o Estado14 e devolve dados prontos para os componentes), testada em tests/unit/painel.test.ts.
@@ -306,6 +307,7 @@ export function textoFontesPremissas(r: { total: number; convencao: number; pais
 }
 
 export function painelDe(e: Estado14): Painel {
+  e = estadoDoProjeto(e);
   sincronizar(e);
   const faltam = faltamDe(e).length, respondidas = telasAtivas(e).length - faltam;
   const premissas = telasAtivas(e).filter((tela) => camposAtivos(e, tela).some((c) => origemDe(e, c) === 'padrao' || origemDe(e, c) === 'sugerido')).length;

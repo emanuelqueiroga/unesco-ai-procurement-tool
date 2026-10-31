@@ -7,7 +7,7 @@ import { CampoImportar } from './CasoDialog';
 import { abrirMatriz } from './Matriz';
 import { abrirExemplo, comecarEmBranco, exportarCaso } from './acoes';
 import { destinoContinuar } from './transversal';
-import { CAPITULOS_INFO, t } from '../percurso/textos';
+import { CAPITULOS_INFO, infoCapitulo, t } from '../percurso/textos';
 import { href, ir } from '../percurso/rota';
 import './inicio.css';
 
@@ -61,7 +61,7 @@ export function Inicio() {
             <div className="pc-inicio-detalhe-corpo">
               <ol className="pc-inicio-passos">
                 {Object.values(CAPITULOS_INFO).map((etapa) => (
-                  <li key={etapa.n}><b>{t(etapa.titulo)}</b><p>{t(etapa.guia)}</p></li>
+                  <li key={etapa.n}><b>{t(infoCapitulo(etapa.n, s).titulo)}</b><p>{t(infoCapitulo(etapa.n, s).guia)}</p></li>
                 ))}
               </ol>
               <p>{t('Os valores são estimativas. Você pode revisar as premissas ao longo do planejamento.')}</p>

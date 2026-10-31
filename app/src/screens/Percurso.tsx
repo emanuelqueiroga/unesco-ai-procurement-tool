@@ -92,13 +92,13 @@ function AjudaPergunta({ ajuda }: { ajuda: { como: string | null; quem: string |
 
 export function Pergunta({ n, tela: pedida }: { n: Capitulo; tela: string }) {
   const s = useCaso();
-  const id = n === 1 && pedida === 'etapas' && somenteGovernanca(s.ctx) ? 'problemas' : pedida;
+  const id = telasDoCapitulo(n, s).some(t => t.id === pedida) ? pedida : telasDoCapitulo(n, s)[0].id;
   useEffect(() => { if (id !== pedida) ir(href.pergunta(n, id)); }, [id, pedida, n]);
   // sem memória: a explicação começa fechada em cada pergunta (a tela é remontada a cada pergunta) e nunca abre sozinha
   const [porque, setPorque] = useState(false);
   const telas = telasDoCapitulo(n, s);
   const i = telas.findIndex((x) => x.id === id);
-  const tela = telas[i];
+  const tela = telas[i] || telas[0];
   const prox = telas[i + 1] ? href.pergunta(n, telas[i + 1].id) : href.sintese(n);
   const ant = i > 0 ? href.pergunta(n, telas[i - 1].id) : href.abertura(n);
   const sugeridos = sugeridosDaTela(s, tela);
@@ -111,7 +111,7 @@ export function Pergunta({ n, tela: pedida }: { n: Capitulo; tela: string }) {
   const continuar = () => { confirmaveis.forEach((c) => s.confirmar(c)); ir(prox); };
   // no Refinar não há limite de problemas, então a frase de abertura muda
   const lead = id === 'problemas' && s.modo === 'refinar'
-    ? 'Marque os problemas que quer resolver; no modo Refinar não há limite. Cada problema já traz uma descrição, impactos e tarefas que a IA pode apoiar; você ajusta depois.'
+    ? 'Selecione todos os desafios que fazem parte do seu plano.'
     : LEAD[id] || null;
   const numeroGlobal = telasAtivas(s).indexOf(tela) + 1;
   return (

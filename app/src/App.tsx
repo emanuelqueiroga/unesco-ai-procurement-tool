@@ -1,3 +1,5 @@
+import { Governanca } from './screens/Governanca';
+import { percursoGovernanca } from './domain';
 import { useEffect } from 'react';
 import { Galeria } from './screens/Galeria';
 import { Inicio } from './screens/Inicio';
@@ -12,6 +14,7 @@ import './screens/shell.css';
 
 export function App() {
   const rota = useRota();
+  const ctx = useCaso(s => s.ctx);
   // a posição no percurso fica no caso (capitulo.atual/pergunta), para "continuar de onde parei"
   const irPara = useCaso((s) => s.irPara);
   const chave = rota.tipo === 'pergunta' ? `${rota.n}/${rota.tela}` : '';
@@ -22,6 +25,7 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chave]);
   const tela = (() => {
+    if (percursoGovernanca(ctx) && !['inicio', 'galeria'].includes(rota.tipo)) return <Governanca key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo === 'abertura' || rota.tipo === 'sintese' ? `${rota.tipo}${rota.n}` : rota.tipo} rota={rota} />;
     switch (rota.tipo) {
       case 'galeria': return <Galeria />;
       case 'abertura': return <Abertura key={`a${rota.n}`} n={rota.n} />;
