@@ -1,7 +1,7 @@
 // Telas do percurso: abertura de capítulo (D2), pergunta (D3–D6, M2, M3) e síntese de capítulo (D7).
 import { useEffect, useState, type ReactNode } from 'react';
 import {
-  CAMPO_POR_ID, textoCampo, tr, REF_TCO, INFO_C236, modoTeste, somenteGovernanca, tamanhoRedeValido, ajudaDeTela, dicaDaTela, dicaDoCampo, quemSabe,
+  CAMPO_POR_ID, textoCampo, tr, REF_TCO, INFO_C236, modoTeste, prioridadeEscolhida, somenteGovernanca, tamanhoRedeValido, ajudaDeTela, dicaDaTela, dicaDoCampo, quemSabe,
 } from '../domain';
 import {
   useCaso, telasAtivas, telasDoCapitulo, camposAtivos, afetadosPor, camposRefinar, origemDe, extrasDoCapitulo, comparaN, idDoFoco, comLacuna,
@@ -24,7 +24,7 @@ export function Abertura({ n }: { n: Capitulo }) {
   // A abertura também deve retraduzir seus textos ao trocar o idioma no cabeçalho.
   const s = useCaso();
   const info = CAPITULOS_INFO[n];
-  const telas = telasDoCapitulo(n, s);
+  const telas = telasDoCapitulo(n, s).filter(x => prioridadeEscolhida(s.ctx) || ['local', 'prioridades'].includes(x.id));
   return (
     <Shell pos={{ capitulo: n }} contexto={t(info.titulo)}>
       <div className="pc-abertura" data-abertura={n}>
@@ -96,7 +96,7 @@ export function Pergunta({ n, tela: pedida }: { n: Capitulo; tela: string }) {
   useEffect(() => { if (id !== pedida) ir(href.pergunta(n, id)); }, [id, pedida, n]);
   // sem memória: a explicação começa fechada em cada pergunta (a tela é remontada a cada pergunta) e nunca abre sozinha
   const [porque, setPorque] = useState(false);
-  const telas = telasDoCapitulo(n, s);
+  const telas = telasDoCapitulo(n, s).filter(x => prioridadeEscolhida(s.ctx) || ['local', 'prioridades'].includes(x.id));
   const i = telas.findIndex((x) => x.id === id);
   const tela = telas[i] || telas[0];
   const prox = telas[i + 1] ? href.pergunta(n, telas[i + 1].id) : href.sintese(n);
@@ -131,7 +131,7 @@ export function Pergunta({ n, tela: pedida }: { n: Capitulo; tela: string }) {
             <>
               <div className="pc-botoes">
                 <Button variant="secondary" href={ant}>{t('Voltar')}</Button>
-                <Button onClick={continuar} disabled={faltaRede}>{t('Próximo')}</Button>
+                <Button onClick={continuar} disabled={faltaRede || (id === 'prioridades' && !prioridadeEscolhida(s.ctx))}>{t('Próximo')}</Button>
                 {ajuda ? (
                   <Button variant="link" aria-expanded={porque} aria-controls={porque ? 'pc-ajuda' : undefined} onClick={() => setPorque((x) => !x)}>
                     {porque ? t('Fechar a explicação') : t('Por que perguntamos isso?')}
@@ -147,7 +147,7 @@ export function Pergunta({ n, tela: pedida }: { n: Capitulo; tela: string }) {
         >
           <ControlesTela e={s} tela={tela} />
         </QuestionFrame>
-        <p className="pc-voltar pc-nota">{t('Pergunta {i} de {n} do Essencial', { i: numeroGlobal, n: telasAtivas(s).length })}</p>
+        {prioridadeEscolhida(s.ctx) ? <p className="pc-voltar pc-nota">{t('Pergunta {i} de {n} do Essencial', { i: numeroGlobal, n: telasAtivas(s).length })}</p> : null}
       </div>
     </Shell>
   );
@@ -260,7 +260,7 @@ export function Sintese({ n, foco }: { n: Capitulo; foco?: string }) {
   const s = useCaso();
   const sin = sinteseCapitulo(n, s);
   const prox = n < 4 ? CAPITULOS_INFO[(n + 1) as Capitulo] : null;
-  const telas = telasDoCapitulo(n, s);
+  const telas = telasDoCapitulo(n, s).filter(x => prioridadeEscolhida(s.ctx) || ['local', 'prioridades'].includes(x.id));
   return (
     <Shell pos={{ capitulo: n, sintese: true }} contexto={t(CAPITULOS_INFO[n].titulo)}>
       <div className="pc-sintese" data-sintese={n}>

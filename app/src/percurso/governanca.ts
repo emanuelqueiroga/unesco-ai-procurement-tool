@@ -1,9 +1,10 @@
+import { contextoGovProjetado, definicoesPendentes } from './governancaPresets';
 // Projeção institucional: a página, o painel e os dois PDFs leem este mesmo modelo.
 // Os totais da rede são contexto; nenhuma conta deriva licenças ou participantes deles.
 import { problemasMarcados } from '../domain/prioridades.js';
 import { LOC } from '../domain/i18n.js';
 import { nomePais, paisDoCaso } from '../domain/pais.js';
-import { tamanhoRedeValido, projetoUsoDefinido } from '../domain/escopo.js';
+import { FAIXAS_ESCOLAS, FAIXAS_ESTUDANTES, tamanhoRedeValido, projetoUsoDefinido } from '../domain/escopo.js';
 import type { Estado14 } from '../store/tipos';
 import { t } from './textos';
 export const CUSTOS_GOV = [
@@ -36,7 +37,7 @@ export function desafiosGovernanca(s: Pick<Estado14, 'ctx'>): { id: string; titu
 export function temSandbox(s: Pick<Estado14, 'ctx'>): boolean { return desafiosGovernanca(s).some(q => q.id === 'G15'); }
 export function acoesGovernanca(s: Pick<Estado14, 'ctx'>) {
   return desafiosGovernanca(s).map(q => {
-    const a = s.ctx.govAcoes?.[q.id] || {};
+    const a = contextoGovProjetado(s).govAcoes?.[q.id] || {};
     return { ...q, entrega: preenchido(a.entrega) ? a.entrega : ENTREGAS[q.id] ? t(ENTREGAS[q.id]) : t('Definir ação institucional para: {desafio}', { desafio: q.titulo }),
       sugerida: !preenchido(a.entrega), responsavel: String(a.responsavel || ''), prazo: String(a.prazo || ''),
       marco: String(a.marco || ''), indicador: String(a.indicador || '') };
@@ -44,12 +45,13 @@ export function acoesGovernanca(s: Pick<Estado14, 'ctx'>) {
 }
 function valorCusto(v: unknown): number | null { return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : null; }
 export function orcamentoGovernanca(s: Pick<Estado14, 'ctx' | 'moeda'>) {
-  const o = s.ctx.govOrcamento || {};
+  const o = contextoGovProjetado(s).govOrcamento || {};
+  const valorItem = (i: any) => i?.situacao === 'sem_custo' ? 0 : i?.situacao === 'a_estimar' ? null : valorCusto(i?.valor);
   const categorias: [string, string][] = CUSTOS_GOV.map(([id, nome]) => [id, nome]);
   if (temSandbox(s)) categorias.push(['sandbox', 'Experimentação supervisionada']);
   const extras = Array.isArray(o.extras) ? o.extras : [];
-  const itens = categorias.map(([id, nome]) => ({ id, nome: t(nome), valor: valorCusto(o.itens?.[id]?.valor), detalhe: String(o.itens?.[id]?.detalhe || '') }))
-    .concat(extras.map((x: any, i: number) => ({ id: 'extra-' + i, nome: String(x.nome || t('Recurso adicional')), valor: valorCusto(x.valor), detalhe: String(x.detalhe || '') })));
+  const itens = categorias.map(([id, nome]) => ({ id, nome: t(nome), valor: valorItem(o.itens?.[id]), detalhe: String(o.itens?.[id]?.detalhe || '') }))
+    .concat(extras.map((x: any, i: number) => ({ id: 'extra-' + i, nome: String(x.nome || t('Recurso adicional')), valor: valorItem(x), detalhe: String(x.detalhe || '') })));
   const informados = itens.filter(i => i.valor !== null);
   return { itens, moeda: String(o.moeda || s.moeda.cod || 'USD'), periodo: String(o.periodo || ''), fonte: String(o.fonte || ''),
     subtotal: informados.reduce((n, i) => n + i.valor!, 0), informados: informados.length,
@@ -61,7 +63,7 @@ export function moedaGovernanca(v: number | null, cod: string, locale?: string):
   catch { return cod + ' ' + new Intl.NumberFormat(locale || undefined, { maximumFractionDigits: 2 }).format(v); }
 }
 export function governancaRespondida(s: Estado14, id: string): boolean {
-  const x = s.ctx, qs = desafiosGovernanca(s), tem = (obj: any, keys: string[]) => keys.every(k => preenchido(obj?.[k]));
+  const x = contextoGovProjetado(s), qs = desafiosGovernanca(s), tem = (obj: any, keys: string[]) => keys.every(k => preenchido(obj?.[k]));
   switch (id) {
     case 'gov-projeto': return x.projetoIA?.incluir === 'nao' || projetoUsoDefinido(x);
     case 'gov-diagnostico': return tem(x.govDiagnostico, ['atual', 'resultado', 'linhaBase', 'fonte']);
@@ -71,7 +73,10 @@ export function governancaRespondida(s: Estado14, id: string): boolean {
     case 'gov-atores': return tem(x.govAtores, ['coordenacao', 'instituicoes', 'grupos', 'participacao']);
     case 'gov-acoes': return qs.length > 0 && acoesGovernanca(s).every(a => [a.responsavel, a.prazo, a.marco, a.indicador].every(preenchido));
     case 'gov-capacidade': return tem(x.govCapacidade, ['equipe', 'formacao', 'orientacao', 'supervisao', 'incidentes']);
-    case 'gov-recursos': { const o = orcamentoGovernanca(s); return o.total !== null && preenchido(o.periodo) && preenchido(o.fonte); }
+    case 'gov-recursos': { const o = orcamentoGovernanca(s); const salvo = x.govOrcamento || {};
+      const completo = o.itens.every(i => { const item = i.id.startsWith('extra-') ? salvo.extras?.[Number(i.id.slice(6))] : salvo.itens?.[i.id];
+        return i.valor !== null || item?.situacao === 'a_estimar'; });
+      return completo && (salvo.extras || []).every((e: any) => preenchido(e.nome)) && preenchido(o.periodo) && preenchido(o.fonte); }
     case 'gov-sandbox': return temSandbox(s) && tem(x.govSandbox, CAMPOS_SANDBOX.map(([k]) => k));
     case 'gov-revisao': return tem(x.govRevisao, ['indicadores', 'responsavel', 'periodicidade', 'data', 'alcance', 'progresso', 'canal']);
     default: return false;
@@ -79,18 +84,22 @@ export function governancaRespondida(s: Estado14, id: string): boolean {
 }
 export interface BlocoGovernanca { titulo: string; linhas: { rotulo: string; valor: string }[] }
 export function planoGovernanca(s: Estado14) {
-  const x = s.ctx, qs = desafiosGovernanca(s), acoes = acoesGovernanca(s), orcamento = orcamentoGovernanca(s);
+  const x = contextoGovProjetado(s), qs = desafiosGovernanca(s), acoes = acoesGovernanca(s), orcamento = orcamentoGovernanca(s);
   const nao = t('Não informado'), valor = (v: any) => preenchido(v) ? String(v) : nao;
   const linha = (rotulo: string, v: any) => ({ rotulo: t(rotulo), valor: valor(v) });
   const campos = (obj: any, lista: [string, string][]) => lista.map(([k, nome]) => linha(nome, obj?.[k]));
   const blocos: BlocoGovernanca[] = [
     { titulo: t('Contexto'), linhas: [linha('País', nomePais(paisDoCaso(s.caso))), linha('Instituição responsável', x.olhando),
-      linha('Total de escolas', tamanhoRedeValido(x) ? new Intl.NumberFormat(String(LOC())).format(x.redeNacional.escolas) : ''), linha('Total de estudantes', tamanhoRedeValido(x) ? new Intl.NumberFormat(String(LOC())).format(x.redeNacional.estudantes) : ''),
+      linha('Total de escolas', Number.isSafeInteger(x.redeNacional?.escolas) && x.redeNacional.escolas > 0 ? new Intl.NumberFormat(String(LOC())).format(x.redeNacional.escolas) : ''), linha('Total de estudantes', Number.isSafeInteger(x.redeNacional?.estudantes) && x.redeNacional.estudantes > 0 ? new Intl.NumberFormat(String(LOC())).format(x.redeNacional.estudantes) : ''),
+      ...(!(x.redeNacional?.escolas > 0) && x.redeNacional?.faixaEscolas ? [linha('Escolas — faixa selecionada', t(FAIXAS_ESCOLAS.find(([id]) => id === x.redeNacional.faixaEscolas)?.[1] || 'Não informado'))] : []),
+      ...(!(x.redeNacional?.estudantes > 0) && x.redeNacional?.faixaEstudantes ? [linha('Estudantes — faixa selecionada', t(FAIXAS_ESTUDANTES.find(([id]) => id === x.redeNacional.faixaEstudantes)?.[1] || 'Não informado'))] : []),
       ...qs.map(q => linha('Desafio', q.titulo))] },
-    { titulo: t('Diagnóstico institucional'), linhas: campos(x.govDiagnostico, [['atual', 'Situação institucional atual'], ['resultado', 'Resultado esperado'], ['linhaBase', 'Linha de base institucional'], ['fonte', 'Fonte e data da evidência']]) },
+    { titulo: t('Diagnóstico institucional'), linhas: campos(x.govDiagnostico, [['atual', 'Situação institucional atual'], ['resultado', 'Resultado esperado'], ['linhaBase', 'Linha de base institucional'], ['fonte', 'Fonte da informação']]) },
     ...qs.map(q => { const d = x.govInstrumentos?.[q.id]; const status: Record<string, string> = { existente: 'Existe', parcial: 'Em parte', ausente: 'Não existe', nao_sei: 'Não sei' };
+      const dados = d && s.ctx.govSelecoes?.['govInstrumentos.' + q.id + '.evidencia']?.length ? {...d,evidencia: t('Tipo de evidência selecionado: {tipo}. Identificação do documento: a verificar.', {tipo:d.evidencia})} : d;
+      const instrumentos: [string,string][] = d?.situacao === 'ausente' ? [] : [['instrumento','Instrumento existente'],['evidencia','Documento ou evidência']];
       return { titulo: q.titulo, linhas: [linha('Situação', d?.situacao ? t(status[d.situacao] || 'Não informado') : ''),
-        ...campos(d, [['instrumento', 'Instrumento existente'], ['responsavel', 'Instituição responsável'], ['evidencia', 'Documento ou evidência'], ['lacuna', 'Lacunas a resolver']])] }; }),
+        ...campos(dados, [...instrumentos, ['responsavel','Instituição responsável'],['lacuna','Lacunas a resolver']])] }; }),
     { titulo: t('Soluções de política educacional'), linhas: [linha('Instrumentos de política', (x.govSolucoes?.instrumentos || []).map((v: string) => t(v)).join('; ')), linha('Justificativa', x.govSolucoes?.justificativa)] },
     { titulo: t('Instituições e grupos afetados'), linhas: campos(x.govAtores, [['coordenacao', 'Instituição coordenadora'], ['instituicoes', 'Instituições participantes'], ['grupos', 'Grupos afetados'], ['participacao', 'Como serão ouvidos e envolvidos']]) },
     ...acoes.map(a => ({ titulo: a.entrega, linhas: [linha('Desafio', a.titulo), linha('Origem da entrega', a.sugerida ? t('Sugestão a revisar') : t('informado')),
@@ -107,8 +116,9 @@ export function planoGovernanca(s: Estado14) {
   if (!s.caso.pais || !s.respC.pais) faltam.unshift('local');
   if (!tamanhoRedeValido(x) || !qs.length || !s.respC.redeNacional || !(preenchido(x.problemaOutro) || s.respC.problemas)) faltam.unshift('problemas');
   if (x.prioridades?.some((id: string) => id !== 'governar') && !governancaRespondida(s, 'gov-projeto')) faltam.push('gov-projeto');
-  const proxima = !qs.length ? t('Selecione os desafios do plano.') : faltam.length ? t('Complete o diagnóstico, os responsáveis e os recursos antes de aprovar o plano de ação.') : t('Submeta o plano de ação à autoridade competente e acompanhe sua execução.');
-  return { titulo: t('Plano de governança de IA na educação'), pais: nomePais(paisDoCaso(s.caso)), desafios: qs, acoes, orcamento, blocos, faltam, proxima,
+  const pendentes = definicoesPendentes(s) + orcamento.faltam + (!(x.redeNacional?.escolas > 0 && x.redeNacional?.estudantes > 0) && (x.redeNacional?.faixaEscolas === 'a_levantar' || x.redeNacional?.faixaEstudantes === 'a_levantar') ? 1 : 0);
+  const proxima = !qs.length ? t('Selecione os desafios do plano.') : faltam.length || pendentes ? t('Complete o diagnóstico, os responsáveis e os recursos antes de aprovar o plano de ação.') : t('Submeta o plano de ação à autoridade competente e acompanhe sua execução.');
+  return { pendentes, titulo: t('Plano de governança de IA na educação'), pais: nomePais(paisDoCaso(s.caso)), desafios: qs, acoes, orcamento, blocos, faltam, proxima,
     escopo: t('Os totais da rede descrevem o alcance da política. O orçamento usa apenas valores informados.'),
     projeto: projetoUsoDefinido(x) ? String(x.projetoIA.descricao) : null };
 }

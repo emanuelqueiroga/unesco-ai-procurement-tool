@@ -8,3 +8,11 @@
 .pc-gov-dados{display:grid;gap:1rem}.pc-gov-dados dt{font-weight:600}.pc-gov-dados dd{margin:0;white-space:pre-wrap}
 .pc-gov-card summary{cursor:pointer;font-weight:600}
 @media(max-width:650px){.pc-gov-custo{grid-template-columns:1fr}.pc-gov-card{padding:1rem}}
+
+.pc-gov-escolha{padding-block:.6rem}
+.pc-gov-detalhes{margin-top:.75rem;color:var(--ink-muted,#61747d);font-size:.9rem}
+.pc-gov-detalhes summary{cursor:pointer;font-weight:500;list-style:none;display:inline-block;text-decoration:underline;text-underline-offset:3px}
+.pc-gov-detalhes[open] summary{margin-bottom:1rem}
+.pc-gov-detalhes>.pr-textfield{margin-block:1rem}
+.pc-gov-custo-preset h2{font-size:1.05rem}
+.pc-gov-rotulo{font-weight:600;margin:0 0 .65rem;color:var(--ink,#192f38)}

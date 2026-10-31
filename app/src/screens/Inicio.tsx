@@ -1,4 +1,5 @@
 // v015: página inicial sobre a v014 React/Prumo, com as quatro etapas do percurso.
+import { prioridadeEscolhida } from '../domain';
 import { useState } from 'react';
 import { useCaso, faltamDe, temRespostas, telasAtivas } from '../store';
 import { Button, Alert } from '../ui';
@@ -30,7 +31,7 @@ export function Inicio() {
         <p className="pc-lead">{t('Descreva sua rede, defina prioridades e explore os recursos e custos do seu plano.')}</p>
         {comCaso ? (
           <Alert kind="info" title={titulo}>
-            {t('{r} de {n} perguntas essenciais respondidas.', { r: telasAtivas(s).length - faltam.length, n: telasAtivas(s).length })}
+            {prioridadeEscolhida(s.ctx) ? t('{r} de {n} perguntas essenciais respondidas.', { r: telasAtivas(s).length - faltam.length, n: telasAtivas(s).length }) : t('Escolha a prioridade para definir as próximas etapas.')}
           </Alert>
         ) : null}
         {erro ? <Alert kind="atencao" title={erro} /> : null}
@@ -60,12 +61,12 @@ export function Inicio() {
             <summary>{t('Como funciona')}</summary>
             <div className="pc-inicio-detalhe-corpo">
               <ol className="pc-inicio-passos">
-                {Object.values(CAPITULOS_INFO).map((etapa) => (
+                {Object.values(CAPITULOS_INFO).filter(etapa => prioridadeEscolhida(s.ctx) || etapa.n === 1).map((etapa) => (
                   <li key={etapa.n}><b>{t(infoCapitulo(etapa.n, s).titulo)}</b><p>{t(infoCapitulo(etapa.n, s).guia)}</p></li>
                 ))}
               </ol>
               <p>{t('Os valores são estimativas. Você pode revisar as premissas ao longo do planejamento.')}</p>
-              <Button variant="link" onClick={() => abrirMatriz()} aria-haspopup="dialog">{t('Ver a matriz completa')}</Button>
+              {prioridadeEscolhida(s.ctx) ? <Button variant="link" onClick={() => abrirMatriz()} aria-haspopup="dialog">{t('Ver a matriz completa')}</Button> : null}
             </div>
           </details>
         </div>

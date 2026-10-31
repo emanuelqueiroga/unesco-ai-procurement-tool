@@ -1,3 +1,4 @@
+import { presetGovernanca, selecoesGov, detalheGov, textoSelecaoGov } from '../percurso/governancaPresets';
 import { useEffect, useState } from 'react';
 import { useCaso, telasDoCapitulo, telasAtivas, faltamDe, type CasoStore, type Capitulo } from '../store';
 import { percursoGovernanca, projetoUsoDefinido, tamanhoRedeValido, LOC } from '../domain';
@@ -7,7 +8,7 @@ import { ControlesTela } from '../percurso/Controles';
 import { CampoNumero } from '../percurso/CampoNumero';
 import { CURTO, TITULO_TELA, infoCapitulo, t } from '../percurso/textos';
 import { href, ir, type Rota } from '../percurso/rota';
-import { telaGovernancaLegada, desafiosGovernanca, acoesGovernanca, planoGovernanca, orcamentoGovernanca, moedaGovernanca, temSandbox, CUSTOS_GOV, CAMPOS_SANDBOX, INSTRUMENTOS_GOV, MARCOS_GOV } from '../percurso/governanca';
+import { telaGovernancaLegada, desafiosGovernanca, acoesGovernanca, planoGovernanca, orcamentoGovernanca, moedaGovernanca, temSandbox, CUSTOS_GOV, CAMPOS_SANDBOX, INSTRUMENTOS_GOV } from '../percurso/governanca';
 import './governanca.css';
 
 export function Frentes({ s }: { s: CasoStore }) {
@@ -25,8 +26,24 @@ export function Frentes({ s }: { s: CasoStore }) {
 }
 const NA = () => t('Não informado');
 const gv = (s: CasoStore, campo: string) => campo.split('.').reduce((o: any, k) => o?.[k], s.ctx);
-function Texto({ s, campo, label, longo = true, sugestao }: { s: CasoStore; campo: string; label: string; longo?: boolean; sugestao?: string }) {
-  return <TextField label={t(label)} value={String(gv(s, campo) || '')} onChange={v => s.responder(campo, v)} multiline={longo} placeholder={sugestao} />;
+function Texto({ s, campo, label }: { s: CasoStore; campo: string; label: string; longo?: boolean; sugestao?: string }) {
+  const def = presetGovernanca(s, campo), ids = selecoesGov(s, campo), detalhe = detalheGov(s, campo);
+  const gravar = (novos: string[], extra: string) => {
+    const atual = useCaso.getState();
+    s.responder('govDetalhes', { ...atual.ctx.govDetalhes, [campo]: extra });
+    s.responder('govSelecoes', { ...useCaso.getState().ctx.govSelecoes, [campo]: novos });
+    s.responder(campo, textoSelecaoGov(atual, campo, novos, extra));
+  };
+  return <section className="pc-gov-escolha" data-campo-preset={campo}>
+    <p className="pc-gov-rotulo">{t(label)}</p>
+    <ChipGroup label={t(label)}>{def.opcoes.map(o => <Chip key={o.id} label={t(o.texto)} pressed={ids.includes(o.id)}
+      onToggle={on => gravar(on ? !def.multipla || o.id === 'a_definir' ? [o.id] : [...ids.filter(id => id !== 'a_definir'), o.id] : ids.filter(id => id !== o.id), detalhe)} />)}</ChipGroup>
+    {def.evidencia ? <p className="pc-nota">{t('Selecione o tipo de evidência. Você pode identificar o documento nas informações adicionais.')}</p> : null}
+    {campo.endsWith('.prazo') ? <p className="pc-nota">{t('Prazos contados a partir da aprovação do plano.')}</p> : null}
+    <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}{detalhe ? <span> · {t('Informações adicionadas')}</span> : null}</summary>
+      <TextField label={t('Informações adicionais: {campo}', { campo: t(label) })} multiline value={detalhe} onChange={v => gravar(ids, v)} />
+    </details>
+  </section>;
 }
 function Grupo({ s, base, campos }: { s: CasoStore; base: string; campos: readonly (readonly [string, string])[] }) {
   return <div className="pc-gov-campos">{campos.map(([id, label]) => <Texto key={id} s={s} campo={base + '.' + id} label={label} />)}</div>;
@@ -39,55 +56,63 @@ function Instrumentos({ s }: { s: CasoStore }) {
       <OptionCardGroup label={t('O que já existe?')}>
         {[['existente', 'Existe'], ['parcial', 'Em parte'], ['ausente', 'Não existe'], ['nao_sei', 'Não sei']].map(([v, nome]) => <OptionCard key={v} name={base} value={v} label={t(nome)} checked={d.situacao === v} onChange={v => s.responder(base + '.situacao', v)} />)}
       </OptionCardGroup>
-      <Grupo s={s} base={base} campos={[
-        ['instrumento', 'Instrumento existente'], ['responsavel', 'Instituição responsável'], ['evidencia', 'Documento ou evidência'], ['lacuna', 'Lacunas a resolver'],
-      ]} />
+      {d.situacao !== 'ausente' ? <Grupo s={s} base={base} campos={[['instrumento', 'Instrumento existente'], ['evidencia', 'Documento ou evidência']]} /> : null}
+      <Grupo s={s} base={base} campos={[['responsavel', 'Instituição responsável'], ['lacuna', 'Lacunas a resolver']]} />
     </section>;
   })}</div>;
 }
 function Acoes({ s }: { s: CasoStore }) {
   const acoes = acoesGovernanca(s);
   return <><p className="pc-nota">{t('Revise a entrega sugerida de cada desafio e defina como executá-la.')}</p>
-    <p className="pc-nota">{MARCOS_GOV.map(v => t(v)).join(' · ')}</p>
+
     {!acoes.length ? <p><a href={href.pergunta(1, 'problemas')}>{t('Selecione os desafios do plano.')}</a></p> : null}
     <div className="pc-gov-lista">{acoes.map(a => <section className="pc-gov-card" key={a.id}>
       <h2>{a.titulo}</h2>
       <Texto s={s} campo={'govAcoes.' + a.id + '.entrega'} label="Entrega prevista" sugestao={a.entrega} />
-      <p className="pc-nota">{a.sugerida ? t('Sugestão a revisar') + ': ' + a.entrega : null}</p>
+
       <Grupo s={s} base={'govAcoes.' + a.id} campos={[
         ['responsavel', 'Responsável'], ['prazo', 'Prazo'], ['marco', 'Marcos de execução'], ['indicador', 'Indicador de entrega'],
       ]} />
     </section>)}</div></>;
 }
+function CustoPreset({ s, base, nome, moeda }: { s: CasoStore; base: string; nome: string; moeda: string }) {
+  const item = gv(s, base) || {}, situacao = item.situacao || (typeof item.valor === 'number' ? 'informado' : '');
+  return <section className="pc-gov-card pc-gov-custo-preset">
+    <h2>{t(nome)}</h2>
+    <ChipGroup label={t('Situação do custo')}>
+      {[['a_estimar','Custo ainda a levantar'],['sem_custo','Sem custo neste orçamento'],['informado','Já tenho um valor']].map(([id,label]) => <Chip key={id} label={t(label)} pressed={situacao === id} onToggle={on => {
+        s.responder('govOrcamento.moeda', moeda); s.responder(base + '.situacao', on ? id : '');
+      }} />)}
+    </ChipGroup>
+    {situacao === 'informado' && typeof item.valor === 'number' ? <p>{t('Valor informado')}: {moedaGovernanca(item.valor, moeda, String(LOC()))}</p> : null}
+    <details className="pc-gov-detalhes" open={situacao === 'informado' && !(typeof item.valor === 'number')}>
+      <summary>{t('Adicionar mais informações +')}</summary>
+      <CampoNumero label={t('Valor informado') + ' (' + moeda + ')'} value={item.valor ?? ''} decimais
+        error={typeof item.valor === 'number' && item.valor < 0 ? t('Informe um valor maior ou igual a zero.') : undefined}
+        onChange={v => { s.responder('govOrcamento.moeda', moeda); s.responder(base + '.valor', v); s.responder(base + '.situacao', 'informado'); }} />
+      <TextField label={t('Detalhamento e fonte do item')} multiline value={String(item.detalhe || '')} onChange={v => s.responder(base + '.detalhe', v)} />
+    </details>
+  </section>;
+}
 function Orcamento({ s }: { s: CasoStore }) {
   const o = orcamentoGovernanca(s), atual = s.ctx.govOrcamento || {};
-  const set = (campo: string, v: any) => {
-    // A unidade monetária fica gravada com os valores, mesmo que o país mude depois.
-    s.responder('govOrcamento', { ...useCaso.getState().ctx.govOrcamento, moeda: o.moeda });
-    s.responder('govOrcamento.' + campo, v);
-  };
   const categorias: [string, string][] = CUSTOS_GOV.map(([id, nome]) => [id, nome]);
   if (temSandbox(s)) categorias.push(['sandbox', 'Experimentação supervisionada']);
   return <>
-    <p>{t('Informe o custo total de cada item no período escolhido. Use zero apenas quando o custo for conhecido e igual a zero.')}</p>
     <Grupo s={s} base="govOrcamento" campos={[
       ['periodo', 'Período do orçamento'], ['fonte', 'Fonte dos valores'],
     ]} />
     <p><b>{t('Moeda')}: {o.moeda}</b></p>
-    {categorias.map(([id, nome]) => <div className="pc-gov-custo" key={id}>
-      <CampoNumero label={t(nome) + ' (' + o.moeda + ')'} value={atual.itens?.[id]?.valor ?? ''} decimais
-        error={typeof atual.itens?.[id]?.valor === 'number' && atual.itens[id].valor < 0 ? t('Informe um valor maior ou igual a zero.') : undefined}
-        onChange={v => set('itens.' + id + '.valor', v)} />
-      <Texto s={s} campo={'govOrcamento.itens.' + id + '.detalhe'} label="Detalhamento e fonte do item" />
-    </div>)}
-    {(atual.extras || []).map((x: any, i: number) => <section className="pc-gov-card" key={i}>
+    {categorias.map(([id,nome]) => <CustoPreset key={id} s={s} base={'govOrcamento.itens.' + id} nome={nome} moeda={o.moeda} />)}
+    {(atual.extras || []).map((x: any,i: number) => <section key={i}>
       <Texto s={s} campo={`govOrcamento.extras.${i}.nome`} label="Recurso adicional" />
-      <CampoNumero label={t('Valor informado') + ' (' + o.moeda + ')'} value={x.valor ?? ''} decimais onChange={v => set(`extras.${i}.valor`, v)} />
-      <Texto s={s} campo={`govOrcamento.extras.${i}.detalhe`} label="Detalhamento e fonte do item" />
-      <Button variant="link" onClick={() => s.responder('govOrcamento.extras', atual.extras.filter((_: any, n: number) => n !== i))}>{t('Remover')}</Button>
+      <CustoPreset s={s} base={`govOrcamento.extras.${i}`} nome="Recurso adicional" moeda={o.moeda} />
+      <Button variant="link" onClick={() => {
+        for (const campo of ['govSelecoes','govDetalhes']) { const novo = Object.fromEntries(Object.entries(useCaso.getState().ctx[campo] || {}).flatMap(([p,v]) => { const m = p.match(/^govOrcamento\.extras\.(\d+)\.(.*)$/); if (!m) return [[p,v]]; const n=Number(m[1]); return n===i ? [] : [[`govOrcamento.extras.${n>i ? n-1 : n}.${m[2]}`,v]]; })); s.responder(campo,novo); }
+        s.responder('govOrcamento.extras', atual.extras.filter((_: any,n: number) => n !== i));
+      }}>{t('Remover')}</Button>
     </section>)}
-    <Button variant="secondary" onClick={() => set('extras', [...(atual.extras || []), { nome: '', valor: '', detalhe: '' }])}>{t('Adicionar recurso')}</Button>
-    <p className="pc-nota">{t('Inclua equipamentos ou conectividade somente se forem recursos concretos desta ação.')}</p>
+    <Button variant="secondary" onClick={() => s.responder('govOrcamento.extras', [...(atual.extras || []), { nome:'', valor:'', detalhe:'' }])}>{t('Adicionar recurso')}</Button>
     <ResultadoOrcamento s={s} />
   </>;
 }
@@ -115,7 +140,7 @@ function ControlesGov({ s, id }: { s: CasoStore; id: string }) {
   switch (id) {
     case 'gov-projeto': return <Projeto s={s} />;
     case 'gov-diagnostico': return <Grupo s={s} base="govDiagnostico" campos={[
-      ['atual', 'Situação institucional atual'], ['resultado', 'Resultado esperado'], ['linhaBase', 'Linha de base institucional'], ['fonte', 'Fonte e data da evidência'],
+      ['atual', 'Situação institucional atual'], ['resultado', 'Resultado esperado'], ['linhaBase', 'Linha de base institucional'], ['fonte', 'Fonte da informação'],
     ]} />;
     case 'gov-instrumentos': return <Instrumentos s={s} />;
     case 'gov-solucoes': {
@@ -141,7 +166,7 @@ function ControlesGov({ s, id }: { s: CasoStore; id: string }) {
 export function PainelGovernanca({ s }: { s: CasoStore }) {
   const p = planoGovernanca(s), o = p.orcamento;
   const gaveta = useMediaQuery(BREAKPOINTS.drawer), [aberta, setAberta] = useState(false);
-  const painel = <PlanPanel fluid paperOnly={gaveta} state={faltamDe(s).length ? 'writing' : 'complete'}
+  const painel = <PlanPanel fluid paperOnly={gaveta} state={faltamDe(s).length || p.pendentes ? 'writing' : 'complete'}
     title={p.pais || t('Governança de IA na educação')} kicker={p.titulo} facts={t('{n} desafios selecionados', { n: p.desafios.length })}
     openHref={href.plano()} summaryTitle={t('Em resumo')} originLine={<>{p.proxima}<p>{p.escopo}</p></>}
     kpis={[{ id: 'gov-orcamento', label: o.total === null ? t('Subtotal informado') : t('Total informado'), value: o.informados ? moedaGovernanca(o.subtotal, o.moeda, String(LOC())) : NA() }]}
@@ -202,7 +227,7 @@ export function Governanca({ rota }: { rota: Rota }) {
       title={t(titulo)}
       actions={<><div className="pc-botoes"><Button variant="secondary" href={i ? href.pergunta(n, lista[i - 1].id) : href.abertura(n)}>{t('Voltar')}</Button>
         <Button disabled={faltaRede} onClick={() => ir(lista[i + 1] ? href.pergunta(n, lista[i + 1].id) : href.sintese(n))}>{t('Próximo')}</Button></div>
-        {faltaRede ? <p className="pc-nota">{t('Informe os totais da rede para avançar.')}</p> : null}</>}>
+        {faltaRede ? <p className="pc-nota">{t('Selecione as faixas ou informe os totais da rede para avançar.')}</p> : null}</>}>
       <ControlesGov s={s} id={id} />
     </QuestionFrame></div>
   </Shell>;

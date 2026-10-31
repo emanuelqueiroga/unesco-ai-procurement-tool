@@ -51,7 +51,7 @@ export function Pais({ semNota }: { semNota?: boolean }) {
   return (
     <div className="rf-pais">
       <p className="pc-nota">{t('Planejamento no nível do país.')}</p>
-      <TextField label={t('Buscar país')} value={busca} onChange={setBusca} />
+      <details className="pc-gov-detalhes"><summary>{t('Buscar país')}</summary><TextField label={t('Buscar país')} value={busca} onChange={setBusca} /></details>
       <label className="rf-rotulo" htmlFor={id}>{t('País')}</label>
       <select id={id} className="rf-select" value={pais} aria-describedby={semNota ? undefined : notaId} onChange={(e) => { void mudar(e.target.value); }}>
         <option value="">{t('Escolha o país')}</option>

@@ -7,7 +7,7 @@ import { useCaso, telasAtivas, telasDoCapitulo, telaRespondida, origemDe, progre
 import { Header, ChapterNav, ChapterBar, Segmented, Button, IconMoon, IconSun, useMediaQuery, useTheme, BREAKPOINTS, type NavChapter, type BarChapter } from '../ui';
 import { infoCapitulo, CURTO, t } from '../percurso/textos';
 import { href, lerRota } from '../percurso/rota';
-import { percursoGovernanca, temGovernanca } from '../domain';
+import { percursoGovernanca, temGovernanca, prioridadeEscolhida } from '../domain';
 import { Frentes, PainelGovernanca } from './Governanca';
 import { PlanoVivo } from './PlanoVivo';
 import { CasoDialog } from './CasoDialog';
@@ -27,16 +27,16 @@ export { Rodape } from './Rodape';
 
 export interface Posicao { capitulo?: Capitulo; tela?: string; sintese?: boolean }
 
-function capitulosNav(s: CasoStore, pos: Posicao): NavChapter[] {
+export function capitulosNav(s: CasoStore, pos: Posicao): NavChapter[] {
   const prog = progressoDe(s);
-  return ([1, 2, 3, 4] as Capitulo[]).map((n) => {
+  return (prioridadeEscolhida(s.ctx) ? [1, 2, 3, 4] : [1] as Capitulo[]).map((n) => {
     const atual = pos.capitulo === n;
     const p = prog[n - 1];
     return {
-      n, title: t(infoCapitulo(n, s).titulo), href: href.abertura(n),
+      n, title: t(infoCapitulo(n as Capitulo, s).titulo), href: href.abertura(n),
       state: atual ? 'current' : p.completo ? 'done' : 'todo',
       questions: atual
-        ? telasDoCapitulo(n, s).map((tela) => ({
+        ? telasDoCapitulo(n as Capitulo, s).filter(tela => prioridadeEscolhida(s.ctx) || ['local', 'prioridades'].includes(tela.id)).map((tela) => ({
           id: tela.id, title: t(CURTO[tela.id] || tela.id), href: href.pergunta(n, tela.id),
           state: tela.id === pos.tela ? 'current' : telaRespondida(s, tela) ? 'done' : tela.campos.some((c) => origemDe(s, c) === 'sugerido') ? 'suggested' : 'todo',
         }))
@@ -46,14 +46,15 @@ function capitulosNav(s: CasoStore, pos: Posicao): NavChapter[] {
 }
 
 function capitulosBarra(s: CasoStore, pos: Posicao): BarChapter[] {
-  return progressoDe(s).map((p) => ({
-    n: p.capitulo, label: t(infoCapitulo(p.capitulo, s).titulo), progress: p.total ? p.feitas / p.total : 0, href: href.abertura(p.capitulo),
+  return progressoDe(s).filter(p => prioridadeEscolhida(s.ctx) || p.capitulo === 1).map((p) => ({
+    n: p.capitulo, label: t(infoCapitulo(p.capitulo, s).titulo), progress: prioridadeEscolhida(s.ctx) ? p.total ? p.feitas / p.total : 0 : telasDoCapitulo(1, s).filter(t => ['local', 'prioridades'].includes(t.id) && telaRespondida(s, t)).length / 2, href: href.abertura(p.capitulo),
     state: pos.capitulo === p.capitulo ? 'current' : p.completo ? 'done' : 'todo',
   }));
 }
 
 export function Shell({ children, pos = {}, nav = true, plano = true, inicio = false, contexto }: { children: ReactNode; pos?: Posicao; nav?: boolean; plano?: boolean; inicio?: boolean; contexto?: ReactNode }) {
   const s = useCaso();
+  plano = plano && prioridadeEscolhida(s.ctx);
   const barra = useMediaQuery(BREAKPOINTS.bar);
   const estreito = useMediaQuery(BREAKPOINTS.cards);
   const faixa = useMediaQuery('(max-width: 1360px)');   // atalhos numa faixa própria sob o cabeçalho (não cabem junto do nome e do contexto)
@@ -75,8 +76,8 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
   const atalhos = (
     <>
       <Button variant="secondary" size="sm" href={href.inicio()}>{t('Início')}</Button>
-      {!percursoGovernanca(s.ctx) ? <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={t('Matriz camadas × fases')}>{t('Matriz')}</Button> : null}
-      {!percursoGovernanca(s.ctx) && s.modo === 'refinar' ? <Button variant="secondary" size="sm" href={href.refinar()}>{t('Calculadora')}</Button> : null}
+      {prioridadeEscolhida(s.ctx) && !percursoGovernanca(s.ctx) ? <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={t('Matriz camadas × fases')}>{t('Matriz')}</Button> : null}
+      {prioridadeEscolhida(s.ctx) && !percursoGovernanca(s.ctx) && s.modo === 'refinar' ? <Button variant="secondary" size="sm" href={href.refinar()}>{t('Calculadora')}</Button> : null}
     </>
   );
   const modo = (
@@ -87,7 +88,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
       options={[{ value: 'essencial', label: t('Essencial') }, { value: 'refinar', label: t('Refinar') }]}
     />
   );
-  const verPlano = comPlano ? <Button variant="secondary" size="sm" href={href.plano()}>{t('Ver o plano')}</Button> : null;
+  const verPlano = comPlano && prioridadeEscolhida(s.ctx) ? <Button variant="secondary" size="sm" href={href.plano()}>{t('Ver o plano')}</Button> : null;
   const botaoTema = (
     <Button
       variant="secondary"

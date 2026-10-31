@@ -1,11 +1,11 @@
 import { Governanca } from './screens/Governanca';
-import { percursoGovernanca } from './domain';
+import { percursoGovernanca, prioridadeEscolhida } from './domain';
 import { useEffect } from 'react';
 import { Galeria } from './screens/Galeria';
 import { Inicio } from './screens/Inicio';
 import { Abertura, Pergunta, Sintese } from './screens/Percurso';
 import { Plano } from './screens/Plano';
-import { useRota } from './percurso/rota';
+import { href, ir, useRota } from './percurso/rota';
 import { useCaso } from './store';
 import { FaixaRevisao } from './screens/FaixaRevisao';
 import { ConfirmacaoHost, AvisosHost } from './screens/Confirmar';
@@ -24,7 +24,10 @@ export function App() {
     if (c.atual !== rota.n || c.pergunta !== rota.tela) irPara(rota.n, rota.tela);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chave]);
+  const aguardaPrioridade = !prioridadeEscolhida(ctx) && !(rota.tipo === 'inicio' || rota.tipo === 'galeria' || (rota.tipo === 'abertura' && rota.n === 1) || (rota.tipo === 'pergunta' && rota.n === 1 && ['local','prioridades'].includes(rota.tela)));
+  useEffect(() => { if (aguardaPrioridade) ir(href.pergunta(1, 'prioridades')); }, [aguardaPrioridade]);
   const tela = (() => {
+    if (aguardaPrioridade) return <Pergunta n={1} tela="prioridades" />;
     if (percursoGovernanca(ctx) && !['inicio', 'galeria'].includes(rota.tipo)) return <Governanca key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo === 'abertura' || rota.tipo === 'sintese' ? `${rota.tipo}${rota.n}` : rota.tipo} rota={rota} />;
     switch (rota.tipo) {
       case 'galeria': return <Galeria />;

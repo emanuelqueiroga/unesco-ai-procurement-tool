@@ -74,7 +74,7 @@ export function essencial(campo: string): boolean { return CAMPOS_ESSENCIAIS.inc
 // ondeMora (caso.ts) procura o campo em CAMPO_POR_ID para saber se mora em ctx; sem este registro eles iriam para `caso`.
 {
   const reg: any = CAMPO_POR_ID;
-  for (const id of [...GOVERNANCA.flatMap(t => t.campos), 'frenteAtiva']) { if (!reg[id]) reg[id] = { id, onde: 'ctx', tipo: 'extra', passo: '' }; }
+  for (const id of [...GOVERNANCA.flatMap(t => t.campos), 'frenteAtiva', 'govSelecoes', 'govDetalhes']) { if (!reg[id]) reg[id] = { id, onde: 'ctx', tipo: 'extra', passo: '' }; }
   reg.redeNacional = { id: 'redeNacional', onde: 'ctx', tipo: 'extra', passo: '' };
   if (!reg.subs) reg.subs = { id: 'subs', onde: 'ctx', tipo: 'extra', passo: '' };
   if (!reg.problemaOutro) reg.problemaOutro = { id: 'problemaOutro', onde: 'ctx', tipo: 'extra', passo: '' };

@@ -2,7 +2,7 @@
 // substituir o caso, mensagens de erro de importação no idioma da interface, versão e data do rodapé, título da
 // aba por tela, "continuar de onde parei" e a regra de retradução do exemplo ao trocar de idioma.
 import { telaGovernancaLegada } from '../percurso/governanca';
-import { percursoGovernanca } from '../domain/escopo.js';
+import { percursoGovernanca, prioridadeEscolhida } from '../domain/escopo.js';
 import { CASOS, tr } from '../domain';
 import { telasAtivas, temRespostas, ErroImportacao } from '../store';
 import { infoCapitulo, CURTO, t } from '../percurso/textos';
@@ -76,6 +76,7 @@ export function tituloDaAba(rota: Rota, s?: { ctx?: Record<string, any> }): stri
   switch (rota.tipo) {
     case 'abertura': parte = t(infoCapitulo(rota.n, s).titulo); break;
     case 'pergunta': {
+      if (s && !prioridadeEscolhida(s.ctx)) { parte = t(CURTO[rota.tela] || 'Prioridades'); break; }
       const telas = telasAtivas(s);
       const i = telas.findIndex((x) => x.id === rota.tela);
       parte = `${t('Pergunta {n} de {total}', { n: i + 1, total: telas.length })} · ${t(CURTO[rota.tela] || rota.tela)}`;
