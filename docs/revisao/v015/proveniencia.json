@@ -3,36 +3,39 @@
   "app_version": "0.1.0-alpha.8",
   "base": "v014 React/Prumo publicada",
   "base_source_commit": "bd4d4b3bcb1488f9085e64eb5cbe4ae506bc3db7",
-  "source_commit": "b6a7ae0caaeda7dee6ae7c010d37eb02782f36fe",
+  "source_commit": "e0f54b2312b63209bf2c007561038731b9120bd0",
   "source_branch": "feat/v015-from-v014",
-  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/b6a7ae0caaeda7dee6ae7c010d37eb02782f36fe",
+  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/e0f54b2312b63209bf2c007561038731b9120bd0",
   "v014_publication_tree": "4016e03f1e70e0b5f8436065fca37af4dd439611",
-  "scope": "Campos sempre visíveis para digitar os totais exatos de escolas e estudantes na pergunta de desafios. Presets e detalhes opcionais preservados nas demais perguntas; faixas antigas não substituem os totais obrigatórios.",
+  "scope": "Seis opções de Educar sobre a IA, incluindo estudantes e egressos do ensino superior. Mudança restrita ao catálogo e à apresentação das opções; novo fluxo depende de aprovação.",
   "build": "VITE_CANAL=revisao npm run build -- --outDir ../docs/revisao/v015",
   "validation": {
     "build": "passed",
     "types": "passed",
-    "test_files_passed": 3,
-    "tests_passed": 41,
+    "test_files_passed": 5,
+    "tests_passed": 114,
     "test_files": [
+      "letramento-v015.test.ts",
       "governanca-v015.test.ts",
-      "governanca-presets-v015.test.ts",
+      "refinar-perguntas.test.ts",
+      "store.test.ts",
       "percurso.test.ts"
     ],
     "domain_check": "passed",
     "diff_check": "passed",
+    "translation_keys": "6 matching keys in all 8 dictionaries",
     "interface": [
-      "School and student total inputs are directly visible on Challenges, with no range selection.",
-      "Blank exact totals disable Next even when legacy ranges were saved.",
-      "Typing 12345 schools and 1600000 students displays 12.345 and 1.600.000 in Portuguese and enables Next.",
-      "Challenge selections and optional notes from the previous delivery are preserved."
+      "Six Educating about AI options visible in a new isolated case, in the requested order.",
+      "All six options selected together and retained after reload.",
+      "Legacy challenge IDs retain their meanings and existing selections.",
+      "Existing 23-screen literacy path and combined-governance path remain unchanged."
     ],
-    "network_input": "Exact positive integer totals entered by the user; no estimated or range-based totals."
+    "pending_approval": "Any new literacy/curriculum workflow, budget or report changes."
   },
   "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
-  "delivery": "11-totais-exatos-rede",
-  "publication_parent": "2799672385811d573f26cddf4e72d4a86d7671e0",
-  "previous_delivery_commit": "2799672385811d573f26cddf4e72d4a86d7671e0",
+  "delivery": "12-opcoes-letramento",
+  "publication_parent": "9d5db980d0ff585615bcb21ed3a62ac801160169",
+  "previous_delivery_commit": "9d5db980d0ff585615bcb21ed3a62ac801160169",
   "phase_names_en": [
     "Context",
     "Proof of concept or pilot",
@@ -58,32 +61,23 @@
   ],
   "previous_validation": {
     "build": "passed",
-    "test_files_passed": 39,
-    "tests_passed": 847,
-    "skipped": 2,
-    "todo": 1,
+    "types": "passed",
+    "test_files_passed": 3,
+    "tests_passed": 41,
+    "test_files": [
+      "governanca-v015.test.ts",
+      "governanca-presets-v015.test.ts",
+      "percurso.test.ts"
+    ],
     "domain_check": "passed",
     "diff_check": "passed",
     "interface": [
-      "Before priority selection, navigation exposes only Context, Country and Priorities; no future stages, live procurement panel, matrix or calculator.",
-      "After AI governance selection, navigation reveals the institutional path. Direct access to dependent steps before priority selection returns to Priorities.",
-      "Governance diagnosis was completed with clicks only; visible text boxes counted zero. Suggestions for results reflect selected regulation and child-safety challenges.",
-      "Instruments, evidence types, owners, gaps, actions, resources, capacity and review use selection presets; free text is inside Add more information +.",
-      "Optional note remains in the plan when the selected situation changes; stored earlier free text is preserved.",
-      "Network ranges are selectable and do not become exact counts. Unknown cost, explicit zero and optional informed amounts remain distinct."
+      "School and student total inputs are directly visible on Challenges, with no range selection.",
+      "Blank exact totals disable Next even when legacy ranges were saved.",
+      "Typing 12345 schools and 1600000 students displays 12.345 and 1.600.000 in Portuguese and enables Next.",
+      "Challenge selections and optional notes from the previous delivery are preserved."
     ],
-    "pdf": {
-      "brief_pages": 3,
-      "annex_pages": 5,
-      "text": "Selected labels, network ranges and optional synthetic note appear without internal option IDs or fabricated monetary totals.",
-      "visual": "All eight pages rendered and inspected without overlap or clipping."
-    },
-    "regressions": [
-      "Preset IDs retain their meaning after challenge changes.",
-      "JSON round-trip preserves selections, custom notes and previous answers.",
-      "A governance case can answer every step by selecting options without typing, while unknown costs remain pending.",
-      "Selected option labels follow the current language; personal notes retain their text."
-    ]
+    "network_input": "Exact positive integer totals entered by the user; no estimated or range-based totals."
   },
   "context_screens": 9,
   "context_order": [
@@ -143,5 +137,14 @@
   ],
   "governance_input_style": "Selectable presets; Add more information + for optional details.",
   "network_input": "Exact positive integer totals entered by the user; no estimated or range-based totals.",
-  "cost_input": "Unknown, explicit no cost, or optional informed amount; no monetary presets fabricated."
+  "cost_input": "Unknown, explicit no cost, or optional informed amount; no monetary presets fabricated.",
+  "educating_about_ai_options": [
+    "AI literacy for teachers",
+    "AI literacy for students",
+    "AI literacy for policy makers and staff",
+    "AI literacy for school principals",
+    "AI literacy for higher education students and graduates",
+    "Develop a national AI curriculum"
+  ],
+  "educating_about_ai_workflow": "Unchanged; proposed revision awaiting user approval."
 }

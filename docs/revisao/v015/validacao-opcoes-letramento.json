@@ -1,0 +1,23 @@
+{
+  "build": "passed",
+  "types": "passed",
+  "test_files_passed": 5,
+  "tests_passed": 114,
+  "test_files": [
+    "letramento-v015.test.ts",
+    "governanca-v015.test.ts",
+    "refinar-perguntas.test.ts",
+    "store.test.ts",
+    "percurso.test.ts"
+  ],
+  "domain_check": "passed",
+  "diff_check": "passed",
+  "translation_keys": "6 matching keys in all 8 dictionaries",
+  "interface": [
+    "Six Educating about AI options visible in a new isolated case, in the requested order.",
+    "All six options selected together and retained after reload.",
+    "Legacy challenge IDs retain their meanings and existing selections.",
+    "Existing 23-screen literacy path and combined-governance path remain unchanged."
+  ],
+  "pending_approval": "Any new literacy/curriculum workflow, budget or report changes."
+}
