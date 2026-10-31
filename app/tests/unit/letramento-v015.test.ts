@@ -3,7 +3,7 @@ import { useCaso, telasAtivas, proximaTela } from '../../src/store';
 import { PRIORIDADES, problemasMarcados, sugestoesProblemas, setLang } from '../../src/domain';
 const S = () => useCaso.getState();
 beforeEach(() => { setLang('pt'); S().carregarExemplo('novo'); });
-describe('v015: opções de educar sobre a IA, antes da revisão do fluxo', () => {
+describe('v015: opções de educar sobre a IA, catálogo de letramento', () => {
   it('aceita as seis opções juntas e preserva seleção, notas e posição no JSON', () => {
     const sobre: any = PRIORIDADES.find((p: any) => p.id === 'sobre');
     const ids = sobre.problemas.filter((q: any) => q.v015).map((q: any) => q.id);
@@ -26,12 +26,12 @@ describe('v015: opções de educar sobre a IA, antes da revisão do fluxo', () =
     expect(antes[0][1]).toContain('Estudantes usam ferramentas');
     expect(antes.every(([id]: string[]) => ['A1', 'A7', 'A10'].includes(id))).toBe(true);
   });
-  it('preserva os percursos atuais para letramento isolado e combinado com governança', () => {
+  it('usa o novo percurso de letramento e mantém governança como frente inicial na combinação', () => {
     S().responder('prioridades', ['sobre']); S().irPara(1, 'prioridades');
-    expect(telasAtivas(S())).toHaveLength(23); expect(proximaTela(S())?.id).toBe('etapas');
+    expect(telasAtivas(S())).toHaveLength(10); expect(proximaTela(S())?.id).toBe('problemas');
     S().responder('problemas', ['A11', 'A16']);
     S().responder('prioridades', ['governar', 'sobre']); S().responder('problemas', ['A11', 'A16', 'G11']);
-    expect(telasAtivas(S()).some(t => t.id === 'gov-projeto')).toBe(true);
+    expect(telasAtivas(S()).some(t => t.id === 'gov-projeto')).toBe(false);
     expect(problemasMarcados(S().ctx).map((q: any) => q.id)).toEqual(['G11', 'A11', 'A16']);
     S().responder('prioridades', ['sobre']);
     expect(problemasMarcados(S().ctx).map((q: any) => q.id)).toEqual(['A11', 'A16']);

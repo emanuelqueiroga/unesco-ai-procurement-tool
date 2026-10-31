@@ -1,6 +1,7 @@
+import { telasLetramento } from '../percurso/letramento';
 // Perguntas do modo Essencial e vínculo resposta → trecho do plano
 // (spec, "Mapa das 51 perguntas para as 24 do Essencial" e "Comportamentos que fazem a narrativa").
-import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoGovernanca } from '../domain';
+import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoGovernanca, percursoLetramento } from '../domain';
 import type { Capitulo } from './tipos';
 
 export interface TelaEssencial {
@@ -61,10 +62,15 @@ export const GOVERNANCA: TelaEssencial[] = [
   { id: 'gov-sandbox', capitulo: 3, n: [], campos: ['govSandbox'] },
   { id: 'gov-revisao', capitulo: 4, n: [], campos: ['govRevisao'] },
 ];
-export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id))];
+export const LETRAMENTO: TelaEssencial[] = [
+ ...ESSENCIAL.filter(t => ['local','prioridades','problemas'].includes(t.id)),
+ ...(['alcance','diagnostico','desenho','curriculo','oferta','acoes','validacao','digital','projeto','recursos','revisao'] as const).map(id => ({ id: 'lit-' + id, capitulo: (id === 'alcance' ? 1 : ['diagnostico','desenho','curriculo'].includes(id) ? 2 : id === 'revisao' ? 4 : 3) as Capitulo, n: [], campos: ['letramento'] })),
+];
+export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id)), ...LETRAMENTO.filter(t => t.id.startsWith('lit-'))];
 export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] {
+  if (percursoLetramento(e?.ctx)) { const ids = telasLetramento(e as any); return LETRAMENTO.filter(t => ids.includes(t.id)); }
   if (!percursoGovernanca(e?.ctx)) return ESSENCIAL;
-  return GOVERNANCA.filter(t => (t.id !== 'gov-projeto' || e?.ctx?.prioridades.some((id: string) => id !== 'governar'))
+  return GOVERNANCA.filter(t => (t.id !== 'gov-projeto' || e?.ctx?.prioridades.some((id: string) => !['governar','sobre'].includes(id)))
     && (t.id !== 'gov-sandbox' || e?.ctx?.problemas?.includes('G15')));
 }
 export function telasDoCapitulo(n: Capitulo, e?: EscopoPercurso): TelaEssencial[] { return telasAtivas(e).filter(t => t.capitulo === n); }
@@ -74,7 +80,7 @@ export function essencial(campo: string): boolean { return CAMPOS_ESSENCIAIS.inc
 // ondeMora (caso.ts) procura o campo em CAMPO_POR_ID para saber se mora em ctx; sem este registro eles iriam para `caso`.
 {
   const reg: any = CAMPO_POR_ID;
-  for (const id of [...GOVERNANCA.flatMap(t => t.campos), 'frenteAtiva', 'govSelecoes', 'govDetalhes']) { if (!reg[id]) reg[id] = { id, onde: 'ctx', tipo: 'extra', passo: '' }; }
+  for (const id of [...GOVERNANCA.flatMap(t => t.campos), 'frenteAtiva', 'govSelecoes', 'govDetalhes', 'letramento']) { if (!reg[id]) reg[id] = { id, onde: 'ctx', tipo: 'extra', passo: '' }; }
   reg.redeNacional = { id: 'redeNacional', onde: 'ctx', tipo: 'extra', passo: '' };
   if (!reg.subs) reg.subs = { id: 'subs', onde: 'ctx', tipo: 'extra', passo: '' };
   if (!reg.problemaOutro) reg.problemaOutro = { id: 'problemaOutro', onde: 'ctx', tipo: 'extra', passo: '' };

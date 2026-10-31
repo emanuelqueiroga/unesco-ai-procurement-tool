@@ -1,7 +1,7 @@
 import { presetGovernanca, selecoesGov, detalheGov, textoSelecaoGov } from '../percurso/governancaPresets';
 import { useEffect, useState } from 'react';
 import { useCaso, telasDoCapitulo, telasAtivas, faltamDe, type CasoStore, type Capitulo } from '../store';
-import { percursoGovernanca, projetoUsoDefinido, tamanhoRedeValido, LOC } from '../domain';
+import { temGovernanca, temLetramento, percursoLetramento, percursoGovernanca, projetoUsoDefinido, tamanhoRedeValido, LOC } from '../domain';
 import { Button, TextField, OptionCard, OptionCardGroup, QuestionFrame, ChapterOpening, PlanPanel, PlanDrawer, useMediaQuery, BREAKPOINTS, Alert, Chip, ChipGroup } from '../ui';
 import { Shell } from './Shell';
 import { ControlesTela } from '../percurso/Controles';
@@ -13,15 +13,17 @@ import './governanca.css';
 
 export function Frentes({ s }: { s: CasoStore }) {
   const projeto = projetoUsoDefinido(s.ctx), gov = percursoGovernanca(s.ctx);
-  if (!projeto && gov) return null;
+  const lit = temLetramento(s.ctx);
+  if (!projeto && !(lit && temGovernanca(s.ctx))) return null;
   const abrir = (frente: string) => { s.responder('frenteAtiva', frente); ir(href.plano()); };
   return <section className="pc-gov-frentes" aria-label={t('Frentes do plano')}>
-    <p>{t('Governança e projeto de uso de IA têm ações e orçamentos separados.')}</p>
+    <p>{t(lit ? 'As frentes compartilham o contexto nacional e mantêm suas ações e recursos.' : 'Governança e projeto de uso de IA têm ações e orçamentos separados.')}</p>
     <div className="pc-botoes">
-      <Button size="sm" variant={gov ? 'primary' : 'secondary'} onClick={() => abrir('governanca')}>{t('Plano de governança')}</Button>
-      {projeto ? <Button size="sm" variant={!gov ? 'primary' : 'secondary'} onClick={() => abrir('projeto')}>{t('Projeto de uso de IA')}</Button> : null}
+      {temGovernanca(s.ctx) ? <Button size="sm" variant={gov ? 'primary' : 'secondary'} onClick={() => abrir('governanca')}>{t('Plano de governança')}</Button> : null}
+      {lit ? <Button size="sm" variant={percursoLetramento(s.ctx) ? 'primary' : 'secondary'} onClick={() => abrir('letramento')}>{t('Letramento e currículo')}</Button> : null}
+      {projeto ? <Button size="sm" variant={!gov && !percursoLetramento(s.ctx) ? 'primary' : 'secondary'} onClick={() => abrir('projeto')}>{t('Projeto de uso de IA')}</Button> : null}
     </div>
-    {!gov ? <p className="pc-nota">{t('Projeto identificado: {nome}', { nome: s.ctx.projetoIA.descricao })}</p> : null}
+    {projeto && !gov && !percursoLetramento(s.ctx) ? <p className="pc-nota">{t('Projeto identificado: {nome}', { nome: s.ctx.projetoIA.descricao })}</p> : null}
   </section>;
 }
 const NA = () => t('Não informado');

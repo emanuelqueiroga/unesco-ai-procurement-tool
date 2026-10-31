@@ -30,7 +30,7 @@ const ENTREGAS: Record<string, string> = {
 };
 export const preenchido = (v: unknown) => typeof v === 'string' && v.trim().length > 0 && !v.includes('__');
 export function desafiosGovernanca(s: Pick<Estado14, 'ctx'>): { id: string; titulo: string }[] {
-  const qs = problemasMarcados(s.ctx).map((q: any) => ({ id: q.id as string, titulo: t(q.t) }));
+  const qs = problemasMarcados(s.ctx).filter((q: any) => !s.ctx.prioridades?.includes('sobre') || /^G\d+$/.test(q.id)).map((q: any) => ({ id: q.id as string, titulo: t(q.t) }));
   if (preenchido(s.ctx.problemaOutro)) qs.push({ id: 'outro', titulo: String(s.ctx.problemaOutro).trim() });
   return qs;
 }
@@ -113,7 +113,7 @@ export function planoGovernanca(s: Estado14) {
   const faltam = ['gov-diagnostico', 'gov-instrumentos', 'gov-solucoes', 'gov-atores', 'gov-acoes', 'gov-capacidade', 'gov-recursos', ...(temSandbox(s) ? ['gov-sandbox'] : []), 'gov-revisao'].filter(id => !governancaRespondida(s, id));
   if (!s.caso.pais || !s.respC.pais) faltam.unshift('local');
   if (!tamanhoRedeValido(x) || !qs.length || !s.respC.redeNacional || !(preenchido(x.problemaOutro) || s.respC.problemas)) faltam.unshift('problemas');
-  if (x.prioridades?.some((id: string) => id !== 'governar') && !governancaRespondida(s, 'gov-projeto')) faltam.push('gov-projeto');
+  if (x.prioridades?.some((id: string) => !['governar','sobre'].includes(id)) && !governancaRespondida(s, 'gov-projeto')) faltam.push('gov-projeto');
   const pendentes = definicoesPendentes(s) + orcamento.faltam;
   const proxima = !qs.length ? t('Selecione os desafios do plano.') : faltam.length || pendentes ? t('Complete o diagnóstico, os responsáveis e os recursos antes de aprovar o plano de ação.') : t('Submeta o plano de ação à autoridade competente e acompanhe sua execução.');
   return { pendentes, titulo: t('Plano de governança de IA na educação'), pais: nomePais(paisDoCaso(s.caso)), desafios: qs, acoes, orcamento, blocos, faltam, proxima,

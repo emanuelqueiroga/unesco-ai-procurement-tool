@@ -137,7 +137,8 @@ const fmtImg = src => /^data:image\/jpe?g/i.test(String(src)) ? 'JPEG' : /^data:
  * opts.comprimir  false grava os fluxos sem compressão (testes: o texto fica legível no arquivo)
  */
 async function gerarPDF(estado, opts) {
-  const { percursoGovernanca, estadoDoProjeto } = await import('../domain/escopo.js');
+  const { percursoLetramento, percursoGovernanca, estadoDoProjeto } = await import('../domain/escopo.js');
+  if (percursoLetramento(estado.ctx)) { const { gerarGovernancaPDF } = await import('./pdf_governanca'); return gerarGovernancaPDF(estado, { ...opts, tipo: 'anexo', modelo:'letramento' }); }
   if (percursoGovernanca(estado.ctx)) { const { gerarGovernancaPDF } = await import('./pdf_governanca'); return gerarGovernancaPDF(estado, { ...opts, tipo: 'anexo' }); }
   estado = estadoDoProjeto(estado);
   opts = opts || {};

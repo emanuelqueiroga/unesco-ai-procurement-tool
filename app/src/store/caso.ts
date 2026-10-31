@@ -11,7 +11,7 @@ import { normalizarContextoPais } from './contextoPais';
 //   refinar   → 'refinado'    (a pessoa alterou uma premissa no modo Refinar)
 // respC continua sendo derivado (informado/refinado = confirmado), para o domínio e a exportação da v13.
 import { create } from 'zustand';
-import { temGovernanca, projetoUsoDefinido, clone, CASO_VAZIO, CASOS, CTX_EX, RESP_EX, CAMPO_POR_ID, CAMPOS_CUSTO, CAMPOS_SUGERIDOS, CAMPOS_PROB, SUB_OBJ,
+import { percursoLetramento, temGovernanca, projetoUsoDefinido, clone, CASO_VAZIO, CASOS, CTX_EX, RESP_EX, CAMPO_POR_ID, CAMPOS_CUSTO, CAMPOS_SUGERIDOS, CAMPOS_PROB, SUB_OBJ,
   confirmarGerados, horasEstimativa, vazio, tr, cfgAtual, direcionadores, PRESETS, salario, opcoes,
   escolherPais as escolherPaisDoCaso, editarCampoPais as editarCampoPaisDoCaso, restaurarCampoPais as restaurarCampoPaisDoCaso,
   moedaAoEscolherPais, PAIS_CAMPOS_NO_CUSTO } from '../domain';
@@ -236,7 +236,7 @@ function efeitos(e: Estado14, campo: string) {
 }
 // Sugestões em cascata até o ponto fixo (2.0 → 2.3.8; 2.2.1 → 4.1.1 → 3.1.1…); no máximo 5 voltas.
 function propagar(e: Estado14): string[] {
-  if (temGovernanca(e.ctx) && !projetoUsoDefinido(e.ctx)) return [];
+  if (percursoLetramento(e.ctx) || temGovernanca(e.ctx) && !projetoUsoDefinido(e.ctx)) return [];
   const tocados: string[] = [];
   for (let i = 0; i < 5; i++) {
     const r = aplicarSugestoes(e);
@@ -262,6 +262,7 @@ function recenteDe(campo: string, tocados: string[]): Recente {
   return { campo, afetados, em: Date.now() };
 }
 function proximaTela(e: Estado14, campo: string) {
+  if (campo.split('.')[0] === 'letramento') return; // Várias telas compartilham o modelo; conservar a posição atual.
   const t = telaDoCampo(campo.split('.')[0]);
   if (t) e.capitulo = { atual: t.capitulo, pergunta: t.id };
 }

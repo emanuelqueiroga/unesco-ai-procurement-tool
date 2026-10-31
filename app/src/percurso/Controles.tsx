@@ -6,7 +6,7 @@
 // mostram o detalhe recolhido na própria tela; a lógica pura dessas edições está em refinar.ts.
 import { Fragment, createContext, useContext, useId, useState, type ReactNode } from 'react';
 import {
-  temGovernanca, LOC, CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
+  percursoLetramento, temGovernanca, LOC, CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
   listaOpc, totaisCtx, alunosEtapa, etapasAtivas, modoTeste, horasEstimativa, lerNumero, problemasMarcados, sugProblemas, temLacuna, rotulo, pct, tr,
 } from '../domain';
 import { useCaso, origemDe, valorDe, type Estado14, type TelaEssencial } from '../store';
@@ -749,7 +749,7 @@ function Problemas({ e }: { e: Estado14 }) {
           </section>
         );
       })}
-      {refinando ? <OutroProblema e={e} /> : <DicaRefinar texto={t('Para marcar subcategorias ou descrever outro problema, use o modo Refinar.')} />}
+      {percursoLetramento(e.ctx) ? <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}</summary><TextField label={t('Informações adicionais')} multiline value={str(e.ctx.problemaOutro)} onChange={v=>useCaso.getState().refinar('problemaOutro',v)} /></details> : refinando ? <OutroProblema e={e} /> : <DicaRefinar texto={t('Para marcar subcategorias ou descrever outro problema, use o modo Refinar.')} />}
     </div>
   );
 }

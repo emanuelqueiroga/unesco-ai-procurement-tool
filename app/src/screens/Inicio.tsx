@@ -1,5 +1,5 @@
 // v015: página inicial sobre a v014 React/Prumo, com as quatro etapas do percurso.
-import { prioridadeEscolhida } from '../domain';
+import { prioridadeEscolhida, percursoInstitucional } from '../domain';
 import { useState } from 'react';
 import { useCaso, faltamDe, temRespostas, telasAtivas } from '../store';
 import { Button, Alert } from '../ui';
@@ -66,7 +66,7 @@ export function Inicio() {
                 ))}
               </ol>
               <p>{t('Os valores são estimativas. Você pode revisar as premissas ao longo do planejamento.')}</p>
-              {prioridadeEscolhida(s.ctx) ? <Button variant="link" onClick={() => abrirMatriz()} aria-haspopup="dialog">{t('Ver a matriz completa')}</Button> : null}
+              {prioridadeEscolhida(s.ctx) && !percursoInstitucional(s.ctx) ? <Button variant="link" onClick={() => abrirMatriz()} aria-haspopup="dialog">{t('Ver a matriz completa')}</Button> : null}
             </div>
           </details>
         </div>

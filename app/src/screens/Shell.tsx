@@ -1,3 +1,4 @@
+import { PainelLetramento } from './Letramento';
 // Moldura das telas: cabeçalho (logos, atalhos, modo, plano, idioma, tema, caso), navegação de capítulos (lateral
 // ≥ 900 px, barra abaixo), o conteúdo, o plano vivo (painel ≥ 1100 px, gaveta abaixo) e o rodapé institucional.
 // Até 1360 px os atalhos do cabeçalho (Início, Matriz, Calculadora, Modo, Ver o plano, tema) descem para uma
@@ -7,7 +8,7 @@ import { useCaso, telasAtivas, telasDoCapitulo, telaRespondida, origemDe, progre
 import { Header, ChapterNav, ChapterBar, Segmented, Button, IconMoon, IconSun, useMediaQuery, useTheme, BREAKPOINTS, type NavChapter, type BarChapter } from '../ui';
 import { infoCapitulo, CURTO, t } from '../percurso/textos';
 import { href, lerRota } from '../percurso/rota';
-import { percursoGovernanca, temGovernanca, prioridadeEscolhida } from '../domain';
+import { percursoGovernanca, percursoLetramento, percursoInstitucional, temLetramento, temGovernanca, prioridadeEscolhida } from '../domain';
 import { Frentes, PainelGovernanca } from './Governanca';
 import { PlanoVivo } from './PlanoVivo';
 import { CasoDialog } from './CasoDialog';
@@ -76,8 +77,8 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
   const atalhos = (
     <>
       <Button variant="secondary" size="sm" href={href.inicio()}>{t('Início')}</Button>
-      {prioridadeEscolhida(s.ctx) && !percursoGovernanca(s.ctx) ? <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={t('Matriz camadas × fases')}>{t('Matriz')}</Button> : null}
-      {prioridadeEscolhida(s.ctx) && !percursoGovernanca(s.ctx) && s.modo === 'refinar' ? <Button variant="secondary" size="sm" href={href.refinar()}>{t('Calculadora')}</Button> : null}
+      {prioridadeEscolhida(s.ctx) && !percursoInstitucional(s.ctx) ? <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={t('Matriz camadas × fases')}>{t('Matriz')}</Button> : null}
+      {prioridadeEscolhida(s.ctx) && !percursoInstitucional(s.ctx) && s.modo === 'refinar' ? <Button variant="secondary" size="sm" href={href.refinar()}>{t('Calculadora')}</Button> : null}
     </>
   );
   const modo = (
@@ -157,11 +158,11 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
         <div className={['pc-corpo', nav && !barra ? 'pc-corpo--nav' : '', plano ? 'pc-corpo--plano' : ''].filter(Boolean).join(' ')}>
           {nav && !barra ? <aside className="pc-nav"><ChapterNav zoneLabel={t('Seu caminho')} chapters={capitulosNav(s, pos)} /></aside> : null}
           <main id="conteudo" className="pc-main" tabIndex={-1}>
-            {rota.tipo === 'plano' && !percursoGovernanca(s.ctx) ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Anexo técnico (PDF)".')}</p> : null}
-            {temGovernanca(s.ctx) && !inicio ? <Frentes s={s} /> : null}
+            {rota.tipo === 'plano' && !percursoInstitucional(s.ctx) ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Anexo técnico (PDF)".')}</p> : null}
+            {(temGovernanca(s.ctx) || temLetramento(s.ctx)) && !inicio ? <Frentes s={s} /> : null}
             {children}
           </main>
-          {plano ? percursoGovernanca(s.ctx) ? <PainelGovernanca s={s} /> : <PlanoVivo s={s} /> : null}
+          {plano ? percursoLetramento(s.ctx) ? <PainelLetramento s={s} /> : percursoGovernanca(s.ctx) ? <PainelGovernanca s={s} /> : <PlanoVivo s={s} /> : null}
         </div>
         <RodapeCompleto />
         <CasoDialog open={caso} onClose={() => setCaso(false)} />
