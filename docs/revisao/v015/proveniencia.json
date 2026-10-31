@@ -3,13 +3,69 @@
   "app_version": "0.1.0-alpha.8",
   "base": "v014 React/Prumo publicada",
   "base_source_commit": "bd4d4b3bcb1488f9085e64eb5cbe4ae506bc3db7",
-  "source_commit": "2346f0b0c9935d65edebb8b5c5753259e9a2a1a3",
+  "source_commit": "46ed2cecf65665a2a81d9283928d1d1bf5380457",
   "source_branch": "feat/v015-from-v014",
-  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/2346f0b0c9935d65edebb8b5c5753259e9a2a1a3",
+  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/46ed2cecf65665a2a81d9283928d1d1bf5380457",
   "v014_publication_tree": "4016e03f1e70e0b5f8436065fca37af4dd439611",
-  "scope": "Percurso institucional de governança, orçamento informado e PDFs próprios; desafios sem limite em todas as prioridades. Projetos de ferramenta exigem identificação explícita quando há governança e mantêm ações, orçamento e relatório separados.",
+  "scope": "Navegação progressiva antes da prioridade; percurso institucional por opções de seleção, sugestões conforme desafios e detalhes livres opcionais. Faixas de tamanho da rede e estados de custo sem inventar quantidades ou valores. Painel, plano e PDFs consistentes; textos e respostas anteriores preservados.",
   "build": "VITE_CANAL=revisao npm run build -- --outDir ../docs/revisao/v015",
   "validation": {
+    "build": "passed",
+    "test_files_passed": 39,
+    "tests_passed": 847,
+    "skipped": 2,
+    "todo": 1,
+    "domain_check": "passed",
+    "diff_check": "passed",
+    "interface": [
+      "Before priority selection, navigation exposes only Context, Country and Priorities; no future stages, live procurement panel, matrix or calculator.",
+      "After AI governance selection, navigation reveals the institutional path. Direct access to dependent steps before priority selection returns to Priorities.",
+      "Governance diagnosis was completed with clicks only; visible text boxes counted zero. Suggestions for results reflect selected regulation and child-safety challenges.",
+      "Instruments, evidence types, owners, gaps, actions, resources, capacity and review use selection presets; free text is inside Add more information +.",
+      "Optional note remains in the plan when the selected situation changes; stored earlier free text is preserved.",
+      "Network ranges are selectable and do not become exact counts. Unknown cost, explicit zero and optional informed amounts remain distinct."
+    ],
+    "pdf": {
+      "brief_pages": 3,
+      "annex_pages": 5,
+      "text": "Selected labels, network ranges and optional synthetic note appear without internal option IDs or fabricated monetary totals.",
+      "visual": "All eight pages rendered and inspected without overlap or clipping."
+    },
+    "regressions": [
+      "Preset IDs retain their meaning after challenge changes.",
+      "JSON round-trip preserves selections, custom notes and previous answers.",
+      "A governance case can answer every step by selecting options without typing, while unknown costs remain pending.",
+      "Selected option labels follow the current language; personal notes retain their text."
+    ]
+  },
+  "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
+  "delivery": "10-presets-e-navegacao-progressiva",
+  "publication_parent": "d32aeade23b5c30eb35207fe3d98d4d6c6324c39",
+  "previous_delivery_commit": "d32aeade23b5c30eb35207fe3d98d4d6c6324c39",
+  "phase_names_en": [
+    "Context",
+    "Proof of concept or pilot",
+    "Deployment",
+    "Scale-up"
+  ],
+  "phase_names_pt": [
+    "Contexto",
+    "Prova de conceito ou piloto",
+    "Implantação",
+    "Expansão"
+  ],
+  "country_catalog_count": 249,
+  "essential_screens": 23,
+  "national_scope": "pais",
+  "navigation_en": [
+    "Back",
+    "Next"
+  ],
+  "navigation_pt": [
+    "Voltar",
+    "Próximo"
+  ],
+  "previous_validation": {
     "build": "passed",
     "test_files_passed": 38,
     "tests_passed": 837,
@@ -40,55 +96,6 @@
       "text": "Numbers and labels match the institutional model; no pilot, PoC, license or procurement annex text in the governance PDFs.",
       "visual": "All pages rendered and inspected; no overlap or clipping."
     }
-  },
-  "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
-  "delivery": "09-percurso-institucional-governanca",
-  "publication_parent": "610d28fdf8cd0302122ac37334fd51a258d0003d",
-  "previous_delivery_commit": "610d28fdf8cd0302122ac37334fd51a258d0003d",
-  "phase_names_en": [
-    "Context",
-    "Proof of concept or pilot",
-    "Deployment",
-    "Scale-up"
-  ],
-  "phase_names_pt": [
-    "Contexto",
-    "Prova de conceito ou piloto",
-    "Implantação",
-    "Expansão"
-  ],
-  "country_catalog_count": 249,
-  "essential_screens": 23,
-  "national_scope": "pais",
-  "navigation_en": [
-    "Back",
-    "Next"
-  ],
-  "navigation_pt": [
-    "Voltar",
-    "Próximo"
-  ],
-  "previous_validation": {
-    "build": "passed",
-    "test_files_passed": 38,
-    "tests_passed": 832,
-    "skipped": 2,
-    "todo": 1,
-    "final_targeted_tests_passed": 17,
-    "domain_check": "passed",
-    "diff_check": "passed",
-    "interface": [
-      "Priority label corrected to AI governance in education. Sole governance Next goes to Challenges; no Levels screen in navigation and counters show 22 active questions, 8 in Context.",
-      "National total schools/students are required to enable Next, formatted by locale. Entered 12345 schools and 1600000 students in the local test.",
-      "Eight new governance challenges rendered with revised English titles and descriptions.",
-      "With Educating with AI also checked, Next leads to Levels, schools and students, with 23 total questions. Returning to sole governance preserves national totals.",
-      "Direct URL to Levels redirects to Challenges when governance is the sole priority."
-    ],
-    "regressions": [
-      "Round-trip import/export preserves national totals, G1 legacy and G11/G16 new IDs.",
-      "Switching scope preserves stage data separately from national totals. National totals feed summaries and update estimates when an AI use is defined.",
-      "Invalid totals do not complete the Challenges question. All eight translation dictionaries contain the new challenge labels and descriptions."
-    ]
   },
   "context_screens": 9,
   "context_order": [
@@ -138,5 +145,15 @@
     "Acompanhamento e revisão"
   ],
   "challenge_selection_limit": null,
-  "governance_translation_status": "PT/EN/ES/FR new text; existing translations retained for AR/ZH/BM/ZU/SW, with explicit English entries for new text awaiting native review and the existing preliminary-translation notice."
+  "governance_translation_status": "PT/EN/ES/FR new text; existing translations retained for AR/ZH/BM/ZU/SW, with explicit English entries for new text awaiting native review and the existing preliminary-translation notice.",
+  "pre_priority_visible_screens": [
+    "local",
+    "prioridades"
+  ],
+  "pre_priority_visible_phases": [
+    "Context"
+  ],
+  "governance_input_style": "Selectable presets; Add more information + for optional details.",
+  "network_input": "Selected ranges or optional exact totals; no conversion of ranges to estimated totals.",
+  "cost_input": "Unknown, explicit no cost, or optional informed amount; no monetary presets fabricated."
 }

@@ -1,0 +1,29 @@
+{
+  "build": "passed",
+  "test_files_passed": 39,
+  "tests_passed": 847,
+  "skipped": 2,
+  "todo": 1,
+  "domain_check": "passed",
+  "diff_check": "passed",
+  "interface": [
+    "Before priority selection, navigation exposes only Context, Country and Priorities; no future stages, live procurement panel, matrix or calculator.",
+    "After AI governance selection, navigation reveals the institutional path. Direct access to dependent steps before priority selection returns to Priorities.",
+    "Governance diagnosis was completed with clicks only; visible text boxes counted zero. Suggestions for results reflect selected regulation and child-safety challenges.",
+    "Instruments, evidence types, owners, gaps, actions, resources, capacity and review use selection presets; free text is inside Add more information +.",
+    "Optional note remains in the plan when the selected situation changes; stored earlier free text is preserved.",
+    "Network ranges are selectable and do not become exact counts. Unknown cost, explicit zero and optional informed amounts remain distinct."
+  ],
+  "pdf": {
+    "brief_pages": 3,
+    "annex_pages": 5,
+    "text": "Selected labels, network ranges and optional synthetic note appear without internal option IDs or fabricated monetary totals.",
+    "visual": "All eight pages rendered and inspected without overlap or clipping."
+  },
+  "regressions": [
+    "Preset IDs retain their meaning after challenge changes.",
+    "JSON round-trip preserves selections, custom notes and previous answers.",
+    "A governance case can answer every step by selecting options without typing, while unknown costs remain pending.",
+    "Selected option labels follow the current language; personal notes retain their text."
+  ]
+}
