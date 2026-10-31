@@ -3,23 +3,25 @@
   "app_version": "0.1.0-alpha.8",
   "base": "v014 React/Prumo publicada",
   "base_source_commit": "bd4d4b3bcb1488f9085e64eb5cbe4ae506bc3db7",
-  "source_commit": "86ef41e2d1f4e98e17416b55d3223d95f90211c0",
+  "source_commit": "aa15f0922bbeb83b0feedc4a367be59c1b85800f",
   "source_branch": "feat/v015-from-v014",
-  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/86ef41e2d1f4e98e17416b55d3223d95f90211c0",
+  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/aa15f0922bbeb83b0feedc4a367be59c1b85800f",
   "v014_publication_tree": "4016e03f1e70e0b5f8436065fca37af4dd439611",
-  "scope": "Implementação dos percursos revisados de governança e educação com e sem IA/para a era da IA: navegação contínua, presets, intervenção educacional, tecnologia e testes condicionais, orçamento próprio, PDFs e isolamento por conjunto de temas.",
+  "scope": "Prioridades só alteram o caso, o layout e Seu caminho após Próximo. Seleção provisória não remonta a página. Voltar sem confirmar conserva as prioridades anteriores.",
   "build": "VITE_CANAL=revisao npm run build -- --outDir ../docs/revisao/v015",
   "validation": {
     "build": "passed",
     "types": "passed",
-    "test_files_passed": 44,
-    "tests_passed": 925,
+    "test_files_passed": 45,
+    "tests_passed": 932,
     "skipped": 2,
     "todo": 1,
     "new_pathway_tests": 24,
     "domain_check": "passed (43 files)",
     "diff_check": "Source and publication metadata passed; generated bundles kept byte-identical to the tested build, including vendor whitespace.",
     "interface": [
+      "Priority selection tested in fresh and saved cases: shell class, main width/position, navigation, panel and counter remain unchanged when selecting/deselecting all four options and combinations.",
+      "Next commits the selection and navigates to the new pathway. Back discards unconfirmed choices and restores the previously confirmed priorities.",
       "12-question educational pathway without AI completed; 15-question mixed pathway completed with proof of concept/pilot and digital conditions.",
       "Governance with education priorities completed in 12 questions, without a mandatory procurement pilot.",
       "Stage navigation resumes pending questions; Back/Next cross phases continuously. Pending governance costs open and focus the first native radio.",
@@ -39,16 +41,17 @@
     "preservation": "Format 14 and storage key retained. Existing IDs, notes, counts, inactive answers, currency and legacy tool data remain in JSON. A–D illustrative tool projects remain explicit projects.",
     "translation_status": "PT/EN complete; existing translations retained in six other languages with explicit English fallback for new text; no native review claimed.",
     "open_session_compatibility": {
-      "retained_asset_source": "df7dcb344a39822afb593b7f0a7ad7f905a1d4a3",
-      "retained_files": 41,
-      "validation": "All assets from previous delivery retained byte-identical alongside the new build."
+      "retained_asset_source": "09b150fcf402635c6cdddcc471574555ded4cf43",
+      "retained_files": 58,
+      "validation": "Every previous asset retained byte-identical alongside the new build."
     },
-    "source_rebuild": "Complete main source rebuild passed TypeScript and produced all 27 active build files byte-identical to the tested publication."
+    "source_rebuild": "All 555 tracked app, translation and country-catalog files match the TypeScript-checked source build.",
+    "new_priority_confirmation_tests": 7
   },
   "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
-  "delivery": "16-percursos-orientados",
-  "publication_parent": "df7dcb344a39822afb593b7f0a7ad7f905a1d4a3",
-  "previous_delivery_commit": "df7dcb344a39822afb593b7f0a7ad7f905a1d4a3",
+  "delivery": "17-confirmacao-prioridades",
+  "publication_parent": "09b150fcf402635c6cdddcc471574555ded4cf43",
+  "previous_delivery_commit": "09b150fcf402635c6cdddcc471574555ded4cf43",
   "phase_names_en": [
     "Context",
     "Proof of concept or pilot",
@@ -251,7 +254,7 @@
     "Acompanhamento e expansão"
   ],
   "source_completeness": {
-    "source_commit": "86ef41e2d1f4e98e17416b55d3223d95f90211c0",
+    "source_commit": "aa15f0922bbeb83b0feedc4a367be59c1b85800f",
     "complementary_files": 150,
     "purpose": "Complete the runtime, translations, tests and country catalog from previous v015 source deliveries, keeping the built v014 and stable page unchanged."
   }

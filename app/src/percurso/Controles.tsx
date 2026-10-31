@@ -605,10 +605,8 @@ function EstudantesPorAno({ e }: { e: Estado14 }) {
 }
 
 /** 1.2.1: cartões das prioridades, cada um com ⓘ que abre os exemplos sem mudar a seleção (PER-11) */
-function Prioridades({ e }: { e: Estado14 }) {
-  const responder = useCaso((s) => s.responder);
+export function OpcoesPrioridades({ atual, onChange }: { atual: string[]; onChange: (ids: string[]) => void }) {
   const [abertas, setAbertas] = useState<Record<string, boolean>>({});
-  const atual: string[] = e.ctx.prioridades || [];
   const P = PRIORIDADES as any[];
   return (
     <OptionCardGroup label={t('Prioridades')} type="checkbox">
@@ -625,7 +623,7 @@ function Prioridades({ e }: { e: Estado14 }) {
               checked={atual.includes(p.id)}
               onChange={(v, on) => {
                 const s = new Set(atual); if (on) s.add(v); else s.delete(v);
-                responder('prioridades', P.map((x) => x.id).filter((k: string) => s.has(k)));
+                onChange(P.map((x) => x.id).filter((k: string) => s.has(k)));
               }}
             />
             <button type="button" className="pcx-info" aria-expanded={aberta} aria-controls={idEx} aria-label={`${t('Exemplos')}: ${t(p.nome)}`} onClick={() => setAbertas((a) => ({ ...a, [p.id]: !a[p.id] }))}>
@@ -1109,7 +1107,7 @@ export function ControlesTela({ e, tela }: { e: Estado14; tela: TelaEssencial })
           : <DicaRefinar texto={t('Para informar os estudantes ano a ano ou série a série, use o modo Refinar.')} />}
       </>
     );
-    case 'prioridades': return <Prioridades e={e} />;
+    case 'prioridades': return <OpcoesPrioridades atual={e.ctx.prioridades || []} onChange={ids=>useCaso.getState().responder('prioridades',ids)} />;
     case 'problemas': return <Problemas e={e} />;
     case 'problema': return <Texto e={e} campo="problema" multiline rotulo={t('Situação atual')} />;
     case 'impactos': if (percursoEducacao(e.ctx)) { const ids=impactosEducacao(e); return <><p>{t('Impactos definidos pelos desafios selecionados')}</p>{ids.length ? <ul>{ids.map(id=><li key={id}>{String(tr((OPC.impactos.find((o:any)=>o[0]===id)||[id,id])[1]))}</li>)}</ul> : <p>{t('Selecione desafios para definir os impactos.')}</p>}<Texto e={e} campo="resultado" multiline rotulo={t('Meta ou resultado esperado')} /></>; } return <><Chips e={e} campo="impactos" /><Origem e={e} campos={['impactos']} /></>;
