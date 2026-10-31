@@ -1,0 +1,32 @@
+{
+  "build": "passed",
+  "types": "passed",
+  "test_files_passed": 43,
+  "tests_passed": 901,
+  "skipped": 2,
+  "todo": 1,
+  "new_interface_tests": 14,
+  "domain_check": "passed (42 files)",
+  "diff_check": "passed",
+  "interface": [
+    "Five audiences and national curriculum completed through all four phases, with 14 questions when pedagogical validation, digital resources and AI project questions are active.",
+    "A single policy maker/staff audience completed the in-person pathway without digital resources, in 10 questions.",
+    "Curriculum-only pathway completed in 10 questions without participant counts; inclusion stays in the curriculum design and old scope URLs redirect to it.",
+    "Back/Next cross phase boundaries directly; stage links resume their first unanswered question.",
+    "Pending groups open and focus their first control; exact school/participant numbers, higher education subgroup labels and optional notes remain distinct.",
+    "PT/EN change and unknown-number toggle preserve the original value (1000); returning to the audience restores it formatted as 1.000 in Portuguese.",
+    "Unknown costs, explicit zero and BRL1234.56 informed staff amount remain distinct. Adding a synthetic BRL250 resource gives BRL1484.56 and removing it restores BRL1234.56.",
+    "Additional resource numbered title checked in English. Related student numeric fields have the same vertical position."
+  ],
+  "responsive": {
+    "tested_viewports": "default; 390x844; 1600x1000",
+    "mobile_client_width": 375,
+    "mobile_scroll_width": 375,
+    "viewport_override": "reset after testing",
+    "panel": "drawer through 1439px; 320px sidebar on wider screens"
+  },
+  "preservation": "Same IDs, format 14 and browser storage; optional notes, counts, inactive answers and budgets retained; governance and education regressions passed.",
+  "other_pathways": "Model and representative UI reviewed for governance, education with/without AI and educating for the Age of AI; full redesign of these pathways remains proposed, not implemented.",
+  "known_remaining_work": "Other pathways retain old layout/transitions and tool-centric education decisions. Review scope isolation of suggestions when switching priorities.",
+  "translation_status": "New text complete in PT/EN; existing translations retained elsewhere with explicit English fallback for new entries. No native review claimed."
+}

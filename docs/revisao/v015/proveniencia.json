@@ -3,42 +3,48 @@
   "app_version": "0.1.0-alpha.8",
   "base": "v014 React/Prumo publicada",
   "base_source_commit": "bd4d4b3bcb1488f9085e64eb5cbe4ae506bc3db7",
-  "source_commit": "72911267399831953434d1b9f01144ea5151dbb3",
+  "source_commit": "4aa8e2cb8db65b93a5a900a87e33a52ca2ba8ab5",
   "source_branch": "feat/v015-from-v014",
-  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/72911267399831953434d1b9f01144ea5151dbb3",
+  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/4aa8e2cb8db65b93a5a900a87e33a52ca2ba8ab5",
   "v014_publication_tree": "4016e03f1e70e0b5f8436065fca37af4dd439611",
-  "scope": "Education with and without AI: eleven themes, retained level/school/student navigation, removed Current situation/Baseline/Non-AI alternative screens, automatically derived impacts and editable target. Further educational pathway redesign awaits user approval.",
+  "scope": "Revisão funcional e visual de Educar sobre a IA: navegação contínua, agrupamento por público, opções alinhadas, validação com foco, formulário responsivo, currículo isolado e orçamento. Avaliação dos outros três percursos registrada como proposta.",
   "build": "VITE_CANAL=revisao npm run build -- --outDir ../docs/revisao/v015",
   "validation": {
     "build": "passed",
     "types": "passed",
-    "test_files_passed": 42,
-    "tests_passed": 887,
+    "test_files_passed": 43,
+    "tests_passed": 901,
     "skipped": 2,
     "todo": 1,
-    "new_pathway_tests": 17,
+    "new_interface_tests": 14,
     "domain_check": "passed (42 files)",
     "diff_check": "passed",
     "interface": [
-      "All eleven new themes selected simultaneously without a limit in an isolated case.",
-      "Levels, schools and students navigation retained; education path has 20 screens, 6 in Context.",
-      "Impact labels are a derived list without manual impact selection; target/outcome remains editable.",
-      "A custom numeric target survives deselecting nine of eleven themes; impacts update to match the remaining themes.",
-      "Old baseline URL redirects to Expected impact without deleting legacy saved data."
+      "Five audiences and national curriculum completed through all four phases, with 14 questions when pedagogical validation, digital resources and AI project questions are active.",
+      "A single policy maker/staff audience completed the in-person pathway without digital resources, in 10 questions.",
+      "Curriculum-only pathway completed in 10 questions without participant counts; inclusion stays in the curriculum design and old scope URLs redirect to it.",
+      "Back/Next cross phase boundaries directly; stage links resume their first unanswered question.",
+      "Pending groups open and focus their first control; exact school/participant numbers, higher education subgroup labels and optional notes remain distinct.",
+      "PT/EN change and unknown-number toggle preserve the original value (1000); returning to the audience restores it formatted as 1.000 in Portuguese.",
+      "Unknown costs, explicit zero and BRL1234.56 informed staff amount remain distinct. Adding a synthetic BRL250 resource gives BRL1484.56 and removing it restores BRL1234.56.",
+      "Additional resource numbered title checked in English. Related student numeric fields have the same vertical position."
     ],
-    "regressions": [
-      "All eleven individual themes map to valid impact IDs and do not assume AI tool tasks.",
-      "Removing all challenges clears automatic impacts.",
-      "Original manual impacts and inactive baseline/alternative answers survive JSON round trip.",
-      "Governance, literacy and fourth-priority screen paths remain unchanged."
-    ],
-    "translation_status": "New text complete in PT/EN; other six dictionaries preserve existing translations and use explicit English fallback where new translations are missing. No native review claimed.",
-    "known_remaining_work": "Later education screens, budget, recommendations, panel and PDFs still use the procurement model. Full educational redesign is proposed for user approval; it is not implemented in this delivery."
+    "responsive": {
+      "tested_viewports": "default; 390x844; 1600x1000",
+      "mobile_client_width": 375,
+      "mobile_scroll_width": 375,
+      "viewport_override": "reset after testing",
+      "panel": "drawer through 1439px; 320px sidebar on wider screens"
+    },
+    "preservation": "Same IDs, format 14 and browser storage; optional notes, counts, inactive answers and budgets retained; governance and education regressions passed.",
+    "other_pathways": "Model and representative UI reviewed for governance, education with/without AI and educating for the Age of AI; full redesign of these pathways remains proposed, not implemented.",
+    "known_remaining_work": "Other pathways retain old layout/transitions and tool-centric education decisions. Review scope isolation of suggestions when switching priorities.",
+    "translation_status": "New text complete in PT/EN; existing translations retained elsewhere with explicit English fallback for new entries. No native review claimed."
   },
   "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
-  "delivery": "14-educacao-com-sem-ia",
-  "publication_parent": "173c5397af6b3390232d9e8c2621d64a08a6387c",
-  "previous_delivery_commit": "173c5397af6b3390232d9e8c2621d64a08a6387c",
+  "delivery": "15-revisao-navegacao-letramento",
+  "publication_parent": "c24582224017343cfe66245505ac8bf5692c1431",
+  "previous_delivery_commit": "c24582224017343cfe66245505ac8bf5692c1431",
   "phase_names_en": [
     "Context",
     "Proof of concept or pilot",
@@ -65,39 +71,28 @@
   "previous_validation": {
     "build": "passed",
     "types": "passed",
-    "test_files_passed": 41,
-    "tests_passed": 870,
+    "test_files_passed": 42,
+    "tests_passed": 887,
     "skipped": 2,
     "todo": 1,
-    "focused_final": {
-      "files": 5,
-      "passed": 55,
-      "new_pathway_tests": 20
-    },
-    "domain_check": "passed",
+    "new_pathway_tests": 17,
+    "domain_check": "passed (42 files)",
     "diff_check": "passed",
-    "translation_keys_and_placeholders": "8 dictionaries checked; existing translations preserved; new pathway text complete in PT/EN with explicit English fallback elsewhere",
     "interface": [
-      "Literacy uses Context, Assessment and learning design, Implementation and resources, Monitoring and review. No technology matrix or procurement calculator in this pathway.",
-      "Policy makers and staff: exact eligible/planned participant inputs, without mandatory school levels or school/student totals.",
-      "Diagnosis completed by selections with zero visible text boxes before optionally adding a note. The note survives situation change and language change.",
-      "Budget input 1234.56 displays R$ 1.234,56 in both the question and live panel, with six unknown items explicitly retained.",
-      "Governance and literacy workstream buttons preserve the national context and previous answers; selecting both does not require a tool project."
+      "All eleven new themes selected simultaneously without a limit in an isolated case.",
+      "Levels, schools and students navigation retained; education path has 20 screens, 6 in Context.",
+      "Impact labels are a derived list without manual impact selection; target/outcome remains editable.",
+      "A custom numeric target survives deselecting nine of eleven themes; impacts update to match the remaining themes.",
+      "Old baseline URL redirects to Expected impact without deleting legacy saved data."
     ],
-    "pdf": {
-      "summary_pages": 3,
-      "plan_pages": 4,
-      "fixture": "Synthetic policy maker/staff and national curriculum case; BRL1234.56 staff amount, other categories explicitly zero, baseline assessment still pending.",
-      "text": "Shared model labels, numeric totals, pending definitions and optional note checked; no procurement authorization, test cost or license text.",
-      "visual": "All seven pages rendered and inspected; no clipping or overlap; headings kept with their first content."
-    },
     "regressions": [
-      "Each of six options can complete its own institutional learning/curriculum path.",
-      "Higher education subgroup counts and unique participant totals are validated without automatic summation.",
-      "Curriculum, pedagogical validation, digital conditions and explicit tool project are conditional.",
-      "Unknown, zero, partial and invalid budget amounts remain distinct; shared governance costs are referenced at their source without adding them again.",
-      "Legacy challenge meanings, inactive answers, optional notes, current position, JSON round trip and old links are preserved. Malformed imported selections do not crash the plan."
-    ]
+      "All eleven individual themes map to valid impact IDs and do not assume AI tool tasks.",
+      "Removing all challenges clears automatic impacts.",
+      "Original manual impacts and inactive baseline/alternative answers survive JSON round trip.",
+      "Governance, literacy and fourth-priority screen paths remain unchanged."
+    ],
+    "translation_status": "New text complete in PT/EN; other six dictionaries preserve existing translations and use explicit English fallback where new translations are missing. No native review claimed.",
+    "known_remaining_work": "Later education screens, budget, recommendations, panel and PDFs still use the procurement model. Full educational redesign is proposed for user approval; it is not implemented in this delivery."
   },
   "context_screens": 9,
   "context_order": [
@@ -222,5 +217,16 @@
   "education_editorial_references": [
     "https://www.uil.unesco.org/en/litbase/literate-brazil-programme-brazil",
     "https://www.unesco.org/en/legal-affairs/recommendation-adult-learning-and-education"
-  ]
+  ],
+  "literacy_navigation": "Continuous Back/Next across active question screens; old opening/summary routes redirect; stage links resume first unanswered screen.",
+  "literacy_input_style": "Aligned native radio/checkbox option cards, grouped by audience; optional notes collapsed; exact numeric inputs preserved.",
+  "essential_screens_literacy_curriculum_only": 10,
+  "essential_screens_literacy_all_optional": 14,
+  "literacy_curriculum_only": "No audience scope screen; inclusion fields retain the same key and move into curriculum design. Related page/nav/report titles adapt.",
+  "literacy_context_order_curriculum_only": [
+    "local",
+    "prioridades",
+    "problemas"
+  ],
+  "other_pathway_review": "Governance retains institutional content but needs continuous navigation and aligned groups. Education with/without AI and for the Age of AI still need conditional education/intervention pathways, shared-resource handling and coherent reports."
 }
