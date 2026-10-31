@@ -1,0 +1,5 @@
+# v015 — Confirmar prioridades antes de alterar o percurso
+
+Marcar ou desmarcar prioridades altera somente a seleção provisória da página. O caso confirmado continua alimentando a moldura, o painel, o contador e “Seu caminho”. A seleção só é gravada ao clicar em Próximo, que calcula o destino a partir do novo percurso. Voltar sem confirmar mantém as prioridades anteriores; uma seleção vazia não pode ser confirmada. A mesma página de prioridades atende todos os percursos, evitando remontagem quando uma opção é marcada.
+
+Verificação: 932 testes aprovados em 45 arquivos, 2 ignorados e 1 pendente. Sete novos casos cobrem renderização provisória, confirmação das quatro prioridades, combinação, preservação dos dados e seleção vazia. Build com TypeScript aprovado. No navegador, caso novo e caso salvo mantiveram classe da moldura, largura/posição do conteúdo, navegação e contador ao selecionar cada opção e combiná-las. Confirmados os destinos Desafios (governança/letramento) e Etapas, escolas e estudantes (educação), além do descarte da seleção provisória ao voltar.
