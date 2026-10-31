@@ -3,13 +3,66 @@
   "app_version": "0.1.0-alpha.8",
   "base": "v014 React/Prumo publicada",
   "base_source_commit": "bd4d4b3bcb1488f9085e64eb5cbe4ae506bc3db7",
-  "source_commit": "b73daa012e70cb73f49abeaee6dd321be690ee94",
+  "source_commit": "72911267399831953434d1b9f01144ea5151dbb3",
   "source_branch": "feat/v015-from-v014",
-  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/b73daa012e70cb73f49abeaee6dd321be690ee94",
+  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/72911267399831953434d1b9f01144ea5151dbb3",
   "v014_publication_tree": "4016e03f1e70e0b5f8436065fca37af4dd439611",
-  "scope": "Fluxo nacional de letramento em IA e currículo aprovado pelo usuário: quatro etapas, públicos condicionais, presets, quantidades exatas, recursos próprios, frentes combinadas e PDFs consistentes.",
+  "scope": "Education with and without AI: eleven themes, retained level/school/student navigation, removed Current situation/Baseline/Non-AI alternative screens, automatically derived impacts and editable target. Further educational pathway redesign awaits user approval.",
   "build": "VITE_CANAL=revisao npm run build -- --outDir ../docs/revisao/v015",
   "validation": {
+    "build": "passed",
+    "types": "passed",
+    "test_files_passed": 42,
+    "tests_passed": 887,
+    "skipped": 2,
+    "todo": 1,
+    "new_pathway_tests": 17,
+    "domain_check": "passed (42 files)",
+    "diff_check": "passed",
+    "interface": [
+      "All eleven new themes selected simultaneously without a limit in an isolated case.",
+      "Levels, schools and students navigation retained; education path has 20 screens, 6 in Context.",
+      "Impact labels are a derived list without manual impact selection; target/outcome remains editable.",
+      "A custom numeric target survives deselecting nine of eleven themes; impacts update to match the remaining themes.",
+      "Old baseline URL redirects to Expected impact without deleting legacy saved data."
+    ],
+    "regressions": [
+      "All eleven individual themes map to valid impact IDs and do not assume AI tool tasks.",
+      "Removing all challenges clears automatic impacts.",
+      "Original manual impacts and inactive baseline/alternative answers survive JSON round trip.",
+      "Governance, literacy and fourth-priority screen paths remain unchanged."
+    ],
+    "translation_status": "New text complete in PT/EN; other six dictionaries preserve existing translations and use explicit English fallback where new translations are missing. No native review claimed.",
+    "known_remaining_work": "Later education screens, budget, recommendations, panel and PDFs still use the procurement model. Full educational redesign is proposed for user approval; it is not implemented in this delivery."
+  },
+  "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
+  "delivery": "14-educacao-com-sem-ia",
+  "publication_parent": "173c5397af6b3390232d9e8c2621d64a08a6387c",
+  "previous_delivery_commit": "173c5397af6b3390232d9e8c2621d64a08a6387c",
+  "phase_names_en": [
+    "Context",
+    "Proof of concept or pilot",
+    "Deployment",
+    "Scale-up"
+  ],
+  "phase_names_pt": [
+    "Contexto",
+    "Prova de conceito ou piloto",
+    "Implantação",
+    "Expansão"
+  ],
+  "country_catalog_count": 249,
+  "essential_screens": 23,
+  "national_scope": "pais",
+  "navigation_en": [
+    "Back",
+    "Next"
+  ],
+  "navigation_pt": [
+    "Voltar",
+    "Próximo"
+  ],
+  "previous_validation": {
     "build": "passed",
     "types": "passed",
     "test_files_passed": 41,
@@ -45,56 +98,6 @@
       "Unknown, zero, partial and invalid budget amounts remain distinct; shared governance costs are referenced at their source without adding them again.",
       "Legacy challenge meanings, inactive answers, optional notes, current position, JSON round trip and old links are preserved. Malformed imported selections do not crash the plan."
     ]
-  },
-  "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
-  "delivery": "13-fluxo-letramento-curriculo",
-  "publication_parent": "e28586c335db9bd880545e1e819991ca4c4dc9a0",
-  "previous_delivery_commit": "e28586c335db9bd880545e1e819991ca4c4dc9a0",
-  "phase_names_en": [
-    "Context",
-    "Proof of concept or pilot",
-    "Deployment",
-    "Scale-up"
-  ],
-  "phase_names_pt": [
-    "Contexto",
-    "Prova de conceito ou piloto",
-    "Implantação",
-    "Expansão"
-  ],
-  "country_catalog_count": 249,
-  "essential_screens": 23,
-  "national_scope": "pais",
-  "navigation_en": [
-    "Back",
-    "Next"
-  ],
-  "navigation_pt": [
-    "Voltar",
-    "Próximo"
-  ],
-  "previous_validation": {
-    "build": "passed",
-    "types": "passed",
-    "test_files_passed": 5,
-    "tests_passed": 114,
-    "test_files": [
-      "letramento-v015.test.ts",
-      "governanca-v015.test.ts",
-      "refinar-perguntas.test.ts",
-      "store.test.ts",
-      "percurso.test.ts"
-    ],
-    "domain_check": "passed",
-    "diff_check": "passed",
-    "translation_keys": "6 matching keys in all 8 dictionaries",
-    "interface": [
-      "Six Educating about AI options visible in a new isolated case, in the requested order.",
-      "All six options selected together and retained after reload.",
-      "Legacy challenge IDs retain their meanings and existing selections.",
-      "Existing 23-screen literacy path and combined-governance path remain unchanged."
-    ],
-    "pending_approval": "Any new literacy/curriculum workflow, budget or report changes."
   },
   "context_screens": 9,
   "context_order": [
@@ -190,5 +193,34 @@
     "lit-alcance"
   ],
   "literacy_translation_status": "New pathway text complete in PT/EN. Existing translations preserved in other languages; missing new entries use explicit English fallback and a pathway notice. No native review claimed.",
-  "literacy_budget": "Informed totals by category/period; unknown is not zero; shared governance costs are referenced without summing again; no inferred licenses or participant-based prices."
+  "literacy_budget": "Informed totals by category/period; unknown is not zero; shared governance costs are referenced without summing again; no inferred licenses or participant-based prices.",
+  "essential_screens_education": 20,
+  "context_screens_education": 6,
+  "education_context_order": [
+    "local",
+    "prioridades",
+    "etapas",
+    "problemas",
+    "impactos",
+    "governanca"
+  ],
+  "education_challenge_ids": [
+    "C11",
+    "C12",
+    "C13",
+    "C14",
+    "C15",
+    "C16",
+    "C17",
+    "C18",
+    "C19",
+    "C20",
+    "C21"
+  ],
+  "education_impact_mode": "Derived from selected challenges; target/expected outcome editable; old manual impacts retained in exported context.",
+  "education_workflow_status": "Only explicitly requested context changes implemented. Later screens, budget, recommendations and reports still use the procurement model; proposed redesign awaits approval.",
+  "education_editorial_references": [
+    "https://www.uil.unesco.org/en/litbase/literate-brazil-programme-brazil",
+    "https://www.unesco.org/en/legal-affairs/recommendation-adult-learning-and-education"
+  ]
 }

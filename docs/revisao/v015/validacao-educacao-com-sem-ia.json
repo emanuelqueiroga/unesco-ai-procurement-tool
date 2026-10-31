@@ -1,0 +1,26 @@
+{
+  "build": "passed",
+  "types": "passed",
+  "test_files_passed": 42,
+  "tests_passed": 887,
+  "skipped": 2,
+  "todo": 1,
+  "new_pathway_tests": 17,
+  "domain_check": "passed (42 files)",
+  "diff_check": "passed",
+  "interface": [
+    "All eleven new themes selected simultaneously without a limit in an isolated case.",
+    "Levels, schools and students navigation retained; education path has 20 screens, 6 in Context.",
+    "Impact labels are a derived list without manual impact selection; target/outcome remains editable.",
+    "A custom numeric target survives deselecting nine of eleven themes; impacts update to match the remaining themes.",
+    "Old baseline URL redirects to Expected impact without deleting legacy saved data."
+  ],
+  "regressions": [
+    "All eleven individual themes map to valid impact IDs and do not assume AI tool tasks.",
+    "Removing all challenges clears automatic impacts.",
+    "Original manual impacts and inactive baseline/alternative answers survive JSON round trip.",
+    "Governance, literacy and fourth-priority screen paths remain unchanged."
+  ],
+  "translation_status": "New text complete in PT/EN; other six dictionaries preserve existing translations and use explicit English fallback where new translations are missing. No native review claimed.",
+  "known_remaining_work": "Later education screens, budget, recommendations, panel and PDFs still use the procurement model. Full educational redesign is proposed for user approval; it is not implemented in this delivery."
+}
