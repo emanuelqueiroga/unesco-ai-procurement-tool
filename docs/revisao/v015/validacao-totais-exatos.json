@@ -1,0 +1,20 @@
+{
+  "build": "passed",
+  "types": "passed",
+  "test_files_passed": 3,
+  "tests_passed": 41,
+  "test_files": [
+    "governanca-v015.test.ts",
+    "governanca-presets-v015.test.ts",
+    "percurso.test.ts"
+  ],
+  "domain_check": "passed",
+  "diff_check": "passed",
+  "interface": [
+    "School and student total inputs are directly visible on Challenges, with no range selection.",
+    "Blank exact totals disable Next even when legacy ranges were saved.",
+    "Typing 12345 schools and 1600000 students displays 12.345 and 1.600.000 in Portuguese and enables Next.",
+    "Challenge selections and optional notes from the previous delivery are preserved."
+  ],
+  "network_input": "Exact positive integer totals entered by the user; no estimated or range-based totals."
+}

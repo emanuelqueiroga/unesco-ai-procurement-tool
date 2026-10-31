@@ -3,13 +3,60 @@
   "app_version": "0.1.0-alpha.8",
   "base": "v014 React/Prumo publicada",
   "base_source_commit": "bd4d4b3bcb1488f9085e64eb5cbe4ae506bc3db7",
-  "source_commit": "46ed2cecf65665a2a81d9283928d1d1bf5380457",
+  "source_commit": "b6a7ae0caaeda7dee6ae7c010d37eb02782f36fe",
   "source_branch": "feat/v015-from-v014",
-  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/46ed2cecf65665a2a81d9283928d1d1bf5380457",
+  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/b6a7ae0caaeda7dee6ae7c010d37eb02782f36fe",
   "v014_publication_tree": "4016e03f1e70e0b5f8436065fca37af4dd439611",
-  "scope": "Navegação progressiva antes da prioridade; percurso institucional por opções de seleção, sugestões conforme desafios e detalhes livres opcionais. Faixas de tamanho da rede e estados de custo sem inventar quantidades ou valores. Painel, plano e PDFs consistentes; textos e respostas anteriores preservados.",
+  "scope": "Campos sempre visíveis para digitar os totais exatos de escolas e estudantes na pergunta de desafios. Presets e detalhes opcionais preservados nas demais perguntas; faixas antigas não substituem os totais obrigatórios.",
   "build": "VITE_CANAL=revisao npm run build -- --outDir ../docs/revisao/v015",
   "validation": {
+    "build": "passed",
+    "types": "passed",
+    "test_files_passed": 3,
+    "tests_passed": 41,
+    "test_files": [
+      "governanca-v015.test.ts",
+      "governanca-presets-v015.test.ts",
+      "percurso.test.ts"
+    ],
+    "domain_check": "passed",
+    "diff_check": "passed",
+    "interface": [
+      "School and student total inputs are directly visible on Challenges, with no range selection.",
+      "Blank exact totals disable Next even when legacy ranges were saved.",
+      "Typing 12345 schools and 1600000 students displays 12.345 and 1.600.000 in Portuguese and enables Next.",
+      "Challenge selections and optional notes from the previous delivery are preserved."
+    ],
+    "network_input": "Exact positive integer totals entered by the user; no estimated or range-based totals."
+  },
+  "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
+  "delivery": "11-totais-exatos-rede",
+  "publication_parent": "2799672385811d573f26cddf4e72d4a86d7671e0",
+  "previous_delivery_commit": "2799672385811d573f26cddf4e72d4a86d7671e0",
+  "phase_names_en": [
+    "Context",
+    "Proof of concept or pilot",
+    "Deployment",
+    "Scale-up"
+  ],
+  "phase_names_pt": [
+    "Contexto",
+    "Prova de conceito ou piloto",
+    "Implantação",
+    "Expansão"
+  ],
+  "country_catalog_count": 249,
+  "essential_screens": 23,
+  "national_scope": "pais",
+  "navigation_en": [
+    "Back",
+    "Next"
+  ],
+  "navigation_pt": [
+    "Voltar",
+    "Próximo"
+  ],
+  "previous_validation": {
     "build": "passed",
     "test_files_passed": 39,
     "tests_passed": 847,
@@ -37,65 +84,6 @@
       "A governance case can answer every step by selecting options without typing, while unknown costs remain pending.",
       "Selected option labels follow the current language; personal notes retain their text."
     ]
-  },
-  "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
-  "delivery": "10-presets-e-navegacao-progressiva",
-  "publication_parent": "d32aeade23b5c30eb35207fe3d98d4d6c6324c39",
-  "previous_delivery_commit": "d32aeade23b5c30eb35207fe3d98d4d6c6324c39",
-  "phase_names_en": [
-    "Context",
-    "Proof of concept or pilot",
-    "Deployment",
-    "Scale-up"
-  ],
-  "phase_names_pt": [
-    "Contexto",
-    "Prova de conceito ou piloto",
-    "Implantação",
-    "Expansão"
-  ],
-  "country_catalog_count": 249,
-  "essential_screens": 23,
-  "national_scope": "pais",
-  "navigation_en": [
-    "Back",
-    "Next"
-  ],
-  "navigation_pt": [
-    "Voltar",
-    "Próximo"
-  ],
-  "previous_validation": {
-    "build": "passed",
-    "test_files_passed": 38,
-    "tests_passed": 837,
-    "skipped": 2,
-    "todo": 1,
-    "domain_check": "passed",
-    "diff_check": "passed",
-    "translation_keys_and_placeholders": "8 dictionaries verified",
-    "interface": [
-      "Local isolated browser: four governance challenges selected without a limit; Next goes to the institutional diagnosis, with no tool trial screens.",
-      "Governance navigation: Context, Institutional diagnosis, Action plan and resources, Monitoring and review.",
-      "Budget: entering 1234.56 shows the same formatted subtotal in the resource question, live panel and plan, alongside six missing amounts.",
-      "Mixed priorities remain institutional until the user explicitly identifies an AI use project. Separate project and governance buttons preserve each front.",
-      "The tool project report uses the identified project title and excludes governance challenge IDs from its projection. Returning to governance preserves its budget.",
-      "National school/student totals are formatted by locale; the currency already associated with entered governance amounts is retained if the country changes."
-    ],
-    "regressions": [
-      "Sandbox only for G15; saved sandbox data retained when the challenge is unselected.",
-      "All selected challenges create actions; existing G1-G10 IDs remain supported, along with other challenge text.",
-      "National totals and governance budget cannot change tool project costs.",
-      "New institutional answers, previous tool answers, stage data and saved position survive JSON export/import.",
-      "Unknown costs are not zero; zero, partial totals, complete totals and invalid imported amounts are distinguished."
-    ],
-    "pdf": {
-      "brief_pages": 3,
-      "annex_pages": 5,
-      "fixture": "Synthetic case with regulation and child safety challenges; one amount 1234.56 and six unknown amounts",
-      "text": "Numbers and labels match the institutional model; no pilot, PoC, license or procurement annex text in the governance PDFs.",
-      "visual": "All pages rendered and inspected; no overlap or clipping."
-    }
   },
   "context_screens": 9,
   "context_order": [
@@ -154,6 +142,6 @@
     "Context"
   ],
   "governance_input_style": "Selectable presets; Add more information + for optional details.",
-  "network_input": "Selected ranges or optional exact totals; no conversion of ranges to estimated totals.",
+  "network_input": "Exact positive integer totals entered by the user; no estimated or range-based totals.",
   "cost_input": "Unknown, explicit no cost, or optional informed amount; no monetary presets fabricated."
 }
