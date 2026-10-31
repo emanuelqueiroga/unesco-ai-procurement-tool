@@ -1,0 +1,37 @@
+{
+  "build": "passed",
+  "types": "passed",
+  "test_files_passed": 41,
+  "tests_passed": 870,
+  "skipped": 2,
+  "todo": 1,
+  "focused_final": {
+    "files": 5,
+    "passed": 55,
+    "new_pathway_tests": 20
+  },
+  "domain_check": "passed",
+  "diff_check": "passed",
+  "translation_keys_and_placeholders": "8 dictionaries checked; existing translations preserved; new pathway text complete in PT/EN with explicit English fallback elsewhere",
+  "interface": [
+    "Literacy uses Context, Assessment and learning design, Implementation and resources, Monitoring and review. No technology matrix or procurement calculator in this pathway.",
+    "Policy makers and staff: exact eligible/planned participant inputs, without mandatory school levels or school/student totals.",
+    "Diagnosis completed by selections with zero visible text boxes before optionally adding a note. The note survives situation change and language change.",
+    "Budget input 1234.56 displays R$ 1.234,56 in both the question and live panel, with six unknown items explicitly retained.",
+    "Governance and literacy workstream buttons preserve the national context and previous answers; selecting both does not require a tool project."
+  ],
+  "pdf": {
+    "summary_pages": 3,
+    "plan_pages": 4,
+    "fixture": "Synthetic policy maker/staff and national curriculum case; BRL1234.56 staff amount, other categories explicitly zero, baseline assessment still pending.",
+    "text": "Shared model labels, numeric totals, pending definitions and optional note checked; no procurement authorization, test cost or license text.",
+    "visual": "All seven pages rendered and inspected; no clipping or overlap; headings kept with their first content."
+  },
+  "regressions": [
+    "Each of six options can complete its own institutional learning/curriculum path.",
+    "Higher education subgroup counts and unique participant totals are validated without automatic summation.",
+    "Curriculum, pedagogical validation, digital conditions and explicit tool project are conditional.",
+    "Unknown, zero, partial and invalid budget amounts remain distinct; shared governance costs are referenced at their source without adding them again.",
+    "Legacy challenge meanings, inactive answers, optional notes, current position, JSON round trip and old links are preserved. Malformed imported selections do not crash the plan."
+  ]
+}

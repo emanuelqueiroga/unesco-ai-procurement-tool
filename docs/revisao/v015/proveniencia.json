@@ -3,39 +3,53 @@
   "app_version": "0.1.0-alpha.8",
   "base": "v014 React/Prumo publicada",
   "base_source_commit": "bd4d4b3bcb1488f9085e64eb5cbe4ae506bc3db7",
-  "source_commit": "e0f54b2312b63209bf2c007561038731b9120bd0",
+  "source_commit": "b73daa012e70cb73f49abeaee6dd321be690ee94",
   "source_branch": "feat/v015-from-v014",
-  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/e0f54b2312b63209bf2c007561038731b9120bd0",
+  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/b73daa012e70cb73f49abeaee6dd321be690ee94",
   "v014_publication_tree": "4016e03f1e70e0b5f8436065fca37af4dd439611",
-  "scope": "Seis opções de Educar sobre a IA, incluindo estudantes e egressos do ensino superior. Mudança restrita ao catálogo e à apresentação das opções; novo fluxo depende de aprovação.",
+  "scope": "Fluxo nacional de letramento em IA e currículo aprovado pelo usuário: quatro etapas, públicos condicionais, presets, quantidades exatas, recursos próprios, frentes combinadas e PDFs consistentes.",
   "build": "VITE_CANAL=revisao npm run build -- --outDir ../docs/revisao/v015",
   "validation": {
     "build": "passed",
     "types": "passed",
-    "test_files_passed": 5,
-    "tests_passed": 114,
-    "test_files": [
-      "letramento-v015.test.ts",
-      "governanca-v015.test.ts",
-      "refinar-perguntas.test.ts",
-      "store.test.ts",
-      "percurso.test.ts"
-    ],
+    "test_files_passed": 41,
+    "tests_passed": 870,
+    "skipped": 2,
+    "todo": 1,
+    "focused_final": {
+      "files": 5,
+      "passed": 55,
+      "new_pathway_tests": 20
+    },
     "domain_check": "passed",
     "diff_check": "passed",
-    "translation_keys": "6 matching keys in all 8 dictionaries",
+    "translation_keys_and_placeholders": "8 dictionaries checked; existing translations preserved; new pathway text complete in PT/EN with explicit English fallback elsewhere",
     "interface": [
-      "Six Educating about AI options visible in a new isolated case, in the requested order.",
-      "All six options selected together and retained after reload.",
-      "Legacy challenge IDs retain their meanings and existing selections.",
-      "Existing 23-screen literacy path and combined-governance path remain unchanged."
+      "Literacy uses Context, Assessment and learning design, Implementation and resources, Monitoring and review. No technology matrix or procurement calculator in this pathway.",
+      "Policy makers and staff: exact eligible/planned participant inputs, without mandatory school levels or school/student totals.",
+      "Diagnosis completed by selections with zero visible text boxes before optionally adding a note. The note survives situation change and language change.",
+      "Budget input 1234.56 displays R$ 1.234,56 in both the question and live panel, with six unknown items explicitly retained.",
+      "Governance and literacy workstream buttons preserve the national context and previous answers; selecting both does not require a tool project."
     ],
-    "pending_approval": "Any new literacy/curriculum workflow, budget or report changes."
+    "pdf": {
+      "summary_pages": 3,
+      "plan_pages": 4,
+      "fixture": "Synthetic policy maker/staff and national curriculum case; BRL1234.56 staff amount, other categories explicitly zero, baseline assessment still pending.",
+      "text": "Shared model labels, numeric totals, pending definitions and optional note checked; no procurement authorization, test cost or license text.",
+      "visual": "All seven pages rendered and inspected; no clipping or overlap; headings kept with their first content."
+    },
+    "regressions": [
+      "Each of six options can complete its own institutional learning/curriculum path.",
+      "Higher education subgroup counts and unique participant totals are validated without automatic summation.",
+      "Curriculum, pedagogical validation, digital conditions and explicit tool project are conditional.",
+      "Unknown, zero, partial and invalid budget amounts remain distinct; shared governance costs are referenced at their source without adding them again.",
+      "Legacy challenge meanings, inactive answers, optional notes, current position, JSON round trip and old links are preserved. Malformed imported selections do not crash the plan."
+    ]
   },
   "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
-  "delivery": "12-opcoes-letramento",
-  "publication_parent": "9d5db980d0ff585615bcb21ed3a62ac801160169",
-  "previous_delivery_commit": "9d5db980d0ff585615bcb21ed3a62ac801160169",
+  "delivery": "13-fluxo-letramento-curriculo",
+  "publication_parent": "e28586c335db9bd880545e1e819991ca4c4dc9a0",
+  "previous_delivery_commit": "e28586c335db9bd880545e1e819991ca4c4dc9a0",
   "phase_names_en": [
     "Context",
     "Proof of concept or pilot",
@@ -62,22 +76,25 @@
   "previous_validation": {
     "build": "passed",
     "types": "passed",
-    "test_files_passed": 3,
-    "tests_passed": 41,
+    "test_files_passed": 5,
+    "tests_passed": 114,
     "test_files": [
+      "letramento-v015.test.ts",
       "governanca-v015.test.ts",
-      "governanca-presets-v015.test.ts",
+      "refinar-perguntas.test.ts",
+      "store.test.ts",
       "percurso.test.ts"
     ],
     "domain_check": "passed",
     "diff_check": "passed",
+    "translation_keys": "6 matching keys in all 8 dictionaries",
     "interface": [
-      "School and student total inputs are directly visible on Challenges, with no range selection.",
-      "Blank exact totals disable Next even when legacy ranges were saved.",
-      "Typing 12345 schools and 1600000 students displays 12.345 and 1.600.000 in Portuguese and enables Next.",
-      "Challenge selections and optional notes from the previous delivery are preserved."
+      "Six Educating about AI options visible in a new isolated case, in the requested order.",
+      "All six options selected together and retained after reload.",
+      "Legacy challenge IDs retain their meanings and existing selections.",
+      "Existing 23-screen literacy path and combined-governance path remain unchanged."
     ],
-    "network_input": "Exact positive integer totals entered by the user; no estimated or range-based totals."
+    "pending_approval": "Any new literacy/curriculum workflow, budget or report changes."
   },
   "context_screens": 9,
   "context_order": [
@@ -146,5 +163,32 @@
     "AI literacy for higher education students and graduates",
     "Develop a national AI curriculum"
   ],
-  "educating_about_ai_workflow": "Unchanged; proposed revision awaiting user approval."
+  "educating_about_ai_workflow": "Implemented after explicit user approval on 2026-10-31.",
+  "literacy_phase_names_pt": [
+    "Contexto",
+    "Diagnóstico e desenho formativo",
+    "Implementação e recursos",
+    "Acompanhamento e revisão"
+  ],
+  "literacy_phase_names_en": [
+    "Context",
+    "Assessment and learning design",
+    "Implementation and resources",
+    "Monitoring and review"
+  ],
+  "essential_screens_literacy_basic": 10,
+  "essential_screens_literacy_with_curriculum": 11,
+  "literacy_optional_screens": [
+    "lit-validacao",
+    "lit-digital",
+    "lit-projeto"
+  ],
+  "literacy_context_order": [
+    "local",
+    "prioridades",
+    "problemas",
+    "lit-alcance"
+  ],
+  "literacy_translation_status": "New pathway text complete in PT/EN. Existing translations preserved in other languages; missing new entries use explicit English fallback and a pathway notice. No native review claimed.",
+  "literacy_budget": "Informed totals by category/period; unknown is not zero; shared governance costs are referenced without summing again; no inferred licenses or participant-based prices."
 }
