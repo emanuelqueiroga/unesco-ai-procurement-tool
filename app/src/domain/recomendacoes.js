@@ -1,3 +1,4 @@
+import { estadoDoProjeto } from './escopo.js';
 // =====================================================================
 // Recomendações do caso: motor que transforma as respostas DESTE caso em ações (v10–v13; pacote R2 do sistema de
 // recomendações, design/redesign/05-requisitos-recomendacoes.md, seções 3 e 6).
@@ -130,6 +131,7 @@ function recFerramentas(c) {
     .map(f => Object.assign({}, f, { nome: String(f.nome).trim() }));
 }
 function recContexto(estado) {
+  estado = estadoDoProjeto(estado);
   const c = estado.caso || {};
   let ce = c;
   try { ce = casoAtual(estado); } catch (e) { console.warn(e); }

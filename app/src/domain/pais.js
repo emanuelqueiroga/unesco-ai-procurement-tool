@@ -5,6 +5,7 @@
 // país ou da região na base de referências → linha global (valor ilustrativo). A lista das premissas do caso
 // (premissasDoCaso) e a versão das bases ficam em referencias.js, o contrato com o relatório.
 // =====================================================================
+import CATALOGO from '../../../data/paises-catalogo.json';
 import { PAISES_DADOS, refLinha, temFaixa, foraDaFaixaLinha, origemDaLinha } from './referencias_base.js';
 import { tr, LOC, getLang, lerNumero } from './i18n.js';
 
@@ -31,17 +32,17 @@ const OUTRO_PAIS = 'outro';
 /** horas de trabalho por pessoa por ano: converte o salário anual do professor em custo da hora de formação */
 const ID_HORAS_ANO = 'conv.horasAno';
 // ISO 3166-1 alfa-2 dos países da base, para o nome no idioma da tela (Intl.DisplayNames)
-const ISO2 = { BRA: 'BR', MEX: 'MX', KEN: 'KE', MAR: 'MA', IDN: 'ID' };
+const ISO2 = Object.fromEntries(CATALOGO.paises.map(p => [p.iso3, p.iso2]));
 
 // ---------------------------------------------------------------- país e escopos
 function listaPaises() { return PAISES_DADOS.paises || []; }
-function paisPorIso(iso) { return listaPaises().find(p => p.iso3 === iso) || null; }
+function paisPorIso(iso) { return listaPaises().find(p => p.iso3 === iso) || CATALOGO.paises.find(p => p.iso3 === iso) || null; }
+function nomeContexto(estado) { return nomePais(paisDoCaso(estado.caso)) || String((estado.ctx || {}).local || ''); }
 function paisDoCaso(caso) { return caso && caso.pais && caso.pais !== OUTRO_PAIS ? paisPorIso(caso.pais) : null; }
 function nomeRegiao(cod) { const r = (PAISES_DADOS.regioes || []).find(x => x.codigo === cod); return r ? r.nome : cod; }
 /** nome do país no idioma da tela: em português, o da base; nos outros, o do Intl (sem ele, a tradução do dicionário) */
 function nomePais(p) {
   if (!p) return '';
-  if (getLang() === 'pt') return p.nome;
   try {
     const i2 = ISO2[p.iso3];
     const n = i2 && typeof Intl !== 'undefined' && Intl.DisplayNames ? new Intl.DisplayNames([String(LOC())], { type: 'region' }).of(i2) : '';
@@ -51,11 +52,11 @@ function nomePais(p) {
 }
 /** países em ordem alfabética do nome exibido */
 function paisesOrdenados() {
-  const L = listaPaises().map(p => ({ iso3: p.iso3, nome: nomePais(p), moeda: p.moeda, regiao: p.regiao }));
+  const L = CATALOGO.paises.map(item => { const p = paisPorIso(item.iso3); return ({ iso2: ISO2[p.iso3], iso3: p.iso3, nome: nomePais(p), moeda: p.moeda, regiao: p.regiao }); });
   try { return L.sort((a, b) => a.nome.localeCompare(b.nome, String(LOC()))); } catch (e) { return L; }
 }
 /** cadeia de escopos do país (['BRA', 'LAC', 'global']); null sem país (não listado ou não respondido): vale só o global, como na v13 */
-function escoposDeCaso(caso) { const p = paisDoCaso(caso); return p ? [p.iso3, p.regiao, 'global'] : null; }
+function escoposDeCaso(caso) { const p = paisDoCaso(caso); return p ? [p.iso3, p.regiao, 'global'].filter(Boolean) : null; }
 function linhaDoCaso(id, caso) { return refLinha(id, escoposDeCaso(caso)); }
 function fonteDeLinha(row) { return row.fonte && row.fonte.titulo ? row.fonte.titulo : ''; }
 /** descrição de um valor (origem, fonte, url, ano, grau) a partir da linha da base */
@@ -64,7 +65,7 @@ function infoDeLinha(row) {
 }
 /** a nota do país escolhido: moeda, região e grupo de renda (com a fonte); null sem país */
 function notaPais(caso) {
-  const p = paisDoCaso(caso); if (!p) return null;
+  const p = paisDoCaso(caso); if (!p || !p.moeda || !p.regiao) return null;
   const g = p.grupoRenda || null;
   return { iso3: p.iso3, nome: nomePais(p), moeda: p.moeda, regiao: p.regiao, nomeRegiao: nomeRegiao(p.regiao),
     renda: g && g.valor ? RENDA_NOME[g.valor] || g.valor : '', fonteRenda: g && g.fonte ? g.fonte : '', anoRenda: g && g.ano != null ? g.ano : null };
@@ -204,6 +205,6 @@ function faixaDoCampo(cfg, caminho, caso, valorBruto) {
 }
 
 export { PAIS_CAMPOS, PAIS_CAMPO_POR_ID, PAIS_CAMPOS_NO_CUSTO, ORIGEM_ROTULO, GRAU_NOME, RENDA_NOME, OUTRO_PAIS, ID_HORAS_ANO, REF_CAMINHOS,
-  listaPaises, paisPorIso, paisDoCaso, nomeRegiao, nomePais, paisesOrdenados, escoposDeCaso, linhaDoCaso, infoDeLinha, notaPais,
+  listaPaises, paisPorIso, paisDoCaso, nomeRegiao, nomePais, nomeContexto, paisesOrdenados, escoposDeCaso, linhaDoCaso, infoDeLinha, notaPais,
   valorEfetivoCampo, escolherPais, lerValorCampo, editarCampoPais, restaurarCampoPais, valorParaTexto, dicaOrigem, perfilDoPais, moedaAoEscolherPais,
   idRefDoCaminho, escalaDoCaminho, faixaDoCampo };

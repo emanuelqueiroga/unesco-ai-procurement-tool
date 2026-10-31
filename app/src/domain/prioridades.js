@@ -10,7 +10,7 @@ import { OPC } from './framework.js';
 const LACUNA = '__';
 const PRIORIDADES = [
   {
-    id: 'governar', nome: 'Governar a IA na educação',
+    id: 'governar', nome: 'Governança de IA na educação',
     desc: 'Criar as regras, as equipes e os processos para que o uso de IA na rede seja seguro, legal, equitativo e sustentável.',
     ex: ['Uma rede sem orientações para o uso de IA por estudantes', 'Escolas que usam ferramentas gratuitas sem análise de privacidade', 'Contratos de tecnologia assinados sem estimar o custo de vários anos', 'Nenhuma pessoa responsável pelo tema'],
     problemas: [
@@ -65,8 +65,8 @@ const PRIORIDADES = [
     ],
   },
   {
-    id: 'com', nome: 'Educar com a IA',
-    desc: 'Usar a IA para apoiar o ensino, a aprendizagem e a gestão: planejar aulas, dar retorno, oferecer prática, identificar quem precisa de apoio e atender as escolas.',
+    id: 'com', nome: 'Educação com e sem IA',
+    desc: 'Planejar melhorias na aprendizagem, na inclusão e no desenvolvimento dos estudantes, com ou sem IA.',
     ex: ['Estudantes do 5º ano abaixo do nível esperado em leitura', 'Baixa proficiência em matemática ao fim do ensino fundamental', 'Professores que gastam muitas horas no planejamento', 'Escolas que esperam dias por respostas da secretaria'],
     problemas: [
       { id: 'C1', t: 'Estudantes abaixo do nível esperado em leitura e escrita.', obj: 'Reduzir de __% para __% os estudantes de __ abaixo do nível adequado em leitura em __ anos.',
@@ -119,6 +119,337 @@ const PRIORIDADES = [
     ],
   },
 ];
+// Novos desafios de governança da v015. G1–G10 continuam válidos para casos salvos.
+const DESAFIOS_GOV_V015 = [
+  {
+    "id": "G11",
+    "t": "Criar regulamentação e orientações para IA na educação",
+    "desc": "Definir usos permitidos, responsabilidades e supervisão.",
+    "obj": "Criar regulamentação e orientações para IA na educação: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "uso_responsavel",
+      "gestao"
+    ],
+    "v015": true
+  },
+  {
+    "id": "G12",
+    "t": "Integrar a IA à estratégia nacional de educação",
+    "desc": "Definir objetivos, responsabilidades, recursos e prazos para o país.",
+    "obj": "Integrar a IA à estratégia nacional de educação: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "uso_responsavel",
+      "gestao"
+    ],
+    "v015": true
+  },
+  {
+    "id": "G13",
+    "t": "Fortalecer a soberania e a proteção de dados",
+    "desc": "Definir quem controla, acessa e compartilha os dados educacionais.",
+    "obj": "Fortalecer a soberania e a proteção de dados: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "uso_responsavel",
+      "gestao"
+    ],
+    "v015": true
+  },
+  {
+    "id": "G14",
+    "t": "Desenvolver a capacidade do Estado para governar a IA",
+    "desc": "Preparar equipes públicas para avaliar, contratar e supervisionar IA.",
+    "obj": "Desenvolver a capacidade do Estado para governar a IA: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "uso_responsavel",
+      "gestao"
+    ],
+    "v015": true
+  },
+  {
+    "id": "G15",
+    "t": "Criar um sandbox para experimentação educacional",
+    "desc": "Testar usos de IA em ambiente supervisionado, com salvaguardas e critérios de avaliação.",
+    "obj": "Criar um sandbox para experimentação educacional: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "uso_responsavel",
+      "gestao"
+    ],
+    "v015": true
+  },
+  {
+    "id": "G16",
+    "t": "Proteger a segurança, os direitos e o bem-estar de crianças e adolescentes",
+    "desc": "Prevenir danos e definir supervisão, resposta a incidentes e canais de reclamação.",
+    "obj": "Proteger a segurança, os direitos e o bem-estar de crianças e adolescentes: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "uso_responsavel",
+      "gestao"
+    ],
+    "v015": true
+  },
+  {
+    "id": "G17",
+    "t": "Garantir equidade e inclusão no acesso à IA",
+    "desc": "Considerar acessibilidade, línguas locais e escolas com menos recursos.",
+    "obj": "Garantir equidade e inclusão no acesso à IA: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "inclusao",
+      "desigualdade"
+    ],
+    "v015": true
+  },
+  {
+    "id": "G18",
+    "t": "Garantir transparência, responsabilização e avaliação contínua",
+    "desc": "Definir indicadores, prestação de contas e revisão das decisões sobre IA.",
+    "obj": "Garantir transparência, responsabilização e avaliação contínua: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "uso_responsavel",
+      "gestao"
+    ],
+    "v015": true
+  }
+];
+PRIORIDADES.find(p => p.id === 'governar').problemas.push(...DESAFIOS_GOV_V015);
+// IDs novos mantêm o significado das respostas A1–A10 já salvas. O fluxo será revisto após aprovação.
+const DESAFIOS_SOBRE_V015 = [
+  {
+    "id": "A11",
+    "t": "Letramento em IA para professores",
+    "obj": "Letramento em IA para professores: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "letramento_ia"
+    ],
+    "formacao": true,
+    "v015": true
+  },
+  {
+    "id": "A12",
+    "t": "Letramento em IA para estudantes",
+    "obj": "Letramento em IA para estudantes: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "letramento_ia"
+    ],
+    "formacao": true,
+    "v015": true
+  },
+  {
+    "id": "A13",
+    "t": "Letramento em IA para formuladores de políticas e equipes técnicas",
+    "obj": "Letramento em IA para formuladores de políticas e equipes técnicas: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "letramento_ia"
+    ],
+    "formacao": true,
+    "v015": true
+  },
+  {
+    "id": "A14",
+    "t": "Letramento em IA para diretores escolares",
+    "obj": "Letramento em IA para diretores escolares: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "letramento_ia"
+    ],
+    "formacao": true,
+    "v015": true
+  },
+  {
+    "id": "A15",
+    "t": "Letramento em IA para estudantes e egressos do ensino superior",
+    "obj": "Letramento em IA para estudantes e egressos do ensino superior: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "letramento_ia"
+    ],
+    "formacao": true,
+    "v015": true
+  },
+  {
+    "id": "A16",
+    "t": "Construir o currículo nacional de IA",
+    "obj": "Construir o currículo nacional de IA: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "letramento_ia"
+    ],
+    "formacao": true,
+    "v015": true
+  }
+];
+PRIORIDADES.find(p => p.id === 'sobre').problemas.push(...DESAFIOS_SOBRE_V015);
+// Opções novas de educação; C1–C10 preservam os significados dos casos anteriores.
+const DESAFIOS_EDUCACAO_V015 = [
+  {
+    "id": "C11",
+    "t": "Alfabetização e numeracia fundamentais",
+    "obj": "Elevar para __% os estudantes que atingem o nível esperado em leitura, escrita e matemática até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "aprendizagem",
+      "desigualdade"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C12",
+    "t": "Educação STEM",
+    "obj": "Ampliar para __ estudantes as oportunidades de aprendizagem em ciências, tecnologia, engenharia e matemática até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "aprendizagem",
+      "competencias_vida"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C13",
+    "t": "Recomposição e recuperação das aprendizagens",
+    "obj": "Oferecer apoio à recuperação das aprendizagens a __ estudantes até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "aprendizagem",
+      "desigualdade"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C14",
+    "t": "Educação de jovens e adultos (EJA)",
+    "obj": "Apoiar __ jovens e adultos na retomada e conclusão dos estudos até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "aprendizagem",
+      "permanencia",
+      "inclusao"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C15",
+    "t": "Estudantes com deficiência",
+    "obj": "Garantir materiais e atividades acessíveis a __% dos estudantes com deficiência até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "inclusao",
+      "desigualdade"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C16",
+    "t": "Educação multilíngue",
+    "obj": "Disponibilizar materiais e atividades nas línguas dos estudantes para __ participantes até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "inclusao",
+      "aprendizagem"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C17",
+    "t": "Futuro do trabalho",
+    "obj": "Oferecer atividades de preparação para as mudanças no trabalho a __ estudantes até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "competencias_vida"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C18",
+    "t": "Educação e formação técnica e profissional (TVET)",
+    "obj": "Ampliar ou atualizar __ cursos de educação técnica e profissional até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "competencias_vida",
+      "permanencia"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C19",
+    "t": "Bem-estar social e emocional",
+    "obj": "Realizar ações de apoio ao bem-estar social e emocional com __ estudantes até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "bem_estar",
+      "socioemocionais"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C20",
+    "t": "Cidadania global",
+    "obj": "Trabalhar cidadania global com __ estudantes por meio de atividades e projetos até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "cidadania_global",
+      "competencias_vida"
+    ],
+    "v015": true,
+    "educacao": true
+  },
+  {
+    "id": "C21",
+    "t": "Competências pessoais e interpessoais (soft skills)",
+    "obj": "Desenvolver atividades de comunicação, colaboração e resolução de problemas com __ estudantes até __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "socioemocionais",
+      "competencias_vida"
+    ],
+    "v015": true,
+    "educacao": true
+  }
+];
+PRIORIDADES.find(p => p.id === 'com').problemas.push(...DESAFIOS_EDUCACAO_V015);
 const PROBLEMA_POR_ID = {};
 const PRIORIDADE_DO_PROBLEMA = {};
 PRIORIDADES.forEach(p => p.problemas.forEach(q => { PROBLEMA_POR_ID[q.id] = q; PRIORIDADE_DO_PROBLEMA[q.id] = p.id; }));
@@ -151,12 +482,12 @@ function sugestoesProblemas(x, trf) {
   const textos = ps.map(q => t(q.t));
   if (outro) textos.push(outro);
   const olhando = textos.length ? textos[0].replace(/\.$/, '') + (textos.length > 1 ? ' ' + t('(e mais ' + (textos.length - 1) + ')') : '') : '';
-  const objetivos = ps.map(q => t(q.obj));
+  const objetivos = ps.map(q => q.v015 && !q.educacao ? t(q.t) + ': __.' : t(q.obj));
   return {
     n: ps.length + (outro ? 1 : 0), problemas: ps.map(q => q.id), tarefas, impactos, olhando,
     resultado: objetivos.join('\n'),
-    problema: textos.length ? t('Na rede, hoje:') + ' ' + textos.join(' ') + ' ' + t('Quem é afetado: __. O que se sabe sobre as causas: __.') : '',
-    semFerramenta: ps.length > 0 && !outro && ps.every(q => !(q.tarefas || []).length),
+    problema: textos.length ? t(ps.some(q => q.v015) ? 'Desafios selecionados:' : 'Na rede, hoje:') + ' ' + textos.join(' ') + ' ' + t('Quem é afetado: __. O que se sabe sobre as causas: __.') : '',
+    semFerramenta: ps.length > 0 && !outro && ps.every(q => !(q.tarefas || []).length) && !ps.some(q => q.educacao),
     formacao: ps.some(q => q.formacao) || (x && (x.prioridades || []).some(id => (PRIORIDADES.find(p => p.id === id) || {}).formacao)),
   };
 }

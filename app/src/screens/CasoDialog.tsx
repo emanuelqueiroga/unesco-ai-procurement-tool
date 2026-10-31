@@ -129,7 +129,7 @@ export function CasoDialog({ open, onClose }: { open: boolean; onClose: () => vo
         <section>
           <h3 className="pc-dialogo-titulo">{t('Modo')}</h3>
           <Segmented label={t('Modo')} value={s.modo} onChange={(m) => s.setModo(m)} options={[{ value: 'essencial', label: t('Essencial') }, { value: 'refinar', label: t('Refinar') }]} />
-          <p className="pc-dialogo-texto">{t('Essencial: as perguntas que mudam o plano, com premissas padrão no resto. Refinar: as mesmas telas, com as premissas de cada capítulo abertas para ajuste.')}</p>
+          <p className="pc-dialogo-texto">{t('Essencial: as perguntas que mudam o plano, com premissas padrão no resto. Refinar: as mesmas telas, com as premissas de cada etapa abertas para ajuste.')}</p>
         </section>
         <section>
           <h3 className="pc-dialogo-titulo">{t('País e moeda')}</h3>

@@ -1,0 +1,18 @@
+{
+  "Contexto": "Isimo",
+  "Prova de conceito ou piloto": "Ubufakazi bomqondo noma uhlelo lokuhlola",
+  "Implantação": "Ukusetshenziswa",
+  "Expansão": "Ukwandiswa",
+  "Qual é o contexto da sua rede e o que você quer melhorar?": "Siyini isimo sohlelo lwakho lwemfundo, futhi yini ofuna ukuyithuthukisa?",
+  "Descreva sua rede, suas prioridades e o problema que você quer resolver. Este capítulo reúne o contexto educacional, o alcance pretendido e as primeiras recomendações de governança.": "Chaza uhlelo lwakho lwemfundo, izinto eziza kuqala nenkinga ofuna ukuyixazulula. Lesi sahluko sihlanganisa isimo semfundo, ububanzi obuhlosiwe nezincomo zokuqala zokuphatha.",
+  "contexto e prioridades do planejamento": "isimo nezinto eziza kuqala ekuhleleni",
+  "O que você precisa verificar antes de decidir pela implantação?": "Yini okudingeka uyiqinisekise ngaphambi kokunquma ngokusetshenziswa?",
+  "Defina como avaliar a proposta antes de ampliar seu uso. Escolha uma prova de conceito, um piloto ou ambos e descreva as tarefas, os participantes e os recursos necessários. Ao final, revise a estimativa de custo do teste.": "Chaza ukuthi uzosihlola kanjani isiphakamiso ngaphambi kokwandisa ukusetshenziswa kwaso. Khetha ubufakazi bomqondo, uhlelo lokuhlola noma kokubili, bese uchaza imisebenzi, ababambiqhaza nezinsiza ezidingekayo. Ekugcineni, buyekeza izindleko ezilinganisiwe zokuhlola.",
+  "escopo e estimativa de custo da prova de conceito ou do piloto": "ububanzi nezindleko ezilinganisiwe zobufakazi bomqondo noma zohlelo lokuhlola",
+  "Como iniciar o uso com o alcance e os recursos planejados?": "Uzoqala kanjani ukusebenzisa ngobubanzi nezinsiza ezihleliwe?",
+  "Defina o alcance inicial da implantação: quantas escolas e pessoas serão atendidas no primeiro ano de uso. O plano usa esses dados para estimar o custo dessa etapa.": "Chaza ububanzi bokuqala bokusetshenziswa: zingaki izikole nabantu abazofinyelelwa onyakeni wokuqala. Uhlelo lusebenzisa le mininingwane ukulinganisa izindleko zalesi sigaba.",
+  "alcance e estimativa de custo da implantação": "ububanzi nezindleko ezilinganisiwe zokusetshenziswa",
+  "Como ampliar o alcance e sustentar o uso ao longo dos anos?": "Uzokwandisa kanjani ukufinyelela futhi ugcine ukusetshenziswa kuqhubeka eminyakeni ezayo?",
+  "Informe o público previsto para a expansão e o prazo para alcançá-lo. O plano reúne as estimativas de implantação e expansão para projetar os custos ao longo do horizonte definido e apoiar a contratação.": "Chaza abantu okuhloswe ukufinyelelwa kubo ekwandiseni nesikhathi esidingekayo sokubafinyelela. Uhlelo luhlanganisa izilinganiso zokusetshenziswa nokwandiswa ukuze luveze izindleko zesikhathi esinqunyiwe futhi lusekele ukuthengwa.",
+  "estimativa de custo da expansão e do ciclo de vida": "izindleko ezilinganisiwe zokwandiswa nezomjikelezo wokuphila"
+}

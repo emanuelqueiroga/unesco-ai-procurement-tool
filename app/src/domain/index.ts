@@ -20,3 +20,5 @@ export * from './ajuda.js';
 export * from './referencias.js';
 export * from './pais.js';
 export * from './rec_numeros.js';
+
+export * from './escopo.js';

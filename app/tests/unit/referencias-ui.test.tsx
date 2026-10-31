@@ -12,12 +12,15 @@ const S = () => useCaso.getState();
 beforeEach(() => { S().carregarExemplo('novo'); });
 
 describe('país e dados do país na interface', () => {
-  it('seletor com os 5 países e "outro"; nota com moeda, região e renda', () => {
+  it('seletor com todos os países e "outro"; nota com moeda, região e renda', () => {
     const html = renderToString(<Pais />);
     ['BRA', 'MEX', 'KEN', 'MAR', 'IDN', 'outro'].forEach((v) => expect(html).toContain(`value="${v}"`));
-    expect(html).toContain('Em que país fica a rede?');
+    expect(html).toContain('Planejamento no nível do país.');
+    expect(html).toContain('value="CAN"');
+    expect(html).toContain('value="USA"');
+    expect(html).toContain('value="AGO"');
     expect(textoNotaPais('BRA')).toMatch(/^Moeda do país: BRL · .+\.( 1 US\$ = .+ BRL\.)? Região: América Latina e Caribe\. Grupo de renda: renda média-alta \(Banco Mundial, a verificar\)\.$/);
-    expect(textoNotaPais('')).toMatch(/^Opcional\./);
+    expect(textoNotaPais('')).toBe('Selecione o país para iniciar o planejamento nacional.');
     expect(textoNotaPais('outro')).toMatch(/^Sem dados de país/);
   });
   it('"Dados do país" aberto: 9 campos, 7 "sem dado" e inflação e desconto com valor ilustrativo; fechado por padrão', () => {

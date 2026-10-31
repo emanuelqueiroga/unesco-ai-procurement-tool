@@ -1,4 +1,4 @@
-// Teste de ponta a ponta do percurso (0.1.0-alpha.2): percorre as 25 perguntas do Essencial pela interface,
+// Teste de ponta a ponta do percurso (0.1.0-alpha.2): percorre as 24 perguntas do Essencial pela interface,
 // em 1360 px (painel ao lado) e em 400 px (gaveta), sobre o build em ../docs/app.
 // Verifica: o primeiro número aparece ao responder 2.3.4; as sugestões aceitas viram respostas; as sínteses;
 // o plano completo; exportação JSON no formato 14; o caso continua depois de recarregar; nenhuma rolagem
@@ -29,14 +29,13 @@ const BASE = `http://127.0.0.1:${servidor.address().port}/`;
 let falhas = 0, verificacoes = 0;
 const ok = (cond, msg) => { verificacoes++; if (!cond) { falhas++; console.error('  ✗ ' + msg); } };
 
-const continuar = (p) => p.getByRole('button', { name: /^(Continuar|Aceitar a sugestão e continuar)$/ }).click();
+const continuar = (p) => p.getByRole('button', { name: 'Próximo', exact: true }).click();
 const radio = (p, nome) => p.getByRole('radio', { name: nome }).check();
 const caixa = (p, nome) => p.getByRole('checkbox', { name: nome }).check();
 
 // uma ação por tela do Essencial; sem ação = aceitar a sugestão (ou seguir) com o botão principal
 const RESPOSTAS = {
-  nivel: (p) => radio(p, /^Município ou cidade/),
-  local: (p) => p.getByLabel('Nome do lugar ou da rede').fill('Rede Municipal de Exemplo'),
+  local: async (p) => { await p.getByLabel('País', { exact: true }).selectOption('CAN'); await p.getByLabel('Nome da instituição (opcional)').fill('Ministério da Educação'); },
   situacao: (p) => radio(p, /^Iniciar uma nova iniciativa/),
   etapas: async (p) => { await caixa(p, /anos finais/); await p.locator('#pr-schoolsgrid-fund2-escolas').fill('48'); await p.locator('#pr-schoolsgrid-fund2-estudantes').fill('9000'); },
   prioridades: (p) => caixa(p, /^Educar com a IA/),
@@ -86,7 +85,7 @@ async function percorrer(b, largura) {
     // espera a tela correspondente ao endereço estar desenhada antes de interagir
     const sel = /^#\/capitulo\/(\d)$/.test(h) ? `[data-abertura="${h.slice(-1)}"]` : /\/sintese$/.test(h) ? `[data-sintese="${h.split('/')[2]}"]` : /^#\/capitulo\/\d\/\w+$/.test(h) ? `[data-tela="${h.split('/')[3]}"]` : null;
     if (sel) await p.locator(sel).waitFor({ timeout: 5000 });
-    if (/^#\/capitulo\/\d$/.test(h)) { capitulo++; await semRolagemHorizontal(p, `${rotulo} abertura ${capitulo}`); await p.getByRole('link', { name: 'Começar o capítulo' }).click(); continue; }
+    if (/^#\/capitulo\/\d$/.test(h)) { capitulo++; await semRolagemHorizontal(p, `${rotulo} abertura ${capitulo}`); await p.getByRole('link', { name: 'Próximo', exact: true }).click(); continue; }
     const m = h.match(/^#\/capitulo\/(\d)\/(\w+)$/);
     if (!m) break;
     if (m[2] === 'sintese') {
@@ -94,7 +93,7 @@ async function percorrer(b, largura) {
       ok(await p.getByRole('heading', { name: n === 4 ? 'Seu próximo passo' : 'Até aqui, o que você já sabe' }).isVisible(), `${rotulo}: síntese ${n} sem título`);
       if (n >= 2) ok(/US\$/.test(await p.locator('.pr-chaptersummary, main').first().innerText()), `${rotulo}: síntese ${n} sem número`);
       await semRolagemHorizontal(p, `${rotulo} síntese ${n}`);
-      await p.getByRole('link', { name: n < 4 ? new RegExp(`^Capítulo ${n + 1}:`) : /^Abrir o plano$/ }).click();
+      await p.getByRole('link', { name: 'Próximo', exact: true }).click();
       continue;
     }
     const tela = m[2];
@@ -110,7 +109,7 @@ async function percorrer(b, largura) {
     await semRolagemHorizontal(p, `${rotulo} ${tela}`);
     await continuar(p);
   }
-  ok(telas === 25, `${rotulo}: percorreu ${telas} telas (esperado 25)`);
+  ok(telas === 24, `${rotulo}: percorreu ${telas} telas (esperado 24)`);
   ok(numeroApareceu, `${rotulo}: número não apareceu`);
   ok((await p.evaluate(() => location.hash)) === '#/plano', `${rotulo}: não terminou no plano`);
   await p.locator('.pc-plano-pagina').waitFor({ timeout: 5000 });

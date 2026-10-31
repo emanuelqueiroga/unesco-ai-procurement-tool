@@ -1,0 +1,14 @@
+{
+  "Qual país você está planejando?": "您正在为哪个国家制定计划？",
+  "O planejamento é sempre nacional. Escolha o país e, se quiser, informe a instituição responsável.": "规划始终在国家层面进行。请选择国家，并可填写负责机构的名称。",
+  "Nome da instituição (opcional)": "机构名称（可选）",
+  "Ex.: Ministério da Educação": "例如：教育部",
+  "Buscar país": "搜索国家",
+  "Sem dados locais para este país: as estimativas usam referências globais ilustrativas. Você pode ajustar as premissas.": "没有该国的本地数据：估算使用全球示例参考值。您可以调整假设。",
+  "Planejamento no nível do país.": "国家层面的规划。",
+  "Nenhum país encontrado.": "未找到国家。",
+  "Não informado": "未填写",
+  "Selecione o país para iniciar o planejamento nacional.": "选择国家以开始国家层面的规划。",
+  "Equipe de planejamento": "规划团队",
+  "País: ———": "国家：———"
+}

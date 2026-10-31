@@ -40,7 +40,9 @@ describe('PER-08: só conta resposta real', () => {
   it('texto vazio e texto com lacuna não contam', () => {
     S().responder('local', '   ');
     expect(respondida('local')).toBe(false);
-    S().responder('local', 'Rede municipal de Pelotas');
+    S().responder('local', 'Ministério da Educação');
+    expect(respondida('local')).toBe(false); // instituição opcional não substitui o país
+    S().escolherPais('BRA');
     expect(respondida('local')).toBe(true);
     S().responder('problema', 'Na rede, hoje: lê mal. Quem é afetado: __. O que se sabe sobre as causas: __.');
     expect(comLacuna(S().estado(), 'problema')).toBe(true);
@@ -130,6 +132,7 @@ describe('PER-15: marcar todos por prioridade (Refinar) sem limite', () => {
   });
   it('o store aceita mais de três problemas', () => {
     S().responder('prioridades', ['governar']);
+    S().responder('redeNacional', { escolas: 1000, estudantes: 500000 });
     S().responder('problemas', problemasDoGrupo([], ORDEM_PROBLEMAS, ids, true));
     expect(S().ctx.problemas.length).toBe(ids.length);
     expect(respondida('problemas')).toBe(true);

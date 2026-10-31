@@ -1,0 +1,14 @@
+{
+  "Qual país você está planejando?": "Which country are you planning for?",
+  "O planejamento é sempre nacional. Escolha o país e, se quiser, informe a instituição responsável.": "Planning is always at country level. Select the country and, if you wish, name the responsible institution.",
+  "Nome da instituição (opcional)": "Institution name (optional)",
+  "Ex.: Ministério da Educação": "E.g. Ministry of Education",
+  "Buscar país": "Search countries",
+  "Sem dados locais para este país: as estimativas usam referências globais ilustrativas. Você pode ajustar as premissas.": "No local data for this country: estimates use illustrative global references. You can adjust the assumptions.",
+  "Planejamento no nível do país.": "Planning at country level.",
+  "Nenhum país encontrado.": "No countries found.",
+  "Não informado": "Not specified",
+  "Selecione o país para iniciar o planejamento nacional.": "Select the country to start national planning.",
+  "Equipe de planejamento": "Planning team",
+  "País: ———": "Country: ———"
+}

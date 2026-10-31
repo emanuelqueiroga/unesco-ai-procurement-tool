@@ -1,3 +1,5 @@
+import { estadoDoProjeto } from '../domain/escopo.js';
+import { nomeContexto } from '../domain/pais.js';
 // =====================================================================
 // Policy brief (design/redesign/06-policy-brief.md, PB-01): dados do PDF principal e da tela "Em resumo", já
 // traduzidos. Parte pura (sem DOM): lê as mesmas fontes do plano (secoesPlano → resumo e sumário; relDados; planoRec),
@@ -145,6 +147,7 @@ const zero = v => !(Math.abs(+v || 0) >= 0.5);
  * Nunca lança: com estado sem caso, devolve o brief vazio (vazio: true) com as frases "a definir".
  */
 export function briefDados(estado, opts) {
+  estado = estadoDoProjeto(estado);
   opts = opts || {};
   estado = estado || {};
   const c = estado.caso || {}, x = estado.ctx || {};
@@ -191,7 +194,7 @@ export function briefDados(estado, opts) {
   const rotTeste = pocPrimeiro && comPiloto ? B('rPocPiloto') : pocPrimeiro ? B('rPoc') : comPiloto ? B('rPiloto') : B('rTeste');
 
   // ---------------------------------------------------------------- frases do resumo executivo
-  const local = String(x.local || '').trim();
+  const local = nomeContexto(estado).trim();
   const problema = String(x.olhando || '').trim() || kv('Problemas marcados').split('\n')[0] || String(c.problema || '').trim();
   const medida = String(c.linhaBaseMedida || '').trim();
   let tCtx = '';

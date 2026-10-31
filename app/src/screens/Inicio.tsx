@@ -1,13 +1,14 @@
-// v015: primeira entrega sobre a v014 React/Prumo. Apenas a página inicial muda.
+// v015: página inicial sobre a v014 React/Prumo, com as quatro etapas do percurso.
+import { prioridadeEscolhida, percursoInstitucional } from '../domain';
 import { useState } from 'react';
-import { useCaso, faltamDe, temRespostas, ESSENCIAL } from '../store';
+import { useCaso, faltamDe, temRespostas, telasAtivas } from '../store';
 import { Button, Alert } from '../ui';
 import { Shell } from './Shell';
 import { CampoImportar } from './CasoDialog';
 import { abrirMatriz } from './Matriz';
 import { abrirExemplo, comecarEmBranco, exportarCaso } from './acoes';
-import { precisaConfirmar, destinoContinuar } from './transversal';
-import { t } from '../percurso/textos';
+import { destinoContinuar } from './transversal';
+import { CAPITULOS_INFO, infoCapitulo, t } from '../percurso/textos';
 import { href, ir } from '../percurso/rota';
 import './inicio.css';
 
@@ -30,7 +31,7 @@ export function Inicio() {
         <p className="pc-lead">{t('Descreva sua rede, defina prioridades e explore os recursos e custos do seu plano.')}</p>
         {comCaso ? (
           <Alert kind="info" title={titulo}>
-            {t('{r} de {n} perguntas essenciais respondidas.', { r: ESSENCIAL.length - faltam.length, n: ESSENCIAL.length })}
+            {prioridadeEscolhida(s.ctx) ? t('{r} de {n} perguntas essenciais respondidas.', { r: telasAtivas(s).length - faltam.length, n: telasAtivas(s).length }) : t('Escolha a prioridade para definir as próximas etapas.')}
           </Alert>
         ) : null}
         {erro ? <Alert kind="atencao" title={erro} /> : null}
@@ -38,7 +39,11 @@ export function Inicio() {
           <Button href={comCaso ? continuar.href : href.abertura(1)}>
             {comCaso ? (continuar.pendente ? t('Continuar de onde parei') : t('Abrir o plano')) : t('Começar')}
           </Button>
-          {!comCaso ? <p>{t('Primeiro, descreva seu contexto.')}</p> : null}
+          {comCaso ? (
+            <Button variant="secondary" onClick={async () => {
+              if (await comecarEmBranco()) ir(href.abertura(1));
+            }}>{t('Começar novo plano')}</Button>
+          ) : <p>{t('Primeiro, descreva seu contexto.')}</p>}
         </div>
         <p className="pc-nota">{t('Suas respostas ficam salvas neste navegador. Você pode parar e continuar depois.')}</p>
         <div className="pc-inicio-opcoes">
@@ -52,25 +57,16 @@ export function Inicio() {
               <CampoImportar onPronto={(e) => { setErro(e); if (!e) ir(href.plano()); }} />
             </div>
           </details>
-          {comCaso ? (
-            <details className="pc-inicio-detalhe">
-              <summary>{t('Começar outro plano')}</summary>
-              <div className="pc-inicio-detalhe-corpo">
-                {precisaConfirmar(s) ? <p>{t('Começar em branco ou abrir um exemplo apaga o caso salvo. Para guardá-lo, exporte o caso.')}</p> : null}
-                <Button variant="secondary" onClick={() => { void comecarEmBranco(); }}>{t('Começar em branco')}</Button>
-              </div>
-            </details>
-          ) : null}
           <details className="pc-inicio-detalhe">
             <summary>{t('Como funciona')}</summary>
             <div className="pc-inicio-detalhe-corpo">
               <ol className="pc-inicio-passos">
-                <li><b>{t('Descreva seu contexto')}</b><p>{t('Informe o contexto da sua rede e o que você quer melhorar.')}</p></li>
-                <li><b>{t('Defina suas prioridades')}</b><p>{t('Escolha os objetivos e revise as opções do seu planejamento.')}</p></li>
-                <li><b>{t('Revise seu plano')}</b><p>{t('Explore os custos estimados, as premissas e os próximos passos.')}</p></li>
+                {Object.values(CAPITULOS_INFO).filter(etapa => prioridadeEscolhida(s.ctx) || etapa.n === 1).map((etapa) => (
+                  <li key={etapa.n}><b>{t(infoCapitulo(etapa.n, s).titulo)}</b><p>{t(infoCapitulo(etapa.n, s).guia)}</p></li>
+                ))}
               </ol>
               <p>{t('Os valores são estimativas. Você pode revisar as premissas ao longo do planejamento.')}</p>
-              <Button variant="link" onClick={() => abrirMatriz()} aria-haspopup="dialog">{t('Ver a matriz completa')}</Button>
+              {prioridadeEscolhida(s.ctx) && !percursoInstitucional(s.ctx) ? <Button variant="link" onClick={() => abrirMatriz()} aria-haspopup="dialog">{t('Ver a matriz completa')}</Button> : null}
             </div>
           </details>
         </div>

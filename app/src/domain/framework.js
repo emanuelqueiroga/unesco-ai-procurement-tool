@@ -36,6 +36,10 @@ const OPC = {
     ['letramento_ia', 'Desenvolver o letramento em IA', 'Ex.: entender como a IA funciona, erra e influencia decisões'],
     ['uso_responsavel', 'Garantir o uso seguro e responsável da IA', 'Ex.: regras de uso, proteção de dados, integridade acadêmica'],
     ['competencias', 'Desenvolver competências para a era da IA', 'Ex.: pensamento crítico, criatividade, resolução de problemas'],
+    ['competencias_vida', 'Desenvolver competências para a vida e o trabalho', ''],
+    ['bem_estar', 'Promover o bem-estar social e emocional', ''],
+    ['socioemocionais', 'Desenvolver competências pessoais e interpessoais', ''],
+    ['cidadania_global', 'Desenvolver a cidadania global', ''],
     ['outro', 'Outro', 'Descreva no campo abaixo'],
   ],
   // v9: pergunta 2.0 (guia, cap. 14, "Instrumentos de aprendizagem")
@@ -246,6 +250,8 @@ OPC.testes = OPC.teste;
 OPC.arquiteturaPergunta = OPC.arquitetura.filter(o => o[0] !== 'indefinida');
 // Tarefas ligadas a cada impacto (só para a etiqueta "sugerida pelo impacto" no 2.1; não pré-marcam)
 const IMPACTO_TAREFAS = {
+  // Estes resultados educacionais não implicam adotar uma ferramenta de IA.
+  competencias_vida: [], bem_estar: [], socioemocionais: [], cidadania_global: [],
   aprendizagem: ['tutoria', 'feedback_redacao', 'materiais'],
   desigualdade: ['tutoria', 'alerta_precoce', 'materiais'],
   tempo_docente: ['planos_aula', 'materiais', 'correcao'],

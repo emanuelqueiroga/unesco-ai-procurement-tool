@@ -18,7 +18,7 @@
     "todo": 1,
     "new_pathway_tests": 24,
     "domain_check": "passed (43 files)",
-    "diff_check": "passed",
+    "diff_check": "Source and publication metadata passed; generated bundles kept byte-identical to the tested build, including vendor whitespace.",
     "interface": [
       "12-question educational pathway without AI completed; 15-question mixed pathway completed with proof of concept/pilot and digital conditions.",
       "Governance with education priorities completed in 12 questions, without a mandatory procurement pilot.",
@@ -42,7 +42,8 @@
       "retained_asset_source": "df7dcb344a39822afb593b7f0a7ad7f905a1d4a3",
       "retained_files": 41,
       "validation": "All assets from previous delivery retained byte-identical alongside the new build."
-    }
+    },
+    "source_rebuild": "Complete main source rebuild passed TypeScript and produced all 27 active build files byte-identical to the tested publication."
   },
   "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
   "delivery": "16-percursos-orientados",
@@ -248,5 +249,10 @@
     "Intervenção e avaliação",
     "Execução e recursos",
     "Acompanhamento e expansão"
-  ]
+  ],
+  "source_completeness": {
+    "source_commit": "86ef41e2d1f4e98e17416b55d3223d95f90211c0",
+    "complementary_files": 150,
+    "purpose": "Complete the runtime, translations, tests and country catalog from previous v015 source deliveries, keeping the built v014 and stable page unchanged."
+  }
 }

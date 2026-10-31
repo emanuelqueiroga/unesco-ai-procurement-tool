@@ -1,3 +1,4 @@
+import { estadoDoProjeto } from '../domain/escopo.js';
 // Plano de contratação: Em resumo, Quanto custa, O que fazer, O que exigir e Apêndice (D8–D11, M4), com o
 // relatório em PDF e o caso em JSON. As seções vêm de src/plano/secoes.js (porte de src/resumo.js da v13).
 // P3: links "Rever a resposta" para qualquer pergunta (href.campo), lacunas nas duas classes (as mesmas do PDF),
@@ -463,7 +464,7 @@ function entradasDe(pagina: PaginaPlano, secs: SecaoPlano[], p: Painel, sum?: Su
 
 // ----------------------------------------------------------- a página
 export function Plano({ pagina }: { pagina: PaginaPlano }) {
-  const s = useCaso();
+  const s = estadoDoProjeto(useCaso());
   const p = usePainel(s);
   const dados = useMemo(() => {
     sincronizar(s);

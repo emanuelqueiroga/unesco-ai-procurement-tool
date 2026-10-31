@@ -20,6 +20,8 @@ export type NumeroFieldProps = {
   hint?: ReactNode;
   suggested?: boolean;
   error?: string;
+  invalid?: boolean;
+  describedBy?: string;
   suffix?: ReactNode;
   size?: number;
   placeholder?: string;
@@ -28,7 +30,7 @@ export type NumeroFieldProps = {
 };
 
 export function NumeroField({
-  id, label, value, onChange, locale, decimais, percentual, negativo, hint, suggested, error, suffix, size = 10, placeholder, disabled, className,
+  id, label, value, onChange, locale, decimais, percentual, negativo, hint, suggested, error, invalid, describedBy, suffix, size = 10, placeholder, disabled, className,
 }: NumeroFieldProps) {
   const auto = useId();
   const fieldId = id ?? `pr-num-${auto}`;
@@ -54,12 +56,14 @@ export function NumeroField({
       hint={hint}
       suggested={suggested}
       error={error}
+      invalid={invalid}
       suffix={suffix ?? (percentual ? '%' : undefined)}
       size={size}
       placeholder={placeholder}
       disabled={disabled}
       className={className}
       inputProps={{
+        'aria-describedby': describedBy,
         inputMode: decimais || percentual ? 'decimal' : 'numeric',
         onFocus: () => { focado.current = true; },
         onBlur: () => { focado.current = false; setTexto(paraTexto(externo, locale)); },

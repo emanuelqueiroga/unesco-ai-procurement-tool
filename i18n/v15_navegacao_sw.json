@@ -1,0 +1,12 @@
+{
+  "Voltar": "Rudi",
+  "Próximo": "Ifuatayo",
+  "{nome} · pergunta {i} de {total}": "{nome} · swali {i} kati ya {total}",
+  "Premissas desta etapa": "Dhana za hatua hii",
+  "Estimativa desta etapa": "Makadirio ya hatua hii",
+  "Quer ajustar as premissas padrão?": "Unataka kurekebisha dhana za msingi?",
+  "Ao avançar, você aceita as sugestões exibidas.": "Unapoenda hatua inayofuata, unakubali mapendekezo yaliyoonyeshwa.",
+  "Esta etapa ainda não tem respostas: o plano usa as premissas padrão.": "Hatua hii bado haina majibu: mpango unatumia dhana za msingi.",
+  "Essencial: as perguntas que mudam o plano, com premissas padrão no resto. Refinar: as mesmas telas, com as premissas de cada etapa abertas para ajuste.": "Muhimu: maswali yanayobadilisha mpango, huku sehemu nyingine zikitumia dhana za msingi. Boresha: kurasa zilezile, huku dhana za kila hatua zikiwa wazi kwa marekebisho.",
+  "{nome}: {pct}% respondido": "{nome}: {pct}% imejibiwa"
+}

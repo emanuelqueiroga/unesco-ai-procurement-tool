@@ -1,0 +1,12 @@
+{
+  "Voltar": "上一步",
+  "Próximo": "下一步",
+  "{nome} · pergunta {i} de {total}": "{nome} · 第 {i} 题，共 {total} 题",
+  "Premissas desta etapa": "本阶段的假设",
+  "Estimativa desta etapa": "本阶段的估算",
+  "Quer ajustar as premissas padrão?": "要调整默认假设吗？",
+  "Ao avançar, você aceita as sugestões exibidas.": "进入下一步即表示接受所显示的建议。",
+  "Esta etapa ainda não tem respostas: o plano usa as premissas padrão.": "本阶段尚无回答：计划使用默认假设。",
+  "Essencial: as perguntas que mudam o plano, com premissas padrão no resto. Refinar: as mesmas telas, com as premissas de cada etapa abertas para ajuste.": "基本模式：回答影响计划的问题，其余部分使用默认假设。细化模式：使用相同的页面，并展开每个阶段的假设以供调整。",
+  "{nome}: {pct}% respondido": "{nome}：已回答 {pct}%"
+}

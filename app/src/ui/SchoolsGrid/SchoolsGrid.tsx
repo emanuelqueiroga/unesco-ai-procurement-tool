@@ -1,5 +1,5 @@
 import type { MouseEvent } from 'react';
-import { TextField } from '../TextField/TextField';
+import { NumeroField } from '../NumeroField/NumeroField';
 import './SchoolsGrid.css';
 import { tx } from '../texto';
 
@@ -23,6 +23,7 @@ export type SchoolStage = {
 export type SchoolsGridProps = {
   /** Rótulo acessível do grupo (a pergunta). */
   label: string;
+  locale?: string;
   stages: SchoolStage[];
   onChange?: (id: string, patch: Partial<Pick<SchoolStage, 'on' | 'schools' | 'students'>>) => void;
   schoolsLabel?: string;
@@ -40,6 +41,7 @@ export type SchoolsGridProps = {
 export function SchoolsGrid({
   label,
   stages,
+  locale,
   onChange,
   schoolsLabel,
   studentsLabel,
@@ -72,25 +74,25 @@ export function SchoolsGrid({
             </label>
             {s.on ? (
               <div className="pr-schoolsgrid-fields">
-                <TextField
+                <NumeroField
                   id={`${boxId}-escolas`}
                   label={schoolsLabel ?? tx('Escolas')}
-                  type="number"
-                  value={s.schools ?? ''}
-                  onChange={(v) => onChange?.(s.id, { schools: v })}
+                  locale={locale}
+                  value={s.schools ? Number(s.schools) : ''}
+                  onChange={(v) => onChange?.(s.id, { schools: String(v) })}
                   suggested={s.suggested}
                   invalid={Boolean(s.error)}
-                  inputProps={{ 'aria-describedby': s.hint || s.error ? `${boxId}-linha` : undefined }}
+                  describedBy={s.hint || s.error ? `${boxId}-linha` : undefined}
                 />
-                <TextField
+                <NumeroField
                   id={`${boxId}-estudantes`}
                   label={studentsLabel ?? tx('Estudantes')}
-                  type="number"
-                  value={s.students ?? ''}
-                  onChange={(v) => onChange?.(s.id, { students: v })}
+                  locale={locale}
+                  value={s.students ? Number(s.students) : ''}
+                  onChange={(v) => onChange?.(s.id, { students: String(v) })}
                   suggested={s.suggested}
                   invalid={Boolean(s.error)}
-                  inputProps={{ 'aria-describedby': s.hint || s.error ? `${boxId}-linha` : undefined }}
+                  describedBy={s.hint || s.error ? `${boxId}-linha` : undefined}
                 />
                 {s.error || s.hint ? (
                   <span

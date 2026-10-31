@@ -4,7 +4,7 @@
 // pontos de referência, para pegar regressões na passagem do estado.
 import { describe, it, expect } from 'vitest';
 import * as D from '../../src/domain/index.ts';
-const MODULOS = ['custos', 'framework', 'casos', 'prioridades', 'plano_dados', 'fluxo_dados', 'i18n', 'custos_ui', 'formula', 'fluxo', 'matriz', 'recomendacoes', 'glossario', 'ajuda', 'referencias', 'pais', 'rec_numeros'];
+const MODULOS = ['escopo', 'custos', 'framework', 'casos', 'prioridades', 'plano_dados', 'fluxo_dados', 'i18n', 'custos_ui', 'formula', 'fluxo', 'matriz', 'recomendacoes', 'glossario', 'ajuda', 'referencias', 'pais', 'rec_numeros'];
 
 function estadoExemplo(k) {
   const caso = k === 'novo' ? D.clone(D.CASO_VAZIO) : D.clone(D.CASOS[k]);
@@ -41,7 +41,7 @@ describe('fluxo.js com estado', () => {
     const e = estadoExemplo('A');
     expect(D.totaisCtx(e.ctx).alunos).toBeGreaterThan(0);
     expect(D.padroesGerados(e)).toEqual({ piloto: { escolas: 30, participantes: 600, meses: 4 }, pagamento: 'institucional', licenca: 'assinatura', nFerramentas: '1', elegiveis: 12000, implantacao: { escolas: 267, pessoas: 4000 } });
-    expect(D.faltasTodas(e).map(f => f.id)).toEqual(['formacaoHoras', 'arquitetura']);   // sem aplicarExemploFluxo (que preenche os dois)
+    expect(D.faltasTodas(e).map(f => f.id)).toEqual(['pais', 'formacaoHoras', 'arquitetura']);   // sem aplicarExemploFluxo (que preenche os dois)
     expect(D.faltasEstimativa(e)).toEqual([]);
     expect(D.qOk('tarefas', e)).toBe(true);
     expect(D.qOk(D.CAMPO_POR_ID.arquitetura, e)).toBe(false);
@@ -60,7 +60,7 @@ describe('fluxo.js com estado', () => {
     expect(Math.round(D.numerosCusto(D.cfgAtual(d)).total)).toBe(630407);
     const v = estadoExemplo('novo');
     expect(D.padroesGerados(v)).toEqual({});
-    expect(D.faltasTodas(v).length).toBe(47);
+    expect(D.faltasTodas(v).length).toBe(46);
     expect(D.faltasEstimativa(v).map(f => f.id)).toEqual(['tarefas', 'tipoTec', 'elegiveis']);
     expect(D.perfil(v).agregado).toBe('moderado');
     const semCusto = { caso: v.caso, ctx: {}, resp: {}, respC: {} };
