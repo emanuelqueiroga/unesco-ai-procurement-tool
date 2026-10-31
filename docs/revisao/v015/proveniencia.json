@@ -18,7 +18,7 @@
     "todo": 1,
     "new_interface_tests": 14,
     "domain_check": "passed (42 files)",
-    "diff_check": "passed",
+    "diff_check": "Source and publication metadata passed; restored generated/vendor assets kept byte-identical to the prior commit.",
     "interface": [
       "Five audiences and national curriculum completed through all four phases, with 14 questions when pedagogical validation, digital resources and AI project questions are active.",
       "A single policy maker/staff audience completed the in-person pathway without digital resources, in 10 questions.",
@@ -39,11 +39,16 @@
     "preservation": "Same IDs, format 14 and browser storage; optional notes, counts, inactive answers and budgets retained; governance and education regressions passed.",
     "other_pathways": "Model and representative UI reviewed for governance, education with/without AI and educating for the Age of AI; full redesign of these pathways remains proposed, not implemented.",
     "known_remaining_work": "Other pathways retain old layout/transitions and tool-centric education decisions. Review scope isolation of suggestions when switching priorities.",
-    "translation_status": "New text complete in PT/EN; existing translations retained elsewhere with explicit English fallback for new entries. No native review claimed."
+    "translation_status": "New text complete in PT/EN; existing translations retained elsewhere with explicit English fallback for new entries. No native review claimed.",
+    "open_session_compatibility": {
+      "retained_asset_source": "c24582224017343cfe66245505ac8bf5692c1431",
+      "retained_files": 16,
+      "validation": "Every prior asset exists byte-identical; active HTML and tested current assets unchanged. Retains the immediately preceding delivery for open tabs using deferred language/PDF imports."
+    }
   },
   "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
   "delivery": "15-revisao-navegacao-letramento",
-  "publication_parent": "c24582224017343cfe66245505ac8bf5692c1431",
+  "publication_parent": "4b5576a31f383d9d6220fc1cc857c097565928b4",
   "previous_delivery_commit": "c24582224017343cfe66245505ac8bf5692c1431",
   "phase_names_en": [
     "Context",
@@ -228,5 +233,10 @@
     "prioridades",
     "problemas"
   ],
-  "other_pathway_review": "Governance retains institutional content but needs continuous navigation and aligned groups. Education with/without AI and for the Age of AI still need conditional education/intervention pathways, shared-resource handling and coherent reports."
+  "other_pathway_review": "Governance retains institutional content but needs continuous navigation and aligned groups. Education with/without AI and for the Age of AI still need conditional education/intervention pathways, shared-resource handling and coherent reports.",
+  "retained_previous_assets": {
+    "retained_asset_source": "c24582224017343cfe66245505ac8bf5692c1431",
+    "retained_files": 16,
+    "validation": "Every prior asset exists byte-identical; active HTML and tested current assets unchanged. Retains the immediately preceding delivery for open tabs using deferred language/PDF imports."
+  }
 }
