@@ -227,7 +227,7 @@ export function Governanca({ rota }: { rota: Rota }) {
       title={t(titulo)}
       actions={<><div className="pc-botoes"><Button variant="secondary" href={i ? href.pergunta(n, lista[i - 1].id) : href.abertura(n)}>{t('Voltar')}</Button>
         <Button disabled={faltaRede} onClick={() => ir(lista[i + 1] ? href.pergunta(n, lista[i + 1].id) : href.sintese(n))}>{t('Próximo')}</Button></div>
-        {faltaRede ? <p className="pc-nota">{t('Selecione as faixas ou informe os totais da rede para avançar.')}</p> : null}</>}>
+        {faltaRede ? <p className="pc-nota">{t('Informe os totais da rede para avançar.')}</p> : null}</>}>
       <ControlesGov s={s} id={id} />
     </QuestionFrame></div>
   </Shell>;

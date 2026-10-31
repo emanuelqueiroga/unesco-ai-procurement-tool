@@ -18,7 +18,7 @@ function escolher(campo:string, ids?:string[]) {
 }
 function contexto() {
  S().escolherPais('BRA');S().responder('prioridades',['governar']);S().responder('problemas',['G11','G16']);
- S().responder('redeNacional',{faixaEscolas:'10001a50000',faixaEstudantes:'1000001a10000000'});
+ S().responder('redeNacional',{escolas:12345,estudantes:1600000});
 }
 beforeEach(()=>{setLang('pt');S().carregarExemplo('novo');});
 describe('v015: sugestões e seleção sem redação obrigatória',()=>{
@@ -42,7 +42,7 @@ describe('v015: sugestões e seleção sem redação obrigatória',()=>{
   S().responder('problemas',['G13']);const depois=presetGovernanca(S(),'govCapacidade.formacao').opcoes;
   for(const a of antes) { const mesma=depois.find(b=>b.id===a.id);if(mesma)expect(mesma.texto).toBe(a.texto); }
  });
- it('completa o percurso institucional escolhendo opções, sem digitar texto ou custos',()=>{
+ it('completa as demais perguntas escolhendo opções, com os totais exatos da rede informados',()=>{
   contexto();
   for(const k of ['atual','resultado','linhaBase','fonte'])escolher('govDiagnostico.'+k);
   for(const id of ['G11','G16']) {
@@ -59,10 +59,12 @@ describe('v015: sugestões e seleção sem redação obrigatória',()=>{
   expect(faltamDe(S()).map(t=>t.id)).toEqual([]);
   const p=planoGovernanca(S());expect(p.orcamento.total).toBeNull();expect(p.orcamento.informados).toBe(0);
   expect(p.proxima).not.toContain('Submeta');expect(p.pendentes).toBeGreaterThan(0);
-  expect(p.blocos.some(b=>b.linhas.some(l=>l.valor.includes('10.001 a 50.000')))).toBe(true);
+  expect(p.blocos[0].linhas.find(l=>l.rotulo==='Total de escolas')?.valor).toBe('12.345');
  });
- it('não transforma uma faixa em um total exato nem em orçamento',()=>{
-  contexto();expect(tamanhoRedeValido(S().ctx)).toBe(true);
+ it('exige totais exatos; uma faixa antiga não substitui escolas e estudantes',()=>{
+  contexto();S().responder('redeNacional',{faixaEscolas:'10001a50000',faixaEstudantes:'1000001a10000000'});
+  expect(tamanhoRedeValido(S().ctx)).toBe(false);
+  expect(faltamDe(S()).some(t=>t.id==='problemas')).toBe(true);
   const p=planoGovernanca(S());expect(JSON.stringify(p)).not.toContain('NaN');
   const total=p.blocos[0].linhas.find(l=>l.rotulo==='Total de escolas');expect(total?.valor).toBe('Não informado');
   expect(orcamentoGovernanca(S()).total).toBeNull();

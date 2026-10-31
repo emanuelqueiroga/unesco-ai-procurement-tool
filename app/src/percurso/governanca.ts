@@ -4,7 +4,7 @@ import { contextoGovProjetado, definicoesPendentes } from './governancaPresets';
 import { problemasMarcados } from '../domain/prioridades.js';
 import { LOC } from '../domain/i18n.js';
 import { nomePais, paisDoCaso } from '../domain/pais.js';
-import { FAIXAS_ESCOLAS, FAIXAS_ESTUDANTES, tamanhoRedeValido, projetoUsoDefinido } from '../domain/escopo.js';
+import { tamanhoRedeValido, projetoUsoDefinido } from '../domain/escopo.js';
 import type { Estado14 } from '../store/tipos';
 import { t } from './textos';
 export const CUSTOS_GOV = [
@@ -91,8 +91,6 @@ export function planoGovernanca(s: Estado14) {
   const blocos: BlocoGovernanca[] = [
     { titulo: t('Contexto'), linhas: [linha('País', nomePais(paisDoCaso(s.caso))), linha('Instituição responsável', x.olhando),
       linha('Total de escolas', Number.isSafeInteger(x.redeNacional?.escolas) && x.redeNacional.escolas > 0 ? new Intl.NumberFormat(String(LOC())).format(x.redeNacional.escolas) : ''), linha('Total de estudantes', Number.isSafeInteger(x.redeNacional?.estudantes) && x.redeNacional.estudantes > 0 ? new Intl.NumberFormat(String(LOC())).format(x.redeNacional.estudantes) : ''),
-      ...(!(x.redeNacional?.escolas > 0) && x.redeNacional?.faixaEscolas ? [linha('Escolas — faixa selecionada', t(FAIXAS_ESCOLAS.find(([id]) => id === x.redeNacional.faixaEscolas)?.[1] || 'Não informado'))] : []),
-      ...(!(x.redeNacional?.estudantes > 0) && x.redeNacional?.faixaEstudantes ? [linha('Estudantes — faixa selecionada', t(FAIXAS_ESTUDANTES.find(([id]) => id === x.redeNacional.faixaEstudantes)?.[1] || 'Não informado'))] : []),
       ...qs.map(q => linha('Desafio', q.titulo))] },
     { titulo: t('Diagnóstico institucional'), linhas: campos(x.govDiagnostico, [['atual', 'Situação institucional atual'], ['resultado', 'Resultado esperado'], ['linhaBase', 'Linha de base institucional'], ['fonte', 'Fonte da informação']]) },
     ...qs.map(q => { const d = x.govInstrumentos?.[q.id]; const status: Record<string, string> = { existente: 'Existe', parcial: 'Em parte', ausente: 'Não existe', nao_sei: 'Não sei' };
@@ -116,7 +114,7 @@ export function planoGovernanca(s: Estado14) {
   if (!s.caso.pais || !s.respC.pais) faltam.unshift('local');
   if (!tamanhoRedeValido(x) || !qs.length || !s.respC.redeNacional || !(preenchido(x.problemaOutro) || s.respC.problemas)) faltam.unshift('problemas');
   if (x.prioridades?.some((id: string) => id !== 'governar') && !governancaRespondida(s, 'gov-projeto')) faltam.push('gov-projeto');
-  const pendentes = definicoesPendentes(s) + orcamento.faltam + (!(x.redeNacional?.escolas > 0 && x.redeNacional?.estudantes > 0) && (x.redeNacional?.faixaEscolas === 'a_levantar' || x.redeNacional?.faixaEstudantes === 'a_levantar') ? 1 : 0);
+  const pendentes = definicoesPendentes(s) + orcamento.faltam;
   const proxima = !qs.length ? t('Selecione os desafios do plano.') : faltam.length || pendentes ? t('Complete o diagnóstico, os responsáveis e os recursos antes de aprovar o plano de ação.') : t('Submeta o plano de ação à autoridade competente e acompanhe sua execução.');
   return { pendentes, titulo: t('Plano de governança de IA na educação'), pais: nomePais(paisDoCaso(s.caso)), desafios: qs, acoes, orcamento, blocos, faltam, proxima,
     escopo: t('Os totais da rede descrevem o alcance da política. O orçamento usa apenas valores informados.'),

@@ -5,8 +5,7 @@ export function somenteGovernanca(ctx) {
 }
 export function tamanhoRedeValido(ctx) {
   const r = (ctx || {}).redeNacional || {};
-  return ['escolas', 'estudantes'].every(k => Number.isSafeInteger(r[k]) && r[k] > 0)
-    || FAIXAS_ESCOLAS.some(([id]) => id === r.faixaEscolas) && FAIXAS_ESTUDANTES.some(([id]) => id === r.faixaEstudantes);
+  return ['escolas', 'estudantes'].every(k => Number.isSafeInteger(r[k]) && r[k] > 0);
 }
 
 /** Uma prioridade combinada não implica contratar ou testar uma ferramenta. */

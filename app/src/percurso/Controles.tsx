@@ -6,7 +6,7 @@
 // mostram o detalhe recolhido na própria tela; a lógica pura dessas edições está em refinar.ts.
 import { Fragment, createContext, useContext, useId, useState, type ReactNode } from 'react';
 import {
-  FAIXAS_ESCOLAS, FAIXAS_ESTUDANTES, temGovernanca, LOC, CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
+  temGovernanca, LOC, CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
   listaOpc, totaisCtx, alunosEtapa, etapasAtivas, modoTeste, horasEstimativa, lerNumero, problemasMarcados, sugProblemas, temLacuna, rotulo, pct, tr,
 } from '../domain';
 import { useCaso, origemDe, valorDe, type Estado14, type TelaEssencial } from '../store';
@@ -692,16 +692,10 @@ function TamanhoRedeNacional({ e }: { e: Estado14 }) {
     ? t('Informe um número inteiro maior que zero.') : undefined;
   return <fieldset className="pcx-etapa">
     <legend className="pcx-etapa-titulo">{t('Tamanho total da rede')}</legend>
-    {[['faixaEscolas','Escolas',FAIXAS_ESCOLAS],['faixaEstudantes','Estudantes',FAIXAS_ESTUDANTES]].map(([campo,label,opcoes]) => <div key={String(campo)} className="pc-gov-escolha">
-      <p className="pc-gov-rotulo">{t(String(label))}</p>
-      <ChipGroup label={t(String(label))}>{(opcoes as string[][]).map(([id,texto]) => <Chip key={id} label={t(texto)} pressed={rede[String(campo)] === id} onToggle={on => gravar('redeNacional.' + campo,on ? id : '')} />)}</ChipGroup>
-    </div>)}
-    <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}</summary>
-      <div className="pcx-anos-campos">
-        <CampoNumero id="gov-rede-escolas" label={t('Total de escolas')} value={rede.escolas} error={erro(rede.escolas)} onChange={v => gravar('redeNacional.escolas', v)} />
-        <CampoNumero id="gov-rede-estudantes" label={t('Total de estudantes')} value={rede.estudantes} error={erro(rede.estudantes)} onChange={v => gravar('redeNacional.estudantes', v)} />
-      </div>
-    </details>
+    <div className="pcx-anos-campos">
+      <CampoNumero id="gov-rede-escolas" label={t('Total de escolas')} value={rede.escolas} error={erro(rede.escolas)} onChange={v => gravar('redeNacional.escolas', v)} />
+      <CampoNumero id="gov-rede-estudantes" label={t('Total de estudantes')} value={rede.estudantes} error={erro(rede.estudantes)} onChange={v => gravar('redeNacional.estudantes', v)} />
+    </div>
   </fieldset>;
 }
 
