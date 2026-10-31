@@ -711,7 +711,7 @@ function Problemas({ e }: { e: Estado14 }) {
   return (
     <div className="pc-grupos">
       {temGovernanca(e.ctx) ? <TamanhoRedeNacional e={e} /> : null}
-      {!percursoEducacao(e.ctx) ? <p className="pc-nota">{t('Selecione todos os desafios que fazem parte do seu plano.')}</p> : null}
+      {!percursoEducacao(e.ctx) && !percursoLetramento(e.ctx) ? <p className="pc-nota">{t('Selecione todos os desafios que fazem parte do seu plano.')}</p> : null}
       {P.map((p) => {
         const catalogoNovo = ['governar', 'sobre', 'com'].includes(p.id);
         const atuais = catalogoNovo ? p.problemas.filter((q: any) => q.v015) : p.problemas;

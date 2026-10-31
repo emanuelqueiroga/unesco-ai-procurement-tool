@@ -8,6 +8,8 @@ import { useCaso, telasAtivas, telasDoCapitulo, telaRespondida, origemDe, progre
 import { Header, ChapterNav, ChapterBar, Segmented, Button, IconMoon, IconSun, useMediaQuery, useTheme, BREAKPOINTS, type NavChapter, type BarChapter } from '../ui';
 import { infoCapitulo, CURTO, t } from '../percurso/textos';
 import { href, lerRota } from '../percurso/rota';
+import { tituloDaTelaLit } from '../percurso/letramento';
+import { entradaEtapaLit } from '../percurso/letramentoInterface';
 import { percursoGovernanca, percursoLetramento, percursoInstitucional, temLetramento, temGovernanca, prioridadeEscolhida } from '../domain';
 import { Frentes, PainelGovernanca } from './Governanca';
 import { PlanoVivo } from './PlanoVivo';
@@ -34,11 +36,11 @@ export function capitulosNav(s: CasoStore, pos: Posicao): NavChapter[] {
     const atual = pos.capitulo === n;
     const p = prog[n - 1];
     return {
-      n, title: t(infoCapitulo(n as Capitulo, s).titulo), href: href.abertura(n),
+      n, title: t(infoCapitulo(n as Capitulo, s).titulo), href: percursoLetramento(s.ctx) ? entradaEtapaLit(s, n as Capitulo) : href.abertura(n),
       state: atual ? 'current' : p.completo ? 'done' : 'todo',
       questions: atual
         ? telasDoCapitulo(n as Capitulo, s).filter(tela => prioridadeEscolhida(s.ctx) || ['local', 'prioridades'].includes(tela.id)).map((tela) => ({
-          id: tela.id, title: t(CURTO[tela.id] || tela.id), href: href.pergunta(n, tela.id),
+          id: tela.id, title: t(percursoLetramento(s.ctx) && tituloDaTelaLit(s,tela.id) || CURTO[tela.id] || tela.id), href: href.pergunta(n, tela.id),
           state: tela.id === pos.tela ? 'current' : telaRespondida(s, tela) ? 'done' : tela.campos.some((c) => origemDe(s, c) === 'sugerido') ? 'suggested' : 'todo',
         }))
         : undefined,
@@ -48,7 +50,7 @@ export function capitulosNav(s: CasoStore, pos: Posicao): NavChapter[] {
 
 function capitulosBarra(s: CasoStore, pos: Posicao): BarChapter[] {
   return progressoDe(s).filter(p => prioridadeEscolhida(s.ctx) || p.capitulo === 1).map((p) => ({
-    n: p.capitulo, label: t(infoCapitulo(p.capitulo, s).titulo), progress: prioridadeEscolhida(s.ctx) ? p.total ? p.feitas / p.total : 0 : telasDoCapitulo(1, s).filter(t => ['local', 'prioridades'].includes(t.id) && telaRespondida(s, t)).length / 2, href: href.abertura(p.capitulo),
+    n: p.capitulo, label: t(infoCapitulo(p.capitulo, s).titulo), progress: prioridadeEscolhida(s.ctx) ? p.total ? p.feitas / p.total : 0 : telasDoCapitulo(1, s).filter(t => ['local', 'prioridades'].includes(t.id) && telaRespondida(s, t)).length / 2, href: percursoLetramento(s.ctx) ? entradaEtapaLit(s, p.capitulo) : href.abertura(p.capitulo),
     state: pos.capitulo === p.capitulo ? 'current' : p.completo ? 'done' : 'todo',
   }));
 }
@@ -81,7 +83,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
       {prioridadeEscolhida(s.ctx) && !percursoInstitucional(s.ctx) && s.modo === 'refinar' ? <Button variant="secondary" size="sm" href={href.refinar()}>{t('Calculadora')}</Button> : null}
     </>
   );
-  const modo = (
+  const modo = percursoLetramento(s.ctx) ? null : (
     <Segmented
       label={t('Modo')}
       value={s.modo}
@@ -102,7 +104,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
   const nomeExemplo = exemploIlustrativo(s) ? nomeDoExemplo(s.exemplo) : '';
   return (
     <DentroDaMoldura.Provider value>
-      <div className={inicio ? 'pc-app pc-app--inicio' : 'pc-app'}>
+      <div className={inicio ? 'pc-app pc-app--inicio' : percursoLetramento(s.ctx) ? 'pc-app pc-app--letramento' : 'pc-app'}>
         <a className="pc-pular" href="#conteudo" onClick={(e) => { e.preventDefault(); document.getElementById('conteudo')?.focus(); }}>{t('Pular para o conteúdo')}</a>
         <Header
           logos={LOGOS}

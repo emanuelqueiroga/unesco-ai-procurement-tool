@@ -25,6 +25,10 @@ export function publicosLetramento(s: Estado) {
  const cat = (PRIORIDADES as any[]).find(p => p.id === 'sobre').problemas;
  return idsTemas(s).filter(id => !['A16','A3'].includes(id)).map(id => ({ id, ...(TEMAS_LIT[id] || { nome: cat.find((q: any) => q.id === id)?.t || id, competencias:TEMAS_LIT.A12.competencias }) }));
 }
+export function somenteCurriculoLit(s: Estado) { return curriculo(s) && !publicosLetramento(s).length; }
+export function tituloDaTelaLit(s: Estado, id: string) {
+ return somenteCurriculoLit(s) && id === 'lit-desenho' ? 'Abordagens e salvaguardas do currículo' : TITULOS_LIT[id];
+}
 export function lerLit(s: Estado, caminho: string): any { return caminho.split('.').reduce((v,k) => v?.[k], s.ctx.letramento); }
 export function alterarLit(base: any, caminho: string, valor: any): any {
  const ks = caminho.split('.'); if (ks.some(k => !k || ['__proto__','prototype','constructor'].includes(k))) throw new Error('Campo inválido');
@@ -37,14 +41,14 @@ const inclui = (s: Estado, caminho: string, valor: string) => selecoesLit(s,cami
 const adicionaisAtivos = (s:Estado) => Object.keys(lerLit(s,'orcamento.adicionais')||{}).filter(id=>/^adicional-[1-9]\d*$/.test(id));
 export const digitalLit = (s: Estado) => ['online','hibrida'].some(id => inclui(s,'oferta.modalidade',id)) || ['materiais','plataforma','ia'].some(id => inclui(s,'oferta.recursos',id));
 export function telasLetramento(s: Estado): string[] {
- return ['local','prioridades','problemas','lit-alcance','lit-diagnostico','lit-desenho',...(curriculo(s) ? ['lit-curriculo'] : []),'lit-oferta','lit-acoes',...(inclui(s,'oferta.validacao','sim') ? ['lit-validacao'] : []),...(digitalLit(s) ? ['lit-digital'] : []),...(inclui(s,'oferta.recursos','ia') ? ['lit-projeto'] : []),'lit-recursos','lit-revisao'];
+ return ['local','prioridades','problemas',...(!somenteCurriculoLit(s) ? ['lit-alcance'] : []),'lit-diagnostico','lit-desenho',...(curriculo(s) ? ['lit-curriculo'] : []),'lit-oferta',...(inclui(s,'oferta.validacao','sim') ? ['lit-validacao'] : []),...(digitalLit(s) ? ['lit-digital'] : []),...(inclui(s,'oferta.recursos','ia') ? ['lit-projeto'] : []),'lit-acoes','lit-recursos','lit-revisao'];
 }
 export function camposLetramento(s: Estado): CampoLit[] {
  const campos: CampoLit[] = [];
  const f = (tela: string,caminho: string,label: string,opcoes: OpcaoLit[],multipla=false,evidencia=false) => campos.push({tela,caminho,label,opcoes:[...opcoes,PENDENTE],multipla,evidencia});
  const n = (tela:string,caminho:string,label:string,numero:'inteiro'|'decimal'='inteiro') => campos.push({tela,caminho,label,numero});
  const pubs=publicosLetramento(s);
- if (pubs.some(p => ['A12','A1','A4','A5','A6','A9','A10'].includes(p.id))) {
+ if (pubs.some(p => ['A11','A12','A14','A1','A2','A4','A5','A6','A7','A8','A9','A10'].includes(p.id))) {
   f('lit-alcance','alcance.etapas',L('Etapas atendidas','Education levels served'),(ETAPAS_ENS as any[]).filter(([id]:string[])=>id!=='superior').map(([id,nome]:string[])=>({id,texto:nome})),true);
   n('lit-alcance','alcance.escolas',L('Total exato de escolas atendidas','Exact number of schools served'));
  }
@@ -55,7 +59,7 @@ export function camposLetramento(s: Estado): CampoLit[] {
  if (pubs.length>1) n('lit-alcance','alcance.totalUnico',L('Total de participantes distintos, sem contar a mesma pessoa duas vezes','Total unique participants, counting each person once'));
  if (pubs.some(p=>p.id==='A15')) f('lit-alcance','alcance.superior',L('Grupos do ensino superior e egressos','Higher education and graduate groups'),[o('graduacao','Graduação','Undergraduate students'),o('pos','Pós-graduação','Postgraduate students'),o('egressos','Egressos','Graduates')],true);
  if (pubs.some(p=>p.id==='A15')) for(const [id,nome] of [['graduacao',L('Graduação','Undergraduate students')],['pos',L('Pós-graduação','Postgraduate students')],['egressos',L('Egressos','Graduates')]]) if(inclui(s,'alcance.superior',id)) n('lit-alcance',`publicos.A15.subgrupos.${id}`,L('Participantes por subgrupo','Participants by subgroup')+' · '+t(nome));
- f('lit-alcance','alcance.inclusao',L('Condições de inclusão e participação','Conditions for inclusion and participation'),[o('acessibilidade','Acessibilidade e adaptações','Accessibility and accommodations'),o('linguas','Línguas locais','Local languages'),o('territorio','Áreas rurais e remotas','Rural and remote areas'),o('horarios','Horários e liberação para participar','Schedules and time to participate'),o('avaliado','Condições já avaliadas','Conditions already assessed')],true);
+ f(somenteCurriculoLit(s)?'lit-curriculo':'lit-alcance','alcance.inclusao',L('Condições de inclusão e participação','Conditions for inclusion and participation'),[o('acessibilidade','Acessibilidade e adaptações','Accessibility and accommodations'),o('linguas','Línguas locais','Local languages'),o('territorio','Áreas rurais e remotas','Rural and remote areas'),o('horarios','Horários e liberação para participar','Schedules and time to participate'),o('avaliado','Condições já avaliadas','Conditions already assessed')],true);
  f('lit-diagnostico','diagnostico.situacao',L('Situação do programa','Programme status'),[o('nenhum','Ainda não existe programa','No programme yet'),o('isoladas','Há ações isoladas','Isolated activities exist'),o('elaboracao','Programa em elaboração','Programme under development'),o('existente','Programa existente a revisar','Existing programme to review')]);
  f('lit-diagnostico','diagnostico.base',L('Diagnóstico das competências atuais','Assessment of current competencies'),[o('nenhum','Diagnóstico ainda não realizado','Assessment not yet conducted'),o('andamento','Diagnóstico em andamento','Assessment in progress'),o('parcial','Diagnóstico parcial disponível','Partial assessment available'),o('completo','Diagnóstico disponível','Assessment available')]);
  f('lit-diagnostico','diagnostico.evidencias',L('Fontes e instrumentos do diagnóstico','Assessment sources and instruments'),[o('questionario','Questionário de competências','Competency questionnaire'),o('pratica','Atividades e tarefas práticas','Practical activities and tasks'),o('inventario','Inventário de cursos e materiais','Course and materials inventory'),o('consulta','Consulta aos públicos selecionados','Consultation with selected audiences'),o('documentos','Documentos oficiais','Official documents')],true,true);
@@ -146,7 +150,7 @@ export function custosLetramento(s:Estado):[string,string][] {
  if(curriculo(s)) itens.push(['consulta',L('Consulta e participação curricular','Curriculum consultation and participation')]);
  if(digitalLit(s)) itens.push(['digital',L('Recursos digitais necessários à ação','Digital resources required for the activity')]);
  if(inclui(s,'oferta.validacao','sim')) itens.push(['validacao',L('Validação pedagógica de cursos e materiais','Pedagogical validation of courses and materials')]);
- for(const id of adicionaisAtivos(s)) itens.push([id, L('Recurso adicional','Additional resource')+' '+id.split('-').pop()]);
+ for(const id of adicionaisAtivos(s)) itens.push([id, t('Recurso adicional {n}', { n: id.split('-').pop() || '' })]);
  return itens;
 }
 export function orcamentoLetramento(s:Pick<Estado14,'ctx'|'moeda'>) {
@@ -172,7 +176,7 @@ export function planoLetramento(s:Estado14) {
  const faltam=telasLetramento(s).filter(id=>id.startsWith('lit-')&&!letramentoRespondido(s,id));
  if(!s.respC.pais||!s.caso.pais)faltam.unshift('local');if(!qs.length||!s.respC.problemas)faltam.unshift('problemas');
  const indefinidos=campos.filter(f=>{const v=lerLit(s,f.caminho);return v?.situacao==='a_levantar'||selecoesLit(s,f.caminho).includes('_pendente')||f.caminho==='diagnostico.base'&&selecoesLit(s,f.caminho).some(id=>['nenhum','andamento','parcial'].includes(id));}).length;
- const blocos=[{titulo:t('Contexto'),linhas:[{rotulo:t('País'),valor:nomePais(paisDoCaso(s.caso))},{rotulo:t('Instituição responsável'),valor:String(s.ctx.local||t('Não informado'))},...(textoValido(s.ctx.problemaOutro)?[{rotulo:t('Informações adicionais'),valor:s.ctx.problemaOutro}]:[]),{rotulo:t(L('Públicos selecionados','Selected audiences')),valor:[...pubs.map(p=>t(p.nome)),...(curriculo(s)?[t(L('Currículo nacional de IA','National AI curriculum'))]:[])].join('; ')||t('Não informado')}]},...telasLetramento(s).filter(id=>id.startsWith('lit-')).map(id=>({titulo:t(TITULOS_LIT[id]),linhas:campos.filter(f=>f.tela===id).map(f=>({rotulo:rotuloLit(f.label),valor:valorCampoLit(s,f)}))}))];
+ const blocos=[{titulo:t('Contexto'),linhas:[{rotulo:t('País'),valor:nomePais(paisDoCaso(s.caso))},{rotulo:t('Instituição responsável'),valor:String(s.ctx.local||t('Não informado'))},...(textoValido(s.ctx.problemaOutro)?[{rotulo:t('Informações adicionais'),valor:s.ctx.problemaOutro}]:[]),{rotulo:t(L('Públicos selecionados','Selected audiences')),valor:[...pubs.map(p=>t(p.nome)),...(curriculo(s)?[t(L('Currículo nacional de IA','National AI curriculum'))]:[])].join('; ')||t('Não informado')}]},...telasLetramento(s).filter(id=>id.startsWith('lit-')).map(id=>({titulo:t(tituloDaTelaLit(s,id)),linhas:campos.filter(f=>f.tela===id).map(f=>({rotulo:rotuloLit(f.label),valor:valorCampoLit(s,f)}))}))];
  const recursos=blocos.find(b=>b.titulo===t(TITULOS_LIT['lit-recursos']))!;
  recursos.linhas.push(...o.itens.map(i=>({rotulo:i.nome,valor:i.compartilhado?t(L('Custeado na governança: {item} — {valor}. Não somado novamente.','Funded under governance: {item} — {valor}. Not counted again.'),{item:i.origem?.nome||t('Não informado'),valor:moedaGovernanca(i.origem?.valor??null,orcamentoGovernanca(s).moeda,String(LOC()))}):moedaGovernanca(i.valor,o.moeda,String(LOC()))+(i.detalhe?'\n'+i.detalhe:'')})),{rotulo:t(L('Subtotal desta frente, sem custos compartilhados','Workstream subtotal, excluding shared costs')),valor:o.temSubtotal?moedaGovernanca(o.subtotal,o.moeda,String(LOC())):t('Não informado')},{rotulo:t('Itens sem valor informado'),valor:String(o.faltam)});
  return {titulo:t(L('Plano nacional de letramento em IA e currículo','National AI literacy and curriculum plan')),pais:nomePais(paisDoCaso(s.caso)),blocos,faltam,pendentes:indefinidos+o.faltam,orcamento:o,projeto:null,acoes:[],escopo:t(L('Alcance, competências e recursos de formação e currículo. Valores desconhecidos permanecem pendentes.','Scope, competencies and resources for training and curriculum. Unknown amounts remain pending.')),proxima:t(faltam.length||indefinidos||o.faltam?L('Complete as informações e resolva as pendências antes de aprovar o programa.','Complete the information and resolve pending items before approving the programme.'):L('Revise o plano com os responsáveis e acompanhe a execução e os resultados.','Review the plan with its owners and monitor delivery and outcomes.'))};

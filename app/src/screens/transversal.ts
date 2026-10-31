@@ -1,4 +1,4 @@
-import { telaLetramentoLegada } from '../percurso/letramento';
+import { telaLetramentoLegada, tituloDaTelaLit, somenteCurriculoLit } from '../percurso/letramento';
 // Lógica pura do pacote transversal (sem React nem DOM, para testar em Vitest): quando pedir confirmação antes de
 // substituir o caso, mensagens de erro de importação no idioma da interface, versão e data do rodapé, título da
 // aba por tela, "continuar de onde parei" e a regra de retradução do exemplo ao trocar de idioma.
@@ -80,7 +80,8 @@ export function tituloDaAba(rota: Rota, s?: { ctx?: Record<string, any> }): stri
       if (s && !prioridadeEscolhida(s.ctx)) { parte = t(CURTO[rota.tela] || 'Prioridades'); break; }
       const telas = telasAtivas(s);
       const i = telas.findIndex((x) => x.id === rota.tela);
-      parte = `${t('Pergunta {n} de {total}', { n: i + 1, total: telas.length })} · ${t(CURTO[rota.tela] || rota.tela)}`;
+      const nome = percursoLetramento(s?.ctx) ? tituloDaTelaLit({ctx:s?.ctx||{}},rota.tela) : '';
+      parte = `${t('Pergunta {n} de {total}', { n: i + 1, total: telas.length })} · ${t(nome || CURTO[rota.tela] || rota.tela)}`;
       break;
     }
     case 'sintese': parte = t(infoCapitulo(rota.n, s).titulo); break;
@@ -101,7 +102,7 @@ export function destinoContinuar(
   if (!faltam.length) return { href: href.plano(), pendente: false };
   const c = s.capitulo;
   if(percursoEducacao(s.ctx) && c?.pergunta && CAMPOS_EDUCACAO_REMOVIDOS.includes(c.pergunta)) return {href:href.pergunta(1,'impactos'),pendente:true};
-  if (percursoLetramento(s.ctx) && c?.pergunta) { const id=telaLetramentoLegada(c.pergunta); const alvo=telasAtivas(s).find(t=>t.id===id); if(alvo) return {href:href.pergunta(alvo.capitulo,alvo.id),pendente:true}; }
+  if (percursoLetramento(s.ctx) && c?.pergunta) { let id=telaLetramentoLegada(c.pergunta); if(id==='lit-alcance'&&somenteCurriculoLit({ctx:s.ctx||{}}))id='lit-curriculo'; const alvo=telasAtivas(s).find(t=>t.id===id); if(alvo) return {href:href.pergunta(alvo.capitulo,alvo.id),pendente:true}; }
   const legada = percursoGovernanca(s.ctx) && c?.pergunta ? telaGovernancaLegada(c.pergunta) : null;
   if (legada) return { href: href.pergunta(legada.n, legada.id), pendente: true };
   if (c?.pergunta === 'etapas' && !telasAtivas(s).some(t => t.id === 'etapas')) return { href: href.pergunta(1, 'problemas'), pendente: true };

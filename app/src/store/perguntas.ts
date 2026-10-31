@@ -64,7 +64,7 @@ export const GOVERNANCA: TelaEssencial[] = [
 ];
 export const LETRAMENTO: TelaEssencial[] = [
  ...ESSENCIAL.filter(t => ['local','prioridades','problemas'].includes(t.id)),
- ...(['alcance','diagnostico','desenho','curriculo','oferta','acoes','validacao','digital','projeto','recursos','revisao'] as const).map(id => ({ id: 'lit-' + id, capitulo: (id === 'alcance' ? 1 : ['diagnostico','desenho','curriculo'].includes(id) ? 2 : id === 'revisao' ? 4 : 3) as Capitulo, n: [], campos: ['letramento'] })),
+ ...(['alcance','diagnostico','desenho','curriculo','oferta','validacao','digital','projeto','acoes','recursos','revisao'] as const).map(id => ({ id: 'lit-' + id, capitulo: (id === 'alcance' ? 1 : ['diagnostico','desenho','curriculo'].includes(id) ? 2 : id === 'revisao' ? 4 : 3) as Capitulo, n: [], campos: ['letramento'] })),
 ];
 export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id)), ...LETRAMENTO.filter(t => t.id.startsWith('lit-'))];
 export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] {
