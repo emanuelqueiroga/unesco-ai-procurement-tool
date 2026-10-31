@@ -1,3 +1,5 @@
+import { percursoPedagogico } from '../domain/escopo.js';
+import { ROTULOS_ERA } from './pedagogicoRotulos';
 import { impactosEducacao } from './educacao';
 // Controles das perguntas: um renderizador por tipo de campo de CAMPOS (radio → OptionCard; chips, multi → Chip
 // ou OptionCard; texto, area → TextField; num, horas → CampoNumero; etapas → SchoolsGrid; setup → campos do teste;
@@ -708,6 +710,8 @@ function Problemas({ e }: { e: Estado14 }) {
   const P = (PRIORIDADES as any[]).filter((p) => pr.includes(p.id));
   if (!P.length) return <p className="pc-aviso">{t('Escolha uma prioridade para ver os desafios.')}</p>;
   const grava = (lista: string[]) => responder('problemas', lista);
+  const nota=percursoPedagogico(e.ctx)?'educacao.contexto.detalhe':percursoLetramento(e.ctx)?'letramento.contexto.detalhe':'govDetalhes.contexto';
+  const textoNota=nota.split('.').reduce((o:any,k)=>o?.[k],e.ctx);
   return (
     <div className="pc-grupos">
       {temGovernanca(e.ctx) ? <TamanhoRedeNacional e={e} /> : null}
@@ -716,11 +720,11 @@ function Problemas({ e }: { e: Estado14 }) {
         const catalogoNovo = ['governar', 'sobre', 'com'].includes(p.id);
         const atuais = catalogoNovo ? p.problemas.filter((q: any) => q.v015) : p.problemas;
         // Nos catálogos educacionais novos, escolhas antigas só reaparecem se já pertencem ao caso salvo.
-        const legados = catalogoNovo ? p.problemas.filter((q: any) => !q.v015 && (p.id === 'governar' || atual.includes(q.id))) : [];
+        const legados = catalogoNovo ? p.problemas.filter((q: any) => !q.v015 && atual.includes(q.id)) : [];
         const cartao = (q: any) => {
           const on = atual.includes(q.id);
           return <OptionCard key={q.id} type="checkbox" name="problemas" value={q.id}
-            label={<>{t(q.t)}{!q.v015 || q.desc ? <span className="pr-optioncard-desc">{q.v015 ? t(q.desc) : <><span className="pcx-obj">{t('Objetivo:')}</span> {t(q.obj)}</>}</span> : null}</>}
+            label={<>{t(ROTULOS_ERA[q.id] || q.t)}{(!q.v015 && p.id !== 'para') || q.desc ? <span className="pr-optioncard-desc">{q.v015 ? t(q.desc) : <><span className="pcx-obj">{t('Objetivo:')}</span> {t(q.obj)}</>}</span> : null}</>}
             checked={on}
             onChange={(v, marcado) => grava(problemasDoGrupo(atual, ORDEM_PROBLEMAS, [v], marcado))} />;
         };
@@ -750,7 +754,7 @@ function Problemas({ e }: { e: Estado14 }) {
           </section>
         );
       })}
-      {percursoLetramento(e.ctx) || percursoEducacao(e.ctx) ? <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}</summary><TextField label={t('Informações adicionais')} multiline value={str(e.ctx.problemaOutro)} onChange={v=>useCaso.getState().refinar('problemaOutro',v)} /></details> : refinando ? <OutroProblema e={e} /> : <DicaRefinar texto={t('Para marcar subcategorias ou descrever outro problema, use o modo Refinar.')} />}
+      {percursoLetramento(e.ctx) || percursoPedagogico(e.ctx) || temGovernanca(e.ctx) ? <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}</summary>{e.ctx.problemaOutro?<p>{str(e.ctx.problemaOutro)}</p>:null}<TextField label={t('Informações adicionais')} multiline value={str(textoNota)} onChange={v=>responder(nota,v)} /></details> : refinando ? <OutroProblema e={e} /> : <DicaRefinar texto={t('Para marcar subcategorias ou descrever outro problema, use o modo Refinar.')} />}
     </div>
   );
 }
@@ -1100,7 +1104,7 @@ export function ControlesTela({ e, tela }: { e: Estado14; tela: TelaEssencial })
     case 'etapas': return (
       <>
         <Etapas e={e} />
-        {refinando
+        {(refinando||percursoPedagogico(e.ctx))
           ? <Recolher titulo={t('Estudantes por ano ou série (opcional)')} aberto={etapasComAnos(e)}><EstudantesPorAno e={e} /></Recolher>
           : <DicaRefinar texto={t('Para informar os estudantes ano a ano ou série a série, use o modo Refinar.')} />}
       </>

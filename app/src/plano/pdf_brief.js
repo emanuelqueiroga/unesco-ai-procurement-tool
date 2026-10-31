@@ -18,7 +18,8 @@ export function nomeArqBrief(estado) { return 'policy-brief-' + slugPlano(estado
 
 /** Gera o PDF do policy brief (no máximo 6 páginas; o resumo executivo numa só). */
 export async function gerarBrief(estado, opts) {
-  const { percursoLetramento, percursoGovernanca } = await import('../domain/escopo.js');
+  const { percursoPedagogico, percursoLetramento, percursoGovernanca } = await import('../domain/escopo.js');
+  if (percursoPedagogico(estado.ctx)) { const { gerarEducacaoPDF } = await import('./pdf_educacao'); return gerarEducacaoPDF(estado, { ...opts, tipo:'brief' }); }
   if (percursoLetramento(estado.ctx)) { const { gerarGovernancaPDF } = await import('./pdf_governanca'); return gerarGovernancaPDF(estado, { ...opts, tipo: 'brief', modelo:'letramento' }); }
   if (percursoGovernanca(estado.ctx)) { const { gerarGovernancaPDF } = await import('./pdf_governanca'); return gerarGovernancaPDF(estado, { ...opts, tipo: 'brief' }); }
   opts = opts || {};

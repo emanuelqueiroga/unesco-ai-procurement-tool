@@ -30,7 +30,7 @@ const ENTREGAS: Record<string, string> = {
 };
 export const preenchido = (v: unknown) => typeof v === 'string' && v.trim().length > 0 && !v.includes('__');
 export function desafiosGovernanca(s: Pick<Estado14, 'ctx'>): { id: string; titulo: string }[] {
-  const qs = problemasMarcados(s.ctx).filter((q: any) => !s.ctx.prioridades?.includes('sobre') || /^G\d+$/.test(q.id)).map((q: any) => ({ id: q.id as string, titulo: t(q.t) }));
+  const qs = problemasMarcados(s.ctx).filter((q: any) => /^G\d+$/.test(q.id)).map((q: any) => ({ id: q.id as string, titulo: t(q.t) }));
   if (preenchido(s.ctx.problemaOutro)) qs.push({ id: 'outro', titulo: String(s.ctx.problemaOutro).trim() });
   return qs;
 }
@@ -89,7 +89,7 @@ export function planoGovernanca(s: Estado14) {
   const linha = (rotulo: string, v: any) => ({ rotulo: t(rotulo), valor: valor(v) });
   const campos = (obj: any, lista: [string, string][]) => lista.map(([k, nome]) => linha(nome, obj?.[k]));
   const blocos: BlocoGovernanca[] = [
-    { titulo: t('Contexto'), linhas: [linha('País', nomePais(paisDoCaso(s.caso))), linha('Instituição responsável', x.olhando),
+    { titulo: t('Contexto'), linhas: [linha('País', nomePais(paisDoCaso(s.caso))), linha('Instituição responsável', x.olhando), ...(preenchido(x.govDetalhes?.contexto)?[linha('Informações adicionais',x.govDetalhes.contexto)]:[]),
       linha('Total de escolas', Number.isSafeInteger(x.redeNacional?.escolas) && x.redeNacional.escolas > 0 ? new Intl.NumberFormat(String(LOC())).format(x.redeNacional.escolas) : ''), linha('Total de estudantes', Number.isSafeInteger(x.redeNacional?.estudantes) && x.redeNacional.estudantes > 0 ? new Intl.NumberFormat(String(LOC())).format(x.redeNacional.estudantes) : ''),
       ...qs.map(q => linha('Desafio', q.titulo))] },
     { titulo: t('Diagnóstico institucional'), linhas: campos(x.govDiagnostico, [['atual', 'Situação institucional atual'], ['resultado', 'Resultado esperado'], ['linhaBase', 'Linha de base institucional'], ['fonte', 'Fonte da informação']]) },
@@ -131,4 +131,23 @@ export function telaGovernancaLegada(id: string): { n: 1 | 2 | 3 | 4; id: string
     suporteNivel: [3, 'gov-capacidade'], implantacao: [3, 'gov-acoes'], elegiveis: [4, 'gov-revisao'], expansao: [4, 'gov-revisao'],
   };
   return mapa[id] ? { n: mapa[id][0], id: mapa[id][1] } : null;
+}
+
+export function pendenciasGov(s:Estado14,id:string) {
+ const x=contextoGovProjetado(s), out:{caminho:string;label:string}[]=[];
+ const add=(p:string,label:string)=>{const v=p.split('.').reduce((o:any,k)=>o?.[k],x);if(!preenchido(v))out.push({caminho:p,label});};
+ const grupo=(base:string,fs:readonly (readonly [string,string])[])=>fs.forEach(([k,l])=>add(base+'.'+k,l));
+ switch(id){
+ case 'gov-diagnostico':grupo('govDiagnostico',[['atual','Situação institucional atual'],['resultado','Resultado esperado'],['linhaBase','Linha de base institucional'],['fonte','Fonte da informação']]);break;
+ case 'gov-instrumentos':for(const q of desafiosGovernanca(s)){const b='govInstrumentos.'+q.id,d=x.govInstrumentos?.[q.id]||{};if(!d.situacao)out.push({caminho:b+'.situacao',label:q.titulo});grupo(b,[['responsavel','Instituição responsável'],...(d.situacao==='existente'?[['instrumento','Instrumento existente'],['evidencia','Documento ou evidência']] as const:[['lacuna','Lacunas a resolver']] as const)]);}break;
+ case 'gov-solucoes':if(!x.govSolucoes?.instrumentos?.length)out.push({caminho:'govSolucoes.instrumentos',label:'Instrumentos de política'});add('govSolucoes.justificativa','Por que esses instrumentos são adequados aos desafios?');break;
+ case 'gov-atores':grupo('govAtores',[['coordenacao','Instituição coordenadora'],['instituicoes','Instituições participantes'],['grupos','Grupos afetados'],['participacao','Como serão ouvidos e envolvidos']]);break;
+ case 'gov-acoes':for(const q of desafiosGovernanca(s))grupo('govAcoes.'+q.id,[['responsavel','Responsável'],['prazo','Prazo'],['marco','Marcos de execução'],['indicador','Indicador de entrega']]);break;
+ case 'gov-capacidade':grupo('govCapacidade',[['equipe','Equipe e competências necessárias'],['formacao','Formação institucional'],['orientacao','Orientação às instituições'],['supervisao','Supervisão e acompanhamento'],['incidentes','Resposta a incidentes e reclamações']]);break;
+ case 'gov-sandbox':grupo('govSandbox',CAMPOS_SANDBOX);break;
+ case 'gov-recursos':{grupo('govOrcamento',[['periodo','Período do orçamento'],['fonte','Fonte dos valores']]);for(const i of orcamentoGovernanca(s).itens){const extra=i.id.startsWith('extra-'),p=extra?'govOrcamento.extras.'+i.id.slice(6):'govOrcamento.itens.'+i.id,item=p.split('.').reduce((o:any,k)=>o?.[k],x);if(i.valor===null&&item?.situacao!=='a_estimar')out.push({caminho:p,label:i.nome});if(extra)add(p+'.nome','Recurso adicional');}break;}
+ case 'gov-revisao':grupo('govRevisao',[['indicadores','Indicadores e metas institucionais'],['responsavel','Responsável pelo acompanhamento'],['periodicidade','Periodicidade da revisão'],['data','Próxima revisão'],['alcance','Alcance da política'],['progresso','Progresso de implementação'],['canal','Transparência e prestação de contas']]);break;
+ case 'gov-projeto':add('projetoIA.incluir','Incluir projeto de uso de IA?');if(x.projetoIA?.incluir==='sim')add('projetoIA.descricao','Descreva o projeto, a tarefa de IA e o público previsto');break;
+ }
+ return out;
 }

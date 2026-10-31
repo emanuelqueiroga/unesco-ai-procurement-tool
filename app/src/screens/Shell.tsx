@@ -1,3 +1,5 @@
+import { PainelEducacao } from './Educacao';
+import { entradaEtapa } from '../percurso/navegacaoOrientada';
 import { PainelLetramento } from './Letramento';
 // Moldura das telas: cabeçalho (logos, atalhos, modo, plano, idioma, tema, caso), navegação de capítulos (lateral
 // ≥ 900 px, barra abaixo), o conteúdo, o plano vivo (painel ≥ 1100 px, gaveta abaixo) e o rodapé institucional.
@@ -10,7 +12,7 @@ import { infoCapitulo, CURTO, t } from '../percurso/textos';
 import { href, lerRota } from '../percurso/rota';
 import { tituloDaTelaLit } from '../percurso/letramento';
 import { entradaEtapaLit } from '../percurso/letramentoInterface';
-import { percursoGovernanca, percursoLetramento, percursoInstitucional, temLetramento, temGovernanca, prioridadeEscolhida } from '../domain';
+import { percursoPedagogico, percursoGovernanca, percursoLetramento, percursoInstitucional, temLetramento, temGovernanca, prioridadeEscolhida } from '../domain';
 import { Frentes, PainelGovernanca } from './Governanca';
 import { PlanoVivo } from './PlanoVivo';
 import { CasoDialog } from './CasoDialog';
@@ -36,7 +38,7 @@ export function capitulosNav(s: CasoStore, pos: Posicao): NavChapter[] {
     const atual = pos.capitulo === n;
     const p = prog[n - 1];
     return {
-      n, title: t(infoCapitulo(n as Capitulo, s).titulo), href: percursoLetramento(s.ctx) ? entradaEtapaLit(s, n as Capitulo) : href.abertura(n),
+      n, title: t(infoCapitulo(n as Capitulo, s).titulo), href: percursoLetramento(s.ctx) ? entradaEtapaLit(s, n as Capitulo) : percursoGovernanca(s.ctx)||percursoPedagogico(s.ctx) ? entradaEtapa(s,n as Capitulo) : href.abertura(n),
       state: atual ? 'current' : p.completo ? 'done' : 'todo',
       questions: atual
         ? telasDoCapitulo(n as Capitulo, s).filter(tela => prioridadeEscolhida(s.ctx) || ['local', 'prioridades'].includes(tela.id)).map((tela) => ({
@@ -50,7 +52,7 @@ export function capitulosNav(s: CasoStore, pos: Posicao): NavChapter[] {
 
 function capitulosBarra(s: CasoStore, pos: Posicao): BarChapter[] {
   return progressoDe(s).filter(p => prioridadeEscolhida(s.ctx) || p.capitulo === 1).map((p) => ({
-    n: p.capitulo, label: t(infoCapitulo(p.capitulo, s).titulo), progress: prioridadeEscolhida(s.ctx) ? p.total ? p.feitas / p.total : 0 : telasDoCapitulo(1, s).filter(t => ['local', 'prioridades'].includes(t.id) && telaRespondida(s, t)).length / 2, href: percursoLetramento(s.ctx) ? entradaEtapaLit(s, p.capitulo) : href.abertura(p.capitulo),
+    n: p.capitulo, label: t(infoCapitulo(p.capitulo, s).titulo), progress: prioridadeEscolhida(s.ctx) ? p.total ? p.feitas / p.total : 0 : telasDoCapitulo(1, s).filter(t => ['local', 'prioridades'].includes(t.id) && telaRespondida(s, t)).length / 2, href: percursoLetramento(s.ctx) ? entradaEtapaLit(s, p.capitulo) : percursoGovernanca(s.ctx)||percursoPedagogico(s.ctx) ? entradaEtapa(s,p.capitulo) : href.abertura(p.capitulo),
     state: pos.capitulo === p.capitulo ? 'current' : p.completo ? 'done' : 'todo',
   }));
 }
@@ -79,11 +81,11 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
   const atalhos = (
     <>
       <Button variant="secondary" size="sm" href={href.inicio()}>{t('Início')}</Button>
-      {prioridadeEscolhida(s.ctx) && !percursoInstitucional(s.ctx) ? <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={t('Matriz camadas × fases')}>{t('Matriz')}</Button> : null}
-      {prioridadeEscolhida(s.ctx) && !percursoInstitucional(s.ctx) && s.modo === 'refinar' ? <Button variant="secondary" size="sm" href={href.refinar()}>{t('Calculadora')}</Button> : null}
+      {prioridadeEscolhida(s.ctx) && !percursoInstitucional(s.ctx) && !percursoPedagogico(s.ctx) ? <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={t('Matriz camadas × fases')}>{t('Matriz')}</Button> : null}
+      {prioridadeEscolhida(s.ctx) && !percursoInstitucional(s.ctx) && !percursoPedagogico(s.ctx) && s.modo === 'refinar' ? <Button variant="secondary" size="sm" href={href.refinar()}>{t('Calculadora')}</Button> : null}
     </>
   );
-  const modo = percursoLetramento(s.ctx) ? null : (
+  const modo = !prioridadeEscolhida(s.ctx)||percursoInstitucional(s.ctx)||percursoPedagogico(s.ctx) ? null : (
     <Segmented
       label={t('Modo')}
       value={s.modo}
@@ -104,7 +106,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
   const nomeExemplo = exemploIlustrativo(s) ? nomeDoExemplo(s.exemplo) : '';
   return (
     <DentroDaMoldura.Provider value>
-      <div className={inicio ? 'pc-app pc-app--inicio' : percursoLetramento(s.ctx) ? 'pc-app pc-app--letramento' : 'pc-app'}>
+      <div className={inicio ? 'pc-app pc-app--inicio' : percursoLetramento(s.ctx) ? 'pc-app pc-app--letramento' : percursoGovernanca(s.ctx)||percursoPedagogico(s.ctx) ? 'pc-app pc-app--orientado' : 'pc-app'}>
         <a className="pc-pular" href="#conteudo" onClick={(e) => { e.preventDefault(); document.getElementById('conteudo')?.focus(); }}>{t('Pular para o conteúdo')}</a>
         <Header
           logos={LOGOS}
@@ -160,11 +162,11 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
         <div className={['pc-corpo', nav && !barra ? 'pc-corpo--nav' : '', plano ? 'pc-corpo--plano' : ''].filter(Boolean).join(' ')}>
           {nav && !barra ? <aside className="pc-nav"><ChapterNav zoneLabel={t('Seu caminho')} chapters={capitulosNav(s, pos)} /></aside> : null}
           <main id="conteudo" className="pc-main" tabIndex={-1}>
-            {rota.tipo === 'plano' && !percursoInstitucional(s.ctx) ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Anexo técnico (PDF)".')}</p> : null}
-            {(temGovernanca(s.ctx) || temLetramento(s.ctx)) && !inicio ? <Frentes s={s} /> : null}
+            {rota.tipo === 'plano' && !percursoInstitucional(s.ctx) && !percursoPedagogico(s.ctx) ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Anexo técnico (PDF)".')}</p> : null}
+            {prioridadeEscolhida(s.ctx) && !inicio ? <Frentes s={s} /> : null}
             {children}
           </main>
-          {plano ? percursoLetramento(s.ctx) ? <PainelLetramento s={s} /> : percursoGovernanca(s.ctx) ? <PainelGovernanca s={s} /> : <PlanoVivo s={s} /> : null}
+          {plano ? percursoPedagogico(s.ctx) ? <PainelEducacao s={s} /> : percursoLetramento(s.ctx) ? <PainelLetramento s={s} /> : percursoGovernanca(s.ctx) ? <PainelGovernanca s={s} /> : <PlanoVivo s={s} /> : null}
         </div>
         <RodapeCompleto />
         <CasoDialog open={caso} onClose={() => setCaso(false)} />

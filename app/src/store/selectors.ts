@@ -1,3 +1,4 @@
+import { edRespondido } from '../percurso/pedagogico';
 import { impactosEducacao } from '../percurso/educacao';
 import { letramentoRespondido, telaLetramentoLegada } from '../percurso/letramento';
 // Seletores: derivações puras do estado v14 para a interface (plano, KPIs, recomendações, progresso).
@@ -67,6 +68,7 @@ export function etapasCompletas(s: Estado14): boolean {
 /** a tela do Essencial está respondida? (governança: as seis perguntas; as demais: o campo principal e os ativos obrigatórios,
  *  cada um com resposta real; etapas: todas as marcadas com escolas e estudantes; problemas: ao menos um ou "Outro problema") */
 export function telaRespondida(s: Estado14, t: TelaEssencial): boolean {
+  if (t.id.startsWith('ed-')) return edRespondido(s,t.id);
   if (t.id === 'impactos' && percursoEducacao(s.ctx)) return impactosEducacao(s).length > 0;
   if (t.id.startsWith('lit-')) return letramentoRespondido(s, t.id);
   if (t.id.startsWith('gov-')) return governancaRespondida(s, t.id);

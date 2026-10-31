@@ -1,9 +1,10 @@
+import { telaEdLegada } from '../percurso/pedagogico';
 import { telaLetramentoLegada, tituloDaTelaLit, somenteCurriculoLit } from '../percurso/letramento';
 // Lógica pura do pacote transversal (sem React nem DOM, para testar em Vitest): quando pedir confirmação antes de
 // substituir o caso, mensagens de erro de importação no idioma da interface, versão e data do rodapé, título da
 // aba por tela, "continuar de onde parei" e a regra de retradução do exemplo ao trocar de idioma.
 import { telaGovernancaLegada } from '../percurso/governanca';
-import { percursoGovernanca, percursoLetramento, percursoEducacao, CAMPOS_EDUCACAO_REMOVIDOS, prioridadeEscolhida } from '../domain/escopo.js';
+import { percursoPedagogico, percursoGovernanca, percursoLetramento, percursoEducacao, CAMPOS_EDUCACAO_REMOVIDOS, prioridadeEscolhida } from '../domain/escopo.js';
 import { CASOS, tr } from '../domain';
 import { telasAtivas, temRespostas, ErroImportacao } from '../store';
 import { infoCapitulo, CURTO, t } from '../percurso/textos';
@@ -101,6 +102,7 @@ export function destinoContinuar(
 ): { href: string; pendente: boolean } {
   if (!faltam.length) return { href: href.plano(), pendente: false };
   const c = s.capitulo;
+  if(percursoPedagogico(s.ctx) && c?.pergunta) {const id=telaEdLegada(c.pergunta),q=telasAtivas(s).find(t=>t.id===id); if(q)return {href:href.pergunta(q.capitulo,q.id),pendente:true};return {href:href.pergunta(2,'ed-intervencao'),pendente:true};}
   if(percursoEducacao(s.ctx) && c?.pergunta && CAMPOS_EDUCACAO_REMOVIDOS.includes(c.pergunta)) return {href:href.pergunta(1,'impactos'),pendente:true};
   if (percursoLetramento(s.ctx) && c?.pergunta) { let id=telaLetramentoLegada(c.pergunta); if(id==='lit-alcance'&&somenteCurriculoLit({ctx:s.ctx||{}}))id='lit-curriculo'; const alvo=telasAtivas(s).find(t=>t.id===id); if(alvo) return {href:href.pergunta(alvo.capitulo,alvo.id),pendente:true}; }
   const legada = percursoGovernanca(s.ctx) && c?.pergunta ? telaGovernancaLegada(c.pergunta) : null;

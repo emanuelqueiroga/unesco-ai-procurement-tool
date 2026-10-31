@@ -12,11 +12,11 @@ export function tamanhoRedeValido(ctx) {
 export function temGovernanca(ctx) { return Array.isArray(ctx?.prioridades) && ctx.prioridades.includes('governar'); }
 export function projetoUsoDefinido(ctx) {
   const p = ctx?.projetoIA;
-  return (temLetramento(ctx) || temGovernanca(ctx) && ctx.prioridades.some(id => id !== 'governar'))
+  return (temLetramento(ctx) || temEducacao(ctx) || temGovernanca(ctx) && ctx.prioridades.some(id => id !== 'governar'))
     && p?.incluir === 'sim' && typeof p.descricao === 'string' && p.descricao.trim().length > 0 && !p.descricao.includes('__');
 }
 export function percursoGovernanca(ctx) {
-  return temGovernanca(ctx) && !(temLetramento(ctx) && ctx.frenteAtiva === 'letramento') && !(projetoUsoDefinido(ctx) && ctx.frenteAtiva === 'projeto');
+  return temGovernanca(ctx) && !(ctx.frenteAtiva === 'educacao' && temEducacao(ctx)) && !(temLetramento(ctx) && ctx.frenteAtiva === 'letramento') && !(projetoUsoDefinido(ctx) && ctx.frenteAtiva === 'projeto');
 }
 /** Vista do projeto: desafios institucionais e seu orçamento não alimentam o relatório de ferramenta. */
 export function estadoDoProjeto(estado) {
@@ -36,9 +36,12 @@ export const FAIXAS_ESCOLAS = [['ate1000','Até 1.000 escolas'],['1001a10000','D
 export const FAIXAS_ESTUDANTES = [['ate100000','Até 100.000 estudantes'],['100001a1000000','De 100.001 a 1.000.000 de estudantes'],['1000001a10000000','De 1.000.001 a 10.000.000 de estudantes'],['mais10000000','Mais de 10.000.000 de estudantes'],['a_levantar','Total de estudantes ainda a levantar']];
 
 export function temLetramento(ctx) { return Array.isArray(ctx?.prioridades) && ctx.prioridades.includes('sobre'); }
-export function percursoLetramento(ctx) { return temLetramento(ctx) && !percursoGovernanca(ctx) && !(projetoUsoDefinido(ctx) && ctx.frenteAtiva === 'projeto'); }
+export function percursoLetramento(ctx) { return temLetramento(ctx) && !(ctx.frenteAtiva === 'educacao' && temEducacao(ctx)) && !percursoGovernanca(ctx) && !(projetoUsoDefinido(ctx) && ctx.frenteAtiva === 'projeto'); }
 export function percursoInstitucional(ctx) { return percursoGovernanca(ctx) || percursoLetramento(ctx); }
 
 /** A frente educacional conserva as etapas de ensino; os percursos institucionais têm navegação própria. */
 export function percursoEducacao(ctx) { return Array.isArray(ctx?.prioridades) && ctx.prioridades.includes('com') && !percursoInstitucional(ctx); }
+/** Ações educacionais compartilham um plano, com temas e recursos sem duplicação. */
+export function temEducacao(ctx) { return Array.isArray(ctx?.prioridades) && ctx.prioridades.some(id => ['com','para'].includes(id)); }
+export function percursoPedagogico(ctx) { return temEducacao(ctx) && (ctx.frenteAtiva === 'educacao' || !percursoInstitucional(ctx) && !(ctx.frenteAtiva === 'projeto' && projetoUsoDefinido(ctx))); }
 export const CAMPOS_EDUCACAO_REMOVIDOS = ['problema','linhaBase','alternativa','altCustoEfeito','linhaBaseProblemas','linhaBaseProblemaTxt','linhaBaseMedida'];

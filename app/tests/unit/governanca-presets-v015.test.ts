@@ -27,7 +27,7 @@ describe('v015: sugestões e seleção sem redação obrigatória',()=>{
   expect(nav.map(n=>n.n)).toEqual([1]);expect(nav[0].questions?.map(q=>q.id)).toEqual(['local','prioridades']);
   expect(tituloDaAba({tipo:'pergunta',n:1,tela:'prioridades'},S())).not.toContain('23');
   contexto();expect(capitulosNav(S(),{}).map(n=>n.title)).toEqual(['Contexto','Diagnóstico institucional','Plano de ação e recursos','Acompanhamento e revisão']);
-  S().responder('prioridades',['com']);expect(capitulosNav(S(),{})[1].title).toBe('Prova de conceito ou piloto');
+  S().responder('prioridades',['com']);expect(capitulosNav(S(),{})[1].title).toBe('Intervenção e avaliação');
  });
  it('resultados, instrumentos, entregas e indicadores variam conforme os desafios',()=>{
   contexto();

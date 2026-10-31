@@ -130,7 +130,7 @@ describe('v015: percurso institucional de governança', () => {
     S().responder('govOrcamento.itens.equipe.valor', 9000000); S().responder('redeNacional.estudantes', 9000000);
     expect(numerosDe(S()).total).toBe(custo);
     S().responder('frenteAtiva', 'governanca');
-    expect(planoGovernanca(S()).acoes.map(a => a.id)).toEqual(['G11', 'C4']);
+    expect(planoGovernanca(S()).acoes.map(a => a.id)).toEqual(['G11']);
     expect(orcamentoGovernanca(S()).subtotal).toBe(9000000);
   });
   it('exporta/importa todos os novos campos, o ponto salvo e os dados legados', () => {

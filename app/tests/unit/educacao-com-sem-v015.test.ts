@@ -8,11 +8,11 @@ const grupo=()=>PRIORIDADES.find((p:any)=>p.id==='com')!;
 function iniciar(ids=['C11']){S().escolherPais('BRA');S().responder('prioridades',['com']);S().responder('problemas',ids);}
 beforeEach(()=>{setLang('pt');S().carregarExemplo('novo');});
 describe('v015: Education with and without AI',()=>{
- it('mantém etapas e escolas e retira apenas as três telas solicitadas',()=>{
-  iniciar();expect(percursoEducacao(S().ctx)).toBe(true);expect(telasAtivas(S())).toHaveLength(20);
-  expect(telasDoCapitulo(1,S()).map(t=>t.id)).toEqual(['local','prioridades','etapas','problemas','impactos','governanca']);
+ it('mantém etapas e escolas e usa intervenção, execução e acompanhamento',()=>{
+  iniciar();expect(percursoEducacao(S().ctx)).toBe(true);expect(telasAtivas(S())).toHaveLength(12);
+  expect(telasDoCapitulo(1,S()).map(t=>t.id)).toEqual(['local','prioridades','etapas','problemas']);
   expect(telasAtivas(S()).some(t=>['problema','linhaBase','alternativa'].includes(t.id))).toBe(false);
-  expect(progressoDe(S()).reduce((n,p)=>n+p.total,0)).toBe(20);
+  expect(progressoDe(S()).reduce((n,p)=>n+p.total,0)).toBe(12);
   expect(extrasDoCapitulo(1,S()).some(t=>t.id==='linhaBase')).toBe(false);
   expect(camposRefinar(1,S())).not.toContain('altCustoEfeito');
  });
@@ -42,12 +42,12 @@ describe('v015: Education with and without AI',()=>{
  it('desmarcar todos os desafios também retira os impactos automáticos',()=>{
   iniciar(['C19']);S().responder('problemas',[]);expect(S().caso.impactos).toEqual([]);expect(impactosEducacao(S())).toEqual([]);expect(telaRespondida(S(),telaDoCampo('impactos')!)).toBe(false);
  });
- it('retoma links das telas removidas em impactos sem apagar a posição ou os dados salvos',()=>{
-  iniciar();for(const id of ['problema','linhaBase','alternativa']){S().irPara(1,id);expect(destinoContinuar(S(),faltamDe(S())).href).toBe('#/capitulo/1/impactos');}
+ it('retoma links das telas removidas em objetivos sem apagar a posição ou os dados salvos',()=>{
+  iniciar();for(const id of ['problema','linhaBase','alternativa']){S().irPara(1,id);expect(destinoContinuar(S(),faltamDe(S())).href).toBe(id==='alternativa'?'#/capitulo/2/ed-intervencao':'#/capitulo/2/ed-objetivos');}
  });
- it('preserva os percursos de governança, letramento e a quarta prioridade',()=>{
+ it('preserva governança e letramento e revê a quarta prioridade',()=>{
   S().responder('prioridades',['governar']);expect(telasAtivas(S())).toHaveLength(11);
   S().responder('prioridades',['sobre']);expect(telasAtivas(S())).toHaveLength(10);
-  S().responder('prioridades',['para']);expect(telasAtivas(S())).toHaveLength(23);
+  S().responder('prioridades',['para']);expect(telasAtivas(S())).toHaveLength(12);
  });
 });

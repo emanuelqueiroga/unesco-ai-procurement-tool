@@ -12,7 +12,7 @@ import { normalizarContextoPais } from './contextoPais';
 //   refinar   → 'refinado'    (a pessoa alterou uma premissa no modo Refinar)
 // respC continua sendo derivado (informado/refinado = confirmado), para o domínio e a exportação da v13.
 import { create } from 'zustand';
-import { percursoLetramento, temGovernanca, projetoUsoDefinido, clone, CASO_VAZIO, CASOS, CTX_EX, RESP_EX, CAMPO_POR_ID, CAMPOS_CUSTO, CAMPOS_SUGERIDOS, CAMPOS_PROB, SUB_OBJ,
+import { percursoPedagogico, percursoLetramento, temGovernanca, projetoUsoDefinido, clone, CASO_VAZIO, CASOS, CTX_EX, RESP_EX, CAMPO_POR_ID, CAMPOS_CUSTO, CAMPOS_SUGERIDOS, CAMPOS_PROB, SUB_OBJ,
   confirmarGerados, horasEstimativa, vazio, tr, cfgAtual, direcionadores, PRESETS, salario, opcoes,
   escolherPais as escolherPaisDoCaso, editarCampoPais as editarCampoPaisDoCaso, restaurarCampoPais as restaurarCampoPaisDoCaso,
   moedaAoEscolherPais, PAIS_CAMPOS_NO_CUSTO } from '../domain';
@@ -248,6 +248,7 @@ function propagar(e: Estado14): string[] {
     }
     e.origem.impactos='informado';e.respC.impactos=ids.length>0;e.sugestoes.impactos='problemas';
   }
+  if (percursoPedagogico(e.ctx)) return tocados; // O plano pedagógico não sugere compra, licenças ou tarefas de IA.
   for (let i = 0; i < 5; i++) {
     const r = aplicarSugestoes(e);
     r.revisar.forEach(x => {
@@ -272,7 +273,7 @@ function recenteDe(campo: string, tocados: string[]): Recente {
   return { campo, afetados, em: Date.now() };
 }
 function proximaTela(e: Estado14, campo: string) {
-  if (campo.split('.')[0] === 'letramento') return; // Várias telas compartilham o modelo; conservar a posição atual.
+  if (['letramento','educacao'].includes(campo.split('.')[0])) return; // Várias telas compartilham o modelo; conservar a posição atual.
   const t = telaDoCampo(campo.split('.')[0]);
   if (t) e.capitulo = { atual: t.capitulo, pergunta: t.id };
 }
@@ -478,6 +479,9 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     Object.keys(rc).forEach(c => { e.origem[c] = 'informado'; });
     Object.keys(e.resp).forEach(g => { if (e.resp[g]) e.origem[g] = 'informado'; });
     e.respC = Object.fromEntries(Object.keys(rc).filter(c => !/^g-/.test(c)).map(c => [c, true]));
+    // Os exemplos A–D são projetos concretos de ferramenta, com custo ilustrativo já definido.
+    e.ctx.projetoIA = { incluir:'sim', descricao:String(e.caso.titulo||e.ctx.olhando||'') };
+    e.ctx.frenteAtiva = 'projeto';
     normalizarContextoPais(e);
     propagar(e);
     set({ ...e, recente: null, migradoDe: '' });

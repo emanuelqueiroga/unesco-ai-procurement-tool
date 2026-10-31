@@ -1,9 +1,9 @@
 /* Ajustes restritos à frente de letramento: mesma largura, anatomia e alinhamento em todas as telas. */
-.pc-app--letramento .pc-main { padding: 32px; }
-.pc-app--letramento .pc-pergunta { max-width: 760px; margin-inline: auto; }
-.pc-app--letramento .pr-questionframe-control,
-.pc-app--letramento .pr-questionframe-text { max-width: none; }
-.pc-app--letramento .pr-questionframe-title { text-wrap: balance; }
+:is(.pc-app--letramento,.pc-app--orientado) .pc-main { padding: 32px; }
+:is(.pc-app--letramento,.pc-app--orientado) .pc-pergunta { max-width: 760px; margin-inline: auto; }
+:is(.pc-app--letramento,.pc-app--orientado) .pr-questionframe-control,
+:is(.pc-app--letramento,.pc-app--orientado) .pr-questionframe-text { max-width: none; }
+:is(.pc-app--letramento,.pc-app--orientado) .pr-questionframe-title { text-wrap: balance; }
 .pc-lit-campos { display: grid; gap: 28px; min-width: 0; }
 .pc-lit-grupo { min-width: 0; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 20px; }
 .pc-lit-grupo > h2 { font-size: 18px; line-height: 26px; margin-bottom: 20px; }
@@ -30,7 +30,7 @@
 .pc-lit-opcoes .pr-optioncard { align-items: flex-start; min-height: 52px; padding: 12px; }
 .pc-lit-opcoes .pr-optioncard--selected { padding: 11px; }
 .pc-lit-opcoes .pr-optioncard-input { margin-top: 2px; }
-.pc-lit-opcoes .pr-optioncard:last-child { grid-column: 1 / -1; }
+.pc-lit-opcoes .pr-optioncard:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .pc-lit-pendente { display: flex; gap: 8px; align-items: center; width: fit-content; min-height: 36px; font-size: 13px; line-height: 18px; cursor: pointer; }
 .pc-lit-pendente input { width: 17px; height: 17px; margin: 0; accent-color: var(--primary); }
 .pc-lit-campo .pc-gov-detalhes { margin: 0; }
@@ -52,21 +52,21 @@
 .pc-lit-painel .pr-planpanel-origin { font-size: 14px; line-height: 22px; }
 .pc-lit-painel .pr-planpanel-origin p + p { margin-top: 10px; }
 .pc-lit-painel .pr-planpanel-footer { display: grid; gap: 12px; }
-.pc-app--letramento .pr-chapternav-chapter { align-items: flex-start; }
-.pc-app--letramento .pr-chapternav-title { min-width: 0; }
-.pc-app--letramento .pr-chapternav-q { min-height: 36px; }
+:is(.pc-app--letramento,.pc-app--orientado) .pr-chapternav-chapter { align-items: flex-start; }
+:is(.pc-app--letramento,.pc-app--orientado) .pr-chapternav-title { min-width: 0; }
+:is(.pc-app--letramento,.pc-app--orientado) .pr-chapternav-q { min-height: 36px; }
 @media (min-width: 1440px) {
-  .pc-app--letramento .pc-corpo--nav.pc-corpo--plano { grid-template-columns: 260px minmax(0,1fr) 320px; }
-  .pc-app--letramento .pc-corpo--plano { grid-template-columns: minmax(0,1fr) 320px; }
+  :is(.pc-app--letramento,.pc-app--orientado) .pc-corpo--nav.pc-corpo--plano { grid-template-columns: 260px minmax(0,1fr) 320px; }
+  :is(.pc-app--letramento,.pc-app--orientado) .pc-corpo--plano { grid-template-columns: minmax(0,1fr) 320px; }
 }
 @media (max-width: 1439px) {
-  .pc-app--letramento .pc-corpo--nav.pc-corpo--plano { grid-template-columns: 260px minmax(0,1fr); }
-  .pc-app--letramento .pc-corpo--plano { grid-template-columns: minmax(0,1fr); }
-  .pc-app--letramento .pc-main { padding-bottom: 130px; }
+  :is(.pc-app--letramento,.pc-app--orientado) .pc-corpo--nav.pc-corpo--plano { grid-template-columns: 260px minmax(0,1fr); }
+  :is(.pc-app--letramento,.pc-app--orientado) .pc-corpo--plano { grid-template-columns: minmax(0,1fr); }
+  :is(.pc-app--letramento,.pc-app--orientado) .pc-main { padding-bottom: 130px; }
   .pc-lit-painel .pr-plandrawer-bar { padding-bottom: max(12px,env(safe-area-inset-bottom)); }
 }
 @media (max-width: 900px) {
-  .pc-app--letramento .pc-main { padding: 24px 20px 130px; }
+  :is(.pc-app--letramento,.pc-app--orientado) .pc-main { padding: 24px 20px 130px; }
 }
 @media (max-width: 600px) {
   .pc-lit-grupo { padding: 16px; }

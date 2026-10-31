@@ -1,8 +1,9 @@
+import { TITULOS_ED } from './pedagogicoTitulos';
 import { TITULOS_LIT } from './letramentoTitulos';
 // Textos do percurso (v14): capítulos, a frase de abertura de cada pergunta e os rótulos dos trechos do plano.
 // Português é a chave de tradução; `t()` traduz quando há dicionário (os textos novos entram nos
 // dicionários em i18n/v14_<l>.json; até lá aparecem em português nos outros idiomas).
-import { tr, nomePais, paisDoCaso, percursoGovernanca, percursoLetramento } from '../domain';
+import { tr, nomePais, paisDoCaso, percursoGovernanca, percursoLetramento, percursoPedagogico } from '../domain';
 import type { Capitulo } from '../store';
 
 export const t = (s: string, vars?: Record<string, string | number>): string => {
@@ -110,6 +111,7 @@ export const NOME_TESTE: Record<string, string> = { poc: 'Prova de conceito', pi
 
 /** Nome curto de cada tela, para a navegação lateral e a lista de pendências. */
 export const CURTO: Record<string, string> = {
+  ...TITULOS_ED,
   nivel: 'Nível da decisão', local: 'País', situacao: 'Em que ponto você está', etapas: 'Etapas, escolas e estudantes',
   prioridades: 'Prioridades', problemas: 'Desafios', problema: 'Situação atual', impactos: 'Impacto esperado', linhaBase: 'Linha de base',
   alternativa: 'Soluções de política educacional', governanca: 'Governança de IA na educação', testes: 'Tipo de teste', tarefas: 'O que a IA faz', usuarios: 'Quem usa',
@@ -175,6 +177,7 @@ export const GOVERNANCA_INFO: Record<Capitulo, InfoCapitulo> = {
   4: { n: 4, titulo: 'Acompanhamento e revisão', guia: 'Como acompanhar os resultados e revisar a política?', texto: '', minutos: 3, entrega: '', alimenta: '' },
 };
 export function infoCapitulo(n: Capitulo, s?: { ctx?: Record<string, any> }): InfoCapitulo {
+  if (percursoPedagogico(s?.ctx)) return ({1:CAPITULOS_INFO[1],2:{...GOVERNANCA_INFO[2],titulo:'Intervenção e avaliação',guia:'O que será feito e como verificar os resultados?'},3:{...GOVERNANCA_INFO[3],titulo:'Execução e recursos',guia:'Quem participa, quem executa e com quais recursos?'},4:{...GOVERNANCA_INFO[4],titulo:'Acompanhamento e expansão',guia:'Como acompanhar, revisar e decidir a continuidade?'}})[n];
   if (percursoLetramento(s?.ctx)) return ({1:CAPITULOS_INFO[1],2:{...GOVERNANCA_INFO[2],titulo:'Diagnóstico e desenho formativo',guia:'O que as pessoas precisam aprender e como desenvolver essas competências?'},3:{...GOVERNANCA_INFO[3],titulo:'Implementação e recursos'},4:{...GOVERNANCA_INFO[4],guia:'Como acompanhar a aprendizagem, a inclusão e a atualização do programa?'}})[n];
   return percursoGovernanca(s?.ctx) ? GOVERNANCA_INFO[n] : CAPITULOS_INFO[n];
 }

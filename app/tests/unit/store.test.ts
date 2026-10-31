@@ -107,7 +107,9 @@ describe('sugestões em cascata', () => {
     expect(S().caso.piloto.escolas).toBe(99);
     expect(v).not.toBe(99);
   });
-  it('problemas marcados sugerem tarefas; tarefas sugerem usuários e afetados', () => {
+  it('em projeto explícito de ferramenta, problemas sugerem tarefas; tarefas sugerem usuários e afetados', () => {
+    S().responder('projetoIA', {incluir:'sim',descricao:'Projeto de tutoria com IA'});
+    S().responder('frenteAtiva','projeto');
     S().responder('prioridades', ['com']);
     S().responder('problemas', ['C2']);
     const e = S().estado();

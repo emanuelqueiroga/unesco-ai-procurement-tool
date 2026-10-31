@@ -1,7 +1,8 @@
+import { TELAS_ED, telasEd } from '../percurso/pedagogico';
 import { telasLetramento } from '../percurso/letramento';
 // Perguntas do modo Essencial e vínculo resposta → trecho do plano
 // (spec, "Mapa das 51 perguntas para as 24 do Essencial" e "Comportamentos que fazem a narrativa").
-import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoGovernanca, percursoLetramento, percursoEducacao, CAMPOS_EDUCACAO_REMOVIDOS } from '../domain';
+import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoPedagogico, percursoGovernanca, percursoLetramento, percursoEducacao, CAMPOS_EDUCACAO_REMOVIDOS } from '../domain';
 import type { Capitulo } from './tipos';
 
 export interface TelaEssencial {
@@ -66,8 +67,10 @@ export const LETRAMENTO: TelaEssencial[] = [
  ...ESSENCIAL.filter(t => ['local','prioridades','problemas'].includes(t.id)),
  ...(['alcance','diagnostico','desenho','curriculo','oferta','validacao','digital','projeto','acoes','recursos','revisao'] as const).map(id => ({ id: 'lit-' + id, capitulo: (id === 'alcance' ? 1 : ['diagnostico','desenho','curriculo'].includes(id) ? 2 : id === 'revisao' ? 4 : 3) as Capitulo, n: [], campos: ['letramento'] })),
 ];
-export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id)), ...LETRAMENTO.filter(t => t.id.startsWith('lit-'))];
+export const PEDAGOGICO: TelaEssencial[] = [...ESSENCIAL.filter(t=>['local','prioridades','etapas','problemas'].includes(t.id)), ...TELAS_ED.map(([id,capitulo])=>({id,capitulo,n:[],campos:['educacao']}))];
+export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id)), ...LETRAMENTO.filter(t => t.id.startsWith('lit-')), ...PEDAGOGICO.filter(t=>t.id.startsWith('ed-'))];
 export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] {
+  if (percursoPedagogico(e?.ctx)) { const ids=telasEd(e as any); return PEDAGOGICO.filter(t=>!t.id.startsWith('ed-')||ids.includes(t.id as any)); }
   if (percursoLetramento(e?.ctx)) { const ids = telasLetramento(e as any); return LETRAMENTO.filter(t => ids.includes(t.id)); }
   if (!percursoGovernanca(e?.ctx)) return percursoEducacao(e?.ctx) ? ESSENCIAL.filter(t=>!['problema','linhaBase','alternativa'].includes(t.id)) : ESSENCIAL;
   return GOVERNANCA.filter(t => (t.id !== 'gov-projeto' || e?.ctx?.prioridades.some((id: string) => !['governar','sobre'].includes(id)))
@@ -80,7 +83,7 @@ export function essencial(campo: string): boolean { return CAMPOS_ESSENCIAIS.inc
 // ondeMora (caso.ts) procura o campo em CAMPO_POR_ID para saber se mora em ctx; sem este registro eles iriam para `caso`.
 {
   const reg: any = CAMPO_POR_ID;
-  for (const id of [...GOVERNANCA.flatMap(t => t.campos), 'frenteAtiva', 'govSelecoes', 'govDetalhes', 'letramento']) { if (!reg[id]) reg[id] = { id, onde: 'ctx', tipo: 'extra', passo: '' }; }
+  for (const id of [...GOVERNANCA.flatMap(t => t.campos), 'frenteAtiva', 'govSelecoes', 'govDetalhes', 'letramento', 'educacao']) { if (!reg[id]) reg[id] = { id, onde: 'ctx', tipo: 'extra', passo: '' }; }
   reg.redeNacional = { id: 'redeNacional', onde: 'ctx', tipo: 'extra', passo: '' };
   if (!reg.subs) reg.subs = { id: 'subs', onde: 'ctx', tipo: 'extra', passo: '' };
   if (!reg.problemaOutro) reg.problemaOutro = { id: 'problemaOutro', onde: 'ctx', tipo: 'extra', passo: '' };
