@@ -1,6 +1,8 @@
+import { TELAS_ED, telasEd } from '../percurso/pedagogico';
+import { telasLetramento } from '../percurso/letramento';
 // Perguntas do modo Essencial e vínculo resposta → trecho do plano
 // (spec, "Mapa das 51 perguntas para as 24 do Essencial" e "Comportamentos que fazem a narrativa").
-import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste } from '../domain';
+import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoPedagogico, percursoGovernanca, percursoLetramento, percursoEducacao, CAMPOS_EDUCACAO_REMOVIDOS } from '../domain';
 import type { Capitulo } from './tipos';
 
 export interface TelaEssencial {
@@ -11,20 +13,18 @@ export interface TelaEssencial {
   n: string[];
   /** ids dos campos de CAMPOS (ou de QUESTOES_G, g-*) que a tela responde */
   campos: string[];
-  /** observação da spec (só totais, até 3, condicional…) */
+  /** observação da spec (só totais, sem limite, condicional…) */
   nota?: string;
 }
 
-// As 25 telas do Essencial, na ordem da spec: 1.1.1, 1.1.2, 1.1.3, 1.1.4+1.1.5, 1.2.1, 1.2.2, 1.2.4, 1.2.5, 1.2.7, 1.2.8,
+// v015: 23 telas; país → prioridades → etapas. A antiga situação fica preservada nos dados, sem tela no percurso.
 // governança (1.3.1–1.3.6, uma tela), 2.0, 2.1.1, 2.2.1, 2.2.2+2.2.3, 2.3.4, 2.3.5, 2.3.8, 2.4.1+2.4.2, 2.4.3, 2.5.1+2.5.4,
 // 2.6.2, 3.1.1, 4.1.1, 4.1.2. As demais perguntas de CAMPOS ficam no modo Refinar com a premissa padrão.
 export const ESSENCIAL: TelaEssencial[] = [
-  { id: 'nivel', capitulo: 1, n: ['1.1.1'], campos: ['nivel'] },
-  { id: 'local', capitulo: 1, n: ['1.1.2'], campos: ['local'] },
-  { id: 'situacao', capitulo: 1, n: ['1.1.3'], campos: ['situacao'] },
-  { id: 'etapas', capitulo: 1, n: ['1.1.4', '1.1.5'], campos: ['etapas', 'grade'], nota: 'só totais; detalhe por ano em Refinar' },
+  { id: 'local', capitulo: 1, n: ['1.1.2'], campos: ['pais'] },
   { id: 'prioridades', capitulo: 1, n: ['1.2.1'], campos: ['prioridades'] },
-  { id: 'problemas', capitulo: 1, n: ['1.2.2'], campos: ['problemas'], nota: 'até 3; subcategorias e "outro problema" em Refinar' },
+  { id: 'etapas', capitulo: 1, n: ['1.1.4', '1.1.5'], campos: ['etapas', 'grade'], nota: 'só totais; detalhe por ano em Refinar' },
+  { id: 'problemas', capitulo: 1, n: ['1.2.2'], campos: ['problemas'], nota: 'sem limite; subcategorias e "outro problema" em Refinar' },
   { id: 'problema', capitulo: 1, n: ['1.2.4'], campos: ['problema'] },
   { id: 'impactos', capitulo: 1, n: ['1.2.5'], campos: ['impactos'] },
   { id: 'linhaBase', capitulo: 1, n: ['1.2.7'], campos: ['linhaBase'], nota: 'detalhes em Refinar' },
@@ -49,13 +49,42 @@ export const ESSENCIAL: TelaEssencial[] = [
 /** ids de todos os campos do Essencial (inclui g-*) */
 export const CAMPOS_ESSENCIAIS: string[] = ESSENCIAL.flatMap(t => t.campos);
 export const CAPITULOS: Capitulo[] = [1, 2, 3, 4];
-export function telasDoCapitulo(n: Capitulo): TelaEssencial[] { return ESSENCIAL.filter(t => t.capitulo === n); }
-export function telaDoCampo(campo: string): TelaEssencial | undefined { return ESSENCIAL.find(t => t.campos.includes(campo)); }
+export type EscopoPercurso = { ctx?: Record<string, any> };
+export const GOVERNANCA: TelaEssencial[] = [
+  ...ESSENCIAL.filter(t => ['local', 'prioridades', 'problemas'].includes(t.id)),
+  { id: 'gov-projeto', capitulo: 1, n: [], campos: ['projetoIA'] },
+  { id: 'gov-diagnostico', capitulo: 2, n: [], campos: ['govDiagnostico'] },
+  { id: 'gov-instrumentos', capitulo: 2, n: [], campos: ['govInstrumentos'] },
+  { id: 'gov-solucoes', capitulo: 2, n: [], campos: ['govSolucoes'] },
+  { id: 'gov-atores', capitulo: 3, n: [], campos: ['govAtores'] },
+  { id: 'gov-acoes', capitulo: 3, n: [], campos: ['govAcoes'] },
+  { id: 'gov-capacidade', capitulo: 3, n: [], campos: ['govCapacidade'] },
+  { id: 'gov-recursos', capitulo: 3, n: [], campos: ['govOrcamento'] },
+  { id: 'gov-sandbox', capitulo: 3, n: [], campos: ['govSandbox'] },
+  { id: 'gov-revisao', capitulo: 4, n: [], campos: ['govRevisao'] },
+];
+export const LETRAMENTO: TelaEssencial[] = [
+ ...ESSENCIAL.filter(t => ['local','prioridades','problemas'].includes(t.id)),
+ ...(['alcance','diagnostico','desenho','curriculo','oferta','validacao','digital','projeto','acoes','recursos','revisao'] as const).map(id => ({ id: 'lit-' + id, capitulo: (id === 'alcance' ? 1 : ['diagnostico','desenho','curriculo'].includes(id) ? 2 : id === 'revisao' ? 4 : 3) as Capitulo, n: [], campos: ['letramento'] })),
+];
+export const PEDAGOGICO: TelaEssencial[] = [...ESSENCIAL.filter(t=>['local','prioridades','etapas','problemas'].includes(t.id)), ...TELAS_ED.map(([id,capitulo])=>({id,capitulo,n:[],campos:['educacao']}))];
+export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id)), ...LETRAMENTO.filter(t => t.id.startsWith('lit-')), ...PEDAGOGICO.filter(t=>t.id.startsWith('ed-'))];
+export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] {
+  if (percursoPedagogico(e?.ctx)) { const ids=telasEd(e as any); return PEDAGOGICO.filter(t=>!t.id.startsWith('ed-')||ids.includes(t.id as any)); }
+  if (percursoLetramento(e?.ctx)) { const ids = telasLetramento(e as any); return LETRAMENTO.filter(t => ids.includes(t.id)); }
+  if (!percursoGovernanca(e?.ctx)) return percursoEducacao(e?.ctx) ? ESSENCIAL.filter(t=>!['problema','linhaBase','alternativa'].includes(t.id)) : ESSENCIAL;
+  return GOVERNANCA.filter(t => (t.id !== 'gov-projeto' || e?.ctx?.prioridades.some((id: string) => !['governar','sobre'].includes(id)))
+    && (t.id !== 'gov-sandbox' || e?.ctx?.problemas?.includes('G15')));
+}
+export function telasDoCapitulo(n: Capitulo, e?: EscopoPercurso): TelaEssencial[] { return telasAtivas(e).filter(t => t.capitulo === n); }
+export function telaDoCampo(campo: string): TelaEssencial | undefined { return TODAS_TELAS.find(t => t.campos.includes(campo) || (campo === 'redeNacional' && t.id === 'problemas')); }
 export function essencial(campo: string): boolean { return CAMPOS_ESSENCIAIS.includes(campo); }
 // Campos que o Refinar grava em ctx/caso mas que não são perguntas de CAMPOS (subcategorias e "Outro problema" do 1.2.2).
 // ondeMora (caso.ts) procura o campo em CAMPO_POR_ID para saber se mora em ctx; sem este registro eles iriam para `caso`.
 {
   const reg: any = CAMPO_POR_ID;
+  for (const id of [...GOVERNANCA.flatMap(t => t.campos), 'frenteAtiva', 'govSelecoes', 'govDetalhes', 'letramento', 'educacao']) { if (!reg[id]) reg[id] = { id, onde: 'ctx', tipo: 'extra', passo: '' }; }
+  reg.redeNacional = { id: 'redeNacional', onde: 'ctx', tipo: 'extra', passo: '' };
   if (!reg.subs) reg.subs = { id: 'subs', onde: 'ctx', tipo: 'extra', passo: '' };
   if (!reg.problemaOutro) reg.problemaOutro = { id: 'problemaOutro', onde: 'ctx', tipo: 'extra', passo: '' };
 }
@@ -79,7 +108,7 @@ export function capituloDoCampo(campo: string): Capitulo {
 // — formacao-plano, ferramentas-*, gratis-adiados, dados-* — entram pelos campos que o seu contexto lê).
 const KPIS_TODOS = ['kpi.ano0', 'kpi.anual', 'kpi.total', 'kpi.porAluno'];
 const KPI_POR_CAMPO: Record<string, string[]> = {
-  etapas: KPIS_TODOS, grade: KPIS_TODOS, usuarios: KPIS_TODOS, elegiveis: KPIS_TODOS, tarefas: KPIS_TODOS, tipoTec: KPIS_TODOS,
+  redeNacional: KPIS_TODOS, etapas: KPIS_TODOS, grade: KPIS_TODOS, usuarios: KPIS_TODOS, elegiveis: KPIS_TODOS, tarefas: KPIS_TODOS, tipoTec: KPIS_TODOS,
   testes: ['kpi.ano0', 'kpi.total', 'A1'], piloto: ['kpi.ano0', 'kpi.total', 'A1'], poc: ['kpi.ano0', 'kpi.total', 'A1'],
   implantacao: ['kpi.anual', 'kpi.total', 'A1'], expansao: ['kpi.anual', 'kpi.total', 'A1'], horizonte: ['kpi.anual', 'kpi.total'],
   pagamento: KPIS_TODOS, licenca: ['A2'], adaptacao: ['kpi.ano0', 'kpi.total'], arquitetura: KPIS_TODOS,
@@ -177,7 +206,7 @@ export const EXTRAS_REFINAR: ExtraRefinar[] = [
   { id: 'linhaBase', capitulo: 1, n: '1.2.7', campos: ['linhaBaseProblemas', 'linhaBaseProblemaTxt', 'linhaBaseMedida'] },
   { id: 'governanca', capitulo: 1, n: '1.3', campos: [] },
 ];
-export function extrasDoCapitulo(capitulo: Capitulo): ExtraRefinar[] { return EXTRAS_REFINAR.filter(x => x.capitulo === capitulo); }
+export function extrasDoCapitulo(capitulo: Capitulo, e?: EscopoPercurso): ExtraRefinar[] { return EXTRAS_REFINAR.filter(x => x.capitulo === capitulo && !(percursoEducacao(e?.ctx) && x.id === 'linhaBase')); }
 /** o id de âncora de um campo na síntese (`#/capitulo/:n/sintese/:campo`): campos de detalhe apontam para o seu bloco */
 export function idDoFoco(campo: string): string {
   const c = String(campo || '');

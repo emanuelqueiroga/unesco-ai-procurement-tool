@@ -1,3 +1,4 @@
+import { nomeContexto } from '../domain/pais.js';
 // =====================================================================
 // PDF do plano de contratação (jsPDF 2.5.2 + jsPDF-AutoTable 3.8.4, Helvetica/WinAnsi). Porte de src/plano_pdf.js
 // da v13 (gerarPDF, fontes embutidas, pdfTxt, quebra CJK, árabe e aviso de tradução), sem DOM nem globais:
@@ -136,6 +137,11 @@ const fmtImg = src => /^data:image\/jpe?g/i.test(String(src)) ? 'JPEG' : /^data:
  * opts.comprimir  false grava os fluxos sem compressão (testes: o texto fica legível no arquivo)
  */
 async function gerarPDF(estado, opts) {
+  const { percursoPedagogico, percursoLetramento, percursoGovernanca, estadoDoProjeto } = await import('../domain/escopo.js');
+  if (percursoPedagogico(estado.ctx)) { const { gerarEducacaoPDF } = await import('./pdf_educacao'); return gerarEducacaoPDF(estado, { ...opts, tipo:'anexo' }); }
+  if (percursoLetramento(estado.ctx)) { const { gerarGovernancaPDF } = await import('./pdf_governanca'); return gerarGovernancaPDF(estado, { ...opts, tipo: 'anexo', modelo:'letramento' }); }
+  if (percursoGovernanca(estado.ctx)) { const { gerarGovernancaPDF } = await import('./pdf_governanca'); return gerarGovernancaPDF(estado, { ...opts, tipo: 'anexo' }); }
+  estado = estadoDoProjeto(estado);
   opts = opts || {};
   const lang0 = getLang(), lang = opts.lang || lang0;
   const jsPDF = await carregarJsPDF();
@@ -343,7 +349,7 @@ function montarPDF(jsPDF, estado, opts, fontes, lang) {
     const LC = corta(quebra(nomeCaso, 20, LW, 'bold'), 3);
     fonte(20, 'bold', C.tinta); LC.forEach(l => { doc.text(l, M, y + 16); y += 25; });
     fonte(10.5, 'normal', C.muted);
-    doc.text(pdfTxt([ctx.local, tP('gerado') + ' ' + agora.toLocaleDateString(LOC())].filter(Boolean).join('  ·  ')), M, y + 10);
+    doc.text(pdfTxt([nomeContexto(estado), tP('gerado') + ' ' + agora.toLocaleDateString(LOC())].filter(Boolean).join('  ·  ')), M, y + 10);
     y += 30;
 
     // a linha que remete ao policy brief (o resumo executivo, a recomendação e os números principais ficam lá)

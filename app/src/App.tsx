@@ -1,9 +1,13 @@
+import { Educacao } from './screens/Educacao';
+import { Letramento } from './screens/Letramento';
+import { Governanca } from './screens/Governanca';
+import { percursoPedagogico, percursoGovernanca, percursoLetramento, percursoEducacao, CAMPOS_EDUCACAO_REMOVIDOS, prioridadeEscolhida } from './domain';
 import { useEffect } from 'react';
 import { Galeria } from './screens/Galeria';
 import { Inicio } from './screens/Inicio';
 import { Abertura, Pergunta, Sintese } from './screens/Percurso';
 import { Plano } from './screens/Plano';
-import { useRota } from './percurso/rota';
+import { href, ir, useRota } from './percurso/rota';
 import { useCaso } from './store';
 import { FaixaRevisao } from './screens/FaixaRevisao';
 import { ConfirmacaoHost, AvisosHost } from './screens/Confirmar';
@@ -12,6 +16,7 @@ import './screens/shell.css';
 
 export function App() {
   const rota = useRota();
+  const ctx = useCaso(s => s.ctx);
   // a posição no percurso fica no caso (capitulo.atual/pergunta), para "continuar de onde parei"
   const irPara = useCaso((s) => s.irPara);
   const chave = rota.tipo === 'pergunta' ? `${rota.n}/${rota.tela}` : '';
@@ -21,7 +26,16 @@ export function App() {
     if (c.atual !== rota.n || c.pergunta !== rota.tela) irPara(rota.n, rota.tela);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chave]);
+  const aguardaPrioridade = !prioridadeEscolhida(ctx) && !(rota.tipo === 'inicio' || rota.tipo === 'galeria' || (rota.tipo === 'abertura' && rota.n === 1) || (rota.tipo === 'pergunta' && rota.n === 1 && ['local','prioridades'].includes(rota.tela)));
+  useEffect(() => { if (aguardaPrioridade) ir(href.pergunta(1, 'prioridades')); }, [aguardaPrioridade]);
+  const removida = !percursoPedagogico(ctx) && percursoEducacao(ctx) && (rota.tipo === 'pergunta' && CAMPOS_EDUCACAO_REMOVIDOS.includes(rota.tela) || rota.tipo === 'sintese' && !!rota.foco && CAMPOS_EDUCACAO_REMOVIDOS.includes(rota.foco));
+  useEffect(()=>{if(removida) ir(href.pergunta(1,'impactos'));},[removida]);
   const tela = (() => {
+    if (removida) return <Pergunta n={1} tela="impactos" />;
+    if (aguardaPrioridade) return <Pergunta n={1} tela="prioridades" />;
+    if (percursoPedagogico(ctx) && !['inicio','galeria'].includes(rota.tipo)) return <Educacao key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo} rota={rota} />;
+    if (percursoLetramento(ctx) && !['inicio','galeria'].includes(rota.tipo)) return <Letramento key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo} rota={rota} />;
+    if (percursoGovernanca(ctx) && !['inicio', 'galeria'].includes(rota.tipo)) return <Governanca key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo === 'abertura' || rota.tipo === 'sintese' ? `${rota.tipo}${rota.n}` : rota.tipo} rota={rota} />;
     switch (rota.tipo) {
       case 'galeria': return <Galeria />;
       case 'abertura': return <Abertura key={`a${rota.n}`} n={rota.n} />;

@@ -1,3 +1,6 @@
+import { percursoPedagogico } from '../domain/escopo.js';
+import { ROTULOS_ERA } from './pedagogicoRotulos';
+import { impactosEducacao } from './educacao';
 // Controles das perguntas: um renderizador por tipo de campo de CAMPOS (radio → OptionCard; chips, multi → Chip
 // ou OptionCard; texto, area → TextField; num, horas → CampoNumero; etapas → SchoolsGrid; setup → campos do teste;
 // ferramentas e arq → listas do Refinar) e as telas do Essencial que juntam mais de um campo (governança, internet,
@@ -6,7 +9,7 @@
 // mostram o detalhe recolhido na própria tela; a lógica pura dessas edições está em refinar.ts.
 import { Fragment, createContext, useContext, useId, useState, type ReactNode } from 'react';
 import {
-  CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
+  percursoEducacao, percursoLetramento, temGovernanca, LOC, CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
   listaOpc, totaisCtx, alunosEtapa, etapasAtivas, modoTeste, horasEstimativa, lerNumero, problemasMarcados, sugProblemas, temLacuna, rotulo, pct, tr,
 } from '../domain';
 import { useCaso, origemDe, valorDe, type Estado14, type TelaEssencial } from '../store';
@@ -16,7 +19,7 @@ import {
 } from '../ui';
 import { fmt } from './ambiente';
 import { CampoNumero } from './CampoNumero';
-import { t, plural } from './textos';
+import { t, plural, tituloGovernanca } from './textos';
 import { href } from './rota';
 import {
   MAX_POR_CAMPO, linhasDeOndas, ondaEditada, errosDaOnda, avisoOndas, casasDoCampo, valorComCasas, erroDeIntervalo, horizonteDoCaso,
@@ -39,7 +42,6 @@ import { Pais } from './Pais';
 /** inteiro digitado no campo de texto do SchoolsGrid (escolas, estudantes) */
 const num = (v: string): number | '' => inteiro(lerNumero(v) === '' ? '' : +lerNumero(v));
 const str = (v: unknown) => (v == null ? '' : String(v));
-const LIMITE_PROBLEMAS = 3;
 /** nome da opção com a explicação embaixo (o subtexto do OptionCard é para legendas curtas à direita) */
 const comDescricao = (nome: unknown, desc?: unknown, extra?: ReactNode): ReactNode =>
   desc || extra ? <>{String(tr(nome))}{desc ? <span className="pr-optioncard-desc">{String(tr(desc))}</span> : null}{extra}</> : String(tr(nome));
@@ -509,6 +511,7 @@ export function ControleCampo({ e, campo }: { e: Estado14; campo: string }) {
   const f: any = (CAMPO_POR_ID as any)[campo];
   if (!f) return null;
   switch (f.tipo) {
+    case 'pais': return <Pais />;
     case 'radio': return <><Radio e={e} campo={campo} />{campo === 'frequencia' ? <AvisoRevisar e={e} campos={['frequencia']} /> : null}</>;
     case 'chips': return <Chips e={e} campo={campo} />;
     case 'multi': return <Multi e={e} campo={campo} />;
@@ -548,6 +551,7 @@ function Etapas({ e }: { e: Estado14 }) {
     <>
       <SchoolsGrid
         label={t('Etapas de ensino atendidas')}
+        locale={String(LOC())}
         stages={stages}
         totals={tt.n ? { schools: fmt.int(tt.escolas), students: fmt.int(tt.alunos), label: t('Total da rede') } : undefined}
         onChange={(id, patch) => {
@@ -624,7 +628,7 @@ function Prioridades({ e }: { e: Estado14 }) {
                 responder('prioridades', P.map((x) => x.id).filter((k: string) => s.has(k)));
               }}
             />
-            <button type="button" className="pcx-info" aria-expanded={aberta} aria-controls={idEx} aria-label={`${t('Exemplos')}: ${String(tr(p.nome))}`} onClick={() => setAbertas((a) => ({ ...a, [p.id]: !a[p.id] }))}>
+            <button type="button" className="pcx-info" aria-expanded={aberta} aria-controls={idEx} aria-label={`${t('Exemplos')}: ${t(p.nome)}`} onClick={() => setAbertas((a) => ({ ...a, [p.id]: !a[p.id] }))}>
               <IconInfo size={20} />
             </button>
             <div id={idEx} className="pcx-exemplos" hidden={!aberta}>
@@ -683,31 +687,53 @@ function OutroProblema({ e }: { e: Estado14 }) {
   );
 }
 
+/** Totais nacionais separados das etapas: trocar de prioridade nunca apaga os dois conjuntos. */
+function TamanhoRedeNacional({ e }: { e: Estado14 }) {
+  const gravar = useGravar();
+  const rede = e.ctx.redeNacional || {};
+  const erro = (v: unknown) => v !== '' && v != null && (!Number.isSafeInteger(v) || Number(v) <= 0)
+    ? t('Informe um número inteiro maior que zero.') : undefined;
+  return <fieldset className="pcx-etapa">
+    <legend className="pcx-etapa-titulo">{t('Tamanho total da rede')}</legend>
+    <div className="pcx-anos-campos">
+      <CampoNumero id="gov-rede-escolas" label={t('Total de escolas')} value={rede.escolas} error={erro(rede.escolas)} onChange={v => gravar('redeNacional.escolas', v)} />
+      <CampoNumero id="gov-rede-estudantes" label={t('Total de estudantes')} value={rede.estudantes} error={erro(rede.estudantes)} onChange={v => gravar('redeNacional.estudantes', v)} />
+    </div>
+  </fieldset>;
+}
+
 function Problemas({ e }: { e: Estado14 }) {
   const responder = useCaso((s) => s.responder);
   const refinando = useRefinando();
   const pr: string[] = e.ctx.prioridades || [];
   const atual: string[] = e.ctx.problemas || [];
   const P = (PRIORIDADES as any[]).filter((p) => pr.includes(p.id));
-  if (!P.length) return <p className="pc-aviso">{t('Escolha antes uma prioridade (pergunta anterior): os problemas aparecem agrupados por prioridade.')}</p>;
-  // o limite de três vale só no Essencial; no Refinar volta o "Marcar todos" por prioridade
-  const cheio = !refinando && atual.length >= LIMITE_PROBLEMAS;
+  if (!P.length) return <p className="pc-aviso">{t('Escolha uma prioridade para ver os desafios.')}</p>;
   const grava = (lista: string[]) => responder('problemas', lista);
+  const nota=percursoPedagogico(e.ctx)?'educacao.contexto.detalhe':percursoLetramento(e.ctx)?'letramento.contexto.detalhe':'govDetalhes.contexto';
+  const textoNota=nota.split('.').reduce((o:any,k)=>o?.[k],e.ctx);
   return (
     <div className="pc-grupos">
-      {refinando ? null : (
-        <>
-          <p className="pc-contador" aria-live="polite">{t('{n} de {m} marcados', { n: atual.length, m: LIMITE_PROBLEMAS })}</p>
-          <p className="pc-nota">{t('O limite de três mantém o primeiro teste focado: cada problema acrescenta objetivos, tarefas e custos ao plano. No modo Refinar não há limite.')}</p>
-        </>
-      )}
+      {temGovernanca(e.ctx) ? <TamanhoRedeNacional e={e} /> : null}
+      {!percursoEducacao(e.ctx) && !percursoLetramento(e.ctx) ? <p className="pc-nota">{t('Selecione todos os desafios que fazem parte do seu plano.')}</p> : null}
       {P.map((p) => {
-        const ids: string[] = p.problemas.map((q: any) => q.id);
+        const catalogoNovo = ['governar', 'sobre', 'com'].includes(p.id);
+        const atuais = catalogoNovo ? p.problemas.filter((q: any) => q.v015) : p.problemas;
+        // Nos catálogos educacionais novos, escolhas antigas só reaparecem se já pertencem ao caso salvo.
+        const legados = catalogoNovo ? p.problemas.filter((q: any) => !q.v015 && atual.includes(q.id)) : [];
+        const cartao = (q: any) => {
+          const on = atual.includes(q.id);
+          return <OptionCard key={q.id} type="checkbox" name="problemas" value={q.id}
+            label={<>{t(ROTULOS_ERA[q.id] || q.t)}{(!q.v015 && p.id !== 'para') || q.desc ? <span className="pr-optioncard-desc">{q.v015 ? t(q.desc) : <><span className="pcx-obj">{t('Objetivo:')}</span> {t(q.obj)}</>}</span> : null}</>}
+            checked={on}
+            onChange={(v, marcado) => grava(problemasDoGrupo(atual, ORDEM_PROBLEMAS, [v], marcado))} />;
+        };
+        const ids: string[] = [...atuais, ...legados].map((q: any) => q.id);
         const n = ids.filter((k) => atual.includes(k)).length;
         return (
           <section key={p.id} className="pc-grupo">
             <div className="pcx-grupo-cab">
-              <h2 className="pc-grupo-titulo">{String(tr(p.nome))}</h2>
+              <h2 className="pc-grupo-titulo">{t(p.nome)}</h2>
               {refinando ? (
                 <>
                   <span className="pc-contador" aria-live="polite">{t('{n} de {m} marcados', { n, m: ids.length })}</span>
@@ -718,28 +744,17 @@ function Problemas({ e }: { e: Estado14 }) {
                 </>
               ) : null}
             </div>
-            <OptionCardGroup label={String(tr(p.nome))} type="checkbox">
-              {p.problemas.map((q: any) => {
-                const on = atual.includes(q.id);
-                return (
-                  <OptionCard
-                    key={q.id}
-                    type="checkbox"
-                    name="problemas"
-                    value={q.id}
-                    label={<>{String(tr(q.t))}<span className="pr-optioncard-desc"><span className="pcx-obj">{t('Objetivo:')}</span> {String(tr(q.obj))}</span></>}
-                    checked={on}
-                    disabled={cheio && !on}
-                    onChange={(v, marcado) => grava(problemasDoGrupo(atual, ORDEM_PROBLEMAS, [v], marcado))}
-                  />
-                );
-              })}
+            <OptionCardGroup label={t(p.nome)} type="checkbox">
+              {atuais.map(cartao)}
             </OptionCardGroup>
+            {legados.length ? <Recolher titulo={t('Desafios de versões anteriores')} aberto={legados.some((q: any) => atual.includes(q.id))}>
+              <OptionCardGroup label={t('Desafios de versões anteriores')} type="checkbox">{legados.map(cartao)}</OptionCardGroup>
+            </Recolher> : null}
             {refinando ? <Subcategorias e={e} grupo={p} recolhido /> : null}
           </section>
         );
       })}
-      {refinando ? <OutroProblema e={e} /> : <DicaRefinar texto={t('Para marcar subcategorias, descrever outro problema ou marcar mais de três, use o modo Refinar.')} />}
+      {percursoLetramento(e.ctx) || percursoPedagogico(e.ctx) || temGovernanca(e.ctx) ? <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}</summary>{e.ctx.problemaOutro?<p>{str(e.ctx.problemaOutro)}</p>:null}<TextField label={t('Informações adicionais')} multiline value={str(textoNota)} onChange={v=>responder(nota,v)} /></details> : refinando ? <OutroProblema e={e} /> : <DicaRefinar texto={t('Para marcar subcategorias ou descrever outro problema, use o modo Refinar.')} />}
     </div>
   );
 }
@@ -822,18 +837,21 @@ function Governanca({ e }: { e: Estado14 }) {
   return (
     <div className="pc-gov">
       {(QUESTOES_G as any[]).map((q) => {
+        const titulo = tituloGovernanca(q.id, e.caso, q.t);
+        const dica = q.id === 'g-politica' ? t('A IA já está incluída na estratégia nacional de educação?')
+          : q.id === 'g-legislacao' ? t('As normas aplicáveis ao uso de IA nas escolas já foram identificadas?') : q.h ? t(q.h) : '';
         const resp = e.resp[q.id] || '';
         const det = e.respDet[q.id];
         const tem = !!(det && (str(det.qual).trim() || str(det.falta).trim()));
         return (
           <div key={q.id} className="pc-gov-linha">
             <div className="pc-gov-texto">
-              <span className="pc-gov-pergunta">{String(tr(q.t))}</span>
-              {q.h ? <span className="pc-gov-dica">{String(tr(q.h))}</span> : null}
-              {q.ex ? <span className="pc-gov-dica">{String(tr(q.ex))}</span> : null}
+              <span className="pc-gov-pergunta">{titulo}</span>
+              {dica ? <span className="pc-gov-dica">{dica}</span> : null}
+              {q.ex ? <details className="pc-gov-dica"><summary>{t('Exemplo')}</summary>{String(tr(q.ex))}</details> : null}
             </div>
             <Segmented
-              label={String(tr(q.t))}
+              label={titulo}
               options={opcoes}
               value={resp || undefined}
               onChange={(v) => { const r = respostaGov(resp, v, det); responderGov(q.id, r.valor, r.det); }}
@@ -1086,7 +1104,7 @@ export function ControlesTela({ e, tela }: { e: Estado14; tela: TelaEssencial })
     case 'etapas': return (
       <>
         <Etapas e={e} />
-        {refinando
+        {(refinando||percursoPedagogico(e.ctx))
           ? <Recolher titulo={t('Estudantes por ano ou série (opcional)')} aberto={etapasComAnos(e)}><EstudantesPorAno e={e} /></Recolher>
           : <DicaRefinar texto={t('Para informar os estudantes ano a ano ou série a série, use o modo Refinar.')} />}
       </>
@@ -1094,7 +1112,7 @@ export function ControlesTela({ e, tela }: { e: Estado14; tela: TelaEssencial })
     case 'prioridades': return <Prioridades e={e} />;
     case 'problemas': return <Problemas e={e} />;
     case 'problema': return <Texto e={e} campo="problema" multiline rotulo={t('Situação atual')} />;
-    case 'impactos': return <><Chips e={e} campo="impactos" /><Origem e={e} campos={['impactos']} /></>;
+    case 'impactos': if (percursoEducacao(e.ctx)) { const ids=impactosEducacao(e); return <><p>{t('Impactos definidos pelos desafios selecionados')}</p>{ids.length ? <ul>{ids.map(id=><li key={id}>{String(tr((OPC.impactos.find((o:any)=>o[0]===id)||[id,id])[1]))}</li>)}</ul> : <p>{t('Selecione desafios para definir os impactos.')}</p>}<Texto e={e} campo="resultado" multiline rotulo={t('Meta ou resultado esperado')} /></>; } return <><Chips e={e} campo="impactos" /><Origem e={e} campos={['impactos']} /></>;
     case 'linhaBase': return (
       <>
         <ControleCampo e={e} campo="linhaBase" />
@@ -1122,7 +1140,7 @@ export function ControlesTela({ e, tela }: { e: Estado14; tela: TelaEssencial })
     case 'formados': return <Formacao e={e} />;
     case 'implantacao': return <Implantacao e={e} />;
     case 'elegiveis': return <><Numero e={e} campo="elegiveis" rotulo={t('Pessoas em toda a rede')} /><NotaPremissa e={e} campo="elegiveis" /></>;
-    case 'local': return <><Texto e={e} campo="local" rotulo={t('Nome do lugar ou da rede')} /><Pais /></>;
+    case 'local': return <><Pais semNota={temGovernanca(e.ctx)} /><details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}</summary><Texto e={e} campo="local" rotulo={t('Nome da instituição (opcional)')} /></details></>;
     default: return <Fragment>{tela.campos.map((c) => <ControleCampo key={c} e={e} campo={c} />)}</Fragment>;
   }
 }

@@ -1,3 +1,5 @@
+import { educacaoAutomatica, impactosEducacao } from '../percurso/educacao';
+import { normalizarContextoPais } from './contextoPais';
 // Store do caso (Zustand): o estado v14 mais as ações do percurso. Substitui a global S e as funções que a
 // mutavam em src/app.js e src/fluxo.js (marcarCampo, gravarNumCaso, aplicarPadroes/Problemas/Sugestoes,
 // carregarExemplo, aplicarImportado). Cada ação trabalha numa cópia profunda do estado e grava o resultado,
@@ -10,14 +12,14 @@
 //   refinar   → 'refinado'    (a pessoa alterou uma premissa no modo Refinar)
 // respC continua sendo derivado (informado/refinado = confirmado), para o domínio e a exportação da v13.
 import { create } from 'zustand';
-import { clone, CASO_VAZIO, CASOS, CTX_EX, RESP_EX, CAMPO_POR_ID, CAMPOS_CUSTO, CAMPOS_SUGERIDOS, CAMPOS_PROB, SUB_OBJ,
+import { percursoPedagogico, percursoLetramento, temGovernanca, projetoUsoDefinido, clone, CASO_VAZIO, CASOS, CTX_EX, RESP_EX, CAMPO_POR_ID, CAMPOS_CUSTO, CAMPOS_SUGERIDOS, CAMPOS_PROB, SUB_OBJ,
   confirmarGerados, horasEstimativa, vazio, tr, cfgAtual, direcionadores, PRESETS, salario, opcoes,
   escolherPais as escolherPaisDoCaso, editarCampoPais as editarCampoPaisDoCaso, restaurarCampoPais as restaurarCampoPaisDoCaso,
   moedaAoEscolherPais, PAIS_CAMPOS_NO_CUSTO } from '../domain';
 import type { Estado14, Origem, Modo, Capitulo, DadosCaso14, Custo } from './tipos';
 import { estadoInicial, migrar, ErroImportacao } from './migracoes';
 import { aplicarSugestoes } from './sugestoes';
-import { afetadosPor, telaDoCampo, ESSENCIAL, CAPITULOS } from './perguntas';
+import { afetadosPor, telaDoCampo, ESSENCIAL, telasDoCapitulo, CAPITULOS } from './perguntas';
 import { dadosCaso } from '../export/json';
 
 // ----------------------------------------------------------- calculadora do modo Refinar (#/refinar)
@@ -235,7 +237,18 @@ function efeitos(e: Estado14, campo: string) {
 }
 // Sugestões em cascata até o ponto fixo (2.0 → 2.3.8; 2.2.1 → 4.1.1 → 3.1.1…); no máximo 5 voltas.
 function propagar(e: Estado14): string[] {
+  if (percursoLetramento(e.ctx) || temGovernanca(e.ctx) && !projetoUsoDefinido(e.ctx)) return [];
   const tocados: string[] = [];
+  if (educacaoAutomatica(e.ctx)) {
+    e.ctx.impactosAutomaticosEducacao=true;
+    const ids=impactosEducacao(e);
+    if (JSON.stringify(ids)!==JSON.stringify(e.caso.impactos)) {
+      if (['informado','refinado'].includes(e.origem.impactos) && !e.ctx.impactosAnterioresEducacao) e.ctx.impactosAnterioresEducacao={valores:clone(e.caso.impactos),origem:e.origem.impactos};
+      e.caso.impactos=ids;tocados.push('impactos');
+    }
+    e.origem.impactos='informado';e.respC.impactos=ids.length>0;e.sugestoes.impactos='problemas';
+  }
+  if (percursoPedagogico(e.ctx)) return tocados; // O plano pedagógico não sugere compra, licenças ou tarefas de IA.
   for (let i = 0; i < 5; i++) {
     const r = aplicarSugestoes(e);
     r.revisar.forEach(x => {
@@ -260,6 +273,7 @@ function recenteDe(campo: string, tocados: string[]): Recente {
   return { campo, afetados, em: Date.now() };
 }
 function proximaTela(e: Estado14, campo: string) {
+  if (['letramento','educacao'].includes(campo.split('.')[0])) return; // Várias telas compartilham o modelo; conservar a posição atual.
   const t = telaDoCampo(campo.split('.')[0]);
   if (t) e.capitulo = { atual: t.capitulo, pergunta: t.id };
 }
@@ -270,6 +284,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
   migradoDe: '',
 
   responder(campo, valor) {
+    if (['nivel', 'nivelOutro'].includes(campo)) return;
     const e = copiar(get());
     gravar(e, campo, valor);
     marcar(e, campo, 'informado');
@@ -294,6 +309,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     set({ ...e, recente: recenteDe(campo, tocados) });
   },
   refinar(campo, valor) {
+    if (['nivel', 'nivelOutro'].includes(campo)) return;
     const e = copiar(get());
     gravar(e, campo, valor);
     marcar(e, campo, 'refinado');
@@ -317,7 +333,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
   },
   setModo(modo) { set({ modo }); },
   irPara(capitulo, pergunta) {
-    const t = ESSENCIAL.find(x => x.capitulo === capitulo);
+    const t = telasDoCapitulo(capitulo, get())[0];
     set({ capitulo: { atual: capitulo, pergunta: pergunta || (t ? t.id : '') } });
   },
   setLang(lang) { set({ lang }); },
@@ -395,6 +411,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     const antes = String(e.caso.pais || '');
     escolherPaisDoCaso(e.caso, iso);
     const novo = String(e.caso.pais || '');
+    if (novo) marcar(e, 'pais', 'informado'); else { delete e.origem.pais; delete e.respC.pais; }
     const m = moedaAoEscolherPais(e.moeda, novo);
     if (m) e.moeda = m as Estado14['moeda'];
     if (novo !== antes) {
@@ -432,6 +449,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     if (k === 'novo' || !ex) { set({ ...e, recente: null, migradoDe: '' }); return; }
     e.caso = Object.assign(clone(CASO_VAZIO), clone(ex));
     e.exemplo = k;
+    e.caso.pais = e.caso.pais || 'outro'; // exemplos genéricos: país explicitamente não informado
     e.ctx = clone((CTX_EX as any)[k] || {}); e.resp = clone((RESP_EX as any)[k] || {});
     // textos do exemplo no idioma corrente (textosExemplo, src/app.js)
     ['titulo', 'problema', 'resultado', 'linhaBaseMedida', 'tarefaOutra', 'impactoOutro'].forEach(f => { if (ex[f]) (e.caso as any)[f] = tr(ex[f]); });
@@ -461,6 +479,10 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     Object.keys(rc).forEach(c => { e.origem[c] = 'informado'; });
     Object.keys(e.resp).forEach(g => { if (e.resp[g]) e.origem[g] = 'informado'; });
     e.respC = Object.fromEntries(Object.keys(rc).filter(c => !/^g-/.test(c)).map(c => [c, true]));
+    // Os exemplos A–D são projetos concretos de ferramenta, com custo ilustrativo já definido.
+    e.ctx.projetoIA = { incluir:'sim', descricao:String(e.caso.titulo||e.ctx.olhando||'') };
+    e.ctx.frenteAtiva = 'projeto';
+    normalizarContextoPais(e);
     propagar(e);
     set({ ...e, recente: null, migradoDe: '' });
   },
@@ -475,7 +497,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     set({ ...e, recente: null, migradoDe: '' });
   },
   exportar() { return dadosCaso(soEstado(get())); },
-  repor(estado, migradoDe) { set({ ...clone(estado), recente: null, migradoDe: migradoDe || '' }); },
+  repor(estado, migradoDe) { set({ ...normalizarContextoPais(clone(estado)), recente: null, migradoDe: migradoDe || '' }); },
   estado() { return soEstado(get()); },
 }));
 
