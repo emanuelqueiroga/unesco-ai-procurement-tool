@@ -712,16 +712,18 @@ function Problemas({ e }: { e: Estado14 }) {
       {temGovernanca(e.ctx) ? <TamanhoRedeNacional e={e} /> : null}
       <p className="pc-nota">{t('Selecione todos os desafios que fazem parte do seu plano.')}</p>
       {P.map((p) => {
-        const atuais = p.id === 'governar' ? p.problemas.filter((q: any) => q.v015) : p.problemas;
-        const legados = p.id === 'governar' ? p.problemas.filter((q: any) => !q.v015) : [];
+        const catalogoNovo = ['governar', 'sobre'].includes(p.id);
+        const atuais = catalogoNovo ? p.problemas.filter((q: any) => q.v015) : p.problemas;
+        // Em letramento, as escolhas antigas só reaparecem quando já pertencem ao caso salvo.
+        const legados = catalogoNovo ? p.problemas.filter((q: any) => !q.v015 && (p.id !== 'sobre' || atual.includes(q.id))) : [];
         const cartao = (q: any) => {
           const on = atual.includes(q.id);
           return <OptionCard key={q.id} type="checkbox" name="problemas" value={q.id}
-            label={<>{t(q.t)}<span className="pr-optioncard-desc">{q.v015 ? t(q.desc) : <><span className="pcx-obj">{t('Objetivo:')}</span> {t(q.obj)}</>}</span></>}
+            label={<>{t(q.t)}{!q.v015 || q.desc ? <span className="pr-optioncard-desc">{q.v015 ? t(q.desc) : <><span className="pcx-obj">{t('Objetivo:')}</span> {t(q.obj)}</>}</span> : null}</>}
             checked={on}
             onChange={(v, marcado) => grava(problemasDoGrupo(atual, ORDEM_PROBLEMAS, [v], marcado))} />;
         };
-        const ids: string[] = p.problemas.map((q: any) => q.id);
+        const ids: string[] = [...atuais, ...legados].map((q: any) => q.id);
         const n = ids.filter((k) => atual.includes(k)).length;
         return (
           <section key={p.id} className="pc-grupo">

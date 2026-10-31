@@ -227,6 +227,82 @@ const DESAFIOS_GOV_V015 = [
   }
 ];
 PRIORIDADES.find(p => p.id === 'governar').problemas.push(...DESAFIOS_GOV_V015);
+// IDs novos mantêm o significado das respostas A1–A10 já salvas. O fluxo será revisto após aprovação.
+const DESAFIOS_SOBRE_V015 = [
+  {
+    "id": "A11",
+    "t": "Letramento em IA para professores",
+    "obj": "Letramento em IA para professores: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "letramento_ia"
+    ],
+    "formacao": true,
+    "v015": true
+  },
+  {
+    "id": "A12",
+    "t": "Letramento em IA para estudantes",
+    "obj": "Letramento em IA para estudantes: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "letramento_ia"
+    ],
+    "formacao": true,
+    "v015": true
+  },
+  {
+    "id": "A13",
+    "t": "Letramento em IA para formuladores de políticas e equipes técnicas",
+    "obj": "Letramento em IA para formuladores de políticas e equipes técnicas: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "letramento_ia"
+    ],
+    "formacao": true,
+    "v015": true
+  },
+  {
+    "id": "A14",
+    "t": "Letramento em IA para diretores escolares",
+    "obj": "Letramento em IA para diretores escolares: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "letramento_ia"
+    ],
+    "formacao": true,
+    "v015": true
+  },
+  {
+    "id": "A15",
+    "t": "Letramento em IA para estudantes e egressos do ensino superior",
+    "obj": "Letramento em IA para estudantes e egressos do ensino superior: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "letramento_ia"
+    ],
+    "formacao": true,
+    "v015": true
+  },
+  {
+    "id": "A16",
+    "t": "Construir o currículo nacional de IA",
+    "obj": "Construir o currículo nacional de IA: __.",
+    "sub": [],
+    "tarefas": [],
+    "impactos": [
+      "letramento_ia"
+    ],
+    "formacao": true,
+    "v015": true
+  }
+];
+PRIORIDADES.find(p => p.id === 'sobre').problemas.push(...DESAFIOS_SOBRE_V015);
 const PROBLEMA_POR_ID = {};
 const PRIORIDADE_DO_PROBLEMA = {};
 PRIORIDADES.forEach(p => p.problemas.forEach(q => { PROBLEMA_POR_ID[q.id] = q; PRIORIDADE_DO_PROBLEMA[q.id] = p.id; }));
