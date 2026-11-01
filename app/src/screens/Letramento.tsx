@@ -1,3 +1,8 @@
+import { progressoFrente } from '../percurso/frentes';
+import { GrupoFormulario } from './GrupoFormulario';
+import { useResumoPlano } from './ResumoContexto';
+import { AcoesPercurso } from './AcoesPercurso';
+import { ProgressoPergunta } from './ProgressoPergunta';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useCaso, telasDoCapitulo, telasAtivas, faltamDe, telaRespondida, type CasoStore, type Capitulo } from '../store';
 import { LOC, getLang } from '../domain';
@@ -28,13 +33,9 @@ function focarCampo(caminho: string) {
   });
 }
 function GrupoLit({ titulo, estado, recolhivel, abrir = false, children }: { titulo: string; estado?: string; recolhivel?: boolean; abrir?: boolean; children: ReactNode }) {
-  const [aberto, setAberto] = useState(abrir);
-  const conteudo = <div className="pc-lit-grupo-dados" role="group" aria-label={titulo}>{children}</div>;
-  return recolhivel ? <details className="pc-lit-grupo" open={aberto} onToggle={e => { if (e.target === e.currentTarget) setAberto(e.currentTarget.open); }}>
-    <summary><h2 className="pc-lit-grupo-titulo">{titulo}</h2><span className="pc-lit-grupo-estado">{estado}</span></summary>{conteudo}
-  </details> : <section className="pc-lit-grupo"><h2>{titulo}</h2>{conteudo}</section>;
+ return <GrupoFormulario titulo={titulo} estado={estado} abrir={abrir} nome="letramento-grupos">{children}</GrupoFormulario>;
 }
-function Escolha({ s, f, contexto, tentou = false }: { s: CasoStore; f: CampoLit; contexto?: string; tentou?: boolean }) {
+function Escolha({ s, f, contexto, tentou = false, ocultarTitulo=false }: { s: CasoStore; f: CampoLit; contexto?: string; tentou?: boolean; ocultarTitulo?:boolean }) {
   const v = lerLit(s, f.caminho) || {}, ids = selecoesLit(s, f.caminho);
   const label = rotuloVisivelLit(f, contexto);
   const TituloCampo = contexto ? 'h3' : 'h2';
@@ -48,14 +49,14 @@ function Escolha({ s, f, contexto, tentou = false }: { s: CasoStore; f: CampoLit
   };
   const erro = f.numero && v.situacao !== 'a_levantar' && (faltando || v.valor !== '' && v.valor != null && !campoLitRespondido(s, f))
     ? t(f.numero === 'decimal' ? 'Informe um número maior que zero ou marque a informação a levantar.' : 'Informe um número inteiro maior que zero ou marque a informação a levantar.') : undefined;
-  return <section className={'pc-lit-campo' + (f.numero ? ' pc-lit-campo--numero' : '')} id={campoId(f.caminho)} data-campo-lit={f.caminho} tabIndex={-1}>
+  return <section className={'pc-lit-campo' + (f.numero ? ' pc-lit-campo--numero' : '')+(ocultarTitulo&&f.numero?' pc-ux-rotulo-externo':'')} id={campoId(f.caminho)} data-campo-lit={f.caminho} tabIndex={-1}>
     {f.numero ? <>
       <CampoNumero label={label} value={v.situacao === 'a_levantar' ? '' : v.valor ?? ''} disabled={v.situacao === 'a_levantar'} decimais={f.numero === 'decimal'} error={erro} onChange={valor => salvar({ ...v, valor, situacao: 'informado' })} />
       <label className="pc-lit-pendente"><input type="checkbox" checked={v.situacao === 'a_levantar'} onChange={e => salvar({ ...v, situacao: e.target.checked ? 'a_levantar' : 'informado' })} />{t('Informação a levantar')}</label>
     </> : <>
-      <TituloCampo className="pc-lit-campo-titulo">{label}</TituloCampo>
-      <OptionCardGroup className="pc-lit-opcoes" label={label} type={f.multipla ? 'checkbox' : 'radio'}>{f.opcoes?.map(o => <OptionCard key={o.id} name={f.caminho} value={o.id} label={t(o.texto)} type={f.multipla ? 'checkbox' : 'radio'} checked={ids.includes(o.id)} onChange={(id, on) => salvar({ ...v, escolhas: selecionarLit(ids, id, on, f.multipla) })} />)}</OptionCardGroup>
-      {faltando ? <p className="pc-lit-erro">{t('Selecione uma opção ou indique a informação a levantar.')}</p> : null}
+      {!ocultarTitulo?<TituloCampo className="pc-lit-campo-titulo">{label}</TituloCampo>:null}
+      <OptionCardGroup invalid={faltando} describedBy={faltando?campoId(f.caminho)+'-erro':undefined} className="pc-lit-opcoes" label={label} type={f.multipla ? 'checkbox' : 'radio'}>{f.opcoes?.map(o => <OptionCard key={o.id} name={f.caminho} value={o.id} label={t(o.texto)} type={f.multipla ? 'checkbox' : 'radio'} checked={ids.includes(o.id)} onChange={(id, on) => salvar({ ...v, escolhas: selecionarLit(ids, id, on, f.multipla) })} />)}</OptionCardGroup>
+      {faltando ? <p id={campoId(f.caminho)+'-erro'} className="pc-lit-erro">{t('Selecione uma opção ou indique a informação a levantar.')}</p> : null}
     </>}
     {f.evidencia ? <p className="pc-nota">{t('Selecione o tipo de evidência. Você pode identificar o documento nas informações adicionais.')}</p> : null}
     <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}{v.detalhe ? ' · ' + t('Informações adicionadas') : ''}</summary>
@@ -67,8 +68,8 @@ function CamposLit({ s, id, tentou }: { s: CasoStore; id: string; tentou: boolea
   const grupos = gruposCamposLit(s, id);
   return <div className="pc-lit-campos">{grupos.map((g, i) => {
     const conteudo = g.campos.map(f => <Escolha key={f.caminho} s={s} f={f} contexto={g.titulo} tentou={tentou} />);
-    return g.titulo ? <GrupoLit key={g.id} titulo={t(g.titulo)} recolhivel={g.recolhivel} abrir={i === grupos.findIndex(g => g.recolhivel)} estado={t('{n} de {total} respostas', { n: g.campos.filter(f => campoLitRespondido(s, f)).length, total: g.campos.length })}>{conteudo}</GrupoLit>
-      : <div className="pc-lit-campos" key={g.id}>{conteudo}</div>;
+    return g.titulo ? <GrupoLit key={g.id} titulo={t(g.titulo)} recolhivel={g.recolhivel} abrir={i === 0} estado={t('{n} de {total} respostas', { n: g.campos.filter(f => campoLitRespondido(s, f)).length, total: g.campos.length })}>{conteudo}</GrupoLit>
+      : <div className="pc-lit-campos" key={g.id}>{g.campos.map((f,j)=><GrupoFormulario key={f.caminho} titulo={rotuloLit(f.label)} estado={t(campoLitRespondido(s,f)?'Preenchido':'A preencher')} abrir={j===0} nome="letramento-grupos"><Escolha s={s} f={f} tentou={tentou} ocultarTitulo/></GrupoFormulario>)}</div>;
   })}</div>;
 }
 function OrcamentoLit({ s, tentou }: { s: CasoStore; tentou: boolean }) {
@@ -82,10 +83,10 @@ function OrcamentoLit({ s, tentou }: { s: CasoStore; tentou: boolean }) {
       return <div id={campoId(caminho)} data-orcamento-lit={i.id} key={i.id} tabIndex={-1}>
         <GrupoLit titulo={i.nome} recolhivel abrir={idx === 0 || i.id.startsWith('adicional-')} estado={estado}>
           {adicional ? <Escolha s={s} f={adicional} contexto={i.nome} tentou={tentou} /> : null}
-          <OptionCardGroup className="pc-lit-opcoes" label={t('Situação do custo') + ': ' + i.nome}>{[['a_estimar', 'Custo ainda a levantar'], ['sem_custo', 'Sem custo neste orçamento'], ['informado', 'Já tenho um valor'], ...(s.ctx.prioridades?.includes('governar') ? [['compartilhado', L('Já custeado na governança', 'Already funded under governance')]] : [])].map(([id, label]) => <OptionCard key={id} name={caminho} value={id} label={t(label)} checked={v.situacao === id} onChange={id => salvar({ ...v, situacao: id })} />)}</OptionCardGroup>
+          <OptionCardGroup invalid={tentou&&!i.respondido} describedBy={tentou&&!i.respondido?campoId(caminho)+'-erro':undefined} className="pc-lit-opcoes" label={t('Situação do custo') + ': ' + i.nome}>{[['a_estimar', 'Custo ainda a levantar'], ['sem_custo', 'Sem custo neste orçamento'], ['informado', 'Já tenho um valor'], ...(s.ctx.prioridades?.includes('governar') ? [['compartilhado', L('Já custeado na governança', 'Already funded under governance')]] : [])].map(([id, label]) => <OptionCard key={id} name={caminho} value={id} label={t(label)} checked={v.situacao === id} onChange={id => salvar({ ...v, situacao: id })} />)}</OptionCardGroup>
           {v.situacao === 'informado' ? <div className="pc-lit-campo"><CampoNumero label={t('Valor informado') + ' (' + o.moeda + ')'} value={v.valor ?? ''} decimais error={tentou && !i.respondido || typeof v.valor === 'number' && (!Number.isFinite(v.valor) || v.valor < 0) ? t('Informe um valor maior ou igual a zero.') : undefined} onChange={valor => salvar({ ...v, valor })} /></div> : null}
-          {v.situacao === 'compartilhado' ? <OptionCardGroup className="pc-lit-opcoes" label={t(L('Item de origem na governança', 'Source item under governance'))}>{gov.itens.map(g => <OptionCard key={g.id} name={caminho + '.referencia'} value={g.id} label={g.nome} checked={v.referencia === g.id} onChange={id => salvar({ ...v, referencia: id })} />)}</OptionCardGroup> : null}
-          {tentou && !i.respondido ? <p className="pc-lit-erro">{t('Informe a situação e, quando necessário, o valor ou o item de origem.')}</p> : null}
+          {v.situacao === 'compartilhado' ? <OptionCardGroup invalid={tentou&&!i.respondido} describedBy={tentou&&!i.respondido?campoId(caminho)+'-erro':undefined} className="pc-lit-opcoes" label={t(L('Item de origem na governança', 'Source item under governance'))}>{gov.itens.map(g => <OptionCard key={g.id} name={caminho + '.referencia'} value={g.id} label={g.nome} checked={v.referencia === g.id} onChange={id => salvar({ ...v, referencia: id })} />)}</OptionCardGroup> : null}
+          {tentou && !i.respondido ? <p id={campoId(caminho)+'-erro'} className="pc-lit-erro">{t('Informe a situação e, quando necessário, o valor ou o item de origem.')}</p> : null}
           <div className="pc-lit-campo"><details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}</summary><TextField multiline label={t('Detalhamento e fonte do item')} value={String(v.detalhe || '')} onChange={detalhe => salvar({ ...v, detalhe })} /></details></div>
           {i.id.startsWith('adicional-') ? <Button variant="link" onClick={() => { const atual = useCaso.getState(); const { [i.id]: _x, ...resto } = atual.ctx.letramento.orcamento.adicionais; const { [i.id]: _y, ...itens } = atual.ctx.letramento.orcamento.itens || {}; gravar(s, 'orcamento.adicionais', resto); gravar(s, 'orcamento.itens', itens); }}>{t('Remover')}</Button> : null}
         </GrupoLit>
@@ -100,14 +101,15 @@ function ResumoOrcamento({ s }: { s: CasoStore }) {
   return <div className="pc-gov-orcamento" role="status"><b>{t(L('Subtotal desta frente, sem custos compartilhados', 'Workstream subtotal, excluding shared costs'))}: {o.temSubtotal ? moedaGovernanca(o.subtotal, o.moeda, String(LOC())) : t('Não informado')}</b><p>{t('{n} itens sem valor informado. O subtotal não é o orçamento completo.', { n: o.faltam })}</p></div>;
 }
 export function PainelLetramento({ s }: { s: CasoStore }) {
-  const p = planoLetramento(s), o = p.orcamento, gaveta = useMediaQuery('(max-width: 1439px)'), [aberta, setAberta] = useState(false);
+  const p = planoLetramento(s), o = p.orcamento, gaveta = useMediaQuery('(max-width: 1439px)'), {aberta,setAberta,integrado}=useResumoPlano();
   const telas = telasAtivas(s), faltam = faltamDe(s), proxima = faltam[0];
-  const progresso = t('{n} de {total} telas respondidas', { n: telas.length - faltam.length, total: telas.length });
+  const feitas=progressoFrente(s,'letramento');
+  const progresso = t('{n} de {total} telas desta frente preenchidas', { n: feitas.feitas, total: feitas.total });
   const painel = <PlanPanel className="pc-lit-painel" fluid paperOnly={gaveta} state={p.faltam.length || p.pendentes ? 'writing' : 'complete'} title={p.pais || t('Educar sobre a IA')} kicker={t('Letramento e currículo')} facts={progresso} openHref={href.plano()} summaryTitle={t('Recursos')}
     originLine={<><p>{proxima ? <>{t('Próxima resposta')}: <a href={href.pergunta(proxima.capitulo, proxima.id)}>{t(CURTO[proxima.id] || proxima.id)}</a></> : p.proxima}</p>{o.faltam ? <p>{t('{n} itens sem valor informado. O subtotal não é o orçamento completo.', { n: o.faltam })}</p> : null}</>}
     kpis={[{ id: 'lit-orcamento', label: t('Subtotal informado'), value: o.temSubtotal ? moedaGovernanca(o.subtotal, o.moeda, String(LOC())) : t('Não informado') }]}
-    footer={<><p>{t(L('{n} definições e valores a levantar', '{n} definitions and amounts to collect'), { n: p.pendentes })}</p><Button size="sm" variant="secondary" href={href.plano()}>{t('Abrir o plano inteiro')}</Button></>} />;
-  return gaveta ? <div className="pc-lit-painel"><PlanDrawer open={aberta} onOpenChange={setAberta} zoneLabel={t('Seu plano')} summary={progresso} closeLabel={t('Fechar')} openLabel={t('Abrir o seu plano')}>{painel}</PlanDrawer></div> : <aside className="pc-plano pc-lit-painel" aria-label={p.titulo}>{painel}</aside>;
+    footer={<><p>{t(L('{n} definições e valores a levantar', '{n} definitions and amounts to collect'), { n: p.pendentes })}</p><Button size="sm" variant="secondary" href={href.plano()}>{t('Resumo desta frente')}</Button></>} />;
+  return gaveta ? <div className="pc-lit-painel"><PlanDrawer hideTrigger={integrado} open={aberta} onOpenChange={setAberta} zoneLabel={t('Seu plano')} summary={progresso} closeLabel={t('Fechar')} openLabel={t('Abrir o seu plano')}>{painel}</PlanDrawer></div> : <aside className="pc-plano pc-lit-painel" aria-label={p.titulo}>{painel}</aside>;
 }
 function PlanoLit({s}:{s:CasoStore}) {
  const p=planoLetramento(s),[erro,setErro]=useState(''),[ocupado,setOcupado]=useState(false);
@@ -151,9 +153,9 @@ export function Letramento({ rota }: { rota: Rota }) {
     else requestAnimationFrame(() => document.getElementById('lit-validacao-tela')?.focus());
   };
   return <Shell pos={{ capitulo: n, tela: id }} contexto={t(info.titulo)}>{aviso}<div className="pc-pergunta" data-tela={id}><QuestionFrame
-    kicker={t('{nome} · pergunta {i} de {total}', { nome: t(info.titulo), i: i + 1, total: lista.length })}
+    kicker={<ProgressoPergunta s={s} n={n} id={id}/>}
     title={t(tituloDaTelaLit(s,id) || TITULO_TELA[id] || CURTO[id] || id)} explanation={t(guiaTelaLit(s,id) || LEAD[id] || '')}
-    actions={<div className="pc-lit-acoes"><p className="pc-lit-progresso">{t('Pergunta {i} de {n} do Essencial', { i: telas.indexOf(ativa) + 1, n: telas.length })}</p><div className="pc-botoes"><Button variant="secondary" href={destinos.anterior}>{t('Voltar')}</Button><Button onClick={avancar}>{t('Próximo')}</Button></div></div>}>
+    actions={<AcoesPercurso anterior={destinos.anterior} avancar={avancar}/>} >
     {tentou && falta ? <div className="pc-lit-validacao" id="lit-validacao-tela" role="alert" tabIndex={-1}><b>{t('Complete as respostas indicadas ou marque as informações a levantar.')}</b><ul>
       {pendencias.slice(0, 3).map(itemPendente)}
       {erros.map(e => <li key={e}>{t(e)}</li>)}

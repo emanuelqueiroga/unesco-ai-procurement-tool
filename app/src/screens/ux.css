@@ -1,0 +1,71 @@
+/* v015: anatomia comum aos três percursos e à visão do plano. */
+.pc-ux-frente-atual { display:flex; align-items:center; justify-content:space-between; gap:16px; max-width:760px; margin:0 auto 20px; padding-bottom:12px; border-bottom:1px solid var(--line); font-size:14px; line-height:20px; }
+.pc-ux-frente-atual > span { min-width:0; }
+.pc-ux-frente-atual a { flex-shrink:0; min-height:36px; display:inline-flex; align-items:center; }
+.pc-ux-frente-rotulo { color:var(--muted); }
+.pc-ux-progresso { display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px 16px; }
+.pc-ux-etapa-movel { margin:0 0 4px; font-size:13px; line-height:18px; color:var(--ink); font-weight:600; }
+.pc-faixa-revisao { padding:3px 16px; font-size:12px; line-height:18px; }
+.pc-faixa-revisao > summary { cursor:pointer; width:fit-content; margin:auto; min-height:22px; }
+.pc-faixa-revisao > p { padding:8px 0; }
+.pc-ux-acoes { width:100%; }
+.pc-ux-barra-acoes { position:fixed; z-index:40; inset-inline-start:var(--ux-left,0px); inset-inline-end:var(--ux-right,0px); bottom:var(--teclado-offset,0px); display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center; min-height:76px; padding:12px max(20px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left)); border-top:1px solid var(--line); background:var(--surface-1); box-shadow:0 -2px 10px var(--surface-2); }
+.pc-ux-barra-acoes > .pr-button--link { justify-self:center; }
+.pc-corpo { --ux-left:0px; --ux-right:0px; }
+@media(min-width:901px){.pc-corpo--nav { --ux-left:260px; }}
+@media(min-width:1440px){.pc-corpo--plano { --ux-right:320px; }}
+.pc-app[data-barra-acoes] .pc-main { padding-bottom:120px; }
+.pc-ux-nota-confirmacao { border-top:1px solid var(--line); padding-top:12px; }
+.pc-app .pc-gov-detalhes { color:var(--muted); font-size:13px; }
+.pc-app .pc-gov-detalhes > summary { min-height:32px; display:inline-flex; align-items:center; }
+:is(.pc-app--orientado,.pc-app--letramento) .pc-gov-plano { display:grid; gap:24px; width:100%; max-width:760px; margin-inline:auto; }
+:is(.pc-app--orientado,.pc-app--letramento) .pc-gov-plano > .pc-gov-card { margin:0; }
+.pc-frentes-plano > .pr-questionframe { padding:0; background:transparent; }
+.pc-ux-status { display:inline-block; width:fit-content; max-width:100%; border:1px solid var(--line-control); border-radius:var(--radius-pill); padding:2px 9px; font-size:12px; line-height:18px; color:var(--muted); font-weight:500; }
+.pc-ux-status--completa { background:var(--primary-tint); color:var(--ink); border-color:var(--primary); }
+.pc-frentes-opcoes .pc-ux-status { margin-inline-start:8px; }
+.pc-ux-panorama { max-width:760px; margin-inline:auto; display:grid; gap:24px; }
+.pc-ux-panorama h1 { font-size:30px; line-height:38px; margin:8px 0 12px; text-wrap:balance; }
+.pc-ux-panorama h2 { font-size:18px; line-height:26px; margin:0; }
+.pc-ux-contexto,.pc-ux-frente-card { border:1px solid var(--line); border-radius:var(--radius-md); padding:20px; display:grid; gap:16px; }
+.pc-ux-contexto { background:var(--surface-0); }
+.pc-ux-frentes-lista { display:grid; gap:20px; }
+.pc-ux-frente-cab { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:start; gap:8px 16px; }
+.pc-ux-frente-card progress { width:100%; height:8px; accent-color:var(--primary); }
+.pc-ux-subtotal { display:grid; gap:4px; border-top:1px solid var(--line); padding-top:12px; }
+.pc-ux-subtotal strong { font-size:20px; line-height:28px; font-variant-numeric:tabular-nums; }
+.pc-ux-escopo-recursos { background:var(--surface-0); border-inline-start:3px solid var(--primary); padding:16px; font-size:14px; line-height:22px; }
+.pc-ux-bloco > summary { align-items:flex-start; flex-wrap:wrap; }
+.pc-ux-bloco > summary .pc-lit-grupo-estado { white-space:normal; }
+.pc-ux-bloco > summary h2 { flex:1 1 55%; }
+.pc-ux-bloco > summary::after { margin-inline-start:0; }
+.pc-ux-bloco .pc-lit-campo > .pc-lit-campo-titulo { font-size:14px; }
+.pc-ux-bloco .pr-optioncard { min-height:44px; }
+.pc-ux-bloco .pr-optioncard-desc { font-size:14px; line-height:20px; }
+.pc-app :is(input,select,textarea,summary,button,[tabindex]) { scroll-margin-block:100px; }
+.pc-ux-carregando { padding:24px; }
+@media(max-width:600px){
+ .pc-app :is(.pc-main) { padding-inline:20px; }
+ :is(.pc-app--letramento,.pc-app--orientado) .pc-main { padding-top:16px; }
+ .pc-ux-frente-atual { margin-bottom:16px; padding-bottom:8px; gap:10px; font-size:13px; line-height:18px; }
+ .pc-ux-frente-rotulo { display:none; }
+ .pc-ux-progresso > span:first-child { display:none; }
+ .pc-frentes-plano .pc-ux-status { display:block; margin:6px 0 0; }
+ .pc-ux-panorama h1 { font-size:26px; line-height:32px; }
+ .pc-ux-contexto,.pc-ux-frente-card { padding:16px; }
+ .pc-ux-frente-card .pc-botoes { display:grid; grid-template-columns:1fr; }
+ .pc-ux-frente-card .pc-botoes .pr-button { width:100%; white-space:normal; height:auto; min-height:44px; padding-block:10px; }
+ .pc-ux-barra-acoes { gap:8px; min-height:72px; }
+ .pc-ux-barra-acoes > .pr-button:not(.pr-button--link) { min-width:96px; padding-inline:12px; }
+ .pc-ux-bloco > summary h2 { flex-basis:100%; font-size:16px; line-height:22px; }
+ .pc-ux-bloco > summary .pc-lit-grupo-estado { font-size:12px; }
+}
+@media print{.pc-ux-barra-acoes,.pc-ux-frente-atual{display:none}.pc-ux-bloco>div{display:block!important}}
+@media(min-width:1101px){.pc-app:not(.pc-app--orientado):not(.pc-app--letramento) .pc-corpo--plano{--ux-right:400px}}
+.pc-ux-bloco .pc-gov-escolha { width:100%; }
+.pc-ux-bloco > .pc-lit-grupo-dados > .pc-gov-escolha { grid-column:1/-1; }
+.pc-ux-rotulo-externo .pr-textfield-label { position:absolute; width:1px; height:1px; min-height:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.pc-ux-frente-card progress { appearance:none; border:0; border-radius:8px; background:var(--surface-2); overflow:hidden; }
+.pc-ux-frente-card progress::-webkit-progress-bar { background:var(--surface-2); border-radius:8px; }
+.pc-ux-frente-card progress::-webkit-progress-value { background:var(--primary); border-radius:8px; }
+.pc-ux-frente-card progress::-moz-progress-bar { background:var(--primary); border-radius:8px; }

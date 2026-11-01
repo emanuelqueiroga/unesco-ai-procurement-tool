@@ -1,3 +1,5 @@
+import { AcoesPercurso } from './AcoesPercurso';
+import { ProgressoPergunta } from './ProgressoPergunta';
 import { useState } from 'react';
 import { useCaso, telasDoCapitulo } from '../store';
 import { Button, QuestionFrame } from '../ui';
@@ -16,9 +18,9 @@ export function Prioridades() {
  const avancar=()=>{const destino=confirmarPrioridades(rascunho);if(destino)ir(destino);};
  return <Shell pos={{capitulo:1,tela:'prioridades'}} contexto={t(infoCapitulo(1,s).titulo)}>
   <div className="pc-pergunta" data-tela="prioridades"><QuestionFrame
-   kicker={t('{nome} · pergunta {i} de {total}',{nome:t(infoCapitulo(1,s).titulo),i:i+1,total:telas.length})}
+   kicker={<ProgressoPergunta s={s} n={1} id="prioridades"/>}
    title={t('Prioridades')} explanation={t('Escolha uma ou mais prioridades.')}
-   actions={<div className="pc-lit-acoes"><div className="pc-botoes"><Button variant="secondary" href={href.pergunta(1,'local')}>{t('Voltar')}</Button><Button disabled={!rascunho.length} onClick={avancar}>{t('Próximo')}</Button></div></div>}>
+   actions={<AcoesPercurso anterior={href.pergunta(1,'local')} avancar={avancar} disabled={!rascunho.length} nota={t('Clique em Próximo para aplicar sua seleção.')}/>} >
    <OpcoesPrioridades atual={rascunho} onChange={setRascunho}/>
   </QuestionFrame></div>
  </Shell>;

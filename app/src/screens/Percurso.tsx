@@ -1,3 +1,5 @@
+import { AcoesPercurso } from './AcoesPercurso';
+import { ProgressoPergunta } from './ProgressoPergunta';
 // Telas do percurso: abertura de capítulo (D2), pergunta (D3–D6, M2, M3) e síntese de capítulo (D7).
 import { useEffect, useState, type ReactNode } from 'react';
 import {
@@ -119,7 +121,7 @@ export function Pergunta({ n, tela: pedida }: { n: Capitulo; tela: string }) {
     <Shell pos={{ capitulo: n, tela: id }} contexto={t(CAPITULOS_INFO[n].titulo)}>
       <div className="pc-pergunta" data-tela={id}>
         <QuestionFrame
-          kicker={t('{nome} · pergunta {i} de {total}', { nome: t(CAPITULOS_INFO[n].titulo), i: i + 1, total: telas.length })}
+          kicker={<ProgressoPergunta s={s} n={n} id={id}/>}
           title={tituloTela(s, id)}
           explanation={
             <>
@@ -130,9 +132,8 @@ export function Pergunta({ n, tela: pedida }: { n: Capitulo; tela: string }) {
           help={porque && ajuda ? <AjudaPergunta ajuda={ajuda} /> : null}
           actions={
             <>
+              <AcoesPercurso anterior={ant} avancar={continuar} disabled={faltaRede || (id === 'prioridades' && !prioridadeEscolhida(s.ctx))}/>
               <div className="pc-botoes">
-                <Button variant="secondary" href={ant}>{t('Voltar')}</Button>
-                <Button onClick={continuar} disabled={faltaRede || (id === 'prioridades' && !prioridadeEscolhida(s.ctx))}>{t('Próximo')}</Button>
                 {ajuda ? (
                   <Button variant="link" aria-expanded={porque} aria-controls={porque ? 'pc-ajuda' : undefined} onClick={() => setPorque((x) => !x)}>
                     {porque ? t('Fechar a explicação') : t('Por que perguntamos isso?')}
@@ -148,7 +149,7 @@ export function Pergunta({ n, tela: pedida }: { n: Capitulo; tela: string }) {
         >
           <ControlesTela e={s} tela={tela} />
         </QuestionFrame>
-        {prioridadeEscolhida(s.ctx) ? <p className="pc-voltar pc-nota">{t('Pergunta {i} de {n} do Essencial', { i: numeroGlobal, n: telasAtivas(s).length })}</p> : null}
+
       </div>
     </Shell>
   );

@@ -25,3 +25,12 @@ export function abrirFrente(id: FrenteId): string | null {
  const proxima=telas.find(q=>!telaRespondida(atual,q));
  return proxima?href.pergunta(proxima.capitulo,proxima.id):href.plano();
 }
+
+export function estadoDaFrente(s: Estado14,id: FrenteId): Estado14 {
+ return {...s,ctx:{...s.ctx,frenteAtiva:id}};
+}
+export function progressoFrente(s: Estado14,id: FrenteId){
+ const estado=estadoDaFrente(s,id),telas=telasAtivas(estado).filter(q=>!['local','prioridades'].includes(q.id));
+ const feitas=telas.filter(q=>telaRespondida(estado,q)).length;
+ return {telas,feitas,total:telas.length,estado:feitas===0?'nova':feitas===telas.length?'completa':'andamento'} as const;
+}

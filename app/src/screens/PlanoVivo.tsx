@@ -1,3 +1,4 @@
+import { useResumoPlano } from './ResumoContexto';
 // "Seu plano": o painel à direita (≥ 1100 px) e a gaveta do celular, projetados do store a cada resposta.
 // Só um item em âmbar por vez: o primeiro KPI que mudou; se nenhum mudou, a primeira recomendação nova.
 // PB-06: sob os números, a mesma recomendação do policy brief e de "Em resumo" (plano/brief.js).
@@ -84,7 +85,7 @@ function Conteudo({ p, nov, fluid, soPapel, rec }: { p: Painel; nov: Novidade | 
         { id: 'fazer', title: t('O que fazer'), note: p.recs.length ? (p.nPacotes ? t('{n} ações em {g} pacotes', { n: p.recs.length, g: p.nPacotes }) : plural(p.recs.length, '{n} recomendação', '{n} recomendações')) : undefined },
         { id: 'exigir', title: t('O que exigir') },
       ]}
-      footer={p.estado !== 'empty' ? <Button variant="secondary" size="sm" href={href.plano()}>{t('Abrir o plano inteiro')}</Button> : undefined}
+      footer={p.estado !== 'empty' ? <Button variant="secondary" size="sm" href={href.plano()}>{t('Resumo desta frente')}</Button> : undefined}
     />
   );
 }
@@ -95,7 +96,7 @@ export function PlanoVivo({ s, forcarGaveta }: { s: CasoStore; forcarGaveta?: bo
   const nov = useNovidade(p, s.recente?.em);
   const rec = useRecomendacao(s);
   const gaveta = useMediaQuery(BREAKPOINTS.drawer) || !!forcarGaveta;
-  const [aberta, setAberta] = useState(false);
+  const {aberta,setAberta,integrado}=useResumoPlano();
   if (!gaveta) return <aside className="pc-plano" aria-label={t('Seu plano')}><Conteudo p={p} nov={nov} fluid rec={rec} /></aside>;
   const kpiVisivel = p.kpis.find((k) => k.id === nov?.kpi) || p.kpis.find((k) => k.value);
   const resumo = [
@@ -104,6 +105,7 @@ export function PlanoVivo({ s, forcarGaveta }: { s: CasoStore; forcarGaveta?: bo
   ].filter(Boolean).join(' · ');
   return (
     <PlanDrawer
+      hideTrigger={integrado}
       open={aberta}
       onOpenChange={setAberta}
       zoneLabel={t('Seu plano')}
@@ -115,7 +117,7 @@ export function PlanoVivo({ s, forcarGaveta }: { s: CasoStore; forcarGaveta?: bo
     >
       <Conteudo p={p} nov={nov} fluid soPapel rec={rec} />
       <div className="pc-gaveta-acoes">
-        <Button href={href.plano()} onClick={() => { setAberta(false); ir(href.plano()); }}>{t('Abrir o plano inteiro')}</Button>
+        <Button href={href.plano()} onClick={() => { setAberta(false); ir(href.plano()); }}>{t('Resumo desta frente')}</Button>
       </div>
     </PlanDrawer>
   );

@@ -1,3 +1,5 @@
+import { createPortal } from 'react-dom';
+import { useModalIsolation } from '../modalIsolation';
 import { useRef } from 'react';
 import type { ReactNode } from 'react';
 import { IconChevronUp } from '../icons';
@@ -7,6 +9,7 @@ import { tx } from '../texto';
 
 export type PlanDrawerProps = {
   open: boolean;
+  hideTrigger?: boolean;
   onOpenChange: (open: boolean) => void;
   /** Rótulo de zona: "Seu plano · escrevendo". */
   zoneLabel: string;
@@ -28,6 +31,7 @@ export type PlanDrawerProps = {
 /** Versão móvel do PlanPanel: barra inferior com o resumo, que abre como gaveta com foco preso e Esc. */
 export function PlanDrawer({
   open,
+  hideTrigger=false,
   onOpenChange,
   zoneLabel,
   highlight,
@@ -41,12 +45,22 @@ export function PlanDrawer({
 }: PlanDrawerProps) {
   const sheet = useRef<HTMLElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const modalRoot=useRef<HTMLDivElement>(null);
+  useModalIsolation(modalRoot,open&&!inline);
   const close = () => onOpenChange(false);
   useFocusTrap(sheet, open && !inline, close, trigger);
 
+  const modal = open ? <div ref={modalRoot} className="pr-plandrawer-modal">
+    <div className="pr-plandrawer-overlay" onClick={close} aria-hidden="true" />
+    <section ref={sheet} className="pr-plandrawer-sheet" role="dialog" aria-modal={inline?undefined:true} aria-label={zoneLabel} tabIndex={-1}>
+      <span className="pr-plandrawer-handle pr-plandrawer-handle--sheet" aria-hidden="true" />
+      <div className="pr-plandrawer-head"><span className="pr-plandrawer-zone">{zoneLabel}</span><button type="button" className="pr-plandrawer-close" onClick={close}>{closeLabel??tx('Fechar')}</button></div>
+      <div className="pr-plandrawer-body">{children}</div>
+    </section>
+  </div> : null;
   return (
     <div className={['pr-plandrawer', inline ? 'pr-plandrawer--inline' : '', className ?? ''].filter(Boolean).join(' ')}>
-      {!open || inline ? (
+      {(!open || inline) && !hideTrigger ? (
         <button
           ref={trigger}
           type="button"
@@ -69,21 +83,7 @@ export function PlanDrawer({
         </button>
       ) : null}
 
-      {open ? (
-        <>
-          <div className="pr-plandrawer-overlay" onClick={close} aria-hidden="true" />
-          <section ref={sheet} className="pr-plandrawer-sheet" aria-label={tx('Seu plano')} tabIndex={-1}>
-            <span className="pr-plandrawer-handle pr-plandrawer-handle--sheet" aria-hidden="true" />
-            <div className="pr-plandrawer-head">
-              <span className="pr-plandrawer-zone">{zoneLabel}</span>
-              <button type="button" className="pr-plandrawer-close" onClick={close}>
-                {closeLabel ?? tx('Fechar')}
-              </button>
-            </div>
-            <div className="pr-plandrawer-body">{children}</div>
-          </section>
-        </>
-      ) : null}
+      {modal && !inline && typeof document !== 'undefined' ? createPortal(modal,document.body) : modal}
     </div>
   );
 }

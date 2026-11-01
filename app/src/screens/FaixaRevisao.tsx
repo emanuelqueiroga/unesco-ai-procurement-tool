@@ -5,9 +5,9 @@ import { t } from '../percurso/textos';
 export function FaixaRevisao() {
   if (CANAL !== 'revisao') return null;
   return (
-    <section className="pc-faixa-revisao" aria-label={t('Versão de revisão')}>
-      {t('Versão de revisão {v} · redesenho com o design system Prumo · não é a ferramenta publicada.', { v: VERSAO })}{' '}
-      <a href={URL_ESTAVEL}>{t('Abrir a versão estável')}</a>
-    </section>
+    <details className="pc-faixa-revisao" aria-label={t('Versão de revisão')}>
+      <summary>{t('Versão de revisão')} · v015</summary>
+      <p>{t('Versão de revisão {v} · redesenho com o design system Prumo · não é a ferramenta publicada.', { v: VERSAO })}{' '}<a href={URL_ESTAVEL}>{t('Abrir a versão estável')}</a></p>
+    </details>
   );
 }

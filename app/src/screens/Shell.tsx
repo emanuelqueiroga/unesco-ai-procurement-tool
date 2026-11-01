@@ -1,3 +1,4 @@
+import { ResumoProvider } from './ResumoContexto';
 import { PainelEducacao } from './Educacao';
 import { entradaEtapa } from '../percurso/navegacaoOrientada';
 import { PainelLetramento } from './Letramento';
@@ -25,6 +26,7 @@ import { exportarCaso, comecarEmBranco } from './acoes';
 import { exemploIlustrativo, nomeDoExemplo, tituloDaAba } from './transversal';
 import './shell.css';
 import './transversal.css';
+import './ux.css';
 
 export { LOGOS };
 // O rodapé institucional é da moldura; quem ainda chama <Rodape/> (Inicio, Plano) não o duplica.
@@ -93,7 +95,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
       options={[{ value: 'essencial', label: t('Essencial') }, { value: 'refinar', label: t('Refinar') }]}
     />
   );
-  const verPlano = comPlano && prioridadeEscolhida(s.ctx) ? <Button variant="secondary" size="sm" href={href.plano()}>{t('Ver o plano')}</Button> : null;
+  const verPlano = comPlano && prioridadeEscolhida(s.ctx) ? <Button variant="secondary" size="sm" href={href.panorama()}>{t('Ver o plano')}</Button> : null;
   const botaoTema = (
     <Button
       variant="secondary"
@@ -103,10 +105,11 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
       onClick={alternarTema}
     />
   );
+  const barraAcoes=rota.tipo==='pergunta'||rota.tipo==='frentes';
   const nomeExemplo = exemploIlustrativo(s) ? nomeDoExemplo(s.exemplo) : '';
   return (
-    <DentroDaMoldura.Provider value>
-      <div className={inicio ? 'pc-app pc-app--inicio' : percursoLetramento(s.ctx) ? 'pc-app pc-app--letramento' : percursoGovernanca(s.ctx)||percursoPedagogico(s.ctx) ? 'pc-app pc-app--orientado' : 'pc-app'}>
+    <ResumoProvider disponivel={plano} integrado={barraAcoes} limite={percursoInstitucional(s.ctx)||percursoPedagogico(s.ctx)?1439:1100}><DentroDaMoldura.Provider value>
+      <div data-barra-acoes={barraAcoes||undefined} className={inicio ? 'pc-app pc-app--inicio' : percursoLetramento(s.ctx) ? 'pc-app pc-app--letramento' : percursoGovernanca(s.ctx)||percursoPedagogico(s.ctx) ? 'pc-app pc-app--orientado' : 'pc-app'}>
         <a className="pc-pular" href="#conteudo" onClick={(e) => { e.preventDefault(); document.getElementById('conteudo')?.focus(); }}>{t('Pular para o conteúdo')}</a>
         <Header
           logos={LOGOS}
@@ -122,7 +125,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
             ) : faixa ? (
               <>
                 <SeletorIdioma compacto={estreito} />
-                <Button variant="secondary" size="sm" onClick={() => setCaso(true)} aria-haspopup="dialog">{t('Caso')}</Button>
+                <Button variant="secondary" size="sm" onClick={() => setCaso(true)} aria-haspopup="dialog">{t('Plano')}</Button>
               </>
             ) : (
               <>
@@ -131,7 +134,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
                 <SeletorIdioma />
                 {verPlano}
                 {botaoTema}
-                <Button variant="secondary" size="sm" onClick={() => setCaso(true)} aria-haspopup="dialog">{t('Caso')}</Button>
+                <Button variant="secondary" size="sm" onClick={() => setCaso(true)} aria-haspopup="dialog">{t('Plano')}</Button>
               </>
             )
           }
@@ -147,7 +150,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
         {salvamento.falhou && !salvamento.dispensado ? (
           <section className="pc-faixa pc-faixa--atencao" role="status" aria-label={t('Aviso')}>
             <span>{t('Suas respostas não estão sendo salvas neste navegador; exporte o caso para guardá-las.')}</span>
-            <Button size="sm" variant="secondary" onClick={() => { void exportarCaso(); }}>{t('Exportar o caso')}</Button>
+            <Button size="sm" variant="secondary" onClick={() => { void exportarCaso(); }}>{t('Exportar o plano')}</Button>
             <Button size="sm" variant="link" onClick={() => useSalvamento.setState({ dispensado: true })}>{t('Dispensar')}</Button>
           </section>
         ) : null}
@@ -158,12 +161,12 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
           </section>
         ) : null}
         <AvisoTraducao />
-        {nav && barra ? <div className="pc-barra"><ChapterBar chapters={capitulosBarra(s, pos)} compact={estreito} /></div> : null}
+        {nav && barra ? <div className="pc-barra">{pos.capitulo?<p className="pc-ux-etapa-movel">{t('Etapa {n} de {total}: {nome}',{n:pos.capitulo,total:prioridadeEscolhida(s.ctx)?4:1,nome:t(infoCapitulo(pos.capitulo,s).titulo)})}</p>:null}<ChapterBar chapters={capitulosBarra(s, pos)} compact={estreito} /></div> : null}
         <div className={['pc-corpo', nav && !barra ? 'pc-corpo--nav' : '', plano ? 'pc-corpo--plano' : ''].filter(Boolean).join(' ')}>
           {nav && !barra ? <aside className="pc-nav"><ChapterNav zoneLabel={t('Seu caminho')} chapters={capitulosNav(s, pos)} /></aside> : null}
           <main id="conteudo" className="pc-main" tabIndex={-1}>
             {rota.tipo === 'plano' && !percursoInstitucional(s.ctx) && !percursoPedagogico(s.ctx) ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Anexo técnico (PDF)".')}</p> : null}
-            {prioridadeEscolhida(s.ctx) && !inicio && rota.tipo !== 'frentes' ? <Frentes s={s} /> : null}
+            {prioridadeEscolhida(s.ctx) && !inicio && !['frentes','panorama'].includes(rota.tipo) ? <Frentes s={s} /> : null}
             {children}
           </main>
           {plano ? percursoPedagogico(s.ctx) ? <PainelEducacao s={s} /> : percursoLetramento(s.ctx) ? <PainelLetramento s={s} /> : percursoGovernanca(s.ctx) ? <PainelGovernanca s={s} /> : <PlanoVivo s={s} /> : null}
@@ -172,6 +175,6 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
         <CasoDialog open={caso} onClose={() => setCaso(false)} />
         <MatrizHost />
       </div>
-    </DentroDaMoldura.Provider>
+    </DentroDaMoldura.Provider></ResumoProvider>
   );
 }

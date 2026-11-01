@@ -30,7 +30,7 @@ export function CampoImportar({ onPronto, rotulo }: { onPronto?: (erro: string |
   };
   return (
     <>
-      <Button variant="secondary" onClick={() => ref.current?.click()}>{rotulo || t('Importar caso')}</Button>
+      <Button variant="secondary" onClick={() => ref.current?.click()}>{rotulo || t('Importar plano')}</Button>
       <input
         ref={ref}
         type="file"
@@ -49,17 +49,17 @@ export function CampoImportar({ onPronto, rotulo }: { onPronto?: (erro: string |
         <div className="pc-colar">
           <TextField
             multiline
-            label={t('Dados do caso')}
+            label={t('Dados do plano')}
             value={texto}
             onChange={(v) => { setTexto(v); setErroColar(undefined); }}
-            hint={t('Cole aqui o texto copiado com "Copiar dados do caso".')}
+            hint={t('Cole aqui o texto copiado com "Copiar dados do plano".')}
             error={erroColar}
           />
           <div className="pc-botoes">
             <Button
               size="sm"
               onClick={async () => {
-                if (!texto.trim()) { setErroColar(t('Cole antes os dados do caso.')); return; }
+                if (!texto.trim()) { setErroColar(t('Cole antes os dados do plano.')); return; }
                 const r = await importarTexto(texto.trim());
                 if (!r.ok && 'erro' in r) setErroColar(r.erro);
                 fim(r);
@@ -91,23 +91,23 @@ export function CasoDialog({ open, onClose }: { open: boolean; onClose: () => vo
       open={open}
       // com uma confirmação aberta por cima, o Esc fecha só a confirmação
       onClose={() => { if (!confirmacaoAberta()) fechar(); }}
-      title={t('Caso e preferências')}
+      title={t('Plano e preferências')}
       actions={<Button variant="secondary" onClick={fechar}>{t('Fechar')}</Button>}
     >
       <div className="pc-dialogo">
         {msg ? <Alert kind={msg.tipo} title={msg.texto} /> : null}
         <section>
-          <h3 className="pc-dialogo-titulo">{t('Este caso')}</h3>
-          <p className="pc-dialogo-texto">{t('As respostas ficam salvas só neste navegador. Exporte o caso para guardar uma cópia ou abrir em outro computador.')}</p>
+          <h3 className="pc-dialogo-titulo">{t('Este plano')}</h3>
+          <p className="pc-dialogo-texto">{t('As respostas ficam salvas só neste navegador. Exporte o plano para guardar uma cópia ou abrir em outro computador.')}</p>
           <div className="pc-botoes">
-            <Button onClick={async () => { if (await exportarCaso()) setMsg({ tipo: 'info', texto: t('Caso exportado.') }); }}>{t('Exportar caso (.json)')}</Button>
-            <Button variant="secondary" onClick={() => { void copiarDadosCaso(); }}>{t('Copiar dados do caso')}</Button>
+            <Button onClick={async () => { if (await exportarCaso()) setMsg({ tipo: 'info', texto: t('Plano exportado.') }); }}>{t('Exportar plano (.json)')}</Button>
+            <Button variant="secondary" onClick={() => { void copiarDadosCaso(); }}>{t('Copiar dados do plano')}</Button>
           </div>
           {temDownloads() ? null : <p className="pc-dialogo-texto">{t('Se o download não funcionar neste ambiente, copie os dados do caso e guarde o texto; para abrir de novo, use "Colar dados".')}</p>}
           <div className="pc-botoes">
             <CampoImportar
               onPronto={(erro) => {
-                setMsg(erro ? { tipo: 'atencao', texto: erro } : { tipo: 'info', texto: t('Caso importado.') });
+                setMsg(erro ? { tipo: 'atencao', texto: erro } : { tipo: 'info', texto: t('Plano importado.') });
               }}
             />
           </div>

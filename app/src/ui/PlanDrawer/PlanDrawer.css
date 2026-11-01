@@ -149,3 +149,6 @@
 .pr-plandrawer--inline .pr-plandrawer-sheet {
   max-height: none;
 }
+
+.pr-plandrawer-sheet { padding-bottom: max(16px,env(safe-area-inset-bottom)); }
+.pr-plandrawer-body { overscroll-behavior: contain; }

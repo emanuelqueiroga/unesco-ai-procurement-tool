@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 
 const FOCUSABLE =
@@ -14,6 +14,8 @@ export function useFocusTrap(
   onClose?: () => void,
   returnTo?: RefObject<HTMLElement>,
 ) {
+  const fechar=useRef(onClose);
+  fechar.current=onClose;
   useEffect(() => {
     if (!active) return;
     const el = ref.current;
@@ -27,7 +29,7 @@ export function useFocusTrap(
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        onClose?.();
+        fechar.current?.();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -53,5 +55,5 @@ export function useFocusTrap(
       const back = returnTo?.current ?? previous;
       if (back && typeof back.focus === 'function') back.focus();
     };
-  }, [active, ref, onClose, returnTo]);
+  }, [active, ref, returnTo]);
 }

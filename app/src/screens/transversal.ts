@@ -1,3 +1,4 @@
+import { frentesDoPlano } from '../percurso/frentes';
 import { telaEdLegada } from '../percurso/pedagogico';
 import { telaLetramentoLegada, tituloDaTelaLit, somenteCurriculoLit } from '../percurso/letramento';
 // Lógica pura do pacote transversal (sem React nem DOM, para testar em Vitest): quando pedir confirmação antes de
@@ -79,15 +80,17 @@ export function tituloDaAba(rota: Rota, s?: { ctx?: Record<string, any> }): stri
     case 'abertura': parte = t(infoCapitulo(rota.n, s).titulo); break;
     case 'pergunta': {
       if (s && !prioridadeEscolhida(s.ctx)) { parte = t(CURTO[rota.tela] || 'Prioridades'); break; }
-      const telas = telasAtivas(s);
+      const telas = telasAtivas(s).filter(q=>q.capitulo===rota.n);
       const i = telas.findIndex((x) => x.id === rota.tela);
       const nome = percursoLetramento(s?.ctx) ? tituloDaTelaLit({ctx:s?.ctx||{}},rota.tela) : '';
-      parte = `${t('Pergunta {n} de {total}', { n: i + 1, total: telas.length })} · ${t(nome || CURTO[rota.tela] || rota.tela)}`;
+      parte = `${t('Tela {n} de {total}', { n: i + 1, total: telas.length })} · ${t(nome || CURTO[rota.tela] || rota.tela)}`;
       break;
     }
     case 'sintese': parte = t(infoCapitulo(rota.n, s).titulo); break;
     case 'plano': parte = `${t('Seu plano')} · ${t(({ resumo: 'Em resumo', custa: 'Quanto custa', fazer: 'O que fazer', exigir: 'O que exigir', apendice: 'Apêndice', faltam: 'Respostas que faltam' } as Record<string, string>)[rota.pagina] || 'Em resumo')}`; break;
     case 'refinar': parte = t('Refinar'); break;
+    case 'panorama': parte = t('Plano nacional'); break;
+    case 'frente': parte = t(frentesDoPlano({ctx:s?.ctx||{}} as any).find(f=>f.id===rota.id)?.titulo||'Frente do plano'); break;
     case 'frentes': parte = t('Frentes do plano'); break;
     case 'galeria': parte = 'Prumo'; break;
     default: parte = '';
