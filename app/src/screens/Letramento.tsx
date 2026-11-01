@@ -1,3 +1,4 @@
+import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { progressoFrente } from '../percurso/frentes';
 import { GrupoFormulario } from './GrupoFormulario';
 import { useResumoPlano } from './ResumoContexto';
@@ -115,9 +116,9 @@ function PlanoLit({s}:{s:CasoStore}) {
  const p=planoLetramento(s),[erro,setErro]=useState(''),[ocupado,setOcupado]=useState(false);
  const baixar=async(tipo:'brief'|'anexo')=>{setOcupado(true);setErro('');try {const {gerarGovernancaPDF}=await import('../plano/pdf_governanca');const doc=await gerarGovernancaPDF(s.estado(),{tipo,modelo:'letramento'});doc.save(tipo==='brief'?'resumo-letramento.pdf':'plano-letramento.pdf');}catch(e){console.error(e);setErro(t('Não foi possível gerar o PDF.'));}finally{setOcupado(false);}};
  return <div className="pc-gov-plano"><h1>{p.titulo}</h1><p className="pc-lead">{p.pais}</p><Alert kind="info" title={p.proxima}>{p.escopo}</Alert><ResumoOrcamento s={s}/>
-  <div className="pc-botoes"><Button disabled={ocupado} onClick={()=>void baixar('brief')}>{t(L('Resumo do programa (PDF)','Programme summary (PDF)'))}</Button><Button disabled={ocupado} variant="secondary" onClick={()=>void baixar('anexo')}>{t(L('Plano de formação e currículo (PDF)','Training and curriculum plan (PDF)'))}</Button></div>{erro?<p role="alert">{erro}</p>:null}
+  <div className="pc-botoes"><Button disabled={ocupado} onClick={()=>void baixar('brief')}>{t(L('Resumo do programa (PDF)','Programme summary (PDF)'))}</Button><Button disabled={ocupado} variant="secondary" onClick={()=>void baixar('anexo')}>{t(L('Plano de formação e currículo (PDF)','Training and curriculum plan (PDF)'))}</Button></div>{erro?<p role="alert">{erro}</p>:null}<AtalhoLeituraSimples/>
   {p.faltam.length?<section className="pc-gov-card"><h2>{t('Respostas que faltam')}</h2><ul>{faltamDe(s).map(q=><li key={q.id}><a href={href.pergunta(q.capitulo,q.id)}>{t(tituloDaTelaLit(s,q.id)||CURTO[q.id]||q.id)}</a></li>)}</ul></section>:null}
-  {p.blocos.map((b,i)=><section className="pc-gov-card" key={i}><h2>{b.titulo}</h2><dl className="pc-gov-dados">{b.linhas.map((l,j)=><div key={j}><dt>{l.rotulo}</dt><dd>{l.valor}</dd></div>)}</dl></section>)}<Button variant="secondary" href={href.pergunta(4,'lit-revisao')}>{t('Voltar')}</Button>
+  {p.blocos.map((b,i)=><section className="pc-gov-card" key={i}><h2>{b.titulo}</h2><dl className="pc-gov-dados">{b.linhas.map((l,j)=><div key={j}><dt>{l.rotulo}</dt><dd>{l.valor}</dd></div>)}</dl></section>)}<Button variant="secondary" href={href.pergunta(4,'lit-revisao')}>{t('Voltar')}</Button><LeituraSimples s={s}/>
  </div>;
 }
 export function Letramento({ rota }: { rota: Rota }) {

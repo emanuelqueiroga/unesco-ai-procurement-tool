@@ -1,3 +1,4 @@
+import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { GrupoFormulario, ValidacaoCampos } from './GrupoFormulario';
 import { useResumoPlano } from './ResumoContexto';
 import { AcoesPercurso } from './AcoesPercurso';
@@ -194,10 +195,10 @@ function PlanoGov({ s }: { s: CasoStore }) {
   return <div className="pc-gov-plano">
     <h1>{p.titulo}</h1><p className="pc-lead">{p.pais}</p>
     <Alert kind="info" title={p.proxima}>{p.escopo}</Alert>
-    <ResultadoOrcamento s={s} /><PDFs s={s} />
+    <ResultadoOrcamento s={s} /><PDFs s={s} /><AtalhoLeituraSimples/>
     {faltam.length ? <details className="pc-gov-card" open><summary>{t('Respostas que faltam')} ({faltam.length})</summary><ul>{faltam.map(q => <li key={q.id}><a href={href.pergunta(q.capitulo, q.id)}>{t(CURTO[q.id] || q.id)}</a></li>)}</ul></details> : null}
     {p.blocos.map((b, i) => <section className="pc-gov-card" key={i}><h2>{b.titulo}</h2><dl className="pc-gov-dados">{b.linhas.map((l, j) => <div key={j}><dt>{l.rotulo}</dt><dd>{l.valor}</dd></div>)}</dl></section>)}
-    <p><Button variant="secondary" href={href.pergunta(4, 'gov-revisao')}>{t('Voltar')}</Button></p>
+    <p><Button variant="secondary" href={href.pergunta(4, 'gov-revisao')}>{t('Voltar')}</Button></p><LeituraSimples s={s}/>
   </div>;
 }
 // Links e posições antigas são remapeados; as respostas antigas continuam guardadas no caso.
