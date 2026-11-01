@@ -1,4 +1,4 @@
-import { percursoPedagogico } from '../domain/escopo.js';
+import { percursoPedagogico, percursoGovernanca, prioridadesDoPercurso } from '../domain/escopo.js';
 import { ROTULOS_ERA } from './pedagogicoRotulos';
 import { impactosEducacao } from './educacao';
 // Controles das perguntas: um renderizador por tipo de campo de CAMPOS (radio → OptionCard; chips, multi → Chip
@@ -703,7 +703,7 @@ function TamanhoRedeNacional({ e }: { e: Estado14 }) {
 function Problemas({ e }: { e: Estado14 }) {
   const responder = useCaso((s) => s.responder);
   const refinando = useRefinando();
-  const pr: string[] = e.ctx.prioridades || [];
+  const pr: string[] = prioridadesDoPercurso(e.ctx);
   const atual: string[] = e.ctx.problemas || [];
   const P = (PRIORIDADES as any[]).filter((p) => pr.includes(p.id));
   if (!P.length) return <p className="pc-aviso">{t('Escolha uma prioridade para ver os desafios.')}</p>;
@@ -712,7 +712,7 @@ function Problemas({ e }: { e: Estado14 }) {
   const textoNota=nota.split('.').reduce((o:any,k)=>o?.[k],e.ctx);
   return (
     <div className="pc-grupos">
-      {temGovernanca(e.ctx) ? <TamanhoRedeNacional e={e} /> : null}
+      {percursoGovernanca(e.ctx) ? <TamanhoRedeNacional e={e} /> : null}
       {!percursoEducacao(e.ctx) && !percursoLetramento(e.ctx) ? <p className="pc-nota">{t('Selecione todos os desafios que fazem parte do seu plano.')}</p> : null}
       {P.map((p) => {
         const catalogoNovo = ['governar', 'sobre', 'com'].includes(p.id);

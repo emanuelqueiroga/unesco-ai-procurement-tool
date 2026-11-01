@@ -17,7 +17,7 @@ export function vizinhos(s: Estado14, id: string) {
   const link = (q: (typeof qs)[number] | undefined, fim: string) =>
     q ? href.pergunta(q.capitulo, q.id) : fim;
   return {
-    anterior: link(qs[i - 1], href.inicio()),
+    anterior: qs[i - 1]?.id === 'prioridades' && s.ctx.prioridades?.length > 1 ? href.frentes() : link(qs[i - 1], href.inicio()),
     proxima: link(qs[i + 1], href.plano()),
   };
 }

@@ -45,3 +45,9 @@ export function percursoEducacao(ctx) { return Array.isArray(ctx?.prioridades) &
 export function temEducacao(ctx) { return Array.isArray(ctx?.prioridades) && ctx.prioridades.some(id => ['com','para'].includes(id)); }
 export function percursoPedagogico(ctx) { return temEducacao(ctx) && (ctx.frenteAtiva === 'educacao' || !percursoInstitucional(ctx) && !(ctx.frenteAtiva === 'projeto' && projetoUsoDefinido(ctx))); }
 export const CAMPOS_EDUCACAO_REMOVIDOS = ['problema','linhaBase','alternativa','altCustoEfeito','linhaBaseProblemas','linhaBaseProblemaTxt','linhaBaseMedida'];
+
+/** Catálogo visível da frente atual; as escolhas das outras frentes ficam guardadas. */
+export function prioridadesDoPercurso(ctx) {
+ const p=ctx?.prioridades || [];
+ return p.filter(id=>percursoGovernanca(ctx)?id==='governar':percursoLetramento(ctx)?id==='sobre':percursoPedagogico(ctx)?['com','para'].includes(id):true);
+}
