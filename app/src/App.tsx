@@ -1,4 +1,5 @@
 import { Prioridades } from './screens/Prioridades';
+import { FrentesPlano } from './screens/FrentesPlano';
 import { Educacao } from './screens/Educacao';
 import { Letramento } from './screens/Letramento';
 import { Governanca } from './screens/Governanca';
@@ -34,6 +35,7 @@ export function App() {
   const tela = (() => {
     if (removida) return <Pergunta n={1} tela="impactos" />;
     if (aguardaPrioridade || rota.tipo === 'pergunta' && rota.n === 1 && rota.tela === 'prioridades') return <Prioridades />;
+    if (rota.tipo === 'frentes') return <FrentesPlano />;
     if (percursoPedagogico(ctx) && !['inicio','galeria'].includes(rota.tipo)) return <Educacao key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo} rota={rota} />;
     if (percursoLetramento(ctx) && !['inicio','galeria'].includes(rota.tipo)) return <Letramento key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo} rota={rota} />;
     if (percursoGovernanca(ctx) && !['inicio', 'galeria'].includes(rota.tipo)) return <Governanca key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo === 'abertura' || rota.tipo === 'sintese' ? `${rota.tipo}${rota.n}` : rota.tipo} rota={rota} />;

@@ -13,7 +13,7 @@ export function entradaEtapaLit(s: Estado14, n: Capitulo): string {
 export function vizinhosLit(s: Estado14, id: string) {
   const telas = telasAtivas(s), i = telas.findIndex(q => q.id === id);
   const link = (q: typeof telas[number] | undefined, fim: string) => q ? href.pergunta(q.capitulo, q.id) : fim;
-  return { anterior: link(telas[i - 1], href.inicio()), proxima: link(telas[i + 1], href.plano()) };
+  return { anterior: telas[i - 1]?.id === 'prioridades' && s.ctx.prioridades?.length > 1 ? href.frentes() : link(telas[i - 1], href.inicio()), proxima: link(telas[i + 1], href.plano()) };
 }
 
 export function selecionarLit(ids: string[], id: string, on: boolean, multipla = false): string[] {

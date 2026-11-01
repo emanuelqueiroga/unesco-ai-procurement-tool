@@ -4,7 +4,7 @@ import { letramentoRespondido, telaLetramentoLegada } from '../percurso/letramen
 // Seletores: derivações puras do estado v14 para a interface (plano, KPIs, recomendações, progresso).
 // Recebem o Estado14 (ou o store) e nunca o mutam: cfgAtual guarda a cfg em estado.custo, por isso recebe uma cópia.
 import { clone, cfgAtual, numerosCusto, casoAtual, perfil, recomendacoesCaso, premissasUnitarias, faltasEstimativa, modoTeste, QUESTOES_G, CAMPO_POR_ID,
-  etapasAtivas, alunosEtapa, problemasMarcados, temLacuna, nomeContexto, temGovernanca, percursoGovernanca, percursoLetramento, percursoInstitucional, percursoEducacao, CAMPOS_EDUCACAO_REMOVIDOS, tamanhoRedeValido } from '../domain';
+  etapasAtivas, alunosEtapa, problemasMarcados, temLacuna, nomeContexto, temGovernanca, percursoGovernanca, percursoLetramento, percursoInstitucional, percursoEducacao, CAMPOS_EDUCACAO_REMOVIDOS, tamanhoRedeValido, prioridadesDoPercurso } from '../domain';
 import { governancaRespondida } from '../percurso/governanca';
 import type { Estado14, Origem, Capitulo } from './tipos';
 import { ESSENCIAL, telasAtivas, telasDoCapitulo, type TelaEssencial } from './perguntas';
@@ -31,7 +31,7 @@ export const respondido = (s: Estado14, campo: string) => { const o = origemDe(s
 /** campos que a tela realmente pergunta neste caso: o tamanho do teste segue a resposta 2.0 (prova de conceito,
  *  piloto ou os dois) e as perguntas condicionais (2.4.2) só contam quando aparecem */
 export function camposAtivos(s: Estado14, t: TelaEssencial): string[] {
-  if (t.id === 'problemas' && temGovernanca(s.ctx)) return [...t.campos, 'redeNacional'];
+  if (t.id === 'problemas' && percursoGovernanca(s.ctx)) return [...t.campos, 'redeNacional'];
   if (t.id === 'piloto') { const m = modoTeste(s.caso); return m === 'poc' ? ['poc'] : m === 'ambos' ? ['poc', 'piloto'] : ['piloto']; }
   return t.campos.filter(c => { const f: any = (CAMPO_POR_ID as any)[c]; try { return !f || !f.se || !!f.se(s.caso); } catch (e) { return true; } });
 }
@@ -55,7 +55,7 @@ export function respostaReal(s: Estado14, campo: string): boolean {
     case 'texto': case 'area': return String(v ?? '').trim() !== '' && !temLacuna(String(v));
     case 'num': case 'horas': return +v > 0;
     case 'etapas': return etapasAtivas(s.ctx).length > 0;
-    case 'problemas': return problemasMarcados(s.ctx).length > 0 || String(s.ctx.problemaOutro || '').trim() !== '';
+    case 'problemas': return problemasMarcados({...s.ctx, prioridades:prioridadesDoPercurso(s.ctx)}).length > 0 || String(s.ctx.problemaOutro || '').trim() !== '';
     case 'setup': case 'implant': return v != null && typeof v === 'object' && Object.values(v).some((x: any) => +x > 0);
     default: return temValor(v);
   }

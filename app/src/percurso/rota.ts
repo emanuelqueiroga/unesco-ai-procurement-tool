@@ -18,6 +18,7 @@ const ABAS: AbaRefinar[] = ['premissas', 'ferramentas', 'cenarios'];
 
 export type Rota =
   | { tipo: 'inicio' }
+  | { tipo: 'frentes' }
   | { tipo: 'abertura'; n: Capitulo }
   | { tipo: 'pergunta'; n: Capitulo; tela: string }
   | { tipo: 'sintese'; n: Capitulo; foco?: string }
@@ -29,6 +30,7 @@ const cap = (s: string): Capitulo | null => (['1', '2', '3', '4'].includes(s) ? 
 
 export function lerRota(hash: string): Rota {
   const p = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  if (p[0] === 'frentes') return { tipo: 'frentes' };
   if (p[0] === 'galeria') return { tipo: 'galeria' };
   // #/refinar/premissas/<campo> abre a aba com o campo em foco ("Ajustar premissas" do "de onde vem?")
   if (p[0] === 'refinar') return { tipo: 'refinar', aba: ABAS.includes(p[1] as AbaRefinar) ? (p[1] as AbaRefinar) : 'premissas', foco: p[2] || undefined };
@@ -49,6 +51,7 @@ export function lerRota(hash: string): Rota {
 
 export const href = {
   inicio: () => '#/',
+  frentes: () => '#/frentes',
   abertura: (n: number) => `#/capitulo/${n}`,
   pergunta: (n: number, tela: string) => `#/capitulo/${n}/${tela}`,
   sintese: (n: number) => `#/capitulo/${n}/sintese`,

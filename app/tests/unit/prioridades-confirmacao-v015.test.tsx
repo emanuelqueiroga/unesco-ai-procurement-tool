@@ -20,7 +20,7 @@ describe('v015: prioridades só alteram o percurso ao confirmar',()=>{
  });
  it('confirma a combinação de uma vez e conserva respostas de outras frentes',()=>{
   S().responder('govOrcamento.itens.equipe.valor',500);S().responder('letramento.contexto.detalhe','Nota anterior');
-  expect(confirmarPrioridades(['com','governar','sobre'])).toBe('#/capitulo/1/problemas');expect(S().ctx.prioridades).toEqual(['governar','sobre','com']);expect(S().ctx.govOrcamento.itens.equipe.valor).toBe(500);expect(S().ctx.letramento.contexto.detalhe).toBe('Nota anterior');
+  expect(confirmarPrioridades(['com','governar','sobre'])).toBe('#/frentes');expect(S().ctx.prioridades).toEqual(['governar','sobre','com']);expect(S().ctx.govOrcamento.itens.equipe.valor).toBe(500);expect(S().ctx.letramento.contexto.detalhe).toBe('Nota anterior');
  });
  it('não confirma uma seleção vazia ou desconhecida e mantém o percurso anterior',()=>{
   S().responder('prioridades',['governar']);const antes=JSON.stringify(S().estado());expect(confirmarPrioridades([])).toBeNull();expect(confirmarPrioridades(['inexistente'])).toBeNull();expect(JSON.stringify(S().estado())).toBe(antes);

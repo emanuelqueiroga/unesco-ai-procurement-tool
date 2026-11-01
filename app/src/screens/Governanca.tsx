@@ -1,3 +1,4 @@
+import { abrirFrente, type FrenteId } from '../percurso/frentes';
 import { presetGovernanca, selecoesGov, detalheGov, textoSelecaoGov } from '../percurso/governancaPresets';
 import { entradaEtapa, vizinhos, focarPendencia } from '../percurso/navegacaoOrientada';
 import { useEffect, useState } from 'react';
@@ -17,10 +18,11 @@ import './orientado.css';
 export function Frentes({ s }: { s: CasoStore }) {
   const projeto = projetoUsoDefinido(s.ctx), gov = percursoGovernanca(s.ctx);
   const lit = temLetramento(s.ctx), edu=temEducacao(s.ctx);
-  if ([temGovernanca(s.ctx),lit,edu,projeto].filter(Boolean).length < 2) return null;
-  const abrir = (frente: string) => { s.responder('frenteAtiva', frente); ir(href.plano()); };
+  if ((s.ctx.prioridades?.length || 0) < 2 && [temGovernanca(s.ctx),lit,edu,projeto].filter(Boolean).length < 2) return null;
+  const abrir = (frente: FrenteId) => { const destino=abrirFrente(frente); if(destino)ir(destino); };
   return <section className="pc-gov-frentes" aria-label={t('Frentes do plano')}>
     <p>{t('As frentes compartilham o contexto nacional e mantêm suas ações e recursos.')}</p>
+    <Button size="sm" variant="link" href={href.frentes()}>{t('Ver todas as frentes')}</Button>
     <div className="pc-botoes">
       {temGovernanca(s.ctx) ? <Button size="sm" variant={gov ? 'primary' : 'secondary'} onClick={() => abrir('governanca')}>{t('Plano de governança')}</Button> : null}
       {lit ? <Button size="sm" variant={percursoLetramento(s.ctx) ? 'primary' : 'secondary'} onClick={() => abrir('letramento')}>{t('Letramento e currículo')}</Button> : null}

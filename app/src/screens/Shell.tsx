@@ -163,7 +163,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
           {nav && !barra ? <aside className="pc-nav"><ChapterNav zoneLabel={t('Seu caminho')} chapters={capitulosNav(s, pos)} /></aside> : null}
           <main id="conteudo" className="pc-main" tabIndex={-1}>
             {rota.tipo === 'plano' && !percursoInstitucional(s.ctx) && !percursoPedagogico(s.ctx) ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Anexo técnico (PDF)".')}</p> : null}
-            {prioridadeEscolhida(s.ctx) && !inicio ? <Frentes s={s} /> : null}
+            {prioridadeEscolhida(s.ctx) && !inicio && rota.tipo !== 'frentes' ? <Frentes s={s} /> : null}
             {children}
           </main>
           {plano ? percursoPedagogico(s.ctx) ? <PainelEducacao s={s} /> : percursoLetramento(s.ctx) ? <PainelLetramento s={s} /> : percursoGovernanca(s.ctx) ? <PainelGovernanca s={s} /> : <PlanoVivo s={s} /> : null}
