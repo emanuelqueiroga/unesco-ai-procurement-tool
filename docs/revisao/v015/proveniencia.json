@@ -3,17 +3,17 @@
   "app_version": "0.1.0-alpha.8",
   "base": "v014 React/Prumo publicada",
   "base_source_commit": "bd4d4b3bcb1488f9085e64eb5cbe4ae506bc3db7",
-  "source_commit": "471f2d04cec868dcd6952b08011a1703beb97b7b",
+  "source_commit": "e7bc23fc1833f23c27a3c66c14e52c82e90edf01",
   "source_branch": "feat/v015-from-v014",
-  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/471f2d04cec868dcd6952b08011a1703beb97b7b",
+  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/e7bc23fc1833f23c27a3c66c14e52c82e90edf01",
   "v014_publication_tree": "4016e03f1e70e0b5f8436065fca37af4dd439611",
-  "scope": "Prioridades combinadas apresentam as frentes do plano após Próximo. Escolha local da frente, retomada de pendências e catálogos de desafios separados, preservando escolhas e recursos de todas as frentes.",
+  "scope": "UX unificada: frente compacta, etapas e telas, ações fixas, blocos nativos, panorama nacional e resumos por frente, alinhamento, contraste e acessibilidade modal. Dados e percursos preservados.",
   "build": "VITE_CANAL=revisao npm run build -- --outDir ../docs/revisao/v015",
   "validation": {
     "build": "passed",
     "types": "passed",
-    "test_files_passed": 46,
-    "tests_passed": 955,
+    "test_files_passed": 47,
+    "tests_passed": 976,
     "skipped": 2,
     "todo": 1,
     "new_pathway_tests": 24,
@@ -32,30 +32,42 @@
       "All 15 nonempty priority combinations validated. Four priorities form three workstreams; with/without AI and for the AI age share education.",
       "Browser: confirmed priorities open the overview; local radio choice only activates on Next; literacy, governance and education open their own pending questions and challenge catalogues.",
       "Browser: selected teacher literacy and regulation challenges remain saved when switching; literacy resumes at audience scope.",
-      "Overview PT/EN and reload verified. Mobile 390x844 has client and scroll widths of 375px with aligned 303px cards. Viewport reset."
+      "Overview PT/EN and reload verified. Mobile 390x844 has client and scroll widths of 375px with aligned 303px cards. Viewport reset.",
+      "UX: compact current workstream replaces repeated navigation buttons; drafts do not change priority layout before Next.",
+      "Shared country/priorities excluded from workstream totals consistently in overview, home and panels; stage/screen counters remain scoped.",
+      "National overview shows all workstreams, their states and individual amounts; explicit workstream summary URLs survive reload and Back.",
+      "Native exclusive disclosure groups preserve inputs; Next opens and focuses the first pending group, with associated control errors.",
+      "Mobile 390x844: 375px client/scroll width, 45px workstream header, 72px action bar, title y=334px. Modal isolates the application root and restores focus on Escape.",
+      "Wide 1600x1000: 1585px client/scroll width; workstream header and literacy result both width760 at x542.5.",
+      "Governance: exact totals 12345 schools and 1600000 students; diagnostic completed through presets.",
+      "Education: numeric target 80.5 and USD1234.56 retained across PT/EN; amount shown only in its workstream.",
+      "Dark auxiliary links: foreground147/163/171 on22/35/42, contrast approximately6.17:1."
     ],
     "responsive": {
-      "tested_viewports": "default; 390x844; 1600x1000",
+      "tested_viewports": "1280x720; 390x844; 1600x1000",
       "mobile_client_width": 375,
       "mobile_scroll_width": 375,
       "wide_panel_width": 320,
-      "viewport_override": "reset after testing",
-      "panel": "drawer through 1439px; 320px sidebar above"
+      "viewport_override": "reset; mobile test tab closed",
+      "panel": "drawer through 1439px; 320px sidebar above",
+      "current_workstream_height": 45,
+      "action_bar_height": 72
     },
     "preservation": "Format 14 and storage key retained. Existing IDs, notes, counts, inactive answers, currency and legacy tool data remain in JSON. A–D illustrative tool projects remain explicit projects.",
     "translation_status": "PT/EN complete; existing translations retained in six other languages with explicit English fallback for new text; no native review claimed.",
     "open_session_compatibility": {
-      "retained_asset_source": "4610a7f6ef051596d7ecca7cf086a19dd121c758",
-      "retained_files": 66,
+      "retained_asset_source": "bab4a5b46422385cd62d43cdc62d85cb417cd74d",
+      "retained_files": 83,
       "validation": "Every previous asset retained byte-identical alongside the new build."
     },
-    "source_rebuild": "All 555 tracked app, translation and country-catalog files match the TypeScript-checked source build.",
+    "source_rebuild": "All 582 tracked app, translation and country-catalog files match the TypeScript-checked source build.",
     "new_priority_confirmation_tests": 7,
-    "new_workstream_tests": 23
+    "new_workstream_tests": 23,
+    "new_ux_tests": 21
   },
   "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
-  "delivery": "18-frentes-do-plano",
-  "publication_parent": "4610a7f6ef051596d7ecca7cf086a19dd121c758",
+  "delivery": "19-design-ux",
+  "publication_parent": "bab4a5b46422385cd62d43cdc62d85cb417cd74d",
   "previous_delivery_commit": "09b150fcf402635c6cdddcc471574555ded4cf43",
   "phase_names_en": [
     "Context",
@@ -201,15 +213,13 @@
   ],
   "literacy_translation_status": "New pathway text complete in PT/EN. Existing translations preserved in other languages; missing new entries use explicit English fallback and a pathway notice. No native review claimed.",
   "literacy_budget": "Informed totals by category/period; unknown is not zero; shared governance costs are referenced without summing again; no inferred licenses or participant-based prices.",
-  "essential_screens_education": 20,
-  "context_screens_education": 6,
+  "essential_screens_education": 12,
+  "context_screens_education": 4,
   "education_context_order": [
     "local",
     "prioridades",
     "etapas",
-    "problemas",
-    "impactos",
-    "governanca"
+    "problemas"
   ],
   "education_challenge_ids": [
     "C11",
@@ -225,7 +235,7 @@
     "C21"
   ],
   "education_impact_mode": "Derived from selected challenges; target/expected outcome editable; old manual impacts retained in exported context.",
-  "education_workflow_status": "Only explicitly requested context changes implemented. Later screens, budget, recommendations and reports still use the procurement model; proposed redesign awaits approval.",
+  "education_workflow_status": "Full educational workflow previously implemented; common UX and national plan overview delivered in 19-design-ux.",
   "education_editorial_references": [
     "https://www.uil.unesco.org/en/litbase/literate-brazil-programme-brazil",
     "https://www.unesco.org/en/legal-affairs/recommendation-adult-learning-and-education"
@@ -240,7 +250,7 @@
     "prioridades",
     "problemas"
   ],
-  "other_pathway_review": "Governance retains institutional content but needs continuous navigation and aligned groups. Education with/without AI and for the Age of AI still need conditional education/intervention pathways, shared-resource handling and coherent reports.",
+  "other_pathway_review": "Governance, literacy and educational pathways implemented; shared UX updated in 19-design-ux.",
   "retained_previous_assets": {
     "retained_asset_source": "c24582224017343cfe66245505ac8bf5692c1431",
     "retained_files": 16,
@@ -259,7 +269,7 @@
     "Acompanhamento e expansão"
   ],
   "source_completeness": {
-    "source_commit": "471f2d04cec868dcd6952b08011a1703beb97b7b",
+    "source_commit": "e7bc23fc1833f23c27a3c66c14e52c82e90edf01",
     "complementary_files": 150,
     "purpose": "Complete the runtime, translations, tests and country catalog from previous v015 source deliveries, keeping the built v014 and stable page unchanged."
   },
@@ -278,5 +288,15 @@
     "resume": "First pending workstream question, excluding shared country and priorities; complete workstream opens its plan.",
     "sequencing": "User chooses one workstream at a time; no automatic traversal.",
     "challenges": "Only the active workstream catalogue is displayed and counted. Other selections remain saved."
+  },
+  "ux": {
+    "overview": "#/plano-nacional",
+    "summary": "#/frente/{id}/resumo",
+    "drafts": "Priorities and workstream choice apply only on Next.",
+    "progress": "Own workstream screens; country/priorities shown separately as shared context.",
+    "costs": "Individual workstream subtotals, currencies and references; no fabricated consolidated sum or new consolidated PDF.",
+    "groups": "Native exclusive sibling disclosure groups; stored answers unchanged.",
+    "accessibility": "Modal semantics, inert background, Escape/focus restoration and associated group errors; no full physical-device/screen-reader certification claimed.",
+    "identity": "Existing product name and institutional logos retained; plan-management terminology unified."
   }
 }

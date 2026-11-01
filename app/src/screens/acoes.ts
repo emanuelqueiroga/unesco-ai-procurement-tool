@@ -48,7 +48,7 @@ export async function baixarArquivo(nome: string, conteudo: string | Blob, tipo 
 export async function exportarCaso(): Promise<boolean> {
   const e = useCaso.getState().estado();
   const como = await baixarArquivo(nomeArqCaso(e), textoCaso(e));
-  if (como === 'link') avisar(t('Caso exportado.'));
+  if (como === 'link') avisar(t('Plano exportado.'));
   return !!como;
 }
 
@@ -56,7 +56,7 @@ export async function exportarCaso(): Promise<boolean> {
 export async function copiarDadosCaso(): Promise<boolean> {
   const txt = JSON.stringify(JSON.parse(textoCaso(useCaso.getState().estado())));
   try {
-    if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(txt); avisar(t('Dados do caso copiados.')); return true; }
+    if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(txt); avisar(t('Dados do plano copiados.')); return true; }
   } catch { /* cai no aviso abaixo */ }
   avisar(t('Não foi possível copiar.'));
   return false;
@@ -81,10 +81,10 @@ export async function confirmarSubstituicao(tipo: TipoSubstituicao): Promise<boo
   let ok2 = false;
   try {
     ok2 = await confirmar({
-      titulo: t('Apagar o caso atual?'),
-      texto: t('As respostas deste caso serão apagadas deste navegador e não há como desfazer. Se quiser guardá-las, exporte o caso antes.'),
+      titulo: t('Substituir o plano atual?'),
+      texto: t('As respostas deste plano serão apagadas deste navegador e não há como desfazer. Se quiser guardá-las, exporte o plano antes.'),
       ok,
-      extra: { rotulo: t('Exportar o caso antes'), acao: () => { void exportarCaso(); } },
+      extra: { rotulo: t('Exportar o plano antes'), acao: () => { void exportarCaso(); } },
     });
     return ok2;
   } finally {
@@ -97,7 +97,7 @@ export async function confirmarSubstituicao(tipo: TipoSubstituicao): Promise<boo
 export async function comecarEmBranco(): Promise<boolean> {
   if (!(await confirmarSubstituicao('branco'))) return false;
   useCaso.getState().limpar();
-  avisar(t('Caso em branco.'));
+  avisar(t('Plano em branco.'));
   ir(href.inicio());
   return true;
 }
@@ -121,7 +121,7 @@ export async function importarTexto(texto: string): Promise<ResultadoImportacao>
   if (!(await confirmarSubstituicao('importar'))) return { ok: false, cancelado: true };
   try { useCaso.getState().importar(texto); } catch (err) { return { ok: false, erro: mensagemErroImportacao(err) }; }
   await aplicarIdiomaDoCaso();
-  avisar(t('Caso importado.'));
+  avisar(t('Plano importado.'));
   return { ok: true };
 }
 

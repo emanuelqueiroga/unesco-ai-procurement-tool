@@ -7,6 +7,7 @@
 //   #/refinar[/premissas|ferramentas|cenarios]   calculadora do modo Refinar
 //   #/galeria                  galeria de componentes do Prumo
 import { useEffect, useState } from 'react';
+import type { FrenteId } from './frentes';
 import type { Capitulo } from '../store';
 import { TODAS_TELAS, telaDoCampo, capituloDoCampo } from '../store';
 
@@ -19,6 +20,8 @@ const ABAS: AbaRefinar[] = ['premissas', 'ferramentas', 'cenarios'];
 export type Rota =
   | { tipo: 'inicio' }
   | { tipo: 'frentes' }
+  | { tipo: 'panorama' }
+  | { tipo: 'frente'; id: FrenteId; resumo: boolean }
   | { tipo: 'abertura'; n: Capitulo }
   | { tipo: 'pergunta'; n: Capitulo; tela: string }
   | { tipo: 'sintese'; n: Capitulo; foco?: string }
@@ -30,6 +33,8 @@ const cap = (s: string): Capitulo | null => (['1', '2', '3', '4'].includes(s) ? 
 
 export function lerRota(hash: string): Rota {
   const p = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  if (p[0] === 'plano-nacional') return {tipo:'panorama'};
+  if (p[0] === 'frente' && ['governanca','letramento','educacao','projeto'].includes(p[1])) return {tipo:'frente',id:p[1] as FrenteId,resumo:p[2]==='resumo'};
   if (p[0] === 'frentes') return { tipo: 'frentes' };
   if (p[0] === 'galeria') return { tipo: 'galeria' };
   // #/refinar/premissas/<campo> abre a aba com o campo em foco ("Ajustar premissas" do "de onde vem?")
@@ -52,6 +57,8 @@ export function lerRota(hash: string): Rota {
 export const href = {
   inicio: () => '#/',
   frentes: () => '#/frentes',
+  panorama: () => '#/plano-nacional',
+  frente: (id: FrenteId, resumo=false) => `#/frente/${id}${resumo?'/resumo':''}`,
   abertura: (n: number) => `#/capitulo/${n}`,
   pergunta: (n: number, tela: string) => `#/capitulo/${n}/${tela}`,
   sintese: (n: number) => `#/capitulo/${n}/sintese`,

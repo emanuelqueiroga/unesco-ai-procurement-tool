@@ -1,5 +1,6 @@
+import { frentesDoPlano,frenteAtual,progressoFrente } from '../percurso/frentes';
 // v015: página inicial sobre a v014 React/Prumo, com as quatro etapas do percurso.
-import { prioridadeEscolhida, percursoInstitucional } from '../domain';
+import { prioridadeEscolhida, percursoInstitucional,percursoPedagogico } from '../domain';
 import { useState } from 'react';
 import { useCaso, faltamDe, temRespostas, telasAtivas } from '../store';
 import { Button, Alert } from '../ui';
@@ -17,12 +18,13 @@ export function Inicio() {
   const [erro, setErro] = useState<string | null>(null);
   const comCaso = temRespostas(s);
   const faltam = faltamDe(s);
+  const andamento=progressoFrente(s,frenteAtual(s));
   const continuar = destinoContinuar(s, faltam);
   const titulo = s.exemplo !== 'novo' && s.exemplo !== 'editado'
     ? t('Há um exemplo aberto neste navegador.')
-    : s.migradoDe === 'v13' ? t('Encontramos o caso que você preencheu na versão anterior.')
-      : s.migradoDe === 'v8' ? t('Encontramos o caso que você preencheu no aplicativo anterior.')
-        : t('Há um caso salvo neste navegador.');
+    : s.migradoDe === 'v13' ? t('Encontramos o plano que você preencheu na versão anterior.')
+      : s.migradoDe === 'v8' ? t('Encontramos o plano que você preencheu no aplicativo anterior.')
+        : t('Há um plano salvo neste navegador.');
   return (
     <Shell nav={false} plano={false} inicio>
       <section className="pc-inicio pc-inicio-simples" aria-labelledby="inicio-titulo">
@@ -31,12 +33,12 @@ export function Inicio() {
         <p className="pc-lead">{t('Descreva sua rede, defina prioridades e explore os recursos e custos do seu plano.')}</p>
         {comCaso ? (
           <Alert kind="info" title={titulo}>
-            {prioridadeEscolhida(s.ctx) ? t('{r} de {n} perguntas essenciais respondidas.', { r: telasAtivas(s).length - faltam.length, n: telasAtivas(s).length }) : t('Escolha a prioridade para definir as próximas etapas.')}
+            {prioridadeEscolhida(s.ctx) ? t('{r} de {n} telas preenchidas em {frente}.', { r: andamento.feitas, n: andamento.total,frente:t(frentesDoPlano(s).find(f=>f.id===frenteAtual(s))?.titulo||'Planejamento') }) : t('Escolha a prioridade para definir as próximas etapas.')}
           </Alert>
         ) : null}
         {erro ? <Alert kind="atencao" title={erro} /> : null}
         <div className="pc-inicio-principal">
-          <Button href={comCaso ? continuar.href : href.abertura(1)}>
+          <Button href={comCaso ? continuar.pendente?continuar.href:href.panorama() : href.abertura(1)}>
             {comCaso ? (continuar.pendente ? t('Continuar de onde parei') : t('Abrir o plano')) : t('Começar')}
           </Button>
           {comCaso ? (
@@ -49,10 +51,10 @@ export function Inicio() {
         <div className="pc-inicio-opcoes">
           <div className="pc-inicio-secundarias">
             <Button variant="link" onClick={() => { void abrirExemplo('B'); }}>{t('Ver um plano de exemplo')}</Button>
-            {comCaso ? <Button variant="link" onClick={() => { void exportarCaso(); }}>{t('Exportar o caso')}</Button> : null}
+            {comCaso ? <Button variant="link" onClick={() => { void exportarCaso(); }}>{t('Exportar o plano')}</Button> : null}
           </div>
           <details className="pc-inicio-detalhe">
-            <summary>{t('Importar caso')}</summary>
+            <summary>{t('Importar plano')}</summary>
             <div className="pc-inicio-detalhe-corpo pc-botoes">
               <CampoImportar onPronto={(e) => { setErro(e); if (!e) ir(href.plano()); }} />
             </div>
@@ -66,7 +68,7 @@ export function Inicio() {
                 ))}
               </ol>
               <p>{t('Os valores são estimativas. Você pode revisar as premissas ao longo do planejamento.')}</p>
-              {prioridadeEscolhida(s.ctx) && !percursoInstitucional(s.ctx) ? <Button variant="link" onClick={() => abrirMatriz()} aria-haspopup="dialog">{t('Ver a matriz completa')}</Button> : null}
+              {prioridadeEscolhida(s.ctx) && !percursoInstitucional(s.ctx) && !percursoPedagogico(s.ctx) ? <Button variant="link" onClick={() => abrirMatriz()} aria-haspopup="dialog">{t('Ver a matriz completa')}</Button> : null}
             </div>
           </details>
         </div>

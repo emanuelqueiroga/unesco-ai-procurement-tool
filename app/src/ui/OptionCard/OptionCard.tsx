@@ -1,5 +1,7 @@
+import { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import './OptionCard.css';
+const EstadoGrupo=createContext<{invalid?:boolean;describedBy?:string}>({});
 
 export type OptionCardProps = {
   /** Nome do grupo de rádio (ou da caixa). */
@@ -29,6 +31,7 @@ export function OptionCard({
   disabled,
   children,
 }: OptionCardProps) {
+  const grupo=useContext(EstadoGrupo);
   const cls = ['pr-optioncard', checked ? 'pr-optioncard--selected' : '', disabled ? 'pr-optioncard--disabled' : '']
     .filter(Boolean)
     .join(' ');
@@ -39,6 +42,8 @@ export function OptionCard({
         type={type}
         name={name}
         value={value}
+        aria-invalid={grupo.invalid||undefined}
+        aria-describedby={grupo.describedBy}
         checked={checked}
         disabled={disabled}
         onChange={(e) => onChange?.(value, e.target.checked)}
@@ -80,6 +85,8 @@ export function OptionCardField({ label, value, onChange, suffix, size = 4 }: Op
 }
 
 export type OptionCardGroupProps = {
+  invalid?: boolean;
+  describedBy?: string;
   /** Rótulo acessível do grupo (a pergunta). */
   label: string;
   type?: 'radio' | 'checkbox';
@@ -88,14 +95,16 @@ export type OptionCardGroupProps = {
 };
 
 /** Lista vertical de cartões, uma coluna, com `role="radiogroup"` ou `role="group"`. */
-export function OptionCardGroup({ label, type = 'radio', children, className }: OptionCardGroupProps) {
+export function OptionCardGroup({ label, type = 'radio', children, className,invalid,describedBy }: OptionCardGroupProps) {
   return (
     <div
       className={['pr-optioncard-group', className ?? ''].filter(Boolean).join(' ')}
       role={type === 'radio' ? 'radiogroup' : 'group'}
       aria-label={label}
+      aria-invalid={invalid||undefined}
+      aria-describedby={describedBy}
     >
-      {children}
+      <EstadoGrupo.Provider value={{invalid,describedBy}}>{children}</EstadoGrupo.Provider>
     </div>
   );
 }

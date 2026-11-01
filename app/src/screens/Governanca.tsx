@@ -1,7 +1,12 @@
+import { GrupoFormulario, ValidacaoCampos } from './GrupoFormulario';
+import { useResumoPlano } from './ResumoContexto';
+import { AcoesPercurso } from './AcoesPercurso';
+import { ProgressoPergunta } from './ProgressoPergunta';
+import { frentesDoPlano,frenteAtual } from '../percurso/frentes';
 import { abrirFrente, type FrenteId } from '../percurso/frentes';
 import { presetGovernanca, selecoesGov, detalheGov, textoSelecaoGov } from '../percurso/governancaPresets';
 import { entradaEtapa, vizinhos, focarPendencia } from '../percurso/navegacaoOrientada';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { useCaso, telasDoCapitulo, telasAtivas, faltamDe, telaRespondida, type CasoStore, type Capitulo } from '../store';
 import { temEducacao, percursoPedagogico, temGovernanca, temLetramento, percursoLetramento, percursoGovernanca, projetoUsoDefinido, tamanhoRedeValido, LOC } from '../domain';
 import { Button, TextField, OptionCard, OptionCardGroup, QuestionFrame, ChapterOpening, PlanPanel, PlanDrawer, useMediaQuery, BREAKPOINTS, Alert, Chip, ChipGroup } from '../ui';
@@ -15,26 +20,15 @@ import './governanca.css';
 import './letramento.css';
 import './orientado.css';
 
-export function Frentes({ s }: { s: CasoStore }) {
-  const projeto = projetoUsoDefinido(s.ctx), gov = percursoGovernanca(s.ctx);
-  const lit = temLetramento(s.ctx), edu=temEducacao(s.ctx);
-  if ((s.ctx.prioridades?.length || 0) < 2 && [temGovernanca(s.ctx),lit,edu,projeto].filter(Boolean).length < 2) return null;
-  const abrir = (frente: FrenteId) => { const destino=abrirFrente(frente); if(destino)ir(destino); };
-  return <section className="pc-gov-frentes" aria-label={t('Frentes do plano')}>
-    <p>{t('As frentes compartilham o contexto nacional e mantêm suas ações e recursos.')}</p>
-    <Button size="sm" variant="link" href={href.frentes()}>{t('Ver todas as frentes')}</Button>
-    <div className="pc-botoes">
-      {temGovernanca(s.ctx) ? <Button size="sm" variant={gov ? 'primary' : 'secondary'} onClick={() => abrir('governanca')}>{t('Plano de governança')}</Button> : null}
-      {lit ? <Button size="sm" variant={percursoLetramento(s.ctx) ? 'primary' : 'secondary'} onClick={() => abrir('letramento')}>{t('Letramento e currículo')}</Button> : null}
-      {edu ? <Button size="sm" variant={percursoPedagogico(s.ctx)?'primary':'secondary'} onClick={()=>abrir('educacao')}>{t('Intervenção educacional')}</Button> : null}
-      {projeto ? <Button size="sm" variant={!gov && !percursoLetramento(s.ctx) && !percursoPedagogico(s.ctx) ? 'primary' : 'secondary'} onClick={() => abrir('projeto')}>{t('Projeto de uso de IA')}</Button> : null}
-    </div>
-    {projeto && !gov && !percursoLetramento(s.ctx) ? <p className="pc-nota">{t('Projeto identificado: {nome}', { nome: s.ctx.projetoIA.descricao })}</p> : null}
-  </section>;
+export function Frentes({s}:{s:CasoStore}){
+ const lista=frentesDoPlano(s),atual=lista.find(f=>f.id===frenteAtual(s));
+ if(!atual)return null;
+ return <nav className="pc-ux-frente-atual" aria-label={t('Frente atual')}><span><span className="pc-ux-frente-rotulo">{t('Frente:')}</span> <strong aria-current="true">{t(atual.titulo)}</strong></span>{lista.length>1||s.ctx.prioridades?.length>1?<a href={href.frentes()}>{t('Trocar')}</a>:null}</nav>;
 }
 const NA = () => t('Não informado');
 const gv = (s: CasoStore, campo: string) => campo.split('.').reduce((o: any, k) => o?.[k], s.ctx);
-function Texto({ s, campo, label }: { s: CasoStore; campo: string; label: string; longo?: boolean; sugestao?: string }) {
+function Texto({ s, campo, label, ocultarTitulo=false }: { s: CasoStore; campo: string; label: string; ocultarTitulo?:boolean; longo?: boolean; sugestao?: string }) {
+  const tentou=useContext(ValidacaoCampos),faltando=tentou&&!String(gv(s,campo)||'').trim(),erroId='gov-'+campo.replace(/[^a-zA-Z0-9_-]/g,'-')+'-erro';
   const def = presetGovernanca(s, campo), ids = selecoesGov(s, campo), detalhe = detalheGov(s, campo);
   const gravar = (novos: string[], extra: string) => {
     const atual = useCaso.getState();
@@ -43,9 +37,10 @@ function Texto({ s, campo, label }: { s: CasoStore; campo: string; label: string
     s.responder(campo, textoSelecaoGov(atual, campo, novos, extra));
   };
   return <section className="pc-gov-escolha" data-campo-preset={campo} id={'gov-'+campo.replace(/[^a-zA-Z0-9_-]/g,'-')} tabIndex={-1}>
-    <p className="pc-gov-rotulo">{t(label)}</p>
-    <OptionCardGroup className="pc-lit-opcoes" label={t(label)} type={def.multipla?'checkbox':'radio'}>{def.opcoes.map(o => <OptionCard key={o.id} name={campo} value={o.id} type={def.multipla?'checkbox':'radio'} label={t(o.texto)} checked={ids.includes(o.id)}
+    {!ocultarTitulo?<p className="pc-gov-rotulo">{t(label)}</p>:null}
+    <OptionCardGroup invalid={faltando} describedBy={faltando?erroId:undefined} className="pc-lit-opcoes" label={t(label)} type={def.multipla?'checkbox':'radio'}>{def.opcoes.map(o => <OptionCard key={o.id} name={campo} value={o.id} type={def.multipla?'checkbox':'radio'} label={t(o.texto)} checked={ids.includes(o.id)}
       onChange={(_,on) => gravar(on ? !def.multipla || o.id === 'a_definir' ? [o.id] : [...ids.filter(id => id !== 'a_definir'), o.id] : ids.filter(id => id !== o.id), detalhe)} />)}</OptionCardGroup>
+    {faltando?<p id={erroId} className="pc-lit-erro">{t('Selecione uma opção ou indique a informação a levantar.')}</p>:null}
     {def.evidencia ? <p className="pc-nota">{t('Selecione o tipo de evidência. Você pode identificar o documento nas informações adicionais.')}</p> : null}
     {campo.endsWith('.prazo') ? <p className="pc-nota">{t('Prazos contados a partir da aprovação do plano.')}</p> : null}
     <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}{detalhe ? <span> · {t('Informações adicionadas')}</span> : null}</summary>
@@ -54,15 +49,16 @@ function Texto({ s, campo, label }: { s: CasoStore; campo: string; label: string
   </section>;
 }
 function Grupo({ s, base, campos }: { s: CasoStore; base: string; campos: readonly (readonly [string, string])[] }) {
-  return <div className="pc-gov-campos">{campos.map(([id, label]) => <Texto key={id} s={s} campo={base + '.' + id} label={label} />)}</div>;
+  return <div className="pc-gov-campos">{campos.map(([id, label],i) => <GrupoFormulario key={id} titulo={t(label)} estado={t(gv(s,base+'.'+id)?'Preenchido':'A preencher')} abrir={i===0} nome={'gov-'+base}><Texto s={s} campo={base+'.'+id} label={label} ocultarTitulo/></GrupoFormulario>)}</div>;
 }
 function Instrumentos({ s }: { s: CasoStore }) {
+  const tentou=useContext(ValidacaoCampos);
   return <div className="pc-gov-lista">{desafiosGovernanca(s).map((q,i) => {
-    const d = s.ctx.govInstrumentos?.[q.id] || {}, base = 'govInstrumentos.' + q.id;
-    return <details className="pc-lit-grupo" key={q.id} open={i===0||undefined}><summary><h2 className="pc-lit-grupo-titulo">{q.titulo}</h2></summary><div className="pc-gov-grupo-conteudo">
-      <section id={'gov-'+(base+'.situacao').replace(/[^a-zA-Z0-9_-]/g,'-')} tabIndex={-1}><OptionCardGroup className="pc-lit-opcoes" label={t('O que já existe?')}>
+    const d = s.ctx.govInstrumentos?.[q.id] || {}, base = 'govInstrumentos.' + q.id,erroId='gov-instrumento-'+q.id+'-erro',faltando=tentou&&!d.situacao;
+    return <details className="pc-lit-grupo" {...{name:"gov-desafios"}} key={q.id} open={i===0||undefined}><summary><h2 className="pc-lit-grupo-titulo">{q.titulo}</h2></summary><div className="pc-gov-grupo-conteudo">
+      <section id={'gov-'+(base+'.situacao').replace(/[^a-zA-Z0-9_-]/g,'-')} tabIndex={-1}><OptionCardGroup invalid={faltando} describedBy={faltando?erroId:undefined} className="pc-lit-opcoes" label={t('O que já existe?')}>
         {[['existente', 'Existe'], ['parcial', 'Em parte'], ['ausente', 'Não existe'], ['nao_sei', 'Não sei']].map(([v, nome]) => <OptionCard key={v} name={base} value={v} label={t(nome)} checked={d.situacao === v} onChange={v => s.responder(base + '.situacao', v)} />)}
-      </OptionCardGroup></section>
+      </OptionCardGroup>{faltando?<p id={erroId} className="pc-lit-erro">{t('Selecione uma opção ou indique a informação a levantar.')}</p>:null}</section>
       {['existente','parcial'].includes(d.situacao) ? <Grupo s={s} base={base} campos={[['instrumento', 'Instrumento existente'], ['evidencia', 'Documento ou evidência']]} /> : null}
       <Grupo s={s} base={base} campos={[['responsavel', 'Instituição responsável'], ['lacuna', 'Lacunas a resolver']]} />
     </div></details>;
@@ -82,16 +78,19 @@ function Acoes({ s }: { s: CasoStore }) {
     </div></details>)}</div></>;
 }
 function CustoPreset({ s, base, nome, moeda }: { s: CasoStore; base: string; nome: string; moeda: string }) {
+  const tentou=useContext(ValidacaoCampos);
   const item = gv(s, base) || {}, situacao = item.situacao || (typeof item.valor === 'number' ? 'informado' : '');
-  return <details className="pc-gov-card pc-lit-grupo pc-gov-custo-preset" id={'gov-'+base.replace(/[^a-zA-Z0-9_-]/g,'-')} tabIndex={-1}>
+  const faltando=tentou&&!(['a_estimar','sem_custo'].includes(situacao)||situacao==='informado'&&typeof item.valor==='number'&&Number.isFinite(item.valor)&&item.valor>=0),erroId='gov-custo-'+base.replace(/[^a-zA-Z0-9_-]/g,'-')+'-erro';
+  return <details {...{name:'gov-govOrcamento'}} className="pc-gov-card pc-lit-grupo pc-gov-custo-preset" id={'gov-'+base.replace(/[^a-zA-Z0-9_-]/g,'-')} tabIndex={-1}>
     <summary><h2 className="pc-lit-grupo-titulo">{t(nome)}</h2><span className="pc-lit-grupo-estado">{situacao==='informado'&&typeof item.valor==='number'?moedaGovernanca(item.valor,moeda,String(LOC())):situacao==='a_estimar'?t('Custo ainda a levantar'):situacao==='sem_custo'?moedaGovernanca(0,moeda,String(LOC())):t('Não informado')}</span></summary><div className="pc-gov-grupo-conteudo">
-    <OptionCardGroup className="pc-lit-opcoes" label={t('Situação do custo')+': '+t(nome)}>
+    <OptionCardGroup invalid={faltando} describedBy={faltando?erroId:undefined} className="pc-lit-opcoes" label={t('Situação do custo')+': '+t(nome)}>
       {[['a_estimar','Custo ainda a levantar'],['sem_custo','Sem custo neste orçamento'],['informado','Já tenho um valor']].map(([id,label]) => <OptionCard key={id} name={base} value={id} label={t(label)} checked={situacao === id} onChange={id => {
         s.responder('govOrcamento.moeda', moeda); s.responder(base + '.situacao', id);
       }} />)}
     </OptionCardGroup>
+    {faltando?<p id={erroId} className="pc-lit-erro">{t('Informe a situação e, quando necessário, o valor ou o item de origem.')}</p>:null}
     {situacao === 'informado' ? <CampoNumero label={t('Valor informado') + ' (' + moeda + ')'} value={item.valor ?? ''} decimais
-        error={typeof item.valor === 'number' && item.valor < 0 ? t('Informe um valor maior ou igual a zero.') : undefined}
+        error={faltando||typeof item.valor === 'number' && (!Number.isFinite(item.valor)||item.valor < 0) ? t('Informe um valor maior ou igual a zero.') : undefined}
         onChange={v => { s.responder('govOrcamento.moeda', moeda); s.responder(base + '.valor', v); s.responder(base + '.situacao', 'informado'); }} /> : null}
     <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}</summary>
       <TextField label={t('Detalhamento e fonte do item')} multiline value={String(item.detalhe || '')} onChange={v => s.responder(base + '.detalhe', v)} />
@@ -169,15 +168,15 @@ function ControlesGov({ s, id }: { s: CasoStore; id: string }) {
 }
 export function PainelGovernanca({ s }: { s: CasoStore }) {
   const p = planoGovernanca(s), o = p.orcamento;
-  const gaveta = useMediaQuery('(max-width: 1439px)'), [aberta, setAberta] = useState(false);
+  const gaveta = useMediaQuery('(max-width: 1439px)'), {aberta,setAberta,integrado}=useResumoPlano();
   const painel = <PlanPanel fluid paperOnly={gaveta} state={faltamDe(s).length || p.pendentes ? 'writing' : 'complete'}
     title={p.pais || t('Governança de IA na educação')} kicker={p.titulo} facts={t('{n} desafios selecionados', { n: p.desafios.length })}
     openHref={href.plano()} summaryTitle={t('Em resumo')} originLine={<>{p.proxima}<p>{p.escopo}</p></>}
     kpis={[{ id: 'gov-orcamento', label: o.total === null ? t('Subtotal informado') : t('Total informado'), value: o.informados ? moedaGovernanca(o.subtotal, o.moeda, String(LOC())) : NA() }]}
     recommendationsTitle={t('Entregas previstas')} recommendationsCount={p.acoes.length}
     recommendations={p.acoes.slice(0, 3).map(a => ({ id: a.id, text: a.entrega }))}
-    footer={<><p className="pc-nota">{o.faltam ? t('{n} itens sem valor informado. O subtotal não é o orçamento completo.', { n: o.faltam }) : o.periodo || t('Período do orçamento') + ': ' + NA()}</p><Button variant="secondary" size="sm" href={href.plano()}>{t('Abrir o plano inteiro')}</Button></>} />;
-  return gaveta ? <PlanDrawer open={aberta} onOpenChange={setAberta} zoneLabel={p.titulo} summary={t('{n} desafios selecionados', { n: p.desafios.length })} closeLabel={t('Fechar')} openLabel={t('Abrir o seu plano')}>{painel}</PlanDrawer>
+    footer={<><p className="pc-nota">{o.faltam ? t('{n} itens sem valor informado. O subtotal não é o orçamento completo.', { n: o.faltam }) : o.periodo || t('Período do orçamento') + ': ' + NA()}</p><Button variant="secondary" size="sm" href={href.plano()}>{t('Resumo desta frente')}</Button></>} />;
+  return gaveta ? <PlanDrawer hideTrigger={integrado} open={aberta} onOpenChange={setAberta} zoneLabel={p.titulo} summary={t('{n} desafios selecionados', { n: p.desafios.length })} closeLabel={t('Fechar')} openLabel={t('Abrir o seu plano')}>{painel}</PlanDrawer>
     : <aside className="pc-plano" aria-label={p.titulo}>{painel}</aside>;
 }
 function PDFs({ s }: { s: CasoStore }) {
@@ -213,8 +212,8 @@ export function Governanca({ rota }: { rota: Rota }) {
  const id=ativa.id,info=infoCapitulo(n,s),dest=vizinhos(s,id),falta=!telaRespondida(s,ativa),pendencias=pendenciasGov(s,id);
  const focar=(p:string)=>focarPendencia('gov-'+p.replace(/[^a-zA-Z0-9_-]/g,'-'));
  const avancar=()=>{if(!falta){ir(dest.proxima);return;}setTentou(true);requestAnimationFrame(()=>pendencias.length?focar(pendencias[0].caminho):focarPendencia('gov-validacao'));};
- return <Shell pos={{capitulo:n,tela:id}} contexto={t(info.titulo)}><div className="pc-pergunta" data-tela={id}><QuestionFrame kicker={t('{nome} · pergunta {i} de {total}',{nome:t(info.titulo),i:lista.indexOf(ativa)+1,total:lista.length})} title={t(TITULO_TELA[id]||CURTO[id]||id)}
- actions={<div className="pc-lit-acoes"><p className="pc-lit-progresso">{t('Pergunta {n} de {total}',{n:qs.indexOf(ativa)+1,total:qs.length})}</p><div className="pc-botoes"><Button variant="secondary" href={dest.anterior}>{t('Voltar')}</Button><Button onClick={avancar}>{t('Próximo')}</Button></div></div>}>
+ return <Shell pos={{capitulo:n,tela:id}} contexto={t(info.titulo)}><div className="pc-pergunta" data-tela={id}><QuestionFrame kicker={<ProgressoPergunta s={s} n={n} id={id}/>} title={t(TITULO_TELA[id]||CURTO[id]||id)}
+ actions={<AcoesPercurso anterior={dest.anterior} avancar={avancar}/>}>
  {tentou&&falta?<div id="gov-validacao" className="pc-lit-validacao" role="alert" tabIndex={-1}><b>{t('Complete as respostas indicadas ou marque as informações a levantar.')}</b><ul>{pendencias.slice(0,3).map(p=><li key={p.caminho}><a href="#gov-validacao" onClick={e=>{e.preventDefault();focar(p.caminho);}}>{t(p.label)}</a></li>)}{!pendencias.length?<li>{t(id==='problemas'?'Selecione os desafios do plano e informe os totais da rede.':id==='local'?'Escolha o país para avançar.':'Selecione ao menos uma prioridade.')}</li>:null}</ul>{pendencias.length>3?<details><summary>{t('Ver outras {n} pendências',{n:pendencias.length-3})}</summary><ul>{pendencias.slice(3).map(p=><li key={p.caminho}><a href="#gov-validacao" onClick={e=>{e.preventDefault();focar(p.caminho);}}>{t(p.label)}</a></li>)}</ul></details>:null}</div>:null}
- <div className="pc-lit-campos"><ControlesGov s={s} id={id}/></div></QuestionFrame></div></Shell>;
+ <div className="pc-lit-campos"><ValidacaoCampos.Provider value={tentou}><ControlesGov s={s} id={id}/></ValidacaoCampos.Provider></div></QuestionFrame></div></Shell>;
 }

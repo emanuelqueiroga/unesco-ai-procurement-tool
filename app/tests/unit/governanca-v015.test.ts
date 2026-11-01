@@ -26,7 +26,7 @@ describe('v015: percurso institucional de governança', () => {
     expect(telasDoCapitulo(2, S()).map(t => t.id)).toEqual(['gov-diagnostico', 'gov-instrumentos', 'gov-solucoes']);
     expect(progressoDe(S())[0].total).toBe(3);
     S().irPara(1, 'problemas'); expect(telaAnterior(S())?.id).toBe('prioridades');
-    expect(tituloDaAba({ tipo: 'pergunta', n: 1, tela: 'problemas' }, S())).toMatch(/^Pergunta 3 de 11/);
+    expect(tituloDaAba({ tipo: 'pergunta', n: 1, tela: 'problemas' }, S())).toMatch(/^Tela 3 de 3/);
     expect(telasAtivas(S()).some(t => ['etapas', 'testes', 'piloto', 'tipoTec', 'pagamento', 'elegiveis', 'internet'].includes(t.id))).toBe(false);
   });
   it('retoma em desafios se o caso estava na seleção de etapas', () => {

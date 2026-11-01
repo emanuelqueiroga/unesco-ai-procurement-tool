@@ -1,3 +1,8 @@
+import { progressoFrente } from '../percurso/frentes';
+import { GrupoFormulario } from './GrupoFormulario';
+import { useResumoPlano } from './ResumoContexto';
+import { AcoesPercurso } from './AcoesPercurso';
+import { ProgressoPergunta } from './ProgressoPergunta';
 import { useEffect, useState, type ReactNode } from "react";
 import {
   useCaso,
@@ -69,29 +74,19 @@ function GrupoEd({
   aberto?: boolean;
   estado?: string;
 }) {
-  return recolhivel ? (
-    <details className="pc-lit-grupo" open={aberto || undefined}>
-      <summary>
-        <h2 className="pc-lit-grupo-titulo">{nome}</h2>
-        {estado ? <span className="pc-lit-grupo-estado">{estado}</span> : null}
-      </summary>
-      <div className="pc-lit-grupo-dados">{children}</div>
-    </details>
-  ) : (
-    <section className="pc-lit-grupo">
-      <h2>{nome}</h2>
-      <div className="pc-lit-grupo-dados">{children}</div>
-    </section>
-  );
+  return <GrupoFormulario titulo={nome} estado={estado} abrir={aberto} nome="educacao-grupos">{children}</GrupoFormulario>;
 }
+
 function Campo({
   s,
   f,
   tentou,
+  ocultarTitulo=false,
 }: {
   s: CasoStore;
   f: CampoEd;
   tentou: boolean;
+  ocultarTitulo?:boolean;
 }) {
   const Titulo = f.grupo ? "h3" : "h2";
   const v = lerEd(s, f.caminho) || {},
@@ -101,7 +96,7 @@ function Campo({
   return (
     <section
       id={ident(f.caminho)}
-      className={"pc-lit-campo" + (f.numero ? " pc-lit-campo--numero" : "")}
+      className={"pc-lit-campo" + (f.numero ? " pc-lit-campo--numero" : "") + (ocultarTitulo&&f.numero?" pc-ux-rotulo-externo":"")}
       tabIndex={-1}
     >
       {f.numero ? (
@@ -139,8 +134,9 @@ function Campo({
         </>
       ) : (
         <>
-          <Titulo className="pc-lit-campo-titulo">{t(f.label)}</Titulo>
+          {!ocultarTitulo?<Titulo className="pc-lit-campo-titulo">{t(f.label)}</Titulo>:null}
           <OptionCardGroup
+            invalid={falta} describedBy={falta?ident(f.caminho)+'-erro':undefined}
             className="pc-lit-opcoes"
             label={t(f.label)}
             type={f.multipla ? "checkbox" : "radio"}
@@ -163,7 +159,7 @@ function Campo({
             ))}
           </OptionCardGroup>
           {falta ? (
-            <p className="pc-lit-erro">
+            <p id={ident(f.caminho)+'-erro'} className="pc-lit-erro">
               {t("Selecione uma opção ou indique a informação a levantar.")}
             </p>
           ) : null}
@@ -215,8 +211,8 @@ function Campos({
           <div className="pc-lit-campos" key="geral">
             {fs
               .filter((f) => !f.grupo)
-              .map((f) => (
-                <Campo key={f.caminho} s={s} f={f} tentou={tentou} />
+              .map((f,j) => (
+                <GrupoFormulario key={f.caminho} titulo={t(f.label)} estado={t(campoEdRespondido(s,f)?"Preenchido":"A preencher")} abrir={j===0} nome="educacao-grupos"><Campo s={s} f={f} tentou={tentou} ocultarTitulo/></GrupoFormulario>
               ))}
           </div>
         ),
@@ -344,6 +340,7 @@ function Orcamento({ s, tentou }: { s: CasoStore; tentou: boolean }) {
                 </div>
               ) : null}
               <OptionCardGroup
+                invalid={tentou&&!i.respondido} describedBy={tentou&&!i.respondido?ident(p)+"-erro":undefined}
                 className="pc-lit-opcoes"
                 label={t("Situação do custo") + ": " + t(i.nome)}
               >
@@ -417,7 +414,7 @@ function Orcamento({ s, tentou }: { s: CasoStore; tentou: boolean }) {
                 </OptionCardGroup>
               ) : null}
               {tentou && !i.respondido ? (
-                <p className="pc-lit-erro">
+                <p id={ident(p)+"-erro"} className="pc-lit-erro">
                   {t(
                     "Informe a situação e, quando necessário, o valor ou o item de origem.",
                   )}
@@ -476,10 +473,11 @@ export function PainelEducacao({ s }: { s: CasoStore }) {
     faltam = faltamDe(s),
     proxima = faltam[0],
     gaveta = useMediaQuery("(max-width: 1439px)"),
-    [aberta, setAberta] = useState(false);
-  const progresso = t("{n} de {total} telas respondidas", {
-    n: qs.length - faltam.length,
-    total: qs.length,
+    {aberta,setAberta,integrado}=useResumoPlano();
+  const feitas=progressoFrente(s,"educacao");
+  const progresso = t("{n} de {total} telas desta frente preenchidas", {
+    n: feitas.feitas,
+    total: feitas.total,
   });
   const panel = (
     <PlanPanel
@@ -523,7 +521,7 @@ export function PainelEducacao({ s }: { s: CasoStore }) {
             </Button>
           ) : null}
           <Button variant="secondary" size="sm" href={href.plano()}>
-            {t("Abrir o plano inteiro")}
+            {t("Resumo desta frente")}
           </Button>
         </>
       }
@@ -531,6 +529,7 @@ export function PainelEducacao({ s }: { s: CasoStore }) {
   );
   return gaveta ? (
     <PlanDrawer
+      hideTrigger={integrado}
       open={aberta}
       onOpenChange={setAberta}
       zoneLabel={p.titulo}
@@ -703,11 +702,7 @@ export function Educacao({ rota }: { rota: Rota }) {
     <Shell pos={{ capitulo: n, tela: id }} contexto={t(info.titulo)}>
       <div className="pc-pergunta" data-tela={id}>
         <QuestionFrame
-          kicker={t("{nome} · pergunta {i} de {total}", {
-            nome: t(info.titulo),
-            i: lista.indexOf(ativa) + 1,
-            total: lista.length,
-          })}
+          kicker={<ProgressoPergunta s={s} n={n} id={id}/>}
           title={t(TITULOS_ED[id] || TITULO_TELA[id] || CURTO[id] || id)}
           explanation={t(
             id === "ed-objetivos"
@@ -722,22 +717,7 @@ export function Educacao({ rota }: { rota: Rota }) {
                   )
                 : LEAD[id] || "",
           )}
-          actions={
-            <div className="pc-lit-acoes">
-              <p className="pc-lit-progresso">
-                {t("Pergunta {n} de {total}", {
-                  n: qs.indexOf(ativa) + 1,
-                  total: qs.length,
-                })}
-              </p>
-              <div className="pc-botoes">
-                <Button variant="secondary" href={dest.anterior}>
-                  {t("Voltar")}
-                </Button>
-                <Button onClick={avancar}>{t("Próximo")}</Button>
-              </div>
-            </div>
-          }
+          actions={<AcoesPercurso anterior={dest.anterior} avancar={avancar}/>}
         >
           {tentou && falta ? (
             <div
@@ -752,7 +732,7 @@ export function Educacao({ rota }: { rota: Rota }) {
                 )}
               </b>
               <ul>
-                {itens.map((p) => (
+                {itens.slice(0,3).map((p) => (
                   <li key={p.id}>
                     <a
                       href={"#" + p.id}

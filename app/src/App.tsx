@@ -1,3 +1,4 @@
+import { PanoramaPlano, EntradaFrente } from './screens/PanoramaPlano';
 import { Prioridades } from './screens/Prioridades';
 import { FrentesPlano } from './screens/FrentesPlano';
 import { Educacao } from './screens/Educacao';
@@ -36,6 +37,8 @@ export function App() {
     if (removida) return <Pergunta n={1} tela="impactos" />;
     if (aguardaPrioridade || rota.tipo === 'pergunta' && rota.n === 1 && rota.tela === 'prioridades') return <Prioridades />;
     if (rota.tipo === 'frentes') return <FrentesPlano />;
+    if (rota.tipo === 'panorama') return <PanoramaPlano />;
+    if (rota.tipo === 'frente') return <EntradaFrente id={rota.id} resumo={rota.resumo}/>;
     if (percursoPedagogico(ctx) && !['inicio','galeria'].includes(rota.tipo)) return <Educacao key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo} rota={rota} />;
     if (percursoLetramento(ctx) && !['inicio','galeria'].includes(rota.tipo)) return <Letramento key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo} rota={rota} />;
     if (percursoGovernanca(ctx) && !['inicio', 'galeria'].includes(rota.tipo)) return <Governanca key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo === 'abertura' || rota.tipo === 'sintese' ? `${rota.tipo}${rota.n}` : rota.tipo} rota={rota} />;
