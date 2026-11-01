@@ -1,3 +1,4 @@
+import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { progressoFrente } from '../percurso/frentes';
 import { GrupoFormulario } from './GrupoFormulario';
 import { useResumoPlano } from './ResumoContexto';
@@ -585,7 +586,7 @@ function PlanoEd({ s }: { s: CasoStore }) {
           {t(E("Plano educacional (PDF)", "Educational plan (PDF)"))}
         </Button>
       </div>
-      {erro ? <p role="alert">{erro}</p> : null}
+      {erro ? <p role="alert">{erro}</p> : null}<AtalhoLeituraSimples/>
       {faltam.length ? (
         <section className="pc-gov-card">
           <h2>{t("Respostas que faltam")}</h2>
@@ -616,6 +617,7 @@ function PlanoEd({ s }: { s: CasoStore }) {
       <Button variant="secondary" href={href.pergunta(4, "ed-expansao")}>
         {t("Voltar")}
       </Button>
+      <LeituraSimples s={s}/>
     </div>
   );
 }

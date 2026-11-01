@@ -3,21 +3,21 @@
   "app_version": "0.1.0-alpha.8",
   "base": "v014 React/Prumo publicada",
   "base_source_commit": "bd4d4b3bcb1488f9085e64eb5cbe4ae506bc3db7",
-  "source_commit": "e7bc23fc1833f23c27a3c66c14e52c82e90edf01",
+  "source_commit": "233b56c88c7075b8eb688a16283f8876308e3b31",
   "source_branch": "feat/v015-from-v014",
-  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/e7bc23fc1833f23c27a3c66c14e52c82e90edf01",
+  "source_commit_url": "https://github.com/emanuelqueiroga/unesco-ai-procurement-tool/commit/233b56c88c7075b8eb688a16283f8876308e3b31",
   "v014_publication_tree": "4016e03f1e70e0b5f8436065fca37af4dd439611",
-  "scope": "UX unificada: frente compacta, etapas e telas, ações fixas, blocos nativos, panorama nacional e resumos por frente, alinhamento, contraste e acessibilidade modal. Dados e percursos preservados.",
+  "scope": "Extra opcional ao final dos documentos: sumário executivo e relatório curtos, linguagem simples, leitura em tela e PDFs separados. Originais preservados.",
   "build": "VITE_CANAL=revisao npm run build -- --outDir ../docs/revisao/v015",
   "validation": {
     "build": "passed",
     "types": "passed",
-    "test_files_passed": 47,
-    "tests_passed": 976,
+    "test_files_passed": 48,
+    "tests_passed": 990,
     "skipped": 2,
     "todo": 1,
     "new_pathway_tests": 24,
-    "domain_check": "passed (43 files)",
+    "domain_check": "passed (45 files)",
     "diff_check": "Source and publication metadata passed; generated bundles kept byte-identical to the tested build, including vendor whitespace.",
     "interface": [
       "Priority selection tested in fresh and saved cases: shell class, main width/position, navigation, panel and counter remain unchanged when selecting/deselecting all four options and combinations.",
@@ -56,18 +56,27 @@
     "preservation": "Format 14 and storage key retained. Existing IDs, notes, counts, inactive answers, currency and legacy tool data remain in JSON. A–D illustrative tool projects remain explicit projects.",
     "translation_status": "PT/EN complete; existing translations retained in six other languages with explicit English fallback for new text; no native review claimed.",
     "open_session_compatibility": {
-      "retained_asset_source": "bab4a5b46422385cd62d43cdc62d85cb417cd74d",
-      "retained_files": 83,
-      "validation": "Every previous asset retained byte-identical alongside the new build."
+      "retained_asset_source": "2b5399badb6aa372b422f536ced25193ab77aca5",
+      "retained_files": 100,
+      "validation": "Every previous v015 asset retained byte-identical."
     },
-    "source_rebuild": "All 582 tracked app, translation and country-catalog files match the TypeScript-checked source build.",
+    "source_rebuild": "All 594 tracked app and translation files match the tested source.",
     "new_priority_confirmation_tests": 7,
     "new_workstream_tests": 23,
-    "new_ux_tests": 21
+    "new_ux_tests": 21,
+    "new_plain_language_tests": 14,
+    "plain_language": {
+      "position": "End of governance, literacy and education summaries; legacy project summary and appendix. Shortcut at top.",
+      "pdfs": "One-page executive summary in all four representative models. Reports: governance 2, literacy 2, education 3, legacy project 2 pages. All current topics/audiences selected.",
+      "data": "Read-only projections; no inferred approvals or evidence. Targets, units, reported amounts, unknown versus zero and shared-cost ownership preserved.",
+      "browser": "Portuguese and English; report disclosure and both PDF actions without UI errors. 390x844 viewport: client and scroll widths 375px; override reset.",
+      "review": "Final PDF pages rendered with Poppler; pagination, alignment, accents and disclaimers visually inspected.",
+      "translations": "New PT/EN/ES/FR labels. Explicit English fallback in five other languages."
+    }
   },
   "bamanankan": "Nomes existentes preservados; introduções novas usam fallback inglês explícito, com aviso de tradução preliminar mantido.",
-  "delivery": "19-design-ux",
-  "publication_parent": "bab4a5b46422385cd62d43cdc62d85cb417cd74d",
+  "delivery": "20-leitura-simples",
+  "publication_parent": "2b5399badb6aa372b422f536ced25193ab77aca5",
   "previous_delivery_commit": "09b150fcf402635c6cdddcc471574555ded4cf43",
   "phase_names_en": [
     "Context",

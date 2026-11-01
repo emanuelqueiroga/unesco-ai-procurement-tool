@@ -1,3 +1,4 @@
+import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { estadoDoProjeto } from '../domain/escopo.js';
 // Plano de contratação: Em resumo, Quanto custa, O que fazer, O que exigir e Apêndice (D8–D11, M4), com o
 // relatório em PDF e o caso em JSON. As seções vêm de src/plano/secoes.js (porte de src/resumo.js da v13).
@@ -536,6 +537,7 @@ export function Plano({ pagina }: { pagina: PaginaPlano }) {
               </Button>
               <Button variant="secondary" size="sm" onClick={() => { void exportarCaso(); }}>{t('Exportar caso')}</Button>
               <BotoesPDF s={s} />
+              {pagina === 'resumo' || pagina === 'apendice' ? <AtalhoLeituraSimples/> : null}
             </div>
             {imprimindo ? null : <IndiceInterno key={pagina} entradas={entradasDe(pagina, secs, p, sum)} />}
             {imprimindo
@@ -546,6 +548,7 @@ export function Plano({ pagina }: { pagina: PaginaPlano }) {
                 <a key={x} href={href.plano(x)}>{t(TITULO_PAGINA[x])}</a>
               ))}
             </nav>
+            {pagina === 'resumo' || pagina === 'apendice' ? <LeituraSimples s={s}/> : null}
             <Rodape />
           </div>
         </div>
