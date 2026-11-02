@@ -2,7 +2,6 @@ import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { progressoFrente } from '../percurso/frentes';
 import { GrupoFormulario } from './GrupoFormulario';
 import { AcoesPercurso } from './AcoesPercurso';
-import { ProgressoPergunta } from './ProgressoPergunta';
 import { useEffect, useState, type ReactNode } from "react";
 import {
   useCaso,
@@ -47,8 +46,9 @@ import {
 } from "../percurso/pedagogico";
 import { orcamentoGovernanca, moedaGovernanca, valorItemOrcamento } from "../percurso/governanca";
 import { CampoQuantidade, semValorComEstimativa, TotaisOrcamentoView } from "./EstimativaReferencia";
-import { linhasTotais, taxaMoeda } from "../percurso/estimativasOrcamento";
-import { TabelaRecursos, type LinhaRecurso } from "./TabelaRecursos";
+import { linhasTotais, mesesPeriodo } from "../percurso/estimativasOrcamento";
+import { TabelaRecursos, resumoPeriodo, type LinhaRecurso } from "./TabelaRecursos";
+import { primeiraFrase } from "../percurso/textos";
 import { orcamentoLetramento, alterarLit } from "../percurso/letramento";
 import { selecionarLit } from "../percurso/letramentoInterface";
 import {
@@ -247,7 +247,6 @@ function Orcamento({ s, tentou }: { s: CasoStore; tentou: boolean }) {
   const o = orcamentoEd(s),
     disponiveis = semValorComEstimativa(o.itens, (i) => i.emReferencia),
     atual = lerEd(s, "orcamento") || {},
-    conv = taxaMoeda(o.moeda, s),
     gov = orcamentoGovernanca(s),
     lit = orcamentoLetramento(s),
     refs = { governanca: gov.itens, letramento: lit.itens },
@@ -321,10 +320,8 @@ function Orcamento({ s, tentou }: { s: CasoStore; tentou: boolean }) {
   const camposTela = camposEd(s).filter((f) => f.tela === "ed-recursos");
   return (
     <TabelaRecursos s={s} linhas={linhas} moeda={o.moeda} tela="ed-recursos" tentou={tentou}
-      aviso={t(E("Informe cada recurso uma única vez, mesmo quando ele atende a vários temas.", "Enter each resource once, even when it serves several themes."))}
-      contexto={{ periodo: valorDe("orcamento.periodo"), fonte: valorDe("orcamento.fonte"), moeda: o.moeda, completo: camposTela.every((f) => campoEdRespondido(s, f)),
-        cambio: conv ? t("câmbio de referência 1 US$ = {taxa}", { taxa: new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 2 }).format(conv.taxa) }) : "",
-        campos: <Campos s={s} id="ed-recursos" tentou={tentou} /> }}
+      contexto={{ resumo: resumoPeriodo(mesesPeriodo('educacao', s), valorDe("orcamento.periodo"), o.moeda), completo: camposTela.every((f) => campoEdRespondido(s, f)),
+      campos: <Campos s={s} id="ed-recursos" tentou={tentou} /> }}
       disponiveis={disponiveis.length}
       onUsarTodas={() => {
         gravar(s, "orcamento.moeda", o.moeda);
@@ -497,9 +494,8 @@ export function Educacao({ rota }: { rota: Rota }) {
     <Shell pos={{ capitulo: n, tela: id }} contexto={t(info.titulo)}>
       <div className="pc-pergunta" data-tela={id}>
         <QuestionFrame
-          kicker={<ProgressoPergunta s={s} id={id}/>}
           title={t(TITULOS_ED[id] || TITULO_TELA[id] || CURTO[id] || id)}
-          explanation={t(
+          explanation={primeiraFrase(t(
             id === "ed-objetivos"
               ? E(
                   "Os impactos vêm dos desafios escolhidos. Revise os objetivos e informe a meta.",
@@ -511,7 +507,7 @@ export function Educacao({ rota }: { rota: Rota }) {
                     "Count each participant once, even when they take part in several themes.",
                   )
                 : LEAD[id] || "",
-          )}
+          ))}
           actions={<AcoesPercurso anterior={dest.anterior} avancar={avancar}/>}
         >
           {tentou && falta ? (

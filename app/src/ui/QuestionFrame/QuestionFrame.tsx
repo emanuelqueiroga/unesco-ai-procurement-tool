@@ -4,7 +4,7 @@ import { tx } from '../texto';
 
 export type QuestionFrameProps = {
   /** Nome da etapa e posição da pergunta, sem prefixo de capítulo. */
-  kicker: ReactNode;
+  kicker?: ReactNode;
   /** A pergunta, em `question-26`. Uma por tela. */
   title: string;
   /** Explicação em `body-16` `ink-2`: por que perguntamos. */
@@ -35,7 +35,7 @@ export function QuestionFrame({
 }: QuestionFrameProps) {
   return (
     <section className={['pr-questionframe', className ?? ''].filter(Boolean).join(' ')}>
-      <div className="pr-questionframe-kicker">{kicker}</div>
+      {kicker ? <div className="pr-questionframe-kicker">{kicker}</div> : null}
       <h1 className="pr-questionframe-title">{title}</h1>
       {explanation ? <p className="pr-questionframe-text">{explanation}</p> : null}
       {help ? <div className="pr-questionframe-help">{help}</div> : null}

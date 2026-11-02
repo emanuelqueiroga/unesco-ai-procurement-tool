@@ -2,7 +2,6 @@ import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { progressoFrente } from '../percurso/frentes';
 import { GrupoFormulario } from './GrupoFormulario';
 import { AcoesPercurso } from './AcoesPercurso';
-import { ProgressoPergunta } from './ProgressoPergunta';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useCaso, telasDoCapitulo, telasAtivas, faltamDe, telaRespondida, type CasoStore, type Capitulo } from '../store';
 import { LOC, getLang } from '../domain';
@@ -16,8 +15,9 @@ import { selecoesLit, rotuloLit, alterarLit, lerLit, camposLetramento, campoLitR
 import { entradaEtapaLit, vizinhosLit, selecionarLit, gruposCamposLit, pendenciasCamposLit, pendenciasCustosLit, rotuloVisivelLit, guiaTelaLit } from '../percurso/letramentoInterface';
 import { moedaGovernanca, orcamentoGovernanca, valorItemOrcamento } from '../percurso/governanca';
 import { CampoQuantidade, semValorComEstimativa, TotaisOrcamentoView } from './EstimativaReferencia';
-import { linhasTotais, taxaMoeda } from '../percurso/estimativasOrcamento';
-import { TabelaRecursos, type LinhaRecurso } from './TabelaRecursos';
+import { linhasTotais, mesesPeriodo } from '../percurso/estimativasOrcamento';
+import { TabelaRecursos, resumoPeriodo, type LinhaRecurso } from './TabelaRecursos';
+import { primeiraFrase } from '../percurso/textos';
 import { focarPendencia } from '../percurso/navegacaoOrientada';
 import './governanca.css';
 import './letramento.css';
@@ -78,7 +78,7 @@ function CamposLit({ s, id, tentou }: { s: CasoStore; id: string; tentou: boolea
 }
 function OrcamentoLit({ s, tentou }: { s: CasoStore; tentou: boolean }) {
   const o = orcamentoLetramento(s), gov = orcamentoGovernanca(s), disponiveis = semValorComEstimativa(o.itens, i => i.referencia);
-  const comGov = !!s.ctx.prioridades?.includes('governar'), conv = taxaMoeda(o.moeda, s);
+  const comGov = !!s.ctx.prioridades?.includes('governar');
   const campo = (c: string) => camposLetramento(s).find(f => f.caminho === c);
   const valorDe = (c: string) => { const f = campo(c); return f && campoLitRespondido(s, f) ? valorCampoLit(s, f) : ''; };
   const camposTela = camposLetramento(s).filter(f => f.tela === 'lit-recursos' && !f.caminho.startsWith('orcamento.adicionais.'));
@@ -102,9 +102,7 @@ function OrcamentoLit({ s, tentou }: { s: CasoStore; tentou: boolean }) {
     };
   });
   return <TabelaRecursos s={s} linhas={linhas} moeda={o.moeda} tela="lit-recursos" tentou={tentou}
-    aviso={t(L('Informe apenas os recursos desta frente. Custos compartilhados são referenciados, sem somar novamente.', 'Enter only this workstream’s resources. Shared costs are referenced without counting them again.'))}
-    contexto={{ periodo: valorDe('orcamento.periodo'), fonte: valorDe('orcamento.fonte'), moeda: o.moeda, completo: camposTela.every(f => campoLitRespondido(s, f)),
-      cambio: conv ? t('câmbio de referência 1 US$ = {taxa}', { taxa: new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 2 }).format(conv.taxa) }) : '',
+    contexto={{ resumo: resumoPeriodo(mesesPeriodo('letramento', s), valorDe('orcamento.periodo'), o.moeda), completo: camposTela.every(f => campoLitRespondido(s, f)),
       campos: <CamposLit s={s} id="lit-recursos" tentou={tentou} /> }}
     disponiveis={disponiveis.length}
     onUsarTodas={() => { gravar(s, 'orcamento.moeda', o.moeda); for (const i of disponiveis) gravar(s, 'orcamento.itens.' + i.id, { ...(lerLit(useCaso.getState(), 'orcamento.itens.' + i.id) || {}), situacao: 'referencia' }); }}
@@ -156,8 +154,7 @@ export function Letramento({ rota }: { rota: Rota }) {
     else requestAnimationFrame(() => document.getElementById('lit-validacao-tela')?.focus());
   };
   return <Shell pos={{ capitulo: n, tela: id }} contexto={t(info.titulo)}>{aviso}<div className="pc-pergunta" data-tela={id}><QuestionFrame
-    kicker={<ProgressoPergunta s={s} id={id}/>}
-    title={t(tituloDaTelaLit(s,id) || TITULO_TELA[id] || CURTO[id] || id)} explanation={t(guiaTelaLit(s,id) || LEAD[id] || '')}
+    title={t(tituloDaTelaLit(s,id) || TITULO_TELA[id] || CURTO[id] || id)} explanation={primeiraFrase(t(guiaTelaLit(s,id) || LEAD[id] || ''))}
     actions={<AcoesPercurso anterior={destinos.anterior} avancar={avancar}/>} >
     {tentou && falta ? <div className="pc-lit-validacao" id="lit-validacao-tela" role="alert" tabIndex={-1}><b>{t('Complete as respostas indicadas ou marque as informações a levantar.')}</b><ul>
       {pendencias.slice(0, 3).map(itemPendente)}

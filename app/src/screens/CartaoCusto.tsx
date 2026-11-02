@@ -54,14 +54,14 @@ export function moedaCurta(v: number, cod: string): string {
 }
 const itens = (n: number) => n === 1 ? t('1 item') : t('{n} itens', { n });
 
-/** O número grande: o total quando completo; com faltas, informado + estimado da própria frente, com a nota que diz o que falta. */
+/** O número grande: o total quando completo; com faltas, informado + estimado da própria frente, e só "faltam N itens". */
 function principal(d: DadosCusto): { valor: number | null; nota: string; completo: boolean } {
   const completo = d.estimados ? d.totalComEstimativas : d.total;
-  if (completo !== null) return { valor: completo, completo: true, nota: d.estimados ? t('total completo, inclui estimativas de referência') : t('total completo, só valores informados') };
+  if (completo !== null) return { valor: completo, completo: true, nota: '' };
   const conhecido = d.informados + d.estimados ? Math.round((d.informado + d.estimado) * 100) / 100 : null;
-  const falta = d.faltam === 1 ? t('ainda falta 1 item') : t('ainda faltam {n} itens', { n: d.faltam });
-  return { valor: conhecido, completo: false, nota: conhecido === null ? t('nenhum valor ainda') + ' · ' + falta : (d.estimados ? t('inclui estimativas de referência') : t('só valores informados')) + ' · ' + falta };
+  return { valor: conhecido, completo: false, nota: faltam(d.faltam) };
 }
+export const faltam = (n: number) => n === 1 ? t('falta 1 item') : t('faltam {n} itens', { n });
 
 function Barra({ d }: { d: DadosCusto }) {
   const n = d.informados + d.estimados + d.faltam, soma = d.informado + d.estimado;
@@ -81,12 +81,12 @@ export function CartaoCustoFrente({ d, compacto = false }: { d: DadosCusto; comp
   const p = principal(d);
   return <section className={'pc-custo' + (compacto ? ' pc-custo--compacto' : '')} aria-label={t('Custo desta frente')}>
     <div className="pc-custo-cab">
-      <h2 className="pc-custo-rotulo">{rotuloPeriodo(t('Custo desta frente'), d.meses)}</h2>
+      <h2 className="pc-custo-rotulo">{rotuloPeriodo(compacto ? t('Custo') : t('Custo desta frente'), d.meses)}</h2>
       <p className="pc-custo-total" title={p.valor === null ? undefined : formatarMoedaEst(p.valor, d.moeda)}>
         {p.valor === null ? '—' : moedaCurta(p.valor, d.moeda)}
         {p.valor !== null ? <span className="pc-sr"> ({formatarMoedaEst(p.valor, d.moeda)}{p.completo ? '' : ', ' + t('parcial')})</span> : null}
       </p>
-      <p className="pc-custo-nota">{p.nota}</p>
+      {p.nota ? <p className="pc-custo-nota">{p.nota}</p> : null}
     </div>
     <Barra d={d} />
     {compacto ? <dl className="pc-custo-tres">
@@ -94,49 +94,33 @@ export function CartaoCustoFrente({ d, compacto = false }: { d: DadosCusto; comp
       <div><dt>{t('Estimado')}</dt><dd className="pc-custo-est">{d.estimados ? moedaCurta(d.estimado, d.moeda) : '—'}</dd></div>
       <div><dt>{t('A levantar')}</dt><dd>{itens(d.faltam)}</dd></div>
     </dl> : <dl className="pc-custo-lista">
-      <dt><i className="pc-custo-marca pc-custo-marca--inf" aria-hidden="true" />{t('Informado')} · {itens(d.informados)}</dt>
+      <dt><i className="pc-custo-marca pc-custo-marca--inf" aria-hidden="true" />{t('Informado')}</dt>
       <dd>{d.informados ? formatarMoedaEst(d.informado, d.moeda) : '—'}</dd>
-      <dt><i className="pc-custo-marca pc-custo-marca--est" aria-hidden="true" />{t('Estimado pela ferramenta')} · {d.estimados}</dt>
+      <dt><i className="pc-custo-marca pc-custo-marca--est" aria-hidden="true" />{t('Estimado')}</dt>
       <dd className="pc-custo-est">{d.estimados ? formatarMoedaEst(d.estimado, d.moeda) : '—'}</dd>
-      <dt><i className="pc-custo-marca pc-custo-marca--lev" aria-hidden="true" />{t('Ainda a levantar')}</dt>
+      <dt><i className="pc-custo-marca pc-custo-marca--lev" aria-hidden="true" />{t('A levantar')}</dt>
       <dd>{itens(d.faltam)}</dd>
     </dl>}
   </section>;
 }
 
-/** "Esta resposta muda": o item com estimativa que a pergunta atual alimenta, com o valor e a conta em uma linha. */
+/** "Esta resposta muda": o item com estimativa que a pergunta atual alimenta e o valor em âmbar; a conta fica em "Ver a conta". */
 export function RespostaMuda({ d, tela }: { d: DadosCusto; tela: string }) {
   const ids = ALIMENTA[d.frente]?.[tela] || [];
-  const lista = d.itens.filter(i => ids.includes(i.id) && i.estimativa);
+  const lista = d.itens.filter(i => ids.includes(i.id) && typeof i.estimativa?.valor === 'number');
   if (!lista.length) return null;
   return <section className="pc-custo-muda" aria-label={t('Esta resposta muda')}>
     <h2 className="pc-custo-muda-titulo">{t('Esta resposta muda')}</h2>
-    {lista.map(i => { const e = i.estimativa!; return <div key={i.id} className="pc-custo-muda-item">
-      <p className="pc-custo-muda-linha"><span className="pc-custo-muda-nome">{i.nome}</span>
-        {typeof e.valor === 'number' ? <strong className="pc-custo-muda-valor">{formatarMoedaEst(e.valor, e.moeda)}</strong> : null}</p>
-      {typeof e.valor === 'number' ? <>
-        <span className="pc-est-chip">{t('estimativa de referência, ilustrativa')}</span>
-        {e.conta.calculo ? <p className="pc-custo-muda-conta">{e.conta.calculo}</p> : null}
-      </> : <p className="pc-custo-muda-conta">{e.mensagem}</p>}
-    </div>; })}
-    {d.recursos ? <a href={d.recursos} className="pc-custo-muda-link">{t('Ver a conta completa e a fonte')}</a> : null}
-  </section>;
-}
-
-/** Legenda dos três estados, na tela do orçamento. */
-export function ComoLerValores() {
-  return <section className="pc-custo-muda pc-custo-ler" aria-label={t('Como ler os valores')}>
-    <h2 className="pc-custo-muda-titulo">{t('Como ler os valores')}</h2>
-    <p><strong>{t('Informado')}</strong>: {t('valor que a equipe digitou.')}</p>
-    <p><strong className="pc-custo-ler-est">{t('Estimado')}</strong>: {t('conta da ferramenta com parâmetros ilustrativos. Use como ordem de grandeza.')}</p>
-    <p><strong>{t('A levantar')}</strong>: {t('fica pendente no plano. Nunca vira zero.')}</p>
+    {lista.map(i => { const e = i.estimativa!; return <p key={i.id} className="pc-custo-muda-linha"><span className="pc-custo-muda-nome">{i.nome}</span>
+      <strong className="pc-custo-muda-valor" title={t('estimativa de referência, ilustrativa')}>{formatarMoedaEst(e.valor as number, e.moeda)}<span className="pc-sr"> ({t('estimativa de referência, ilustrativa')})</span></strong></p>; })}
+    {d.recursos ? <a href={d.recursos} className="pc-custo-muda-link">{t('Ver a conta')}</a> : null}
   </section>;
 }
 
 function Links({ d, tela }: { d: DadosCusto | null; tela?: string }) {
   const naRecursos = !!d && tela === TELA_RECURSOS[d.frente];
   return <nav className="pc-custo-links" aria-label={t('Orçamento e resumo')}>
-    {d?.recursos && !naRecursos ? <a className="pc-custo-link" href={d.recursos}>{t('Ver o orçamento da frente')} <span aria-hidden="true">→</span></a> : null}
+    {d?.recursos && !naRecursos ? <a className="pc-custo-link" href={d.recursos}>{t('Orçamento')} <span aria-hidden="true">→</span></a> : null}
     <a className="pc-custo-link" href={href.plano()}>{t('Resumo desta frente')} <span aria-hidden="true">→</span></a>
   </nav>;
 }
@@ -148,7 +132,7 @@ export function ColunaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
   const naRecursos = tela === TELA_RECURSOS[d.frente];
   return <aside className="pc-coluna-custo" aria-label={t('Custo desta frente')}>
     <CartaoCustoFrente d={d} />
-    {naRecursos ? <ComoLerValores /> : tela ? <RespostaMuda d={d} tela={tela} /> : null}
+    {!naRecursos && tela ? <RespostaMuda d={d} tela={tela} /> : null}
     <Links d={d} tela={tela} />
   </aside>;
 }
@@ -160,18 +144,13 @@ export function FaixaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
   if (tela === TELA_RECURSOS[d.frente]) return <div className="pc-faixa-custo-wrap"><CartaoCustoFrente d={d} compacto /></div>;
   const p = principal(d);
   const conteudo: ReactNode = <>
-    <span className="pc-faixa-custo-esq">
-      <span className="pc-faixa-custo-rotulo">{rotuloPeriodo(t('Custo da frente'), d.meses)}</span>
-      <span className="pc-faixa-custo-total">{p.valor === null ? '—' : moedaCurta(p.valor, d.moeda)}</span>
-    </span>
-    <span className="pc-faixa-custo-dir">
-      {d.estimados ? <span className="pc-custo-est">{t('{valor} estimado', { valor: moedaCurta(d.estimado, d.moeda) })}</span> : null}
-      <span>{d.faltam === 1 ? t('1 item a levantar') : t('{n} itens a levantar', { n: d.faltam })} <span aria-hidden="true">›</span></span>
-    </span>
+    <span className="pc-faixa-custo-total">{p.valor === null ? '—' : moedaCurta(p.valor, d.moeda)}</span>
+    <span className="pc-faixa-custo-dir">{p.nota} <span aria-hidden="true">›</span></span>
   </>;
+  const rotulo = t('Custo desta frente') + ': ' + (p.valor === null ? '—' : formatarMoedaEst(p.valor, d.moeda)) + (p.nota ? '. ' + p.nota : '');
   return <div className="pc-faixa-custo-wrap">{d.recursos
-    ? <a className="pc-faixa-custo" href={d.recursos} aria-label={t('Custo desta frente') + ': ' + (p.valor === null ? t('nenhum valor ainda') : formatarMoedaEst(p.valor, d.moeda)) + '. ' + p.nota + '. ' + t('Ver o orçamento da frente')}>{conteudo}</a>
-    : <div className="pc-faixa-custo">{conteudo}</div>}</div>;
+    ? <a className="pc-faixa-custo" href={d.recursos} aria-label={rotulo + '. ' + t('Orçamento')}>{conteudo}</a>
+    : <div className="pc-faixa-custo" aria-label={rotulo}>{conteudo}</div>}</div>;
 }
 
 /** Projeto de uso de IA: os números que o painel "Seu plano" já mostra (custo total, Ano 0, por ano, por usuário). */
@@ -191,15 +170,9 @@ export function CartaoCustoProjeto({ s }: { s: CasoStore }) {
 }
 
 function FaixaProjeto({ s }: { s: CasoStore }) {
-  const p = usePainel(s), total = p.kpis.find(k => k.id === 'kpi.total'), ano0 = p.kpis.find(k => k.id === 'kpi.ano0');
-  return <div className="pc-faixa-custo-wrap"><a className="pc-faixa-custo" href={href.plano()}>
-    <span className="pc-faixa-custo-esq">
-      <span className="pc-faixa-custo-rotulo">{total?.label || t('Custo deste projeto')}</span>
-      <span className="pc-faixa-custo-total">{total?.value ?? '—'}</span>
-    </span>
-    <span className="pc-faixa-custo-dir">
-      {ano0?.value ? <span>{ano0.label}: {ano0.value}</span> : null}
-      <span>{t('Resumo desta frente')} <span aria-hidden="true">›</span></span>
-    </span>
+  const p = usePainel(s), total = p.kpis.find(k => k.id === 'kpi.total');
+  return <div className="pc-faixa-custo-wrap"><a className="pc-faixa-custo" href={href.plano()} aria-label={(total?.label || t('Custo deste projeto')) + ': ' + (total?.fullValue || '—') + '. ' + t('Resumo desta frente')}>
+    <span className="pc-faixa-custo-total">{total?.value ?? '—'}</span>
+    <span className="pc-faixa-custo-dir">{total?.label} <span aria-hidden="true">›</span></span>
   </a></div>;
 }

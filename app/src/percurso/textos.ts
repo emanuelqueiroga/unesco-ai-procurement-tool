@@ -188,3 +188,9 @@ Object.assign(CURTO, {
 });
 
 Object.assign(CURTO, TITULOS_LIT);
+
+/** Só a primeira frase de um texto de apoio (teste de layout: no máximo uma frase curta sob a pergunta). */
+export function primeiraFrase(texto: string): string {
+  const m = String(texto || '').match(/^.+?[.!?。؟](?=\s|$)/u);
+  return m ? m[0] : String(texto || '');
+}

@@ -1,7 +1,6 @@
 import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { GrupoFormulario, ValidacaoCampos } from './GrupoFormulario';
 import { AcoesPercurso } from './AcoesPercurso';
-import { ProgressoPergunta } from './ProgressoPergunta';
 import { frentesDoPlano,frenteAtual } from '../percurso/frentes';
 import { abrirFrente, type FrenteId } from '../percurso/frentes';
 import { presetGovernanca, selecoesGov, detalheGov, textoSelecaoGov } from '../percurso/governancaPresets';
@@ -17,8 +16,8 @@ import { CURTO, TITULO_TELA, infoCapitulo, t } from '../percurso/textos';
 import { href, ir, type Rota } from '../percurso/rota';
 import { telaGovernancaLegada, desafiosGovernanca, acoesGovernanca, planoGovernanca, orcamentoGovernanca, moedaGovernanca, valorItemOrcamento, temSandbox, CUSTOS_GOV, CAMPOS_SANDBOX, INSTRUMENTOS_GOV, pendenciasGov } from '../percurso/governanca';
 import { CampoQuantidade, semValorComEstimativa, TotaisOrcamentoView } from './EstimativaReferencia';
-import { linhasTotais, taxaMoeda } from '../percurso/estimativasOrcamento';
-import { TabelaRecursos, type LinhaRecurso } from './TabelaRecursos';
+import { linhasTotais, mesesPeriodo } from '../percurso/estimativasOrcamento';
+import { TabelaRecursos, resumoPeriodo, type LinhaRecurso } from './TabelaRecursos';
 import './governanca.css';
 import './letramento.css';
 import './orientado.css';
@@ -110,11 +109,9 @@ function linhaGov(s: CasoStore, i: ReturnType<typeof orcamentoGovernanca>['itens
 function Orcamento({ s, tentou }: { s: CasoStore; tentou: boolean }) {
   const o = orcamentoGovernanca(s), atual = s.ctx.govOrcamento || {};
   const disponiveis = semValorComEstimativa(o.itens, i => i.referencia);
-  const conv = taxaMoeda(o.moeda, s);
   const linhas = o.itens.map(i => linhaGov(s, i, o.moeda, i.id.startsWith('extra-') ? Number(i.id.slice(6)) : null));
   return <TabelaRecursos s={s} linhas={linhas} moeda={o.moeda} tela="gov-recursos" tentou={tentou}
-    contexto={{ periodo: o.periodo, fonte: o.fonte, moeda: o.moeda, completo: !!(gv(s, 'govOrcamento.periodo') && gv(s, 'govOrcamento.fonte')),
-      cambio: conv ? t('câmbio de referência 1 US$ = {taxa}', { taxa: new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 2 }).format(conv.taxa) }) : '',
+    contexto={{ resumo: resumoPeriodo(mesesPeriodo('governanca', s), o.periodo, o.moeda), completo: !!(gv(s, 'govOrcamento.periodo') && gv(s, 'govOrcamento.fonte')),
       campos: <Grupo s={s} base="govOrcamento" campos={[['periodo', 'Período do orçamento'], ['fonte', 'Fonte dos valores']]} /> }}
     disponiveis={disponiveis.length}
     onUsarTodas={() => { s.responder('govOrcamento.moeda', o.moeda); for (const i of disponiveis) s.responder('govOrcamento.itens.' + i.id + '.situacao', 'referencia'); }}
@@ -197,7 +194,7 @@ export function Governanca({ rota }: { rota: Rota }) {
  const id=ativa.id,info=infoCapitulo(n,s),dest=vizinhos(s,id),falta=!telaRespondida(s,ativa),pendencias=pendenciasGov(s,id);
  const focar=(p:string)=>focarPendencia('gov-'+p.replace(/[^a-zA-Z0-9_-]/g,'-'));
  const avancar=()=>{if(!falta){ir(dest.proxima);return;}setTentou(true);requestAnimationFrame(()=>pendencias.length?focar(pendencias[0].caminho):focarPendencia('gov-validacao'));};
- return <Shell pos={{capitulo:n,tela:id}} contexto={t(info.titulo)}><div className="pc-pergunta" data-tela={id}><QuestionFrame kicker={<ProgressoPergunta s={s} id={id}/>} title={t(TITULO_TELA[id]||CURTO[id]||id)}
+ return <Shell pos={{capitulo:n,tela:id}} contexto={t(info.titulo)}><div className="pc-pergunta" data-tela={id}><QuestionFrame title={t(TITULO_TELA[id]||CURTO[id]||id)}
  actions={<AcoesPercurso anterior={dest.anterior} avancar={avancar}/>}>
  {tentou&&falta?<div id="gov-validacao" className="pc-lit-validacao" role="alert" tabIndex={-1}><b>{t('Complete as respostas indicadas ou marque as informações a levantar.')}</b><ul>{pendencias.slice(0,3).map(p=><li key={p.caminho}><a href="#gov-validacao" onClick={e=>{e.preventDefault();focar(p.caminho);}}>{t(p.label)}</a></li>)}{!pendencias.length?<li>{t(id==='problemas'?'Selecione os desafios do plano e informe os totais da rede.':id==='local'?'Escolha o país para avançar.':'Selecione ao menos uma prioridade.')}</li>:null}</ul>{pendencias.length>3?<details><summary>{t('Ver outras {n} pendências',{n:pendencias.length-3})}</summary><ul>{pendencias.slice(3).map(p=><li key={p.caminho}><a href="#gov-validacao" onClick={e=>{e.preventDefault();focar(p.caminho);}}>{t(p.label)}</a></li>)}</ul></details>:null}</div>:null}
  <div className="pc-lit-campos"><ValidacaoCampos.Provider value={tentou}><ControlesGov s={s} id={id} tentou={tentou}/></ValidacaoCampos.Provider></div></QuestionFrame></div></Shell>;

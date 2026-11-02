@@ -26,7 +26,7 @@ export interface LinhaRecurso {
   emUso: boolean;
   /** custo compartilhado: custeado em outra frente, não somado de novo */
   compartilhado?: { frente: string; valor: string } | null;
-  /** situações extras (custo compartilhado) depois das quatro */
+  /** custo compartilhado: escolhido dentro de "Tenho o valor" (Neste orçamento · Custeado na governança…) */
   extras?: OpcaoSituacao[];
   respondido: boolean;
   topo?: ReactNode;
@@ -72,47 +72,44 @@ function Falta({ s, est, tela }: { s: CasoStore; est: Estimativa; tela: string }
     : est.mensagem}</p>;
 }
 
-/** A conta em blocos, com a fonte em letra monoespaçada pequena e o link para a conta completa. */
+/** A conta em blocos; a fonte resumida em monoespaçada e o resto em "Ver a conta completa". */
 function ContaBlocos({ est }: { est: Estimativa }) {
-  const blocos = blocosConta(est.conta.calculo || ''), ultimo = blocos.length - 1;
-  const origens = [...new Set(est.conta.quantidades.map(q => q.origem))];
-  const fonte = [...est.conta.parametros.map(p => t('Parâmetro') + ' ' + p.id + ' · ' + t(p.fonte) + ' · ' + t('grau {g}', { g: p.grau }) + (p.ano ? ' · ' + t('preços de {ano}', { ano: p.ano }) : '')),
-    ...(origens.length ? [t('Quantidades usadas') + ': ' + origens.join('; ')] : [])].join(' · ');
+  const blocos = blocosConta(est.conta.calculo || ''), ultimo = blocos.length - 1, grau = est.conta.parametros[0]?.grau;
   const fechar = <button type="button" className="pc-est-fechar" onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))}>{t('Fechar')}</button>;
   return <div className="pc-rec-conta">
-    <p className="pc-rec-conta-titulo">{t('Como a estimativa foi calculada')}</p>
     <p className="pc-rec-blocos">{blocos.map((b, i) => <span key={i} className={b.op ? 'pc-rec-op' : i === ultimo ? 'pc-rec-bloco pc-rec-bloco--res' : 'pc-rec-bloco'}>{b.texto}</span>)}</p>
-    <p className="pc-rec-fonte">{fonte}</p>
-    <div className="pc-est pc-rec-conta-completa"><Popover className="pc-est-popover" label={t('Ver a conta completa')} title={t('Como a estimativa foi calculada')} actions={fechar}><ContaEstimativa est={est} /></Popover></div>
+    <div className="pc-rec-conta-pe">
+      <span className="pc-rec-fonte">{t('Convenção ilustrativa')}{grau ? ' · ' + t('grau {g}', { g: grau }) : ''}</span>
+      <span className="pc-est pc-rec-conta-completa"><Popover className="pc-est-popover" label={t('Ver a conta completa')} title={t('Como a estimativa foi calculada')} actions={fechar}><ContaEstimativa est={est} /></Popover></span>
+    </div>
   </div>;
 }
 
 function Valor({ l, moeda }: { l: LinhaRecurso; moeda: string }) {
   const est = l.estimativa, disp = typeof est?.valor === 'number' ? formatarMoedaEst(est.valor, est.moeda) : null;
-  let valor = '—', nota = t('não informado'), classe = 'pc-rec-valor--vazio';
+  let valor = '—', nota = '', classe = 'pc-rec-valor--vazio';
   if (l.compartilhado) { valor = l.compartilhado.valor; nota = t('custeado em {frente}', { frente: l.compartilhado.frente }); classe = 'pc-rec-valor--sem'; }
-  else if (l.emUso) { if (disp) { valor = disp; classe = 'pc-rec-valor--est'; } nota = disp ? t('estimativa de referência') : t('estimativa indisponível'); }
-  else if (l.situacao === 'informado') { const ok = typeof l.valor === 'number' && Number.isFinite(l.valor) && l.valor >= 0; valor = ok ? formatarMoedaEst(l.valor as number, moeda) : t('Digite o valor'); nota = t('informado'); classe = ok ? 'pc-rec-valor--inf' : 'pc-rec-valor--vazio'; }
-  else if (l.situacao === 'sem_custo') { valor = formatarMoedaEst(0, moeda); nota = t('fora deste orçamento'); classe = 'pc-rec-valor--sem'; }
-  else if (l.situacao === 'a_estimar') nota = disp ? t('estimativa disponível: {valor}', { valor: disp }) : t('pendente no plano');
-  else if (disp) nota = t('estimativa disponível: {valor}', { valor: disp });
-  return <div className="pc-rec-valor"><span className={'pc-rec-valor-num ' + classe}>{valor}</span><span className="pc-rec-valor-nota">{nota}</span></div>;
+  else if (l.emUso) { if (disp) { valor = disp; classe = 'pc-rec-valor--est'; } }
+  else if (l.situacao === 'informado') { const ok = typeof l.valor === 'number' && Number.isFinite(l.valor) && l.valor >= 0; if (ok) { valor = formatarMoedaEst(l.valor as number, moeda); classe = 'pc-rec-valor--inf'; } }
+  else if (l.situacao === 'sem_custo') { valor = formatarMoedaEst(0, moeda); classe = 'pc-rec-valor--sem'; }
+  else if (l.situacao === 'a_estimar' && disp) nota = t('estimativa disponível: {valor}', { valor: disp });
+  return <div className="pc-rec-valor"><span className={'pc-rec-valor-num ' + classe}>{valor}</span>{nota ? <span className="pc-rec-valor-nota">{nota}</span> : null}</div>;
 }
 
-function rotuloSituacao(l: LinhaRecurso): { texto: string; classe: string } {
+function rotuloSituacao(l: LinhaRecurso): { texto: string; classe: string } | null {
   if (l.compartilhado) return { texto: t('custeado em {frente}', { frente: l.compartilhado.frente }), classe: 'pc-rec-chip--sem' };
-  if (l.emUso) return { texto: t('Estimativa de referência'), classe: 'pc-rec-chip--est' };
-  if (l.situacao === 'informado') return { texto: t('Informado'), classe: 'pc-rec-chip--inf' };
-  if (l.situacao === 'sem_custo') return { texto: t('Sem custo neste orçamento'), classe: 'pc-rec-chip--sem' };
-  if (l.situacao === 'a_estimar') return { texto: t('A levantar'), classe: 'pc-rec-chip--lev' };
-  return { texto: t('Escolha a situação'), classe: 'pc-rec-chip--lev' };
+  // no celular, o valor (cor e número) já diz informado, estimado ou sem custo; só "a levantar" precisa de rótulo
+  if (!l.emUso && l.situacao === 'a_estimar') return { texto: t('A levantar'), classe: 'pc-rec-chip--lev' };
+  return null;
 }
 
 function Linha({ s, l, moeda, tela, tentou, aberta, onAbrir }: { s: CasoStore; l: LinhaRecurso; moeda: string; tela: string; tentou: boolean; aberta: boolean; onAbrir: (v: boolean) => void }) {
   const est = l.estimativa, erro = tentou && !l.respondido, corpo = l.ancora + '-corpo';
-  const opcoes = [...SITUACOES, ...(est ? [{ id: 'referencia', rotulo: 'Usar estimativa' }] : []), ...(l.extras || [])];
-  const ativa = (id: string) => id === 'referencia' ? l.emUso : !l.emUso && l.situacao === id;
-  const chip = rotuloSituacao(l), semEstimativa = l.situacao === 'a_estimar' || (!l.situacao && !l.compartilhado);
+  const opcoes = [...SITUACOES, ...(est ? [{ id: 'referencia', rotulo: 'Usar estimativa' }] : [])];
+  const compartilhado = !!l.compartilhado || (l.extras || []).some(o => o.id === l.situacao);
+  // "Tenho o valor" inclui o custo já custeado em outra frente (escolhido dentro da linha aberta)
+  const ativa = (id: string) => id === 'referencia' ? l.emUso : !l.emUso && (l.situacao === id || id === 'informado' && compartilhado);
+  const chip = rotuloSituacao(l), comValor = !l.emUso && (l.situacao === 'informado' || compartilhado);
   const valorInvalido = typeof l.valor === 'number' && (!Number.isFinite(l.valor) || l.valor < 0);
   return <div className={'pc-rec-linha' + (aberta ? ' is-aberta' : '') + (erro ? ' is-erro' : '')} id={l.ancora} tabIndex={-1} data-recurso={l.id}>
     <div className="pc-rec-cab">
@@ -120,12 +117,12 @@ function Linha({ s, l, moeda, tela, tentou, aberta, onAbrir }: { s: CasoStore; l
         <span>{l.nome}</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true" className="pc-rec-seta"><path d="m6 9 6 6 6-6" /></svg>
       </button>
-      <span className={'pc-rec-chip ' + chip.classe}>{chip.texto}</span>
+      {chip ? <span className={'pc-rec-chip ' + chip.classe}>{chip.texto}</span> : null}
       <div className="pc-rec-pilulas" role="group" aria-label={t('Situação do custo') + ': ' + l.nome}>
         {opcoes.map(o => {
           const on = ativa(o.id), ref = o.id === 'referencia';
           const indisponivel = ref && !on && typeof est?.valor !== 'number';
-          return <button key={o.id} type="button" aria-pressed={on} disabled={indisponivel} title={indisponivel ? t('Estimativa indisponível: falta uma quantidade ou o período.') : undefined}
+          return <button key={o.id} type="button" aria-pressed={on} disabled={indisponivel}
             className={'pc-rec-pilula' + (ref ? ' pc-rec-pilula--est' : '')}
             onClick={() => { if (!on) l.onSituacao(o.id); onAbrir(true); }}>{t(o.rotulo)}</button>;
         })}
@@ -137,16 +134,15 @@ function Linha({ s, l, moeda, tela, tentou, aberta, onAbrir }: { s: CasoStore; l
       <summary className="pc-rec-sum" tabIndex={-1} aria-hidden="true">{l.nome}</summary>
       <div className="pc-rec-corpo-dados">
         {l.topo}
-        {!l.emUso && l.situacao === 'informado' ? <div className="pc-rec-campo"><CampoNumero label={t('Valor total no período') + ' (' + moeda + ')'} value={typeof l.valor === 'number' ? l.valor : ''} decimais
+        {comValor && l.extras?.length ? <div className="pc-rec-onde" role="group" aria-label={t('Tenho o valor') + ': ' + l.nome}>
+          {[{ id: 'informado', rotulo: 'Neste orçamento' }, ...l.extras].map(o => <button key={o.id} type="button" className="pc-rec-pilula pc-rec-pilula--sm" aria-pressed={l.situacao === o.id} onClick={() => { if (l.situacao !== o.id) l.onSituacao(o.id); }}>{t(o.rotulo)}</button>)}
+        </div> : null}
+        {!l.emUso && l.situacao === 'informado' ? <div className="pc-rec-campo"><CampoNumero label={t('Valor informado') + ' (' + moeda + ')'} value={typeof l.valor === 'number' ? l.valor : ''} decimais
           error={erro || valorInvalido ? t('Informe um valor maior ou igual a zero.') : undefined} onChange={l.onValor} /></div> : null}
         {l.emUso && est ? typeof est.valor === 'number' ? <ContaBlocos est={est} /> : <><p className="pc-rec-falta"><b>{t('Estimativa em uso, mas indisponível.')}</b></p><Falta s={s} est={est} tela={tela} /></> : null}
         {l.origem}
-        {!l.compartilhado && semEstimativa && !l.emUso ? est === null
-          ? <p className="pc-rec-falta">{t('A ferramenta não tem base para estimar este item. Ele fica pendente no plano até a equipe informar.')}</p>
-          : typeof est.valor === 'number'
-            ? <p className="pc-rec-falta">{t('Estimativa de referência disponível: {valor}. Escolha "Usar estimativa" para usá-la neste item.', { valor: formatarMoedaEst(est.valor, est.moeda) })}</p>
-            : <Falta s={s} est={est} tela={tela} /> : null}
-        {l.quantidades && !l.compartilhado && l.situacao !== 'sem_custo' && !(l.situacao === 'informado' && !l.emUso) ? <div className="pc-rec-quantidades">{l.quantidades}</div> : null}
+        {!compartilhado && !l.emUso && est && typeof est.valor !== 'number' && l.situacao !== 'sem_custo' && l.situacao !== 'informado' ? <Falta s={s} est={est} tela={tela} /> : null}
+        {l.quantidades && !compartilhado && l.situacao !== 'sem_custo' && !(l.situacao === 'informado' && !l.emUso) ? <div className="pc-rec-quantidades">{l.quantidades}</div> : null}
         <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}{l.detalhe ? ' · ' + t('Informações adicionadas') : ''}</summary>
           <TextField multiline label={t('Detalhamento e fonte do item')} value={l.detalhe} onChange={l.onDetalhe} />
         </details>
@@ -156,37 +152,33 @@ function Linha({ s, l, moeda, tela, tentou, aberta, onAbrir }: { s: CasoStore; l
   </div>;
 }
 
-export interface ContextoOrcamento { periodo: string; moeda: string; cambio: string; fonte: string; completo: boolean; campos: ReactNode }
+/** "24 meses · BRL": os meses do período (ou a resposta) e a moeda. */
+export function resumoPeriodo(meses: number | null, periodo: string, moeda: string): string {
+  return (meses ? t('{n} meses', { n: meses }) : periodo || t('Período do orçamento')) + ' · ' + moeda;
+}
 
-/** Faixa Período · Moeda e câmbio · Fonte; "mudar" abre as perguntas do período e da fonte (abertas enquanto faltam). */
+export interface ContextoOrcamento { resumo: string; completo: boolean; campos: ReactNode }
+
+/** Linha discreta "24 meses · BRL" com "mudar"; abre as perguntas do período e da fonte (abertas enquanto faltam). */
 function Contexto({ c }: { c: ContextoOrcamento }) {
   const [aberto, setAberto] = useState(!c.completo);
   return <details className="pc-rec-contexto" open={aberto} onToggle={e => setAberto(e.currentTarget.open)}>
-    <summary>
-      <span><span className="pc-rec-ctx-rot">{t('Período')}</span> <strong>{c.periodo || t('a definir')}</strong></span>
-      <span><span className="pc-rec-ctx-rot">{t('Moeda')}</span> <strong>{c.moeda}</strong>{c.cambio ? ' · ' + c.cambio : ''}</span>
-      <span><span className="pc-rec-ctx-rot">{t('Fonte')}</span> <strong>{c.fonte || t('a definir')}</strong></span>
-      <span className="pc-rec-ctx-mudar">{aberto ? t('fechar') : t('mudar')}</span>
-    </summary>
+    <summary><span>{c.resumo}</span><span className="pc-rec-ctx-mudar">{aberto ? t('fechar') : t('mudar')}</span></summary>
     <div className="pc-rec-contexto-campos">{c.campos}</div>
   </details>;
 }
 
-export function TabelaRecursos({ s, linhas, moeda, tela, tentou, contexto, aviso, disponiveis, onUsarTodas, onAdicionar }: {
-  s: CasoStore; linhas: LinhaRecurso[]; moeda: string; tela: string; tentou: boolean; contexto: ContextoOrcamento; aviso?: ReactNode;
+export function TabelaRecursos({ s, linhas, moeda, tela, tentou, contexto, disponiveis, onUsarTodas, onAdicionar }: {
+  s: CasoStore; linhas: LinhaRecurso[]; moeda: string; tela: string; tentou: boolean; contexto: ContextoOrcamento;
   disponiveis: number; onUsarTodas: () => void; onAdicionar: () => void;
 }) {
   const [aberta, setAberta] = useState<string | null>(null);
   return <div className="pc-rec">
     <Contexto c={contexto} />
-    {aviso ? <p className="pc-nota">{aviso}</p> : null}
     <div className="pc-rec-tabela">
-      <div className="pc-rec-cabecalho" aria-hidden="true"><span>{t('Recurso e situação')}</span><span>{t('Valor')}</span></div>
       {linhas.map(l => <Linha key={l.id} s={s} l={l} moeda={moeda} tela={tela} tentou={tentou} aberta={aberta === l.id} onAbrir={v => setAberta(v ? l.id : a => a === l.id ? null : a)} />)}
       <div className="pc-rec-rodape">
-        <button type="button" className="pc-rec-todas" disabled={!disponiveis} onClick={onUsarTodas}>
-          {disponiveis ? t('Usar a estimativa nos itens sem valor ({n})', { n: disponiveis }) : t('Nenhum item sem valor tem estimativa de referência disponível.')}
-        </button>
+        {disponiveis ? <button type="button" className="pc-rec-todas" onClick={onUsarTodas}>{t('Usar a estimativa nos itens sem valor ({n})', { n: disponiveis })}</button> : <span />}
         <Button variant="link" onClick={onAdicionar}>{t('Adicionar recurso +')}</Button>
       </div>
     </div>

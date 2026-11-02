@@ -1,5 +1,4 @@
 import { AcoesPercurso } from './AcoesPercurso';
-import { ProgressoPergunta } from './ProgressoPergunta';
 // Telas do percurso: abertura de capítulo (D2), pergunta (D3–D6, M2, M3) e síntese de capítulo (D7).
 import { useEffect, useState, type ReactNode } from 'react';
 import {
@@ -121,7 +120,6 @@ export function Pergunta({ n, tela: pedida }: { n: Capitulo; tela: string }) {
     <Shell pos={{ capitulo: n, tela: id }} contexto={t(CAPITULOS_INFO[n].titulo)}>
       <div className="pc-pergunta" data-tela={id}>
         <QuestionFrame
-          kicker={<ProgressoPergunta s={s} n={n} id={id}/>}
           title={tituloTela(s, id)}
           explanation={
             <>
