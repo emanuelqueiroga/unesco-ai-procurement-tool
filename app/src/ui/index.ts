@@ -88,3 +88,5 @@ export { formatarDigitando, lerDigitado, paraTexto, separadores } from './Numero
 export { Popover } from './Popover/Popover';
 export type { PopoverProps } from './Popover/Popover';
 export { Termo, TextoComTermos } from './Termo';
+export { StepBar } from './StepBar/StepBar';
+export type { StepBarProps, Step } from './StepBar/StepBar';

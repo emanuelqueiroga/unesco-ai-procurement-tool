@@ -6,6 +6,7 @@ import {lerRota,href} from '../../src/percurso/rota';
 import {OptionCard,OptionCardGroup} from '../../src/ui';
 import {ProgressoPergunta} from '../../src/screens/ProgressoPergunta';
 import {Frentes} from '../../src/screens/Governanca';
+import {etapasDaFrente} from '../../src/screens/Shell';
 import {orcamentoGovernanca} from '../../src/percurso/governanca';
 import {orcamentoLetramento} from '../../src/percurso/letramento';
 const S=()=>useCaso.getState();
@@ -51,10 +52,15 @@ describe('v015: panorama, progresso e controles acessíveis',()=>{
   expect(html).toContain('aria-current="true"');expect(html).toContain('href="#/frentes"');
   expect(html).not.toContain('<button');
  });
- it('comunica etapa e tela, sem misturar com o total da frente',()=>{
+ // Teste de layout (mockup aprovado em 02/11/2026): a etapa e a tela dentro dela passam para a barra de etapas do
+ // cabeçalho ("nome · 1 de 2"); acima do título fica a posição da pergunta no percurso ("Pergunta n de m").
+ it('comunica a pergunta no percurso e, na barra de etapas, a etapa e a tela',()=>{
   S().responder('prioridades',['sobre']);
   const html=renderToString(<ProgressoPergunta s={S()} n={2} id="lit-diagnostico"/>);
-  expect(html).toContain('Etapa 2 de 4');expect(html).toContain('Tela 1 de 2');expect(html).not.toContain('Pergunta');
+  expect(html).toMatch(/Pergunta \d+ de \d+/);expect(html).not.toContain('Etapa');
+  const etapas=etapasDaFrente(S(),{capitulo:2,tela:'lit-diagnostico'});
+  expect(etapas).toHaveLength(4);
+  expect(etapas.find(e=>e.state==='current')).toMatchObject({n:2,position:'1 de 2',progress:0.5});
  });
  it('associa o erro ao grupo e aos controles que recebem foco',()=>{
   const html=renderToString(<OptionCardGroup label="Situação" invalid describedBy="erro-situacao"><OptionCard name="situacao" value="nao" checked={false} label="Não existe"/></OptionCardGroup>);

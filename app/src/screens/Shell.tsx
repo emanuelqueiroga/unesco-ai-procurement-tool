@@ -1,21 +1,18 @@
-import { ResumoProvider } from './ResumoContexto';
-import { PainelEducacao } from './Educacao';
 import { entradaEtapa } from '../percurso/navegacaoOrientada';
-import { PainelLetramento } from './Letramento';
-// Moldura das telas: cabeçalho (logos, atalhos, modo, plano, idioma, tema, caso), navegação de capítulos (lateral
-// ≥ 900 px, barra abaixo), o conteúdo, o plano vivo (painel ≥ 1100 px, gaveta abaixo) e o rodapé institucional.
-// Até 1360 px os atalhos do cabeçalho (Início, Matriz, Calculadora, Modo, Ver o plano, tema) descem para uma
-// faixa própria sob o cabeçalho, para que "Início" e "Matriz" estejam visíveis em qualquer largura.
-import { useEffect, useState, type ReactNode } from 'react';
+// Moldura das telas (teste de layout da v015): cabeçalho com a frente atual numa pílula e as quatro etapas em linha
+// (sem a coluna lateral "Seu caminho"), a coluna da pergunta e, à direita, o cartão "Custo desta frente" (≥ 1100 px;
+// abaixo, uma faixa noite sob o cabeçalho que leva ao orçamento) e o rodapé institucional. No celular (≤ 900 px) o
+// cabeçalho fica compacto: a frente, o menu e a barra de etapas. A página inicial mantém o cabeçalho anterior.
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useCaso, telasAtivas, telasDoCapitulo, telaRespondida, origemDe, progressoDe, type Capitulo, type CasoStore } from '../store';
-import { Header, ChapterNav, ChapterBar, Segmented, Button, IconMoon, IconSun, useMediaQuery, useTheme, BREAKPOINTS, type NavChapter, type BarChapter } from '../ui';
+import { Header, StepBar, Segmented, Button, IconMoon, IconSun, IconMenu, IconClose, useMediaQuery, useTheme, BREAKPOINTS, type NavChapter, type BarChapter, type Step } from '../ui';
 import { infoCapitulo, CURTO, t } from '../percurso/textos';
 import { href, lerRota } from '../percurso/rota';
 import { tituloDaTelaLit } from '../percurso/letramento';
 import { entradaEtapaLit } from '../percurso/letramentoInterface';
-import { percursoPedagogico, percursoGovernanca, percursoLetramento, percursoInstitucional, temLetramento, temGovernanca, prioridadeEscolhida } from '../domain';
-import { Frentes, PainelGovernanca } from './Governanca';
-import { PlanoVivo } from './PlanoVivo';
+import { percursoPedagogico, percursoGovernanca, percursoLetramento, percursoInstitucional, prioridadeEscolhida, nomePais, paisDoCaso, tr } from '../domain';
+import { frentesDoPlano, frenteAtual } from '../percurso/frentes';
+import { ColunaCusto, FaixaCusto } from './CartaoCusto';
 import { CasoDialog } from './CasoDialog';
 import { SeletorIdioma, AvisoTraducao } from './Idioma';
 import { MatrizHost, abrirMatriz } from './Matriz';
@@ -27,6 +24,7 @@ import { exemploIlustrativo, nomeDoExemplo, tituloDaAba } from './transversal';
 import './shell.css';
 import './transversal.css';
 import './ux.css';
+import './moldura.css';
 
 export { LOGOS };
 // O rodapé institucional é da moldura; quem ainda chama <Rodape/> (Inicio, Plano) não o duplica.
@@ -52,20 +50,43 @@ export function capitulosNav(s: CasoStore, pos: Posicao): NavChapter[] {
   });
 }
 
-function capitulosBarra(s: CasoStore, pos: Posicao): BarChapter[] {
+export function capitulosBarra(s: CasoStore, pos: Posicao): BarChapter[] {
   return progressoDe(s).filter(p => prioridadeEscolhida(s.ctx) || p.capitulo === 1).map((p) => ({
     n: p.capitulo, label: t(infoCapitulo(p.capitulo, s).titulo), progress: prioridadeEscolhida(s.ctx) ? p.total ? p.feitas / p.total : 0 : telasDoCapitulo(1, s).filter(t => ['local', 'prioridades'].includes(t.id) && telaRespondida(s, t)).length / 2, href: percursoLetramento(s.ctx) ? entradaEtapaLit(s, p.capitulo) : percursoGovernanca(s.ctx)||percursoPedagogico(s.ctx) ? entradaEtapa(s,p.capitulo) : href.abertura(p.capitulo),
     state: pos.capitulo === p.capitulo ? 'current' : p.completo ? 'done' : 'todo',
   }));
 }
 
+/** Etapas em linha: ✓ nas concluídas, "nome · n de m" e o segmento preenchido até a tela atual na etapa atual. */
+export function etapasDaFrente(s: CasoStore, pos: Posicao): Step[] {
+  return capitulosBarra(s, pos).map((c) => {
+    if (c.state !== 'current' || !pos.tela) return { n: c.n, label: c.label, href: c.href, state: c.state ?? 'todo', progress: c.progress };
+    const qs = telasDoCapitulo(c.n as Capitulo, s).filter(q => prioridadeEscolhida(s.ctx) || ['local', 'prioridades'].includes(q.id));
+    const i = qs.findIndex(q => q.id === pos.tela);
+    return { n: c.n, label: c.label, href: c.href, state: 'current', progress: i < 0 ? c.progress : (i + 1) / qs.length, position: i < 0 ? undefined : t('{n} de {total}', { n: i + 1, total: qs.length }) };
+  });
+}
+
+/** A frente atual numa pílula; com mais de uma frente, leva ao seletor de frentes. */
+function PilulaFrente({ s }: { s: CasoStore }) {
+  const lista = frentesDoPlano(s), atual = lista.find(f => f.id === frenteAtual(s));
+  if (!atual || !prioridadeEscolhida(s.ctx)) return null;
+  const conteudo = <><i className="pc-frente-ponto" aria-hidden="true" /><span className="pc-frente-rotulo">{t('Frente:')}</span> <strong>{t(atual.titulo)}</strong></>;
+  return lista.length > 1 || s.ctx.prioridades?.length > 1
+    ? <a className="pc-frente-pilula" href={href.frentes()} aria-label={t('Frente:') + ' ' + t(atual.titulo) + ' · ' + t('Trocar')}>{conteudo}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></a>
+    : <span className="pc-frente-pilula pc-frente-pilula--fixa">{conteudo}</span>;
+}
+
 export function Shell({ children, pos = {}, nav = true, plano = true, inicio = false, contexto }: { children: ReactNode; pos?: Posicao; nav?: boolean; plano?: boolean; inicio?: boolean; contexto?: ReactNode }) {
   const s = useCaso();
   plano = plano && prioridadeEscolhida(s.ctx);
-  const barra = useMediaQuery(BREAKPOINTS.bar);
   const estreito = useMediaQuery(BREAKPOINTS.cards);
-  const faixa = useMediaQuery('(max-width: 1360px)');   // atalhos numa faixa própria sob o cabeçalho (não cabem junto do nome e do contexto)
+  const celular = useMediaQuery(BREAKPOINTS.bar);           // cabeçalho compacto com menu
+  const semColuna = useMediaQuery('(max-width: 1099px)');   // custo numa faixa sob o cabeçalho
   const [caso, setCaso] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const botaoMenu = useRef<HTMLButtonElement>(null);
   const [tema, , alternarTema] = useTheme();
   const salvamento = useSalvamento();
   const respondidas = telasAtivas(s).length - progressoDe(s).reduce((a, p) => a + (p.total - p.feitas), 0);
@@ -73,21 +94,29 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
 
   // título da aba por tela (e no idioma da interface)
   useEffect(() => {
-    const atualizar = () => { document.title = tituloDaAba(lerRota(window.location.hash), useCaso.getState()); };
+    const atualizar = () => { document.title = tituloDaAba(lerRota(window.location.hash), useCaso.getState()); setMenu(false); };
     atualizar();
     window.addEventListener('hashchange', atualizar);
     return () => window.removeEventListener('hashchange', atualizar);
   }, [s.lang, s.ctx.prioridades]);
+  useEffect(() => {
+    if (!menu) return;
+    const tecla = (e: KeyboardEvent) => { if (e.key === 'Escape') { setMenu(false); botaoMenu.current?.focus(); } };
+    document.addEventListener('keydown', tecla);
+    return () => document.removeEventListener('keydown', tecla);
+  }, [menu]);
+  useEffect(() => { if (!celular) setMenu(false); }, [celular]);
 
   const comPlano = respondidas > 0 || s.exemplo !== 'novo';
+  const projeto = prioridadeEscolhida(s.ctx) && !percursoInstitucional(s.ctx) && !percursoPedagogico(s.ctx);
   const atalhos = (
     <>
       <Button variant="secondary" size="sm" href={href.inicio()}>{t('Início')}</Button>
-      {prioridadeEscolhida(s.ctx) && !percursoInstitucional(s.ctx) && !percursoPedagogico(s.ctx) ? <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={t('Matriz camadas × fases')}>{t('Matriz')}</Button> : null}
-      {prioridadeEscolhida(s.ctx) && !percursoInstitucional(s.ctx) && !percursoPedagogico(s.ctx) && s.modo === 'refinar' ? <Button variant="secondary" size="sm" href={href.refinar()}>{t('Calculadora')}</Button> : null}
+      {projeto ? <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={t('Matriz camadas × fases')}>{t('Matriz')}</Button> : null}
+      {projeto && s.modo === 'refinar' ? <Button variant="secondary" size="sm" href={href.refinar()}>{t('Calculadora')}</Button> : null}
     </>
   );
-  const modo = !prioridadeEscolhida(s.ctx)||percursoInstitucional(s.ctx)||percursoPedagogico(s.ctx) ? null : (
+  const modo = !projeto ? null : (
     <Segmented
       label={t('Modo')}
       value={s.modo}
@@ -95,7 +124,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
       options={[{ value: 'essencial', label: t('Essencial') }, { value: 'refinar', label: t('Refinar') }]}
     />
   );
-  const verPlano = comPlano && prioridadeEscolhida(s.ctx) ? <Button variant="secondary" size="sm" href={href.panorama()}>{t('Ver o plano')}</Button> : null;
+  const verPlano = comPlano && prioridadeEscolhida(s.ctx) ? <Button variant="link" size="sm" href={href.panorama()}>{t('Plano nacional')}</Button> : null;
   const botaoTema = (
     <Button
       variant="secondary"
@@ -105,76 +134,103 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
       onClick={alternarTema}
     />
   );
-  const barraAcoes=rota.tipo==='pergunta'||rota.tipo==='frentes';
+  const botaoCaso = <Button variant="secondary" size="sm" onClick={() => { setMenu(false); setCaso(true); }} aria-haspopup="dialog">{t('Plano')}</Button>;
+  const barraAcoes = rota.tipo === 'pergunta' || rota.tipo === 'frentes';
   const nomeExemplo = exemploIlustrativo(s) ? nomeDoExemplo(s.exemplo) : '';
+  const faixas = (
+    <>
+      {salvamento.falhou && !salvamento.dispensado ? (
+        <section className="pc-faixa pc-faixa--atencao" role="status" aria-label={t('Aviso')}>
+          <span>{t('Suas respostas não estão sendo salvas neste navegador; exporte o caso para guardá-las.')}</span>
+          <Button size="sm" variant="secondary" onClick={() => { void exportarCaso(); }}>{t('Exportar o plano')}</Button>
+          <Button size="sm" variant="link" onClick={() => useSalvamento.setState({ dispensado: true })}>{t('Dispensar')}</Button>
+        </section>
+      ) : null}
+      {nomeExemplo && rota.tipo !== 'inicio' ? (
+        <section className="pc-faixa pc-faixa--exemplo" aria-label={t('Caso ilustrativo')}>
+          <span>{t('Você está vendo um caso ilustrativo: {nome}. Ao mudar uma resposta, ele passa a ser o seu caso.', { nome: nomeExemplo })}</span>
+          <Button size="sm" variant="secondary" onClick={() => { void comecarEmBranco(); }}>{t('Começar em branco')}</Button>
+        </section>
+      ) : null}
+      <AvisoTraducao />
+    </>
+  );
+
+  if (inicio) {
+    // Página inicial: fora do teste de layout, mantém o cabeçalho e a moldura anteriores (só herda cores e tipos).
+    return (
+      <DentroDaMoldura.Provider value>
+        <div className="pc-app pc-app--inicio">
+          <a className="pc-pular" href="#conteudo" onClick={(e) => { e.preventDefault(); document.getElementById('conteudo')?.focus(); }}>{t('Pular para o conteúdo')}</a>
+          <Header logos={LOGOS} href={href.inicio()} compact={estreito} context={contexto} actions={<><SeletorIdioma compacto={estreito} />{botaoTema}</>} />
+          {faixas}
+          <div className="pc-corpo"><main id="conteudo" className="pc-main" tabIndex={-1}>{children}</main></div>
+          <RodapeCompleto />
+          <CasoDialog open={caso} onClose={() => setCaso(false)} />
+          <MatrizHost />
+        </div>
+      </DentroDaMoldura.Provider>
+    );
+  }
+
+  const pais = s.caso?.pais ? nomePais(paisDoCaso(s.caso)) : '';
+  const ctxCab = pais && prioridadeEscolhida(s.ctx) ? pais + ' · ' + t('plano nacional') : contexto;
+  const etapas = nav ? etapasDaFrente(s, pos) : [];
+  const marca = (
+    <a className="pc-cab-marca" href={href.inicio()}>
+      <span className="pr-header-plate pc-cab-plate">{LOGOS.map((l) => <img key={l.src} className="pc-cab-logo" src={l.src} alt={String(tr(l.alt))} />)}</span>
+      <span className="pc-cab-nome">AI in Education Procurement Tool</span>
+    </a>
+  );
   return (
-    <ResumoProvider disponivel={plano} integrado={barraAcoes} limite={percursoInstitucional(s.ctx)||percursoPedagogico(s.ctx)?1439:1100}><DentroDaMoldura.Provider value>
-      <div data-barra-acoes={barraAcoes||undefined} className={inicio ? 'pc-app pc-app--inicio' : percursoLetramento(s.ctx) ? 'pc-app pc-app--letramento' : percursoGovernanca(s.ctx)||percursoPedagogico(s.ctx) ? 'pc-app pc-app--orientado' : 'pc-app'}>
+    <DentroDaMoldura.Provider value>
+      <div data-barra-acoes={barraAcoes || undefined} className={'pc-app pc-app--novo' + (percursoLetramento(s.ctx) ? ' pc-app--letramento' : percursoGovernanca(s.ctx) || percursoPedagogico(s.ctx) ? ' pc-app--orientado' : '')}>
         <a className="pc-pular" href="#conteudo" onClick={(e) => { e.preventDefault(); document.getElementById('conteudo')?.focus(); }}>{t('Pular para o conteúdo')}</a>
-        <Header
-          logos={LOGOS}
-          href={href.inicio()}
-          compact={estreito}
-          context={contexto}
-          actions={
-            inicio ? (
-              <>
-                <SeletorIdioma compacto={estreito} />
-                {botaoTema}
-              </>
-            ) : faixa ? (
-              <>
-                <SeletorIdioma compacto={estreito} />
-                <Button variant="secondary" size="sm" onClick={() => setCaso(true)} aria-haspopup="dialog">{t('Plano')}</Button>
-              </>
+        <header className={'pc-cab' + (celular ? ' pc-cab--celular' : '')}>
+          <div className="pc-cab-linha">
+            <div className="pc-cab-esq">
+              {marca}
+              {!celular && ctxCab ? <span className="pc-cab-ctx">{ctxCab}</span> : null}
+            </div>
+            <PilulaFrente s={s} />
+            {celular ? (
+              <button ref={botaoMenu} type="button" className="pc-cab-menu" aria-expanded={menu} aria-controls="pc-menu" aria-label={menu ? t('Fechar o menu') : t('Menu')} onClick={() => setMenu((m) => !m)}>
+                {menu ? <IconClose /> : <IconMenu />}
+              </button>
             ) : (
-              <>
-                {atalhos}
+              <div className="pc-cab-acoes">
+                {projeto ? atalhos : null}
                 {modo}
-                <SeletorIdioma />
                 {verPlano}
+                <SeletorIdioma compacto />
                 {botaoTema}
-                <Button variant="secondary" size="sm" onClick={() => setCaso(true)} aria-haspopup="dialog">{t('Plano')}</Button>
-              </>
-            )
-          }
-        />
-        {!inicio && faixa ? (
-          <nav className="pc-atalhos" aria-label={t('Atalhos')}>
-            {atalhos}
-            {!estreito ? modo : null}
-            {verPlano}
-            {botaoTema}
-          </nav>
-        ) : null}
-        {salvamento.falhou && !salvamento.dispensado ? (
-          <section className="pc-faixa pc-faixa--atencao" role="status" aria-label={t('Aviso')}>
-            <span>{t('Suas respostas não estão sendo salvas neste navegador; exporte o caso para guardá-las.')}</span>
-            <Button size="sm" variant="secondary" onClick={() => { void exportarCaso(); }}>{t('Exportar o plano')}</Button>
-            <Button size="sm" variant="link" onClick={() => useSalvamento.setState({ dispensado: true })}>{t('Dispensar')}</Button>
-          </section>
-        ) : null}
-        {nomeExemplo && rota.tipo !== 'inicio' ? (
-          <section className="pc-faixa pc-faixa--exemplo" aria-label={t('Caso ilustrativo')}>
-            <span>{t('Você está vendo um caso ilustrativo: {nome}. Ao mudar uma resposta, ele passa a ser o seu caso.', { nome: nomeExemplo })}</span>
-            <Button size="sm" variant="secondary" onClick={() => { void comecarEmBranco(); }}>{t('Começar em branco')}</Button>
-          </section>
-        ) : null}
-        <AvisoTraducao />
-        {nav && barra ? <div className="pc-barra">{pos.capitulo?<p className="pc-ux-etapa-movel">{t('Etapa {n} de {total}: {nome}',{n:pos.capitulo,total:prioridadeEscolhida(s.ctx)?4:1,nome:t(infoCapitulo(pos.capitulo,s).titulo)})}</p>:null}<ChapterBar chapters={capitulosBarra(s, pos)} compact={estreito} /></div> : null}
-        <div className={['pc-corpo', nav && !barra ? 'pc-corpo--nav' : '', plano ? 'pc-corpo--plano' : ''].filter(Boolean).join(' ')}>
-          {nav && !barra ? <aside className="pc-nav"><ChapterNav zoneLabel={t('Seu caminho')} chapters={capitulosNav(s, pos)} /></aside> : null}
+                {botaoCaso}
+              </div>
+            )}
+          </div>
+          {celular && menu ? (
+            <nav id="pc-menu" className="pc-menu" aria-label={t('Menu')}>
+              {ctxCab ? <p className="pc-menu-ctx">{ctxCab}</p> : null}
+              <div className="pc-menu-acoes">{atalhos}{verPlano}{plano ? <Button variant="link" size="sm" href={href.plano()}>{t('Resumo desta frente')}</Button> : null}</div>
+              {modo ? <div className="pc-menu-linha">{modo}</div> : null}
+              <div className="pc-menu-linha"><SeletorIdioma />{botaoTema}{botaoCaso}</div>
+            </nav>
+          ) : null}
+          {nav && etapas.length ? <div className="pc-cab-etapas"><StepBar steps={etapas} compact={celular} label={t('Etapas da frente')} /></div> : null}
+        </header>
+        {faixas}
+        {plano && semColuna ? <FaixaCusto s={s} tela={pos.tela} /> : null}
+        <div className={'pc-corpo pc-corpo--novo' + (plano && !semColuna ? ' pc-corpo--custo' : '')}>
           <main id="conteudo" className="pc-main" tabIndex={-1}>
             {rota.tipo === 'plano' && !percursoInstitucional(s.ctx) && !percursoPedagogico(s.ctx) ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Anexo técnico (PDF)".')}</p> : null}
-            {prioridadeEscolhida(s.ctx) && !inicio && !['frentes','panorama'].includes(rota.tipo) ? <Frentes s={s} /> : null}
             {children}
           </main>
-          {plano ? percursoPedagogico(s.ctx) ? <PainelEducacao s={s} /> : percursoLetramento(s.ctx) ? <PainelLetramento s={s} /> : percursoGovernanca(s.ctx) ? <PainelGovernanca s={s} /> : <PlanoVivo s={s} /> : null}
+          {plano && !semColuna ? <ColunaCusto s={s} tela={pos.tela} /> : null}
         </div>
         <RodapeCompleto />
         <CasoDialog open={caso} onClose={() => setCaso(false)} />
         <MatrizHost />
       </div>
-    </DentroDaMoldura.Provider></ResumoProvider>
+    </DentroDaMoldura.Provider>
   );
 }

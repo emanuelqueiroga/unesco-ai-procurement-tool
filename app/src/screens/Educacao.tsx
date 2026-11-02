@@ -1,7 +1,6 @@
 import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { progressoFrente } from '../percurso/frentes';
 import { GrupoFormulario } from './GrupoFormulario';
-import { useResumoPlano } from './ResumoContexto';
 import { AcoesPercurso } from './AcoesPercurso';
 import { ProgressoPergunta } from './ProgressoPergunta';
 import { useEffect, useState, type ReactNode } from "react";
@@ -47,8 +46,9 @@ import {
   type CampoEd,
 } from "../percurso/pedagogico";
 import { orcamentoGovernanca, moedaGovernanca, valorItemOrcamento } from "../percurso/governanca";
-import { LinhaEstimativa, CampoQuantidade, UsarEstimativas, semValorComEstimativa, TotaisOrcamentoView, kpisOrcamento } from "./EstimativaReferencia";
-import { linhasTotais } from "../percurso/estimativasOrcamento";
+import { CampoQuantidade, semValorComEstimativa, TotaisOrcamentoView } from "./EstimativaReferencia";
+import { linhasTotais, taxaMoeda } from "../percurso/estimativasOrcamento";
+import { TabelaRecursos, type LinhaRecurso } from "./TabelaRecursos";
 import { orcamentoLetramento, alterarLit } from "../percurso/letramento";
 import { selecionarLit } from "../percurso/letramentoInterface";
 import {
@@ -247,357 +247,96 @@ function Orcamento({ s, tentou }: { s: CasoStore; tentou: boolean }) {
   const o = orcamentoEd(s),
     disponiveis = semValorComEstimativa(o.itens, (i) => i.emReferencia),
     atual = lerEd(s, "orcamento") || {},
-    refs = {
-      governanca: orcamentoGovernanca(s).itens,
-      letramento: orcamentoLetramento(s).itens,
+    conv = taxaMoeda(o.moeda, s),
+    gov = orcamentoGovernanca(s),
+    lit = orcamentoLetramento(s),
+    refs = { governanca: gov.itens, letramento: lit.itens },
+    moedaRef = { governanca: gov.moeda, letramento: lit.moeda },
+    frenteRef = { governanca: t("governança"), letramento: t("letramento") };
+  const extrasSit = [
+    ...(s.ctx.prioridades?.includes("governar") ? [{ id: "governanca", rotulo: "Custeado na governança" }] : []),
+    ...(s.ctx.prioridades?.includes("sobre") ? [{ id: "letramento", rotulo: "Custeado no letramento" }] : []),
+  ];
+  const campo = (c: string) => camposEd(s).find((f) => f.caminho === c);
+  const valorDe = (c: string) => { const f = campo(c); return f && campoEdRespondido(s, f) ? valorEd(s, f) : ""; };
+  const linhas: LinhaRecurso[] = o.itens.map((i) => {
+    const p = "orcamento.itens." + i.id,
+      v = lerEd(s, p) || {},
+      salvar = (item: any) => { gravar(s, "orcamento.moeda", o.moeda); gravar(s, p, item); },
+      novo = (mudar: any) => salvar({ ...(lerEd(useCaso.getState(), p) || {}), ...mudar }),
+      extra = i.id.startsWith("adicional-"),
+      chave = v.situacao as "governanca" | "letramento",
+      origem = i.compartilhado ? refs[chave]?.find((r: any) => r.id === v.referencia) : undefined;
+    return {
+      id: i.id, ancora: ident(p), nome: t(i.nome), situacao: String(v.situacao || ""), valor: v.valor,
+      estimativa: i.estimativa, emUso: i.emReferencia, respondido: i.respondido,
+      compartilhado: i.compartilhado ? { frente: frenteRef[chave], valor: origem ? valorItemOrcamento(origem as any, moedaRef[chave]) : t("Não informado") } : null,
+      extras: extrasSit,
+      topo: extra ? (
+        <div className="pc-lit-campo">
+          <OptionCardGroup className="pc-lit-opcoes" label={t(E("Tipo de recurso adicional", "Additional resource type"))}>
+            {[
+              ["deslocamento", E("Deslocamento e encontros", "Travel and meetings")],
+              ["assessoria", E("Assessoria especializada", "Specialist advice")],
+              ["pesquisa", E("Pesquisa e avaliação", "Research and evaluation")],
+              ["apoio", E("Apoio à participação", "Participation support")],
+              ["outro", E("Outro recurso", "Other resource")],
+            ].map(([id, label]) => (
+              <OptionCard key={id} name={i.id + ".nome"} value={id} label={t(label)} checked={atual.adicionais?.[i.id]?.nome === label}
+                onChange={() => gravar(s, "orcamento.adicionais." + i.id + ".nome", label)} />
+            ))}
+          </OptionCardGroup>
+        </div>
+      ) : undefined,
+      origem: i.compartilhado ? (
+        <OptionCardGroup className="pc-lit-opcoes" label={t(E("Item de origem do custo", "Source cost item"))}>
+          {refs[chave].map((ref: any) => (
+            <OptionCard key={ref.id} name={p + ".referencia"} value={ref.id} label={ref.nome} checked={v.referencia === ref.id} onChange={(referencia) => novo({ referencia })} />
+          ))}
+        </OptionCardGroup>
+      ) : undefined,
+      quantidades: i.id === "equipe" ? (
+        <CampoQuantidade id={ident("orcamento.quantidades.equipeFte")} label={t("Pessoas na equipe (equivalente em tempo integral)")} decimais
+          value={lerEd(s, "orcamento.quantidades.equipeFte")} onChange={(valor) => gravar(s, "orcamento.quantidades.equipeFte", valor)} />
+      ) : i.id === "formacao" ? (
+        <>
+          <CampoQuantidade id={ident("orcamento.quantidades.profissionais")} label={t("Profissionais a formar")}
+            value={lerEd(s, "orcamento.quantidades.profissionais")} onChange={(valor) => gravar(s, "orcamento.quantidades.profissionais", valor)} />
+          <CampoQuantidade id={ident("orcamento.quantidades.horasProfissional")} label={t("Horas por profissional")} decimais
+            value={lerEd(s, "orcamento.quantidades.horasProfissional")} onChange={(valor) => gravar(s, "orcamento.quantidades.horasProfissional", valor)} />
+        </>
+      ) : undefined,
+      detalhe: String(v.detalhe || ""),
+      onSituacao: (situacao) => novo({ situacao }),
+      onValor: (valor) => novo({ valor }),
+      onDetalhe: (detalhe) => novo({ detalhe }),
+      onRemover: extra ? () => {
+        const a = lerEd(useCaso.getState(), "orcamento") || {};
+        const { [i.id]: _a, ...adicionais } = a.adicionais || {}, { [i.id]: _b, ...itens } = a.itens || {};
+        gravar(s, "orcamento.adicionais", adicionais);
+        gravar(s, "orcamento.itens", itens);
+      } : undefined,
     };
-  return (
-    <div className="pc-lit-orcamento">
-      <p className="pc-nota">
-        {t("Moeda")}: {o.moeda}.{" "}
-        {t(
-          E(
-            "Informe cada recurso uma única vez, mesmo quando ele atende a vários temas.",
-            "Enter each resource once, even when it serves several themes.",
-          ),
-        )}
-      </p>
-      {o.itens.map((i, n) => {
-        const p = "orcamento.itens." + i.id,
-          v = lerEd(s, p) || {},
-          salvar = (item: any) => {
-            gravar(s, "orcamento.moeda", o.moeda);
-            gravar(s, p, item);
-          },
-          extra = i.id.startsWith("adicional-");
-        return (
-          <div id={ident(p)} key={i.id} tabIndex={-1}>
-            <GrupoEd
-              nome={t(i.nome)}
-              recolhivel
-              aberto={n === 0 || extra}
-              estado={
-                i.compartilhado
-                  ? t(E("Custo compartilhado", "Shared cost"))
-                  : i.valor !== null || i.emReferencia
-                    ? valorItemOrcamento(
-                        { ...i, referencia: i.emReferencia },
-                        o.moeda,
-                      )
-                    : i.situacao === "a_estimar"
-                      ? t("Custo ainda a levantar")
-                      : t("Não informado")
-              }
-            >
-              {extra ? (
-                <div className="pc-lit-campo">
-                  <h3 className="pc-lit-campo-titulo">
-                    {t(
-                      E(
-                        "Tipo de recurso adicional",
-                        "Additional resource type",
-                      ),
-                    )}
-                  </h3>
-                  <OptionCardGroup
-                    className="pc-lit-opcoes"
-                    label={t(
-                      E(
-                        "Tipo de recurso adicional",
-                        "Additional resource type",
-                      ),
-                    )}
-                  >
-                    {[
-                      [
-                        "deslocamento",
-                        E("Deslocamento e encontros", "Travel and meetings"),
-                      ],
-                      [
-                        "assessoria",
-                        E("Assessoria especializada", "Specialist advice"),
-                      ],
-                      [
-                        "pesquisa",
-                        E("Pesquisa e avaliação", "Research and evaluation"),
-                      ],
-                      [
-                        "apoio",
-                        E("Apoio à participação", "Participation support"),
-                      ],
-                      ["outro", E("Outro recurso", "Other resource")],
-                    ].map(([id, label]) => (
-                      <OptionCard
-                        key={id}
-                        name={i.id + ".nome"}
-                        value={id}
-                        label={t(label)}
-                        checked={atual.adicionais?.[i.id]?.nome === label}
-                        onChange={() =>
-                          gravar(
-                            s,
-                            "orcamento.adicionais." + i.id + ".nome",
-                            label,
-                          )
-                        }
-                      />
-                    ))}
-                  </OptionCardGroup>
-                </div>
-              ) : null}
-              <OptionCardGroup
-                invalid={tentou&&!i.respondido} describedBy={tentou&&!i.respondido?ident(p)+"-erro":undefined}
-                className="pc-lit-opcoes"
-                label={t("Situação do custo") + ": " + t(i.nome)}
-              >
-                {[
-                  ["a_estimar", "Custo ainda a levantar"],
-                  ["sem_custo", "Sem custo neste orçamento"],
-                  ["informado", "Já tenho um valor"],
-                  ...(s.ctx.prioridades?.includes("governar")
-                    ? [
-                        [
-                          "governanca",
-                          E(
-                            "Já custeado na governança",
-                            "Already funded under governance",
-                          ),
-                        ],
-                      ]
-                    : []),
-                  ...(s.ctx.prioridades?.includes("sobre")
-                    ? [
-                        [
-                          "letramento",
-                          E(
-                            "Já custeado no letramento",
-                            "Already funded under AI literacy",
-                          ),
-                        ],
-                      ]
-                    : []),
-                ].map(([id, label]) => (
-                  <OptionCard
-                    key={id}
-                    name={p}
-                    value={id}
-                    label={t(label)}
-                    checked={v.situacao === id}
-                    onChange={(id) => salvar({ ...v, situacao: id })}
-                  />
-                ))}
-              </OptionCardGroup>
-              {v.situacao === "informado" ? (
-                <div className="pc-lit-campo">
-                  <CampoNumero
-                    label={t("Valor informado") + " (" + o.moeda + ")"}
-                    value={v.valor ?? ""}
-                    decimais
-                    error={
-                      tentou && !i.respondido
-                        ? t("Informe um valor maior ou igual a zero.")
-                        : undefined
-                    }
-                    onChange={(valor) => salvar({ ...v, valor })}
-                  />
-                </div>
-              ) : null}
-              {i.compartilhado ? (
-                <OptionCardGroup
-                  className="pc-lit-opcoes"
-                  label={t(E("Item de origem do custo", "Source cost item"))}
-                >
-                  {refs[v.situacao as keyof typeof refs].map((ref) => (
-                    <OptionCard
-                      key={ref.id}
-                      name={p + ".referencia"}
-                      value={ref.id}
-                      label={ref.nome}
-                      checked={v.referencia === ref.id}
-                      onChange={(referencia) => salvar({ ...v, referencia })}
-                    />
-                  ))}
-                </OptionCardGroup>
-              ) : null}
-              {i.id === "equipe" ? (
-                <CampoQuantidade
-                  id={ident("orcamento.quantidades.equipeFte")}
-                  label={t("Pessoas na equipe (equivalente em tempo integral)")}
-                  decimais
-                  value={lerEd(s, "orcamento.quantidades.equipeFte")}
-                  onChange={(valor) =>
-                    gravar(s, "orcamento.quantidades.equipeFte", valor)
-                  }
-                />
-              ) : null}
-              {i.id === "formacao" ? (
-                <>
-                  <CampoQuantidade
-                    id={ident("orcamento.quantidades.profissionais")}
-                    label={t("Profissionais a formar")}
-                    value={lerEd(s, "orcamento.quantidades.profissionais")}
-                    onChange={(valor) =>
-                      gravar(s, "orcamento.quantidades.profissionais", valor)
-                    }
-                  />
-                  <CampoQuantidade
-                    id={ident("orcamento.quantidades.horasProfissional")}
-                    label={t("Horas por profissional")}
-                    decimais
-                    value={lerEd(s, "orcamento.quantidades.horasProfissional")}
-                    onChange={(valor) =>
-                      gravar(
-                        s,
-                        "orcamento.quantidades.horasProfissional",
-                        valor,
-                      )
-                    }
-                  />
-                </>
-              ) : null}
-              {!i.compartilhado ? (
-                <LinhaEstimativa
-                  s={s}
-                  est={i.estimativa}
-                  tela="ed-recursos"
-                  nome={t(i.nome)}
-                  emUso={i.emReferencia}
-                  onUsar={() => salvar({ ...v, situacao: "referencia" })}
-                />
-              ) : null}
-              {tentou && !i.respondido ? (
-                <p id={ident(p)+"-erro"} className="pc-lit-erro">
-                  {t(
-                    "Informe a situação e, quando necessário, o valor ou o item de origem.",
-                  )}
-                </p>
-              ) : null}
-              <div className="pc-lit-campo">
-                <details className="pc-gov-detalhes">
-                  <summary>{t("Adicionar mais informações +")}</summary>
-                  <TextField
-                    label={t("Detalhamento e fonte do item")}
-                    multiline
-                    value={String(v.detalhe || "")}
-                    onChange={(detalhe) => salvar({ ...v, detalhe })}
-                  />
-                </details>
-              </div>
-              {extra ? (
-                <Button
-                  variant="link"
-                  onClick={() => {
-                    const { [i.id]: _a, ...adicionais } =
-                        atual.adicionais || {},
-                      { [i.id]: _b, ...itens } = atual.itens || {};
-                    gravar(s, "orcamento.adicionais", adicionais);
-                    gravar(s, "orcamento.itens", itens);
-                  }}
-                >
-                  {t("Remover")}
-                </Button>
-              ) : null}
-            </GrupoEd>
-          </div>
-        );
-      })}
-      <UsarEstimativas
-        quantos={disponiveis.length}
-        onUsar={() => {
-          gravar(s, "orcamento.moeda", o.moeda);
-          for (const i of disponiveis)
-            gravar(s, "orcamento.itens." + i.id, {
-              ...(lerEd(useCaso.getState(), "orcamento.itens." + i.id) || {}),
-              situacao: "referencia",
-            });
-        }}
-      />
-      <Button
-        variant="secondary"
-        onClick={() => {
-          const seq = (atual.seq || 0) + 1;
-          gravar(s, "orcamento.seq", seq);
-          gravar(s, "orcamento.adicionais.adicional-" + seq, { nome: "" });
-          requestAnimationFrame(() =>
-            focarPendencia(ident("orcamento.itens.adicional-" + seq)),
-          );
-        }}
-      >
-        {t("Adicionar recurso")}
-      </Button>
-      <Resumo s={s} />
-    </div>
-  );
-}
-export function PainelEducacao({ s }: { s: CasoStore }) {
-  const p = planoEd(s),
-    o = p.orcamento,
-    qs = telasAtivas(s),
-    faltam = faltamDe(s),
-    proxima = faltam[0],
-    gaveta = useMediaQuery("(max-width: 1439px)"),
-    {aberta,setAberta,integrado}=useResumoPlano();
-  const feitas=progressoFrente(s,"educacao");
-  const progresso = t("{n} de {total} telas desta frente preenchidas", {
-    n: feitas.feitas,
-    total: feitas.total,
   });
-  const panel = (
-    <PlanPanel
-      className="pc-lit-painel pc-est-painel"
-      fluid
-      paperOnly={gaveta}
-      title={p.pais || p.titulo}
-      kicker={p.titulo}
-      facts={progresso}
-      state={faltam.length || p.pendentes ? "writing" : "complete"}
-      openHref={href.plano()}
-      summaryTitle={t("Em resumo")}
-      originLine={
-        <>
-          <p>{p.proxima}</p>
-          <p>{p.escopo}</p>
-        </>
-      }
-      kpis={kpisOrcamento("ed-orcamento", o)}
-      recommendationsTitle={t(E("Temas do plano", "Plan themes"))}
-      recommendationsCount={p.temas.length}
-      recommendations={p.temas
-        .slice(0, 3)
-        .map((q) => ({ id: q.id, text: t(q.nome) }))}
-      footer={
-        <>
-          {proxima ? (
-            <Button
-              size="sm"
-              href={href.pergunta(proxima.capitulo, proxima.id)}
-            >
-              {t("Continuar de onde parei")}
-            </Button>
-          ) : null}
-          <Button variant="secondary" size="sm" href={href.plano()}>
-            {t("Resumo desta frente")}
-          </Button>
-        </>
-      }
-    />
-  );
-  return gaveta ? (
-    <PlanDrawer
-      hideTrigger={integrado}
-      open={aberta}
-      onOpenChange={setAberta}
-      zoneLabel={p.titulo}
-      summary={progresso}
-      openLabel={t("Abrir o seu plano")}
-      closeLabel={t("Fechar")}
-    >
-      <div className="pc-est-painel">{panel}</div>
-    </PlanDrawer>
-  ) : (
-    <aside className="pc-plano" aria-label={p.titulo}>
-      {panel}
-    </aside>
+  const camposTela = camposEd(s).filter((f) => f.tela === "ed-recursos");
+  return (
+    <TabelaRecursos s={s} linhas={linhas} moeda={o.moeda} tela="ed-recursos" tentou={tentou}
+      aviso={t(E("Informe cada recurso uma única vez, mesmo quando ele atende a vários temas.", "Enter each resource once, even when it serves several themes."))}
+      contexto={{ periodo: valorDe("orcamento.periodo"), fonte: valorDe("orcamento.fonte"), moeda: o.moeda, completo: camposTela.every((f) => campoEdRespondido(s, f)),
+        cambio: conv ? t("câmbio de referência 1 US$ = {taxa}", { taxa: new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 2 }).format(conv.taxa) }) : "",
+        campos: <Campos s={s} id="ed-recursos" tentou={tentou} /> }}
+      disponiveis={disponiveis.length}
+      onUsarTodas={() => {
+        gravar(s, "orcamento.moeda", o.moeda);
+        for (const i of disponiveis)
+          gravar(s, "orcamento.itens." + i.id, { ...(lerEd(useCaso.getState(), "orcamento.itens." + i.id) || {}), situacao: "referencia" });
+      }}
+      onAdicionar={() => {
+        const seq = ((lerEd(useCaso.getState(), "orcamento") || {}).seq || 0) + 1;
+        gravar(s, "orcamento.seq", seq);
+        gravar(s, "orcamento.adicionais.adicional-" + seq, { nome: "" });
+        requestAnimationFrame(() => focarPendencia(ident("orcamento.itens.adicional-" + seq)));
+      }} />
   );
 }
 function PlanoEd({ s }: { s: CasoStore }) {
@@ -758,7 +497,7 @@ export function Educacao({ rota }: { rota: Rota }) {
     <Shell pos={{ capitulo: n, tela: id }} contexto={t(info.titulo)}>
       <div className="pc-pergunta" data-tela={id}>
         <QuestionFrame
-          kicker={<ProgressoPergunta s={s} n={n} id={id}/>}
+          kicker={<ProgressoPergunta s={s} id={id}/>}
           title={t(TITULOS_ED[id] || TITULO_TELA[id] || CURTO[id] || id)}
           explanation={t(
             id === "ed-objetivos"
@@ -847,10 +586,11 @@ export function Educacao({ rota }: { rota: Rota }) {
                   ) : null}
                 </section>
               ) : null}
-              <Campos s={s} id={id} tentou={tentou} />
               {id === "ed-recursos" ? (
                 <Orcamento s={s} tentou={tentou} />
-              ) : null}
+              ) : (
+                <Campos s={s} id={id} tentou={tentou} />
+              )}
             </div>
           ) : (
             <ControlesTela e={s} tela={ativa} />

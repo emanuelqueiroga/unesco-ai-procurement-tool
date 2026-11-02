@@ -4,7 +4,7 @@ export type Theme = 'light' | 'dark';
 
 const KEY = 'aiedu-theme';
 /** cor da barra do navegador (meta theme-color) em cada tema: a superfície do cabeçalho */
-const COR_BARRA: Record<Theme, string> = { light: '#ffffff', dark: '#16232a' };
+const COR_BARRA: Record<Theme, string> = { light: '#ffffff', dark: '#111a2b' };
 
 function stored(): Theme | null {
   try {
