@@ -6,7 +6,15 @@ import { nomePais, paisDoCaso } from "../domain/pais.js";
 import { LOC } from "../domain/i18n.js";
 import { t } from "./textos";
 import { E, TITULOS_ED } from "./pedagogicoTitulos";
-import { moedaGovernanca, orcamentoGovernanca } from "./governanca";
+import { moedaGovernanca, orcamentoGovernanca, valorItemOrcamento } from "./governanca";
+import {
+  estimativaReferencia,
+  itemEmReferencia,
+  valorEstimado,
+  totaisOrcamento,
+  linhasTotais,
+  notaEstimativas,
+} from "./estimativasOrcamento";
 export { E, TITULOS_ED };
 type EstadoEd = Pick<Estado14, "ctx" | "caso" | "moeda">;
 export interface OpcaoEd {
@@ -1215,6 +1223,8 @@ export function orcamentoEd(s: EstadoEd) {
           s.ctx.prioridades?.includes(
             v.situacao === "governanca" ? "governar" : "sobre",
           );
+      const estimativa = estimativaReferencia("educacao", c.id, s),
+        emRef = itemEmReferencia("educacao", c.id, v);
       const valor =
         v.situacao === "sem_custo"
           ? 0
@@ -1231,9 +1241,13 @@ export function orcamentoEd(s: EstadoEd) {
         referencia: String(v.referencia || ""),
         situacao: v.situacao || "",
         detalhe: String(v.detalhe || ""),
+        estimativa,
+        emReferencia: emRef,
+        estimado: valorEstimado(estimativa, emRef),
         respondido:
           (valor !== null ||
             v.situacao === "a_estimar" ||
+            emRef ||
             (compartilhado &&
               referenciasEd(s, v.situacao).some(
                 (ref) => ref.id === v.referencia,
@@ -1241,6 +1255,16 @@ export function orcamentoEd(s: EstadoEd) {
           (!c.id.startsWith("adicional-") || !!o.adicionais?.[c.id]?.nome),
       };
     });
+  // Custos compartilhados ficam na frente de origem: não somam aqui nem contam como faltantes desta frente.
+  const tot = totaisOrcamento(
+    itens.map((c) =>
+      c.compartilhado
+        ? { valor: null, estimado: null, conta: false, falta: false }
+        : c,
+    ),
+    itens.every((c) => c.respondido),
+  );
+  const semCompartilhado = !itens.some((c) => c.compartilhado);
   return {
     itens,
     moeda: String(o.moeda || s.moeda.cod || "USD"),
@@ -1248,12 +1272,10 @@ export function orcamentoEd(s: EstadoEd) {
       s,
       camposEd(s).find((f) => f.caminho === "orcamento.periodo")!,
     ),
-    subtotal: itens.reduce((a, c) => a + (c.valor ?? 0), 0),
-    informados: itens.filter((c) => c.valor !== null).length,
-    faltam: itens.filter((c) => c.valor === null && !c.compartilhado).length,
-    total: itens.every((c) => c.respondido && c.valor !== null)
-      ? itens.reduce((a, c) => a + (c.valor ?? 0), 0)
-      : null,
+    subtotal: tot.informado,
+    ...tot,
+    total: semCompartilhado ? tot.total : null,
+    totalComEstimativas: semCompartilhado ? tot.totalComEstimativas : null,
   };
 }
 export const TELAS_ED = [
@@ -1432,59 +1454,44 @@ export function planoEd(s: EstadoEd) {
   const recursos = blocos.find(
     (b) => b.titulo === t(TITULOS_ED["ed-recursos"]),
   );
+  const compartilhadoTexto = (i: (typeof o.itens)[number]) =>
+    t(
+      E(
+        "Custo compartilhado — referência: {ref}",
+        "Shared cost — reference: {ref}",
+      ),
+      {
+        ref:
+          referenciasEd(s, i.situacao).find((r) => r.id === i.referencia)
+            ?.nome || t("Não informado"),
+      },
+    );
   recursos?.linhas.push(
-    ...o.itens.map((i) => ({
-      rotulo:
-        i.nome === E("Recurso adicional", "Additional resource")
-          ? t(String(lerEd(s, "orcamento.adicionais")?.[i.id]?.nome || i.nome))
-          : t(i.nome),
-      valor: i.compartilhado
-        ? t(
-            E(
-              "Custo compartilhado — referência: {ref}",
-              "Shared cost — reference: {ref}",
-            ),
-            {
-              ref:
-                referenciasEd(s, i.situacao).find((r) => r.id === i.referencia)
-                  ?.nome || t("Não informado"),
-            },
-          )
-        : i.valor !== null
-          ? moedaGovernanca(i.valor, o.moeda, String(LOC()))
-          : i.situacao === "a_estimar"
+    ...o.itens.map((i) => {
+      const base = i.compartilhado
+        ? compartilhadoTexto(i)
+        : i.valor !== null || i.emReferencia
+          ? valorItemOrcamento(
+              { ...i, referencia: i.emReferencia },
+              o.moeda,
+            )
+          : i.situacao === "a_estimar" || i.detalhe
             ? t("Custo ainda a levantar")
-            : t("Não informado"),
-      ...(i.detalhe
-        ? {
-            valor:
-              (i.compartilhado
-                ? t(
-                    E(
-                      "Custo compartilhado — referência: {ref}",
-                      "Shared cost — reference: {ref}",
-                    ),
-                    {
-                      ref:
-                        referenciasEd(s, i.situacao).find(
-                          (r) => r.id === i.referencia,
-                        )?.nome || t("Não informado"),
-                    },
-                  )
-                : i.valor !== null
-                  ? moedaGovernanca(i.valor, o.moeda, String(LOC()))
-                  : t("Custo ainda a levantar")) +
-              " — " +
-              i.detalhe,
-          }
-        : {}),
-    })),
-    {
-      rotulo: t(o.total === null ? "Subtotal informado" : "Total informado"),
-      valor: o.informados
-        ? moedaGovernanca(o.subtotal, o.moeda, String(LOC()))
-        : t("Não informado"),
-    },
+            : t("Não informado");
+      return {
+        rotulo:
+          i.nome === E("Recurso adicional", "Additional resource")
+            ? t(
+                String(
+                  lerEd(s, "orcamento.adicionais")?.[i.id]?.nome || i.nome,
+                ),
+              )
+            : t(i.nome),
+        valor: base + (i.detalhe ? " — " + i.detalhe : ""),
+      };
+    }),
+    ...linhasTotais(o).map((l) => ({ rotulo: l.rotulo, valor: l.valor })),
+    ...notaEstimativas(o),
   );
   return {
     titulo: t(
@@ -1516,11 +1523,15 @@ export function planoEd(s: EstadoEd) {
               "Review and approve the plan before starting delivery.",
             ),
           ),
-    escopo: t(
-      E(
-        "Participantes e recursos são compartilhados entre temas, sem duplicar contagens ou custos. O orçamento reúne somente valores informados.",
-        "Participants and resources are shared across themes without duplicating counts or costs. The budget includes only entered amounts.",
-      ),
-    ),
+    escopo: o.estimados
+      ? t(
+          "Participantes e recursos são compartilhados entre temas, sem duplicar contagens ou custos. O orçamento separa os valores informados das estimativas de referência escolhidas, que são ilustrativas.",
+        )
+      : t(
+          E(
+            "Participantes e recursos são compartilhados entre temas, sem duplicar contagens ou custos. O orçamento reúne somente valores informados.",
+            "Participants and resources are shared across themes without duplicating counts or costs. The budget includes only entered amounts.",
+          ),
+        ),
   };
 }

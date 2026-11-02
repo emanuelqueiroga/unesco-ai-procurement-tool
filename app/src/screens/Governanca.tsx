@@ -16,7 +16,9 @@ import { ControlesTela } from '../percurso/Controles';
 import { CampoNumero } from '../percurso/CampoNumero';
 import { CURTO, TITULO_TELA, infoCapitulo, t } from '../percurso/textos';
 import { href, ir, type Rota } from '../percurso/rota';
-import { telaGovernancaLegada, desafiosGovernanca, acoesGovernanca, planoGovernanca, orcamentoGovernanca, moedaGovernanca, temSandbox, CUSTOS_GOV, CAMPOS_SANDBOX, INSTRUMENTOS_GOV, pendenciasGov } from '../percurso/governanca';
+import { telaGovernancaLegada, desafiosGovernanca, acoesGovernanca, planoGovernanca, orcamentoGovernanca, moedaGovernanca, valorItemOrcamento, temSandbox, CUSTOS_GOV, CAMPOS_SANDBOX, INSTRUMENTOS_GOV, pendenciasGov } from '../percurso/governanca';
+import { LinhaEstimativa, CampoQuantidade, UsarEstimativas, semValorComEstimativa, TotaisOrcamentoView, kpisOrcamento } from './EstimativaReferencia';
+import { linhasTotais, resumoTotais } from '../percurso/estimativasOrcamento';
 import './governanca.css';
 import './letramento.css';
 import './orientado.css';
@@ -78,12 +80,16 @@ function Acoes({ s }: { s: CasoStore }) {
       ]} />
     </div></details>)}</div></>;
 }
-function CustoPreset({ s, base, nome, moeda }: { s: CasoStore; base: string; nome: string; moeda: string }) {
+function CustoPreset({ s, base, nome, moeda, id }: { s: CasoStore; base: string; nome: string; moeda: string; id?: string }) {
   const tentou=useContext(ValidacaoCampos);
   const item = gv(s, base) || {}, situacao = item.situacao || (typeof item.valor === 'number' ? 'informado' : '');
-  const faltando=tentou&&!(['a_estimar','sem_custo'].includes(situacao)||situacao==='informado'&&typeof item.valor==='number'&&Number.isFinite(item.valor)&&item.valor>=0),erroId='gov-custo-'+base.replace(/[^a-zA-Z0-9_-]/g,'-')+'-erro';
+  const projetado = id ? orcamentoGovernanca(s).itens.find(i => i.id === id) : undefined, emUso = !!projetado?.referencia;
+  const faltando=tentou&&!(['a_estimar','sem_custo'].includes(situacao)||emUso||situacao==='informado'&&typeof item.valor==='number'&&Number.isFinite(item.valor)&&item.valor>=0),erroId='gov-custo-'+base.replace(/[^a-zA-Z0-9_-]/g,'-')+'-erro';
+  const q = (campo: string) => 'govOrcamento.quantidades.' + campo;
+  const quantidade = (campo: string, label: string, decimais = false) => <CampoQuantidade key={campo} id={'gov-' + q(campo).replace(/[^a-zA-Z0-9_-]/g, '-')} label={t(label)} decimais={decimais}
+    value={gv(s, q(campo))} onChange={v => s.responder(q(campo), v)} />;
   return <details {...{name:'gov-govOrcamento'}} className="pc-gov-card pc-lit-grupo pc-gov-custo-preset" id={'gov-'+base.replace(/[^a-zA-Z0-9_-]/g,'-')} tabIndex={-1}>
-    <summary><h2 className="pc-lit-grupo-titulo">{t(nome)}</h2><span className="pc-lit-grupo-estado">{situacao==='informado'&&typeof item.valor==='number'?moedaGovernanca(item.valor,moeda,String(LOC())):situacao==='a_estimar'?t('Custo ainda a levantar'):situacao==='sem_custo'?moedaGovernanca(0,moeda,String(LOC())):t('Não informado')}</span></summary><div className="pc-gov-grupo-conteudo">
+    <summary><h2 className="pc-lit-grupo-titulo">{t(nome)}</h2><span className="pc-lit-grupo-estado">{emUso&&projetado?valorItemOrcamento(projetado,moeda):situacao==='informado'&&typeof item.valor==='number'?moedaGovernanca(item.valor,moeda,String(LOC())):situacao==='a_estimar'?t('Custo ainda a levantar'):situacao==='sem_custo'?moedaGovernanca(0,moeda,String(LOC())):t('Não informado')}</span></summary><div className="pc-gov-grupo-conteudo">
     <OptionCardGroup invalid={faltando} describedBy={faltando?erroId:undefined} className="pc-lit-opcoes" label={t('Situação do custo')+': '+t(nome)}>
       {[['a_estimar','Custo ainda a levantar'],['sem_custo','Sem custo neste orçamento'],['informado','Já tenho um valor']].map(([id,label]) => <OptionCard key={id} name={base} value={id} label={t(label)} checked={situacao === id} onChange={id => {
         s.responder('govOrcamento.moeda', moeda); s.responder(base + '.situacao', id);
@@ -93,6 +99,10 @@ function CustoPreset({ s, base, nome, moeda }: { s: CasoStore; base: string; nom
     {situacao === 'informado' ? <CampoNumero label={t('Valor informado') + ' (' + moeda + ')'} value={item.valor ?? ''} decimais
         error={faltando||typeof item.valor === 'number' && (!Number.isFinite(item.valor)||item.valor < 0) ? t('Informe um valor maior ou igual a zero.') : undefined}
         onChange={v => { s.responder('govOrcamento.moeda', moeda); s.responder(base + '.valor', v); s.responder(base + '.situacao', 'informado'); }} /> : null}
+    {id === 'equipe' ? quantidade('equipeFte', 'Pessoas na equipe (equivalente em tempo integral)', true) : null}
+    {id === 'formacao' ? <>{quantidade('servidores', 'Servidores a formar')}{quantidade('horasServidor', 'Horas por servidor', true)}</> : null}
+    {projetado ? <LinhaEstimativa s={s} est={projetado.estimativa} tela="gov-recursos" nome={t(nome)} emUso={emUso}
+      onUsar={() => { s.responder('govOrcamento.moeda', moeda); s.responder(base + '.situacao', 'referencia'); }} /> : null}
     <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}</summary>
       <TextField label={t('Detalhamento e fonte do item')} multiline value={String(item.detalhe || '')} onChange={v => s.responder(base + '.detalhe', v)} />
     </details>
@@ -102,12 +112,13 @@ function Orcamento({ s }: { s: CasoStore }) {
   const o = orcamentoGovernanca(s), atual = s.ctx.govOrcamento || {};
   const categorias: [string, string][] = CUSTOS_GOV.map(([id, nome]) => [id, nome]);
   if (temSandbox(s)) categorias.push(['sandbox', 'Experimentação supervisionada']);
+  const disponiveis = semValorComEstimativa(o.itens, i => i.referencia);
   return <>
     <Grupo s={s} base="govOrcamento" campos={[
       ['periodo', 'Período do orçamento'], ['fonte', 'Fonte dos valores'],
     ]} />
     <p><b>{t('Moeda')}: {o.moeda}</b></p>
-    {categorias.map(([id,nome]) => <CustoPreset key={id} s={s} base={'govOrcamento.itens.' + id} nome={nome} moeda={o.moeda} />)}
+    {categorias.map(([id,nome]) => <CustoPreset key={id} id={id} s={s} base={'govOrcamento.itens.' + id} nome={nome} moeda={o.moeda} />)}
     {(atual.extras || []).map((x: any,i: number) => <section key={i}>
       <Texto s={s} campo={`govOrcamento.extras.${i}.nome`} label="Recurso adicional" />
       <CustoPreset s={s} base={`govOrcamento.extras.${i}`} nome="Recurso adicional" moeda={o.moeda} />
@@ -117,16 +128,14 @@ function Orcamento({ s }: { s: CasoStore }) {
       }}>{t('Remover')}</Button>
     </section>)}
     <Button variant="secondary" onClick={() => s.responder('govOrcamento.extras', [...(atual.extras || []), { nome:'', valor:'', detalhe:'' }])}>{t('Adicionar recurso')}</Button>
+    <UsarEstimativas quantos={disponiveis.length} onUsar={() => { s.responder('govOrcamento.moeda', o.moeda); for (const i of disponiveis) s.responder('govOrcamento.itens.' + i.id + '.situacao', 'referencia'); }} />
     <ResultadoOrcamento s={s} />
   </>;
 }
 function ResultadoOrcamento({ s }: { s: CasoStore }) {
   const o = orcamentoGovernanca(s);
-  return <div className="pc-gov-orcamento" role="status">
-    <b>{o.total === null ? t('Subtotal informado') : t('Total informado')}: {o.informados ? moedaGovernanca(o.subtotal, o.moeda, String(LOC())) : NA()}</b>
-    {o.faltam ? <p>{t('{n} itens sem valor informado. O subtotal não é o orçamento completo.', { n: o.faltam })}</p> : null}
-    <p>{t('Período do orçamento')}: {o.periodo || NA()}</p>
-  </div>;
+  return <TotaisOrcamentoView linhas={[...linhasTotais(o), { rotulo: t('Período do orçamento'), valor: o.periodo || NA() }]}
+    nota={o.faltam ? t('{n} itens sem valor informado. O subtotal não é o orçamento completo.', { n: o.faltam }) : o.estimados ? t('Estimativas de referência são ilustrativas: confirme os valores antes de aprovar o orçamento.') : undefined} />;
 }
 function Projeto({ s }: { s: CasoStore }) {
   return <>
@@ -170,14 +179,14 @@ function ControlesGov({ s, id }: { s: CasoStore; id: string }) {
 export function PainelGovernanca({ s }: { s: CasoStore }) {
   const p = planoGovernanca(s), o = p.orcamento;
   const gaveta = useMediaQuery('(max-width: 1439px)'), {aberta,setAberta,integrado}=useResumoPlano();
-  const painel = <PlanPanel fluid paperOnly={gaveta} state={faltamDe(s).length || p.pendentes ? 'writing' : 'complete'}
+  const painel = <PlanPanel className="pc-est-painel" fluid paperOnly={gaveta} state={faltamDe(s).length || p.pendentes ? 'writing' : 'complete'}
     title={p.pais || t('Governança de IA na educação')} kicker={p.titulo} facts={t('{n} desafios selecionados', { n: p.desafios.length })}
     openHref={href.plano()} summaryTitle={t('Em resumo')} originLine={<>{p.proxima}<p>{p.escopo}</p></>}
-    kpis={[{ id: 'gov-orcamento', label: o.total === null ? t('Subtotal informado') : t('Total informado'), value: o.informados ? moedaGovernanca(o.subtotal, o.moeda, String(LOC())) : NA() }]}
+    kpis={kpisOrcamento('gov-orcamento', o)}
     recommendationsTitle={t('Entregas previstas')} recommendationsCount={p.acoes.length}
     recommendations={p.acoes.slice(0, 3).map(a => ({ id: a.id, text: a.entrega }))}
-    footer={<><p className="pc-nota">{o.faltam ? t('{n} itens sem valor informado. O subtotal não é o orçamento completo.', { n: o.faltam }) : o.periodo || t('Período do orçamento') + ': ' + NA()}</p><Button variant="secondary" size="sm" href={href.plano()}>{t('Resumo desta frente')}</Button></>} />;
-  return gaveta ? <PlanDrawer hideTrigger={integrado} open={aberta} onOpenChange={setAberta} zoneLabel={p.titulo} summary={t('{n} desafios selecionados', { n: p.desafios.length })} closeLabel={t('Fechar')} openLabel={t('Abrir o seu plano')}>{painel}</PlanDrawer>
+    footer={<><p className="pc-nota">{resumoTotais(o)}{o.periodo ? ' · ' + o.periodo : ''}</p><Button variant="secondary" size="sm" href={href.plano()}>{t('Resumo desta frente')}</Button></>} />;
+  return gaveta ? <PlanDrawer hideTrigger={integrado} open={aberta} onOpenChange={setAberta} zoneLabel={p.titulo} summary={t('{n} desafios selecionados', { n: p.desafios.length })} closeLabel={t('Fechar')} openLabel={t('Abrir o seu plano')}><div className="pc-est-painel">{painel}</div></PlanDrawer>
     : <aside className="pc-plano" aria-label={p.titulo}>{painel}</aside>;
 }
 function PDFs({ s }: { s: CasoStore }) {

@@ -46,7 +46,9 @@ import {
   errosEd,
   type CampoEd,
 } from "../percurso/pedagogico";
-import { orcamentoGovernanca, moedaGovernanca } from "../percurso/governanca";
+import { orcamentoGovernanca, moedaGovernanca, valorItemOrcamento } from "../percurso/governanca";
+import { LinhaEstimativa, CampoQuantidade, UsarEstimativas, semValorComEstimativa, TotaisOrcamentoView, kpisOrcamento } from "./EstimativaReferencia";
+import { linhasTotais } from "../percurso/estimativasOrcamento";
 import { orcamentoLetramento, alterarLit } from "../percurso/letramento";
 import { selecionarLit } from "../percurso/letramentoInterface";
 import {
@@ -224,26 +226,26 @@ function Campos({
 function Resumo({ s }: { s: CasoStore }) {
   const o = orcamentoEd(s);
   return (
-    <div className="pc-gov-orcamento" role="status">
-      <b>
-        {t(o.total === null ? "Subtotal informado" : "Total informado")}:{" "}
-        {o.informados
-          ? moedaGovernanca(o.subtotal, o.moeda, String(LOC()))
-          : t("Não informado")}
-      </b>
-      {o.faltam ? (
-        <p>
-          {t(
-            "{n} itens sem valor informado. O subtotal não é o orçamento completo.",
-            { n: o.faltam },
-          )}
-        </p>
-      ) : null}
-    </div>
+    <TotaisOrcamentoView
+      linhas={linhasTotais(o)}
+      nota={
+        o.faltam
+          ? t(
+              "{n} itens sem valor informado. O subtotal não é o orçamento completo.",
+              { n: o.faltam },
+            )
+          : o.estimados
+            ? t(
+                "Estimativas de referência são ilustrativas: confirme os valores antes de aprovar o orçamento.",
+              )
+            : undefined
+      }
+    />
   );
 }
 function Orcamento({ s, tentou }: { s: CasoStore; tentou: boolean }) {
   const o = orcamentoEd(s),
+    disponiveis = semValorComEstimativa(o.itens, (i) => i.emReferencia),
     atual = lerEd(s, "orcamento") || {},
     refs = {
       governanca: orcamentoGovernanca(s).itens,
@@ -277,8 +279,11 @@ function Orcamento({ s, tentou }: { s: CasoStore; tentou: boolean }) {
               estado={
                 i.compartilhado
                   ? t(E("Custo compartilhado", "Shared cost"))
-                  : i.valor !== null
-                    ? moedaGovernanca(i.valor, o.moeda, String(LOC()))
+                  : i.valor !== null || i.emReferencia
+                    ? valorItemOrcamento(
+                        { ...i, referencia: i.emReferencia },
+                        o.moeda,
+                      )
                     : i.situacao === "a_estimar"
                       ? t("Custo ainda a levantar")
                       : t("Não informado")
@@ -414,6 +419,52 @@ function Orcamento({ s, tentou }: { s: CasoStore; tentou: boolean }) {
                   ))}
                 </OptionCardGroup>
               ) : null}
+              {i.id === "equipe" ? (
+                <CampoQuantidade
+                  id={ident("orcamento.quantidades.equipeFte")}
+                  label={t("Pessoas na equipe (equivalente em tempo integral)")}
+                  decimais
+                  value={lerEd(s, "orcamento.quantidades.equipeFte")}
+                  onChange={(valor) =>
+                    gravar(s, "orcamento.quantidades.equipeFte", valor)
+                  }
+                />
+              ) : null}
+              {i.id === "formacao" ? (
+                <>
+                  <CampoQuantidade
+                    id={ident("orcamento.quantidades.profissionais")}
+                    label={t("Profissionais a formar")}
+                    value={lerEd(s, "orcamento.quantidades.profissionais")}
+                    onChange={(valor) =>
+                      gravar(s, "orcamento.quantidades.profissionais", valor)
+                    }
+                  />
+                  <CampoQuantidade
+                    id={ident("orcamento.quantidades.horasProfissional")}
+                    label={t("Horas por profissional")}
+                    decimais
+                    value={lerEd(s, "orcamento.quantidades.horasProfissional")}
+                    onChange={(valor) =>
+                      gravar(
+                        s,
+                        "orcamento.quantidades.horasProfissional",
+                        valor,
+                      )
+                    }
+                  />
+                </>
+              ) : null}
+              {!i.compartilhado ? (
+                <LinhaEstimativa
+                  s={s}
+                  est={i.estimativa}
+                  tela="ed-recursos"
+                  nome={t(i.nome)}
+                  emUso={i.emReferencia}
+                  onUsar={() => salvar({ ...v, situacao: "referencia" })}
+                />
+              ) : null}
               {tentou && !i.respondido ? (
                 <p id={ident(p)+"-erro"} className="pc-lit-erro">
                   {t(
@@ -450,6 +501,17 @@ function Orcamento({ s, tentou }: { s: CasoStore; tentou: boolean }) {
           </div>
         );
       })}
+      <UsarEstimativas
+        quantos={disponiveis.length}
+        onUsar={() => {
+          gravar(s, "orcamento.moeda", o.moeda);
+          for (const i of disponiveis)
+            gravar(s, "orcamento.itens." + i.id, {
+              ...(lerEd(useCaso.getState(), "orcamento.itens." + i.id) || {}),
+              situacao: "referencia",
+            });
+        }}
+      />
       <Button
         variant="secondary"
         onClick={() => {
@@ -482,7 +544,7 @@ export function PainelEducacao({ s }: { s: CasoStore }) {
   });
   const panel = (
     <PlanPanel
-      className="pc-lit-painel"
+      className="pc-lit-painel pc-est-painel"
       fluid
       paperOnly={gaveta}
       title={p.pais || p.titulo}
@@ -497,15 +559,7 @@ export function PainelEducacao({ s }: { s: CasoStore }) {
           <p>{p.escopo}</p>
         </>
       }
-      kpis={[
-        {
-          id: "ed-orcamento",
-          label: t(o.total === null ? "Subtotal informado" : "Total informado"),
-          value: o.informados
-            ? moedaGovernanca(o.subtotal, o.moeda, String(LOC()))
-            : t("Não informado"),
-        },
-      ]}
+      kpis={kpisOrcamento("ed-orcamento", o)}
       recommendationsTitle={t(E("Temas do plano", "Plan themes"))}
       recommendationsCount={p.temas.length}
       recommendations={p.temas
@@ -538,7 +592,7 @@ export function PainelEducacao({ s }: { s: CasoStore }) {
       openLabel={t("Abrir o seu plano")}
       closeLabel={t("Fechar")}
     >
-      {panel}
+      <div className="pc-est-painel">{panel}</div>
     </PlanDrawer>
   ) : (
     <aside className="pc-plano" aria-label={p.titulo}>

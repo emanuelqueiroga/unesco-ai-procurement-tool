@@ -1,0 +1,40 @@
+/* Estimativas de referência dos orçamentos (v015). Só tokens do Prumo, texto ≥ 13 px, propriedades lógicas. */
+.pc-est { position: relative; display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-4); border: 1px dashed var(--line); border-radius: var(--radius-md); background: var(--surface-1); color: var(--ink); font-size: 14px; line-height: 20px; overflow-wrap: anywhere; min-width: 0; }
+.pc-est p { margin: 0; }
+.pc-est--uso { border-style: solid; border-color: var(--info); background: var(--info-bg); }
+.pc-est--falta { color: var(--ink-2); }
+.pc-est-rotulo { color: var(--ink-2); font-size: 13px; }
+.pc-est-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.pc-est-uso { font-size: 13px; color: var(--ink-2); }
+/* "Ver a conta": o painel se ancora na própria linha e nunca passa da largura do cartão (sem rolagem lateral a 360 px). */
+.pc-est .pr-popover { position: static; }
+.pc-est .pr-popover-painel { inset-inline: 0; width: auto; max-width: 100%; max-height: 70vh; overflow: auto; box-sizing: border-box; }
+.pc-est-conta { display: grid; gap: var(--space-2); font-size: 13px; line-height: 19px; }
+.pc-est-bloco { display: grid; gap: 2px; }
+.pc-est-origem { color: var(--muted); }
+.pc-est-quantidade .pr-textfield-hint { font-size: 13px; }
+.pc-est-todas { display: grid; gap: var(--space-2); justify-items: start; }
+.pc-est-todas .pc-nota { margin: 0; }
+.pc-est-totais dl { display: grid; gap: var(--space-2); margin: 0; }
+.pc-est-totais dl > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1) var(--space-4); }
+.pc-est-totais dt { color: var(--ink-2); }
+.pc-est-totais dd { margin: 0; font-weight: 600; text-align: end; }
+.pc-est-total dt, .pc-est-total dd { color: var(--ink); font-weight: 700; }
+@media (max-width: 480px) { .pc-est { padding: var(--space-3); } .pc-est-totais dd { text-align: start; } }
+.pc-est-panorama { display: grid; gap: var(--space-1); margin: 0; font-size: 14px; line-height: 20px; }
+.pc-est-panorama > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px var(--space-3); }
+.pc-est-panorama dt { color: var(--ink-2); }
+.pc-est-panorama dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pc-est-panorama .pc-est-total dd { font-size: 18px; line-height: 26px; }
+/* Rótulos longos dos botões quebram linha em vez de alargar a coluna no celular. */
+.pc-est-todas .pr-button, .pc-est-acoes .pr-button { white-space: normal; height: auto; min-height: 44px; max-width: 100%; padding-block: var(--space-2); text-align: center; }
+.pc-est-acoes .pr-button--sm { min-height: 36px; }
+.pc-est-fechar { background: none; border: 0; padding: 0; min-height: 24px; font: inherit; font-size: 13px; color: var(--primary); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.pc-est-fechar:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-sm); }
+/* Celular: "Ver a conta" abre como folha acima da barra de ações. */
+@media (max-width: 600px) {
+  .pc-est .pr-popover-painel { position: fixed; z-index: 45; inset-inline: 0; inset-block-start: auto; inset-block-end: 0; max-width: none; max-height: 75vh; border-radius: var(--radius-md) var(--radius-md) 0 0; padding-block-end: max(var(--space-4), env(safe-area-inset-bottom)); }
+}
+/* Painel "Seu plano" (320 px ou gaveta): cartões de orçamento empilhados, número menor e com quebra, nunca cortado. */
+.pc-est-painel .pr-planpanel-kpis, .pc-est-painel.pc-lit-painel .pr-planpanel-kpis { grid-template-columns: minmax(0, 1fr); }
+.pc-est-painel .pr-kpitile .pr-kpitile-value, .pc-est-painel .pr-kpitile--compact .pr-kpitile-value { font-size: 20px; line-height: 26px; white-space: normal; overflow-wrap: anywhere; }

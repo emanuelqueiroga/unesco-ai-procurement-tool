@@ -116,7 +116,8 @@ describe('(2) valores-padrão lidos da base = v13', () => {
 
 describe('(3) toda linha da base é usada', () => {
   it('cada id aparece no código (salários e níveis do fornecedor por prefixo); sementes globais de grau C', () => {
-    const codigo = ['custos.js', 'casos.js', 'pais.js', 'referencias.js'].map((f) => fs.readFileSync(path.join(APP, 'src', 'domain', f), 'utf8')).join('\n');
+    // v015: as estimativas de referência dos orçamentos (src/percurso/estimativasOrcamento.ts) também leem a base.
+    const codigo = [...['custos.js', 'casos.js', 'pais.js', 'referencias.js'].map((f) => path.join('domain', f)), path.join('percurso', 'estimativasOrcamento.ts')].map((f) => fs.readFileSync(path.join(APP, 'src', f), 'utf8')).join('\n');
     const orfas = REF_DADOS.referencias.filter((r) => !codigo.includes("'" + r.id + "'") && !/^sal\./.test(r.id) && !/^v11\.fornecedor\./.test(r.id));
     expect(orfas.map((r) => r.id)).toEqual([]);
     expect(PAPEIS_SAL.every((k) => REF_DADOS.referencias.some((r) => r.id === 'sal.' + k))).toBe(true);

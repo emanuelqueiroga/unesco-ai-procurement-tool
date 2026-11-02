@@ -1,6 +1,7 @@
 // Modelo nacional de formação/currículo. Seleções são intenções declaradas, nunca evidências presumidas.
 import { PRIORIDADES, ETAPAS_ENS, LOC, nomePais, paisDoCaso } from '../domain';
-import { orcamentoGovernanca, moedaGovernanca } from './governanca';
+import { orcamentoGovernanca, moedaGovernanca, valorItemOrcamento } from './governanca';
+import { estimativaReferencia, itemEmReferencia, valorEstimado, totaisOrcamento, linhasTotais, notaEstimativas } from './estimativasOrcamento';
 import { t } from './textos';
 import type { Estado14 } from '../store/tipos';
 type Estado = Pick<Estado14, 'ctx'>;
@@ -158,12 +159,14 @@ export function orcamentoLetramento(s:Pick<Estado14,'ctx'|'moeda'>) {
  const itens=custosLetramento(s).map(([id,nome])=>{
   const x=o.itens?.[id]||{}, compartilhado=x.situacao==='compartilhado'&&s.ctx.prioridades?.includes('governar');
   const origem=compartilhado?gov.itens.find(i=>i.id===x.referencia):null;
-  const valor=compartilhado?null:x.situacao==='sem_custo'?0:x.situacao==='informado'&&typeof x.valor==='number'&&Number.isFinite(x.valor)&&x.valor>=0?x.valor:null;
-  return {id,nome:t(nome),valor,compartilhado,origem,detalhe:String(x.detalhe||''),respondido:compartilhado?!!origem:['a_estimar','sem_custo'].includes(x.situacao)||valor!==null};
+  const estimativa=estimativaReferencia('letramento',id,s), emRef=!compartilhado&&itemEmReferencia('letramento',id,x);
+  const valor=compartilhado||x.situacao==='referencia'?null:x.situacao==='sem_custo'?0:x.situacao==='informado'&&typeof x.valor==='number'&&Number.isFinite(x.valor)&&x.valor>=0?x.valor:null;
+  return {id,nome:t(nome),valor,compartilhado,origem,detalhe:String(x.detalhe||''),situacao:String(x.situacao||''),estimativa,referencia:emRef,estimado:valorEstimado(estimativa,emRef),respondido:compartilhado?!!origem:['a_estimar','sem_custo'].includes(x.situacao)||emRef||valor!==null};
  });
- const faltam=itens.filter(i=>i.compartilhado?i.origem?.valor===null||!i.origem:i.valor===null).length;
+ // Custo compartilhado: conhecido quando a origem tem valor informado ou estimado; nunca é somado de novo nesta frente.
+ const tot=totaisOrcamento(itens.map(i=>i.compartilhado?{valor:null,estimado:null,conta:false,falta:!i.origem||i.origem.valor===null&&i.origem.estimado===null}:i));
  const propios=itens.filter(i=>!i.compartilhado&&i.valor!==null);
- return {itens,moeda:String(o.moeda||s.moeda.cod||'USD'),periodo:o.periodo,fonte:o.fonte,subtotal:propios.reduce((a,b)=>a+b.valor!,0),informados:propios.length,temSubtotal:propios.length>0||itens.some(i=>i.compartilhado&&i.origem?.valor!=null),faltam,total:faltam?null:propios.reduce((a,b)=>a+b.valor!,0)};
+ return {itens,moeda:String(o.moeda||s.moeda.cod||'USD'),periodo:o.periodo,fonte:o.fonte,subtotal:tot.informado,temSubtotal:propios.length>0||itens.some(i=>i.compartilhado&&i.origem?.valor!=null),...tot};
 }
 export function letramentoRespondido(s:Estado14,id:string):boolean {
  if(id==='lit-alcance'&&errosAlcance(s).length)return false;
@@ -178,7 +181,7 @@ export function planoLetramento(s:Estado14) {
  const indefinidos=campos.filter(f=>{const v=lerLit(s,f.caminho);return v?.situacao==='a_levantar'||selecoesLit(s,f.caminho).includes('_pendente')||f.caminho==='diagnostico.base'&&selecoesLit(s,f.caminho).some(id=>['nenhum','andamento','parcial'].includes(id));}).length;
  const blocos=[{titulo:t('Contexto'),linhas:[{rotulo:t('País'),valor:nomePais(paisDoCaso(s.caso))},{rotulo:t('Instituição responsável'),valor:String(s.ctx.local||t('Não informado'))},...(textoValido(lerLit(s,'contexto.detalhe'))?[{rotulo:t('Informações adicionais'),valor:lerLit(s,'contexto.detalhe')}]:[]),...(textoValido(s.ctx.problemaOutro)?[{rotulo:t('Informações adicionais'),valor:s.ctx.problemaOutro}]:[]),{rotulo:t(L('Públicos selecionados','Selected audiences')),valor:[...pubs.map(p=>t(p.nome)),...(curriculo(s)?[t(L('Currículo nacional de IA','National AI curriculum'))]:[])].join('; ')||t('Não informado')}]},...telasLetramento(s).filter(id=>id.startsWith('lit-')).map(id=>({titulo:t(tituloDaTelaLit(s,id)),linhas:campos.filter(f=>f.tela===id).map(f=>({rotulo:rotuloLit(f.label),valor:valorCampoLit(s,f)}))}))];
  const recursos=blocos.find(b=>b.titulo===t(TITULOS_LIT['lit-recursos']))!;
- recursos.linhas.push(...o.itens.map(i=>({rotulo:i.nome,valor:i.compartilhado?t(L('Custeado na governança: {item} — {valor}. Não somado novamente.','Funded under governance: {item} — {valor}. Not counted again.'),{item:i.origem?.nome||t('Não informado'),valor:moedaGovernanca(i.origem?.valor??null,orcamentoGovernanca(s).moeda,String(LOC()))}):moedaGovernanca(i.valor,o.moeda,String(LOC()))+(i.detalhe?'\n'+i.detalhe:'')})),{rotulo:t(L('Subtotal desta frente, sem custos compartilhados','Workstream subtotal, excluding shared costs')),valor:o.temSubtotal?moedaGovernanca(o.subtotal,o.moeda,String(LOC())):t('Não informado')},{rotulo:t('Itens sem valor informado'),valor:String(o.faltam)});
+ recursos.linhas.push(...o.itens.map(i=>({rotulo:i.nome,valor:i.compartilhado?t(L('Custeado na governança: {item} — {valor}. Não somado novamente.','Funded under governance: {item} — {valor}. Not counted again.'),{item:i.origem?.nome||t('Não informado'),valor:i.origem?valorItemOrcamento(i.origem,orcamentoGovernanca(s).moeda):t('Não informado')}):valorItemOrcamento(i,o.moeda)+(i.detalhe?'\n'+i.detalhe:'')})),...linhasTotais(o).map(l=>({rotulo:l.rotulo,valor:l.valor})),...notaEstimativas(o),...(o.itens.some(i=>i.compartilhado)?[{rotulo:t('Custos compartilhados'),valor:t('Registrados na frente de origem; não somados novamente.')}]:[]));
  return {titulo:t(L('Plano nacional de letramento em IA e currículo','National AI literacy and curriculum plan')),pais:nomePais(paisDoCaso(s.caso)),blocos,faltam,pendentes:indefinidos+o.faltam,orcamento:o,projeto:null,acoes:[],escopo:t(L('Alcance, competências e recursos de formação e currículo. Valores desconhecidos permanecem pendentes.','Scope, competencies and resources for training and curriculum. Unknown amounts remain pending.')),proxima:t(faltam.length||indefinidos||o.faltam?L('Complete as informações e resolva as pendências antes de aprovar o programa.','Complete the information and resolve pending items before approving the programme.'):L('Revise o plano com os responsáveis e acompanhe a execução e os resultados.','Review the plan with its owners and monitor delivery and outcomes.'))};
 }
 export function telaLetramentoLegada(id:string):string {
