@@ -15,7 +15,9 @@ import { t, infoCapitulo, CURTO, TITULO_TELA, LEAD } from '../percurso/textos';
 import { href, ir, type Rota } from '../percurso/rota';
 import { selecoesLit, rotuloLit, alterarLit, lerLit, camposLetramento, campoLitRespondido, planoLetramento, orcamentoLetramento, TITULOS_LIT, telaLetramentoLegada, errosAlcance, valorCampoLit, somenteCurriculoLit, tituloDaTelaLit, L, type CampoLit } from '../percurso/letramento';
 import { entradaEtapaLit, vizinhosLit, selecionarLit, gruposCamposLit, pendenciasCamposLit, pendenciasCustosLit, rotuloVisivelLit, guiaTelaLit } from '../percurso/letramentoInterface';
-import { moedaGovernanca, orcamentoGovernanca } from '../percurso/governanca';
+import { moedaGovernanca, orcamentoGovernanca, valorItemOrcamento } from '../percurso/governanca';
+import { LinhaEstimativa, CampoQuantidade, UsarEstimativas, semValorComEstimativa, TotaisOrcamentoView, kpisOrcamento } from './EstimativaReferencia';
+import { linhasTotais } from '../percurso/estimativasOrcamento';
 import './governanca.css';
 import './letramento.css';
 
@@ -74,43 +76,46 @@ function CamposLit({ s, id, tentou }: { s: CasoStore; id: string; tentou: boolea
   })}</div>;
 }
 function OrcamentoLit({ s, tentou }: { s: CasoStore; tentou: boolean }) {
-  const o = orcamentoLetramento(s), gov = orcamentoGovernanca(s);
+  const o = orcamentoLetramento(s), gov = orcamentoGovernanca(s), disponiveis = semValorComEstimativa(o.itens, i => i.referencia);
   return <div className="pc-lit-orcamento"><p className="pc-nota">{t('Moeda')}: <b>{o.moeda}</b>. {t(L('Informe apenas os recursos desta frente. Custos compartilhados são referenciados, sem somar novamente.', 'Enter only this workstream’s resources. Shared costs are referenced without counting them again.'))}</p>
     {o.itens.map((i, idx) => {
       const caminho = 'orcamento.itens.' + i.id, v = lerLit(s, caminho) || {};
       const salvar = (novo: any) => { gravar(s, 'orcamento.moeda', o.moeda); gravar(s, caminho, novo); };
       const adicional = camposLetramento(s).find(f => f.caminho === 'orcamento.adicionais.' + i.id + '.nome');
-      const estado = i.compartilhado ? t('Já custeado na governança') : i.valor !== null ? moedaGovernanca(i.valor, o.moeda, String(LOC())) : v.situacao === 'a_estimar' ? t('Custo ainda a levantar') : t('Não informado');
+      const estado = i.compartilhado ? t('Já custeado na governança') : i.valor !== null || i.referencia ? valorItemOrcamento(i, o.moeda) : v.situacao === 'a_estimar' ? t('Custo ainda a levantar') : t('Não informado');
       return <div id={campoId(caminho)} data-orcamento-lit={i.id} key={i.id} tabIndex={-1}>
         <GrupoLit titulo={i.nome} recolhivel abrir={idx === 0 || i.id.startsWith('adicional-')} estado={estado}>
           {adicional ? <Escolha s={s} f={adicional} contexto={i.nome} tentou={tentou} /> : null}
           <OptionCardGroup invalid={tentou&&!i.respondido} describedBy={tentou&&!i.respondido?campoId(caminho)+'-erro':undefined} className="pc-lit-opcoes" label={t('Situação do custo') + ': ' + i.nome}>{[['a_estimar', 'Custo ainda a levantar'], ['sem_custo', 'Sem custo neste orçamento'], ['informado', 'Já tenho um valor'], ...(s.ctx.prioridades?.includes('governar') ? [['compartilhado', L('Já custeado na governança', 'Already funded under governance')]] : [])].map(([id, label]) => <OptionCard key={id} name={caminho} value={id} label={t(label)} checked={v.situacao === id} onChange={id => salvar({ ...v, situacao: id })} />)}</OptionCardGroup>
           {v.situacao === 'informado' ? <div className="pc-lit-campo"><CampoNumero label={t('Valor informado') + ' (' + o.moeda + ')'} value={v.valor ?? ''} decimais error={tentou && !i.respondido || typeof v.valor === 'number' && (!Number.isFinite(v.valor) || v.valor < 0) ? t('Informe um valor maior ou igual a zero.') : undefined} onChange={valor => salvar({ ...v, valor })} /></div> : null}
           {v.situacao === 'compartilhado' ? <OptionCardGroup invalid={tentou&&!i.respondido} describedBy={tentou&&!i.respondido?campoId(caminho)+'-erro':undefined} className="pc-lit-opcoes" label={t(L('Item de origem na governança', 'Source item under governance'))}>{gov.itens.map(g => <OptionCard key={g.id} name={caminho + '.referencia'} value={g.id} label={g.nome} checked={v.referencia === g.id} onChange={id => salvar({ ...v, referencia: id })} />)}</OptionCardGroup> : null}
+          {i.id === 'equipe' ? <CampoQuantidade id={campoId('orcamento.quantidades.equipeFte')} label={t('Pessoas na equipe (equivalente em tempo integral)')} decimais value={lerLit(s, 'orcamento.quantidades.equipeFte')} onChange={valor => gravar(s, 'orcamento.quantidades.equipeFte', valor)} /> : null}
+          {!i.compartilhado ? <LinhaEstimativa s={s} est={i.estimativa} tela="lit-recursos" nome={i.nome} emUso={i.referencia} onUsar={() => salvar({ ...v, situacao: 'referencia' })} /> : null}
           {tentou && !i.respondido ? <p id={campoId(caminho)+'-erro'} className="pc-lit-erro">{t('Informe a situação e, quando necessário, o valor ou o item de origem.')}</p> : null}
           <div className="pc-lit-campo"><details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}</summary><TextField multiline label={t('Detalhamento e fonte do item')} value={String(v.detalhe || '')} onChange={detalhe => salvar({ ...v, detalhe })} /></details></div>
           {i.id.startsWith('adicional-') ? <Button variant="link" onClick={() => { const atual = useCaso.getState(); const { [i.id]: _x, ...resto } = atual.ctx.letramento.orcamento.adicionais; const { [i.id]: _y, ...itens } = atual.ctx.letramento.orcamento.itens || {}; gravar(s, 'orcamento.adicionais', resto); gravar(s, 'orcamento.itens', itens); }}>{t('Remover')}</Button> : null}
         </GrupoLit>
       </div>;
     })}
+    <UsarEstimativas quantos={disponiveis.length} onUsar={() => { gravar(s, 'orcamento.moeda', o.moeda); for (const i of disponiveis) gravar(s, 'orcamento.itens.' + i.id, { ...(lerLit(useCaso.getState(), 'orcamento.itens.' + i.id) || {}), situacao: 'referencia' }); }} />
     <Button variant="secondary" onClick={() => { const seq = (lerLit(useCaso.getState(), 'orcamento.seq') || 0) + 1; gravar(s, 'orcamento.seq', seq); gravar(s, 'orcamento.adicionais.adicional-' + seq, { nome: {} }); requestAnimationFrame(() => focarCampo('orcamento.itens.adicional-' + seq)); }}>{t('Adicionar recurso')}</Button>
     <ResumoOrcamento s={s} />
   </div>;
 }
 function ResumoOrcamento({ s }: { s: CasoStore }) {
   const o = orcamentoLetramento(s);
-  return <div className="pc-gov-orcamento" role="status"><b>{t(L('Subtotal desta frente, sem custos compartilhados', 'Workstream subtotal, excluding shared costs'))}: {o.temSubtotal ? moedaGovernanca(o.subtotal, o.moeda, String(LOC())) : t('Não informado')}</b><p>{t('{n} itens sem valor informado. O subtotal não é o orçamento completo.', { n: o.faltam })}</p></div>;
+  return <TotaisOrcamentoView linhas={linhasTotais(o)} nota={[o.itens.some(i => i.compartilhado) ? t(L('Custos compartilhados ficam na governança e não são somados novamente.', 'Shared costs stay under governance and are not counted again.')) : '', o.faltam ? t('{n} itens sem valor informado. O subtotal não é o orçamento completo.', { n: o.faltam }) : o.estimados ? t('Estimativas de referência são ilustrativas: confirme os valores antes de aprovar o orçamento.') : ''].filter(Boolean).join(' ') || undefined} />;
 }
 export function PainelLetramento({ s }: { s: CasoStore }) {
   const p = planoLetramento(s), o = p.orcamento, gaveta = useMediaQuery('(max-width: 1439px)'), {aberta,setAberta,integrado}=useResumoPlano();
   const telas = telasAtivas(s), faltam = faltamDe(s), proxima = faltam[0];
   const feitas=progressoFrente(s,'letramento');
   const progresso = t('{n} de {total} telas desta frente preenchidas', { n: feitas.feitas, total: feitas.total });
-  const painel = <PlanPanel className="pc-lit-painel" fluid paperOnly={gaveta} state={p.faltam.length || p.pendentes ? 'writing' : 'complete'} title={p.pais || t('Educar sobre a IA')} kicker={t('Letramento e currículo')} facts={progresso} openHref={href.plano()} summaryTitle={t('Recursos')}
+  const painel = <PlanPanel className="pc-lit-painel pc-est-painel" fluid paperOnly={gaveta} state={p.faltam.length || p.pendentes ? 'writing' : 'complete'} title={p.pais || t('Educar sobre a IA')} kicker={t('Letramento e currículo')} facts={progresso} openHref={href.plano()} summaryTitle={t('Recursos')}
     originLine={<><p>{proxima ? <>{t('Próxima resposta')}: <a href={href.pergunta(proxima.capitulo, proxima.id)}>{t(CURTO[proxima.id] || proxima.id)}</a></> : p.proxima}</p>{o.faltam ? <p>{t('{n} itens sem valor informado. O subtotal não é o orçamento completo.', { n: o.faltam })}</p> : null}</>}
-    kpis={[{ id: 'lit-orcamento', label: t('Subtotal informado'), value: o.temSubtotal ? moedaGovernanca(o.subtotal, o.moeda, String(LOC())) : t('Não informado') }]}
+    kpis={kpisOrcamento('lit-orcamento', o)}
     footer={<><p>{t(L('{n} definições e valores a levantar', '{n} definitions and amounts to collect'), { n: p.pendentes })}</p><Button size="sm" variant="secondary" href={href.plano()}>{t('Resumo desta frente')}</Button></>} />;
-  return gaveta ? <div className="pc-lit-painel"><PlanDrawer hideTrigger={integrado} open={aberta} onOpenChange={setAberta} zoneLabel={t('Seu plano')} summary={progresso} closeLabel={t('Fechar')} openLabel={t('Abrir o seu plano')}>{painel}</PlanDrawer></div> : <aside className="pc-plano pc-lit-painel" aria-label={p.titulo}>{painel}</aside>;
+  return gaveta ? <div className="pc-lit-painel"><PlanDrawer hideTrigger={integrado} open={aberta} onOpenChange={setAberta} zoneLabel={t('Seu plano')} summary={progresso} closeLabel={t('Fechar')} openLabel={t('Abrir o seu plano')}><div className="pc-est-painel">{painel}</div></PlanDrawer></div> : <aside className="pc-plano pc-lit-painel" aria-label={p.titulo}>{painel}</aside>;
 }
 function PlanoLit({s}:{s:CasoStore}) {
  const p=planoLetramento(s),[erro,setErro]=useState(''),[ocupado,setOcupado]=useState(false);

@@ -7,6 +7,7 @@ import { nomePais, paisDoCaso } from '../domain/pais.js';
 import { tamanhoRedeValido, projetoUsoDefinido } from '../domain/escopo.js';
 import type { Estado14 } from '../store/tipos';
 import { t } from './textos';
+import { estimativaReferencia, itemEmReferencia, valorEstimado, totaisOrcamento, linhasTotais, notaEstimativas, textoEstimado } from './estimativasOrcamento';
 export const CUSTOS_GOV = [
   ['equipe', 'Equipe e coordenação'], ['estudos', 'Estudos e assessoria'], ['consulta', 'Consulta e participação'],
   ['formacao', 'Formação institucional'], ['comunicacao', 'Comunicação e orientação'],
@@ -46,21 +47,28 @@ export function acoesGovernanca(s: Pick<Estado14, 'ctx'>) {
 function valorCusto(v: unknown): number | null { return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : null; }
 export function orcamentoGovernanca(s: Pick<Estado14, 'ctx' | 'moeda'>) {
   const o = contextoGovProjetado(s).govOrcamento || {};
-  const valorItem = (i: any) => i?.situacao === 'sem_custo' ? 0 : i?.situacao === 'a_estimar' ? null : valorCusto(i?.valor);
+  // 'referencia' só vale onde há base de cálculo; o valor digitado anteriormente fica guardado, mas não conta.
+  const valorItem = (i: any) => i?.situacao === 'sem_custo' ? 0 : i?.situacao === 'a_estimar' || i?.situacao === 'referencia' ? null : valorCusto(i?.valor);
   const categorias: [string, string][] = CUSTOS_GOV.map(([id, nome]) => [id, nome]);
   if (temSandbox(s)) categorias.push(['sandbox', 'Experimentação supervisionada']);
   const extras = Array.isArray(o.extras) ? o.extras : [];
-  const itens = categorias.map(([id, nome]) => ({ id, nome: t(nome), valor: valorItem(o.itens?.[id]), detalhe: String(o.itens?.[id]?.detalhe || '') }))
-    .concat(extras.map((x: any, i: number) => ({ id: 'extra-' + i, nome: String(x.nome || t('Recurso adicional')), valor: valorItem(x), detalhe: String(x.detalhe || '') })));
-  const informados = itens.filter(i => i.valor !== null);
+  const itens = categorias.map(([id, nome]) => { const salvo = o.itens?.[id], estimativa = estimativaReferencia('governanca', id, s), emRef = itemEmReferencia('governanca', id, salvo);
+      return { id, nome: t(nome), valor: valorItem(salvo), detalhe: String(salvo?.detalhe || ''), situacao: String(salvo?.situacao || ''), estimativa, referencia: emRef, estimado: valorEstimado(estimativa, emRef) }; })
+    .concat(extras.map((x: any, i: number) => ({ id: 'extra-' + i, nome: String(x.nome || t('Recurso adicional')), valor: valorItem(x), detalhe: String(x.detalhe || ''), situacao: String(x?.situacao || ''), estimativa: null, referencia: false, estimado: null })));
+  const tot = totaisOrcamento(itens, extras.every((e: any) => preenchido(e.nome)));
   return { itens, moeda: String(o.moeda || s.moeda.cod || 'USD'), periodo: String(o.periodo || ''), fonte: String(o.fonte || ''),
-    subtotal: informados.reduce((n, i) => n + i.valor!, 0), informados: informados.length,
-    faltam: itens.length - informados.length, total: informados.length === itens.length && extras.every((e: any) => preenchido(e.nome)) ? informados.reduce((n, i) => n + i.valor!, 0) : null };
+    subtotal: tot.informado, ...tot };
 }
 export function moedaGovernanca(v: number | null, cod: string, locale?: string): string {
   if (v === null) return t('Não informado');
   try { return new Intl.NumberFormat(locale || undefined, { style: 'currency', currency: cod }).format(v); }
   catch { return cod + ' ' + new Intl.NumberFormat(locale || undefined, { maximumFractionDigits: 2 }).format(v); }
+}
+/** Valor de um item no plano: informado, estimativa em uso (com o rótulo honesto) ou o que ainda falta. */
+export function valorItemOrcamento(i: { valor: number | null; referencia?: boolean; estimado?: number | null; estimativa?: { mensagem?: string } | null }, moeda: string): string {
+  if (i.valor !== null) return moedaGovernanca(i.valor, moeda, String(LOC()));
+  if (i.referencia) return typeof i.estimado === 'number' ? textoEstimado(i.estimado, moeda) : t('Estimativa de referência indisponível') + (i.estimativa?.mensagem ? ': ' + i.estimativa.mensagem : '');
+  return t('Não informado');
 }
 export function governancaRespondida(s: Estado14, id: string): boolean {
   const x = contextoGovProjetado(s), qs = desafiosGovernanca(s), tem = (obj: any, keys: string[]) => keys.every(k => preenchido(obj?.[k]));
@@ -75,7 +83,7 @@ export function governancaRespondida(s: Estado14, id: string): boolean {
     case 'gov-capacidade': return tem(x.govCapacidade, ['equipe', 'formacao', 'orientacao', 'supervisao', 'incidentes']);
     case 'gov-recursos': { const o = orcamentoGovernanca(s); const salvo = x.govOrcamento || {};
       const completo = o.itens.every(i => { const item = i.id.startsWith('extra-') ? salvo.extras?.[Number(i.id.slice(6))] : salvo.itens?.[i.id];
-        return i.valor !== null || item?.situacao === 'a_estimar'; });
+        return i.valor !== null || item?.situacao === 'a_estimar' || i.referencia; });
       return completo && (salvo.extras || []).every((e: any) => preenchido(e.nome)) && preenchido(o.periodo) && preenchido(o.fonte); }
     case 'gov-sandbox': return temSandbox(s) && tem(x.govSandbox, CAMPOS_SANDBOX.map(([k]) => k));
     case 'gov-revisao': return tem(x.govRevisao, ['indicadores', 'responsavel', 'periodicidade', 'data', 'alcance', 'progresso', 'canal']);
@@ -104,9 +112,8 @@ export function planoGovernanca(s: Estado14) {
       linha('Responsável', a.responsavel), linha('Prazo', a.prazo), linha('Marcos de execução', a.marco), linha('Indicador de entrega', a.indicador)] })),
     { titulo: t('Capacidade institucional'), linhas: campos(x.govCapacidade, [['equipe', 'Equipe e competências necessárias'], ['formacao', 'Formação institucional'], ['orientacao', 'Orientação às instituições'], ['supervisao', 'Supervisão e acompanhamento'], ['incidentes', 'Resposta a incidentes e reclamações']]) },
     { titulo: t('Recursos e orçamento'), linhas: [linha('Período do orçamento', orcamento.periodo), linha('Moeda', orcamento.moeda), linha('Fonte dos valores', orcamento.fonte),
-      ...orcamento.itens.flatMap(i => [linha(i.nome, moedaGovernanca(i.valor, orcamento.moeda, String(LOC()))), ...(i.detalhe ? [linha('Detalhamento', i.detalhe)] : [])]),
-      linha(orcamento.total === null ? 'Subtotal informado' : 'Total informado', orcamento.informados ? moedaGovernanca(orcamento.subtotal, orcamento.moeda, String(LOC())) : nao),
-      linha('Itens sem valor informado', String(orcamento.faltam))] },
+      ...orcamento.itens.flatMap(i => [linha(i.nome, valorItemOrcamento(i, orcamento.moeda)), ...(i.detalhe ? [linha('Detalhamento', i.detalhe)] : [])]),
+      ...linhasTotais(orcamento).map(l => ({ rotulo: l.rotulo, valor: l.valor })), ...notaEstimativas(orcamento)] },
   ];
   if (temSandbox(s)) blocos.push({ titulo: t('Experimentação supervisionada'), linhas: campos(x.govSandbox, CAMPOS_SANDBOX.map(([k, n]) => [k, n])) });
   blocos.push({ titulo: t('Acompanhamento e revisão'), linhas: campos(x.govRevisao, [['indicadores', 'Indicadores e metas institucionais'], ['responsavel', 'Responsável pelo acompanhamento'], ['periodicidade', 'Periodicidade da revisão'], ['data', 'Próxima revisão'], ['alcance', 'Alcance da política'], ['progresso', 'Progresso de implementação'], ['canal', 'Transparência e prestação de contas']]) });
@@ -117,7 +124,7 @@ export function planoGovernanca(s: Estado14) {
   const pendentes = definicoesPendentes(s) + orcamento.faltam;
   const proxima = !qs.length ? t('Selecione os desafios do plano.') : faltam.length || pendentes ? t('Complete o diagnóstico, os responsáveis e os recursos antes de aprovar o plano de ação.') : t('Submeta o plano de ação à autoridade competente e acompanhe sua execução.');
   return { pendentes, titulo: t('Plano de governança de IA na educação'), pais: nomePais(paisDoCaso(s.caso)), desafios: qs, acoes, orcamento, blocos, faltam, proxima,
-    escopo: t('Os totais da rede descrevem o alcance da política. O orçamento usa apenas valores informados.'),
+    escopo: orcamento.estimados ? t('Os totais da rede descrevem o alcance da política. O orçamento separa os valores informados das estimativas de referência escolhidas, que são ilustrativas.') : t('Os totais da rede descrevem o alcance da política. O orçamento usa apenas valores informados.'),
     projeto: projetoUsoDefinido(x) ? String(x.projetoIA.descricao) : null };
 }
 
@@ -145,7 +152,7 @@ export function pendenciasGov(s:Estado14,id:string) {
  case 'gov-acoes':for(const q of desafiosGovernanca(s))grupo('govAcoes.'+q.id,[['responsavel','Responsável'],['prazo','Prazo'],['marco','Marcos de execução'],['indicador','Indicador de entrega']]);break;
  case 'gov-capacidade':grupo('govCapacidade',[['equipe','Equipe e competências necessárias'],['formacao','Formação institucional'],['orientacao','Orientação às instituições'],['supervisao','Supervisão e acompanhamento'],['incidentes','Resposta a incidentes e reclamações']]);break;
  case 'gov-sandbox':grupo('govSandbox',CAMPOS_SANDBOX);break;
- case 'gov-recursos':{grupo('govOrcamento',[['periodo','Período do orçamento'],['fonte','Fonte dos valores']]);for(const i of orcamentoGovernanca(s).itens){const extra=i.id.startsWith('extra-'),p=extra?'govOrcamento.extras.'+i.id.slice(6):'govOrcamento.itens.'+i.id,item=p.split('.').reduce((o:any,k)=>o?.[k],x);if(i.valor===null&&item?.situacao!=='a_estimar')out.push({caminho:p,label:i.nome});if(extra)add(p+'.nome','Recurso adicional');}break;}
+ case 'gov-recursos':{grupo('govOrcamento',[['periodo','Período do orçamento'],['fonte','Fonte dos valores']]);for(const i of orcamentoGovernanca(s).itens){const extra=i.id.startsWith('extra-'),p=extra?'govOrcamento.extras.'+i.id.slice(6):'govOrcamento.itens.'+i.id,item=p.split('.').reduce((o:any,k)=>o?.[k],x);if(i.valor===null&&item?.situacao!=='a_estimar'&&!i.referencia)out.push({caminho:p,label:i.nome});if(extra)add(p+'.nome','Recurso adicional');}break;}
  case 'gov-revisao':grupo('govRevisao',[['indicadores','Indicadores e metas institucionais'],['responsavel','Responsável pelo acompanhamento'],['periodicidade','Periodicidade da revisão'],['data','Próxima revisão'],['alcance','Alcance da política'],['progresso','Progresso de implementação'],['canal','Transparência e prestação de contas']]);break;
  case 'gov-projeto':add('projetoIA.incluir','Incluir projeto de uso de IA?');if(x.projetoIA?.incluir==='sim')add('projetoIA.descricao','Descreva o projeto, a tarefa de IA e o público previsto');break;
  }

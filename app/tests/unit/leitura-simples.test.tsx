@@ -18,7 +18,7 @@ describe('proposta extra de leitura simples',()=>{
   S().responder('govOrcamento.moeda','BRL');S().responder('govOrcamento.itens.equipe.valor',1234.56);
   const e=estadoDaFrente(S(),id),antes=JSON.stringify(e),p=leituraSimples(e);
   expect(JSON.stringify(e)).toBe(antes);expect(p.frente).toBe(id);expect(p.parcial).toBe(true);
-  expect(p.resumo.length).toBeLessThanOrEqual(5);expect(p.secoes).toHaveLength(6);
+  expect(p.resumo.length).toBeLessThanOrEqual(7);// v015: informado, estimado e ainda a levantar em linhas própriasexpect(p.secoes).toHaveLength(6);
   expect(JSON.stringify(p)).not.toContain('[object Object]');
   if(id==='governanca'){expect(JSON.stringify(p)).toContain('1.234,56');expect(JSON.stringify(p)).not.toMatch(/piloto/i);}
   else expect(JSON.stringify(p)).not.toContain('1.234,56');
