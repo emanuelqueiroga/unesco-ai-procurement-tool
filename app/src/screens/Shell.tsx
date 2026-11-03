@@ -5,7 +5,7 @@ import { entradaEtapa } from '../percurso/navegacaoOrientada';
 // cabeçalho fica compacto: a frente, o menu e a barra de etapas. A página inicial mantém o cabeçalho anterior.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useCaso, telasAtivas, telasDoCapitulo, telaRespondida, origemDe, progressoDe, type Capitulo, type CasoStore } from '../store';
-import { Header, StepBar, Segmented, Button, IconMoon, IconSun, IconMenu, IconClose, useMediaQuery, useTheme, BREAKPOINTS, type NavChapter, type BarChapter, type Step } from '../ui';
+import { AcoesForaDoQuadro, Header, StepBar, Segmented, Button, IconMoon, IconSun, IconMenu, IconClose, useMediaQuery, useTheme, BREAKPOINTS, type NavChapter, type BarChapter, type Step } from '../ui';
 import { infoCapitulo, CURTO, t } from '../percurso/textos';
 import { href, lerRota } from '../percurso/rota';
 import { tituloDaTelaLit } from '../percurso/letramento';
@@ -221,13 +221,13 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
         {faixas}
         {plano && semColuna ? <div className="pc-container"><FaixaCusto s={s} tela={pos.tela} /></div> : null}
         <div className={'pc-corpo pc-corpo--novo pc-container pc-grade' + (plano && !semColuna ? ' pc-corpo--custo' : '')}>
-          <main id="conteudo" className="pc-main" tabIndex={-1}>
+          <main id="conteudo" className="pc-main" tabIndex={-1}><AcoesForaDoQuadro.Provider value>
             {rota.tipo === 'plano' && !percursoInstitucional(s.ctx) && !percursoPedagogico(s.ctx) ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Anexo técnico (PDF)".')}</p> : null}
             {children}
-          </main>
+          </AcoesForaDoQuadro.Provider></main>
           {plano && !semColuna ? <ColunaCusto s={s} tela={pos.tela} /> : null}
         </div>
-        <div className="pc-rodape-wrap pc-container"><RodapeCompleto /></div>
+        <div className="pc-rodape-faixa"><div className="pc-container"><RodapeCompleto /></div></div>
         <CasoDialog open={caso} onClose={() => setCaso(false)} />
         <MatrizHost />
       </div>

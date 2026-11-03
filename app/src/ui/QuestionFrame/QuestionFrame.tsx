@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import './QuestionFrame.css';
 import { tx } from '../texto';
 
@@ -21,6 +21,9 @@ export type QuestionFrameProps = {
   className?: string;
 };
 
+/** Dentro da moldura nova (teste de layout), os botões ficam fora do quadro da pergunta, logo abaixo dele. */
+export const AcoesForaDoQuadro = createContext(false);
+
 /** Moldura de uma pergunta: kicker, título, explicação, controle, ações e o rodapé do que muda no plano. */
 export function QuestionFrame({
   kicker,
@@ -33,14 +36,16 @@ export function QuestionFrame({
   affectsPrefix,
   className,
 }: QuestionFrameProps) {
-  return (
+  const fora = useContext(AcoesForaDoQuadro);
+  const botoes = actions ? <div className={'pr-questionframe-actions' + (fora ? ' pr-questionframe-actions--fora' : '')}>{actions}</div> : null;
+  const quadro = (
     <section className={['pr-questionframe', className ?? ''].filter(Boolean).join(' ')}>
       {kicker ? <div className="pr-questionframe-kicker">{kicker}</div> : null}
       <h1 className="pr-questionframe-title">{title}</h1>
       {explanation ? <p className="pr-questionframe-text">{explanation}</p> : null}
       {help ? <div className="pr-questionframe-help">{help}</div> : null}
       <div className="pr-questionframe-control">{children}</div>
-      {actions ? <div className="pr-questionframe-actions">{actions}</div> : null}
+      {fora ? null : botoes}
       {affects ? (
         <div className="pr-questionframe-affects">
           {affectsPrefix ?? tx('Esta resposta muda no plano:')} {affects}
@@ -48,4 +53,5 @@ export function QuestionFrame({
       ) : null}
     </section>
   );
+  return fora ? <>{quadro}{botoes}</> : quadro;
 }

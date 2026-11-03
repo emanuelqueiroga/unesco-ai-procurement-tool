@@ -128,9 +128,12 @@ export function Pergunta({ n, tela: pedida }: { n: Capitulo; tela: string }) {
             </>
           }
           help={porque && ajuda ? <AjudaPergunta ajuda={ajuda} /> : null}
-          actions={
+          actions={<AcoesPercurso anterior={ant} avancar={continuar} disabled={faltaRede || (id === 'prioridades' && !prioridadeEscolhida(s.ctx))}/>}
+          affectsPrefix={t('Esta resposta muda no plano:')}
+          affects={linhaAfeta(afetados, +s.caso.horizonte || 3)}
+        >
+          <ControlesTela e={s} tela={tela} />
             <>
-              <AcoesPercurso anterior={ant} avancar={continuar} disabled={faltaRede || (id === 'prioridades' && !prioridadeEscolhida(s.ctx))}/>
               <div className="pc-botoes">
                 {ajuda ? (
                   <Button variant="link" aria-expanded={porque} aria-controls={porque ? 'pc-ajuda' : undefined} onClick={() => setPorque((x) => !x)}>
@@ -141,11 +144,6 @@ export function Pergunta({ n, tela: pedida }: { n: Capitulo; tela: string }) {
               {faltaRede ? <p className="pc-nota">{t('Informe os totais da rede para avançar.')}</p> : null}
               {confirmaveis.length ? <p className="pc-nota">{t('Ao avançar, você aceita as sugestões exibidas.')}</p> : null}
             </>
-          }
-          affectsPrefix={t('Esta resposta muda no plano:')}
-          affects={linhaAfeta(afetados, +s.caso.horizonte || 3)}
-        >
-          <ControlesTela e={s} tela={tela} />
         </QuestionFrame>
 
       </div>

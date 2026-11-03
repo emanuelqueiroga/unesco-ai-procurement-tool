@@ -1,8 +1,8 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Button } from '../ui';
 import { t } from '../percurso/textos';
-// Voltar e Próximo (teste de layout da v015): barra fixa no rodapé da janela, sem texto, no mesmo container e no
-// mesmo grid da área principal (Voltar na borda esquerda e Próximo na borda direita da coluna da pergunta). O comportamento de Voltar, Próximo e das pendências é o de cada tela.
+// Voltar e Próximo (teste de layout da v015): no computador, logo abaixo do quadro da pergunta, alinhados às bordas
+// dele; no celular, uma barra fixa compacta. O comportamento de Voltar, Próximo e das pendências é o de cada tela. O comportamento de Voltar, Próximo e das pendências é o de cada tela.
 export function AcoesPercurso({anterior,avancar,disabled=false,nota}:{anterior:string;avancar:()=>void;disabled?:boolean;nota?:ReactNode}){
  const barra=useRef<HTMLDivElement>(null);
  useEffect(()=>{
@@ -13,7 +13,7 @@ export function AcoesPercurso({anterior,avancar,disabled=false,nota}:{anterior:s
   return()=>{vv.removeEventListener('resize',atualizar);vv.removeEventListener('scroll',atualizar);};
  },[]);
  return <div className="pc-ux-acoes"><div ref={barra} className="pc-ux-barra-acoes" role="group" aria-label={t('Navegação do planejamento')}>
-  <div className="pc-ux-barra-dentro pc-container pc-grade"><div className="pc-ux-barra-botoes">
+  <div className="pc-ux-barra-dentro pc-container"><div className="pc-ux-barra-botoes">
    <Button variant="secondary" href={anterior}>{t('Voltar')}</Button>
    <Button disabled={disabled} onClick={avancar}>{t('Próximo')}</Button>
   </div></div>

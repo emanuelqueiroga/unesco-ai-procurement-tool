@@ -60,7 +60,7 @@ export { Toast } from './Toast/Toast';
 export type { ToastProps } from './Toast/Toast';
 
 // Componentes de estrutura.
-export { QuestionFrame } from './QuestionFrame/QuestionFrame';
+export { QuestionFrame, AcoesForaDoQuadro } from './QuestionFrame/QuestionFrame';
 export type { QuestionFrameProps } from './QuestionFrame/QuestionFrame';
 
 export { PlanDrawer } from './PlanDrawer/PlanDrawer';

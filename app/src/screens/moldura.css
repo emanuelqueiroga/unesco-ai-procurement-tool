@@ -81,27 +81,31 @@ a.pc-frente-pilula:hover { border-color: var(--primary); color: var(--ink); }
   .pc-app.pc-app--novo .pc-lit-grupo:not(.pc-rec-corpo) > summary { padding-block: 8px; }
 }
 
-/* barra de ações: fixa no rodapé da janela, sem texto, com o mesmo container e o mesmo grid da área principal:
-   Voltar na borda esquerda da coluna da pergunta e Próximo na borda direita dela (no árabe, espelhado). */
+/* Voltar e Próximo: no computador, 24 px abaixo do quadro da pergunta, nas bordas dele (Voltar à esquerda, Próximo à
+   direita; no árabe, espelhado), sem barra fixa. No celular, barra fixa compacta só com os dois botões. */
 .pc-app.pc-app--novo .pr-questionframe-actions { margin: 0; }
-.pc-app.pc-app--novo .pr-questionframe-actions:not(:has(> :not(.pc-ux-acoes))) { display: contents; }
-.pc-app.pc-app--novo .pc-ux-acoes { display: contents; }
-.pc-app.pc-app--novo .pc-ux-barra-acoes { position: fixed; z-index: 40; inset-inline: 0; inset-block-end: var(--teclado-offset, 0px); display: block; min-height: 0; padding: 12px 0 max(12px, env(safe-area-inset-bottom)); border: 0; border-top: 1px solid var(--line); background: var(--surface-1); box-shadow: none; }
+.pc-app.pc-app--novo .pr-questionframe-actions--fora { display: block; margin-block-start: 24px; }
+.pc-app.pc-app--novo .pc-ux-acoes { display: block; }
+.pc-app.pc-app--novo .pc-ux-barra-acoes { position: static; inset: auto; display: block; min-height: 0; padding: 0; border: 0; background: none; box-shadow: none; }
+.pc-app.pc-app--novo .pc-ux-barra-dentro.pc-container { max-width: none; padding-inline: 0; }
 .pc-ux-barra-botoes { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 0; }
 .pc-ux-barra-botoes > .pr-button { height: 48px; font-size: 16px; border-radius: 10px; }
 .pc-ux-barra-botoes > .pr-button--secondary { padding-inline: 24px; }
 .pc-ux-barra-botoes > .pr-button--primary { padding-inline: 32px; min-width: 160px; }
-.pc-app.pc-app--novo[data-barra-acoes] { padding-block-end: var(--pc-barra); }
 @media (max-width: 640px) {
-  .pc-app.pc-app--novo .pc-ux-barra-acoes { padding-block: 10px max(10px, env(safe-area-inset-bottom)); }
+  .pc-app.pc-app--novo .pr-questionframe-actions--fora { margin: 0; }
+  .pc-app.pc-app--novo .pc-ux-barra-acoes { position: fixed; z-index: 40; inset-inline: 0; inset-block-end: var(--teclado-offset, 0px); padding-block: 10px max(10px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--surface-1); }
+  .pc-app.pc-app--novo .pc-ux-barra-dentro.pc-container { padding-inline: var(--pc-margem); }
+  .pc-app.pc-app--novo[data-barra-acoes] { padding-block-end: var(--pc-barra); }
   .pc-ux-barra-botoes { gap: 12px; }
   .pc-ux-barra-botoes > .pr-button { flex: 1; min-width: 0; height: 46px; padding-inline: 12px; }
   .pc-ux-barra-botoes > .pr-button--primary { flex: 2; min-width: 0; }
 }
 
-/* rodapé: dentro do container, alinhado ao conteúdo */
-.pc-rodape-wrap { flex: none; }
-.pc-app.pc-app--novo .pc-rodape { margin: 0; padding: 24px 0; border-top: 1px solid var(--line); background: none; max-width: none; display: flex; align-items: flex-start; gap: 20px; font-size: 13px; line-height: 18px; color: var(--muted); }
+/* rodapé: faixa de largura total com o tratamento do cabeçalho (superfície branca) e uma linha de cobalto no topo,
+   emoldurando o miolo cinza; o conteúdo fica no container, alinhado ao grid. */
+.pc-rodape-faixa { flex: none; background: var(--surface-1); border-top: 1px solid var(--line); box-shadow: inset 0 3px 0 var(--primary); }
+.pc-app.pc-app--novo .pc-rodape { margin: 0; padding: 27px 0 24px; border: 0; background: none; max-width: none; display: flex; align-items: flex-start; gap: 20px; font-size: 13px; line-height: 18px; color: var(--muted); }
 .pc-app.pc-app--novo .pc-rodape-texto { max-width: 72ch; gap: 6px; }
 .pc-app.pc-app--novo .pc-rodape-vinculo { font-weight: 600; color: var(--ink-2); }
 .pc-app.pc-app--novo .pc-rodape-aviso { color: var(--ink-2); }
@@ -247,3 +251,27 @@ a.pc-faixa-custo:hover { color: var(--on-night); outline: 2px solid var(--primar
 .pc-app.pc-app--novo[data-barra-acoes] .pc-main { padding: 0; }
 .pc-app.pc-app--novo .pc-pergunta .pr-optiongroup { max-width: none; }
 .pc-faixa-custo-dir { flex-direction: row; align-items: center; gap: 6px; }
+
+/* ---------- quadro da pergunta ----------
+   Toda a pergunta num quadro (superfície, borda de 1 px, raio 16 px como o cartão de custo). Dentro dele, a lista de
+   blocos e a tabela de recursos encostam nas bordas internas, só com divisórias, para não virar caixa dentro de caixa. */
+.pc-app.pc-app--novo .pc-pergunta { --q: 32px; }
+@media (max-width: 640px) { .pc-app.pc-app--novo .pc-pergunta { --q: 20px; } }
+.pc-app.pc-app--novo .pc-pergunta > .pr-questionframe { background: var(--surface-1); border: 1px solid var(--line); border-radius: 16px; padding: var(--q); min-width: 0; }
+.pc-app.pc-app--novo .pc-pergunta > .pr-questionframe > .pr-questionframe-affects { margin-top: 0; }
+/* lista de blocos de primeiro nível: de borda a borda do quadro */
+.pc-app.pc-app--novo .pc-pergunta :is(.pc-lit-campos, .pc-gov-campos, .pc-gov-lista):has(> .pc-lit-grupo):not(:has(> :not(.pc-lit-grupo))):not(.pc-lit-grupo *) { margin-inline: calc(-1 * var(--q)); }
+.pc-app.pc-app--novo .pc-pergunta :is(.pc-lit-campos, .pc-gov-campos, .pc-gov-lista):has(> .pc-lit-grupo):not(:has(> :not(.pc-lit-grupo))):not(.pc-lit-grupo *) > .pc-lit-grupo { border-inline-width: 0; border-radius: 0; padding-inline: var(--q); background: transparent; }
+/* blocos aninhados (dentro de um bloco aberto) e blocos soltos: borda leve, sem fundo próprio */
+.pc-app.pc-app--novo .pc-pergunta .pc-lit-grupo .pc-lit-grupo:not(.pc-rec-corpo) { background: transparent; }
+/* tabela de recursos: de borda a borda, com divisórias */
+.pc-app.pc-app--novo .pc-pergunta .pc-rec-tabela { margin-inline: calc(-1 * var(--q)); border-inline-width: 0; border-block-end-width: 0; border-radius: 0; background: transparent; overflow: visible; }
+.pc-app.pc-app--novo .pc-pergunta .pc-rec-cab { padding-inline: calc(var(--q) - 3px) var(--q); }
+.pc-app.pc-app--novo .pc-pergunta .pc-rec-corpo-dados { padding-inline: calc(var(--q) - 3px) var(--q); }
+.pc-app.pc-app--novo .pc-pergunta .pc-rec-rodape { padding-inline: var(--q); padding-block-end: 0; }
+@media (max-width: 640px) {
+  .pc-app.pc-app--novo .pc-pergunta .pc-rec-tabela { display: block; border-block-start: 1px solid var(--line); }
+  .pc-app.pc-app--novo .pc-pergunta .pc-rec-linha { background: transparent; border: 0; border-bottom: 1px solid var(--surface-2); border-inline-start: 3px solid transparent; border-radius: 0; }
+  .pc-app.pc-app--novo .pc-pergunta .pc-rec-linha.is-erro { border-inline-start-color: var(--crit); }
+  .pc-app.pc-app--novo .pc-pergunta .pc-rec-rodape { padding-block: 12px 0; }
+}
