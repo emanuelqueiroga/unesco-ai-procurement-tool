@@ -83,7 +83,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
   plano = plano && prioridadeEscolhida(s.ctx);
   const estreito = useMediaQuery(BREAKPOINTS.cards);
   const celular = useMediaQuery(BREAKPOINTS.bar);           // cabeçalho compacto com menu
-  const semColuna = useMediaQuery('(max-width: 1099px)');   // custo numa faixa sob o cabeçalho
+  const semColuna = useMediaQuery('(max-width: 1023px)');   // custo numa faixa sob o cabeçalho (uma coluna só)
   const [caso, setCaso] = useState(false);
   const [menu, setMenu] = useState(false);
   const botaoMenu = useRef<HTMLButtonElement>(null);
@@ -184,10 +184,10 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
   );
   return (
     <DentroDaMoldura.Provider value>
-      <div data-barra-acoes={barraAcoes || undefined} className={'pc-app pc-app--novo' + (percursoLetramento(s.ctx) ? ' pc-app--letramento' : percursoGovernanca(s.ctx) || percursoPedagogico(s.ctx) ? ' pc-app--orientado' : '')}>
+      <div data-barra-acoes={barraAcoes || undefined} data-coluna={plano || undefined} className={'pc-app pc-app--novo' + (percursoLetramento(s.ctx) ? ' pc-app--letramento' : percursoGovernanca(s.ctx) || percursoPedagogico(s.ctx) ? ' pc-app--orientado' : '')}>
         <a className="pc-pular" href="#conteudo" onClick={(e) => { e.preventDefault(); document.getElementById('conteudo')?.focus(); }}>{t('Pular para o conteúdo')}</a>
         <header className={'pc-cab' + (celular ? ' pc-cab--celular' : '')}>
-          <div className="pc-cab-linha">
+          <div className="pc-cab-linha pc-container">
             <div className="pc-cab-esq">
               {marca}
               {!celular && ctxCab ? <span className="pc-cab-ctx">{ctxCab}</span> : null}
@@ -209,25 +209,25 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
             )}
           </div>
           {celular && menu ? (
-            <nav id="pc-menu" className="pc-menu" aria-label={t('Menu')}>
+            <nav id="pc-menu" className="pc-menu pc-container" aria-label={t('Menu')}>
               {ctxCab ? <p className="pc-menu-ctx">{ctxCab}</p> : null}
               <div className="pc-menu-acoes">{atalhos}{verPlano}{plano ? <Button variant="link" size="sm" href={href.plano()}>{t('Resumo desta frente')}</Button> : null}</div>
               {modo ? <div className="pc-menu-linha">{modo}</div> : null}
               <div className="pc-menu-linha"><SeletorIdioma />{botaoTema}{botaoCaso}</div>
             </nav>
           ) : null}
-          {nav && etapas.length ? <div className="pc-cab-etapas"><StepBar steps={etapas} compact={celular} label={t('Etapas da frente')} /></div> : null}
+          {nav && etapas.length ? <div className="pc-cab-etapas pc-container"><StepBar steps={etapas} compact={celular} label={t('Etapas da frente')} /></div> : null}
         </header>
         {faixas}
-        {plano && semColuna ? <FaixaCusto s={s} tela={pos.tela} /> : null}
-        <div className={'pc-corpo pc-corpo--novo' + (plano && !semColuna ? ' pc-corpo--custo' : '')}>
+        {plano && semColuna ? <div className="pc-container"><FaixaCusto s={s} tela={pos.tela} /></div> : null}
+        <div className={'pc-corpo pc-corpo--novo pc-container pc-grade' + (plano && !semColuna ? ' pc-corpo--custo' : '')}>
           <main id="conteudo" className="pc-main" tabIndex={-1}>
             {rota.tipo === 'plano' && !percursoInstitucional(s.ctx) && !percursoPedagogico(s.ctx) ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Anexo técnico (PDF)".')}</p> : null}
             {children}
           </main>
           {plano && !semColuna ? <ColunaCusto s={s} tela={pos.tela} /> : null}
         </div>
-        <RodapeCompleto />
+        <div className="pc-rodape-wrap pc-container"><RodapeCompleto /></div>
         <CasoDialog open={caso} onClose={() => setCaso(false)} />
         <MatrizHost />
       </div>

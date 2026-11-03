@@ -2,7 +2,7 @@ import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { progressoFrente } from '../percurso/frentes';
 import { GrupoFormulario } from './GrupoFormulario';
 import { AcoesPercurso } from './AcoesPercurso';
-import { useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import {
   useCaso,
   telasAtivas,
@@ -211,13 +211,13 @@ function Campos({
               ))}
           </GrupoEd>
         ) : (
-          <div className="pc-lit-campos" key="geral">
+          <Fragment key="geral">
             {fs
               .filter((f) => !f.grupo)
               .map((f,j) => (
-                <GrupoFormulario key={f.caminho} titulo={t(f.label)} estado={t(campoEdRespondido(s,f)?"Preenchido":"A preencher")} abrir={j===0} nome="educacao-grupos"><Campo s={s} f={f} tentou={tentou} ocultarTitulo/></GrupoFormulario>
+                <GrupoFormulario key={f.caminho} titulo={t(f.label)} estado={t(campoEdRespondido(s,f)?"Preenchido":"A preencher")} abrir={i===0&&j===0} nome="educacao-grupos"><Campo s={s} f={f} tentou={tentou} ocultarTitulo/></GrupoFormulario>
               ))}
-          </div>
+          </Fragment>
         ),
       )}
     </div>

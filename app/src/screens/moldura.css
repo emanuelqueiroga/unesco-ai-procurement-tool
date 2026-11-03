@@ -2,10 +2,19 @@
    tabela de recursos. Só tokens do Prumo; texto ≥ 13 px; propriedades lógicas (árabe); sem rolagem lateral a 360 px. */
 .pc-sr { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* ---------- moldura ---------- */
-.pc-app.pc-app--novo { background: var(--surface-0); }
+/* ---------- moldura: um container só ----------
+   Cabeçalho, barra de etapas, área principal, barra de ações e rodapé usam o mesmo container (--pc-largura e
+   --pc-margem), então as bordas esquerda e direita coincidem em todas as telas. A área principal e a barra de ações
+   usam o mesmo grid: pergunta minmax(0, 1fr) e coluna lateral fixa de 360 px, com 48 px entre elas; abaixo de
+   1024 px, uma coluna só. */
+.pc-app.pc-app--novo { --pc-largura: 1240px; --pc-margem: 32px; --pc-lateral: 360px; --pc-vao: 48px; --pc-barra: 73px; background: var(--surface-0); }
+@media (max-width: 640px) { .pc-app.pc-app--novo { --pc-margem: 16px; --pc-barra: 69px; } }
+.pc-container { inline-size: 100%; max-width: var(--pc-largura); margin-inline: auto; padding-inline: var(--pc-margem); }
+.pc-grade { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: var(--pc-vao); }
+@media (min-width: 1024px) { .pc-app[data-coluna] .pc-grade { grid-template-columns: minmax(0, 1fr) var(--pc-lateral); } }
+
 .pc-cab { background: var(--surface-1); border-bottom: 1px solid var(--line); position: relative; z-index: 6; }
-.pc-cab-linha { max-width: 1240px; margin-inline: auto; padding: 12px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+.pc-cab-linha { padding-block: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
 .pc-cab-esq { display: flex; align-items: center; gap: 12px; flex: 1 1 320px; min-width: 0; }
 .pc-cab-marca { display: flex; align-items: center; gap: 12px; min-width: 0; min-height: 44px; text-decoration: none; color: var(--ink); }
 .pc-cab-marca:hover { color: var(--primary); }
@@ -22,66 +31,85 @@ a.pc-frente-pilula:hover { border-color: var(--primary); color: var(--ink); }
 .pc-cab-acoes { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-inline-start: auto; }
 .pc-cab-acoes .pr-button--link { min-height: 40px; text-decoration: none; font-size: 14px; }
 .pc-cab-acoes .pr-button--link:hover { text-decoration: underline; }
-.pc-cab-etapas { max-width: 1240px; margin-inline: auto; padding: 0 32px 12px; }
+.pc-cab-etapas { padding-block: 0 12px; }
 @media (max-width: 1500px) { .pc-cab-nome { display: none; } }
 
 /* celular: a frente, o menu e as etapas */
-.pc-cab--celular .pc-cab-linha { padding: 10px 16px; flex-wrap: nowrap; gap: 8px; }
+.pc-cab--celular .pc-cab-linha { padding-block: 10px; flex-wrap: nowrap; gap: 8px; }
 .pc-cab--celular .pc-cab-esq { flex: 0 0 auto; }
 .pc-cab--celular .pc-cab-logo { block-size: 24px; }
 .pc-cab--celular .pc-frente-pilula { flex: 1 1 auto; border: 0; background: transparent; padding: 0 4px; font-weight: 600; }
 .pc-cab--celular .pc-frente-rotulo { display: none; }
 .pc-cab-menu { flex: none; margin-inline-start: auto; min-inline-size: 44px; min-block-size: 44px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-1); color: var(--ink); cursor: pointer; }
 .pc-cab-menu svg { inline-size: 20px; block-size: 20px; }
-.pc-menu { border-top: 1px solid var(--line); padding: 12px 16px 16px; display: grid; gap: 12px; }
+.pc-menu { border-top: 1px solid var(--line); padding-block: 12px 16px; display: grid; gap: 12px; }
 .pc-menu-ctx { font-size: 14px; color: var(--muted); margin: 0; }
 .pc-menu-acoes, .pc-menu-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.pc-cab--celular .pc-cab-etapas { padding: 0 16px 8px; }
+.pc-cab--celular .pc-cab-etapas { padding-block: 0 8px; }
 
-/* corpo: coluna da pergunta (até ~700 px) e, à direita, o custo */
-.pc-app.pc-app--novo .pc-corpo--novo { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 40px; inline-size: 100%; max-width: 1240px; margin-inline: auto; padding: 40px 32px 32px; }
-.pc-app.pc-app--novo .pc-main { flex: 999 1 560px; min-width: 0; padding: 0; }
-.pc-app.pc-app--novo .pc-pergunta { max-width: 700px; margin-inline: auto; }
-.pc-app.pc-app--novo .pc-pergunta[data-tela$='-recursos'] { max-width: 760px; }
-.pc-app.pc-app--novo .pc-corpo--custo .pc-pergunta { margin-inline: 0; }
-.pc-app.pc-app--novo .pc-corpo--custo > .pc-main { max-width: 700px; }
-.pc-app.pc-app--novo .pc-corpo--custo > .pc-main:has(.pc-pergunta[data-tela$='-recursos']) { max-width: 760px; }
+/* área principal */
+.pc-app.pc-app--novo .pc-corpo--novo { flex: 1 0 auto; align-items: start; padding-block: 40px 48px; }
+.pc-app.pc-app--novo .pc-main { min-width: 0; padding: 0; }
+.pc-app.pc-app--novo .pc-pergunta { max-width: none; margin-inline: 0; }
 .pc-app.pc-app--novo .pc-pergunta > .pr-questionframe { gap: 28px; }
+.pc-app.pc-app--novo .pr-questionframe-control { max-width: none; }
 .pc-app.pc-app--novo .pr-questionframe-title + .pr-questionframe-text { margin-block-start: -18px; }
-.pc-app.pc-app--novo .pr-questionframe-kicker + .pr-questionframe-title { margin-block-start: -18px; }
-.pc-app.pc-app--novo .pc-ux-progresso { display: inline; }
-.pc-app.pc-app--novo .pc-lit-grupo { background: var(--surface-1); }
 .pc-app.pc-app--novo .pr-optioncard { background: var(--surface-1); }
 .pc-app.pc-app--novo .pr-optioncard--selected { background: var(--select-2); }
-@media (max-width: 1099px) {
-  .pc-app.pc-app--novo .pc-corpo--novo { padding-top: 24px; }
-}
+@media (max-width: 1023px) { .pc-app.pc-app--novo .pc-corpo--novo { padding-block-start: 24px; } }
 @media (max-width: 640px) {
-  .pc-app.pc-app--novo .pc-corpo--novo { padding: 20px 16px 24px; gap: 24px; }
-  .pc-app.pc-app--novo[data-barra-acoes] .pc-corpo--novo { padding-bottom: 96px; }
-  .pc-app.pc-app--novo .pc-main { flex-basis: 100%; }
+  .pc-app.pc-app--novo .pc-corpo--novo { padding-block: 20px 24px; }
   .pc-app.pc-app--novo .pc-pergunta > .pr-questionframe { gap: 22px; }
-  .pc-app.pc-app--novo .pr-questionframe-title + .pr-questionframe-text,
-  .pc-app.pc-app--novo .pr-questionframe-kicker + .pr-questionframe-title { margin-block-start: -14px; }
+  .pc-app.pc-app--novo .pr-questionframe-title + .pr-questionframe-text { margin-block-start: -14px; }
 }
 
-/* Voltar e Próximo: no computador, abaixo do conteúdo da pergunta, na mesma coluna (sem barra fixa); no celular,
-   barra inferior fixa e compacta, só com os dois botões. No árabe (RTL) a ordem se espelha sozinha. */
-.pc-app.pc-app--novo .pr-questionframe-actions { margin-top: 8px; }
-.pc-app.pc-app--novo .pc-ux-barra-acoes { position: static; display: block; inset: auto; min-height: 0; padding: 0; border: 0; background: none; box-shadow: none; }
-.pc-ux-barra-dentro { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.pc-ux-barra-dentro > .pr-button { height: 48px; font-size: 16px; border-radius: 10px; }
-.pc-ux-barra-dentro > .pr-button--secondary { padding-inline: 20px; border-color: var(--line); color: var(--ink-2); }
-.pc-ux-barra-dentro > .pr-button--primary { padding-inline: 32px; min-width: 160px; }
-@media (max-width: 640px) {
-  .pc-app.pc-app--novo .pc-ux-barra-acoes { position: fixed; z-index: 40; inset-inline: 0; inset-block-end: var(--teclado-offset, 0px); padding: 10px max(16px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); background: var(--surface-1); border-top: 1px solid var(--line); }
-  .pc-ux-barra-dentro { gap: 12px; }
-  .pc-ux-barra-dentro > .pr-button { flex: 1; min-width: 0; height: 46px; }
-  .pc-ux-barra-dentro > .pr-button--primary { flex: 2; min-width: 0; }
+/* blocos recolhidos: uma lista única (um cartão, linhas de ~56 px com divisórias de 1 px), como a tabela de recursos */
+.pc-app.pc-app--novo .pc-lit-grupo:not(.pc-rec-corpo) { background: var(--surface-1); padding: 0 20px; border-radius: 12px; }
+.pc-app.pc-app--novo .pc-lit-grupo:not(.pc-rec-corpo) > summary { min-height: 56px; margin: 0; gap: 12px; }
+.pc-app.pc-app--novo .pc-lit-grupo:not(.pc-rec-corpo) > summary::after { font-size: 20px; inline-size: 20px; text-align: center; }
+.pc-app.pc-app--novo .pc-lit-grupo:not(.pc-rec-corpo) > .pc-lit-grupo-titulo,
+.pc-app.pc-app--novo .pc-lit-grupo:not(.pc-rec-corpo) > summary .pc-lit-grupo-titulo { font-size: 16px; line-height: 22px; }
+.pc-app.pc-app--novo .pc-lit-grupo:not(.pc-rec-corpo)[open] > summary { margin-bottom: 4px; }
+.pc-app.pc-app--novo .pc-lit-grupo:not(.pc-rec-corpo)[open] > summary ~ * { margin-bottom: 20px; }
+.pc-app.pc-app--novo .pc-ux-bloco > summary h2 { flex: 1 1 auto; }
+.pc-lista-blocos, .pc-app.pc-app--novo :is(.pc-lit-campos, .pc-gov-campos, .pc-gov-lista):has(> .pc-lit-grupo):not(:has(> :not(.pc-lit-grupo))) { gap: 0; }
+.pc-app.pc-app--novo :is(.pc-lit-campos, .pc-gov-campos, .pc-gov-lista):has(> .pc-lit-grupo):not(:has(> :not(.pc-lit-grupo))) > .pc-lit-grupo { margin: 0; border-radius: 0; border-top-width: 0; }
+.pc-app.pc-app--novo :is(.pc-lit-campos, .pc-gov-campos, .pc-gov-lista):has(> .pc-lit-grupo):not(:has(> :not(.pc-lit-grupo))) > .pc-lit-grupo:first-child { border-top-width: 1px; border-start-start-radius: 12px; border-start-end-radius: 12px; }
+.pc-app.pc-app--novo :is(.pc-lit-campos, .pc-gov-campos, .pc-gov-lista):has(> .pc-lit-grupo):not(:has(> :not(.pc-lit-grupo))) > .pc-lit-grupo:last-child { border-end-start-radius: 12px; border-end-end-radius: 12px; }
+@media (max-width: 600px) {
+  .pc-app.pc-app--novo .pc-lit-grupo:not(.pc-rec-corpo) { padding: 0 16px; }
+  .pc-app.pc-app--novo .pc-lit-grupo:not(.pc-rec-corpo) > summary { padding-block: 8px; }
 }
+
+/* barra de ações: fixa no rodapé da janela, sem texto, com o mesmo container e o mesmo grid da área principal:
+   Voltar na borda esquerda da coluna da pergunta e Próximo na borda direita dela (no árabe, espelhado). */
+.pc-app.pc-app--novo .pr-questionframe-actions { margin: 0; }
+.pc-app.pc-app--novo .pr-questionframe-actions:not(:has(> :not(.pc-ux-acoes))) { display: contents; }
+.pc-app.pc-app--novo .pc-ux-acoes { display: contents; }
+.pc-app.pc-app--novo .pc-ux-barra-acoes { position: fixed; z-index: 40; inset-inline: 0; inset-block-end: var(--teclado-offset, 0px); display: block; min-height: 0; padding: 12px 0 max(12px, env(safe-area-inset-bottom)); border: 0; border-top: 1px solid var(--line); background: var(--surface-1); box-shadow: none; }
+.pc-ux-barra-botoes { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 0; }
+.pc-ux-barra-botoes > .pr-button { height: 48px; font-size: 16px; border-radius: 10px; }
+.pc-ux-barra-botoes > .pr-button--secondary { padding-inline: 24px; }
+.pc-ux-barra-botoes > .pr-button--primary { padding-inline: 32px; min-width: 160px; }
+.pc-app.pc-app--novo[data-barra-acoes] { padding-block-end: var(--pc-barra); }
+@media (max-width: 640px) {
+  .pc-app.pc-app--novo .pc-ux-barra-acoes { padding-block: 10px max(10px, env(safe-area-inset-bottom)); }
+  .pc-ux-barra-botoes { gap: 12px; }
+  .pc-ux-barra-botoes > .pr-button { flex: 1; min-width: 0; height: 46px; padding-inline: 12px; }
+  .pc-ux-barra-botoes > .pr-button--primary { flex: 2; min-width: 0; }
+}
+
+/* rodapé: dentro do container, alinhado ao conteúdo */
+.pc-rodape-wrap { flex: none; }
+.pc-app.pc-app--novo .pc-rodape { margin: 0; padding: 24px 0; border-top: 1px solid var(--line); background: none; max-width: none; display: flex; align-items: flex-start; gap: 20px; font-size: 13px; line-height: 18px; color: var(--muted); }
+.pc-app.pc-app--novo .pc-rodape-texto { max-width: 72ch; gap: 6px; }
+.pc-app.pc-app--novo .pc-rodape-vinculo { font-weight: 600; color: var(--ink-2); }
+.pc-app.pc-app--novo .pc-rodape-aviso { color: var(--ink-2); }
+.pc-app.pc-app--novo .pc-rodape-logo { block-size: 32px; inline-size: auto; }
+@media (max-width: 640px) { .pc-app.pc-app--novo .pc-rodape { flex-direction: column; gap: 12px; } }
 
 /* ---------- cartão do custo ---------- */
-.pc-coluna-custo { flex: 1 1 320px; max-width: 380px; display: flex; flex-direction: column; gap: 16px; position: sticky; inset-block-start: 16px; min-width: 0; }
+.pc-coluna-custo { display: flex; flex-direction: column; gap: 16px; position: sticky; inset-block-start: 24px; min-width: 0; }
 .pc-custo { background: var(--night); color: var(--on-night); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .pc-custo-cab { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .pc-custo-rotulo { margin: 0 0 8px; font-size: 13px; line-height: 18px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--on-night-3); }
@@ -123,7 +151,7 @@ a.pc-frente-pilula:hover { border-color: var(--primary); color: var(--ink); }
 .pc-custo-link:hover { border-color: var(--primary); color: var(--primary); }
 
 /* faixa do custo (celular e telas médias), logo abaixo do cabeçalho */
-.pc-faixa-custo-wrap { inline-size: 100%; max-width: 1240px; margin: 12px auto 0; padding-inline: 32px; }
+.pc-faixa-custo-wrap { margin-block-start: 12px; }
 .pc-faixa-custo { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: 12px; background: var(--night); color: var(--on-night); text-decoration: none; min-width: 0; }
 a.pc-faixa-custo:hover { color: var(--on-night); outline: 2px solid var(--primary); outline-offset: 2px; }
 .pc-faixa-custo-esq, .pc-faixa-custo-dir { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -134,7 +162,6 @@ a.pc-faixa-custo:hover { color: var(--on-night); outline: 2px solid var(--primar
 .pc-faixa-custo-dir .pc-custo-est { color: var(--on-night-est); }
 .pc-faixa-custo-rotulo { font-size: 13px; line-height: 18px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--on-night-3); }
 .pc-faixa-custo-total { font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere; }
-@media (max-width: 640px) { .pc-faixa-custo-wrap { padding-inline: 16px; } }
 
 /* ---------- tabela de recursos ---------- */
 .pc-rec { display: grid; gap: 12px; min-width: 0; }
@@ -217,3 +244,6 @@ a.pc-faixa-custo:hover { color: var(--on-night); outline: 2px solid var(--primar
   .pc-rec-todas { inline-size: 100%; text-align: center; }
 }
 @media print { .pc-cab-menu, .pc-coluna-custo, .pc-faixa-custo-wrap, .pc-cab-etapas { display: none !important; } }
+.pc-app.pc-app--novo[data-barra-acoes] .pc-main { padding: 0; }
+.pc-app.pc-app--novo .pc-pergunta .pr-optiongroup { max-width: none; }
+.pc-faixa-custo-dir { flex-direction: row; align-items: center; gap: 6px; }

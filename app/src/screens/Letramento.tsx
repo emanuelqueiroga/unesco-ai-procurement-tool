@@ -2,7 +2,7 @@ import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { progressoFrente } from '../percurso/frentes';
 import { GrupoFormulario } from './GrupoFormulario';
 import { AcoesPercurso } from './AcoesPercurso';
-import { useEffect, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { useCaso, telasDoCapitulo, telasAtivas, faltamDe, telaRespondida, type CasoStore, type Capitulo } from '../store';
 import { LOC, getLang } from '../domain';
 import { Button, TextField, OptionCard, OptionCardGroup, QuestionFrame, Alert, PlanPanel, PlanDrawer, useMediaQuery } from '../ui';
@@ -73,7 +73,7 @@ function CamposLit({ s, id, tentou }: { s: CasoStore; id: string; tentou: boolea
   return <div className="pc-lit-campos">{grupos.map((g, i) => {
     const conteudo = g.campos.map(f => <Escolha key={f.caminho} s={s} f={f} contexto={g.titulo} tentou={tentou} />);
     return g.titulo ? <GrupoLit key={g.id} titulo={t(g.titulo)} recolhivel={g.recolhivel} abrir={i === 0} estado={t('{n} de {total} respostas', { n: g.campos.filter(f => campoLitRespondido(s, f)).length, total: g.campos.length })}>{conteudo}</GrupoLit>
-      : <div className="pc-lit-campos" key={g.id}>{g.campos.map((f,j)=><GrupoFormulario key={f.caminho} titulo={rotuloLit(f.label)} estado={t(campoLitRespondido(s,f)?'Preenchido':'A preencher')} abrir={j===0} nome="letramento-grupos"><Escolha s={s} f={f} tentou={tentou} ocultarTitulo/></GrupoFormulario>)}</div>;
+      : <Fragment key={g.id}>{g.campos.map((f,j)=><GrupoFormulario key={f.caminho} titulo={rotuloLit(f.label)} estado={t(campoLitRespondido(s,f)?'Preenchido':'A preencher')} abrir={i===0&&j===0} nome="letramento-grupos"><Escolha s={s} f={f} tentou={tentou} ocultarTitulo/></GrupoFormulario>)}</Fragment>;
   })}</div>;
 }
 function OrcamentoLit({ s, tentou }: { s: CasoStore; tentou: boolean }) {
