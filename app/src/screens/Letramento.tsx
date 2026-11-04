@@ -11,7 +11,7 @@ import { ControlesTela } from '../percurso/Controles';
 import { CampoNumero } from '../percurso/CampoNumero';
 import { t, infoCapitulo, CURTO, TITULO_TELA, LEAD } from '../percurso/textos';
 import { href, ir, type Rota } from '../percurso/rota';
-import { publicosLetramento, selecoesLit, rotuloLit, alterarLit, lerLit, camposLetramento, campoLitRespondido, planoLetramento, orcamentoLetramento, TITULOS_LIT, telaLetramentoLegada, errosAlcance, sugestoesLit, valorCampoLit, somenteCurriculoLit, tituloDaTelaLit, L, type CampoLit } from '../percurso/letramento';
+import { publicosLetramento, selecoesLit, rotuloLit, alterarLit, lerLit, camposLetramento, campoLitRespondido, planoLetramento, orcamentoLetramento, TITULOS_LIT, telaLetramentoLegada, errosAlcance, valorCampoLit, somenteCurriculoLit, tituloDaTelaLit, L, type CampoLit } from '../percurso/letramento';
 import { entradaEtapaLit, vizinhosLit, selecionarLit, gruposCamposLit, pendenciasCamposLit, pendenciasCustosLit, rotuloVisivelLit, guiaTelaLit } from '../percurso/letramentoInterface';
 import { moedaGovernanca, orcamentoGovernanca, valorItemOrcamento, TELAS_OPCIONAIS } from '../percurso/governanca';
 import { CampoQuantidade, semValorComEstimativa, TotaisOrcamentoView } from './EstimativaReferencia';
@@ -19,6 +19,8 @@ import { linhasTotais, mesesPeriodo } from '../percurso/estimativasOrcamento';
 import { TabelaRecursos, resumoPeriodo, type LinhaRecurso } from './TabelaRecursos';
 import { primeiraFrase } from '../percurso/textos';
 import { focarPendencia } from '../percurso/navegacaoOrientada';
+import { usePadroes } from './usePadroes';
+import { ehSugerido } from '../percurso/padroesTeste';
 import './governanca.css';
 import './letramento.css';
 
@@ -81,24 +83,31 @@ function Participantes({ s }: { s: CasoStore }) {
     const ok = v.valor === '' || v.valor == null || typeof v.valor === 'number' && Number.isFinite(v.valor) && v.valor > 0 && (decimais || Number.isSafeInteger(v.valor));
     return <div className="pc-part-campo" id={campoId(caminho)}><CampoNumero label={c === 'horas' ? t('Horas por participante') : t('Participantes previstos')} value={v.situacao === 'a_levantar' ? '' : v.valor ?? ''} decimais={decimais}
       error={ok ? undefined : t(decimais ? 'Informe um número maior que zero.' : 'Informe um número inteiro maior que zero.')}
-      onChange={valor => gravar(s, caminho, { ...lerLit(useCaso.getState(), caminho), valor, situacao: 'informado', origem: 'informado' })} />{v.origem === 'sugerido' ? <span className="pc-sugerido">{t('sugerido')}</span> : null}</div>;
+      onChange={valor => gravar(s, caminho, { ...lerLit(useCaso.getState(), caminho), valor, situacao: 'informado', origem: 'informado' })} />{ehSugerido(s, 'letramento', caminho) ? <span className="pc-sugerido">{t('sugerido')}</span> : null}</div>;
   };
   return <div className="pc-part" id="lit-participantes" tabIndex={-1}>
     <div className="pc-part-cab" aria-hidden="true"><span>{t('Público')}</span><span>{t('Participantes previstos')}</span><span>{t('Horas por participante')}</span></div>
     {pubs.map(p => <div className="pc-part-linha" key={p.id} role="group" aria-label={t(p.nome)}><span className="pc-part-nome">{t(p.nome)}</span>{campo(p.id, 'participantes')}{campo(p.id, 'horas')}</div>)}
   </div>;
 }
-/** Escolas e etapas: etapas atendidas (com educação superior) e total de escolas, pré-preenchidos a partir do Contexto. */
+/** Escolas e etapas: etapas atendidas (com educação superior) e os totais da rede, pré-preenchidos a partir do Contexto;
+ *  os participantes de professores, estudantes e diretores saem destes totais. */
 function EscolasEtapas({ s }: { s: CasoStore }) {
   const f = camposLetramento(s).find(c => c.caminho === 'alcance.etapas'), ids = selecoesLit(s, 'alcance.etapas'), ve = lerLit(s, 'alcance.etapas') || {};
-  const v = lerLit(s, 'alcance.escolas') || {}, ok = v.valor === '' || v.valor == null || typeof v.valor === 'number' && Number.isSafeInteger(v.valor) && v.valor > 0;
+  const numero = (caminho: string, label: string) => {
+    const v = lerLit(s, caminho) || {}, ok = v.valor === '' || v.valor == null || typeof v.valor === 'number' && Number.isSafeInteger(v.valor) && v.valor > 0;
+    return <div className="pc-lit-campo pc-esc-num" id={campoId(caminho)} key={caminho}><CampoNumero label={t(label)} value={v.situacao === 'a_levantar' ? '' : v.valor ?? ''}
+      error={ok ? undefined : t('Informe um número inteiro maior que zero.')}
+      onChange={valor => gravar(s, caminho, { ...lerLit(useCaso.getState(), caminho), valor, situacao: 'informado', origem: 'informado' })} />{ehSugerido(s, 'letramento', caminho) ? <span className="pc-sugerido">{t('sugerido')}</span> : null}</div>;
+  };
   return <div className="pc-esc">
     <OptionCardGroup className="pc-lit-opcoes" label={t('Etapas atendidas')} type="checkbox">{(f?.opcoes || []).map(o => <OptionCard key={o.id} name="alcance.etapas" value={o.id} label={t(o.texto)} type="checkbox" checked={ids.includes(o.id)}
       onChange={(id, on) => gravar(s, 'alcance.etapas', { ...ve, escolhas: selecionarLit(ids, id, on, true), origem: 'informado' })} />)}</OptionCardGroup>
-    {ve.origem === 'sugerido' ? <p className="pc-sugerido">{t('sugerido')}</p> : null}
-    <div className="pc-esc-num" id={campoId('alcance.escolas')}><CampoNumero label={t('Total de escolas atendidas')} value={v.situacao === 'a_levantar' ? '' : v.valor ?? ''}
-      error={ok ? undefined : t('Informe um número inteiro maior que zero.')}
-      onChange={valor => gravar(s, 'alcance.escolas', { ...lerLit(useCaso.getState(), 'alcance.escolas'), valor, situacao: 'informado', origem: 'informado' })} />{v.origem === 'sugerido' ? <span className="pc-sugerido">{t('sugerido')}</span> : null}</div>
+    <div className="pc-esc-nums">
+      {numero('alcance.estudantes', 'Total de estudantes')}
+      {numero('alcance.professores', 'Total de professores')}
+      {numero('alcance.escolas', 'Total de escolas atendidas')}
+    </div>
   </div>;
 }
 function OrcamentoLit({ s, tentou }: { s: CasoStore; tentou: boolean }) {
@@ -118,7 +127,7 @@ function OrcamentoLit({ s, tentou }: { s: CasoStore; tentou: boolean }) {
       respondido: i.respondido,
       topo: adicional ? <Escolha s={s} f={adicional} contexto={i.nome} tentou={tentou} /> : undefined,
       origem: v.situacao === 'compartilhado' ? <OptionCardGroup invalid={tentou&&!i.respondido} className="pc-lit-opcoes" label={t(L('Item de origem na governança', 'Source item under governance'))}>{gov.itens.map(g => <OptionCard key={g.id} name={caminho + '.referencia'} value={g.id} label={g.nome} checked={v.referencia === g.id} onChange={id => salvar({ ...lerLit(useCaso.getState(), caminho), referencia: id })} />)}</OptionCardGroup> : undefined,
-      quantidades: i.id === 'equipe' ? <CampoQuantidade id={campoId('orcamento.quantidades.equipeFte')} label={t('Pessoas na equipe (equivalente em tempo integral)')} decimais value={lerLit(s, 'orcamento.quantidades.equipeFte')} onChange={valor => gravar(s, 'orcamento.quantidades.equipeFte', valor)} /> : undefined,
+      quantidades: i.id === 'equipe' ? <CampoQuantidade id={campoId('orcamento.quantidades.equipeFte')} label={t('Pessoas na equipe (equivalente em tempo integral)')} decimais value={lerLit(s, 'orcamento.quantidades.equipeFte')} onChange={valor => gravar(s, 'orcamento.quantidades.equipeFte', valor)} sugerido={ehSugerido(s, 'letramento', 'orcamento.quantidades.equipeFte')} /> : undefined,
       detalhe: String(v.detalhe || ''),
       onSituacao: id => salvar({ ...lerLit(useCaso.getState(), caminho), situacao: id }),
       onValor: valor => salvar({ ...lerLit(useCaso.getState(), caminho), valor }),
@@ -150,10 +159,7 @@ export function Letramento({ rota }: { rota: Rota }) {
   const s = useCaso(), n: Capitulo = ['abertura', 'pergunta', 'sintese'].includes(rota.tipo) ? (rota as { n: Capitulo }).n : 3;
   const [tentou, setTentou] = useState(false);
   const telaAtual = rota.tipo === 'pergunta' ? rota.tela : '';
-  useEffect(() => {
-    if (!['lit-escolas', 'lit-participantes'].includes(telaAtual)) return;
-    for (const sug of sugestoesLit(useCaso.getState())) gravar(useCaso.getState(), sug.caminho, { ...(lerLit(useCaso.getState(), sug.caminho) || {}), ...sug.valor });
-  }, [telaAtual]);
+  usePadroes('letramento', telaAtual.startsWith('lit-'));
   const lista = telasDoCapitulo(n, s), telas = telasAtivas(s), ativa = rota.tipo === 'pergunta' ? lista.find(q => q.id === rota.tela) : undefined;
   const legado = rota.tipo === 'pergunta' ? telaLetramentoLegada(rota.tela) : '';
   const alvo = telas.find(q => q.id === legado) || telas.find(q => q.id === TELAS_FORA_DO_FLUXO[legado]) || telas.find(q => q.id === 'lit-recursos');

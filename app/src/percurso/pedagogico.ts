@@ -1,6 +1,6 @@
 import type { Estado14 } from "../store/tipos";
 import { problemasMarcados, PROBLEMA_POR_ID } from "../domain/prioridades.js";
-import { OPC, etapasAtivas, alunosEtapa } from "../domain";
+import { OPC, etapasAtivas, alunosEtapa, ALUNOS_POR_PROF } from "../domain";
 import { orcamentoLetramento, alterarLit } from "./letramento";
 import { nomePais, paisDoCaso } from "../domain/pais.js";
 import { LOC } from "../domain/i18n.js";
@@ -512,7 +512,7 @@ export function camposEd(s: EstadoEd): CampoEd[] {
     grupo?: string,
   ) =>
     // versão de teste: telas enxutas sem a opção "Informação a levantar" (campo sem resposta já fica pendente)
-    fs.push({ tela, caminho, label, opcoes: tela === "ed-intervencao" || tela === "ed-tecnologia" ? op(ops) : [...op(ops), P], multipla, grupo });
+    fs.push({ tela, caminho, label, opcoes: ["ed-intervencao", "ed-tecnologia"].includes(tela) || caminho === "orcamento.periodo" ? op(ops) : [...op(ops), P], multipla, grupo });
   const num = (
     tela: string,
     caminho: string,
@@ -1379,9 +1379,12 @@ export function quantidadesEd(s: EstadoEd, tela: string) {
 }
 /** Total do Contexto sugerido para os usuários da ferramenta (estudantes das etapas escolhidas); null sem sugestão. */
 export function usuariosSugeridosEd(s: EstadoEd): number | null {
-  if (!idsEd(s, "usoIA.quem").includes("estudantes")) return null;
-  const total = etapasAtivas(s.ctx).reduce((n: number, et: any) => n + alunosEtapa(s.ctx, et[0]), 0);
-  return total > 0 ? total : null;
+  const quem = idsEd(s, "usoIA.quem");
+  const alunos = etapasAtivas(s.ctx).reduce((n: number, et: any) => n + alunosEtapa(s.ctx, et[0]), 0);
+  if (!quem.length || alunos <= 0) return null;
+  // professores: 1 para cada 25 estudantes (premissa ilustrativa da ferramenta)
+  const prof = Math.max(1, Math.round(alunos / ALUNOS_POR_PROF));
+  return quem.includes("ambos") ? alunos + prof : quem.includes("estudantes") ? alunos : prof;
 }
 /** Usuários da ferramenta: o número digitado, senão o total sugerido pelo Contexto. */
 export function usuariosIAEd(s: EstadoEd): number | null {

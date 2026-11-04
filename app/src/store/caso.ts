@@ -130,6 +130,8 @@ export interface CasoStore extends Estado14 {
 
   responder(campo: string, valor: any): void;
   sugerir(campo: string, valor: any, deQuem: string): void;
+  /** versão de teste: grava valores pré-preenchidos sem marcar como informados nem mudar a posição */
+  preencher(escritas: { campo: string; valor: any }[]): void;
   confirmar(campo: string): void;
   refinar(campo: string, valor: any): void;
   /** governança (1.3.x): resposta e, se houver, os detalhes de "Sim"/"Em parte" */
@@ -292,6 +294,12 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     const tocados = propagar(e);
     proximaTela(e, campo);
     set({ ...e, recente: recenteDe(campo, tocados) });
+  },
+  preencher(escritas) {
+    if (!escritas.length) return;
+    const e = copiar(get());
+    for (const { campo, valor } of escritas) gravar(e, campo, valor);
+    set({ ...e });
   },
   sugerir(campo, valor, deQuem) {
     const e = copiar(get());

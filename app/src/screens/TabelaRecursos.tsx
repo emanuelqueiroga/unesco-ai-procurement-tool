@@ -177,7 +177,7 @@ export function TabelaRecursos({ s, linhas, moeda, tela, tentou, contexto, dispo
       {linhas.map(l => <Linha key={l.id} s={s} l={l} moeda={moeda} tela={tela} tentou={tentou} aberta={aberta === l.id} onAbrir={v => setAberta(v ? l.id : a => a === l.id ? null : a)} />)}
       <div className="pc-rec-rodape">
         {disponiveis ? <button type="button" className="pc-rec-todas" onClick={onUsarTodas}>{t('Usar a estimativa nos itens sem valor ({n})', { n: disponiveis })}</button> : <span />}
-        <Button variant="link" onClick={onAdicionar}>{t('Adicionar recurso +')}</Button>
+        <Button variant="link" onClick={onAdicionar}>{t('Adicionar outro recurso')}</Button>
       </div>
     </div>
   </div>;

@@ -64,7 +64,7 @@ describe('v015: fluxo nacional de letramento e currículo',()=>{
   expect(S().caso.usuarios).toEqual([]);expect(S().caso.tarefas).toEqual([]);
  });
  it('informações a levantar permitem responder, mantendo pendências e plano parcial',()=>{
-  iniciar();for(const f of camposLetramento(S()))g(f.caminho,f.numero?{situacao:'a_levantar'}:{escolhas:['_pendente']});
+  iniciar();for(const f of camposLetramento(S()))g(f.caminho,f.numero?{situacao:'a_levantar'}:{escolhas:[f.opcoes?.some(o=>o.id==='_pendente')?'_pendente':f.opcoes![0].id]}); // versão de teste: o período não tem mais "a levantar"
   for(const [id] of custosLetramento(S()))g('orcamento.itens.'+id,{situacao:'a_estimar'});
   expect(faltamDe(S())).toEqual([]);expect(planoLetramento(S()).pendentes).toBeGreaterThan(0);
   expect(planoLetramento(S()).proxima).toMatch(/pendências/);expect(orcamentoLetramento(S()).total).toBeNull();

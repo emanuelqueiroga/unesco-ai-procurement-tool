@@ -8,7 +8,7 @@
  "Usar estimativa": "Use estimate",
  "Custeado na governança": "Funded under governance",
  "Custeado no letramento": "Funded under AI literacy",
- "Adicionar recurso +": "Add resource +",
+ "Adicionar outro recurso": "Add another resource",
  "custeado em {frente}": "funded under {frente}",
  "Custo desta frente": "Cost of this workstream",
  "Custo deste projeto": "Cost of this project",
@@ -65,5 +65,9 @@
  "Escolas e etapas": "Schools and levels",
  "Total de escolas atendidas": "Number of schools served",
  "Os valores vêm do Contexto; altere se precisar.": "Values come from the Context; change them if needed.",
- "Os valores sugeridos vêm do Contexto; altere se precisar.": "Suggested values come from the Context; change them if needed."
+ "Os valores sugeridos vêm do Contexto; altere se precisar.": "Suggested values come from the Context; change them if needed.",
+ "Os participantes saem destes totais; altere se precisar.": "Participants are derived from these totals; change them if needed.",
+ "Valores sugeridos a partir dos totais; altere se precisar.": "Values suggested from the totals; change them if needed.",
+ "Total de estudantes": "Number of students",
+ "Total de professores": "Number of teachers"
 }

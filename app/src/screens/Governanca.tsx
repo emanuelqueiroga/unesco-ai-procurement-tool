@@ -1,4 +1,6 @@
 import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
+import { usePadroes } from './usePadroes';
+import { ehSugerido } from '../percurso/padroesTeste';
 import { GrupoFormulario, ValidacaoCampos } from './GrupoFormulario';
 import { AcoesPercurso } from './AcoesPercurso';
 import { frentesDoPlano,frenteAtual } from '../percurso/frentes';
@@ -105,7 +107,7 @@ function EquipeFormacao({ s }: { s: CasoStore }) {
   const escolher = (id: string) => { s.responder('govSelecoes', { ...useCaso.getState().ctx.govSelecoes, [campo]: [id] }); s.responder(campo, textoSelecaoGov(useCaso.getState(), campo, [id], '')); };
   const q = (c: string) => 'govOrcamento.quantidades.' + c;
   const quantidade = (c: string, label: string, decimais = false) => <CampoQuantidade key={c} id={'gov-' + q(c).replace(/[^a-zA-Z0-9_-]/g, '-')} label={t(label)} decimais={decimais} dica={false}
-    value={gv(s, q(c))} onChange={v => s.responder(q(c), v)} />;
+    value={gv(s, q(c))} onChange={v => s.responder(q(c), v)} sugerido={ehSugerido(s, 'governanca', 'quantidades.' + c)} />;
   return <div className="pc-curto">
     <section id="gov-govOrcamento-periodo" tabIndex={-1} className="pc-lit-campo"><h2 className="pc-lit-campo-titulo">{t('Período do orçamento')}</h2><OptionCardGroup className="pc-lit-opcoes" label={t('Período do orçamento')}>{opcoes.map(o => <OptionCard key={o.id} name={campo} value={o.id} label={t(o.texto)} checked={ids.includes(o.id)} onChange={escolher} />)}</OptionCardGroup></section>
     <div className="pc-curto-numeros">
@@ -197,6 +199,7 @@ export function Governanca({ rota }: { rota: Rota }) {
  const lista=telasDoCapitulo(n,s),qs=telasAtivas(s),ativa=rota.tipo==='pergunta'?lista.find(q=>q.id===rota.tela):undefined,legada=rota.tipo==='pergunta'?telaGovernancaLegada(rota.tela):null;
  const alvo=legada?qs.find(q=>q.id===legada.id):undefined;
  const remap=rota.tipo==='plano'?null:rota.tipo==='refinar'?href.pergunta(3,'gov-recursos'):rota.tipo==='abertura'?entradaEtapa(s,n):rota.tipo==='sintese'?n<4?entradaEtapa(s,(n+1) as Capitulo):href.plano():!ativa?alvo?href.pergunta(alvo.capitulo,alvo.id):entradaEtapa(s,n):null;
+ usePadroes('governanca',rota.tipo==='pergunta'&&rota.tela.startsWith('gov-'));
  useEffect(()=>{if(remap)window.location.replace(remap);},[remap]);if(remap)return null;
  if(rota.tipo==='plano')return <Shell plano={false}><PlanoGov s={s}/></Shell>;
  if(!ativa)return null;

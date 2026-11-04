@@ -1,4 +1,6 @@
 import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
+import { usePadroes } from "./usePadroes";
+import { ehSugerido } from "../percurso/padroesTeste";
 import { progressoFrente } from '../percurso/frentes';
 import { GrupoFormulario } from './GrupoFormulario';
 import { AcoesPercurso } from './AcoesPercurso';
@@ -237,7 +239,8 @@ function Resumo({ s }: { s: CasoStore }) {
 function QuantidadesEd({ s, id }: { s: CasoStore; id: string }) {
   const q = (c: string) => "orcamento.quantidades." + c;
   const campo = (c: string, label: string, decimais = false, valor?: unknown) => (
-    <CampoQuantidade key={c} id={ident(q(c))} label={t(label)} decimais={decimais} dica={false} value={valor ?? lerEd(s, q(c))} onChange={(v) => gravar(s, q(c), v)} />
+    <CampoQuantidade key={c} id={ident(q(c))} label={t(label)} decimais={decimais} dica={false} value={valor ?? lerEd(s, q(c))} onChange={(v) => gravar(s, q(c), v)}
+      sugerido={c === "usuarios" ? !lerEd(s, q(c)) && valor != null : ehSugerido(s, "educacao", q(c))} />
   );
   if (id === "ed-intervencao") return <div className="pc-curto-numeros">{campo("profissionais", "Profissionais a formar")}{campo("horasProfissional", "Horas por profissional", true)}</div>;
   if (id === "ed-tecnologia") return <div className="pc-curto-numeros">{campo("usuarios", E("Usuários da ferramenta", "Tool users"), false, lerEd(s, q("usuarios")) ?? usuariosSugeridosEd(s) ?? undefined)}</div>;
@@ -296,7 +299,7 @@ function Orcamento({ s, tentou }: { s: CasoStore; tentou: boolean }) {
       ) : undefined,
       quantidades: i.id === "equipe" ? (
         <CampoQuantidade id={ident("orcamento.quantidades.equipeFte")} label={t("Pessoas na equipe (equivalente em tempo integral)")} decimais
-          value={lerEd(s, "orcamento.quantidades.equipeFte")} onChange={(valor) => gravar(s, "orcamento.quantidades.equipeFte", valor)} />
+          value={lerEd(s, "orcamento.quantidades.equipeFte")} onChange={(valor) => gravar(s, "orcamento.quantidades.equipeFte", valor)} sugerido={ehSugerido(s, "educacao", "orcamento.quantidades.equipeFte")} />
       ) : undefined,
       detalhe: String(v.detalhe || ""),
       onSituacao: (situacao) => novo({ situacao }),
@@ -415,6 +418,7 @@ export function Educacao({ rota }: { rota: Rota }) {
       rota.tipo === "pergunta" ? qs.find((q) => q.id === rota.tela) : undefined,
     idLegado = rota.tipo === "pergunta" ? telaEdLegada(rota.tela) : "",
     legado = qs.find((q) => q.id === idLegado);
+  usePadroes("educacao", rota.tipo === "pergunta" && rota.tela.startsWith("ed-"));
   const fallback: Record<string, string> = { ...TELAS_FORA_DO_FLUXO, "ed-tecnologia": "ed-intervencao" },
     alternativa = qs.find((q) => q.id === TELAS_FORA_DO_FLUXO[idLegado]) || qs.find((q) => q.id === fallback[idLegado]) || qs.find((q) => q.id === TELAS_FORA_DO_FLUXO[rota.tipo === "pergunta" ? rota.tela : ""]);
   const remap =

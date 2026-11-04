@@ -301,4 +301,5 @@ a.pc-faixa-custo:hover { color: var(--on-night); outline: 2px solid var(--primar
 /* versão de teste: valores sugeridos a partir do Contexto */
 .pc-sugerido { display: inline-block; margin-block-start: 4px; font-size: 13px; line-height: 18px; color: var(--accent-ink, var(--muted)); }
 .pc-esc { display: flex; flex-direction: column; gap: 24px; }
-.pc-esc-num { max-width: 280px; }
+.pc-esc-nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; align-items: start; }
+.pc-esc-num { min-width: 0; }

@@ -56,12 +56,15 @@ export function camposLetramento(s: Estado): CampoLit[] {
  if (telasLetramento(s).includes('lit-escolas')) {
   campos.push({tela:'lit-escolas',caminho:'alcance.etapas',label:L('Etapas atendidas','Education levels served'),opcoes:(ETAPAS_ENS as any[]).map(([id,nome]:string[])=>({id,texto:nome})),multipla:true,opcional:true});
   n('lit-escolas','alcance.escolas',L('Total de escolas atendidas','Number of schools served'));
+  n('lit-escolas','alcance.estudantes',L('Total de estudantes','Number of students'));
+  n('lit-escolas','alcance.professores',L('Total de professores','Number of teachers'));
  }
  for (const p of publicosLetramento(s)) {
   n('lit-participantes',`publicos.${p.id}.participantes`,L('Participantes previstos','Planned participants')+' · '+t(p.nome));
   n('lit-participantes',`publicos.${p.id}.horas`,L('Horas previstas por participante','Planned hours per participant')+' · '+t(p.nome),'decimal');
  }
- f('lit-recursos','orcamento.periodo',L('Período do orçamento','Budget period'),[o('12','Próximos 12 meses após aprovação','Next 12 months after approval'),o('24','Próximos 24 meses após aprovação','Next 24 months after approval')]);
+ // versão de teste: o período já vem em 12 meses; sem a opção "Informação a levantar"
+ campos.push({tela:'lit-recursos',caminho:'orcamento.periodo',label:L('Período do orçamento','Budget period'),opcoes:[o('12','Próximos 12 meses após aprovação','Next 12 months after approval'),o('24','Próximos 24 meses após aprovação','Next 24 months after approval')]});
  for (const id of adicionaisAtivos(s)) f('lit-recursos',`orcamento.adicionais.${id}.nome`,L('Tipo do recurso adicional','Additional resource type'),[o('transporte','Transporte e participação','Travel and participation'),o('certificacao','Certificação','Certification'),o('outro','Recurso adicional','Additional resource')]);
  return campos;
 }
