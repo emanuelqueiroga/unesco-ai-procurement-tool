@@ -55,12 +55,13 @@ describe('v015: panorama, progresso e controles acessíveis',()=>{
  // Teste de layout (mockup aprovado em 02/11/2026): a etapa e a tela dentro dela passam para a barra de etapas do
  // cabeçalho ("nome · 1 de 2"); acima do título fica a posição da pergunta no percurso ("Pergunta n de m").
  it('comunica a pergunta no percurso e, na barra de etapas, a etapa e a tela',()=>{
-  S().responder('prioridades',['sobre']);
-  const html=renderToString(<ProgressoPergunta s={S()} n={2} id="lit-diagnostico"/>);
+  // fluxos enxutos: três etapas (Contexto · Participantes · Orçamento); etapa com uma tela só não mostra "1 de 1"
+  S().responder('prioridades',['sobre']);S().responder('problemas',['A11']);
+  const html=renderToString(<ProgressoPergunta s={S()} n={2} id="lit-participantes"/>);
   expect(html).toMatch(/Pergunta \d+ de \d+/);expect(html).not.toContain('Etapa');
-  const etapas=etapasDaFrente(S(),{capitulo:2,tela:'lit-diagnostico'});
-  expect(etapas).toHaveLength(4);
-  expect(etapas.find(e=>e.state==='current')).toMatchObject({n:2,position:'1 de 2',progress:0.5});
+  const etapas=etapasDaFrente(S(),{capitulo:2,tela:'lit-participantes'});
+  expect(etapas.map(e=>e.label)).toEqual(['Contexto','Participantes','Orçamento']);
+  expect(etapas.find(e=>e.state==='current')).toMatchObject({n:2,position:undefined,progress:1});
  });
  it('associa o erro ao grupo e aos controles que recebem foco',()=>{
   const html=renderToString(<OptionCardGroup label="Situação" invalid describedBy="erro-situacao"><OptionCard name="situacao" value="nao" checked={false} label="Não existe"/></OptionCardGroup>);

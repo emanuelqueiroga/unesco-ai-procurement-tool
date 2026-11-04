@@ -1,7 +1,7 @@
 // E conserva o par PT/EN para a extração das traduções desta revisão.
 export const E = (pt: string, _en: string) => pt;
 export const TITULOS_ED: Record<string, string> = {
-  "ed-intervencao": E("Intervenção educacional", "Educational intervention"),
+  "ed-intervencao": E("Intervenção", "Intervention"),
   "ed-objetivos": E(
     "Objetivos e resultados esperados",
     "Objectives and expected outcomes",
@@ -12,10 +12,10 @@ export const TITULOS_ED: Record<string, string> = {
     "How will the intervention be evaluated?",
   ),
   "ed-teste": E("Escopo da validação", "Validation scope"),
-  "ed-tecnologia": E("Uso de IA e salvaguardas", "AI use and safeguards"),
+  "ed-tecnologia": E("Uso de IA", "AI use"),
   "ed-digital": E("Condições digitais", "Digital conditions"),
   "ed-execucao": E("Execução e participantes", "Delivery and participants"),
-  "ed-recursos": E("Recursos da intervenção", "Intervention resources"),
+  "ed-recursos": E("Orçamento", "Budget"),
   "ed-acompanhamento": E(
     "Acompanhamento dos resultados",
     "Monitoring outcomes",

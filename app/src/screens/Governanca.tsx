@@ -14,7 +14,7 @@ import { ControlesTela } from '../percurso/Controles';
 import { CampoNumero } from '../percurso/CampoNumero';
 import { CURTO, TITULO_TELA, infoCapitulo, t } from '../percurso/textos';
 import { href, ir, type Rota } from '../percurso/rota';
-import { telaGovernancaLegada, desafiosGovernanca, acoesGovernanca, planoGovernanca, orcamentoGovernanca, moedaGovernanca, valorItemOrcamento, temSandbox, CUSTOS_GOV, CAMPOS_SANDBOX, INSTRUMENTOS_GOV, pendenciasGov } from '../percurso/governanca';
+import { TELAS_OPCIONAIS, telaGovernancaLegada, desafiosGovernanca, acoesGovernanca, planoGovernanca, orcamentoGovernanca, moedaGovernanca, valorItemOrcamento, temSandbox, CUSTOS_GOV, CAMPOS_SANDBOX, INSTRUMENTOS_GOV, pendenciasGov } from '../percurso/governanca';
 import { CampoQuantidade, semValorComEstimativa, TotaisOrcamentoView } from './EstimativaReferencia';
 import { linhasTotais, mesesPeriodo } from '../percurso/estimativasOrcamento';
 import { TabelaRecursos, resumoPeriodo, type LinhaRecurso } from './TabelaRecursos';
@@ -45,9 +45,6 @@ function Texto({ s, campo, label, ocultarTitulo=false }: { s: CasoStore; campo: 
     {faltando?<p id={erroId} className="pc-lit-erro">{t('Selecione uma opção ou indique a informação a levantar.')}</p>:null}
     {def.evidencia ? <p className="pc-nota">{t('Selecione o tipo de evidência. Você pode identificar o documento nas informações adicionais.')}</p> : null}
     {campo.endsWith('.prazo') ? <p className="pc-nota">{t('Prazos contados a partir da aprovação do plano.')}</p> : null}
-    <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}{detalhe ? <span> · {t('Informações adicionadas')}</span> : null}</summary>
-      <TextField label={t('Informações adicionais: {campo}', { campo: t(label) })} multiline value={detalhe} onChange={v => gravar(ids, v)} />
-    </details>
   </section>;
 }
 function Grupo({ s, base, campos }: { s: CasoStore; base: string; campos: readonly (readonly [string, string])[] }) {
@@ -84,17 +81,12 @@ function linhaGov(s: CasoStore, i: ReturnType<typeof orcamentoGovernanca>['itens
   const base = extra === null ? 'govOrcamento.itens.' + i.id : `govOrcamento.extras.${extra}`;
   const item = gv(s, base) || {}, situacao = String(item.situacao || (typeof item.valor === 'number' ? 'informado' : ''));
   const emUso = !!i.referencia, valido = typeof item.valor === 'number' && Number.isFinite(item.valor) && item.valor >= 0;
-  const q = (campo: string) => 'govOrcamento.quantidades.' + campo;
-  const quantidade = (campo: string, label: string, decimais = false) => <CampoQuantidade key={campo} id={'gov-' + q(campo).replace(/[^a-zA-Z0-9_-]/g, '-')} label={t(label)} decimais={decimais}
-    value={gv(s, q(campo))} onChange={v => s.responder(q(campo), v)} />;
   const atual = s.ctx.govOrcamento || {};
   return {
     id: i.id, ancora: 'gov-' + base.replace(/[^a-zA-Z0-9_-]/g, '-'), nome: i.nome,
     situacao, valor: item.valor, estimativa: extra === null ? i.estimativa : null, emUso,
     respondido: ['a_estimar', 'sem_custo'].includes(situacao) || emUso || situacao === 'informado' && valido,
     topo: extra === null ? undefined : <Texto s={s} campo={`govOrcamento.extras.${extra}.nome`} label="Recurso adicional" />,
-    quantidades: i.id === 'equipe' ? quantidade('equipeFte', 'Pessoas na equipe (equivalente em tempo integral)', true)
-      : i.id === 'formacao' ? <>{quantidade('servidores', 'Servidores a formar')}{quantidade('horasServidor', 'Horas por servidor', true)}</> : undefined,
     detalhe: String(item.detalhe || ''),
     onSituacao: id => { s.responder('govOrcamento.moeda', moeda); s.responder(base + '.situacao', id); },
     onValor: v => { s.responder('govOrcamento.moeda', moeda); s.responder(base + '.valor', v); s.responder(base + '.situacao', 'informado'); },
@@ -106,13 +98,29 @@ function linhaGov(s: CasoStore, i: ReturnType<typeof orcamentoGovernanca>['itens
     },
   };
 }
+/** Equipe e formação: período e as três quantidades que alimentam as estimativas de equipe e formação. Tudo opcional. */
+function EquipeFormacao({ s }: { s: CasoStore }) {
+  const campo = 'govOrcamento.periodo', def = presetGovernanca(s, campo), ids = selecoesGov(s, campo);
+  const opcoes = def.opcoes.filter(o => ['Próximos 12 meses', 'Próximos 24 meses'].includes(o.texto) || ids.includes(o.id) && o.id !== 'a_definir');
+  const escolher = (id: string) => { s.responder('govSelecoes', { ...useCaso.getState().ctx.govSelecoes, [campo]: [id] }); s.responder(campo, textoSelecaoGov(useCaso.getState(), campo, [id], '')); };
+  const q = (c: string) => 'govOrcamento.quantidades.' + c;
+  const quantidade = (c: string, label: string, decimais = false) => <CampoQuantidade key={c} id={'gov-' + q(c).replace(/[^a-zA-Z0-9_-]/g, '-')} label={t(label)} decimais={decimais} dica={false}
+    value={gv(s, q(c))} onChange={v => s.responder(q(c), v)} />;
+  return <div className="pc-curto">
+    <section id="gov-govOrcamento-periodo" tabIndex={-1} className="pc-lit-campo"><h2 className="pc-lit-campo-titulo">{t('Período do orçamento')}</h2><OptionCardGroup className="pc-lit-opcoes" label={t('Período do orçamento')}>{opcoes.map(o => <OptionCard key={o.id} name={campo} value={o.id} label={t(o.texto)} checked={ids.includes(o.id)} onChange={escolher} />)}</OptionCardGroup></section>
+    <div className="pc-curto-numeros">
+      {quantidade('equipeFte', 'Pessoas na equipe (tempo integral)', true)}
+      {quantidade('servidores', 'Servidores a formar')}
+      {quantidade('horasServidor', 'Horas por servidor', true)}
+    </div>
+  </div>;
+}
 function Orcamento({ s, tentou }: { s: CasoStore; tentou: boolean }) {
   const o = orcamentoGovernanca(s), atual = s.ctx.govOrcamento || {};
   const disponiveis = semValorComEstimativa(o.itens, i => i.referencia);
   const linhas = o.itens.map(i => linhaGov(s, i, o.moeda, i.id.startsWith('extra-') ? Number(i.id.slice(6)) : null));
   return <TabelaRecursos s={s} linhas={linhas} moeda={o.moeda} tela="gov-recursos" tentou={tentou}
-    contexto={{ resumo: resumoPeriodo(mesesPeriodo('governanca', s), o.periodo, o.moeda), completo: !!(gv(s, 'govOrcamento.periodo') && gv(s, 'govOrcamento.fonte')),
-      campos: <Grupo s={s} base="govOrcamento" campos={[['periodo', 'Período do orçamento'], ['fonte', 'Fonte dos valores']]} /> }}
+    contexto={{ resumo: resumoPeriodo(mesesPeriodo('governanca', s), o.periodo, o.moeda), completo: true, href: href.pergunta(2, 'gov-equipe'), campos: null }}
     disponiveis={disponiveis.length}
     onUsarTodas={() => { s.responder('govOrcamento.moeda', o.moeda); for (const i of disponiveis) s.responder('govOrcamento.itens.' + i.id + '.situacao', 'referencia'); }}
     onAdicionar={() => { const n = (atual.extras || []).length; s.responder('govOrcamento.extras', [...(atual.extras || []), { nome:'', valor:'', detalhe:'' }]); requestAnimationFrame(() => focarPendencia('gov-govOrcamento-extras-' + n)); }} />;
@@ -153,6 +161,7 @@ function ControlesGov({ s, id, tentou = false }: { s: CasoStore; id: string; ten
     case 'gov-capacidade': return <Grupo s={s} base="govCapacidade" campos={[
       ['equipe', 'Equipe e competências necessárias'], ['formacao', 'Formação institucional'], ['orientacao', 'Orientação às instituições'], ['supervisao', 'Supervisão e acompanhamento'], ['incidentes', 'Resposta a incidentes e reclamações'],
     ]} />;
+    case 'gov-equipe': return <EquipeFormacao s={s} />;
     case 'gov-recursos': return <Orcamento s={s} tentou={tentou} />;
     case 'gov-sandbox': return <Grupo s={s} base="govSandbox" campos={CAMPOS_SANDBOX} />;
     case 'gov-revisao': return <Grupo s={s} base="govRevisao" campos={[
@@ -179,7 +188,7 @@ function PlanoGov({ s }: { s: CasoStore }) {
     <ResultadoOrcamento s={s} /><PDFs s={s} /><AtalhoLeituraSimples/>
     {faltam.length ? <details className="pc-gov-card" open><summary>{t('Respostas que faltam')} ({faltam.length})</summary><ul>{faltam.map(q => <li key={q.id}><a href={href.pergunta(q.capitulo, q.id)}>{t(CURTO[q.id] || q.id)}</a></li>)}</ul></details> : null}
     {p.blocos.map((b, i) => <section className="pc-gov-card" key={i}><h2>{b.titulo}</h2><dl className="pc-gov-dados">{b.linhas.map((l, j) => <div key={j}><dt>{l.rotulo}</dt><dd>{l.valor}</dd></div>)}</dl></section>)}
-    <p><Button variant="secondary" href={href.pergunta(4, 'gov-revisao')}>{t('Voltar')}</Button></p><LeituraSimples s={s}/>
+    <p><Button variant="secondary" href={href.pergunta(3, 'gov-recursos')}>{t('Voltar')}</Button></p><LeituraSimples s={s}/>
   </div>;
 }
 // Links e posições antigas são remapeados; as respostas antigas continuam guardadas no caso.
@@ -191,10 +200,10 @@ export function Governanca({ rota }: { rota: Rota }) {
  useEffect(()=>{if(remap)window.location.replace(remap);},[remap]);if(remap)return null;
  if(rota.tipo==='plano')return <Shell plano={false}><PlanoGov s={s}/></Shell>;
  if(!ativa)return null;
- const id=ativa.id,info=infoCapitulo(n,s),dest=vizinhos(s,id),falta=!telaRespondida(s,ativa),pendencias=pendenciasGov(s,id);
+ const id=ativa.id,info=infoCapitulo(n,s),dest=vizinhos(s,id),falta=!TELAS_OPCIONAIS.includes(id)&&!telaRespondida(s,ativa),pendencias=pendenciasGov(s,id);
  const focar=(p:string)=>focarPendencia('gov-'+p.replace(/[^a-zA-Z0-9_-]/g,'-'));
  const avancar=()=>{if(!falta){ir(dest.proxima);return;}setTentou(true);requestAnimationFrame(()=>pendencias.length?focar(pendencias[0].caminho):focarPendencia('gov-validacao'));};
- return <Shell pos={{capitulo:n,tela:id}} contexto={t(info.titulo)}><div className="pc-pergunta" data-tela={id}><QuestionFrame title={t(TITULO_TELA[id]||CURTO[id]||id)}
+ return <Shell pos={{capitulo:n,tela:id}} contexto={t(info.titulo)}><div className="pc-pergunta" data-tela={id}><QuestionFrame title={t(TITULO_TELA[id]||CURTO[id]||id)} explanation={id==='gov-equipe'?t('Opcional: estes números alimentam as estimativas de equipe e formação.'):undefined}
  actions={<AcoesPercurso anterior={dest.anterior} avancar={avancar}/>}>
  {tentou&&falta?<div id="gov-validacao" className="pc-lit-validacao" role="alert" tabIndex={-1}><b>{t('Complete as respostas indicadas ou marque as informações a levantar.')}</b><ul>{pendencias.slice(0,3).map(p=><li key={p.caminho}><a href="#gov-validacao" onClick={e=>{e.preventDefault();focar(p.caminho);}}>{t(p.label)}</a></li>)}{!pendencias.length?<li>{t(id==='problemas'?'Selecione os desafios do plano e informe os totais da rede.':id==='local'?'Escolha o país para avançar.':'Selecione ao menos uma prioridade.')}</li>:null}</ul>{pendencias.length>3?<details><summary>{t('Ver outras {n} pendências',{n:pendencias.length-3})}</summary><ul>{pendencias.slice(3).map(p=><li key={p.caminho}><a href="#gov-validacao" onClick={e=>{e.preventDefault();focar(p.caminho);}}>{t(p.label)}</a></li>)}</ul></details>:null}</div>:null}
  <div className="pc-lit-campos"><ValidacaoCampos.Provider value={tentou}><ControlesGov s={s} id={id} tentou={tentou}/></ValidacaoCampos.Provider></div></QuestionFrame></div></Shell>;

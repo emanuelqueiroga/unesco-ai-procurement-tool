@@ -88,8 +88,9 @@ export async function gerarEducacaoPDF(
         opts.tipo === "brief" &&
         ![
           "Contexto",
-          "Objetivos e resultados esperados",
-          "Recursos da intervenção",
+          "Intervenção",
+          "Uso de IA",
+          "Orçamento",
         ]
           .map((x) => t(x))
           .includes(b.titulo)

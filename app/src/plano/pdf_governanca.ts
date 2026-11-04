@@ -34,10 +34,10 @@ export async function gerarGovernancaPDF(s: Estado14, opts: { tipo?: 'brief' | '
     };
     cab(); texto(tipo, 11, true); texto(p.titulo, 22, true); texto(p.pais || t('País: ———'), 13);
     texto(p.proxima, 12, true); texto(p.escopo);
-    texto(t('Plano parcial: {n} perguntas pendentes.', { n: p.faltam.length }));
+    if (p.faltam.length) texto(t('Plano parcial: {n} perguntas pendentes.', { n: p.faltam.length }));
     if (lit) texto(t('{n} definições e valores a levantar', { n: p.pendentes }));
     if (p.projeto) { texto(t('Governança e projeto de uso de IA têm ações e orçamentos separados.')); texto(t('Projeto identificado: {nome}', { nome: p.projeto })); }
-    const blocos = anexo ? p.blocos : lit ? p.blocos.filter(b => ![t('Condições para atividades digitais'),t('Projeto concreto de uso de IA')].includes(b.titulo)).map(b => ({...b,linhas: [t('Contexto'),t('Públicos e alcance'),t('Ações, responsáveis e prazos'),t('Recursos para formação e currículo'),t('Desenho do currículo nacional')].includes(b.titulo) ? b.linhas : b.titulo === t('Competências e objetivos de aprendizagem') ? b.linhas.filter(l=>l.rotulo.startsWith(t('Objetivos de aprendizagem'))) : b.linhas.slice(0,2)})) : p.blocos.filter((b, i) => i < 2 || [t('Recursos e orçamento'), t('Acompanhamento e revisão'), t('Experimentação supervisionada')].includes(b.titulo)
+    const blocos = anexo ? p.blocos : lit ? p.blocos.filter(b => ![t('Condições para atividades digitais'),t('Projeto concreto de uso de IA')].includes(b.titulo)).map(b => ({...b,linhas: [t('Contexto'),t('Participantes e horas'),t('Orçamento')].includes(b.titulo) ? b.linhas : b.titulo === t('Competências e objetivos de aprendizagem') ? b.linhas.filter(l=>l.rotulo.startsWith(t('Objetivos de aprendizagem'))) : b.linhas.slice(0,2)})) : p.blocos.filter((b, i) => i < 2 || [t('Recursos e orçamento'), t('Equipe e formação')].includes(b.titulo)
       || p.acoes.some(a => a.entrega === b.titulo));
     for (const b of blocos) bloco(b);
     const N = doc.getNumberOfPages(), data = (opts.data || new Date()).toISOString().slice(0, 10);

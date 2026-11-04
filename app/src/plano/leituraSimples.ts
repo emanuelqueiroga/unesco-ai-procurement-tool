@@ -5,7 +5,7 @@ import { frenteAtual, type FrenteId } from '../percurso/frentes';
 import { planoGovernanca, moedaGovernanca } from '../percurso/governanca';
 import { textoEstimado } from '../percurso/estimativasOrcamento';
 import { planoLetramento, camposLetramento, valorCampoLit, rotuloLit } from '../percurso/letramento';
-import { planoEd, camposEd, valorEd } from '../percurso/pedagogico';
+import { planoEd, camposEd, valorEd, impactosPedagogicos } from '../percurso/pedagogico';
 import { t } from '../percurso/textos';
 import { LOC, etapasAtivas } from '../domain';
 import { briefDados } from './brief.js';
@@ -33,23 +33,23 @@ export function leituraSimples(s:Estado14):LeituraSimples {
  let foco:string[]=[],objetivos:LinhaSimples[]=[],alcance:LinhaSimples[]=[],acoes:LinhaSimples[]=[],cuidados:LinhaSimples[]=[],revisao:LinhaSimples[]=[];
  if(frente==='governanca') {
   const g=planoGovernanca(s);foco=g.desafios.map(q=>q.titulo);
-  objetivos=selecionar('Diagnóstico institucional',['Resultado esperado']);
+  objetivos=[];
   alcance=selecionar('Contexto',['Total de escolas','Total de estudantes']);
-  acoes=g.acoes.map(a=>linha(a.entrega+(a.sugerida?' · '+t('Sugestão a revisar'):''),[t('Responsável')+': '+(a.responsavel||t('A definir')),t('Prazo')+': '+(a.prazo||t('A definir'))].join(' · ')));
+  acoes=g.acoes.map(a=>linha(a.titulo,a.entrega));
   cuidados=selecionar('Capacidade institucional',['Supervisão e acompanhamento','Resposta a incidentes e reclamações']);
   revisao=selecionar('Acompanhamento e revisão',['Indicadores e metas institucionais','Responsável pelo acompanhamento','Periodicidade da revisão','Próxima revisão']);
  } else if(frente==='letramento') {
   foco=(contexto.find(l=>l.rotulo===t('Públicos selecionados'))?.valor||'').split('; ').filter((x:string)=>x&&x!==t('Não informado'));
   const fs=camposLetramento(s),pegar=(teste:(c:string)=>boolean)=>fs.filter(f=>teste(f.caminho)).map(f=>linha(rotuloLit(f.label),valorCampoLit(s,f)));
   objetivos=pegar(c=>c.endsWith('.objetivos')||c==='curriculo.progressao');
-  alcance=pegar(c=>c==='alcance.escolas'||c==='alcance.totalUnico'||c.endsWith('.participantes'));
+  alcance=pegar(c=>c.endsWith('.participantes')||c.endsWith('.horas'));
   acoes=pegar(c=>/^acoes\..*\.(responsavel|prazo)$/.test(c));
   cuidados=pegar(c=>c==='desenho.salvaguardas'||c==='validacao.criterios');
   revisao=pegar(c=>['revisao.indicadores','revisao.responsavel','revisao.periodicidade'].includes(c));
  } else {
   foco=planoEd(s).temas.map(q=>t(q.nome));
   const fs=camposEd(s),pegar=(teste:(c:string)=>boolean)=>fs.filter(f=>teste(f.caminho)).map(f=>linha((f.grupo?t(f.grupo)+' · ':'')+t(f.label),valorEd(s,f)));
-  objetivos=pegar(c=>/^temas\..*\.(objetivo|meta|unidade)$/.test(c));
+  objetivos=impactosPedagogicos(s).map(i=>linha('Impacto esperado',t(i.texto)));
   alcance=contexto.filter(l=>(etapasAtivas(s.ctx) as any[]).some(et=>t(et[1])===l.rotulo));
   acoes=pegar(c=>c.endsWith('.acoes')||['execucao.responsavel','execucao.prazo'].includes(c));
   cuidados=pegar(c=>/salvaguardas/.test(c));

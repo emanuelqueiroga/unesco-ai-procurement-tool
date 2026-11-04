@@ -50,31 +50,34 @@ export const ESSENCIAL: TelaEssencial[] = [
 export const CAMPOS_ESSENCIAIS: string[] = ESSENCIAL.flatMap(t => t.campos);
 export const CAPITULOS: Capitulo[] = [1, 2, 3, 4];
 export type EscopoPercurso = { ctx?: Record<string, any> };
+// Versão de teste (fluxos enxutos, 04/11/2026): depois do Contexto, só o essencial para a estimativa de custo.
+// As telas que saíram continuam conhecidas (TELAS_FORA_DO_FLUXO) para redirecionar links antigos; os dados ficam salvos.
 export const GOVERNANCA: TelaEssencial[] = [
   ...ESSENCIAL.filter(t => ['local', 'prioridades', 'problemas'].includes(t.id)),
-  { id: 'gov-projeto', capitulo: 1, n: [], campos: ['projetoIA'] },
-  { id: 'gov-diagnostico', capitulo: 2, n: [], campos: ['govDiagnostico'] },
-  { id: 'gov-instrumentos', capitulo: 2, n: [], campos: ['govInstrumentos'] },
-  { id: 'gov-solucoes', capitulo: 2, n: [], campos: ['govSolucoes'] },
-  { id: 'gov-atores', capitulo: 3, n: [], campos: ['govAtores'] },
-  { id: 'gov-acoes', capitulo: 3, n: [], campos: ['govAcoes'] },
-  { id: 'gov-capacidade', capitulo: 3, n: [], campos: ['govCapacidade'] },
+  { id: 'gov-equipe', capitulo: 2, n: [], campos: ['govOrcamento'] },
   { id: 'gov-recursos', capitulo: 3, n: [], campos: ['govOrcamento'] },
-  { id: 'gov-sandbox', capitulo: 3, n: [], campos: ['govSandbox'] },
-  { id: 'gov-revisao', capitulo: 4, n: [], campos: ['govRevisao'] },
 ];
 export const LETRAMENTO: TelaEssencial[] = [
  ...ESSENCIAL.filter(t => ['local','prioridades','problemas'].includes(t.id)),
- ...(['alcance','diagnostico','desenho','curriculo','oferta','validacao','digital','projeto','acoes','recursos','revisao'] as const).map(id => ({ id: 'lit-' + id, capitulo: (id === 'alcance' ? 1 : ['diagnostico','desenho','curriculo'].includes(id) ? 2 : id === 'revisao' ? 4 : 3) as Capitulo, n: [], campos: ['letramento'] })),
+ { id: 'lit-participantes', capitulo: 2, n: [], campos: ['letramento'] },
+ { id: 'lit-recursos', capitulo: 3, n: [], campos: ['letramento'] },
 ];
 export const PEDAGOGICO: TelaEssencial[] = [...ESSENCIAL.filter(t=>['local','prioridades','etapas','problemas'].includes(t.id)), ...TELAS_ED.map(([id,capitulo])=>({id,capitulo,n:[],campos:['educacao']}))];
+/** Telas dos percursos da v015 que saíram do fluxo na versão de teste → a tela mantida mais próxima. */
+export const TELAS_FORA_DO_FLUXO: Record<string, string> = {
+  'gov-projeto': 'gov-equipe', 'gov-diagnostico': 'gov-equipe', 'gov-instrumentos': 'gov-equipe', 'gov-solucoes': 'gov-equipe',
+  'gov-atores': 'gov-equipe', 'gov-capacidade': 'gov-equipe', 'gov-acoes': 'gov-recursos', 'gov-sandbox': 'gov-recursos', 'gov-revisao': 'gov-recursos',
+  'lit-alcance': 'lit-participantes', 'lit-diagnostico': 'lit-participantes', 'lit-desenho': 'lit-participantes', 'lit-oferta': 'lit-participantes',
+  'lit-curriculo': 'lit-recursos', 'lit-validacao': 'lit-recursos', 'lit-digital': 'lit-recursos', 'lit-projeto': 'lit-recursos', 'lit-acoes': 'lit-recursos', 'lit-revisao': 'lit-recursos',
+  'ed-objetivos': 'ed-intervencao', 'ed-acoes': 'ed-intervencao', 'ed-avaliacao': 'ed-intervencao', 'ed-teste': 'ed-intervencao',
+  'ed-digital': 'ed-recursos', 'ed-execucao': 'ed-recursos', 'ed-acompanhamento': 'ed-recursos', 'ed-expansao': 'ed-recursos',
+};
 export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id)), ...LETRAMENTO.filter(t => t.id.startsWith('lit-')), ...PEDAGOGICO.filter(t=>t.id.startsWith('ed-'))];
 export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] {
   if (percursoPedagogico(e?.ctx)) { const ids=telasEd(e as any); return PEDAGOGICO.filter(t=>!t.id.startsWith('ed-')||ids.includes(t.id as any)); }
   if (percursoLetramento(e?.ctx)) { const ids = telasLetramento(e as any); return LETRAMENTO.filter(t => ids.includes(t.id)); }
   if (!percursoGovernanca(e?.ctx)) return percursoEducacao(e?.ctx) ? ESSENCIAL.filter(t=>!['problema','linhaBase','alternativa'].includes(t.id)) : ESSENCIAL;
-  return GOVERNANCA.filter(t => (t.id !== 'gov-projeto' || e?.ctx?.prioridades.some((id: string) => !['governar','sobre'].includes(id)))
-    && (t.id !== 'gov-sandbox' || e?.ctx?.problemas?.includes('G15')));
+  return GOVERNANCA;
 }
 export function telasDoCapitulo(n: Capitulo, e?: EscopoPercurso): TelaEssencial[] { return telasAtivas(e).filter(t => t.capitulo === n); }
 export function telaDoCampo(campo: string): TelaEssencial | undefined { return TODAS_TELAS.find(t => t.campos.includes(campo) || (campo === 'redeNacional' && t.id === 'problemas')); }
@@ -83,7 +86,9 @@ export function essencial(campo: string): boolean { return CAMPOS_ESSENCIAIS.inc
 // ondeMora (caso.ts) procura o campo em CAMPO_POR_ID para saber se mora em ctx; sem este registro eles iriam para `caso`.
 {
   const reg: any = CAMPO_POR_ID;
-  for (const id of [...GOVERNANCA.flatMap(t => t.campos), 'frenteAtiva', 'govSelecoes', 'govDetalhes', 'letramento', 'educacao']) { if (!reg[id]) reg[id] = { id, onde: 'ctx', tipo: 'extra', passo: '' }; }
+  // inclui os campos das telas que saíram do fluxo de teste: continuam guardados em ctx
+  const GUARDADOS = ['projetoIA', 'govDiagnostico', 'govInstrumentos', 'govSolucoes', 'govAtores', 'govAcoes', 'govCapacidade', 'govSandbox', 'govRevisao'];
+  for (const id of [...GOVERNANCA.flatMap(t => t.campos), ...GUARDADOS, 'frenteAtiva', 'govSelecoes', 'govDetalhes', 'letramento', 'educacao']) { if (!reg[id]) reg[id] = { id, onde: 'ctx', tipo: 'extra', passo: '' }; }
   reg.redeNacional = { id: 'redeNacional', onde: 'ctx', tipo: 'extra', passo: '' };
   if (!reg.subs) reg.subs = { id: 'subs', onde: 'ctx', tipo: 'extra', passo: '' };
   if (!reg.problemaOutro) reg.problemaOutro = { id: 'problemaOutro', onde: 'ctx', tipo: 'extra', passo: '' };

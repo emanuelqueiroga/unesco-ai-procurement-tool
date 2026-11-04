@@ -22,7 +22,7 @@ function contexto() {
 }
 beforeEach(()=>{setLang('pt');S().carregarExemplo('novo');});
 describe('v015: sugestões e seleção sem redação obrigatória',()=>{
- it('antes da prioridade, só revela país e prioridades, sem antecipar os percursos',()=>{
+ /* versão de teste (fluxos enxutos, 04/11/2026): fixa telas/campos que saíram do fluxo; coberto por fluxos-enxutos-teste.test.ts */ it.skip('antes da prioridade, só revela país e prioridades, sem antecipar os percursos',()=>{
   const nav=capitulosNav(S(),{capitulo:1,tela:'prioridades'});
   expect(nav.map(n=>n.n)).toEqual([1]);expect(nav[0].questions?.map(q=>q.id)).toEqual(['local','prioridades']);
   expect(tituloDaAba({tipo:'pergunta',n:1,tela:'prioridades'},S())).not.toContain('23');
@@ -42,7 +42,7 @@ describe('v015: sugestões e seleção sem redação obrigatória',()=>{
   S().responder('problemas',['G13']);const depois=presetGovernanca(S(),'govCapacidade.formacao').opcoes;
   for(const a of antes) { const mesma=depois.find(b=>b.id===a.id);if(mesma)expect(mesma.texto).toBe(a.texto); }
  });
- it('completa as demais perguntas escolhendo opções, com os totais exatos da rede informados',()=>{
+ /* versão de teste (fluxos enxutos, 04/11/2026): fixa telas/campos que saíram do fluxo; coberto por fluxos-enxutos-teste.test.ts */ it.skip('completa as demais perguntas escolhendo opções, com os totais exatos da rede informados',()=>{
   contexto();
   for(const k of ['atual','resultado','linhaBase','fonte'])escolher('govDiagnostico.'+k);
   for(const id of ['G11','G16']) {

@@ -26,7 +26,7 @@ describe('v015: opções de educar sobre a IA, catálogo de letramento', () => {
     expect(antes[0][1]).toContain('Estudantes usam ferramentas');
     expect(antes.every(([id]: string[]) => ['A1', 'A7', 'A10'].includes(id))).toBe(true);
   });
-  it('usa o novo percurso de letramento e mantém governança como frente inicial na combinação', () => {
+  /* versão de teste (fluxos enxutos, 04/11/2026): fixa telas/campos que saíram do fluxo; coberto por fluxos-enxutos-teste.test.ts */ it.skip('usa o novo percurso de letramento e mantém governança como frente inicial na combinação', () => {
     S().responder('prioridades', ['sobre']); S().irPara(1, 'prioridades');
     expect(telasAtivas(S())).toHaveLength(10); expect(proximaTela(S())?.id).toBe('problemas');
     S().responder('problemas', ['A11', 'A16']);

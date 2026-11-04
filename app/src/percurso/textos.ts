@@ -176,15 +176,20 @@ export const GOVERNANCA_INFO: Record<Capitulo, InfoCapitulo> = {
   3: { n: 3, titulo: 'Plano de ação e recursos', guia: 'Quem fará o quê, até quando e com quais recursos?', texto: '', minutos: 8, entrega: '', alimenta: '' },
   4: { n: 4, titulo: 'Acompanhamento e revisão', guia: 'Como acompanhar os resultados e revisar a política?', texto: '', minutos: 3, entrega: '', alimenta: '' },
 };
+/** Versão de teste: Contexto · <etapa da frente> · Orçamento (o capítulo 4 fica vazio e some da barra). */
 export function infoCapitulo(n: Capitulo, s?: { ctx?: Record<string, any> }): InfoCapitulo {
-  if (percursoPedagogico(s?.ctx)) return ({1:CAPITULOS_INFO[1],2:{...GOVERNANCA_INFO[2],titulo:'Intervenção e avaliação',guia:'O que será feito e como verificar os resultados?'},3:{...GOVERNANCA_INFO[3],titulo:'Execução e recursos',guia:'Quem participa, quem executa e com quais recursos?'},4:{...GOVERNANCA_INFO[4],titulo:'Acompanhamento e expansão',guia:'Como acompanhar, revisar e decidir a continuidade?'}})[n];
-  if (percursoLetramento(s?.ctx)) return ({1:CAPITULOS_INFO[1],2:{...GOVERNANCA_INFO[2],titulo:'Diagnóstico e desenho formativo',guia:'O que as pessoas precisam aprender e como desenvolver essas competências?'},3:{...GOVERNANCA_INFO[3],titulo:'Implementação e recursos'},4:{...GOVERNANCA_INFO[4],guia:'Como acompanhar a aprendizagem, a inclusão e a atualização do programa?'}})[n];
-  return percursoGovernanca(s?.ctx) ? GOVERNANCA_INFO[n] : CAPITULOS_INFO[n];
+  const etapa = (titulo: string, guia: string) => ({ ...GOVERNANCA_INFO[2], titulo, guia });
+  const orcamento = { ...GOVERNANCA_INFO[3], titulo: 'Orçamento', guia: 'Quanto custa cada recurso?' };
+  const meio = percursoPedagogico(s?.ctx) ? etapa('Intervenção', 'O que será feito e para quantas pessoas?')
+    : percursoLetramento(s?.ctx) ? etapa('Participantes', 'Quantas pessoas e quantas horas?')
+    : percursoGovernanca(s?.ctx) ? etapa('Equipe e formação', 'Quem coordena e quem será formado?') : null;
+  if (!meio) return CAPITULOS_INFO[n];
+  return ({ 1: CAPITULOS_INFO[1], 2: meio, 3: orcamento, 4: GOVERNANCA_INFO[4] } as Record<Capitulo, InfoCapitulo>)[n];
 }
 Object.assign(CURTO, {
  'gov-projeto': 'Projeto de uso de IA', 'gov-diagnostico': 'Lacunas e resultados', 'gov-instrumentos': 'Instrumentos e evidências',
  'gov-solucoes': 'Soluções de política educacional', 'gov-atores': 'Instituições e grupos afetados', 'gov-acoes': 'Ações e responsabilidades',
- 'gov-capacidade': 'Capacidade institucional', 'gov-recursos': 'Recursos e orçamento', 'gov-sandbox': 'Experimentação supervisionada', 'gov-revisao': 'Indicadores e revisão',
+ 'gov-capacidade': 'Capacidade institucional', 'gov-recursos': 'Orçamento', 'gov-equipe': 'Equipe e formação', 'gov-sandbox': 'Experimentação supervisionada', 'gov-revisao': 'Indicadores e revisão',
 });
 
 Object.assign(CURTO, TITULOS_LIT);

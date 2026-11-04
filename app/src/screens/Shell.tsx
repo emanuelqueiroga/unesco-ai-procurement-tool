@@ -51,7 +51,8 @@ export function capitulosNav(s: CasoStore, pos: Posicao): NavChapter[] {
 }
 
 export function capitulosBarra(s: CasoStore, pos: Posicao): BarChapter[] {
-  return progressoDe(s).filter(p => prioridadeEscolhida(s.ctx) || p.capitulo === 1).map((p) => ({
+  // versão de teste: etapas sem telas (o capítulo 4 dos fluxos enxutos) não aparecem na barra
+  return progressoDe(s).filter(p => (prioridadeEscolhida(s.ctx) || p.capitulo === 1) && (p.capitulo === 1 || p.total > 0)).map((p) => ({
     n: p.capitulo, label: t(infoCapitulo(p.capitulo, s).titulo), progress: prioridadeEscolhida(s.ctx) ? p.total ? p.feitas / p.total : 0 : telasDoCapitulo(1, s).filter(t => ['local', 'prioridades'].includes(t.id) && telaRespondida(s, t)).length / 2, href: percursoLetramento(s.ctx) ? entradaEtapaLit(s, p.capitulo) : percursoGovernanca(s.ctx)||percursoPedagogico(s.ctx) ? entradaEtapa(s,p.capitulo) : href.abertura(p.capitulo),
     state: pos.capitulo === p.capitulo ? 'current' : p.completo ? 'done' : 'todo',
   }));
@@ -63,7 +64,7 @@ export function etapasDaFrente(s: CasoStore, pos: Posicao): Step[] {
     if (c.state !== 'current' || !pos.tela) return { n: c.n, label: c.label, href: c.href, state: c.state ?? 'todo', progress: c.progress };
     const qs = telasDoCapitulo(c.n as Capitulo, s).filter(q => prioridadeEscolhida(s.ctx) || ['local', 'prioridades'].includes(q.id));
     const i = qs.findIndex(q => q.id === pos.tela);
-    return { n: c.n, label: c.label, href: c.href, state: 'current', progress: i < 0 ? c.progress : (i + 1) / qs.length, position: i < 0 ? undefined : t('{n} de {total}', { n: i + 1, total: qs.length }) };
+    return { n: c.n, label: c.label, href: c.href, state: 'current', progress: i < 0 ? c.progress : (i + 1) / qs.length, position: i < 0 || qs.length < 2 ? undefined : t('{n} de {total}', { n: i + 1, total: qs.length }) };
   });
 }
 

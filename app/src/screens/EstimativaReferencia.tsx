@@ -57,11 +57,11 @@ export function LinhaEstimativa({ s, est, tela, emUso, onUsar, nome }: { s: Caso
 }
 
 /** Quantidade opcional usada só pela estimativa (não entra nas pendências). */
-export function CampoQuantidade({ id, label, value, onChange, decimais = false }: { id: string; label: string; value: unknown; onChange: (v: number | '') => void; decimais?: boolean }) {
+export function CampoQuantidade({ id, label, value, onChange, decimais = false, dica = true }: { id: string; label: string; value: unknown; onChange: (v: number | '') => void; decimais?: boolean; dica?: boolean }) {
   const ok = value === '' || value == null || typeof value === 'number' && Number.isFinite(value) && value > 0 && (decimais || Number.isSafeInteger(value));
   return <div className="pc-lit-campo pc-est-quantidade" id={id} tabIndex={-1}>
     <CampoNumero label={label} value={typeof value === 'number' ? value : ''} decimais={decimais} onChange={onChange}
-      hint={t('Opcional. Usado apenas na estimativa de referência.')}
+      hint={dica ? t('Opcional. Usado apenas na estimativa de referência.') : undefined}
       error={ok ? undefined : t(decimais ? 'Informe um número maior que zero.' : 'Informe um número inteiro maior que zero.')} />
   </div>;
 }

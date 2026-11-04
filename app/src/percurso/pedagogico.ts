@@ -1136,7 +1136,19 @@ export function camposEd(s: EstadoEd): CampoEd[] {
         "Unique participants planned for expansion",
       ),
     );
-  return fs;
+  // Versão de teste: só o essencial para a estimativa. Os demais campos continuam guardados, fora do fluxo.
+  add(
+    "ed-tecnologia",
+    "usoIA.quem",
+    E("Quem usa a ferramenta de IA?", "Who uses the AI tool?"),
+    [
+      ["professores", E("Professores", "Teachers")],
+      ["estudantes", E("Estudantes", "Students")],
+      ["ambos", E("Professores e estudantes", "Teachers and students")],
+    ],
+  );
+  const mantidos = ["intervencao.tipo", "usoIA.quem", "orcamento.periodo"];
+  return fs.filter((f) => mantidos.includes(f.caminho) || f.caminho.startsWith("orcamento.adicionais."));
 }
 export function impactosPedagogicos(s: Pick<Estado14, "ctx">) {
   const qs = problemasMarcados(s.ctx).filter((q: any) =>
@@ -1177,12 +1189,12 @@ export function valorEd(s: EstadoEd, f: CampoEd) {
         .filter((id) => f.opcoes?.some((o) => o.id === id))
         .map((id) => t(f.opcoes?.find((o) => o.id === id)?.texto || id))
         .join("; ") || t("Não informado");
-  return base + (v?.detalhe ? " — " + v.detalhe : "");
+  return base;
 }
 export function custosEd(s: EstadoEd) {
   return [
     ...CUSTOS_ED.map(([id, nome]) => ({ id, nome })),
-    ...(digitalEd(s)
+    ...(usaIAEd(s)
       ? [
           {
             id: "digital",
@@ -1280,26 +1292,12 @@ export function orcamentoEd(s: EstadoEd) {
 }
 export const TELAS_ED = [
   ["ed-intervencao", 2],
-  ["ed-objetivos", 2],
-  ["ed-acoes", 2],
-  ["ed-avaliacao", 2],
-  ["ed-teste", 2],
   ["ed-tecnologia", 2],
-  ["ed-digital", 3],
-  ["ed-execucao", 3],
   ["ed-recursos", 3],
-  ["ed-acompanhamento", 4],
-  ["ed-expansao", 4],
 ] as const;
+/** Versão de teste: Intervenção · Uso de IA (só com IA ou mista) · Orçamento. */
 export function telasEd(s: EstadoEd) {
-  return TELAS_ED.filter(
-    ([id]) =>
-      !(
-        (id === "ed-teste" && !testeEd(s)) ||
-        (id === "ed-tecnologia" && !usaIAEd(s)) ||
-        (id === "ed-digital" && !digitalEd(s))
-      ),
-  ).map(([id]) => id);
+  return TELAS_ED.filter(([id]) => id !== "ed-tecnologia" || usaIAEd(s)).map(([id]) => id);
 }
 export function errosEd(s: EstadoEd, tela: string): string[] {
   const e: string[] = [],
@@ -1367,6 +1365,27 @@ export function definicoesPendentesEd(s: EstadoEd) {
         idsEd(s, f.caminho).some((id) => ["_pendente", "definir"].includes(id)),
     ).length + orcamentoEd(s).faltam
   );
+}
+/** Quantidades opcionais das telas Intervenção e Uso de IA (alimentam as estimativas), para o resumo. */
+export function quantidadesEd(s: EstadoEd, tela: string) {
+  const fmt = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v > 0 ? new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 2 }).format(v) : t("Não informado");
+  if (tela === "ed-intervencao") return [
+    { rotulo: t("Profissionais a formar"), valor: fmt(lerEd(s, "orcamento.quantidades.profissionais")) },
+    { rotulo: t("Horas por profissional"), valor: fmt(lerEd(s, "orcamento.quantidades.horasProfissional")) },
+  ];
+  if (tela === "ed-tecnologia") return [{ rotulo: t(E("Usuários da ferramenta", "Tool users")), valor: fmt(usuariosIAEd(s)) }];
+  return [];
+}
+/** Total do Contexto sugerido para os usuários da ferramenta (estudantes das etapas escolhidas); null sem sugestão. */
+export function usuariosSugeridosEd(s: EstadoEd): number | null {
+  if (!idsEd(s, "usoIA.quem").includes("estudantes")) return null;
+  const total = etapasAtivas(s.ctx).reduce((n: number, et: any) => n + alunosEtapa(s.ctx, et[0]), 0);
+  return total > 0 ? total : null;
+}
+/** Usuários da ferramenta: o número digitado, senão o total sugerido pelo Contexto. */
+export function usuariosIAEd(s: EstadoEd): number | null {
+  const v = lerEd(s, "orcamento.quantidades.usuarios");
+  return typeof v === "number" && Number.isSafeInteger(v) && v > 0 ? v : usuariosSugeridosEd(s);
 }
 export function planoEd(s: EstadoEd) {
   const fs = camposEd(s),
@@ -1443,12 +1462,15 @@ export function planoEd(s: EstadoEd) {
     },
     ...telasEd(s).map((id) => ({
       titulo: t(TITULOS_ED[id]),
-      linhas: fs
-        .filter((f) => f.tela === id)
-        .map((f) => ({
-          rotulo: (f.grupo ? t(f.grupo) + " · " : "") + t(f.label),
-          valor: valorEd(s, f),
-        })),
+      linhas: [
+        ...fs
+          .filter((f) => f.tela === id)
+          .map((f) => ({
+            rotulo: (f.grupo ? t(f.grupo) + " · " : "") + t(f.label),
+            valor: valorEd(s, f),
+          })),
+        ...quantidadesEd(s, id),
+      ],
     })),
   ];
   const recursos = blocos.find(
@@ -1487,7 +1509,7 @@ export function planoEd(s: EstadoEd) {
                 ),
               )
             : t(i.nome),
-        valor: base + (i.detalhe ? " — " + i.detalhe : ""),
+        valor: base,
       };
     }),
     ...linhasTotais(o).map((l) => ({ rotulo: l.rotulo, valor: l.valor })),
@@ -1513,8 +1535,8 @@ export function planoEd(s: EstadoEd) {
       : faltam.length || pendentes
         ? t(
             E(
-              "Complete as decisões, os responsáveis e os recursos.",
-              "Complete the decisions, owners and resources.",
+              "Complete a intervenção e os valores do orçamento.",
+              "Complete the intervention and the budget amounts.",
             ),
           )
         : t(

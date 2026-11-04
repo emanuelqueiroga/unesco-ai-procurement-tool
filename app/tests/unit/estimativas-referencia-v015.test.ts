@@ -39,7 +39,9 @@ describe('v015: estimativas de referência nos orçamentos', () => {
     expect(['estudos', 'consulta', 'comunicacao', 'supervisao', 'sandbox'].some(id => temBaseEstimativa('governanca', id))).toBe(false);
     expect(['equipe', 'oferta', 'diagnostico'].every(id => temBaseEstimativa('letramento', id))).toBe(true);
     expect(['materiais', 'desenho', 'apoio', 'formadores', 'consulta', 'digital', 'validacao', 'adicional-1'].some(id => temBaseEstimativa('letramento', id))).toBe(false);
-    expect(['materiais', 'participacao', 'digital', 'ia'].some(id => temBaseEstimativa('educacao', id))).toBe(false);
+    // versão de teste (fluxos enxutos): a linha da ferramenta de IA ganhou estimativa (usuários × licença × meses)
+    expect(['materiais', 'participacao', 'digital'].some(id => temBaseEstimativa('educacao', id))).toBe(false);
+    expect(temBaseEstimativa('educacao', 'ia')).toBe(true);
     governanca(); expect(estimativaReferencia('governanca', 'estudos', S())).toBeNull();
   });
 
@@ -134,9 +136,10 @@ describe('v015: estimativas de referência nos orçamentos', () => {
     expect(est.valorUSD).toBe(384000); expect(est.valor).toBe(c(384000 * BRL));
     expect(est.conta.formula).toMatch(/^Soma por público/);
     expect(est.conta.quantidades).toHaveLength(4);
+    // versão de teste: o total distinto saiu do fluxo; guardado, não muda a conta
     g('alcance.totalUnico', { valor: 1100, situacao: 'informado' });
     est = estimativaReferencia('letramento', 'oferta', S())!;
-    expect(est.valorUSD).toBe(352000); expect(est.conta.formula).toMatch(/^Participantes distintos/);
+    expect(est.valorUSD).toBe(384000);
     // equipe e avaliação dependem do período e da equipe
     expect(estimativaReferencia('letramento', 'equipe', S())!.falta).toContain('o período do orçamento');
     g('orcamento.periodo', { escolhas: ['24'] }); g('orcamento.quantidades.equipeFte', 1.5);
@@ -149,7 +152,7 @@ describe('v015: estimativas de referência nos orçamentos', () => {
     letramento(); publico('A11', 1000, 30);
     const falta = estimativaReferencia('letramento', 'oferta', S())!;
     expect(falta.valor).toBeNull(); expect(falta.falta).toEqual(['o número de participantes previstos', 'as horas previstas por participante']);
-    expect(falta.pendencias!.map(p => p.tela)).toEqual(['lit-alcance', 'lit-oferta']);
+    expect(falta.pendencias!.map(p => p.tela)).toEqual(['lit-participantes', 'lit-participantes']);
     expect(falta.mensagem).toBe('Informe o número de participantes previstos e as horas previstas por participante para ver uma estimativa.');
     publico('A14', 200, 10); g('orcamento.itens.oferta', { situacao: 'referencia' });
     expect(orcamentoLetramento(S())).toMatchObject({ estimados: 1, estimado: c(384000 * BRL), informados: 0 });

@@ -275,3 +275,25 @@ a.pc-faixa-custo:hover { color: var(--on-night); outline: 2px solid var(--primar
   .pc-app.pc-app--novo .pc-pergunta .pc-rec-linha.is-erro { border-inline-start-color: var(--crit); }
   .pc-app.pc-app--novo .pc-pergunta .pc-rec-rodape { padding-block: 12px 0; }
 }
+
+/* ---------- fluxos enxutos: telas curtas de números ---------- */
+.pc-curto { display: grid; gap: 24px; min-width: 0; }
+.pc-curto-numeros { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px 24px; align-items: end; min-width: 0; }
+.pc-curto-numeros .pr-textfield-row { max-width: none; }
+.pc-curto-numeros .pc-lit-campo { gap: 6px; }
+.pc-rec-contexto--link { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 14px; line-height: 20px; color: var(--muted); }
+/* Participantes: uma linha por público, duas colunas numéricas; encosta nas bordas do quadro, só com divisórias */
+.pc-part { margin-inline: calc(-1 * var(--q, 32px)); border-top: 1px solid var(--line); outline: none; }
+.pc-part-cab, .pc-part-linha { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px var(--q, 32px); }
+.pc-part-cab { font-size: 13px; line-height: 18px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--surface-plan); border-bottom: 1px solid var(--line); }
+.pc-part-linha { border-bottom: 1px solid var(--surface-2); }
+.pc-part-linha:last-child { border-bottom: 0; }
+.pc-part-nome { font-size: 16px; line-height: 22px; font-weight: 600; color: var(--ink); }
+.pc-part-campo .pr-textfield-label { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.pc-part-campo .pr-textfield-row { max-width: none; }
+@media (max-width: 640px) {
+  .pc-part-cab { display: none; }
+  .pc-part-linha { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 12px; }
+  .pc-part-nome { grid-column: 1 / -1; }
+  .pc-part-campo .pr-textfield-label { position: static; inline-size: auto; block-size: auto; overflow: visible; clip-path: none; white-space: normal; font-size: 13px; }
+}

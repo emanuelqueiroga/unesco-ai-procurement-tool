@@ -20,7 +20,9 @@ import './moldura.css';
 export const TELA_RECURSOS: Record<FrenteEstimativa, string> = { governanca: 'gov-recursos', letramento: 'lit-recursos', educacao: 'ed-recursos' };
 /** Telas, fora da de recursos, cujas respostas entram numa estimativa (participantes e horas do letramento). */
 const ALIMENTA: Partial<Record<FrenteEstimativa, Record<string, string[]>>> = {
-  letramento: { 'lit-alcance': ['oferta'], 'lit-oferta': ['oferta'] },
+  governanca: { 'gov-equipe': ['equipe', 'formacao', 'avaliacao'] },
+  letramento: { 'lit-participantes': ['oferta'] },
+  educacao: { 'ed-intervencao': ['formacao'], 'ed-tecnologia': ['ia'] },
 };
 
 interface ItemCusto { id: string; nome: string; estimativa?: Estimativa | null }

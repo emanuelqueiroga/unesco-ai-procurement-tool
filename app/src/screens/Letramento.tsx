@@ -3,7 +3,7 @@ import { progressoFrente } from '../percurso/frentes';
 import { GrupoFormulario } from './GrupoFormulario';
 import { AcoesPercurso } from './AcoesPercurso';
 import { Fragment, useEffect, useState, type ReactNode } from 'react';
-import { useCaso, telasDoCapitulo, telasAtivas, faltamDe, telaRespondida, type CasoStore, type Capitulo } from '../store';
+import { useCaso, telasDoCapitulo, telasAtivas, faltamDe, telaRespondida, TELAS_FORA_DO_FLUXO, type CasoStore, type Capitulo } from '../store';
 import { LOC, getLang } from '../domain';
 import { Button, TextField, OptionCard, OptionCardGroup, QuestionFrame, Alert, PlanPanel, PlanDrawer, useMediaQuery } from '../ui';
 import { Shell } from './Shell';
@@ -11,9 +11,9 @@ import { ControlesTela } from '../percurso/Controles';
 import { CampoNumero } from '../percurso/CampoNumero';
 import { t, infoCapitulo, CURTO, TITULO_TELA, LEAD } from '../percurso/textos';
 import { href, ir, type Rota } from '../percurso/rota';
-import { selecoesLit, rotuloLit, alterarLit, lerLit, camposLetramento, campoLitRespondido, planoLetramento, orcamentoLetramento, TITULOS_LIT, telaLetramentoLegada, errosAlcance, valorCampoLit, somenteCurriculoLit, tituloDaTelaLit, L, type CampoLit } from '../percurso/letramento';
+import { publicosLetramento, selecoesLit, rotuloLit, alterarLit, lerLit, camposLetramento, campoLitRespondido, planoLetramento, orcamentoLetramento, TITULOS_LIT, telaLetramentoLegada, errosAlcance, valorCampoLit, somenteCurriculoLit, tituloDaTelaLit, L, type CampoLit } from '../percurso/letramento';
 import { entradaEtapaLit, vizinhosLit, selecionarLit, gruposCamposLit, pendenciasCamposLit, pendenciasCustosLit, rotuloVisivelLit, guiaTelaLit } from '../percurso/letramentoInterface';
-import { moedaGovernanca, orcamentoGovernanca, valorItemOrcamento } from '../percurso/governanca';
+import { moedaGovernanca, orcamentoGovernanca, valorItemOrcamento, TELAS_OPCIONAIS } from '../percurso/governanca';
 import { CampoQuantidade, semValorComEstimativa, TotaisOrcamentoView } from './EstimativaReferencia';
 import { linhasTotais, mesesPeriodo } from '../percurso/estimativasOrcamento';
 import { TabelaRecursos, resumoPeriodo, type LinhaRecurso } from './TabelaRecursos';
@@ -63,9 +63,6 @@ function Escolha({ s, f, contexto, tentou = false, ocultarTitulo=false }: { s: C
       {faltando ? <p id={campoId(f.caminho)+'-erro'} className="pc-lit-erro">{t('Selecione uma opção ou indique a informação a levantar.')}</p> : null}
     </>}
     {f.evidencia ? <p className="pc-nota">{t('Selecione o tipo de evidência. Você pode identificar o documento nas informações adicionais.')}</p> : null}
-    <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}{v.detalhe ? ' · ' + t('Informações adicionadas') : ''}</summary>
-      <TextField multiline label={t('Informações adicionais: {campo}', { campo: rotuloLit(f.label) })} value={String(v.detalhe || '')} onChange={detalhe => salvar({ ...v, detalhe })} />
-    </details>
   </section>;
 }
 function CamposLit({ s, id, tentou }: { s: CasoStore; id: string; tentou: boolean }) {
@@ -73,8 +70,23 @@ function CamposLit({ s, id, tentou }: { s: CasoStore; id: string; tentou: boolea
   return <div className="pc-lit-campos">{grupos.map((g, i) => {
     const conteudo = g.campos.map(f => <Escolha key={f.caminho} s={s} f={f} contexto={g.titulo} tentou={tentou} />);
     return g.titulo ? <GrupoLit key={g.id} titulo={t(g.titulo)} recolhivel={g.recolhivel} abrir={i === 0} estado={t('{n} de {total} respostas', { n: g.campos.filter(f => campoLitRespondido(s, f)).length, total: g.campos.length })}>{conteudo}</GrupoLit>
-      : <Fragment key={g.id}>{g.campos.map((f,j)=><GrupoFormulario key={f.caminho} titulo={rotuloLit(f.label)} estado={t(campoLitRespondido(s,f)?'Preenchido':'A preencher')} abrir={i===0&&j===0} nome="letramento-grupos"><Escolha s={s} f={f} tentou={tentou} ocultarTitulo/></GrupoFormulario>)}</Fragment>;
+      : <Fragment key={g.id}>{g.campos.map(f=><Escolha key={f.caminho} s={s} f={f} tentou={tentou} />)}</Fragment>;
   })}</div>;
+}
+/** Participantes: uma linha por público, com participantes previstos e horas por participante (opcionais). */
+function Participantes({ s }: { s: CasoStore }) {
+  const pubs = publicosLetramento(s);
+  const campo = (p: string, c: 'participantes' | 'horas') => {
+    const caminho = `publicos.${p}.${c}`, v = lerLit(s, caminho) || {}, decimais = c === 'horas';
+    const ok = v.valor === '' || v.valor == null || typeof v.valor === 'number' && Number.isFinite(v.valor) && v.valor > 0 && (decimais || Number.isSafeInteger(v.valor));
+    return <div className="pc-part-campo" id={campoId(caminho)}><CampoNumero label={c === 'horas' ? t('Horas por participante') : t('Participantes previstos')} value={v.situacao === 'a_levantar' ? '' : v.valor ?? ''} decimais={decimais}
+      error={ok ? undefined : t(decimais ? 'Informe um número maior que zero.' : 'Informe um número inteiro maior que zero.')}
+      onChange={valor => gravar(s, caminho, { ...lerLit(useCaso.getState(), caminho), valor, situacao: 'informado' })} /></div>;
+  };
+  return <div className="pc-part" id="lit-participantes" tabIndex={-1}>
+    <div className="pc-part-cab" aria-hidden="true"><span>{t('Público')}</span><span>{t('Participantes previstos')}</span><span>{t('Horas por participante')}</span></div>
+    {pubs.map(p => <div className="pc-part-linha" key={p.id} role="group" aria-label={t(p.nome)}><span className="pc-part-nome">{t(p.nome)}</span>{campo(p.id, 'participantes')}{campo(p.id, 'horas')}</div>)}
+  </div>;
 }
 function OrcamentoLit({ s, tentou }: { s: CasoStore; tentou: boolean }) {
   const o = orcamentoLetramento(s), gov = orcamentoGovernanca(s), disponiveis = semValorComEstimativa(o.itens, i => i.referencia);
@@ -118,7 +130,7 @@ function PlanoLit({s}:{s:CasoStore}) {
  return <div className="pc-gov-plano"><h1>{p.titulo}</h1><p className="pc-lead">{p.pais}</p><Alert kind="info" title={p.proxima}>{p.escopo}</Alert><ResumoOrcamento s={s}/>
   <div className="pc-botoes"><Button disabled={ocupado} onClick={()=>void baixar('brief')}>{t(L('Resumo do programa (PDF)','Programme summary (PDF)'))}</Button><Button disabled={ocupado} variant="secondary" onClick={()=>void baixar('anexo')}>{t(L('Plano de formação e currículo (PDF)','Training and curriculum plan (PDF)'))}</Button></div>{erro?<p role="alert">{erro}</p>:null}<AtalhoLeituraSimples/>
   {p.faltam.length?<section className="pc-gov-card"><h2>{t('Respostas que faltam')}</h2><ul>{faltamDe(s).map(q=><li key={q.id}><a href={href.pergunta(q.capitulo,q.id)}>{t(tituloDaTelaLit(s,q.id)||CURTO[q.id]||q.id)}</a></li>)}</ul></section>:null}
-  {p.blocos.map((b,i)=><section className="pc-gov-card" key={i}><h2>{b.titulo}</h2><dl className="pc-gov-dados">{b.linhas.map((l,j)=><div key={j}><dt>{l.rotulo}</dt><dd>{l.valor}</dd></div>)}</dl></section>)}<Button variant="secondary" href={href.pergunta(4,'lit-revisao')}>{t('Voltar')}</Button><LeituraSimples s={s}/>
+  {p.blocos.map((b,i)=><section className="pc-gov-card" key={i}><h2>{b.titulo}</h2><dl className="pc-gov-dados">{b.linhas.map((l,j)=><div key={j}><dt>{l.rotulo}</dt><dd>{l.valor}</dd></div>)}</dl></section>)}<Button variant="secondary" href={href.pergunta(3,'lit-recursos')}>{t('Voltar')}</Button><LeituraSimples s={s}/>
  </div>;
 }
 export function Letramento({ rota }: { rota: Rota }) {
@@ -126,11 +138,10 @@ export function Letramento({ rota }: { rota: Rota }) {
   const [tentou, setTentou] = useState(false);
   const lista = telasDoCapitulo(n, s), telas = telasAtivas(s), ativa = rota.tipo === 'pergunta' ? lista.find(q => q.id === rota.tela) : undefined;
   const legado = rota.tipo === 'pergunta' ? telaLetramentoLegada(rota.tela) : '';
-  const alternativa: Record<string,string> = { ...(somenteCurriculoLit(s) ? {'lit-alcance':'lit-curriculo'} : {}), 'lit-validacao': 'lit-oferta', 'lit-digital': 'lit-oferta', 'lit-projeto': 'lit-oferta', 'lit-curriculo': 'lit-desenho' };
-  const alvo = telas.find(q => q.id === legado) || telas.find(q => q.id === alternativa[legado]);
+  const alvo = telas.find(q => q.id === legado) || telas.find(q => q.id === TELAS_FORA_DO_FLUXO[legado]) || telas.find(q => q.id === 'lit-recursos');
   const semPublicos = !(s.ctx.problemas || []).some((id: string) => /^A\d+$/.test(id));
   const remap = rota.tipo === 'refinar' ? href.pergunta(3, 'lit-recursos')
-    : rota.tipo !== 'plano' && semPublicos && (n > 1 || rota.tipo === 'pergunta' && rota.tela === 'lit-alcance') ? href.pergunta(1, 'problemas')
+    : rota.tipo !== 'plano' && semPublicos && n > 1 ? href.pergunta(1, 'problemas')
     : rota.tipo === 'abertura' ? entradaEtapaLit(s, n)
     : rota.tipo === 'sintese' ? n < 4 ? entradaEtapaLit(s, (n + 1) as Capitulo) : href.plano()
     : rota.tipo === 'pergunta' && !ativa ? alvo ? href.pergunta(alvo.capitulo, alvo.id) : entradaEtapaLit(s, n) : null;
@@ -140,11 +151,11 @@ export function Letramento({ rota }: { rota: Rota }) {
   const aviso = !['pt', 'en'].includes(getLang()) ? <p className="pc-nota">{t(L('Tradução deste percurso em revisão; textos novos podem aparecer em inglês.', 'Translation of this pathway is under review; new text may appear in English.'))}</p> : null;
   if (rota.tipo === 'plano') return <Shell plano={false}>{aviso}<PlanoLit s={s} /></Shell>;
   if (!ativa) return null;
-  const id = ativa.id, i = lista.indexOf(ativa), erros = id === 'lit-alcance' ? errosAlcance(s) : [];
+  const id = ativa.id, erros: string[] = [];
   const camposFaltando = pendenciasCamposLit(s, id), custosFaltando = pendenciasCustosLit(s, id);
   const pendencias = [...camposFaltando.map(f => ({ caminho: f.caminho, label: rotuloLit(f.label) })), ...custosFaltando.map(c => ({ caminho: 'orcamento.itens.' + c.id, label: c.nome }))];
   const itemPendente = (p: { caminho: string; label: string }) => <li key={p.caminho}><a href={'#' + campoId(p.caminho)} onClick={e => { e.preventDefault(); focarCampo(p.caminho); }}>{p.label}</a></li>;
-  const falta = !telaRespondida(s, ativa) || erros.length > 0;
+  const falta = !TELAS_OPCIONAIS.includes(id) && !telaRespondida(s, ativa);
   const destinos = vizinhosLit(s, id);
   const avancar = () => {
     if (!falta) { ir(destinos.proxima); return; }
@@ -161,6 +172,6 @@ export function Letramento({ rota }: { rota: Rota }) {
       {erros.map(e => <li key={e}>{t(e)}</li>)}
       {!camposFaltando.length && !custosFaltando.length && !erros.length ? <li>{t(id === 'problemas' ? 'Selecione os públicos ou o currículo que fazem parte do plano.' : id === 'local' ? 'Escolha o país para avançar.' : 'Selecione ao menos uma prioridade.')}</li> : null}
     </ul>{pendencias.length > 3 ? <details><summary>{t('Ver outras {n} pendências', { n: pendencias.length - 3 })}</summary><ul>{pendencias.slice(3).map(itemPendente)}</ul></details> : null}</div> : null}
-    {id.startsWith('lit-') ? <div className="pc-lit-campos">{id === 'lit-recursos' ? <OrcamentoLit s={s} tentou={tentou} /> : <CamposLit s={s} id={id} tentou={tentou} />}{erros.length && !tentou ? erros.map(e => <p role="alert" className="pc-lit-erro" key={e}>{t(e)}</p>) : null}</div> : <ControlesTela e={s} tela={ativa} />}
+    {id.startsWith('lit-') ? <div className="pc-lit-campos">{id === 'lit-recursos' ? <OrcamentoLit s={s} tentou={tentou} /> : id === 'lit-participantes' ? <Participantes s={s} /> : <CamposLit s={s} id={id} tentou={tentou} />}{erros.length && !tentou ? erros.map(e => <p role="alert" className="pc-lit-erro" key={e}>{t(e)}</p>) : null}</div> : <ControlesTela e={s} tela={ativa} />}
   </QuestionFrame></div></Shell>;
 }

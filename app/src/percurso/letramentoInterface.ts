@@ -48,13 +48,14 @@ export function gruposCamposLit(s: Estado14, tela: string): GrupoCamposLit[] {
 }
 
 export function pendenciasCamposLit(s: Estado14, tela: string) {
-  return camposLetramento(s).filter(f => f.tela === tela && !campoLitRespondido(s, f));
+  return camposLetramento(s).filter(f => f.tela === tela && !f.opcional && !campoLitRespondido(s, f));
 }
 export function pendenciasCustosLit(s: Estado14, tela: string) {
   return tela === 'lit-recursos' ? orcamentoLetramento(s).itens.filter(i => !i.respondido) : [];
 }
 
 export const GUIAS_LIT: Record<string, string> = {
+  'lit-participantes': 'Opcional: estes números alimentam a estimativa da formação.',
   'lit-alcance': 'Defina quem será atendido. Informe os números exatos ou marque o que ainda precisa levantar.',
   'lit-diagnostico': 'Selecione o que já existe e as lacunas que o programa deve enfrentar.',
   'lit-desenho': 'Escolha o que cada público precisa aprender e como demonstrará essa aprendizagem.',

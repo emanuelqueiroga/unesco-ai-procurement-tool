@@ -143,9 +143,6 @@ function Linha({ s, l, moeda, tela, tentou, aberta, onAbrir }: { s: CasoStore; l
         {l.origem}
         {!compartilhado && !l.emUso && est && typeof est.valor !== 'number' && l.situacao !== 'sem_custo' && l.situacao !== 'informado' ? <Falta s={s} est={est} tela={tela} /> : null}
         {l.quantidades && !compartilhado && l.situacao !== 'sem_custo' && !(l.situacao === 'informado' && !l.emUso) ? <div className="pc-rec-quantidades">{l.quantidades}</div> : null}
-        <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}{l.detalhe ? ' · ' + t('Informações adicionadas') : ''}</summary>
-          <TextField multiline label={t('Detalhamento e fonte do item')} value={l.detalhe} onChange={l.onDetalhe} />
-        </details>
         {l.onRemover ? <Button variant="link" onClick={l.onRemover}>{t('Remover')}</Button> : null}
       </div>
     </details>
@@ -157,11 +154,12 @@ export function resumoPeriodo(meses: number | null, periodo: string, moeda: stri
   return (meses ? t('{n} meses', { n: meses }) : periodo || t('Período do orçamento')) + ' · ' + moeda;
 }
 
-export interface ContextoOrcamento { resumo: string; completo: boolean; campos: ReactNode }
+export interface ContextoOrcamento { resumo: string; completo: boolean; campos: ReactNode; /** "mudar" leva a outra tela (o período da governança fica em Equipe e formação) */ href?: string }
 
 /** Linha discreta "24 meses · BRL" com "mudar"; abre as perguntas do período e da fonte (abertas enquanto faltam). */
 function Contexto({ c }: { c: ContextoOrcamento }) {
   const [aberto, setAberto] = useState(!c.completo);
+  if (c.href) return <p className="pc-rec-contexto pc-rec-contexto--link"><span>{c.resumo}</span> <a className="pc-rec-ctx-mudar" href={c.href}>{t('mudar')}</a></p>;
   return <details className="pc-rec-contexto" open={aberto} onToggle={e => setAberto(e.currentTarget.open)}>
     <summary><span>{c.resumo}</span><span className="pc-rec-ctx-mudar">{aberto ? t('fechar') : t('mudar')}</span></summary>
     <div className="pc-rec-contexto-campos">{c.campos}</div>

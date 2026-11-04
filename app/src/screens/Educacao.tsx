@@ -9,6 +9,7 @@ import {
   telasDoCapitulo,
   telaRespondida,
   faltamDe,
+  TELAS_FORA_DO_FLUXO,
   type CasoStore,
   type Capitulo,
 } from "../store";
@@ -38,6 +39,7 @@ import {
   temasEd,
   orcamentoEd,
   planoEd,
+  usuariosSugeridosEd,
   telaEdLegada,
   TITULOS_ED,
   E,
@@ -168,18 +170,6 @@ function Campo({
           ) : null}
         </>
       )}
-      <details className="pc-gov-detalhes">
-        <summary>
-          {t("Adicionar mais informações +")}
-          {v.detalhe ? " · " + t("Informações adicionadas") : ""}
-        </summary>
-        <TextField
-          label={t("Informações adicionais: {campo}", { campo: t(f.label) })}
-          multiline
-          value={String(v.detalhe || "")}
-          onChange={(detalhe) => salvar({ ...v, detalhe })}
-        />
-      </details>
     </section>
   );
 }
@@ -215,7 +205,7 @@ function Campos({
             {fs
               .filter((f) => !f.grupo)
               .map((f,j) => (
-                <GrupoFormulario key={f.caminho} titulo={t(f.label)} estado={t(campoEdRespondido(s,f)?"Preenchido":"A preencher")} abrir={i===0&&j===0} nome="educacao-grupos"><Campo s={s} f={f} tentou={tentou} ocultarTitulo/></GrupoFormulario>
+                <Campo key={f.caminho} s={s} f={f} tentou={tentou} />
               ))}
           </Fragment>
         ),
@@ -242,6 +232,16 @@ function Resumo({ s }: { s: CasoStore }) {
       }
     />
   );
+}
+/** Quantidades opcionais das telas Intervenção (profissionais e horas) e Uso de IA (usuários, sugerido pelo Contexto). */
+function QuantidadesEd({ s, id }: { s: CasoStore; id: string }) {
+  const q = (c: string) => "orcamento.quantidades." + c;
+  const campo = (c: string, label: string, decimais = false, valor?: unknown) => (
+    <CampoQuantidade key={c} id={ident(q(c))} label={t(label)} decimais={decimais} dica={false} value={valor ?? lerEd(s, q(c))} onChange={(v) => gravar(s, q(c), v)} />
+  );
+  if (id === "ed-intervencao") return <div className="pc-curto-numeros">{campo("profissionais", "Profissionais a formar")}{campo("horasProfissional", "Horas por profissional", true)}</div>;
+  if (id === "ed-tecnologia") return <div className="pc-curto-numeros">{campo("usuarios", E("Usuários da ferramenta", "Tool users"), false, lerEd(s, q("usuarios")) ?? usuariosSugeridosEd(s) ?? undefined)}</div>;
+  return null;
 }
 function Orcamento({ s, tentou }: { s: CasoStore; tentou: boolean }) {
   const o = orcamentoEd(s),
@@ -297,13 +297,6 @@ function Orcamento({ s, tentou }: { s: CasoStore; tentou: boolean }) {
       quantidades: i.id === "equipe" ? (
         <CampoQuantidade id={ident("orcamento.quantidades.equipeFte")} label={t("Pessoas na equipe (equivalente em tempo integral)")} decimais
           value={lerEd(s, "orcamento.quantidades.equipeFte")} onChange={(valor) => gravar(s, "orcamento.quantidades.equipeFte", valor)} />
-      ) : i.id === "formacao" ? (
-        <>
-          <CampoQuantidade id={ident("orcamento.quantidades.profissionais")} label={t("Profissionais a formar")}
-            value={lerEd(s, "orcamento.quantidades.profissionais")} onChange={(valor) => gravar(s, "orcamento.quantidades.profissionais", valor)} />
-          <CampoQuantidade id={ident("orcamento.quantidades.horasProfissional")} label={t("Horas por profissional")} decimais
-            value={lerEd(s, "orcamento.quantidades.horasProfissional")} onChange={(valor) => gravar(s, "orcamento.quantidades.horasProfissional", valor)} />
-        </>
       ) : undefined,
       detalhe: String(v.detalhe || ""),
       onSituacao: (situacao) => novo({ situacao }),
@@ -422,12 +415,8 @@ export function Educacao({ rota }: { rota: Rota }) {
       rota.tipo === "pergunta" ? qs.find((q) => q.id === rota.tela) : undefined,
     idLegado = rota.tipo === "pergunta" ? telaEdLegada(rota.tela) : "",
     legado = qs.find((q) => q.id === idLegado);
-  const fallback: Record<string, string> = {
-      "ed-tecnologia": "ed-intervencao",
-      "ed-teste": "ed-avaliacao",
-      "ed-digital": "ed-intervencao",
-    },
-    alternativa = qs.find((q) => q.id === fallback[idLegado]);
+  const fallback: Record<string, string> = { ...TELAS_FORA_DO_FLUXO, "ed-tecnologia": "ed-intervencao" },
+    alternativa = qs.find((q) => q.id === TELAS_FORA_DO_FLUXO[idLegado]) || qs.find((q) => q.id === fallback[idLegado]) || qs.find((q) => q.id === TELAS_FORA_DO_FLUXO[rota.tipo === "pergunta" ? rota.tela : ""]);
   const remap =
     rota.tipo === "plano"
       ? null
@@ -495,19 +484,13 @@ export function Educacao({ rota }: { rota: Rota }) {
       <div className="pc-pergunta" data-tela={id}>
         <QuestionFrame
           title={t(TITULOS_ED[id] || TITULO_TELA[id] || CURTO[id] || id)}
-          explanation={primeiraFrase(t(
-            id === "ed-objetivos"
-              ? E(
-                  "Os impactos vêm dos desafios escolhidos. Revise os objetivos e informe a meta.",
-                  "Impacts follow the selected challenges. Review objectives and enter the target.",
-                )
-              : id === "ed-execucao"
-                ? E(
-                    "Conte cada participante uma única vez, mesmo quando participa de vários temas.",
-                    "Count each participant once, even when they take part in several themes.",
-                  )
-                : LEAD[id] || "",
-          ))}
+          explanation={t(
+            id === "ed-intervencao"
+              ? E("Os números alimentam a estimativa da formação.", "The numbers feed the training estimate.")
+              : id === "ed-tecnologia"
+                ? E("O número de usuários alimenta a estimativa das licenças.", "The number of users feeds the licence estimate.")
+                : id === "ed-recursos" ? "" : LEAD[id] || "",
+          ) || undefined}
           actions={<AcoesPercurso anterior={dest.anterior} avancar={avancar}/>}
         >
           {tentou && falta ? (
@@ -585,7 +568,10 @@ export function Educacao({ rota }: { rota: Rota }) {
               {id === "ed-recursos" ? (
                 <Orcamento s={s} tentou={tentou} />
               ) : (
+                <>
                 <Campos s={s} id={id} tentou={tentou} />
+                <QuantidadesEd s={s} id={id} />
+              </>
               )}
             </div>
           ) : (

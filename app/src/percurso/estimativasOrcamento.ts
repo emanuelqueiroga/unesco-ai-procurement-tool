@@ -6,31 +6,32 @@ import moedas from '../../../data/moedas.json';
 import { refLinha, lerNumero, LOC } from '../domain';
 import { t } from './textos';
 import { lerLit, publicosLetramento } from './letramento';
-import { lerEd } from './pedagogico';
+import { lerEd, usuariosIAEd } from './pedagogico';
 import { presetGovernanca, selecoesGov } from './governancaPresets';
 import { TITULOS_LIT } from './letramentoTitulos';
 import { TITULOS_ED } from './pedagogicoTitulos';
 import type { Estado14 } from '../store/tipos';
 
 export type FrenteEstimativa = 'governanca' | 'letramento' | 'educacao';
-type Base = 'formacao' | 'equipe' | 'avaliacao';
+type Base = 'formacao' | 'equipe' | 'avaliacao' | 'licenca';
 type EstadoEst = Pick<Estado14, 'ctx' | 'moeda'> & Partial<Pick<Estado14, 'caso'>>;
 
 export const PARAMETRO_FORMACAO = 'formacao.custoHora.programa';
 export const PARAMETRO_EQUIPE = 'sal.especialista_pedagogico';
 export const PARAMETRO_AVALIACAO = 'gov.avaliacaoExterna.ano1';
+export const PARAMETRO_LICENCA = 'saas.preco';
 
 /** Categorias com base de cálculo. As demais continuam sem estimativa: a ferramenta não inventa convenção. */
 export const BASES_ESTIMATIVA: Record<FrenteEstimativa, Record<string, Base>> = {
   governanca: { equipe: 'equipe', formacao: 'formacao', avaliacao: 'avaliacao' },
   letramento: { equipe: 'equipe', oferta: 'formacao', diagnostico: 'avaliacao' },
-  educacao: { equipe: 'equipe', formacao: 'formacao', avaliacao: 'avaliacao' },
+  educacao: { equipe: 'equipe', formacao: 'formacao', avaliacao: 'avaliacao', ia: 'licenca' },
 };
 /** Campos opcionais desta entrega (IDs estáveis no ctx de cada percurso). */
 export const QUANTIDADES_ESTIMATIVA = {
   governanca: { base: 'govOrcamento.quantidades', campos: ['equipeFte', 'servidores', 'horasServidor'] },
   letramento: { base: 'orcamento.quantidades', campos: ['equipeFte'] },
-  educacao: { base: 'orcamento.quantidades', campos: ['equipeFte', 'profissionais', 'horasProfissional'] },
+  educacao: { base: 'orcamento.quantidades', campos: ['equipeFte', 'profissionais', 'horasProfissional', 'usuarios'] },
 } as const;
 
 export interface QuantidadeConta { rotulo: string; valor: number; origem: string }
@@ -66,7 +67,7 @@ const listaTexto = (itens: string[]) => {
 /** Quantidades opcionais gravadas pela pessoa (número > 0); outra coisa vale como não informada. */
 export function quantidadeEstimativa(frente: FrenteEstimativa, s: Pick<Estado14, 'ctx'>, campo: string): number | null {
   const v = frente === 'governanca' ? s.ctx.govOrcamento?.quantidades?.[campo] : frente === 'letramento' ? lerLit(s, 'orcamento.quantidades.' + campo) : lerEd(s, 'orcamento.quantidades.' + campo);
-  if (['servidores', 'profissionais'].includes(campo)) return inteiroPositivo(v) ? v : null;
+  if (['servidores', 'profissionais', 'usuarios'].includes(campo)) return inteiroPositivo(v) ? v : null;
   return positivo(v) ? v : null;
 }
 
@@ -108,31 +109,23 @@ interface Parcial { quantidades: QuantidadeConta[]; faltas: PendenciaEstimativa[
 function formacao(frente: FrenteEstimativa, s: EstadoEst): Parcial {
   const quantidades: QuantidadeConta[] = [], faltas: PendenciaEstimativa[] = [];
   if (frente === 'letramento') {
-    const pubs = publicosLetramento(s), origemP = t(TITULOS_LIT['lit-alcance']), origemH = t(TITULOS_LIT['lit-oferta']);
-    let somaP = 0, somaPH = 0, faltaP = false, faltaH = false;
+    const pubs = publicosLetramento(s), origem = t(TITULOS_LIT['lit-participantes']);
+    let somaPH = 0, faltaP = false, faltaH = false;
     for (const p of pubs) {
       const a = lerLit(s, `publicos.${p.id}.participantes`), h = lerLit(s, `publicos.${p.id}.horas`);
       const vp = a?.situacao !== 'a_levantar' && inteiroPositivo(a?.valor) ? a.valor : null, vh = h?.situacao !== 'a_levantar' && positivo(h?.valor) ? h.valor : null;
-      if (vp === null) faltaP = true; else quantidades.push({ rotulo: t('Participantes previstos') + ' · ' + t(p.nome), valor: vp, origem: origemP });
-      if (vh === null) faltaH = true; else quantidades.push({ rotulo: t('Horas previstas por participante') + ' · ' + t(p.nome), valor: vh, origem: origemH });
-      if (vp !== null && vh !== null) { somaP += vp; somaPH += vp * vh; }
+      if (vp === null) faltaP = true; else quantidades.push({ rotulo: t('Participantes previstos') + ' · ' + t(p.nome), valor: vp, origem });
+      if (vh === null) faltaH = true; else quantidades.push({ rotulo: t('Horas previstas por participante') + ' · ' + t(p.nome), valor: vh, origem });
+      if (vp !== null && vh !== null) somaPH += vp * vh;
     }
-    if (!pubs.length || faltaP) faltas.push({ texto: t('o número de participantes previstos'), tela: 'lit-alcance', ancora: 'lit-alcance' });
-    if (!pubs.length || faltaH) faltas.push({ texto: t('as horas previstas por participante'), tela: 'lit-oferta', ancora: 'lit-oferta' });
-    const u = lerLit(s, 'alcance.totalUnico'), unico = pubs.length > 1 && u?.situacao !== 'a_levantar' && inteiroPositivo(u?.valor) && u.valor < somaP ? u.valor : null;
-    if (unico !== null) {
-      quantidades.push({ rotulo: t('Total de participantes distintos, sem contar a mesma pessoa duas vezes'), valor: unico, origem: origemP });
-      const media = somaPH / somaP;
-      return { quantidades, faltas, param: PARAMETRO_FORMACAO, usd: c => unico * media * c,
-        formula: t('Participantes distintos × média de horas por participante × custo por hora de formação'),
-        calculo: p => `${num(unico)} × ${num(media)} h × ${formatarMoedaEst(p.valor, p.moeda)}` };
-    }
+    if (!pubs.length || faltaP) faltas.push({ texto: t('o número de participantes previstos'), tela: 'lit-participantes', ancora: 'lit-participantes' });
+    if (!pubs.length || faltaH) faltas.push({ texto: t('as horas previstas por participante'), tela: 'lit-participantes', ancora: 'lit-participantes' });
     return { quantidades, faltas, param: PARAMETRO_FORMACAO, usd: c => somaPH * c,
       formula: pubs.length > 1 ? t('Soma por público (participantes previstos × horas por participante) × custo por hora de formação') : t('Participantes previstos × horas por participante × custo por hora de formação'),
       calculo: p => `${num(somaPH)} ${t('horas-participante')} × ${formatarMoedaEst(p.valor, p.moeda)}` };
   }
   const gov = frente === 'governanca', [cP, cH] = gov ? ['servidores', 'horasServidor'] : ['profissionais', 'horasProfissional'];
-  const tela = gov ? 'gov-recursos' : 'ed-recursos', origem = gov ? t('Recursos e orçamento') : t(TITULOS_ED['ed-recursos']);
+  const tela = gov ? 'gov-equipe' : 'ed-intervencao', origem = gov ? t('Equipe e formação') : t(TITULOS_ED['ed-intervencao']);
   const anc = (c: string) => (gov ? 'gov-govOrcamento-quantidades-' : 'ed-orcamento-quantidades-') + c;
   const p = quantidadeEstimativa(frente, s, cP), h = quantidadeEstimativa(frente, s, cH);
   if (p === null) faltas.push({ texto: gov ? t('os servidores a formar') : t('os profissionais a formar'), tela, ancora: anc(cP) });
@@ -143,7 +136,7 @@ function formacao(frente: FrenteEstimativa, s: EstadoEst): Parcial {
     formula: gov ? t('Servidores a formar × horas por servidor × custo por hora de formação') : t('Profissionais a formar × horas por profissional × custo por hora de formação'),
     calculo: x => `${num(p || 0)} × ${num(h || 0)} h × ${formatarMoedaEst(x.valor, x.moeda)}` };
 }
-const telaRecursos = (f: FrenteEstimativa) => f === 'governanca' ? 'gov-recursos' : f === 'letramento' ? 'lit-recursos' : 'ed-recursos';
+const telaRecursos = (f: FrenteEstimativa) => f === 'governanca' ? 'gov-equipe' : f === 'letramento' ? 'lit-recursos' : 'ed-recursos';
 const ancoraPeriodo = (f: FrenteEstimativa) => f === 'governanca' ? 'gov-govOrcamento-periodo' : f === 'letramento' ? 'lit-orcamento-periodo' : 'ed-orcamento-periodo';
 
 /**
@@ -153,7 +146,7 @@ const ancoraPeriodo = (f: FrenteEstimativa) => f === 'governanca' ? 'gov-govOrca
 export function estimativaReferencia(frente: FrenteEstimativa, categoria: string, s: EstadoEst): Estimativa | null {
   if (!temBaseEstimativa(frente, categoria)) return null;
   const base = BASES_ESTIMATIVA[frente][categoria], moeda = moedaDoOrcamento(frente, s), meses = mesesPeriodo(frente, s);
-  const tela = telaRecursos(frente), origemOrc = frente === 'governanca' ? t('Recursos e orçamento') : t(frente === 'letramento' ? TITULOS_LIT['lit-recursos'] : TITULOS_ED['ed-recursos']);
+  const tela = telaRecursos(frente), origemOrc = frente === 'governanca' ? t('Equipe e formação') : t(frente === 'letramento' ? TITULOS_LIT['lit-recursos'] : TITULOS_ED['ed-recursos']);
   const faltaPeriodo: PendenciaEstimativa = { texto: t('o período do orçamento'), tela, ancora: ancoraPeriodo(frente) };
   const periodo = meses === null ? null : { meses, rotulo: t('{n} meses', { n: meses }) };
   let parcial: Parcial;
@@ -166,6 +159,14 @@ export function estimativaReferencia(frente: FrenteEstimativa, categoria: string
     parcial = { quantidades, faltas, param: PARAMETRO_EQUIPE, usd: c => (fte || 0) * ((meses || 0) / 12) * c,
       formula: t('Pessoas em tempo integral × (meses do período ÷ 12) × custo anual de referência por pessoa'),
       calculo: p => `${num(fte || 0)} × (${num(meses || 0)} ÷ 12) × ${formatarMoedaEst(p.valor, p.moeda)}` };
+  } else if (base === 'licenca') {
+    const u = frente === 'educacao' ? usuariosIAEd(s as any) : null, faltas: PendenciaEstimativa[] = [], quantidades: QuantidadeConta[] = [];
+    if (u === null) faltas.push({ texto: t('o número de usuários da ferramenta'), tela: 'ed-tecnologia', ancora: 'ed-orcamento-quantidades-usuarios' });
+    else quantidades.push({ rotulo: t('Usuários da ferramenta'), valor: u, origem: t(TITULOS_ED['ed-tecnologia']) + (lerEd(s, 'orcamento.quantidades.usuarios') ? '' : ' · ' + t('total do Contexto')) });
+    if (meses === null) faltas.push(faltaPeriodo); else quantidades.push({ rotulo: t('Meses do período do orçamento'), valor: meses, origem: t('Período do orçamento') });
+    parcial = { quantidades, faltas, param: PARAMETRO_LICENCA, usd: c => (u || 0) * (meses || 0) * c,
+      formula: t('Usuários × preço de referência por licença por mês × meses do período'),
+      calculo: p => `${num(u || 0)} × ${formatarMoedaEst(p.valor, p.moeda)} × ${num(meses || 0)}` };
   } else {
     const n = meses === null ? 0 : Math.ceil(meses / 12), quantidades: QuantidadeConta[] = [];
     if (meses !== null) quantidades.push({ rotulo: t('Avaliações externas no período (uma a cada 12 meses ou fração)'), valor: n, origem: t('Período do orçamento') });

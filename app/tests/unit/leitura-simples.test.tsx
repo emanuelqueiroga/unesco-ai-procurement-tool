@@ -33,7 +33,8 @@ describe('proposta extra de leitura simples',()=>{
   S().responder('prioridades',['governar']);S().responder('problemas',['G11','G12','G13','G14','G15','G16','G17','G18']);
   const p=leituraSimples(S());expect(p.resumo[0].valor).toContain('e mais 5');
   expect(p.secoes[0].linhas.filter(l=>l.rotulo==='Prioridade')).toHaveLength(8);
-  expect(p.secoes[2].linhas[0].rotulo).toContain('Sugestão a revisar');
+  // versão de teste (fluxos enxutos): as ações são só as sugeridas; o rótulo é o desafio e o valor a ação
+  expect(p.secoes[2].linhas[0].valor).toContain('regulamentação');
  });
  it('resolve valores de período das escolhas do letramento',()=>{
   S().responder('prioridades',['sobre']);S().responder('problemas',['A11']);S().responder('letramento.orcamento.periodo',{escolhas:['12']});
@@ -65,7 +66,8 @@ describe('documentos representativos, com todos os públicos ou temas',()=>{
    if(frente==='educacao'){
     S().responder('etapas',{fund2:{on:true,escolas:120,alunos:12000,soTotal:true}});
     for(const f of camposEd(S()))S().responder('educacao',alterarEd(S(),f.caminho,f.numero?{situacao:'informado',valor:f.caminho.endsWith('.meta')?80.5:250}:{escolhas:[f.opcoes![0].id]}));
-    const p=leituraSimples(S());expect(JSON.stringify(p)).toContain('80,5');expect(JSON.stringify(p)).toContain('12.000');
+    // versão de teste: a meta deixou de ser perguntada; os impactos derivados dos temas e o alcance aparecem
+    const p=leituraSimples(S());expect(JSON.stringify(p)).toContain('Impacto esperado');expect(JSON.stringify(p)).toContain('12.000');
    }
    if(frente==='letramento')for(const f of camposLetramento(S()))S().responder('letramento.'+f.caminho,f.numero?{situacao:'informado',valor:250}:{escolhas:[f.opcoes![0].id]});
   }
