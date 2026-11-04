@@ -83,7 +83,7 @@ export function governancaRespondida(s: Estado14, id: string): boolean {
   }
 }
 /** Telas opcionais: Próximo não é bloqueado nelas. */
-export const TELAS_OPCIONAIS = ['gov-equipe', 'lit-participantes'];
+export const TELAS_OPCIONAIS = ['gov-equipe', 'lit-escolas', 'lit-participantes'];
 export interface BlocoGovernanca { titulo: string; linhas: { rotulo: string; valor: string }[] }
 export function planoGovernanca(s: Estado14) {
   const x = contextoGovProjetado(s), qs = desafiosGovernanca(s), acoes = acoesGovernanca(s), orcamento = orcamentoGovernanca(s);

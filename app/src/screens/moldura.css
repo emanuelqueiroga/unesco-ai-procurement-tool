@@ -297,3 +297,8 @@ a.pc-faixa-custo:hover { color: var(--on-night); outline: 2px solid var(--primar
   .pc-part-nome { grid-column: 1 / -1; }
   .pc-part-campo .pr-textfield-label { position: static; inline-size: auto; block-size: auto; overflow: visible; clip-path: none; white-space: normal; font-size: 13px; }
 }
+
+/* versão de teste: valores sugeridos a partir do Contexto */
+.pc-sugerido { display: inline-block; margin-block-start: 4px; font-size: 13px; line-height: 18px; color: var(--accent-ink, var(--muted)); }
+.pc-esc { display: flex; flex-direction: column; gap: 24px; }
+.pc-esc-num { max-width: 280px; }

@@ -61,7 +61,7 @@ describe('versão de teste: fluxos enxutos por prioridade', () => {
   });
   it('letramento: Participantes (participantes × horas por público) e Orçamento; total distinto e elegíveis guardados não contam', () => {
     S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11', 'A14']);
-    expect(ids()).toEqual(['local', 'prioridades', 'problemas', 'lit-participantes', 'lit-recursos']);
+    expect(ids()).toEqual(['local', 'prioridades', 'problemas', 'lit-escolas', 'lit-participantes', 'lit-recursos']);
     expect(camposLetramento(S()).filter(f => f.tela === 'lit-participantes').map(f => f.caminho)).toEqual(['publicos.A11.participantes', 'publicos.A11.horas', 'publicos.A14.participantes', 'publicos.A14.horas']);
     g('publicos.A11.participantes', { valor: 1000, situacao: 'informado' }); g('publicos.A11.horas', { valor: 30, situacao: 'informado' });
     g('publicos.A14.participantes', { valor: 200, situacao: 'informado' }); g('publicos.A14.horas', { valor: 10, situacao: 'informado' });

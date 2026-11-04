@@ -55,7 +55,8 @@ export function pendenciasCustosLit(s: Estado14, tela: string) {
 }
 
 export const GUIAS_LIT: Record<string, string> = {
-  'lit-participantes': 'Opcional: estes números alimentam a estimativa da formação.',
+  'lit-escolas': 'Os valores vêm do Contexto; altere se precisar.',
+  'lit-participantes': 'Os valores sugeridos vêm do Contexto; altere se precisar.',
   'lit-alcance': 'Defina quem será atendido. Informe os números exatos ou marque o que ainda precisa levantar.',
   'lit-diagnostico': 'Selecione o que já existe e as lacunas que o programa deve enfrentar.',
   'lit-desenho': 'Escolha o que cada público precisa aprender e como demonstrará essa aprendizagem.',

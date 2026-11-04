@@ -511,7 +511,8 @@ export function camposEd(s: EstadoEd): CampoEd[] {
     multipla = false,
     grupo?: string,
   ) =>
-    fs.push({ tela, caminho, label, opcoes: [...op(ops), P], multipla, grupo });
+    // versão de teste: telas enxutas sem a opção "Informação a levantar" (campo sem resposta já fica pendente)
+    fs.push({ tela, caminho, label, opcoes: tela === "ed-intervencao" || tela === "ed-tecnologia" ? op(ops) : [...op(ops), P], multipla, grupo });
   const num = (
     tela: string,
     caminho: string,

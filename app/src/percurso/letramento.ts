@@ -1,5 +1,5 @@
 // Modelo nacional de formação/currículo. Seleções são intenções declaradas, nunca evidências presumidas.
-import { PRIORIDADES, ETAPAS_ENS, LOC, nomePais, paisDoCaso } from '../domain';
+import { PRIORIDADES, ETAPAS_ENS, LOC, nomePais, paisDoCaso, totaisCtx } from '../domain';
 import { orcamentoGovernanca, moedaGovernanca, valorItemOrcamento } from './governanca';
 import { estimativaReferencia, itemEmReferencia, valorEstimado, totaisOrcamento, linhasTotais, notaEstimativas } from './estimativasOrcamento';
 import { t } from './textos';
@@ -43,7 +43,9 @@ const adicionaisAtivos = (s:Estado) => Object.keys(lerLit(s,'orcamento.adicionai
 export const digitalLit = (s: Estado) => ['online','hibrida'].some(id => inclui(s,'oferta.modalidade',id)) || ['materiais','plataforma','ia'].some(id => inclui(s,'oferta.recursos',id));
 /** Versão de teste: Participantes (com públicos) · Orçamento. Currículo não tem tela: vira uma linha do orçamento. */
 export function telasLetramento(s: Estado): string[] {
- return ['local','prioridades','problemas',...(publicosLetramento(s).length ? ['lit-participantes'] : []),'lit-recursos'];
+ const pubs = publicosLetramento(s).map(p => p.id);
+ const escolas = pubs.some(id => ['A11','A12','A14'].includes(id));
+ return ['local','prioridades','problemas',...(escolas ? ['lit-escolas'] : []),...(pubs.length ? ['lit-participantes'] : []),'lit-recursos'];
 }
 /** Campos do fluxo de teste. Os demais (diagnóstico, desenho, oferta, ações, revisão, público elegível, total distinto…)
  *  continuam guardados no caso, fora das telas, das pendências, do progresso e dos relatórios. */
@@ -51,6 +53,10 @@ export function camposLetramento(s: Estado): CampoLit[] {
  const campos: CampoLit[] = [];
  const f = (tela: string,caminho: string,label: string,opcoes: OpcaoLit[],multipla=false,evidencia=false) => campos.push({tela,caminho,label,opcoes:[...opcoes,PENDENTE],multipla,evidencia});
  const n = (tela:string,caminho:string,label:string,numero:'inteiro'|'decimal'='inteiro') => campos.push({tela,caminho,label,numero,opcional:true});
+ if (telasLetramento(s).includes('lit-escolas')) {
+  campos.push({tela:'lit-escolas',caminho:'alcance.etapas',label:L('Etapas atendidas','Education levels served'),opcoes:(ETAPAS_ENS as any[]).map(([id,nome]:string[])=>({id,texto:nome})),multipla:true,opcional:true});
+  n('lit-escolas','alcance.escolas',L('Total de escolas atendidas','Number of schools served'));
+ }
  for (const p of publicosLetramento(s)) {
   n('lit-participantes',`publicos.${p.id}.participantes`,L('Participantes previstos','Planned participants')+' · '+t(p.nome));
   n('lit-participantes',`publicos.${p.id}.horas`,L('Horas previstas por participante','Planned hours per participant')+' · '+t(p.nome),'decimal');
@@ -58,6 +64,19 @@ export function camposLetramento(s: Estado): CampoLit[] {
  f('lit-recursos','orcamento.periodo',L('Período do orçamento','Budget period'),[o('12','Próximos 12 meses após aprovação','Next 12 months after approval'),o('24','Próximos 24 meses após aprovação','Next 24 months after approval')]);
  for (const id of adicionaisAtivos(s)) f('lit-recursos',`orcamento.adicionais.${id}.nome`,L('Tipo do recurso adicional','Additional resource type'),[o('transporte','Transporte e participação','Travel and participation'),o('certificacao','Certificação','Certification'),o('outro','Recurso adicional','Additional resource')]);
  return campos;
+}
+/** Versão de teste: valores sugeridos a partir do Contexto (totais da rede, etapas, público de estudantes) para campos ainda vazios. */
+export function sugestoesLit(s: Estado): { caminho: string; valor: any }[] {
+ const r = (s.ctx as any).redeNacional || {}, tot = totaisCtx(s.ctx), pubs = publicosLetramento(s).map(p => p.id), out: { caminho: string; valor: any }[] = [];
+ const vazioNum = (c: string) => { const v = lerLit(s, c); return !v || (v.valor === '' || v.valor == null) && v.situacao !== 'a_levantar'; };
+ const escolas = +r.escolas || tot.escolas, estudantes = +r.estudantes || tot.alunos;
+ if (telasLetramento(s).includes('lit-escolas')) {
+  if (vazioNum('alcance.escolas') && escolas > 0) out.push({ caminho: 'alcance.escolas', valor: { valor: escolas, origem: 'sugerido' } });
+  const etapas = [...tot.etapas, ...(pubs.includes('A15') ? ['superior'] : [])].filter((x, i, a) => a.indexOf(x) === i);
+  if (!selecoesLit(s, 'alcance.etapas').length && etapas.length) out.push({ caminho: 'alcance.etapas', valor: { escolhas: etapas, origem: 'sugerido' } });
+ }
+ if (pubs.includes('A12') && vazioNum('publicos.A12.participantes') && estudantes > 0) out.push({ caminho: 'publicos.A12.participantes', valor: { valor: estudantes, origem: 'sugerido' } });
+ return out;
 }
 export const rotuloLit = (label:string) => label.split(' · ').map(parte=>t(parte)).join(' · ');
 const textoValido = (v:any) => typeof v==='string' && v.trim().length>0 && !v.includes('__');

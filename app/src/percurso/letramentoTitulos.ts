@@ -1,5 +1,6 @@
 const L = (pt: string, _en: string) => pt;
 export const TITULOS_LIT: Record<string,string> = {
+ 'lit-escolas': L('Escolas e etapas','Schools and levels'),
  'lit-participantes': L('Participantes e horas','Participants and hours'),
  'lit-alcance': L('Públicos e alcance','Audiences and scope'),
  'lit-diagnostico': L('O que já existe?','What is already in place?'),

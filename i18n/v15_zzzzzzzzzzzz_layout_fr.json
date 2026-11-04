@@ -61,5 +61,9 @@
  "Opcional: estes números alimentam a estimativa da formação.": "Optional: these numbers feed the training estimate.",
  "Desenho curricular": "Curriculum design",
  "Complete a intervenção e os valores do orçamento.": "Complete the intervention and the budget amounts.",
- "Participantes, horas e recursos de formação e currículo. Valores desconhecidos permanecem pendentes.": "Participants, hours and resources for training and curriculum. Unknown amounts remain pending."
+ "Participantes, horas e recursos de formação e currículo. Valores desconhecidos permanecem pendentes.": "Participants, hours and resources for training and curriculum. Unknown amounts remain pending.",
+ "Escolas e etapas": "Écoles et niveaux",
+ "Total de escolas atendidas": "Nombre d’écoles concernées",
+ "Os valores vêm do Contexto; altere se precisar.": "Les valeurs viennent du Contexte ; modifiez-les si nécessaire.",
+ "Os valores sugeridos vêm do Contexto; altere se precisar.": "Les valeurs suggérées viennent du Contexte ; modifiez-les si nécessaire."
 }

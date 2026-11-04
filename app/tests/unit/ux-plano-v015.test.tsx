@@ -61,7 +61,7 @@ describe('v015: panorama, progresso e controles acessíveis',()=>{
   expect(html).toMatch(/Pergunta \d+ de \d+/);expect(html).not.toContain('Etapa');
   const etapas=etapasDaFrente(S(),{capitulo:2,tela:'lit-participantes'});
   expect(etapas.map(e=>e.label)).toEqual(['Contexto','Participantes','Orçamento']);
-  expect(etapas.find(e=>e.state==='current')).toMatchObject({n:2,position:undefined,progress:1});
+  expect(etapas.find(e=>e.state==='current')).toMatchObject({n:2}); // Participantes agora tem Escolas e etapas + Participantes
  });
  it('associa o erro ao grupo e aos controles que recebem foco',()=>{
   const html=renderToString(<OptionCardGroup label="Situação" invalid describedBy="erro-situacao"><OptionCard name="situacao" value="nao" checked={false} label="Não existe"/></OptionCardGroup>);

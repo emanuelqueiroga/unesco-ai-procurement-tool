@@ -59,6 +59,7 @@ export const GOVERNANCA: TelaEssencial[] = [
 ];
 export const LETRAMENTO: TelaEssencial[] = [
  ...ESSENCIAL.filter(t => ['local','prioridades','problemas'].includes(t.id)),
+ { id: 'lit-escolas', capitulo: 2, n: [], campos: ['letramento'] },
  { id: 'lit-participantes', capitulo: 2, n: [], campos: ['letramento'] },
  { id: 'lit-recursos', capitulo: 3, n: [], campos: ['letramento'] },
 ];
@@ -67,7 +68,7 @@ export const PEDAGOGICO: TelaEssencial[] = [...ESSENCIAL.filter(t=>['local','pri
 export const TELAS_FORA_DO_FLUXO: Record<string, string> = {
   'gov-projeto': 'gov-equipe', 'gov-diagnostico': 'gov-equipe', 'gov-instrumentos': 'gov-equipe', 'gov-solucoes': 'gov-equipe',
   'gov-atores': 'gov-equipe', 'gov-capacidade': 'gov-equipe', 'gov-acoes': 'gov-recursos', 'gov-sandbox': 'gov-recursos', 'gov-revisao': 'gov-recursos',
-  'lit-alcance': 'lit-participantes', 'lit-diagnostico': 'lit-participantes', 'lit-desenho': 'lit-participantes', 'lit-oferta': 'lit-participantes',
+  'lit-alcance': 'lit-escolas', 'lit-diagnostico': 'lit-participantes', 'lit-desenho': 'lit-participantes', 'lit-oferta': 'lit-participantes',
   'lit-curriculo': 'lit-recursos', 'lit-validacao': 'lit-recursos', 'lit-digital': 'lit-recursos', 'lit-projeto': 'lit-recursos', 'lit-acoes': 'lit-recursos', 'lit-revisao': 'lit-recursos',
   'ed-objetivos': 'ed-intervencao', 'ed-acoes': 'ed-intervencao', 'ed-avaliacao': 'ed-intervencao', 'ed-teste': 'ed-intervencao',
   'ed-digital': 'ed-recursos', 'ed-execucao': 'ed-recursos', 'ed-acompanhamento': 'ed-recursos', 'ed-expansao': 'ed-recursos',
