@@ -29,3 +29,7 @@
 }
 [dir="rtl"] .dg-seta { transform: scaleX(-1); }
 @media (max-width: 900px) { [dir="rtl"] .dg-seta { transform: rotate(90deg); } }
+/* tema escuro: cores de destaque mais claras (contraste ≥ 4,5:1 sobre a superfície escura) */
+:root[data-theme="dark"] .dg-bloco { --dg: #8EA6FF; } :root[data-theme="dark"] .dg-verde { --dg: #6FD3A0; } :root[data-theme="dark"] .dg-lilas { --dg: #C3A4F0; } :root[data-theme="dark"] .dg-ambar { --dg: #F5B565; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .dg-bloco { --dg: #8EA6FF; } :root:not([data-theme="light"]) .dg-verde { --dg: #6FD3A0; } :root:not([data-theme="light"]) .dg-lilas { --dg: #C3A4F0; } :root:not([data-theme="light"]) .dg-ambar { --dg: #F5B565; } }
+:root[data-theme="dark"] .dg-num { color: #0F1B33; } @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .dg-num { color: #0F1B33; } }

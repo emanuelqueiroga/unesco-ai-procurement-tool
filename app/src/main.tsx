@@ -12,6 +12,7 @@ import { tr } from './domain';
 import { vigiarSalvamento } from './screens/salvamento';
 import { iniciarCapacidades } from './screens/acoes';
 import './styles/idiomas.css';
+import { lerLinkDoEndereco } from './compartilhar';
 
 // Os textos fixos dos componentes passam pelo mesmo tradutor do domínio.
 setTradutorUI((s) => String(tr(s)));
@@ -44,7 +45,9 @@ const desenhar = () => createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 );
-usarIdioma(idiomaInicial(useCaso.getState().lang))
+lerLinkDoEndereco()
+  .catch((e) => { console.error('link do plano', e); })
+  .then(() => usarIdioma(idiomaInicial(useCaso.getState().lang)))
   .then((l) => { if (useCaso.getState().lang !== l) useCaso.getState().setLang(l); })
   .catch((e) => console.error('idioma', e))
   .finally(desenhar);

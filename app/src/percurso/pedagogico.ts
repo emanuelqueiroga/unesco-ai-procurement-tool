@@ -4,7 +4,7 @@ import { OPC, etapasAtivas, alunosEtapa, ALUNOS_POR_PROF } from "../domain";
 import { orcamentoLetramento, alterarLit } from "./letramento";
 import { nomePais, paisDoCaso } from "../domain/pais.js";
 import { LOC } from "../domain/i18n.js";
-import { orcamentoV16, fasesSalvas, linhasFases } from "./orcamentoV016";
+import { orcamentoV16, fasesSalvas, linhasFases, proximoV16, instituicaoV16 } from "./orcamentoV016";
 import { t } from "./textos";
 import { E, TITULOS_ED } from "./pedagogicoTitulos";
 import { moedaGovernanca, orcamentoGovernanca, valorItemOrcamento } from "./governanca";
@@ -1358,6 +1358,7 @@ export function planoEd(s: EstadoEd) {
           rotulo: t("País"),
           valor: nomePais(paisDoCaso(s.caso)) || t("Não informado"),
         },
+        { rotulo: t("Instituição responsável"), valor: instituicaoV16(s) || t("Não informado") },
         ...(lerEd(s, "contexto.detalhe")
           ? [
               {
@@ -1468,30 +1469,13 @@ export function planoEd(s: EstadoEd) {
     ),
     pais: nomePais(paisDoCaso(s.caso)),
     temas,
-    blocos,
+    blocos: blocos.filter((b: any) => b.linhas.length),
     orcamento: o,
     faltam,
     pendentes,
     proxima: !temas.length
-      ? t(
-          E(
-            "Selecione os desafios educacionais.",
-            "Select the educational challenges.",
-          ),
-        )
-      : faltam.length || pendentes
-        ? t(
-            E(
-              "Complete a intervenção e os valores do orçamento.",
-              "Complete the intervention and the budget amounts.",
-            ),
-          )
-        : t(
-            E(
-              "Revise e aprove o plano antes de iniciar a execução.",
-              "Review and approve the plan before starting delivery.",
-            ),
-          ),
+      ? t(E("Selecione os desafios educacionais.", "Select the educational challenges."))
+      : proximoV16(o),
     escopo: o.estimados
       ? t(
           "Participantes e recursos são compartilhados entre temas, sem duplicar contagens ou custos. O orçamento separa os valores informados das estimativas de referência escolhidas, que são ilustrativas.",

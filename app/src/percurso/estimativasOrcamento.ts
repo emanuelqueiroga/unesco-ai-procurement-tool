@@ -237,6 +237,6 @@ export function notaEstimativas(o: { itens: { estimado?: number | null; estimati
   if (!o.estimados) return [];
   const usados = o.itens.filter(i => typeof i.estimado === 'number' && i.estimativa), conv = usados.find(i => i.estimativa?.conta.conversao)?.estimativa?.conta.conversao;
   const contas = usados.map(i => i.estimativa!.conta.formula + (i.estimativa!.conta.calculo ? ': ' + i.estimativa!.conta.calculo : '')).join('\n');
-  return [{ rotulo: t('Estimativas de referência'), valor: [t('Convenção da ferramenta (v13), ilustrativa, grau C: valores em US$, iguais para todos os países.'),
+  return [{ rotulo: t('Estimativas de referência'), valor: [t('Valor de referência genérico da ferramenta (grau C: convenção sem pesquisa de preços no país), em US$ e igual para todos os países. Substitua pelo valor da sua rede no campo abaixo da conta.'),
     conv ? t('Conversão: 1 US$ = {taxa} {moeda} ({fonte}{data}).', { taxa: numTaxa(conv.taxa), moeda: conv.para, fonte: conv.fonte, data: conv.data ? ', ' + conv.data : '' }) : '', contas].filter(Boolean).join('\n') }];
 }

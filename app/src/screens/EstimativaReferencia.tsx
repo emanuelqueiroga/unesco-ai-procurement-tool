@@ -18,7 +18,7 @@ export function ContaEstimativa({ est }: { est: Estimativa }) {
     <span><b>{t('Fórmula')}:</b> {c.formula}</span>
     {c.calculo ? <span><b>{t('Conta')}:</b> {c.calculo}</span> : null}
     {c.quantidades.length ? <span className="pc-est-bloco"><b>{t('Quantidades usadas')}</b>
-      {c.quantidades.map((q, i) => <span key={i}>{q.rotulo}: {numero(q.valor)} <span className="pc-est-origem">({t('pergunta: {origem}', { origem: q.origem })})</span></span>)}</span> : null}
+      {c.quantidades.map((q, i) => <span key={i}>{q.rotulo}: {numero(q.valor)} {q.origem ? <span className="pc-est-origem">({t('pergunta: {origem}', { origem: q.origem })})</span> : null}</span>)}</span> : null}
     {c.periodo ? <span><b>{t('Duração das fases')}:</b> {c.periodo.rotulo}</span> : null}
     {c.parametros.map(p => <span className="pc-est-bloco" key={p.id}><b>{t('Parâmetro')}</b>
       <span>{t(p.item)}: {formatarMoedaEst(p.valor, p.moeda)} · {t('unidade: {u}', { u: t(p.unidade) })}</span>

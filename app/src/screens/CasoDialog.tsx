@@ -1,3 +1,4 @@
+import { percursoInstitucional, percursoPedagogico } from '../domain';
 // Caixa "Caso": exportar e importar o caso (JSON, formato 14; arquivo ou dados colados), carregar um exemplo,
 // começar em branco, país da rede (opcional, REF-06), moeda, idioma e tema; a versão da base de referências (REF-05). Tudo fica no navegador; nada é enviado. Antes de substituir um caso
 // com respostas (exemplos, em branco, importar) pede confirmação (acoes.ts).
@@ -126,15 +127,16 @@ export function CasoDialog({ open, onClose }: { open: boolean; onClose: () => vo
             <Button variant="link" onClick={async () => { if (await comecarEmBranco()) fechar(); }}>{t('Começar um caso em branco')}</Button>
           </div>
         </section>
-        <section>
+        {percursoInstitucional(s.ctx) || percursoPedagogico(s.ctx) ? null : <section>
           <h3 className="pc-dialogo-titulo">{t('Modo')}</h3>
           <Segmented label={t('Modo')} value={s.modo} onChange={(m) => s.setModo(m)} options={[{ value: 'essencial', label: t('Essencial') }, { value: 'refinar', label: t('Refinar') }]} />
           <p className="pc-dialogo-texto">{t('Essencial: as perguntas que mudam o plano, com premissas padrão no resto. Refinar: as mesmas telas, com as premissas de cada etapa abertas para ajuste.')}</p>
-        </section>
+        </section>}
         <section>
           <h3 className="pc-dialogo-titulo">{t('País e moeda')}</h3>
           <Pais />
-          <SeletorMoeda compacto semNota />
+          {/* v016: nas frentes, a moeda é a do orçamento de cada frente; o seletor de exibição não se aplica */}
+          {percursoInstitucional(s.ctx) || percursoPedagogico(s.ctx) ? null : <SeletorMoeda compacto semNota />}
           <p className="pc-dialogo-texto">{textoVersao()}</p>
         </section>
         <section>

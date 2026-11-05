@@ -60,7 +60,7 @@ export const CAPITULOS_INFO: Record<Capitulo, InfoCapitulo> = {
 /** Frase de abertura de cada tela do Essencial (tom explicativo: por que a pergunta importa para o plano). */
 export const LEAD: Record<string, string> = {
   nivel: 'Quem decide e paga define as regras de compra, o orçamento e quem assina o contrato.',
-  local: 'O planejamento é sempre nacional. Escolha o país e, se quiser, informe a instituição responsável.',
+  local: 'Escolha o país (moeda e referências) e informe a instituição. O plano pode ser nacional, estadual ou municipal.',
   situacao: 'Uma proposta já recebida pede outras perguntas que uma iniciativa do zero. O plano ajusta as recomendações a esse ponto.',
   etapas: 'Selecione as etapas e informe escolas e estudantes.',
   prioridades: 'Escolha uma ou mais prioridades.',

@@ -125,7 +125,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
       options={[{ value: 'essencial', label: t('Essencial') }, { value: 'refinar', label: t('Refinar') }]}
     />
   );
-  const verPlano = comPlano && prioridadeEscolhida(s.ctx) ? <Button variant="link" size="sm" href={href.panorama()}>{t('Plano nacional')}</Button> : null;
+  const verPlano = comPlano && prioridadeEscolhida(s.ctx) ? <Button variant="link" size="sm" href={href.panorama()}>{t('Visão geral do plano')}</Button> : null;
   const botaoTema = (
     <Button
       variant="secondary"
@@ -175,7 +175,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, inicio = f
   }
 
   const pais = s.caso?.pais ? nomePais(paisDoCaso(s.caso)) : '';
-  const ctxCab = pais && prioridadeEscolhida(s.ctx) ? pais + ' · ' + t('plano nacional') : contexto;
+  const instit = String(s.ctx.local || '').trim(), ctxCab = pais && prioridadeEscolhida(s.ctx) ? (instit ? instit + ' · ' + pais : pais) : contexto;
   const etapas = nav ? etapasDaFrente(s, pos) : [];
   const marca = (
     <a className="pc-cab-marca" href={href.inicio()}>

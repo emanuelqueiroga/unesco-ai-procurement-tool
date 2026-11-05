@@ -20,7 +20,8 @@ import { TabelaRecursos, resumoPeriodo, type LinhaRecurso } from './TabelaRecurs
 import { primeiraFrase } from '../percurso/textos';
 import { focarPendencia } from '../percurso/navegacaoOrientada';
 import { usePadroes } from './usePadroes';
-import { FasesV16, OrcamentoV16 } from './OrcamentoV16';
+import { FasesV16, OrcamentoV16, ResumoV16, BotoesPDFV16 } from './OrcamentoV16';
+import { instituicaoV16 } from '../percurso/orcamentoV016';
 import { ehSugerido } from '../percurso/padroesTeste';
 import './governanca.css';
 import './letramento.css';
@@ -100,10 +101,12 @@ function Participantes({ s }: { s: CasoStore }) {
       {escolha('publicos.A11.incluiLiderancas')}
       {lider ? <div className="pc-esc-nums">{numero('publicos.A11.liderancas', 'Número de diretores e coordenadores')}</div> : null}
       {escolha('oferta.modalidade')}
+      <p className="pc-nota">{t('A forma de entrega fica registrada no plano; a estimativa usa o mesmo custo por hora.')}</p>
     </section> : null}
     {pubs.includes('A12') ? <section className="pv-publico"><h2 className="pc-lit-campo-titulo">{t('Estudantes')}</h2>
       {escolha('publicos.A12.niveis')}
       <div className="pc-esc-nums">{numero('publicos.A12.participantes', 'Número de estudantes')}</div>
+      <p className="pc-nota">{t('O número de estudantes fica registrado como alcance; as linhas de estudantes não têm estimativa automática.')}</p>
     </section> : null}
   </div>;
 }
@@ -166,10 +169,9 @@ function ResumoOrcamento({ s }: { s: CasoStore }) {
 function PlanoLit({s}:{s:CasoStore}) {
  const p=planoLetramento(s),[erro,setErro]=useState(''),[ocupado,setOcupado]=useState(false);
  const baixar=async(tipo:'brief'|'anexo')=>{setOcupado(true);setErro('');try {const {gerarGovernancaPDF}=await import('../plano/pdf_governanca');const doc=await gerarGovernancaPDF(s.estado(),{tipo,modelo:'letramento'});doc.save(tipo==='brief'?'resumo-letramento.pdf':'plano-letramento.pdf');}catch(e){console.error(e);setErro(t('Não foi possível gerar o PDF.'));}finally{setOcupado(false);}};
- return <div className="pc-gov-plano"><h1>{p.titulo}</h1><p className="pc-lead">{p.pais}</p><Alert kind="info" title={p.proxima}>{p.escopo}</Alert><ResumoOrcamento s={s}/>
-  <div className="pc-botoes"><Button disabled={ocupado} onClick={()=>void baixar('brief')}>{t(L('Resumo do programa (PDF)','Programme summary (PDF)'))}</Button><Button disabled={ocupado} variant="secondary" onClick={()=>void baixar('anexo')}>{t(L('Plano de formação e currículo (PDF)','Training and curriculum plan (PDF)'))}</Button></div>{erro?<p role="alert">{erro}</p>:null}<AtalhoLeituraSimples/>
+ return <div className="pc-gov-plano"><h1>{p.titulo}</h1><p className="pc-lead">{[instituicaoV16(s), p.pais].filter(Boolean).join(' · ')}</p><Alert kind="info" title={p.proxima}>{p.escopo}</Alert><ResumoV16 s={s} frente="letramento"/><BotoesPDFV16 s={s} frente="letramento"/>
   {p.faltam.length?<section className="pc-gov-card"><h2>{t('Respostas que faltam')}</h2><ul>{faltamDe(s).map(q=><li key={q.id}><a href={href.pergunta(q.capitulo,q.id)}>{t(tituloDaTelaLit(s,q.id)||CURTO[q.id]||q.id)}</a></li>)}</ul></section>:null}
-  {p.blocos.map((b,i)=><section className="pc-gov-card" key={i}><h2>{b.titulo}</h2><dl className="pc-gov-dados">{b.linhas.map((l,j)=><div key={j}><dt>{l.rotulo}</dt><dd>{l.valor}</dd></div>)}</dl></section>)}<Button variant="secondary" href={href.pergunta(3,'lit-recursos')}>{t('Voltar')}</Button><LeituraSimples s={s}/>
+  {p.blocos.map((b,i)=><section className="pc-gov-card" key={i}><h2>{b.titulo}</h2><dl className="pc-gov-dados">{b.linhas.map((l,j)=><div key={j}><dt>{l.rotulo}</dt><dd>{l.valor}</dd></div>)}</dl></section>)}<Button variant="secondary" href={href.pergunta(3,'lit-recursos')}>{t('Voltar')}</Button>
  </div>;
 }
 export function Letramento({ rota }: { rota: Rota }) {

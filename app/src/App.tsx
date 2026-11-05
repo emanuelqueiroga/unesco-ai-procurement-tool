@@ -13,6 +13,7 @@ import { Plano } from './screens/Plano';
 import { href, ir, useRota } from './percurso/rota';
 import { useCaso } from './store';
 import { FaixaRevisao } from './screens/FaixaRevisao';
+import { RecebidoHost } from './screens/CompartilharV16';
 import { ConfirmacaoHost, AvisosHost } from './screens/Confirmar';
 import { Refinar } from './screens/Refinar';
 import './screens/shell.css';
@@ -52,5 +53,5 @@ export function App() {
       default: return <Inicio />;
     }
   })();
-  return <><FaixaRevisao />{tela}<ConfirmacaoHost /><AvisosHost /></>;
+  return <><FaixaRevisao /><RecebidoHost />{tela}<ConfirmacaoHost /><AvisosHost /></>;
 }

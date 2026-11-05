@@ -7,7 +7,7 @@ import { nomePais, paisDoCaso } from '../domain/pais.js';
 import { tamanhoRedeValido, projetoUsoDefinido } from '../domain/escopo.js';
 import type { Estado14 } from '../store/tipos';
 import { t } from './textos';
-import { orcamentoV16, fasesSalvas, linhasFases } from './orcamentoV016';
+import { orcamentoV16, fasesSalvas, linhasFases, proximoV16, instituicaoV16 } from './orcamentoV016';
 import { estimativaReferencia, itemEmReferencia, valorEstimado, totaisOrcamento, linhasTotais, notaEstimativas, textoEstimado } from './estimativasOrcamento';
 export const CUSTOS_GOV = [
   ['equipe', 'Equipe e coordenação'], ['estudos', 'Estudos e assessoria'], ['consulta', 'Consulta e participação'],
@@ -84,7 +84,7 @@ export function planoGovernanca(s: Estado14) {
   const num = (v: unknown) => numeroPositivo(v) ? new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 2 }).format(v as number) : '';
   const q = s.ctx.govOrcamento?.quantidades || {};
   const blocos: BlocoGovernanca[] = [
-    { titulo: t('Contexto'), linhas: [linha('País', nomePais(paisDoCaso(s.caso))), linha('Instituição responsável', x.olhando),
+    { titulo: t('Contexto'), linhas: [linha('País', nomePais(paisDoCaso(s.caso))), linha('Instituição responsável', instituicaoV16(s)),
       ...qs.map(q => linha('Desafio', q.titulo))] },
     { titulo: t('Ações sugeridas'), linhas: acoes.map(a => ({ rotulo: a.titulo, valor: a.entrega })) },
     { titulo: t('Equipe e formação'), linhas: [linha('Fases', orcamento.periodo), linha('Pessoas na equipe (equivalente em tempo integral)', num(q.equipeFte)),
@@ -97,7 +97,7 @@ export function planoGovernanca(s: Estado14) {
   if (!s.caso.pais || !s.respC.pais) faltam.unshift('local');
   if (!qs.length || !(preenchido(x.problemaOutro) || s.respC.problemas)) faltam.unshift('problemas');
   const pendentes = orcamento.faltam;
-  const proxima = !qs.length ? t('Selecione os desafios do plano.') : faltam.length || pendentes ? t('Complete a equipe, a formação e os valores do orçamento.') : t('Submeta o plano de ação à autoridade competente e acompanhe sua execução.');
+  const proxima = !qs.length ? t('Selecione os desafios do plano.') : proximoV16(orcamento);
   return { pendentes, titulo: t('Plano de governança de IA na educação'), pais: nomePais(paisDoCaso(s.caso)), desafios: qs, acoes, orcamento, blocos, faltam, proxima,
     escopo: orcamento.estimados ? t('O orçamento separa os valores informados das estimativas de referência escolhidas, que são ilustrativas, e mostra o custo por fase.') : t('O orçamento usa apenas valores informados e mostra o custo por fase.'),
     projeto: null as string | null };

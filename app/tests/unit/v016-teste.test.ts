@@ -82,3 +82,45 @@ describe('v016: versão de teste', () => {
     expect(faltamDe(S()).map(t => t.id).filter(id => id.startsWith('ed-'))).toEqual([]);
   });
 });
+
+describe('v016: correções da avaliação por agentes', () => {
+  beforeEach(() => { setLang('pt'); S().setMoeda({ cod: 'USD', taxa: '', taxaDe: '' }); S().carregarExemplo('novo'); S().escolherPais('BRA'); });
+
+  it('fases editadas não voltam ao padrão com o pré-preenchimento', () => {
+    S().responder('prioridades', ['governar']); S().responder('problemas', ['G23']); S().responder('frenteAtiva', 'governanca');
+    preencher('governanca');
+    S().responder('govOrcamento.fases.piloto', { on: true, meses: 6, alcance: 10 });
+    S().responder('govOrcamento.fases.expansao', { on: false, meses: 12, alcance: 100 });
+    preencher('governanca');
+    expect(fasesAtivas(S(), 'governanca').map(f => [f.id, f.meses, f.alcance])).toEqual([['piloto', 6, 10], ['implantacao', 12, 33]]);
+  });
+
+  it('letramento: linhas de estudantes sem estimativa; formação soma as fases sem perder pessoas', () => {
+    S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11', 'A12']); S().responder('frenteAtiva', 'letramento');
+    S().responder('letramento', alterarLit(S().ctx.letramento, 'publicos.A11.participantes', { valor: 50, situacao: 'informado' }));
+    preencher('letramento');
+    const o = orcamentoLetramento(S());
+    expect(o.itens.find(i => i.id === 'l22')!.estimativa).toBeNull();
+    expect(o.itens.find(i => i.id === 'l23')!.estimativa).toBeNull();
+    const q = o.itens.find(i => i.id === 'l11')!.estimativa!.conta.quantidades.filter(x => /pessoas novas/.test(x.rotulo)).reduce((n, x) => n + x.valor, 0);
+    expect(q).toBe(50);
+  });
+
+  it('premissa editável substitui o custo por hora em todas as linhas da frente', () => {
+    S().responder('prioridades', ['governar']); S().responder('problemas', ['G23']); S().responder('frenteAtiva', 'governanca');
+    preencher('governanca');
+    const antes = orcamentoGovernanca(S()).itens.find(i => i.id === 'g32')!.estimativa!.valorUSD!;
+    S().responder('govOrcamento.premissas.formacao_custoHora_programa', 6);
+    const depois = orcamentoGovernanca(S()).itens.find(i => i.id === 'g32')!.estimativa!.valorUSD!;
+    expect(depois / antes).toBeCloseTo(0.5, 5);
+  });
+
+  it('o link do plano leva o caso inteiro e volta igual', async () => {
+    S().responder('prioridades', ['governar']); S().responder('problemas', ['G21', 'G23']); S().responder('frenteAtiva', 'governanca'); S().responder('local', 'Secretaria X');
+    preencher('governanca');
+    const { codificarCaso, decodificarCaso } = await import('../../src/compartilhar/codec');
+    const e = await decodificarCaso(await codificarCaso(S().estado()));
+    expect(e.ctx.local).toBe('Secretaria X');
+    expect(e.ctx.govOrcamento.quantidades).toEqual(S().ctx.govOrcamento.quantidades);
+  });
+});

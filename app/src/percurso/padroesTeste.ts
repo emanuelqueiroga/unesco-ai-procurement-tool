@@ -33,7 +33,9 @@ function vazio(v: any): boolean {
   if (v.situacao) return false;
   if (Array.isArray(v.escolhas) && v.escolhas.length) return false;
   if (v.detalhe && String(v.detalhe).trim()) return false;
-  return v.valor == null || v.valor === '';
+  // objeto de valor ({valor}) sem número; outros objetos (ex.: fase {on, meses, alcance}) só são vazios sem chaves
+  if ('valor' in v) return v.valor == null || v.valor === '';
+  return !Object.keys(v).some(k => k !== 'origem');
 }
 const ler = (raiz: any, caminho: string) => caminho.split('.').reduce((o, k) => o?.[k], raiz);
 

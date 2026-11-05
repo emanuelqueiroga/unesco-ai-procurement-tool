@@ -1,12 +1,15 @@
 // Versão de teste v016: tela de fases (Piloto, Implantação, Expansão) e tabela de orçamento por categoria,
 // comuns às três frentes.
+import { useState } from 'react';
 import { useCaso, type CasoStore } from '../store';
+import { Button } from '../ui';
+import { BotaoLinkPlano } from './CompartilharV16';
 import { CampoNumero } from '../percurso/CampoNumero';
 import { t } from '../percurso/textos';
 import { href } from '../percurso/rota';
 import { alterarLit } from '../percurso/letramento';
 import { alterarEd } from '../percurso/pedagogico';
-import { fasesV16, orcamentoV16, raizOrcamento, resumoFases } from '../percurso/orcamentoV016';
+import { fasesV16, orcamentoV16, raizOrcamento, resumoFases, matrizFases, resumoProsa, riscosV16, totalConhecido, premissaDaBase, chavePremissa } from '../percurso/orcamentoV016';
 import { formatarMoedaEst, type FrenteEstimativa } from '../percurso/estimativasOrcamento';
 import { TabelaRecursos, type LinhaRecurso } from './TabelaRecursos';
 import './moldura.css';
@@ -29,8 +32,8 @@ export function FasesV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativa
     <div className="pv-fases-cab" aria-hidden="true"><span>{t('Fase')}</span><span>{t('Meses')}</span><span>{t('Alcance acumulado (% das pessoas)')}</span></div>
     {fases.map(f => <div key={f.id} className={'pv-fases-linha' + (f.on ? '' : ' is-off')} role="group" aria-label={f.nome}>
       <label className="pv-fases-nome"><input type="checkbox" checked={f.on} onChange={e => salvar(f.id, 'on', e.currentTarget.checked)} /><span>{f.nome}</span></label>
-      <CampoNumero label={t('Meses')} value={f.meses} onChange={v => salvar(f.id, 'meses', v === '' ? undefined : v)} />
-      <CampoNumero label={t('Alcance acumulado (% das pessoas)')} value={f.alcance} onChange={v => salvar(f.id, 'alcance', v === '' ? undefined : Math.min(100, v as number))} />
+      <CampoNumero label={t('Meses') + ' · ' + f.nome} value={f.meses} onChange={v => salvar(f.id, 'meses', v === '' ? undefined : v)} />
+      <CampoNumero label={t('Alcance acumulado (% das pessoas)') + ' · ' + f.nome} value={f.alcance} onChange={v => salvar(f.id, 'alcance', v === '' ? undefined : Math.min(100, v as number))} />
     </div>)}
   </div>;
 }
@@ -47,6 +50,10 @@ export function OrcamentoV16({ s, frente, tentou }: { s: CasoStore; frente: Fren
     onOpcao: (r, on) => { const x = item(i.id), atual: string[] = Array.isArray(x.opcoes) ? x.opcoes : []; salvar(i.id, { ...x, opcoes: on ? [...atual.filter(v => v !== r), r] : atual.filter(v => v !== r) }); },
     fases: o.fases.map(f => ({ id: f.id, nome: f.nome, valor: typeof salvo[i.id]?.valores?.[f.id] === 'number' ? salvo[i.id].valores[f.id] : '' })),
     onValorFase: (fid, v) => { const x = item(i.id); salvar(i.id, { ...x, situacao: 'informado', valores: { ...(x.valores || {}), [fid]: v } }); },
+    quantidades: i.base ? (() => { const pr = premissaDaBase(i.base!), atual = raizOrcamento(s, frente).premissas?.[chavePremissa(pr.pid)];
+      return <div className="pv-premissa"><CampoNumero label={pr.rotulo} value={typeof atual === 'number' ? atual : ''} decimais placeholder={String(pr.padrao)}
+        hint={t('Vazio = valor de referência ({v}). Vale para todas as linhas desta frente que usam este valor.', { v: pr.padrao })}
+        onChange={v => gravarOrc(frente, 'premissas.' + chavePremissa(pr.pid), v === '' ? undefined : v)} /></div>; })() : undefined,
     onSituacao: id => salvar(i.id, { ...item(i.id), situacao: id }),
     onValor: v => salvar(i.id, { ...item(i.id), valor: v, situacao: 'informado' }),
     onDetalhe: v => salvar(i.id, { ...item(i.id), detalhe: v }),
@@ -62,4 +69,41 @@ export function OrcamentoV16({ s, frente, tentou }: { s: CasoStore; frente: Fren
         <span className="pv-por-fase-num">{f.informado ? formatarMoedaEst(f.informado, o.moeda) : ''}{f.informado && f.estimado ? ' + ' : ''}{f.estimado ? <span className="pc-rec-valor--est">{formatarMoedaEst(f.estimado, o.moeda)}</span> : null}{!f.informado && !f.estimado ? '—' : ''}</span></div>)}
     </div> : null}
   </>;
+}
+
+/** Resumo da frente: "Em resumo" e a tabela categoria × fase (mesma conta do cartão e dos PDFs). */
+export function ResumoV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativa }) {
+  const o = orcamentoV16(s, frente), linhas = matrizFases(o);
+  const val = (v: number | null, tipo: string) => v === null ? (tipo === 'a_levantar' ? t('a levantar') : '—') : formatarMoedaEst(v, o.moeda);
+  return <section className="pv-resumo" aria-labelledby={'pv-resumo-' + frente}>
+    <h2 id={'pv-resumo-' + frente} className="pv-resumo-titulo">{t('Em resumo')}</h2>
+    <p className="pv-resumo-prosa">{resumoProsa(o)}</p>
+    <div className="pv-matriz-rolagem" tabIndex={0} role="region" aria-label={t('Custo por categoria e fase')}>
+      <table className="pv-matriz">
+        <caption>{t('Custo por categoria e fase')}</caption>
+        <thead><tr><th scope="col">{t('Categoria')}</th>{o.fases.map(f => <th scope="col" key={f.id}>{f.nome}<span className="pv-matriz-sub">{t('{n} meses', { n: f.meses })} · {f.alcance}%</span></th>)}<th scope="col">{t('Total')}</th></tr></thead>
+        <tbody>{linhas.map(l => <tr key={l.id} className={'pv-matriz--' + l.tipo}><th scope="row">{(l.n ? l.n + ' ' : '') + l.nome}</th>{o.fases.map(f => <td key={f.id}>{val(l.porFase[f.id], l.tipo)}</td>)}<td className="pv-matriz-total">{val(l.total, l.tipo)}</td></tr>)}</tbody>
+        <tfoot><tr><th scope="row">{t('Custo conhecido')}</th>{o.fases.map(f => <td key={f.id}>{formatarMoedaEst(f.informado + f.estimado, o.moeda)}</td>)}<td className="pv-matriz-total">{formatarMoedaEst(totalConhecido(o), o.moeda)}</td></tr></tfoot>
+      </table>
+    </div>
+    <p className="pv-matriz-nota"><span className="pv-matriz-est">{t('Em âmbar')}</span>: {t('estimativa de referência, ilustrativa')}. {t('"a levantar": ainda sem valor, fora do custo conhecido.')}</p>
+    <h3 className="pv-resumo-sub">{t('Riscos e condições')}</h3>
+    <ul className="pv-resumo-riscos">{riscosV16(frente, o).map(r => <li key={r}>{r}</li>)}</ul>
+  </section>;
+}
+
+/** Botões dos PDFs, iguais nas três frentes. */
+export function BotoesPDFV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativa }) {
+  const [erro, setErro] = useState(''), [ocupado, setOcupado] = useState(false);
+  const nomeFrente = frente === 'governanca' ? 'governanca' : frente === 'letramento' ? 'letramento' : 'educacao';
+  const baixar = async (tipo: 'brief' | 'anexo') => {
+    setOcupado(true); setErro('');
+    try { const m = await import('../plano/pdf_v016'); const doc: any = await m.gerarPDFFrenteV16(s.estado(), { frente, tipo }); doc.save(m.nomeArquivoV16(tipo, nomeFrente)); }
+    catch (e) { console.error(e); setErro(t('Não foi possível gerar o PDF.')); }
+    finally { setOcupado(false); }
+  };
+  return <div className="pv-pdfs"><div className="pc-botoes">
+    <Button disabled={ocupado} onClick={() => void baixar('brief')}>{t('Resumo para decisão (PDF)')}</Button>
+    <Button disabled={ocupado} variant="secondary" onClick={() => void baixar('anexo')}>{t('Anexo técnico (PDF)')}</Button>
+  </div><BotaoLinkPlano /><p className="pc-nota">{t('Resumo: 1–2 páginas para quem decide. Anexo: todas as respostas e a memória das estimativas.')}</p>{erro ? <p role="alert">{erro}</p> : null}</div>;
 }

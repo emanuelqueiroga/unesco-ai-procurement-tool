@@ -49,7 +49,14 @@ export function corrigirMagnitudes(dic: Record<string, string>, mags: string[]):
 /** Idioma inicial: o guardado no caso, senão inglês (decisão da equipe na v13: inglês como padrão). */
 export function idiomaInicial(guardado?: string): string {
   const ids = idiomasDisponiveis();
-  return guardado && ids.includes(guardado) ? guardado : 'en';
+  if (guardado && ids.includes(guardado)) return guardado;
+  // primeira visita: o idioma do navegador, quando há tradução; senão inglês
+  try {
+    const nav = (typeof navigator !== 'undefined' ? [...(navigator.languages || []), navigator.language] : []).filter(Boolean).map(l => String(l).toLowerCase().split('-')[0]);
+    const achado = nav.find(l => ids.includes(l));
+    if (achado) return achado;
+  } catch { /* inglês abaixo */ }
+  return 'en';
 }
 
 // Fontes dos idiomas fora do latim básico (como carregarFonteIdioma na v13): só a folha do idioma escolhido.

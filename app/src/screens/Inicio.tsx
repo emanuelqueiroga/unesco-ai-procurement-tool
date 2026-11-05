@@ -40,12 +40,12 @@ export function Inicio() {
         ) : null}
         {erro ? <Alert kind="atencao" title={erro} /> : null}
         <div className="pc-inicio-principal">
-          <Button href={comCaso ? continuar.pendente?continuar.href:href.panorama() : href.abertura(1)}>
+          <Button href={comCaso ? continuar.pendente?continuar.href:href.panorama() : href.pergunta(1, 'local')}>
             {comCaso ? (continuar.pendente ? t('Continuar de onde parei') : t('Abrir o plano')) : t('Começar')}
           </Button>
           {comCaso ? (
             <Button variant="secondary" onClick={async () => {
-              if (await comecarEmBranco()) ir(href.abertura(1));
+              if (await comecarEmBranco()) ir(href.pergunta(1, 'local'));
             }}>{t('Começar novo plano')}</Button>
           ) : <p>{t('Primeiro, descreva seu contexto.')}</p>}
         </div>

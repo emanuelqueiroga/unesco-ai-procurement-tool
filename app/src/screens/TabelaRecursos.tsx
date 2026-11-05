@@ -87,7 +87,7 @@ function ContaBlocos({ est }: { est: Estimativa }) {
   return <div className="pc-rec-conta">
     <p className="pc-rec-blocos">{blocos.map((b, i) => <span key={i} className={b.op ? 'pc-rec-op' : i === ultimo ? 'pc-rec-bloco pc-rec-bloco--res' : 'pc-rec-bloco'}>{b.texto}</span>)}</p>
     <div className="pc-rec-conta-pe">
-      <span className="pc-rec-fonte">{t('Convenção ilustrativa')}{grau ? ' · ' + t('grau {g}', { g: grau }) : ''}</span>
+      <span className="pc-rec-fonte">{grau ? t('Referência genérica, igual para todos os países (grau {g})', { g: grau }) : t('Valor informado pela equipe')}</span>
       <span className="pc-est pc-rec-conta-completa"><Popover className="pc-est-popover" label={t('Ver a conta completa')} title={t('Como a estimativa foi calculada')} actions={fechar}><ContaEstimativa est={est} /></Popover></span>
     </div>
   </div>;
@@ -145,7 +145,7 @@ function Linha({ s, l, moeda, tela, tentou, aberta, onAbrir }: { s: CasoStore; l
         {comValor && l.extras?.length ? <div className="pc-rec-onde" role="group" aria-label={t('Tenho o valor') + ': ' + l.nome}>
           {[{ id: 'informado', rotulo: 'Neste orçamento' }, ...l.extras].map(o => <button key={o.id} type="button" className="pc-rec-pilula pc-rec-pilula--sm" aria-pressed={l.situacao === o.id} onClick={() => { if (l.situacao !== o.id) l.onSituacao(o.id); }}>{t(o.rotulo)}</button>)}
         </div> : null}
-        {l.opcoes?.length ? <fieldset className="pv-opcoes"><legend className="pv-opcoes-leg">{t('O que entra nesta categoria')}</legend>
+        {l.opcoes?.length ? <fieldset className="pv-opcoes"><legend className="pv-opcoes-leg">{t('O que entra nesta categoria')} <span className="pv-opcoes-nota">{t('(descreve o escopo; não muda a estimativa)')}</span></legend>
           {l.opcoes.map(o => <label key={o.rotulo} className={'pv-opcao' + (o.on ? ' is-on' : '')}><input type="checkbox" checked={o.on} onChange={e => l.onOpcao?.(o.rotulo, e.currentTarget.checked)} /><span>{t(o.rotulo)}</span></label>)}
         </fieldset> : null}
         {!l.emUso && l.situacao === 'informado' && l.fases?.length ? <div className="pv-fases-valor">{l.fases.map(f => <div className="pc-rec-campo" key={f.id}><CampoNumero label={f.nome + ' (' + moeda + ')'} value={f.valor} decimais

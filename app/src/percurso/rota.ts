@@ -32,7 +32,8 @@ export type Rota =
 const cap = (s: string): Capitulo | null => (['1', '2', '3', '4'].includes(s) ? (+s as Capitulo) : null);
 
 export function lerRota(hash: string): Rota {
-  const p = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  // "?caso=…" (plano compartilhado por link) não faz parte da rota
+  const p = hash.replace(/^#\/?/, '').split('?')[0].split('/').filter(Boolean);
   if (p[0] === 'plano-nacional') return {tipo:'panorama'};
   if (p[0] === 'frente' && ['governanca','letramento','educacao','projeto'].includes(p[1])) return {tipo:'frente',id:p[1] as FrenteId,resumo:p[2]==='resumo'};
   if (p[0] === 'frentes') return { tipo: 'frentes' };

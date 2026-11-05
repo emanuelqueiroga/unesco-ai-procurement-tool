@@ -89,7 +89,7 @@ export function tituloDaAba(rota: Rota, s?: { ctx?: Record<string, any> }): stri
     case 'sintese': parte = t(infoCapitulo(rota.n, s).titulo); break;
     case 'plano': parte = `${t('Seu plano')} · ${t(({ resumo: 'Em resumo', custa: 'Quanto custa', fazer: 'O que fazer', exigir: 'O que exigir', apendice: 'Apêndice', faltam: 'Respostas que faltam' } as Record<string, string>)[rota.pagina] || 'Em resumo')}`; break;
     case 'refinar': parte = t('Refinar'); break;
-    case 'panorama': parte = t('Plano nacional'); break;
+    case 'panorama': parte = t('Visão geral do plano'); break;
     case 'frente': parte = t(frentesDoPlano({ctx:s?.ctx||{}} as any).find(f=>f.id===rota.id)?.titulo||'Frente do plano'); break;
     case 'frentes': parte = t('Frentes do plano'); break;
     case 'galeria': parte = 'Prumo'; break;

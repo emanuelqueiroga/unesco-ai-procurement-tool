@@ -89,7 +89,11 @@ export function estimativaV16(s: Estado, f: FrenteEstimativa, cat: CategoriaV16,
   if (!cat.base) return null;
   const fases = fasesAtivas(s, f), q = quantidadesBase(s, f, cat.base, cat.id), faltas: PendenciaEstimativa[] = [];
   const pid = cat.base === 'equipe' ? PARAMETRO_EQUIPE : cat.base === 'licenca' ? PARAMETRO_LICENCA : PARAMETRO_FORMACAO;
-  const param = parametro(pid), conversao = taxaMoeda(moeda, s), quantidades: QuantidadeConta[] = [];
+  const base0 = parametro(pid), proprio = raizOrcamento(s, f).premissas?.[chavePremissa(pid)];
+  // premissa editável: a equipe pode substituir o valor de referência (custo por hora, custo anual por pessoa, licença)
+  const item = cat.base === 'equipe' ? 'Custo anual de referência por pessoa em tempo integral' : cat.base === 'licenca' ? 'Preço de referência da licença por usuário por mês' : 'Custo de referência por hora de formação';
+  const param = positivo(proprio) ? { ...base0, item, valor: proprio, fonte: t('Valor informado pela equipe'), grau: '' } : { ...base0, item };
+  const conversao = taxaMoeda(moeda, s), quantidades: QuantidadeConta[] = [];
   const falta = (i: number) => faltas.push({ texto: q.rotulos[i], tela: q.tela, ancora: q.ancora[i] || q.ancora[0] });
   if (!fases.length) faltas.push({ texto: t('as fases do plano'), tela: f === 'governanca' ? 'gov-fases' : f === 'letramento' ? 'lit-fases' : 'ed-fases', ancora: 'fases' });
   if (cat.base === 'formacao') { if (q.pessoas == null) falta(0); if (q.horas == null) falta(1); }
@@ -98,7 +102,7 @@ export function estimativaV16(s: Estado, f: FrenteEstimativa, cat: CategoriaV16,
   const formula = cat.base === 'formacao' ? t('Por fase: pessoas novas na fase (alcance da fase − alcance anterior) × horas × custo por hora de formação')
     : cat.base === 'equipe' ? t('Por fase: pessoas em tempo integral × (meses da fase ÷ 12) × custo anual por pessoa')
     : t('Por fase: usuários alcançados na fase × preço de referência por licença por mês × meses da fase');
-  const nota = t('Convenção da ferramenta (v13), ilustrativa, grau C: valores em US$, iguais para todos os países.');
+  const nota = positivo(proprio) ? t('Valor de referência substituído pela equipe.') : t('Valor de referência genérico da ferramenta (grau C: convenção sem pesquisa de preços no país), em US$ e igual para todos os países. Substitua pelo valor da sua rede no campo abaixo da conta.');
   const meses = fases.reduce((n, x) => n + x.meses, 0);
   const conta = { formula, calculo: '', quantidades, parametros: [param], conversao, periodo: meses ? { meses, rotulo: t('{n} meses', { n: meses }) } : null, nota };
   if (q.pessoas != null) quantidades.push({ rotulo: q.rotulos[0], valor: q.pessoas, origem: '' });
@@ -111,9 +115,9 @@ export function estimativaV16(s: Estado, f: FrenteEstimativa, cat: CategoriaV16,
   let anterior = 0;
   const porFase = fases.map(x => {
     let usd = 0;
-    if (cat.base === 'formacao') { const novos = Math.max(0, Math.round((q.pessoas as number) * (x.alcance - anterior) / 100)); usd = novos * (q.horas as number) * param.valor; quantidades.push({ rotulo: x.nome + ': ' + t('pessoas novas'), valor: novos, origem: x.alcance + '%' }); }
+    if (cat.base === 'formacao') { const novos = Math.max(0, Math.round((q.pessoas as number) * x.alcance / 100) - Math.round((q.pessoas as number) * anterior / 100)); /* diferença dos acumulados arredondados: a soma das fases é o total */ usd = novos * (q.horas as number) * param.valor; quantidades.push({ rotulo: x.nome + ' (' + x.alcance + '%): ' + t('pessoas novas'), valor: novos, origem: '' }); }
     else if (cat.base === 'equipe') usd = (q.fte as number) * (x.meses / 12) * param.valor;
-    else { const u = Math.round((q.usuarios as number) * x.alcance / 100); usd = u * param.valor * x.meses; quantidades.push({ rotulo: x.nome + ': ' + t('usuários alcançados'), valor: u, origem: x.alcance + '%' }); }
+    else { const u = Math.round((q.usuarios as number) * x.alcance / 100); usd = u * param.valor * x.meses; quantidades.push({ rotulo: x.nome + ' (' + x.alcance + '%): ' + t('usuários alcançados'), valor: u, origem: '' }); }
     anterior = Math.max(anterior, x.alcance);
     return { id: x.id, nome: x.nome, usd: centavos(usd), valor: taxa === null ? null : centavos(usd * taxa) };
   });
@@ -122,7 +126,7 @@ export function estimativaV16(s: Estado, f: FrenteEstimativa, cat: CategoriaV16,
   if (taxa === null) return { valor: null, valorUSD: usd, moeda, conta, falta: [], pendencias: [], fases: porFase,
     mensagem: t('Sem taxa de câmbio conhecida para {moeda}; a estimativa em US$ não é convertida para a moeda do orçamento.', { moeda }) } as Estimativa;
   const valor = centavos(porFase.reduce((n, x) => n + (x.valor as number), 0)); // soma das fases, para o total bater com o custo por fase
-  if (moeda !== 'USD') conta.calculo += ' × ' + num(taxa) + ' = ' + formatarMoedaEst(valor, moeda);
+  if (moeda !== 'USD') conta.calculo += ' × ' + new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 4 }).format(taxa) + ' = ' + formatarMoedaEst(valor, moeda);
   return { valor, valorUSD: usd, moeda, conta, fases: porFase } as Estimativa;
 }
 
@@ -142,11 +146,11 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
     const estimativa = estimativaV16(s, f, c, moeda), emRef = x.situacao === 'referencia' && !!c.base;
     const estimado = emRef && typeof estimativa?.valor === 'number' ? estimativa.valor : null;
     const marcadas = Array.isArray(x.opcoes) ? x.opcoes.filter((v: string) => c.opcoes.includes(v)) : [];
-    return { ...c, grupo: c.grupo, marcadas, valor, valores, situacao: String(x.situacao || ''), detalhe: String(x.detalhe || ''), estimativa, referencia: emRef, emReferencia: emRef, estimado,
+    return { ...c, nome: t(c.nome), grupo: c.grupo, marcadas, valor, valores, situacao: String(x.situacao || ''), detalhe: String(x.detalhe || ''), estimativa, referencia: emRef, emReferencia: emRef, estimado,
       respondido: ['a_estimar', 'sem_custo'].includes(x.situacao) || emRef || valor !== null, compartilhado: false, origem: null as any };
   });
   const tot = totaisOrcamento(itens, itens.every(i => i.respondido));
-  const porFase = fases.map(p => ({ id: p.id, nome: p.nome, meses: p.meses,
+  const porFase = fases.map(p => ({ id: p.id, nome: p.nome, meses: p.meses, alcance: p.alcance,
     informado: centavos(itens.reduce((n, i) => n + (i.situacao === 'informado' && positivoOuZero(i.valores[p.id]) ? i.valores[p.id] as number : 0), 0)),
     estimado: centavos(itens.reduce((n, i) => n + (i.estimado !== null ? (i.estimativa as any)?.fases?.find((z: any) => z.id === p.id)?.valor || 0 : 0), 0)) }));
   return { itens, moeda, periodo: resumoFases(s, f), fonte: '', fases: porFase, subtotal: tot.informado, temSubtotal: tot.informados > 0, ...tot };
@@ -157,4 +161,57 @@ function positivoOuZero(v: unknown): v is number { return typeof v === 'number' 
 export function linhasFases(o: { fases?: { nome: string; meses: number; informado: number; estimado: number }[]; moeda: string }): { rotulo: string; valor: string }[] {
   return (o.fases || []).map(f => ({ rotulo: t('Custo por fase') + ' · ' + f.nome + ' (' + t('{n} meses', { n: f.meses }) + ')',
     valor: f.informado + f.estimado ? formatarMoedaEst(f.informado + f.estimado, o.moeda) + (f.estimado ? ' (' + t('inclui estimativas de referência') + ')' : '') : t('Não informado') }));
+}
+
+/** Instituição responsável (campo da tela País; a governança antiga guardava em "olhando"). */
+export function instituicaoV16(s: Pick<Estado14, 'ctx'>): string { return String(s.ctx.local || s.ctx.olhando || '').trim(); }
+
+export interface LinhaMatriz { id: string; n: string; nome: string; grupo: string; tipo: 'informado' | 'estimado' | 'sem_custo' | 'a_levantar'; porFase: Record<string, number | null>; total: number | null }
+/** Categoria × fase: o valor de cada fase (informado ou estimado), o total e a situação. */
+export function matrizFases(o: ReturnType<typeof orcamentoV16>): LinhaMatriz[] {
+  return o.itens.map(i => {
+    const tipo: LinhaMatriz['tipo'] = i.situacao === 'sem_custo' ? 'sem_custo' : i.valor !== null && i.situacao === 'informado' ? 'informado' : i.estimado !== null ? 'estimado' : 'a_levantar';
+    const porFase: Record<string, number | null> = {};
+    for (const f of o.fases) porFase[f.id] = tipo === 'informado' ? (typeof i.valores[f.id] === 'number' ? i.valores[f.id] as number : null)
+      : tipo === 'estimado' ? ((i.estimativa as any)?.fases?.find((z: any) => z.id === f.id)?.valor ?? null) : tipo === 'sem_custo' ? 0 : null;
+    return { id: i.id, n: i.n, nome: i.nome, grupo: i.grupo, tipo, porFase, total: tipo === 'informado' ? i.valor : tipo === 'estimado' ? i.estimado : tipo === 'sem_custo' ? 0 : null };
+  });
+}
+/** Total conhecido (informado + estimado), mesmo com itens a levantar. */
+export const totalConhecido = (o: { informado: number; estimado: number }) => centavos(o.informado + o.estimado);
+/** Parágrafo "Em resumo" para a tela, o resumo e os PDFs. */
+export function resumoProsa(o: ReturnType<typeof orcamentoV16>): string {
+  const total = totalConhecido(o), meses = o.fases.reduce((n, f) => n + f.meses, 0), d = { total: formatarMoedaEst(total, o.moeda), meses, inf: formatarMoedaEst(o.informado, o.moeda), est: formatarMoedaEst(o.estimado, o.moeda) };
+  const fases = o.fases.map(f => f.nome + ' ' + formatarMoedaEst(centavos(f.informado + f.estimado), o.moeda)).join('; ');
+  const faltam = o.itens.filter(i => !i.respondido || i.situacao === 'a_estimar').map(i => i.nome);
+  return [
+    o.faltam ? t('Custo conhecido até agora: {total} em {meses} meses ({inf} informado e {est} em estimativas de referência).', d) : t('Custo total: {total} em {meses} meses ({inf} informado e {est} em estimativas de referência).', d),
+    o.fases.length ? t('Por fase: {fases}.', { fases }) : '',
+    faltam.length ? t('Ainda sem valor ({n}): {lista}.', { n: faltam.length, lista: faltam.join('; ') }) : '',
+  ].filter(Boolean).join(' ');
+}
+/** Próximo passo específico: o que falta levantar, ou confirmar estimativas, ou aprovar. */
+export function proximoV16(o: ReturnType<typeof orcamentoV16>): string {
+  const faltam = o.itens.filter(i => !i.respondido || i.situacao === 'a_estimar').map(i => i.nome);
+  if (faltam.length) return t('Próximo passo: levantar o valor de {lista}.', { lista: faltam.slice(0, 3).join('; ') + (faltam.length > 3 ? ' ' + t('e mais {n}', { n: faltam.length - 3 }) : '') });
+  if (o.estimados) return t('Próximo passo: confirmar as estimativas de referência com orçamentos reais e submeter o plano à aprovação.');
+  return t('Próximo passo: submeter o plano à aprovação e acompanhar a execução por fase.');
+}
+/** Riscos e condições para quem decide (curtos, por frente). */
+export function riscosV16(f: FrenteEstimativa, o: ReturnType<typeof orcamentoV16>): string[] {
+  const r = [t('As estimativas de referência são ilustrativas e iguais para todos os países: confirme-as com orçamentos reais antes de aprovar.')];
+  if (o.faltam) r.push(t('{n} itens ainda não têm valor e não entram no custo conhecido.', { n: o.faltam }));
+  if (f === 'governanca') r.push(t('Defina quem responde pela proteção de dados e pela supervisão antes de qualquer contratação.'), t('Preveja cláusulas de saída e portabilidade para não depender de um único fornecedor.'));
+  if (f === 'letramento') r.push(t('Garanta horas de formação dentro da carga horária dos professores.'), t('Use materiais acessíveis, adequados à idade e em linguagem simples.'));
+  if (f === 'educacao') r.push(t('Com IA: exija proteção dos dados dos estudantes, transparência e avaliação ao fim de cada fase.'), t('Só passe à expansão se o piloto mostrar resultados.'));
+  return r;
+}
+
+/** Chave da premissa editável no caso (sem pontos, que separam o caminho). */
+export const chavePremissa = (pid: string) => pid.replace(/\./g, '_');
+/** Parâmetro de referência de cada base e o rótulo do campo para a equipe substituí-lo. */
+export function premissaDaBase(base: Base): { pid: string; rotulo: string; padrao: number } {
+  const pid = base === 'equipe' ? PARAMETRO_EQUIPE : base === 'licenca' ? PARAMETRO_LICENCA : PARAMETRO_FORMACAO;
+  const rotulo = base === 'equipe' ? t('Custo anual por pessoa (US$)') : base === 'licenca' ? t('Preço da licença por usuário por mês (US$)') : t('Custo por hora de formação (US$)');
+  return { pid, rotulo, padrao: parametro(pid).valor };
 }

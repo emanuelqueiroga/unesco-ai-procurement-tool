@@ -1,6 +1,7 @@
 import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { usePadroes } from "./usePadroes";
-import { FasesV16, OrcamentoV16 } from "./OrcamentoV16";
+import { FasesV16, OrcamentoV16, ResumoV16, BotoesPDFV16 } from "./OrcamentoV16";
+import { instituicaoV16 } from "../percurso/orcamentoV016";
 import { ehSugerido } from "../percurso/padroesTeste";
 import { progressoFrente } from '../percurso/frentes';
 import { GrupoFormulario } from './GrupoFormulario';
@@ -358,24 +359,12 @@ function PlanoEd({ s }: { s: CasoStore }) {
   return (
     <div className="pc-gov-plano">
       <h1>{p.titulo}</h1>
-      <p className="pc-lead">{p.pais}</p>
+      <p className="pc-lead">{[instituicaoV16(s), p.pais].filter(Boolean).join(" · ")}</p>
       <Alert kind="info" title={p.proxima}>
         {p.escopo}
       </Alert>
-      <Resumo s={s} />
-      <div className="pc-botoes">
-        <Button disabled={ocupado} onClick={() => void baixar("brief")}>
-          {t(E("Resumo educacional (PDF)", "Educational summary (PDF)"))}
-        </Button>
-        <Button
-          disabled={ocupado}
-          variant="secondary"
-          onClick={() => void baixar("anexo")}
-        >
-          {t(E("Plano educacional (PDF)", "Educational plan (PDF)"))}
-        </Button>
-      </div>
-      {erro ? <p role="alert">{erro}</p> : null}<AtalhoLeituraSimples/>
+      <ResumoV16 s={s} frente="educacao" />
+      <BotoesPDFV16 s={s} frente="educacao" />
       {faltam.length ? (
         <section className="pc-gov-card">
           <h2>{t("Respostas que faltam")}</h2>
@@ -403,10 +392,9 @@ function PlanoEd({ s }: { s: CasoStore }) {
           </dl>
         </section>
       ))}
-      <Button variant="secondary" href={href.pergunta(4, "ed-expansao")}>
+      <Button variant="secondary" href={href.pergunta(3, "ed-recursos")}>
         {t("Voltar")}
       </Button>
-      <LeituraSimples s={s}/>
     </div>
   );
 }

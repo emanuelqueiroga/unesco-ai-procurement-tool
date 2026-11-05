@@ -1,6 +1,7 @@
 import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { usePadroes } from './usePadroes';
-import { FasesV16, OrcamentoV16 } from './OrcamentoV16';
+import { FasesV16, OrcamentoV16, ResumoV16, BotoesPDFV16 } from './OrcamentoV16';
+import { instituicaoV16 } from '../percurso/orcamentoV016';
 import { ehSugerido } from '../percurso/padroesTeste';
 import { GrupoFormulario, ValidacaoCampos } from './GrupoFormulario';
 import { AcoesPercurso } from './AcoesPercurso';
@@ -187,12 +188,12 @@ function PDFs({ s }: { s: CasoStore }) {
 function PlanoGov({ s }: { s: CasoStore }) {
   const p = planoGovernanca(s), faltam = faltamDe(s);
   return <div className="pc-gov-plano">
-    <h1>{p.titulo}</h1><p className="pc-lead">{p.pais}</p>
+    <h1>{p.titulo}</h1><p className="pc-lead">{[instituicaoV16(s), p.pais].filter(Boolean).join(' · ')}</p>
     <Alert kind="info" title={p.proxima}>{p.escopo}</Alert>
-    <ResultadoOrcamento s={s} /><PDFs s={s} /><AtalhoLeituraSimples/>
+    <ResumoV16 s={s} frente="governanca" /><BotoesPDFV16 s={s} frente="governanca" />
     {faltam.length ? <details className="pc-gov-card" open><summary>{t('Respostas que faltam')} ({faltam.length})</summary><ul>{faltam.map(q => <li key={q.id}><a href={href.pergunta(q.capitulo, q.id)}>{t(CURTO[q.id] || q.id)}</a></li>)}</ul></details> : null}
     {p.blocos.map((b, i) => <section className="pc-gov-card" key={i}><h2>{b.titulo}</h2><dl className="pc-gov-dados">{b.linhas.map((l, j) => <div key={j}><dt>{l.rotulo}</dt><dd>{l.valor}</dd></div>)}</dl></section>)}
-    <p><Button variant="secondary" href={href.pergunta(3, 'gov-recursos')}>{t('Voltar')}</Button></p><LeituraSimples s={s}/>
+    <p><Button variant="secondary" href={href.pergunta(3, 'gov-recursos')}>{t('Voltar')}</Button></p>
   </div>;
 }
 // Links e posições antigas são remapeados; as respostas antigas continuam guardadas no caso.
