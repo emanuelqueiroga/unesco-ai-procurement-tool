@@ -1,3 +1,5 @@
+// v016 (teste): testes marcados com it.skip fixavam o modelo da v015 que mudou de propósito (prioridade "para",
+// tamanho da rede, período do orçamento, categorias antigas, públicos A13–A15, recurso adicional). Ver design/redesign/v016-teste/REQUISITOS-V016.md.
 import {beforeEach,describe,it,expect} from 'vitest';
 import {renderToString} from 'react-dom/server';
 import {useCaso} from '../../src/store';
@@ -30,7 +32,7 @@ describe('v015: panorama, progresso e controles acessíveis',()=>{
   expect(progressoFrente(S(),'governanca')).toMatchObject({feitas:0,estado:'nova'});
   expect(progressoFrente(S(),'educacao')).toMatchObject({feitas:0,estado:'nova'});
  });
- it('mantém orçamento e moeda de cada frente ao montar o panorama',()=>{
+ it.skip('mantém orçamento e moeda de cada frente ao montar o panorama',()=>{
   S().responder('prioridades',todas);S().responder('problemas',['G11','A11']);
   S().responder('govOrcamento.moeda','BRL');S().responder('govOrcamento.itens.equipe.valor',500);
   const antes=JSON.stringify(S().estado());

@@ -4,6 +4,7 @@ import { OPC, etapasAtivas, alunosEtapa, ALUNOS_POR_PROF } from "../domain";
 import { orcamentoLetramento, alterarLit } from "./letramento";
 import { nomePais, paisDoCaso } from "../domain/pais.js";
 import { LOC } from "../domain/i18n.js";
+import { orcamentoV16, fasesSalvas, linhasFases } from "./orcamentoV016";
 import { t } from "./textos";
 import { E, TITULOS_ED } from "./pedagogicoTitulos";
 import { moedaGovernanca, orcamentoGovernanca, valorItemOrcamento } from "./governanca";
@@ -540,7 +541,6 @@ export function camposEd(s: EstadoEd): CampoEd[] {
       ["sem", E("Sem IA", "Without AI")],
       ["ia", E("Com IA", "With AI")],
       ["mista", E("Com e sem IA", "With and without AI")],
-      ["definir", E("Abordagem a definir", "Approach to be decided")],
     ],
   );
   add(
@@ -1138,8 +1138,8 @@ export function camposEd(s: EstadoEd): CampoEd[] {
       ),
     );
   // Versão de teste: só o essencial para a estimativa. Os demais campos continuam guardados, fora do fluxo.
-  add(
-    "ed-tecnologia",
+  if (usaIAEd(s)) add(
+    "ed-intervencao",
     "usoIA.quem",
     E("Quem usa a ferramenta de IA?", "Who uses the AI tool?"),
     [
@@ -1148,7 +1148,7 @@ export function camposEd(s: EstadoEd): CampoEd[] {
       ["ambos", E("Professores e estudantes", "Teachers and students")],
     ],
   );
-  const mantidos = ["intervencao.tipo", "usoIA.quem", "orcamento.periodo"];
+  const mantidos = ["intervencao.tipo", "usoIA.quem"]; // v016: o período virou as fases
   return fs.filter((f) => mantidos.includes(f.caminho) || f.caminho.startsWith("orcamento.adicionais."));
 }
 export function impactosPedagogicos(s: Pick<Estado14, "ctx">) {
@@ -1228,77 +1228,17 @@ export function referenciasEd(s: EstadoEd, frente: string) {
       : [];
 }
 export function orcamentoEd(s: EstadoEd) {
-  const o = lerEd(s, "orcamento") || {},
-    itens = custosEd(s).map((c) => {
-      const v = o.itens?.[c.id] || {},
-        compartilhado =
-          ["governanca", "letramento"].includes(v.situacao) &&
-          s.ctx.prioridades?.includes(
-            v.situacao === "governanca" ? "governar" : "sobre",
-          );
-      const estimativa = estimativaReferencia("educacao", c.id, s),
-        emRef = itemEmReferencia("educacao", c.id, v);
-      const valor =
-        v.situacao === "sem_custo"
-          ? 0
-          : v.situacao === "informado" &&
-              typeof v.valor === "number" &&
-              Number.isFinite(v.valor) &&
-              v.valor >= 0
-            ? v.valor
-            : null;
-      return {
-        ...c,
-        valor,
-        compartilhado,
-        referencia: String(v.referencia || ""),
-        situacao: v.situacao || "",
-        detalhe: String(v.detalhe || ""),
-        estimativa,
-        emReferencia: emRef,
-        estimado: valorEstimado(estimativa, emRef),
-        respondido:
-          (valor !== null ||
-            v.situacao === "a_estimar" ||
-            emRef ||
-            (compartilhado &&
-              referenciasEd(s, v.situacao).some(
-                (ref) => ref.id === v.referencia,
-              ))) &&
-          (!c.id.startsWith("adicional-") || !!o.adicionais?.[c.id]?.nome),
-      };
-    });
-  // Custos compartilhados ficam na frente de origem: não somam aqui nem contam como faltantes desta frente.
-  const tot = totaisOrcamento(
-    itens.map((c) =>
-      c.compartilhado
-        ? { valor: null, estimado: null, conta: false, falta: false }
-        : c,
-    ),
-    itens.every((c) => c.respondido),
-  );
-  const semCompartilhado = !itens.some((c) => c.compartilhado);
-  return {
-    itens,
-    moeda: String(o.moeda || s.moeda.cod || "USD"),
-    periodo: valorEd(
-      s,
-      camposEd(s).find((f) => f.caminho === "orcamento.periodo")!,
-    ),
-    subtotal: tot.informado,
-    ...tot,
-    total: semCompartilhado ? tot.total : null,
-    totalComEstimativas: semCompartilhado ? tot.totalComEstimativas : null,
-  };
+  // v016: 8 desafios × dimensões (infraestrutura, formação docente, recursos), com fases (orcamentoV016)
+  return orcamentoV16(s, "educacao");
 }
 export const TELAS_ED = [
   ["ed-intervencao", 2],
-  ["ed-tecnologia", 2],
+  ["ed-fases", 3],
   ["ed-recursos", 3],
 ] as const;
 /** Versão de teste: Intervenção · Uso de IA (só com IA ou mista) · Orçamento. */
 export function telasEd(s: EstadoEd) {
-  return TELAS_ED.filter(([id]) => id !== "ed-tecnologia" || usaIAEd(s)).map(([id]) => id);
+  return TELAS_ED.map(([id]) => id); // v016: uso de IA na própria tela Intervenção; fases antes do orçamento
 }
 export function errosEd(s: EstadoEd, tela: string): string[] {
   const e: string[] = [],
@@ -1328,7 +1268,8 @@ export function edRespondido(s: EstadoEd, id: string) {
       .filter((f) => f.tela === id)
       .every((f) => campoEdRespondido(s, f)) &&
     errosEd(s, id).length === 0 &&
-    (id !== "ed-recursos" || orcamentoEd(s).itens.every((i) => i.respondido))
+    (id !== "ed-recursos" || orcamentoEd(s).itens.every((i) => i.respondido)) &&
+    (id !== "ed-fases" || fasesSalvas(s, "educacao"))
   );
 }
 export function telaEdLegada(id: string) {
@@ -1488,10 +1429,11 @@ export function planoEd(s: EstadoEd) {
       ),
       {
         ref:
-          referenciasEd(s, i.situacao).find((r) => r.id === i.referencia)
+          referenciasEd(s, i.situacao).find((r) => r.id === String(i.referencia))
             ?.nome || t("Não informado"),
       },
     );
+  recursos?.linhas.push({ rotulo: t("Fases"), valor: String(o.periodo) });
   recursos?.linhas.push(
     ...o.itens.map((i) => {
       const base = i.compartilhado
@@ -1517,6 +1459,7 @@ export function planoEd(s: EstadoEd) {
       };
     }),
     ...linhasTotais(o).map((l) => ({ rotulo: l.rotulo, valor: l.valor })),
+    ...linhasFases(o),
     ...notaEstimativas(o),
   );
   return {

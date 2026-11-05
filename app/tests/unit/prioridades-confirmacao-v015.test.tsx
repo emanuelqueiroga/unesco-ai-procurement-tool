@@ -15,7 +15,7 @@ describe('v015: prioridades só alteram o percurso ao confirmar',()=>{
    expect(JSON.stringify(S().estado())).toBe(antes);expect(JSON.stringify(capitulosNav(S(),{capitulo:1,tela:'prioridades'}))).toBe(nav);
   }
  });
- it.each([['governar','problemas'],['sobre','problemas'],['com','etapas'],['para','etapas']])('ao confirmar %s, ativa o percurso e segue para %s',(id,prox)=>{
+ it.each([['governar','problemas'],['sobre','problemas'],['com','etapas']])('ao confirmar %s, ativa o percurso e segue para %s',(id,prox)=>{
   expect(confirmarPrioridades([id])).toBe('#/capitulo/1/'+prox);expect(S().ctx.prioridades).toEqual([id]);expect(telasAtivas(S()).some(q=>q.id===prox)).toBe(true);
  });
  it('confirma a combinação de uma vez e conserva respostas de outras frentes',()=>{

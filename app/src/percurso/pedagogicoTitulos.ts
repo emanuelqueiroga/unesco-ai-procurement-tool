@@ -16,6 +16,7 @@ export const TITULOS_ED: Record<string, string> = {
   "ed-digital": E("Condições digitais", "Digital conditions"),
   "ed-execucao": E("Execução e participantes", "Delivery and participants"),
   "ed-recursos": E("Orçamento", "Budget"),
+  "ed-fases": E("Fases", "Phases"),
   "ed-acompanhamento": E(
     "Acompanhamento dos resultados",
     "Monitoring outcomes",

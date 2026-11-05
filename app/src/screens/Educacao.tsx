@@ -1,5 +1,6 @@
 import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { usePadroes } from "./usePadroes";
+import { FasesV16, OrcamentoV16 } from "./OrcamentoV16";
 import { ehSugerido } from "../percurso/padroesTeste";
 import { progressoFrente } from '../percurso/frentes';
 import { GrupoFormulario } from './GrupoFormulario';
@@ -42,6 +43,7 @@ import {
   orcamentoEd,
   planoEd,
   usuariosSugeridosEd,
+  usaIAEd,
   telaEdLegada,
   TITULOS_ED,
   E,
@@ -242,7 +244,8 @@ function QuantidadesEd({ s, id }: { s: CasoStore; id: string }) {
     <CampoQuantidade key={c} id={ident(q(c))} label={t(label)} decimais={decimais} dica={false} value={valor ?? lerEd(s, q(c))} onChange={(v) => gravar(s, q(c), v)}
       sugerido={c === "usuarios" ? !lerEd(s, q(c)) && valor != null : ehSugerido(s, "educacao", q(c))} />
   );
-  if (id === "ed-intervencao") return <div className="pc-curto-numeros">{campo("profissionais", "Profissionais a formar")}{campo("horasProfissional", "Horas por profissional", true)}</div>;
+  if (id === "ed-intervencao") return <><div className="pc-curto-numeros">{campo("profissionais", "Profissionais a formar")}{campo("horasProfissional", "Horas por profissional", true)}</div>
+    {usaIAEd(s) ? <div className="pc-curto-numeros">{campo("usuarios", E("Usuários da ferramenta", "Tool users"), false, lerEd(s, q("usuarios")) ?? usuariosSugeridosEd(s) ?? undefined)}</div> : null}</>;
   if (id === "ed-tecnologia") return <div className="pc-curto-numeros">{campo("usuarios", E("Usuários da ferramenta", "Tool users"), false, lerEd(s, q("usuarios")) ?? usuariosSugeridosEd(s) ?? undefined)}</div>;
   return null;
 }
@@ -488,13 +491,7 @@ export function Educacao({ rota }: { rota: Rota }) {
       <div className="pc-pergunta" data-tela={id}>
         <QuestionFrame
           title={t(TITULOS_ED[id] || TITULO_TELA[id] || CURTO[id] || id)}
-          explanation={t(
-            id === "ed-intervencao"
-              ? E("Os números alimentam a estimativa da formação.", "The numbers feed the training estimate.")
-              : id === "ed-tecnologia"
-                ? E("O número de usuários alimenta a estimativa das licenças.", "The number of users feeds the licence estimate.")
-                : id === "ed-recursos" ? "" : LEAD[id] || "",
-          ) || undefined}
+          explanation={id.startsWith("ed-") ? undefined : t(LEAD[id] || "") || undefined}
           actions={<AcoesPercurso anterior={dest.anterior} avancar={avancar}/>}
         >
           {tentou && falta ? (
@@ -570,7 +567,9 @@ export function Educacao({ rota }: { rota: Rota }) {
                 </section>
               ) : null}
               {id === "ed-recursos" ? (
-                <Orcamento s={s} tentou={tentou} />
+                <OrcamentoV16 s={s} frente="educacao" tentou={tentou} />
+              ) : id === "ed-fases" ? (
+                <FasesV16 s={s} frente="educacao" />
               ) : (
                 <>
                 <Campos s={s} id={id} tentou={tentou} />

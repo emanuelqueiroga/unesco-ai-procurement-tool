@@ -1,3 +1,4 @@
+import { DESAFIOS_GOV_V016, DESAFIOS_EDU_V016, DESAFIOS_LIT_V016, NOMES_V016, DESCRICOES_V016 } from './catalogo_v016.js';
 import { OPC } from './framework.js';
 
 // =====================================================================
@@ -450,6 +451,10 @@ const DESAFIOS_EDUCACAO_V015 = [
   }
 ];
 PRIORIDADES.find(p => p.id === 'com').problemas.push(...DESAFIOS_EDUCACAO_V015);
+// v016 (teste): novos desafios e nomes no gerúndio
+PRIORIDADES.find(p => p.id === 'governar').problemas.push(...DESAFIOS_GOV_V016);
+PRIORIDADES.find(p => p.id === 'com').problemas.push(...DESAFIOS_EDU_V016);
+for (const p of PRIORIDADES) { if (NOMES_V016[p.id]) { p.nome = NOMES_V016[p.id]; p.desc = DESCRICOES_V016[p.id]; } for (const q of p.problemas) if (DESAFIOS_LIT_V016.includes(q.id)) q.v016 = true; }
 const PROBLEMA_POR_ID = {};
 const PRIORIDADE_DO_PROBLEMA = {};
 PRIORIDADES.forEach(p => p.problemas.forEach(q => { PROBLEMA_POR_ID[q.id] = q; PRIORIDADE_DO_PROBLEMA[q.id] = p.id; }));

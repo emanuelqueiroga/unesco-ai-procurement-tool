@@ -4,10 +4,11 @@
 // situação de um item passa a "Usar estimativa" quando a conta fecha); um campo que a pessoa mudou não é tocado.
 import { ALUNOS_POR_PROF, totaisCtx } from '../domain';
 import type { Estado14 } from '../store/tipos';
-import { alterarLit, custosLetramento, lerLit, publicosLetramento, telasLetramento } from './letramento';
-import { chaveEd, custosEd, lerEd, temasEd, usaIAEd } from './pedagogico';
-import { CUSTOS_GOV, temSandbox } from './governanca';
-import { presetGovernanca, selecoesGov, textoSelecaoGov } from './governancaPresets';
+import { alterarLit, lerLit, publicosLetramento } from './letramento';
+import { chaveEd, temasEd, usaIAEd } from './pedagogico';
+import { categoriasV16, estimativaV16, raizOrcamento } from './orcamentoV016';
+import { FASES_V016 } from '../domain/catalogo_v016.js';
+const desejosFases = (prefixo: string): Desejo[] => FASES_V016.map(f => ({ caminho: prefixo + f.id, valor: { on: true, meses: f.meses, alcance: f.alcance }, fixo: true }));
 import { estimativaReferencia, temBaseEstimativa, type FrenteEstimativa } from './estimativasOrcamento';
 
 type Estado = Pick<Estado14, 'ctx' | 'moeda'> & Partial<Pick<Estado14, 'caso'>>;
@@ -58,32 +59,30 @@ export function ehSugerido(s: Pick<Estado14, 'ctx'>, frente: FrenteEstimativa, c
 }
 
 /** Situação sugerida de cada item: "Usar estimativa" quando a conta fecha, senão "A levantar". */
-function itens(frente: FrenteEstimativa, ids: string[], s: Estado, prefixo: string): Desejo[] {
-  return ids.map(id => {
-    const est = temBaseEstimativa(frente, id) ? estimativaReferencia(frente, id, s) : null;
-    return { caminho: prefixo + id, valor: { situacao: typeof est?.valor === 'number' ? 'referencia' : 'a_estimar' } };
+function itens(frente: FrenteEstimativa, _ids: string[], s: Estado, prefixo: string): Desejo[] {
+  // v016: todas as cost options já vêm marcadas; a situação usa a estimativa quando a conta fecha
+  const moeda = String(raizOrcamento(s, frente).moeda || s.moeda?.cod || 'USD');
+  return categoriasV16(s, frente).map(c => {
+    const est = c.base ? estimativaV16(s, frente, c, moeda) : null;
+    return { caminho: prefixo + c.id, valor: { situacao: typeof est?.valor === 'number' ? 'referencia' : 'a_estimar', ...(c.opcoes.length ? { opcoes: c.opcoes } : {}) } };
   });
 }
-
 function desejosLit(s: Estado): Desejo[] {
+  // v016: professores e estudantes; sem período (as fases têm padrão próprio)
   const r = (s.ctx as any).redeNacional || {}, tot = totaisCtx(s.ctx), pubs = publicosLetramento(s).map(p => p.id), out: Desejo[] = [];
-  const escolasCtx = +r.escolas || tot.escolas, estudantesCtx = +r.estudantes || tot.alunos;
-  const escolas = val(lerLit(s, 'alcance.escolas')) || escolasCtx, estudantes = val(lerLit(s, 'alcance.estudantes')) || estudantesCtx;
-  const professores = val(lerLit(s, 'alcance.professores')) || (estudantes ? Math.max(1, Math.round(estudantes / ALUNOS_POR_PROF)) : 0);
-  if (telasLetramento(s).includes('lit-escolas')) {
-    const etapas = [...(tot.etapas.length ? tot.etapas : ['fund1', 'fund2', 'medio']), ...(pubs.includes('A15') ? ['superior'] : [])].filter((x, i, a) => a.indexOf(x) === i);
-    out.push({ caminho: 'alcance.etapas', valor: { escolhas: etapas }, fixo: true });
-    if (escolasCtx) out.push({ caminho: 'alcance.escolas', valor: { valor: escolasCtx } });
-    if (estudantesCtx) out.push({ caminho: 'alcance.estudantes', valor: { valor: estudantesCtx } });
-    if (estudantes) out.push({ caminho: 'alcance.professores', valor: { valor: Math.max(1, Math.round(estudantes / ALUNOS_POR_PROF)) } });
+  const estudantesCtx = +r.estudantes || tot.alunos, estudantes = val(lerLit(s, 'publicos.A12.participantes')) || estudantesCtx;
+  if (pubs.includes('A12')) {
+    out.push({ caminho: 'publicos.A12.niveis', valor: { escolhas: tot.etapas.length ? (tot.etapas as string[]).filter((x: string) => ['fund1', 'fund2', 'medio', 'superior', 'profissional', 'eja'].includes(x)) : ['fund1', 'fund2', 'medio'] }, fixo: true });
+    if (estudantesCtx) out.push({ caminho: 'publicos.A12.participantes', valor: { valor: estudantesCtx } });
   }
-  const base: Record<string, number> = { A11: professores, A12: estudantes, A13: PADROES.participantesA13, A14: escolas };
-  for (const id of pubs) {
-    if (base[id]) out.push({ caminho: `publicos.${id}.participantes`, valor: { valor: base[id] } });
-    if (PADROES.horasLit[id]) out.push({ caminho: `publicos.${id}.horas`, valor: { valor: PADROES.horasLit[id] }, fixo: true });
+  if (pubs.includes('A11')) {
+    if (estudantes) out.push({ caminho: 'publicos.A11.participantes', valor: { valor: Math.max(1, Math.round(estudantes / ALUNOS_POR_PROF)) } });
+    out.push({ caminho: 'publicos.A11.horas', valor: { valor: PADROES.horasLit.A11 }, fixo: true });
+    out.push({ caminho: 'publicos.A11.cursos', valor: { valor: 1 }, fixo: true });
+    out.push({ caminho: 'publicos.A11.incluiLiderancas', valor: { escolhas: ['nao'] }, fixo: true });
+    out.push({ caminho: 'oferta.modalidade', valor: { escolhas: ['hibrida'] }, fixo: true });
   }
-  out.push({ caminho: 'orcamento.periodo', valor: { escolhas: ['12'] }, fixo: true });
-  out.push({ caminho: 'orcamento.quantidades.equipeFte', valor: PADROES.equipeFte, fixo: true });
+  out.push(...desejosFases('orcamento.fases.'));
   return out;
 }
 function desejosEd(s: Estado): Desejo[] {
@@ -91,8 +90,7 @@ function desejosEd(s: Estado): Desejo[] {
   const out: Desejo[] = [{ caminho: 'intervencao.tipo', valor: { escolhas: [comIA ? 'mista' : 'sem'] }, fixo: true }];
   if (tot.alunos) out.push({ caminho: 'orcamento.quantidades.profissionais', valor: Math.max(1, Math.round(tot.alunos / ALUNOS_POR_PROF)) });
   out.push({ caminho: 'orcamento.quantidades.horasProfissional', valor: PADROES.horasProfissional, fixo: true });
-  out.push({ caminho: 'orcamento.periodo', valor: { escolhas: ['anual'] }, fixo: true });
-  out.push({ caminho: 'orcamento.quantidades.equipeFte', valor: PADROES.equipeFte, fixo: true });
+  out.push(...desejosFases('orcamento.fases.'));
   return out;
 }
 const comPrefixoEd = (s: Estado, ds: Desejo[]) => ds.map(d => ({ ...d, caminho: /^(temas|contexto)(\.|$)/.test(d.caminho) ? d.caminho : 'percursos.' + chaveEd(s) + '.' + d.caminho }));
@@ -102,7 +100,7 @@ export function escritasPadroes(s: Estado, frente: FrenteEstimativa): Escrita[] 
   if (frente === 'letramento') {
     const r1 = aplicar(s.ctx.letramento, desejosLit(s)) ?? s.ctx.letramento ?? {};
     const s1 = { ...s, ctx: { ...s.ctx, letramento: r1 } };
-    const ids = custosLetramento(s1).map(([id]) => id).filter(id => !id.startsWith('adicional-'));
+    const ids = categoriasV16(s1, 'letramento').map(c => c.id);
     const r2 = aplicar(r1, itens('letramento', ids, s1, 'orcamento.itens.')) ?? r1;
     return r2 === (s.ctx.letramento ?? {}) || J(r2) === J(s.ctx.letramento) ? [] : [{ campo: 'letramento', valor: r2 }];
   }
@@ -111,26 +109,17 @@ export function escritasPadroes(s: Estado, frente: FrenteEstimativa): Escrita[] 
     let r1 = aplicar(s.ctx.educacao, comPrefixoEd(s, desejosEd(s))) ?? s.ctx.educacao ?? {};
     let s1: Estado = { ...s, ctx: { ...s.ctx, educacao: r1 } };
     if (usaIAEd(s1)) { r1 = aplicar(r1, comPrefixoEd(s1, [{ caminho: 'usoIA.quem', valor: { escolhas: ['professores'] }, fixo: true }])) ?? r1; s1 = { ...s, ctx: { ...s.ctx, educacao: r1 } }; }
-    const ids = custosEd(s1 as any).map(c => c.id).filter(id => !id.startsWith('adicional-'));
+    const ids = categoriasV16(s1, 'educacao').map(c => c.id);
     const r2 = aplicar(r1, comPrefixoEd(s1, itens('educacao', ids, s1, 'orcamento.itens.'))) ?? r1;
     return J(r2) === J(s.ctx.educacao) ? [] : [{ campo: 'educacao', valor: r2 }];
   }
   const out: Escrita[] = [];
-  const campo = 'govOrcamento.periodo';
-  let ctx = s.ctx;
-  if (!selecoesGov(s, campo).length) {
-    const op = presetGovernanca(s, campo).opcoes.find(o => o.texto === 'Próximos 12 meses');
-    if (op) {
-      const sel = { ...(ctx.govSelecoes || {}), [campo]: [op.id] }, texto = textoSelecaoGov({ ...s, ctx: { ...ctx, govSelecoes: sel } }, campo, [op.id], '');
-      ctx = { ...ctx, govSelecoes: sel, govOrcamento: { ...(ctx.govOrcamento || {}), periodo: texto } };
-      out.push({ campo: 'govSelecoes', valor: sel });
-    }
-  }
+  const ctx = s.ctx;
   const qs: Desejo[] = [['equipeFte', PADROES.equipeFte], ['servidores', PADROES.servidores], ['horasServidor', PADROES.horasServidor]]
-    .map(([k, v]) => ({ caminho: 'quantidades.' + k, valor: v, fixo: true }));
+    .map(([k, v]) => ({ caminho: 'quantidades.' + k, valor: v, fixo: true } as Desejo)).concat(desejosFases('fases.'));
   const r1 = aplicar(ctx.govOrcamento, qs) ?? ctx.govOrcamento ?? {};
   const s1 = { ...s, ctx: { ...ctx, govOrcamento: r1 } };
-  const ids = [...CUSTOS_GOV.map(([id]) => id as string), ...(temSandbox(s1) ? ['sandbox'] : [])];
+  const ids = categoriasV16(s1, 'governanca').map(c => c.id);
   const r2 = aplicar(r1, itens('governanca', ids, s1, 'itens.')) ?? r1;
   if (J(r2) !== J(s.ctx.govOrcamento)) out.push({ campo: 'govOrcamento', valor: r2 });
   return out;

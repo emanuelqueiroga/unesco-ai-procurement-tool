@@ -1,3 +1,5 @@
+// v016 (teste): testes marcados com it.skip fixavam o modelo da v015 que mudou de propósito (prioridade "para",
+// tamanho da rede, período do orçamento, categorias antigas, públicos A13–A15, recurso adicional). Ver design/redesign/v016-teste/REQUISITOS-V016.md.
 import {beforeEach,describe,it,expect} from 'vitest';
 import {useCaso,telasAtivas,telaRespondida} from '../../src/store';
 import {confirmarPrioridades} from '../../src/percurso/confirmarPrioridades';
@@ -12,7 +14,7 @@ beforeEach(()=>S().carregarExemplo('novo'));
 describe('v015: prioridades combinadas e escolha de frente',()=>{
  const ids=['governar','sobre','com','para'];
  const combinacoes=Array.from({length:15},(_,i)=>ids.filter((_,j)=>(i+1)&(1<<j)));
- it.each(combinacoes.map(p=>[p.join('+'),p] as const))('%s oferece apenas suas frentes, sem duplicar a intervenção',(_,p)=>{
+ it.each(combinacoes.filter(p=>!p.includes('para')).map(p=>[p.join('+'),p] as const))('%s oferece apenas suas frentes, sem duplicar a intervenção',(_,p)=>{
   const destino=confirmarPrioridades([...p]);
   expect(destino).toBe(p.length>1?'#/frentes':p[0]==='com'||p[0]==='para'?'#/capitulo/1/etapas':'#/capitulo/1/problemas');
   const frentes=frentesDoPlano(S()).map(f=>f.id);
@@ -31,7 +33,7 @@ describe('v015: prioridades combinadas e escolha de frente',()=>{
    expect((f.id==='letramento'?vizinhosLit:vizinhos)(S(),rota.tela).anterior).toBe('#/frentes');
   }
  });
- it('mostra a união com e para em um só cartão e não altera o caso ao exibir a tela',()=>{
+ it.skip('mostra a união com e para em um só cartão e não altera o caso ao exibir a tela',()=>{
   confirmarPrioridades(['com','para']);const antes=JSON.stringify(S().estado());
   const frentes=frentesDoPlano(S());
   expect(frentes).toHaveLength(1);expect(frentes[0].descricao).toContain('Reúna a educação com e sem IA');
@@ -67,7 +69,7 @@ describe('v015: prioridades combinadas e escolha de frente',()=>{
   confirmarPrioridades(['sobre']);const antes=JSON.stringify(S().estado());
   expect(abrirFrente('educacao')).toBeNull();expect(JSON.stringify(S().estado())).toBe(antes);
  });
- it('cada frente mostra apenas seu catálogo e preserva as seleções das demais',()=>{
+ it.skip('cada frente mostra apenas seu catálogo e preserva as seleções das demais',()=>{
   confirmarPrioridades(ids);S().responder('problemas',['G11','A11','C11','F1']);
   for(const [frente,visiveis,ocultos] of [
    ['governanca',['G11'],['A11','C11','F1']],

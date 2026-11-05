@@ -303,3 +303,45 @@ a.pc-faixa-custo:hover { color: var(--on-night); outline: 2px solid var(--primar
 .pc-esc { display: flex; flex-direction: column; gap: 24px; }
 .pc-esc-nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; align-items: start; }
 .pc-esc-num { min-width: 0; }
+
+/* v016: grupos, cost options, valor por fase, fases e custo por fase */
+.pv-rec-grupo { margin: 0; padding: 14px 24px 6px; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.pv-opcoes { margin: 0; padding: 0; border: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.pv-opcoes-leg { padding: 0 0 8px; font-size: 14px; font-weight: 600; width: 100%; }
+.pv-opcao { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 12px; border: 1px solid var(--line); border-radius: var(--radius-pill, 999px); font-size: 14px; cursor: pointer; max-width: 100%; }
+.pv-opcao input { width: 16px; height: 16px; margin: 0; accent-color: var(--primary); flex: 0 0 auto; }
+.pv-opcao.is-on { border-color: var(--primary); background: var(--primary-tint); }
+.pv-fases-valor { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.pv-fases { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.pv-fases-cab, .pv-fases-linha { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 16px; }
+.pv-fases-cab { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+.pv-fases-linha + .pv-fases-linha, .pv-fases-cab + .pv-fases-linha { border-top: 1px solid var(--line); }
+.pv-fases-linha .pr-field-label, .pv-fases-linha label:not(.pv-fases-nome) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pv-fases-nome { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; cursor: pointer; }
+.pv-fases-nome input { width: 20px; height: 20px; accent-color: var(--primary); margin: 0; }
+.pv-fases-linha.is-off { color: var(--muted); }
+.pv-por-fase { margin-top: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-1); padding-bottom: 8px; }
+.pv-por-fase-linha { display: flex; justify-content: space-between; gap: 12px; padding: 8px 24px; font-variant-numeric: tabular-nums; }
+.pv-por-fase-num { font-weight: 600; text-align: end; }
+@media (max-width: 720px) {
+  .pv-fases-cab { display: none; }
+  .pv-fases-linha { grid-template-columns: 1fr 1fr; }
+  .pv-fases-nome { grid-column: 1 / -1; }
+  .pv-fases-linha .pr-field-label, .pv-fases-linha label:not(.pv-fases-nome) { position: static; width: auto; height: auto; clip: auto; white-space: normal; }
+  .pv-rec-grupo, .pv-por-fase-linha { padding-inline: 16px; }
+}
+
+.pv-publicos { display: flex; flex-direction: column; gap: 28px; }
+.pv-publico { display: flex; flex-direction: column; gap: 18px; }
+.pv-publico + .pv-publico { padding-top: 24px; border-top: 1px solid var(--line); }
+
+.pc-custo-fases { margin: 4px 0 0; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.16); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font-size: 13px; }
+.pc-custo-fases div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pc-custo-fases dt { color: var(--on-night-2); }
+.pc-custo-fases dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.pv-campo-titulo { margin: 0 0 10px; font-size: 15px; line-height: 22px; font-weight: 600; }
+.pv-publico > .pc-lit-campo-titulo { font-family: var(--font-serif); font-size: 20px; line-height: 28px; margin: 0; }
+.pc-lit-opcoes.pv-opcoes-linha { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.pv-rec-grupo { padding-inline: 32px; }
+@media (max-width: 720px) { .pv-rec-grupo { padding-inline: 4px; } }

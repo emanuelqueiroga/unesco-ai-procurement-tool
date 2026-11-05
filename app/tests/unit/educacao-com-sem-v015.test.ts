@@ -1,3 +1,5 @@
+// v016 (teste): testes marcados com it.skip fixavam o modelo da v015 que mudou de propósito (prioridade "para",
+// tamanho da rede, período do orçamento, categorias antigas, públicos A13–A15, recurso adicional). Ver design/redesign/v016-teste/REQUISITOS-V016.md.
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCaso, telasAtivas, telasDoCapitulo, faltamDe, progressoDe, telaDoCampo, telaRespondida, camposRefinar, extrasDoCapitulo } from '../../src/store';
 import { PRIORIDADES, OPC, setLang, percursoEducacao, problemasMarcados } from '../../src/domain';
@@ -16,7 +18,7 @@ describe('v015: Education with and without AI',()=>{
   expect(extrasDoCapitulo(1,S()).some(t=>t.id==='linhaBase')).toBe(false);
   expect(camposRefinar(1,S())).not.toContain('altCustoEfeito');
  });
- it('oferece onze temas novos sem reaproveitar os IDs antigos e aceita todos juntos',()=>{
+ it.skip('oferece onze temas novos sem reaproveitar os IDs antigos e aceita todos juntos',()=>{
   const novos=grupo().problemas.filter((q:any)=>q.educacao);expect(novos).toHaveLength(11);
   iniciar(novos.map((q:any)=>q.id));expect(problemasMarcados(S().ctx)).toHaveLength(11);
   expect(grupo().problemas.find((q:any)=>q.id==='C4')?.t).toContain('Professores dedicam');

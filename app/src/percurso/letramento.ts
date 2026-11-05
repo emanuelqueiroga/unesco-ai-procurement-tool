@@ -3,6 +3,7 @@ import { PRIORIDADES, ETAPAS_ENS, LOC, nomePais, paisDoCaso, totaisCtx } from '.
 import { orcamentoGovernanca, moedaGovernanca, valorItemOrcamento } from './governanca';
 import { estimativaReferencia, itemEmReferencia, valorEstimado, totaisOrcamento, linhasTotais, notaEstimativas } from './estimativasOrcamento';
 import { t } from './textos';
+import { orcamentoV16, fasesSalvas, linhasFases } from './orcamentoV016';
 import type { Estado14 } from '../store/tipos';
 type Estado = Pick<Estado14, 'ctx'>;
 export interface OpcaoLit { id: string; texto: string }
@@ -24,7 +25,7 @@ const curriculo = (s: Estado) => idsTemas(s).some(id => ['A16','A3'].includes(id
 const idsTemas = (s: Estado): string[] => { const permitidos = new Set((PRIORIDADES as any[]).find(p=>p.id==='sobre').problemas.map((q:any)=>q.id)); return [...new Set<string>((s.ctx.problemas || []).filter((id:string)=>permitidos.has(id)))]; };
 export function publicosLetramento(s: Estado) {
  const cat = (PRIORIDADES as any[]).find(p => p.id === 'sobre').problemas;
- return idsTemas(s).filter(id => !['A16','A3'].includes(id)).map(id => ({ id, ...(TEMAS_LIT[id] || { nome: cat.find((q: any) => q.id === id)?.t || id, competencias:TEMAS_LIT.A12.competencias }) }));
+ return idsTemas(s).filter(id => ['A11','A12'].includes(id)).map(id => ({ id, ...(TEMAS_LIT[id] || { nome: cat.find((q: any) => q.id === id)?.t || id, competencias:TEMAS_LIT.A12.competencias }) }));
 }
 export function somenteCurriculoLit(s: Estado) { return curriculo(s) && !publicosLetramento(s).length; }
 export function tituloDaTelaLit(s: Estado, id: string) {
@@ -44,28 +45,27 @@ export const digitalLit = (s: Estado) => ['online','hibrida'].some(id => inclui(
 /** Versão de teste: Participantes (com públicos) · Orçamento. Currículo não tem tela: vira uma linha do orçamento. */
 export function telasLetramento(s: Estado): string[] {
  const pubs = publicosLetramento(s).map(p => p.id);
- const escolas = pubs.some(id => ['A11','A12','A14'].includes(id));
- return ['local','prioridades','problemas',...(escolas ? ['lit-escolas'] : []),...(pubs.length ? ['lit-participantes'] : []),'lit-recursos'];
+ return ['local','prioridades','problemas',...(pubs.length ? ['lit-participantes'] : []),'lit-fases','lit-recursos'];
 }
 /** Campos do fluxo de teste. Os demais (diagnóstico, desenho, oferta, ações, revisão, público elegível, total distinto…)
  *  continuam guardados no caso, fora das telas, das pendências, do progresso e dos relatórios. */
 export function camposLetramento(s: Estado): CampoLit[] {
+ // v016: só públicos (professores, estudantes), número de pessoas, níveis, lideranças, entrega e duração. Todos opcionais.
  const campos: CampoLit[] = [];
- const f = (tela: string,caminho: string,label: string,opcoes: OpcaoLit[],multipla=false,evidencia=false) => campos.push({tela,caminho,label,opcoes:[...opcoes,PENDENTE],multipla,evidencia});
- const n = (tela:string,caminho:string,label:string,numero:'inteiro'|'decimal'='inteiro') => campos.push({tela,caminho,label,numero,opcional:true});
- if (telasLetramento(s).includes('lit-escolas')) {
-  campos.push({tela:'lit-escolas',caminho:'alcance.etapas',label:L('Etapas atendidas','Education levels served'),opcoes:(ETAPAS_ENS as any[]).map(([id,nome]:string[])=>({id,texto:nome})),multipla:true,opcional:true});
-  n('lit-escolas','alcance.escolas',L('Total de escolas atendidas','Number of schools served'));
-  n('lit-escolas','alcance.estudantes',L('Total de estudantes','Number of students'));
-  n('lit-escolas','alcance.professores',L('Total de professores','Number of teachers'));
+ const n = (caminho:string,label:string,numero:'inteiro'|'decimal'='inteiro') => campos.push({tela:'lit-participantes',caminho,label,numero,opcional:true});
+ const pubs = publicosLetramento(s).map(p => p.id);
+ if (pubs.includes('A11')) {
+  n('publicos.A11.participantes',L('Professores','Teachers'));
+  campos.push({tela:'lit-participantes',caminho:'publicos.A11.incluiLiderancas',label:L('Inclui diretores e coordenadores?','Include principals and coordinators?'),opcoes:[o('sim','Sim','Yes'),o('nao','Não','No')],opcional:true});
+  if (selecoesLit(s,'publicos.A11.incluiLiderancas').includes('sim')) n('publicos.A11.liderancas',L('Diretores e coordenadores','Principals and coordinators'));
+  n('publicos.A11.horas',L('Horas por curso','Hours per course'),'decimal');
+  n('publicos.A11.cursos',L('Cursos por pessoa','Courses per person'));
+  campos.push({tela:'lit-participantes',caminho:'oferta.modalidade',label:L('Forma de entrega','Delivery mode'),opcoes:[o('presencial','Presencial','In person'),o('hibrida','Híbrida','Blended'),o('online','Online','Online')],opcional:true});
  }
- for (const p of publicosLetramento(s)) {
-  n('lit-participantes',`publicos.${p.id}.participantes`,L('Participantes previstos','Planned participants')+' · '+t(p.nome));
-  n('lit-participantes',`publicos.${p.id}.horas`,L('Horas previstas por participante','Planned hours per participant')+' · '+t(p.nome),'decimal');
+ if (pubs.includes('A12')) {
+  campos.push({tela:'lit-participantes',caminho:'publicos.A12.niveis',label:L('Níveis','Levels'),opcoes:(ETAPAS_ENS as any[]).filter(([id]:string[])=>['fund1','fund2','medio','superior','profissional','eja'].includes(id)).map(([id,nome]:string[])=>({id,texto:nome})),multipla:true,opcional:true});
+  n('publicos.A12.participantes',L('Estudantes','Students'));
  }
- // versão de teste: o período já vem em 12 meses; sem a opção "Informação a levantar"
- campos.push({tela:'lit-recursos',caminho:'orcamento.periodo',label:L('Período do orçamento','Budget period'),opcoes:[o('12','Próximos 12 meses após aprovação','Next 12 months after approval'),o('24','Próximos 24 meses após aprovação','Next 24 months after approval')]});
- for (const id of adicionaisAtivos(s)) f('lit-recursos',`orcamento.adicionais.${id}.nome`,L('Tipo do recurso adicional','Additional resource type'),[o('transporte','Transporte e participação','Travel and participation'),o('certificacao','Certificação','Certification'),o('outro','Recurso adicional','Additional resource')]);
  return campos;
 }
 /** Versão de teste: valores sugeridos a partir do Contexto (totais da rede, etapas, público de estudantes) para campos ainda vazios. */
@@ -105,22 +105,14 @@ export function custosLetramento(s:Estado):[string,string][] {
  return itens;
 }
 export function orcamentoLetramento(s:Pick<Estado14,'ctx'|'moeda'>) {
- const o=s.ctx.letramento?.orcamento||{}, gov=orcamentoGovernanca(s);
- const itens=custosLetramento(s).map(([id,nome])=>{
-  const x=o.itens?.[id]||{}, compartilhado=x.situacao==='compartilhado'&&s.ctx.prioridades?.includes('governar');
-  const origem=compartilhado?gov.itens.find(i=>i.id===x.referencia):null;
-  const estimativa=estimativaReferencia('letramento',id,s), emRef=!compartilhado&&itemEmReferencia('letramento',id,x);
-  const valor=compartilhado||x.situacao==='referencia'?null:x.situacao==='sem_custo'?0:x.situacao==='informado'&&typeof x.valor==='number'&&Number.isFinite(x.valor)&&x.valor>=0?x.valor:null;
-  return {id,nome:t(nome),valor,compartilhado,origem,detalhe:String(x.detalhe||''),situacao:String(x.situacao||''),estimativa,referencia:emRef,estimado:valorEstimado(estimativa,emRef),respondido:compartilhado?!!origem:['a_estimar','sem_custo'].includes(x.situacao)||emRef||valor!==null};
- });
- // Custo compartilhado: conhecido quando a origem tem valor informado ou estimado; nunca é somado de novo nesta frente.
- const tot=totaisOrcamento(itens.map(i=>i.compartilhado?{valor:null,estimado:null,conta:false,falta:!i.origem||i.origem.valor===null&&i.origem.estimado===null}:i));
- const propios=itens.filter(i=>!i.compartilhado&&i.valor!==null);
- return {itens,moeda:String(o.moeda||s.moeda.cod||'USD'),periodo:o.periodo,fonte:o.fonte,subtotal:tot.informado,temSubtotal:propios.length>0||itens.some(i=>i.compartilhado&&i.origem?.valor!=null),...tot};
+ // v016: 3 desafios × 11 categorias, com fases (orcamentoV016)
+ return orcamentoV16(s,'letramento');
 }
 export function letramentoRespondido(s:Estado14,id:string):boolean {
+ if(id==='lit-fases')return fasesSalvas(s,'letramento');
+ if(id==='lit-recursos'){const it=orcamentoLetramento(s).itens;return it.length>0&&it.every(i=>i.respondido);}
  const campos=camposLetramento(s).filter(f=>f.tela===id);
- if(!campos.length)return false;
+ if(!campos.length)return id==='lit-participantes';
  return campos.every(f=>campoLitRespondido(s,f)) && (id!=='lit-recursos'||orcamentoLetramento(s).itens.every(i=>i.respondido));
 }
 export function planoLetramento(s:Estado14) {
@@ -130,7 +122,7 @@ export function planoLetramento(s:Estado14) {
  const indefinidos=campos.filter(f=>{const v=lerLit(s,f.caminho);return v?.situacao==='a_levantar'||selecoesLit(s,f.caminho).includes('_pendente');}).length;
  const blocos=[{titulo:t('Contexto'),linhas:[{rotulo:t('País'),valor:nomePais(paisDoCaso(s.caso))},{rotulo:t('Instituição responsável'),valor:String(s.ctx.local||t('Não informado'))},...(textoValido(lerLit(s,'contexto.detalhe'))?[{rotulo:t('Informações adicionais'),valor:lerLit(s,'contexto.detalhe')}]:[]),...(textoValido(s.ctx.problemaOutro)?[{rotulo:t('Informações adicionais'),valor:s.ctx.problemaOutro}]:[]),{rotulo:t(L('Públicos selecionados','Selected audiences')),valor:[...pubs.map(p=>t(p.nome)),...(curriculo(s)?[t(L('Currículo nacional de IA','National AI curriculum'))]:[])].join('; ')||t('Não informado')}]},...telasLetramento(s).filter(id=>id.startsWith('lit-')).map(id=>({titulo:t(tituloDaTelaLit(s,id)),linhas:campos.filter(f=>f.tela===id).map(f=>({rotulo:rotuloLit(f.label),valor:valorCampoLit(s,f)}))}))];
  const recursos=blocos.find(b=>b.titulo===t(TITULOS_LIT['lit-recursos']))!;
- recursos.linhas.push(...o.itens.map(i=>({rotulo:i.nome,valor:i.compartilhado?t(L('Custeado na governança: {item} — {valor}. Não somado novamente.','Funded under governance: {item} — {valor}. Not counted again.'),{item:i.origem?.nome||t('Não informado'),valor:i.origem?valorItemOrcamento(i.origem,orcamentoGovernanca(s).moeda):t('Não informado')}):valorItemOrcamento(i,o.moeda)})),...linhasTotais(o).map(l=>({rotulo:l.rotulo,valor:l.valor})),...notaEstimativas(o),...(o.itens.some(i=>i.compartilhado)?[{rotulo:t('Custos compartilhados'),valor:t('Registrados na frente de origem; não somados novamente.')}]:[]));
+ recursos.linhas.push({rotulo:t('Fases'),valor:String(o.periodo)},...o.itens.map(i=>({rotulo:i.nome,valor:i.compartilhado?t(L('Custeado na governança: {item} — {valor}. Não somado novamente.','Funded under governance: {item} — {valor}. Not counted again.'),{item:i.origem?.nome||t('Não informado'),valor:i.origem?valorItemOrcamento(i.origem,orcamentoGovernanca(s).moeda):t('Não informado')}):valorItemOrcamento(i,o.moeda)})),...linhasTotais(o).map(l=>({rotulo:l.rotulo,valor:l.valor})),...linhasFases(o),...notaEstimativas(o),...(o.itens.some(i=>i.compartilhado)?[{rotulo:t('Custos compartilhados'),valor:t('Registrados na frente de origem; não somados novamente.')}]:[]));
  return {titulo:t(L('Plano nacional de letramento em IA e currículo','National AI literacy and curriculum plan')),pais:nomePais(paisDoCaso(s.caso)),blocos,faltam,pendentes:indefinidos+o.faltam,orcamento:o,projeto:null,acoes:[],escopo:t(L('Participantes, horas e recursos de formação e currículo. Valores desconhecidos permanecem pendentes.','Participants, hours and resources for training and curriculum. Unknown amounts remain pending.')),proxima:t(faltam.length||indefinidos||o.faltam?L('Complete as informações e resolva as pendências antes de aprovar o programa.','Complete the information and resolve pending items before approving the programme.'):L('Revise o plano com os responsáveis e acompanhe a execução e os resultados.','Review the plan with its owners and monitor delivery and outcomes.'))};
 }
 export function telaLetramentoLegada(id:string):string {

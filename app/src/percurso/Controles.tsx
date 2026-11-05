@@ -712,13 +712,11 @@ function Problemas({ e }: { e: Estado14 }) {
   const textoNota=nota.split('.').reduce((o:any,k)=>o?.[k],e.ctx);
   return (
     <div className="pc-grupos">
-      {percursoGovernanca(e.ctx) ? <TamanhoRedeNacional e={e} /> : null}
-      {!percursoEducacao(e.ctx) && !percursoLetramento(e.ctx) ? <p className="pc-nota">{t('Selecione todos os desafios que fazem parte do seu plano.')}</p> : null}
       {P.map((p) => {
         const catalogoNovo = ['governar', 'sobre', 'com'].includes(p.id);
-        const atuais = catalogoNovo ? p.problemas.filter((q: any) => q.v015) : p.problemas;
+        const atuais = catalogoNovo ? p.problemas.filter((q: any) => q.v016) : p.problemas;
         // Nos catálogos educacionais novos, escolhas antigas só reaparecem se já pertencem ao caso salvo.
-        const legados = catalogoNovo ? p.problemas.filter((q: any) => !q.v015 && atual.includes(q.id)) : [];
+        const legados = catalogoNovo ? p.problemas.filter((q: any) => !q.v016 && atual.includes(q.id)) : [];
         const cartao = (q: any) => {
           const on = atual.includes(q.id);
           return <OptionCard key={q.id} type="checkbox" name="problemas" value={q.id}
@@ -752,7 +750,7 @@ function Problemas({ e }: { e: Estado14 }) {
           </section>
         );
       })}
-      {percursoLetramento(e.ctx) || percursoPedagogico(e.ctx) || temGovernanca(e.ctx) ? <details className="pc-gov-detalhes"><summary>{t('Adicionar mais informações +')}</summary>{e.ctx.problemaOutro?<p>{str(e.ctx.problemaOutro)}</p>:null}<TextField label={t('Informações adicionais')} multiline value={str(textoNota)} onChange={v=>responder(nota,v)} /></details> : refinando ? <OutroProblema e={e} /> : <DicaRefinar texto={t('Para marcar subcategorias ou descrever outro problema, use o modo Refinar.')} />}
+      {/* v016: sem "Adicionar mais informações +" */}
     </div>
   );
 }

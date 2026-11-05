@@ -31,7 +31,6 @@ export const respondido = (s: Estado14, campo: string) => { const o = origemDe(s
 /** campos que a tela realmente pergunta neste caso: o tamanho do teste segue a resposta 2.0 (prova de conceito,
  *  piloto ou os dois) e as perguntas condicionais (2.4.2) só contam quando aparecem */
 export function camposAtivos(s: Estado14, t: TelaEssencial): string[] {
-  if (t.id === 'problemas' && percursoGovernanca(s.ctx)) return [...t.campos, 'redeNacional'];
   if (t.id === 'piloto') { const m = modoTeste(s.caso); return m === 'poc' ? ['poc'] : m === 'ambos' ? ['poc', 'piloto'] : ['piloto']; }
   return t.campos.filter(c => { const f: any = (CAMPO_POR_ID as any)[c]; try { return !f || !f.se || !!f.se(s.caso); } catch (e) { return true; } });
 }
@@ -74,8 +73,7 @@ export function telaRespondida(s: Estado14, t: TelaEssencial): boolean {
   if (t.id.startsWith('gov-')) return governancaRespondida(s, t.id);
   if (t.id === 'governanca') return t.campos.every(g => !!s.resp[g]);
   if (t.id === 'etapas') return (respondido(s, 'etapas') || respondido(s, 'grade')) && etapasCompletas(s);
-  if (t.id === 'problemas') return (!percursoGovernanca(s.ctx) || (respondido(s, 'redeNacional') && tamanhoRedeValido(s.ctx)))
-    && (String(s.ctx.problemaOutro || '').trim() !== '' || (respondido(s, 'problemas') && respostaReal(s, 'problemas')));
+  if (t.id === 'problemas') return (String(s.ctx.problemaOutro || '').trim() !== '' || (respondido(s, 'problemas') && respostaReal(s, 'problemas')));
   if (t.id === 'internet' || t.id === 'piloto') return camposAtivos(s, t).every(c => respondido(s, c) && respostaReal(s, c));
   return respondido(s, t.campos[0]) && respostaReal(s, t.campos[0]);
 }

@@ -12,17 +12,18 @@ import { frenteAtual } from '../percurso/frentes';
 import { orcamentoGovernanca } from '../percurso/governanca';
 import { orcamentoLetramento } from '../percurso/letramento';
 import { orcamentoEd } from '../percurso/pedagogico';
-import { formatarMoedaEst, mesesPeriodo, type Estimativa, type FrenteEstimativa } from '../percurso/estimativasOrcamento';
+import { formatarMoedaEst, type Estimativa, type FrenteEstimativa } from '../percurso/estimativasOrcamento';
 import { usePainel } from './PlanoVivo';
+import { mesesV16 } from '../percurso/orcamentoV016';
 import './moldura.css';
 
 /** Telas de recursos de cada frente (a tabela de orçamento). */
 export const TELA_RECURSOS: Record<FrenteEstimativa, string> = { governanca: 'gov-recursos', letramento: 'lit-recursos', educacao: 'ed-recursos' };
 /** Telas, fora da de recursos, cujas respostas entram numa estimativa (participantes e horas do letramento). */
 const ALIMENTA: Partial<Record<FrenteEstimativa, Record<string, string[]>>> = {
-  governanca: { 'gov-equipe': ['equipe', 'formacao', 'avaliacao'] },
-  letramento: { 'lit-participantes': ['oferta'] },
-  educacao: { 'ed-intervencao': ['formacao'], 'ed-tecnologia': ['ia'] },
+  governanca: { 'gov-equipe': ['g31', 'g32'], 'gov-fases': ['g31', 'g32'] },
+  letramento: { 'lit-participantes': ['l11'], 'lit-fases': ['l11'] },
+  educacao: { 'ed-intervencao': ['e3', 'e4'], 'ed-fases': ['e3', 'e4'] },
 };
 
 interface ItemCusto { id: string; nome: string; estimativa?: Estimativa | null }
@@ -33,6 +34,8 @@ export interface DadosCusto {
   itens: ItemCusto[];
   meses: number | null;
   recursos: string | null;
+  /** v016: custo por fase (informado + estimado) */
+  fases?: { id: string; nome: string; meses: number; informado: number; estimado: number }[];
 }
 
 /** Números do orçamento da frente atual; null no projeto de uso de IA. */
@@ -45,7 +48,7 @@ export function dadosCusto(s: CasoStore): DadosCusto | null {
     frente: f, informado: o.informado, informados: o.informados, estimado: o.estimado, estimados: o.estimados, faltam: o.faltam,
     total: o.total, totalComEstimativas: o.totalComEstimativas, moeda: o.moeda,
     itens: o.itens.map((i: any) => ({ id: String(i.id), nome: t(String(i.nome)), estimativa: i.estimativa })),
-    meses: mesesPeriodo(f, s), recursos: tela ? href.pergunta(tela.capitulo, tela.id) : null,
+    meses: mesesV16(s, f), recursos: tela ? href.pergunta(tela.capitulo, tela.id) : null, fases: (o as any).fases,
   };
 }
 
@@ -103,6 +106,7 @@ export function CartaoCustoFrente({ d, compacto = false }: { d: DadosCusto; comp
       <dt><i className="pc-custo-marca pc-custo-marca--lev" aria-hidden="true" />{t('A levantar')}</dt>
       <dd>{itens(d.faltam)}</dd>
     </dl>}
+    {!compacto && d.fases?.length ? <dl className="pc-custo-fases" aria-label={t('Custo por fase')}>{d.fases.map(f => <div key={f.id}><dt>{f.nome}</dt><dd>{f.informado + f.estimado ? moedaCurta(f.informado + f.estimado, d.moeda) : '—'}</dd></div>)}</dl> : null}
   </section>;
 }
 

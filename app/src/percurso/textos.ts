@@ -189,7 +189,7 @@ export function infoCapitulo(n: Capitulo, s?: { ctx?: Record<string, any> }): In
 Object.assign(CURTO, {
  'gov-projeto': 'Projeto de uso de IA', 'gov-diagnostico': 'Lacunas e resultados', 'gov-instrumentos': 'Instrumentos e evidências',
  'gov-solucoes': 'Soluções de política educacional', 'gov-atores': 'Instituições e grupos afetados', 'gov-acoes': 'Ações e responsabilidades',
- 'gov-capacidade': 'Capacidade institucional', 'gov-recursos': 'Orçamento', 'gov-equipe': 'Equipe e formação', 'gov-sandbox': 'Experimentação supervisionada', 'gov-revisao': 'Indicadores e revisão',
+ 'gov-capacidade': 'Capacidade institucional', 'gov-recursos': 'Orçamento', 'gov-fases': 'Fases', 'gov-equipe': 'Equipe e formação', 'gov-sandbox': 'Experimentação supervisionada', 'gov-revisao': 'Indicadores e revisão',
 });
 
 Object.assign(CURTO, TITULOS_LIT);

@@ -1,5 +1,6 @@
 import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { usePadroes } from './usePadroes';
+import { FasesV16, OrcamentoV16 } from './OrcamentoV16';
 import { ehSugerido } from '../percurso/padroesTeste';
 import { GrupoFormulario, ValidacaoCampos } from './GrupoFormulario';
 import { AcoesPercurso } from './AcoesPercurso';
@@ -109,7 +110,7 @@ function EquipeFormacao({ s }: { s: CasoStore }) {
   const quantidade = (c: string, label: string, decimais = false) => <CampoQuantidade key={c} id={'gov-' + q(c).replace(/[^a-zA-Z0-9_-]/g, '-')} label={t(label)} decimais={decimais} dica={false}
     value={gv(s, q(c))} onChange={v => s.responder(q(c), v)} sugerido={ehSugerido(s, 'governanca', 'quantidades.' + c)} />;
   return <div className="pc-curto">
-    <section id="gov-govOrcamento-periodo" tabIndex={-1} className="pc-lit-campo"><h2 className="pc-lit-campo-titulo">{t('Período do orçamento')}</h2><OptionCardGroup className="pc-lit-opcoes" label={t('Período do orçamento')}>{opcoes.map(o => <OptionCard key={o.id} name={campo} value={o.id} label={t(o.texto)} checked={ids.includes(o.id)} onChange={escolher} />)}</OptionCardGroup></section>
+    {/* v016: o período virou as fases */}
     <div className="pc-curto-numeros">
       {quantidade('equipeFte', 'Pessoas na equipe (tempo integral)', true)}
       {quantidade('servidores', 'Servidores a formar')}
@@ -164,7 +165,8 @@ function ControlesGov({ s, id, tentou = false }: { s: CasoStore; id: string; ten
       ['equipe', 'Equipe e competências necessárias'], ['formacao', 'Formação institucional'], ['orientacao', 'Orientação às instituições'], ['supervisao', 'Supervisão e acompanhamento'], ['incidentes', 'Resposta a incidentes e reclamações'],
     ]} />;
     case 'gov-equipe': return <EquipeFormacao s={s} />;
-    case 'gov-recursos': return <Orcamento s={s} tentou={tentou} />;
+    case 'gov-fases': return <FasesV16 s={s} frente="governanca" />;
+    case 'gov-recursos': return <OrcamentoV16 s={s} frente="governanca" tentou={tentou} />;
     case 'gov-sandbox': return <Grupo s={s} base="govSandbox" campos={CAMPOS_SANDBOX} />;
     case 'gov-revisao': return <Grupo s={s} base="govRevisao" campos={[
       ['indicadores', 'Indicadores e metas institucionais'], ['responsavel', 'Responsável pelo acompanhamento'], ['periodicidade', 'Periodicidade da revisão'], ['data', 'Próxima revisão'], ['alcance', 'Alcance da política'], ['progresso', 'Progresso de implementação'], ['canal', 'Transparência e prestação de contas'],
@@ -206,7 +208,7 @@ export function Governanca({ rota }: { rota: Rota }) {
  const id=ativa.id,info=infoCapitulo(n,s),dest=vizinhos(s,id),falta=!TELAS_OPCIONAIS.includes(id)&&!telaRespondida(s,ativa),pendencias=pendenciasGov(s,id);
  const focar=(p:string)=>focarPendencia('gov-'+p.replace(/[^a-zA-Z0-9_-]/g,'-'));
  const avancar=()=>{if(!falta){ir(dest.proxima);return;}setTentou(true);requestAnimationFrame(()=>pendencias.length?focar(pendencias[0].caminho):focarPendencia('gov-validacao'));};
- return <Shell pos={{capitulo:n,tela:id}} contexto={t(info.titulo)}><div className="pc-pergunta" data-tela={id}><QuestionFrame title={t(TITULO_TELA[id]||CURTO[id]||id)} explanation={id==='gov-equipe'?t('Opcional: estes números alimentam as estimativas de equipe e formação.'):undefined}
+ return <Shell pos={{capitulo:n,tela:id}} contexto={t(info.titulo)}><div className="pc-pergunta" data-tela={id}><QuestionFrame title={t(TITULO_TELA[id]||CURTO[id]||id)} 
  actions={<AcoesPercurso anterior={dest.anterior} avancar={avancar}/>}>
  {tentou&&falta?<div id="gov-validacao" className="pc-lit-validacao" role="alert" tabIndex={-1}><b>{t('Complete as respostas indicadas ou marque as informações a levantar.')}</b><ul>{pendencias.slice(0,3).map(p=><li key={p.caminho}><a href="#gov-validacao" onClick={e=>{e.preventDefault();focar(p.caminho);}}>{t(p.label)}</a></li>)}{!pendencias.length?<li>{t(id==='problemas'?'Selecione os desafios do plano e informe os totais da rede.':id==='local'?'Escolha o país para avançar.':'Selecione ao menos uma prioridade.')}</li>:null}</ul>{pendencias.length>3?<details><summary>{t('Ver outras {n} pendências',{n:pendencias.length-3})}</summary><ul>{pendencias.slice(3).map(p=><li key={p.caminho}><a href="#gov-validacao" onClick={e=>{e.preventDefault();focar(p.caminho);}}>{t(p.label)}</a></li>)}</ul></details>:null}</div>:null}
  <div className="pc-lit-campos"><ValidacaoCampos.Provider value={tentou}><ControlesGov s={s} id={id} tentou={tentou}/></ValidacaoCampos.Provider></div></QuestionFrame></div></Shell>;

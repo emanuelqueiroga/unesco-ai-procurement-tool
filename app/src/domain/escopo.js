@@ -42,12 +42,12 @@ export function percursoInstitucional(ctx) { return percursoGovernanca(ctx) || p
 /** A frente educacional conserva as etapas de ensino; os percursos institucionais têm navegação própria. */
 export function percursoEducacao(ctx) { return Array.isArray(ctx?.prioridades) && ctx.prioridades.includes('com') && !percursoInstitucional(ctx); }
 /** Ações educacionais compartilham um plano, com temas e recursos sem duplicação. */
-export function temEducacao(ctx) { return Array.isArray(ctx?.prioridades) && ctx.prioridades.some(id => ['com','para'].includes(id)); }
+export function temEducacao(ctx) { return Array.isArray(ctx?.prioridades) && ctx.prioridades.includes('com'); } // v016: "para a era da IA" saiu do fluxo
 export function percursoPedagogico(ctx) { return temEducacao(ctx) && (ctx.frenteAtiva === 'educacao' || !percursoInstitucional(ctx) && !(ctx.frenteAtiva === 'projeto' && projetoUsoDefinido(ctx))); }
 export const CAMPOS_EDUCACAO_REMOVIDOS = ['problema','linhaBase','alternativa','altCustoEfeito','linhaBaseProblemas','linhaBaseProblemaTxt','linhaBaseMedida'];
 
 /** Catálogo visível da frente atual; as escolhas das outras frentes ficam guardadas. */
 export function prioridadesDoPercurso(ctx) {
  const p=ctx?.prioridades || [];
- return p.filter(id=>percursoGovernanca(ctx)?id==='governar':percursoLetramento(ctx)?id==='sobre':percursoPedagogico(ctx)?['com','para'].includes(id):true);
+ return p.filter(id=>percursoGovernanca(ctx)?id==='governar':percursoLetramento(ctx)?id==='sobre':percursoPedagogico(ctx)?id==='com':true);
 }

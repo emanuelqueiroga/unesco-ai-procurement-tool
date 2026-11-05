@@ -20,6 +20,7 @@ import { TabelaRecursos, resumoPeriodo, type LinhaRecurso } from './TabelaRecurs
 import { primeiraFrase } from '../percurso/textos';
 import { focarPendencia } from '../percurso/navegacaoOrientada';
 import { usePadroes } from './usePadroes';
+import { FasesV16, OrcamentoV16 } from './OrcamentoV16';
 import { ehSugerido } from '../percurso/padroesTeste';
 import './governanca.css';
 import './letramento.css';
@@ -76,18 +77,34 @@ function CamposLit({ s, id, tentou }: { s: CasoStore; id: string; tentou: boolea
   })}</div>;
 }
 /** Participantes: uma linha por público, com participantes previstos e horas por participante (opcionais). */
+/** v016: professores (número, lideranças escolares, horas, cursos, forma de entrega) e estudantes (níveis e número). */
 function Participantes({ s }: { s: CasoStore }) {
-  const pubs = publicosLetramento(s);
-  const campo = (p: string, c: 'participantes' | 'horas') => {
-    const caminho = `publicos.${p}.${c}`, v = lerLit(s, caminho) || {}, decimais = c === 'horas';
-    const ok = v.valor === '' || v.valor == null || typeof v.valor === 'number' && Number.isFinite(v.valor) && v.valor > 0 && (decimais || Number.isSafeInteger(v.valor));
-    return <div className="pc-part-campo" id={campoId(caminho)}><CampoNumero label={c === 'horas' ? t('Horas por participante') : t('Participantes previstos')} value={v.situacao === 'a_levantar' ? '' : v.valor ?? ''} decimais={decimais}
-      error={ok ? undefined : t(decimais ? 'Informe um número maior que zero.' : 'Informe um número inteiro maior que zero.')}
+  const pubs = publicosLetramento(s).map(p => p.id), campos = camposLetramento(s);
+  const numero = (caminho: string, label: string, decimais = false) => {
+    const v = lerLit(s, caminho) || {};
+    return <div className="pc-lit-campo pc-esc-num" id={campoId(caminho)} key={caminho}><CampoNumero label={t(label)} value={v.situacao === 'a_levantar' ? '' : v.valor ?? ''} decimais={decimais}
       onChange={valor => gravar(s, caminho, { ...lerLit(useCaso.getState(), caminho), valor, situacao: 'informado', origem: 'informado' })} />{ehSugerido(s, 'letramento', caminho) ? <span className="pc-sugerido">{t('sugerido')}</span> : null}</div>;
   };
-  return <div className="pc-part" id="lit-participantes" tabIndex={-1}>
-    <div className="pc-part-cab" aria-hidden="true"><span>{t('Público')}</span><span>{t('Participantes previstos')}</span><span>{t('Horas por participante')}</span></div>
-    {pubs.map(p => <div className="pc-part-linha" key={p.id} role="group" aria-label={t(p.nome)}><span className="pc-part-nome">{t(p.nome)}</span>{campo(p.id, 'participantes')}{campo(p.id, 'horas')}</div>)}
+  const escolha = (caminho: string) => {
+    const f = campos.find(c => c.caminho === caminho); if (!f) return null;
+    const ids = selecoesLit(s, caminho), v = lerLit(s, caminho) || {};
+    return <div className="pc-lit-campo" id={campoId(caminho)} key={caminho}><h3 className="pv-campo-titulo" aria-hidden="true">{t(f.label)}</h3><OptionCardGroup className={'pc-lit-opcoes' + (f.multipla ? '' : ' pv-opcoes-linha')} label={t(f.label)} type={f.multipla ? 'checkbox' : 'radio'}>
+      {(f.opcoes || []).map(o => <OptionCard key={o.id} name={caminho} value={o.id} label={t(o.texto)} type={f.multipla ? 'checkbox' : 'radio'} checked={ids.includes(o.id)}
+        onChange={(id, on) => gravar(s, caminho, { ...v, escolhas: f.multipla ? selecionarLit(ids, id, on, true) : [id], origem: 'informado' })} />)}
+    </OptionCardGroup></div>;
+  };
+  const lider = selecoesLit(s, 'publicos.A11.incluiLiderancas').includes('sim');
+  return <div className="pv-publicos" id="lit-participantes" tabIndex={-1}>
+    {pubs.includes('A11') ? <section className="pv-publico"><h2 className="pc-lit-campo-titulo">{t('Professores')}</h2>
+      <div className="pc-esc-nums">{numero('publicos.A11.participantes', 'Número de professores')}{numero('publicos.A11.horas', 'Horas por curso', true)}{numero('publicos.A11.cursos', 'Cursos por pessoa')}</div>
+      {escolha('publicos.A11.incluiLiderancas')}
+      {lider ? <div className="pc-esc-nums">{numero('publicos.A11.liderancas', 'Número de diretores e coordenadores')}</div> : null}
+      {escolha('oferta.modalidade')}
+    </section> : null}
+    {pubs.includes('A12') ? <section className="pv-publico"><h2 className="pc-lit-campo-titulo">{t('Estudantes')}</h2>
+      {escolha('publicos.A12.niveis')}
+      <div className="pc-esc-nums">{numero('publicos.A12.participantes', 'Número de estudantes')}</div>
+    </section> : null}
   </div>;
 }
 /** Escolas e etapas: etapas atendidas (com educação superior) e os totais da rede, pré-preenchidos a partir do Contexto;
@@ -189,13 +206,13 @@ export function Letramento({ rota }: { rota: Rota }) {
     else requestAnimationFrame(() => document.getElementById('lit-validacao-tela')?.focus());
   };
   return <Shell pos={{ capitulo: n, tela: id }} contexto={t(info.titulo)}>{aviso}<div className="pc-pergunta" data-tela={id}><QuestionFrame
-    title={t(tituloDaTelaLit(s,id) || TITULO_TELA[id] || CURTO[id] || id)} explanation={primeiraFrase(t(guiaTelaLit(s,id) || LEAD[id] || ''))}
+    title={t(tituloDaTelaLit(s,id) || TITULO_TELA[id] || CURTO[id] || id)} explanation={id.startsWith('lit-') ? undefined : primeiraFrase(t(guiaTelaLit(s,id) || LEAD[id] || ''))}
     actions={<AcoesPercurso anterior={destinos.anterior} avancar={avancar}/>} >
     {tentou && falta ? <div className="pc-lit-validacao" id="lit-validacao-tela" role="alert" tabIndex={-1}><b>{t('Complete as respostas indicadas ou marque as informações a levantar.')}</b><ul>
       {pendencias.slice(0, 3).map(itemPendente)}
       {erros.map(e => <li key={e}>{t(e)}</li>)}
       {!camposFaltando.length && !custosFaltando.length && !erros.length ? <li>{t(id === 'problemas' ? 'Selecione os públicos ou o currículo que fazem parte do plano.' : id === 'local' ? 'Escolha o país para avançar.' : 'Selecione ao menos uma prioridade.')}</li> : null}
     </ul>{pendencias.length > 3 ? <details><summary>{t('Ver outras {n} pendências', { n: pendencias.length - 3 })}</summary><ul>{pendencias.slice(3).map(itemPendente)}</ul></details> : null}</div> : null}
-    {id.startsWith('lit-') ? <div className="pc-lit-campos">{id === 'lit-recursos' ? <OrcamentoLit s={s} tentou={tentou} /> : id === 'lit-participantes' ? <Participantes s={s} /> : id === 'lit-escolas' ? <EscolasEtapas s={s} /> : <CamposLit s={s} id={id} tentou={tentou} />}{erros.length && !tentou ? erros.map(e => <p role="alert" className="pc-lit-erro" key={e}>{t(e)}</p>) : null}</div> : <ControlesTela e={s} tela={ativa} />}
+    {id.startsWith('lit-') ? <div className="pc-lit-campos">{id === 'lit-recursos' ? <OrcamentoV16 s={s} frente="letramento" tentou={tentou} /> : id === 'lit-fases' ? <FasesV16 s={s} frente="letramento" /> : id === 'lit-participantes' ? <Participantes s={s} /> : <CamposLit s={s} id={id} tentou={tentou} />}{erros.length && !tentou ? erros.map(e => <p role="alert" className="pc-lit-erro" key={e}>{t(e)}</p>) : null}</div> : <ControlesTela e={s} tela={ativa} />}
   </QuestionFrame></div></Shell>;
 }

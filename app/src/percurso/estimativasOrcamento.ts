@@ -10,6 +10,7 @@ import { lerEd, usuariosIAEd } from './pedagogico';
 import { presetGovernanca, selecoesGov } from './governancaPresets';
 import { TITULOS_LIT } from './letramentoTitulos';
 import { TITULOS_ED } from './pedagogicoTitulos';
+import { categoriasV16, estimativaV16, mesesV16 } from './orcamentoV016';
 import type { Estado14 } from '../store/tipos';
 
 export type FrenteEstimativa = 'governanca' | 'letramento' | 'educacao';
@@ -47,6 +48,8 @@ export interface Estimativa {
   falta?: string[];
   pendencias?: PendenciaEstimativa[];
   mensagem?: string;
+  /** v016: valor por fase (Piloto, Implantação, Expansão) */
+  fases?: { id: string; nome: string; usd: number; valor: number | null }[];
 }
 
 export const temBaseEstimativa = (frente: FrenteEstimativa, categoria: string) => Object.hasOwn(BASES_ESTIMATIVA[frente], categoria);
@@ -98,7 +101,7 @@ export function taxaMoeda(cod: string, s: Pick<Estado14, 'moeda'>): ConversaoCon
   const tx = (moedas as { taxas: Record<string, number> }).taxas[cod];
   return typeof tx === 'number' && tx > 0 ? { de: 'USD', para: cod, taxa: tx, fonte: String((moedas as any).fonte || ''), data: String((moedas as any).data || ''), manual: false } : null;
 }
-function parametro(id: string): ParametroConta {
+export function parametro(id: string): ParametroConta {
   const r = refLinha(id, ['global']);
   if (!r) throw new Error('base de referências: falta a linha "' + id + '"');
   return { id, item: String(r.item), valor: Number(r.valor), unidade: String(r.unidade), moeda: String(r.moeda || 'USD'), fonte: String(r.fonte?.titulo || ''), grau: String(r.grau || ''), ano: typeof r.anoPreco === 'number' ? r.anoPreco : null };
@@ -144,6 +147,8 @@ const ancoraPeriodo = (f: FrenteEstimativa) => f === 'governanca' ? 'gov-govOrca
  * Com base mas sem uma quantidade, período ou taxa, devolve valor null e o que falta.
  */
 export function estimativaReferencia(frente: FrenteEstimativa, categoria: string, s: EstadoEst): Estimativa | null {
+  const v16 = categoriasV16(s, frente).find(c => c.id === categoria);
+  if (v16) return estimativaV16(s, frente, v16, moedaDoOrcamento(frente, s));
   if (!temBaseEstimativa(frente, categoria)) return null;
   const base = BASES_ESTIMATIVA[frente][categoria], moeda = moedaDoOrcamento(frente, s), meses = mesesPeriodo(frente, s);
   const tela = telaRecursos(frente), origemOrc = frente === 'governanca' ? t('Equipe e formação') : t(frente === 'letramento' ? TITULOS_LIT['lit-recursos'] : TITULOS_ED['ed-recursos']);

@@ -2,7 +2,7 @@
 // Cada linha: o nome, a situação em pílulas (A levantar · Sem custo · Tenho o valor · Usar estimativa, esta só onde
 // há base de cálculo) e o valor à direita com uma nota. A linha aberta mostra o campo do valor, a conta da estimativa
 // em blocos ou o que falta. Os dados, as situações e as regras são os de cada frente: esta tela só os apresenta.
-import { useState, type ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { Button, Popover, TextField } from '../ui';
 import { CampoNumero } from '../percurso/CampoNumero';
 import { telasAtivas, type CasoStore } from '../store';
@@ -37,6 +37,14 @@ export interface LinhaRecurso {
   onValor: (v: number | '') => void;
   onDetalhe: (v: string) => void;
   onRemover?: () => void;
+  /** v016: desafio da categoria (cabeçalho do grupo) */
+  grupo?: string;
+  /** v016: cost options marcáveis dentro da linha */
+  opcoes?: { rotulo: string; on: boolean }[];
+  onOpcao?: (rotulo: string, on: boolean) => void;
+  /** v016: valor informado por fase */
+  fases?: { id: string; nome: string; valor: number | '' }[];
+  onValorFase?: (id: string, v: number | '') => void;
 }
 
 const SITUACOES: OpcaoSituacao[] = [
@@ -137,7 +145,12 @@ function Linha({ s, l, moeda, tela, tentou, aberta, onAbrir }: { s: CasoStore; l
         {comValor && l.extras?.length ? <div className="pc-rec-onde" role="group" aria-label={t('Tenho o valor') + ': ' + l.nome}>
           {[{ id: 'informado', rotulo: 'Neste orçamento' }, ...l.extras].map(o => <button key={o.id} type="button" className="pc-rec-pilula pc-rec-pilula--sm" aria-pressed={l.situacao === o.id} onClick={() => { if (l.situacao !== o.id) l.onSituacao(o.id); }}>{t(o.rotulo)}</button>)}
         </div> : null}
-        {!l.emUso && l.situacao === 'informado' ? <div className="pc-rec-campo"><CampoNumero label={t('Valor informado') + ' (' + moeda + ')'} value={typeof l.valor === 'number' ? l.valor : ''} decimais
+        {l.opcoes?.length ? <fieldset className="pv-opcoes"><legend className="pv-opcoes-leg">{t('O que entra nesta categoria')}</legend>
+          {l.opcoes.map(o => <label key={o.rotulo} className={'pv-opcao' + (o.on ? ' is-on' : '')}><input type="checkbox" checked={o.on} onChange={e => l.onOpcao?.(o.rotulo, e.currentTarget.checked)} /><span>{t(o.rotulo)}</span></label>)}
+        </fieldset> : null}
+        {!l.emUso && l.situacao === 'informado' && l.fases?.length ? <div className="pv-fases-valor">{l.fases.map(f => <div className="pc-rec-campo" key={f.id}><CampoNumero label={f.nome + ' (' + moeda + ')'} value={f.valor} decimais
+          onChange={v => l.onValorFase?.(f.id, v)} /></div>)}</div> : null}
+        {!l.emUso && l.situacao === 'informado' && !l.fases?.length ? <div className="pc-rec-campo"><CampoNumero label={t('Valor informado') + ' (' + moeda + ')'} value={typeof l.valor === 'number' ? l.valor : ''} decimais
           error={erro || valorInvalido ? t('Informe um valor maior ou igual a zero.') : undefined} onChange={l.onValor} /></div> : null}
         {l.emUso && est ? typeof est.valor === 'number' ? <ContaBlocos est={est} /> : <><p className="pc-rec-falta"><b>{t('Estimativa em uso, mas indisponível.')}</b></p><Falta s={s} est={est} tela={tela} /></> : null}
         {l.origem}
@@ -168,17 +181,17 @@ function Contexto({ c }: { c: ContextoOrcamento }) {
 
 export function TabelaRecursos({ s, linhas, moeda, tela, tentou, contexto, disponiveis, onUsarTodas, onAdicionar }: {
   s: CasoStore; linhas: LinhaRecurso[]; moeda: string; tela: string; tentou: boolean; contexto: ContextoOrcamento;
-  disponiveis: number; onUsarTodas: () => void; onAdicionar: () => void;
+  disponiveis: number; onUsarTodas: () => void; onAdicionar?: () => void;
 }) {
   const [aberta, setAberta] = useState<string | null>(null);
   return <div className="pc-rec">
     <Contexto c={contexto} />
     <div className="pc-rec-tabela">
-      {linhas.map(l => <Linha key={l.id} s={s} l={l} moeda={moeda} tela={tela} tentou={tentou} aberta={aberta === l.id} onAbrir={v => setAberta(v ? l.id : a => a === l.id ? null : a)} />)}
-      <div className="pc-rec-rodape">
+      {linhas.map((l, i) => <Fragment key={l.id}>{l.grupo && l.grupo !== linhas[i - 1]?.grupo ? <h3 className="pv-rec-grupo">{l.grupo}</h3> : null}<Linha s={s} l={l} moeda={moeda} tela={tela} tentou={tentou} aberta={aberta === l.id} onAbrir={v => setAberta(v ? l.id : a => a === l.id ? null : a)} /></Fragment>)}
+      {disponiveis || onAdicionar ? <div className="pc-rec-rodape">
         {disponiveis ? <button type="button" className="pc-rec-todas" onClick={onUsarTodas}>{t('Usar a estimativa nos itens sem valor ({n})', { n: disponiveis })}</button> : <span />}
-        <Button variant="link" onClick={onAdicionar}>{t('Adicionar outro recurso')}</Button>
-      </div>
+        {onAdicionar ? <Button variant="link" onClick={onAdicionar}>{t('Adicionar outro recurso')}</Button> : null}
+      </div> : null}
     </div>
   </div>;
 }
