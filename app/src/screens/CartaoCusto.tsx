@@ -20,11 +20,8 @@ import './moldura.css';
 /** Telas de recursos de cada frente (a tabela de orçamento). */
 export const TELA_RECURSOS: Record<FrenteEstimativa, string> = { governanca: 'gov-recursos', letramento: 'lit-recursos', educacao: 'ed-recursos' };
 /** Telas, fora da de recursos, cujas respostas entram numa estimativa (participantes e horas do letramento). */
-const ALIMENTA: Partial<Record<FrenteEstimativa, Record<string, string[]>>> = {
-  governanca: { 'gov-equipe': ['g31', 'g32'], 'gov-fases': ['g31', 'g32'] },
-  letramento: { 'lit-participantes': ['l11', 'l13', 'l22'], 'lit-fases': ['l11', 'l13', 'l22'] },
-  educacao: { 'ed-intervencao': ['e2', 'e3', 'e4'], 'ed-fases': ['e2', 'e3', 'e4'] },
-};
+// v017: as quantidades ficam em cada opção, na tela de valores
+const ALIMENTA: Partial<Record<FrenteEstimativa, Record<string, string[]>>> = {};
 
 interface ItemCusto { id: string; nome: string; estimativa?: Estimativa | null }
 export interface DadosCusto {
@@ -126,7 +123,7 @@ export function RespostaMuda({ d, tela }: { d: DadosCusto; tela: string }) {
 function Links({ d, tela }: { d: DadosCusto | null; tela?: string }) {
   const naRecursos = !!d && tela === TELA_RECURSOS[d.frente];
   return <nav className="pc-custo-links" aria-label={t('Orçamento e resumo')}>
-    {d?.recursos && !naRecursos ? <a className="pc-custo-link" href={d.recursos}>{t('Orçamento')} <span aria-hidden="true">→</span></a> : null}
+    {d?.recursos && !naRecursos ? <a className="pc-custo-link" href={d.recursos}>{t('Valores')} <span aria-hidden="true">→</span></a> : null}
     <a className="pc-custo-link" href={href.plano()}>{t('Resumo desta frente')} <span aria-hidden="true">→</span></a>
   </nav>;
 }
@@ -155,7 +152,7 @@ export function FaixaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
   </>;
   const rotulo = t('Custo desta frente') + ': ' + (p.valor === null ? '—' : formatarMoedaEst(p.valor, d.moeda)) + (p.nota ? '. ' + p.nota : '');
   return <div className="pc-faixa-custo-wrap">{d.recursos
-    ? <a className="pc-faixa-custo" href={d.recursos} aria-label={rotulo + '. ' + t('Orçamento')}>{conteudo}</a>
+    ? <a className="pc-faixa-custo" href={d.recursos} aria-label={rotulo + '. ' + t('Valores')}>{conteudo}</a>
     : <div className="pc-faixa-custo" aria-label={rotulo}>{conteudo}</div>}</div>;
 }
 

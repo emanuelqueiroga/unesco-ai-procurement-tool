@@ -1,6 +1,7 @@
 import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { usePadroes } from './usePadroes';
 import { FasesV16, OrcamentoV16, ResumoV16, BotoesPDFV16 } from './OrcamentoV16';
+import { CategoriasV17, OpcoesV17, ValoresV17 } from './OrcamentoV17';
 import { instituicaoV16 } from '../percurso/orcamentoV016';
 import { ehSugerido } from '../percurso/padroesTeste';
 import { GrupoFormulario, ValidacaoCampos } from './GrupoFormulario';
@@ -167,7 +168,9 @@ function ControlesGov({ s, id, tentou = false }: { s: CasoStore; id: string; ten
     ]} />;
     case 'gov-equipe': return <EquipeFormacao s={s} />;
     case 'gov-fases': return <FasesV16 s={s} frente="governanca" />;
-    case 'gov-recursos': return <OrcamentoV16 s={s} frente="governanca" tentou={tentou} />;
+    case 'gov-recursos': return <ValoresV17 s={s} frente="governanca" />;
+    case 'gov-categorias': return <CategoriasV17 s={s} frente="governanca" />;
+    case 'gov-opcoes': return <OpcoesV17 s={s} frente="governanca" />;
     case 'gov-sandbox': return <Grupo s={s} base="govSandbox" campos={CAMPOS_SANDBOX} />;
     case 'gov-revisao': return <Grupo s={s} base="govRevisao" campos={[
       ['indicadores', 'Indicadores e metas institucionais'], ['responsavel', 'Responsável pelo acompanhamento'], ['periodicidade', 'Periodicidade da revisão'], ['data', 'Próxima revisão'], ['alcance', 'Alcance da política'], ['progresso', 'Progresso de implementação'], ['canal', 'Transparência e prestação de contas'],

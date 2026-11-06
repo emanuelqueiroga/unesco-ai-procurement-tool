@@ -5,6 +5,7 @@ import { CATEGORIAS, DIMENSOES_EDU, FASES_V016 } from '../domain/catalogo_v016.j
 import { LOC } from '../domain';
 import type { Estado14 } from '../store/tipos';
 import { t } from './textos';
+import { calcularOpcao, chaveOpcao, type LinhaOpcao } from './custosV017';
 import { lerLit } from './letramento';
 import { chaveEd, lerEd, usaIAEd, usuariosIAEd } from './pedagogico';
 import { PROBLEMA_POR_ID } from '../domain/prioridades.js';
@@ -218,35 +219,59 @@ export function estimativaV16(s: Estado, f: FrenteEstimativa, cat: CategoriaV16,
 
 export interface ItemV16 {
   id: string; n: string; nome: string; grupo: string; opcoes: string[]; marcadas: string[]; base?: Base;
-  valor: number | null; valores: Record<string, number | ''>; situacao: string; detalhe: string;
+  /** v017: uma linha de custo por opção escolhida (ou uma só, na categoria sem opções) */
+  linhas: LinhaOpcao[];
+  /** custo conhecido da categoria (informado + estimado); null quando nada tem valor */
+  valor: number | null; informadoCat: number; estimadoCat: number;
+  valores: Record<string, number | ''>; situacao: string; detalhe: string;
   estimativa: Estimativa | null; referencia: boolean; emReferencia: boolean; estimado: number | null; respondido: boolean;
-  compartilhado: boolean; origem: any;
+  compartilhado: boolean; origem: any; pendentes: number;
 }
-/** Orçamento da frente no modelo v016. */
+/** Categorias escolhidas pela equipe (v017: nada vem marcado). */
+export function categoriasEscolhidas(s: Estado, f: FrenteEstimativa): string[] {
+  const sel: unknown = raizOrcamento(s, f).categorias;
+  return Array.isArray(sel) ? sel.filter((x): x is string => typeof x === 'string') : [];
+}
+/** Opções de uma categoria: as do catálogo, ou a própria categoria quando ela não tem opções. */
+export const opcoesDaCategoria = (c: CategoriaV16) => c.opcoes.length ? c.opcoes : [c.nome];
+/** Opções escolhidas de uma categoria; na categoria sem opções, a própria categoria conta como escolhida. */
+export function opcoesEscolhidas(s: Estado, f: FrenteEstimativa, c: CategoriaV16): string[] {
+  if (!c.opcoes.length) return [c.nome];
+  const x = raizOrcamento(s, f).itens?.[c.id]?.opcoes;
+  return Array.isArray(x) ? c.opcoes.filter(o => x.includes(o)) : [];
+}
+/** Orçamento da frente (v017): soma das opções escolhidas, por fase. */
 export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
-  const o = raizOrcamento(s, f), moeda = String(o.moeda || s.moeda?.cod || 'USD'), fases = fasesAtivas(s, f);
-  const itens: ItemV16[] = categoriasV16(s, f).map(c => {
-    const x = o.itens?.[c.id] || {}, valores: Record<string, number | ''> = x.valores && typeof x.valores === 'object' ? x.valores : {};
-    const nums = fases.map(p => valores[p.id]).filter(positivoOuZero);
-    const valor = x.situacao === 'sem_custo' ? 0 : x.situacao === 'informado' ? (nums.length ? centavos(nums.reduce((a, b) => a + (b as number), 0)) : positivoOuZero(x.valor) ? x.valor : null) : null;
-    const estimativa = estimativaV16(s, f, c, moeda), emRef = x.situacao === 'referencia' && !!c.base;
-    const estimado = emRef && typeof estimativa?.valor === 'number' ? estimativa.valor : null;
-    const marcadas = Array.isArray(x.opcoes) ? x.opcoes.filter((v: string) => c.opcoes.includes(v)) : [];
-    return { ...c, nome: t(c.nome), grupo: c.grupo, marcadas, valor, valores, situacao: String(x.situacao || ''), detalhe: String(x.detalhe || ''), estimativa, referencia: emRef, emReferencia: emRef, estimado,
-      respondido: ['a_estimar', 'sem_custo'].includes(x.situacao) || emRef || valor !== null, compartilhado: false, origem: null as any };
+  const o = raizOrcamento(s, f), moeda = String(o.moeda || s.moeda?.cod || 'USD'), fases = fasesAtivas(s, f), taxa = taxaV16(moeda, s);
+  const sel = categoriasEscolhidas(s, f), disponiveis = categoriasV16(s, f);
+  const fmt = (v: number) => formatarMoedaEst(v, moeda);
+  const itens: ItemV16[] = disponiveis.filter(c => sel.includes(c.id)).map(c => {
+    const x = o.itens?.[c.id] || {}, custos = x.custos && typeof x.custos === 'object' ? x.custos : {};
+    const marcadas = opcoesEscolhidas(s, f, c);
+    const linhas = marcadas.map(r => calcularOpcao(s, f, c.id, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num));
+    const inf = linhas.filter(l => l.status === 'informado'), est = linhas.filter(l => l.status === 'referencia');
+    const informadoCat = centavos(inf.reduce((n, l) => n + (l.total as number), 0)), estimadoCat = centavos(est.reduce((n, l) => n + (l.total as number), 0));
+    const pendentes = linhas.filter(l => l.status === 'falta').length + (marcadas.length ? 0 : 1);
+    const valor = inf.length + est.length ? centavos(informadoCat + estimadoCat) : null;
+    return { ...c, nome: t(c.nome), marcadas, linhas, valor, informadoCat, estimadoCat, valores: {}, situacao: '', detalhe: String(x.detalhe || ''),
+      estimativa: null, referencia: est.length > 0, emReferencia: est.length > 0, estimado: est.length ? estimadoCat : null,
+      respondido: pendentes === 0, compartilhado: false, origem: null, pendentes };
   });
-  const tot = totaisOrcamento(itens, itens.every(i => i.respondido));
+  const todas = itens.flatMap(i => i.linhas);
+  const informado = centavos(itens.reduce((n, i) => n + i.informadoCat, 0)), estimado = centavos(itens.reduce((n, i) => n + i.estimadoCat, 0));
+  const informados = todas.filter(l => l.status === 'informado').length, estimados = todas.filter(l => l.status === 'referencia').length;
+  const faltam = itens.reduce((n, i) => n + i.pendentes, 0) + (itens.length ? 0 : 1);
   const porFase = fases.map(p => ({ id: p.id, nome: p.nome, meses: p.meses, alcance: p.alcance,
-    informado: centavos(itens.reduce((n, i) => n + (i.situacao === 'informado' && positivoOuZero(i.valores[p.id]) ? i.valores[p.id] as number : 0), 0)),
-    estimado: centavos(itens.reduce((n, i) => n + (i.estimado !== null ? (i.estimativa as any)?.fases?.find((z: any) => z.id === p.id)?.valor || 0 : 0), 0)) }));
-  // memória do que está sendo custeado: quantidades e valores unitários de cada linha estimada
-  const memoria = itens.filter(i => i.estimado !== null && i.base).map(i => ({ id: i.id, n: i.n, nome: i.nome, quantidades: (i.estimativa as Estimativa).conta.quantidades,
-    premissas: pidsDaBase(i.base as Base).map(pid => premissaV16(s as any, f, pid, moeda)).filter(p => (i.estimativa as Estimativa).conta.parametros.some(z => z.id === p.pid)) }));
-  const usadas = memoria.flatMap(m => m.premissas), premissasEquipe = usadas.filter(p => p.equipe).filter((p, k, a) => a.findIndex(z => z.pid === p.pid) === k);
-  const eletricidade = f === 'educacao' ? valNum(lerEd(s, 'orcamento.quantidades.escolasSemEletricidade')) : null;
-  return { itens, moeda, periodo: resumoFases(s, f), fonte: '', fases: porFase, subtotal: tot.informado, temSubtotal: tot.informados > 0, memoria, premissasEquipe, todasEquipe: usadas.length > 0 && usadas.every(p => p.equipe), eletricidade, ...tot };
+    informado: centavos(todas.filter(l => l.status === 'informado').reduce((n, l) => n + (l.porFase[p.id] || 0), 0)),
+    estimado: centavos(todas.filter(l => l.status === 'referencia').reduce((n, l) => n + (l.porFase[p.id] || 0), 0)) }));
+  const memoria = itens.flatMap(i => i.linhas.filter(l => l.status !== 'falta' && l.tipo !== 'fechado').map(l => ({ id: i.id + ':' + l.chave, n: i.n, nome: i.nome, opcao: t(l.rotulo), texto: l.memoria })));
+  const usadas = todas.filter(l => l.status !== 'falta' && l.tipo !== 'fechado');
+  return { itens, moeda, periodo: resumoFases(s, f), fonte: '', fases: porFase, disponiveis, selecionadas: sel,
+    informado, informados, estimado, estimados, faltam, subtotal: informado, temSubtotal: informados > 0,
+    total: !faltam && !estimados ? informado : null, totalComEstimativas: !faltam ? centavos(informado + estimado) : null,
+    memoria, premissasEquipe: usadas.filter(l => !l.unitDaReferencia).map(l => ({ pid: l.chave, item: t(l.rotulo) })), todasEquipe: usadas.length > 0 && usadas.every(l => !l.unitDaReferencia),
+    eletricidade: null as number | null };
 }
-function positivoOuZero(v: unknown): v is number { return typeof v === 'number' && Number.isFinite(v) && v >= 0; }
 
 /** Linhas "Custo por fase" para o resumo, o panorama e os PDFs (informado + estimado de cada fase). */
 export function linhasFases(o: { fases?: { nome: string; meses: number; informado: number; estimado: number }[]; moeda: string }): { rotulo: string; valor: string }[] {
@@ -257,38 +282,44 @@ export function linhasFases(o: { fases?: { nome: string; meses: number; informad
 /** Instituição responsável (campo da tela País; a governança antiga guardava em "olhando"). */
 export function instituicaoV16(s: Pick<Estado14, 'ctx'>): string { return String(s.ctx.local || s.ctx.olhando || '').trim(); }
 
-export interface LinhaMatriz { id: string; n: string; nome: string; grupo: string; tipo: 'informado' | 'estimado' | 'sem_custo' | 'a_levantar'; porFase: Record<string, number | null>; total: number | null }
-/** Categoria × fase: o valor de cada fase (informado ou estimado), o total e a situação. */
+export interface LinhaMatriz { id: string; n: string; nome: string; grupo: string; nivel: 0 | 1; tipo: 'informado' | 'estimado' | 'sem_custo' | 'a_levantar'; porFase: Record<string, number | null>; total: number | null }
+/** Categoria × fase, com uma sublinha por opção escolhida (v017). */
 export function matrizFases(o: ReturnType<typeof orcamentoV16>): LinhaMatriz[] {
-  return o.itens.map(i => {
-    const tipo: LinhaMatriz['tipo'] = i.situacao === 'sem_custo' ? 'sem_custo' : i.valor !== null && i.situacao === 'informado' ? 'informado' : i.estimado !== null ? 'estimado' : 'a_levantar';
+  const out: LinhaMatriz[] = [];
+  for (const i of o.itens) {
     const porFase: Record<string, number | null> = {};
-    for (const f of o.fases) porFase[f.id] = tipo === 'informado' ? (typeof i.valores[f.id] === 'number' ? i.valores[f.id] as number : null)
-      : tipo === 'estimado' ? ((i.estimativa as any)?.fases?.find((z: any) => z.id === f.id)?.valor ?? null) : tipo === 'sem_custo' ? 0 : null;
-    return { id: i.id, n: i.n, nome: i.nome, grupo: i.grupo, tipo, porFase, total: tipo === 'informado' ? i.valor : tipo === 'estimado' ? i.estimado : tipo === 'sem_custo' ? 0 : null };
-  });
+    for (const f of o.fases) porFase[f.id] = i.valor === null ? null : centavos(i.linhas.filter(l => l.status !== 'falta').reduce((n, l) => n + (l.porFase[f.id] || 0), 0));
+    out.push({ id: i.id, n: i.n, nome: i.nome, grupo: i.grupo, nivel: 0, tipo: i.valor === null ? 'a_levantar' : i.referencia ? 'estimado' : 'informado', porFase, total: i.valor });
+    if (i.linhas.length > 1 || i.opcoes.length) for (const l of i.linhas) {
+      const pf: Record<string, number | null> = {}; for (const f of o.fases) pf[f.id] = l.status === 'falta' ? null : l.porFase[f.id] ?? 0;
+      out.push({ id: i.id + ':' + l.chave, n: '', nome: t(l.rotulo), grupo: i.grupo, nivel: 1, tipo: l.status === 'falta' ? 'a_levantar' : l.status === 'referencia' ? 'estimado' : 'informado', porFase: pf, total: l.total });
+    }
+  }
+  return out;
 }
 /** Total conhecido (informado + estimado), mesmo com itens a levantar. */
 export const totalConhecido = (o: { informado: number; estimado: number }) => centavos(o.informado + o.estimado);
+const pendentesTexto = (o: ReturnType<typeof orcamentoV16>) => o.itens.flatMap(i => !i.marcadas.length ? [i.nome + ' (' + t('nenhuma opção escolhida') + ')'] : i.linhas.filter(l => l.status === 'falta').map(l => t(l.rotulo) + ' (' + l.falta.join(', ') + ')'));
 /** Parágrafo "Em resumo" para a tela, o resumo e os PDFs. */
 export function resumoProsa(o: ReturnType<typeof orcamentoV16>): string {
+  if (!o.itens.length) return t('Nenhuma categoria de custo escolhida.');
   const total = totalConhecido(o), meses = o.fases.reduce((n, f) => n + f.meses, 0), d = { total: formatarMoedaEst(total, o.moeda), meses, inf: formatarMoedaEst(o.informado, o.moeda), est: formatarMoedaEst(o.estimado, o.moeda) };
   const fases = o.fases.map(f => f.nome + ' ' + formatarMoedaEst(centavos(f.informado + f.estimado), o.moeda)).join('; ');
-  const faltam = o.itens.filter(i => !i.respondido || i.situacao === 'a_estimar').map(i => i.nome);
+  const faltam = pendentesTexto(o);
   return [
     o.faltam ? t('Custo conhecido até agora: {total} em {meses} meses ({inf} informado e {est} estimado).', d) : t('Custo total: {total} em {meses} meses ({inf} informado e {est} estimado).', d),
     o.fases.length ? t('Por fase: {fases}.', { fases }) : '',
     faltam.length ? t('Ainda sem valor ({n}): {lista}.', { n: faltam.length, lista: faltam.join('; ') }) : '',
   ].filter(Boolean).join(' ');
 }
-/** "O que está sendo custeado": uma linha por categoria estimada, com quantidades, alcance por fase e valores unitários. */
+/** "O que está sendo custeado": uma linha por opção calculada, com quantidades e valores unitários. */
 export function linhasMemoria(o: ReturnType<typeof orcamentoV16>): string[] {
-  return o.memoria.map(m => (m.n ? m.n + ' ' : '') + m.nome + ': ' + m.quantidades.map(q => q.rotulo + ' ' + num(q.valor)).join(' · ')
-    + '. ' + m.premissas.map(p => p.item + ': ' + textoPremissa(p)).join('; ') + '.');
+  return o.memoria.map(m => (m.n ? m.n + ' ' : '') + m.nome + ' · ' + m.opcao + ': ' + m.texto + '.');
 }
-/** Próximo passo específico: o que falta levantar, ou confirmar estimativas, ou aprovar. */
+/** Próximo passo específico: o que falta, ou confirmar estimativas, ou aprovar. */
 export function proximoV16(o: ReturnType<typeof orcamentoV16>): string {
-  const faltam = o.itens.filter(i => !i.respondido || i.situacao === 'a_estimar').map(i => i.nome);
+  if (!o.itens.length) return t('Próximo passo: escolher as categorias de custo do plano.');
+  const faltam = pendentesTexto(o);
   if (faltam.length) return t('Próximo passo: levantar o valor de {lista}.', { lista: faltam.slice(0, 3).join('; ') + (faltam.length > 3 ? ' ' + t('e mais {n}', { n: faltam.length - 3 }) : '') });
   if (o.estimados) return t('Próximo passo: confirmar as estimativas de referência com orçamentos reais e submeter o plano à aprovação.');
   return t('Próximo passo: submeter o plano à aprovação e acompanhar a execução por fase.');
@@ -296,10 +327,7 @@ export function proximoV16(o: ReturnType<typeof orcamentoV16>): string {
 /** Riscos e condições para quem decide (curtos, por frente). */
 export function riscosV16(f: FrenteEstimativa, o: ReturnType<typeof orcamentoV16>): string[] {
   const r: string[] = [];
-  if (o.estimados) r.push(o.todasEquipe ? t('As estimativas usam valores unitários informados pela equipe: confirme-os com orçamentos reais antes de aprovar.')
-    : o.premissasEquipe.length ? t('Parte das estimativas usa valores da equipe ({lista}); as demais usam referências ilustrativas, iguais para todos os países: confirme-as com orçamentos reais antes de aprovar.', { lista: o.premissasEquipe.map(p => p.item.toLowerCase()).join('; ') })
-    : t('As estimativas de referência são ilustrativas e iguais para todos os países: confirme-as com orçamentos reais antes de aprovar.'));
-  if (o.eletricidade) r.push(t('{n} escolas sem eletricidade: conectividade e dispositivos dependem dela, e esse custo ainda está a levantar.', { n: num(o.eletricidade) }));
+  if (o.estimados) r.push(t('Parte dos valores unitários são referências genéricas, iguais para todos os países: confirme-os com orçamentos reais antes de aprovar.'));
   if (o.faltam) r.push(o.faltam === 1 ? t('1 item ainda não tem valor e não entra no custo conhecido.') : t('{n} itens ainda não têm valor e não entram no custo conhecido.', { n: o.faltam }));
   if (f === 'governanca') r.push(t('Defina quem responde pela proteção de dados e pela supervisão antes de qualquer contratação.'), t('Preveja cláusulas de saída e portabilidade para não depender de um único fornecedor.'));
   if (f === 'letramento') r.push(t('Garanta horas de formação dentro da carga horária dos professores.'), t('Use materiais acessíveis, adequados à idade e em linguagem simples.'));

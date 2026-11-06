@@ -15,7 +15,8 @@ import { formatarMoedaEst, type FrenteEstimativa } from '../percurso/estimativas
 import { nomePais, paisDoCaso } from '../domain/pais.js';
 import { carregarJsPDF, carregarFontesPDF, fontePDF, limparFontePDF, pdfTxt, PDF_COR, IDIOMAS_FONTE } from './pdf.js';
 
-export const VERSAO_TESTE = 'v016';
+import { TESTE } from '../percurso/canal';
+export const VERSAO_TESTE = TESTE || 'v016';
 type Orc = ReturnType<typeof orcamentoV16>;
 const curta = (v: number, cod: string) => { try { return new Intl.NumberFormat(String(LOC()), { style: 'currency', currency: cod, notation: 'compact', maximumFractionDigits: 2 }).format(v); } catch { return formatarMoedaEst(v, cod); } };
 const slug = (x: string) => x.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -58,10 +59,10 @@ function escritor(doc: any, cabecalho: string) {
     let grupo = '';
     for (const l of linhas) {
       if (l.grupo && l.grupo !== grupo) { grupo = l.grupo; cabe(16); fonte(8, true, C.muted); doc.text(pdfTxt(grupo.toUpperCase()), M + 4, y); y += 12; }
-      fonte(8.5); const nome: string[] = doc.splitTextToSize(pdfTxt((l.n ? l.n + ' ' : '') + l.nome), colNome - 8);
+      const recuo = l.nivel ? 10 : 0; fonte(l.nivel ? 8 : 8.5, !l.nivel, l.nivel ? C.muted : C.tinta); const nome: string[] = doc.splitTextToSize(pdfTxt((l.n ? l.n + ' ' : '') + l.nome), colNome - 8 - recuo);
       const h = Math.max(1, nome.length) * 11 + 4; if (y + h > LIM) { nova(); linhaCab(); }
       const est = l.tipo === 'estimado', val = (v: number | null) => v === null ? (l.tipo === 'a_levantar' ? t('a levantar') : '—') : curta(v, o.moeda) + (est ? '*' : '');
-      nome.forEach((s, i) => doc.text(s, M + 4, y + i * 11));
+      nome.forEach((s, i) => doc.text(s, M + 4 + recuo, y + i * 11));
       fonte(8.5, false, est ? C.media : l.tipo === 'a_levantar' ? C.muted : C.tinta);
       fases.forEach((f, i) => doc.text(pdfTxt(val(l.porFase[f.id])), M + colNome + colW * (i + 1) - 4, y, { align: 'right' }));
       fonte(8.5, true, est ? C.media : C.tinta); doc.text(pdfTxt(val(l.total)), W - M - 4, y, { align: 'right' });

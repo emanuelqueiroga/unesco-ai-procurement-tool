@@ -179,17 +179,17 @@ export const GOVERNANCA_INFO: Record<Capitulo, InfoCapitulo> = {
 /** Versão de teste: Contexto · <etapa da frente> · Orçamento (o capítulo 4 fica vazio e some da barra). */
 export function infoCapitulo(n: Capitulo, s?: { ctx?: Record<string, any> }): InfoCapitulo {
   const etapa = (titulo: string, guia: string) => ({ ...GOVERNANCA_INFO[2], titulo, guia });
-  const orcamento = { ...GOVERNANCA_INFO[3], titulo: 'Orçamento', guia: 'Quanto custa cada recurso?' };
-  const meio = percursoPedagogico(s?.ctx) ? etapa('Intervenção', 'O que será feito e para quantas pessoas?')
-    : percursoLetramento(s?.ctx) ? etapa('Participantes', 'Quantas pessoas e quantas horas?')
-    : percursoGovernanca(s?.ctx) ? etapa('Equipe e formação', 'Quem coordena e quem será formado?') : null;
-  if (!meio) return CAPITULOS_INFO[n];
-  return ({ 1: CAPITULOS_INFO[1], 2: meio, 3: orcamento, 4: GOVERNANCA_INFO[4] } as Record<Capitulo, InfoCapitulo>)[n];
+  // v017: Contexto → Categorias → Opções → Fases e valores
+  if (!(percursoPedagogico(s?.ctx) || percursoLetramento(s?.ctx) || percursoGovernanca(s?.ctx))) return CAPITULOS_INFO[n];
+  const categorias = etapa('Categorias', 'Quais categorias de custo entram no plano?');
+  const opcoes = { ...GOVERNANCA_INFO[3], titulo: 'Opções', guia: 'O que será feito em cada categoria?' };
+  const valores = { ...GOVERNANCA_INFO[4], titulo: 'Fases e valores', guia: 'Quanto custa cada opção, em cada fase?' };
+  return ({ 1: CAPITULOS_INFO[1], 2: categorias, 3: opcoes, 4: valores } as Record<Capitulo, InfoCapitulo>)[n];
 }
 Object.assign(CURTO, {
  'gov-projeto': 'Projeto de uso de IA', 'gov-diagnostico': 'Lacunas e resultados', 'gov-instrumentos': 'Instrumentos e evidências',
  'gov-solucoes': 'Soluções de política educacional', 'gov-atores': 'Instituições e grupos afetados', 'gov-acoes': 'Ações e responsabilidades',
- 'gov-capacidade': 'Capacidade institucional', 'gov-recursos': 'Orçamento', 'gov-fases': 'Fases', 'gov-equipe': 'Equipe e formação', 'gov-sandbox': 'Experimentação supervisionada', 'gov-revisao': 'Indicadores e revisão',
+ 'gov-capacidade': 'Capacidade institucional', 'gov-recursos': 'Valores', 'gov-fases': 'Fases', 'gov-equipe': 'Equipe e formação', 'gov-categorias': 'Categorias de custo', 'gov-opcoes': 'Opções de custo', 'ed-categorias': 'Categorias de custo', 'ed-opcoes': 'Opções de custo', 'ed-recursos': 'Valores', 'gov-sandbox': 'Experimentação supervisionada', 'gov-revisao': 'Indicadores e revisão',
 });
 
 Object.assign(CURTO, TITULOS_LIT);

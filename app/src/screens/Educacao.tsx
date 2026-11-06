@@ -1,6 +1,7 @@
 import { LeituraSimples, AtalhoLeituraSimples } from './LeituraSimples';
 import { usePadroes } from "./usePadroes";
-import { FasesV16, OrcamentoV16, ResumoV16, BotoesPDFV16 } from "./OrcamentoV16";
+import { FasesV16, ResumoV16, BotoesPDFV16 } from "./OrcamentoV16";
+import { CategoriasV17, OpcoesV17, ValoresV17 } from "./OrcamentoV17";
 import { instituicaoV16 } from "../percurso/orcamentoV016";
 import { ehSugerido } from "../percurso/padroesTeste";
 import { progressoFrente } from '../percurso/frentes';
@@ -558,13 +559,17 @@ export function Educacao({ rota }: { rota: Rota }) {
                 </section>
               ) : null}
               {id === "ed-recursos" ? (
-                <OrcamentoV16 s={s} frente="educacao" tentou={tentou} />
+                <ValoresV17 s={s} frente="educacao" />
+              ) : id === "ed-categorias" ? (
+                <CategoriasV17 s={s} frente="educacao" />
+              ) : id === "ed-opcoes" ? (
+                <OpcoesV17 s={s} frente="educacao" />
               ) : id === "ed-fases" ? (
                 <FasesV16 s={s} frente="educacao" />
               ) : (
                 <>
                 <Campos s={s} id={id} tentou={tentou} />
-                <QuantidadesEd s={s} id={id} />
+                {/* v017: as quantidades ficam em cada opção, na tela de valores */}
               </>
               )}
             </div>

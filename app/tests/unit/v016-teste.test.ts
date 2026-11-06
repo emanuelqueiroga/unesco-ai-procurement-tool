@@ -1,4 +1,6 @@
 // Versão de teste v016: prioridades, desafios, fases e orçamento por categoria.
+// v017: o orçamento passou a nascer das categorias e opções escolhidas (v017-teste.test.ts); os testes do modelo
+// de situações e estimativas automáticas da v016 ficam desligados aqui.
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCaso, telasAtivas, faltamDe } from '../../src/store';
 import { setLang, PRIORIDADES } from '../../src/domain';
@@ -25,14 +27,14 @@ describe('v016: versão de teste', () => {
     expect(S().ctx.prioridades).toEqual(['sobre']);
   });
 
-  it('governança: sem tamanho da rede; 3 desafios ativam suas categorias; fases antes do orçamento', () => {
+  it.skip('governança: sem tamanho da rede; 3 desafios ativam suas categorias; fases antes do orçamento', () => {
     S().responder('prioridades', ['governar']); S().responder('problemas', ['G21', 'G23']); S().responder('frenteAtiva', 'governanca');
     expect(ids()).toEqual(['local', 'prioridades', 'problemas', 'gov-equipe', 'gov-fases', 'gov-recursos']);
     expect(faltamDe(S()).map(t => t.id)).not.toContain('problemas');
     expect(orcamentoGovernanca(S()).itens.map(i => i.id)).toEqual(['g11', 'g12', 'g13', 'g31', 'g32', 'g33']);
   });
 
-  it('governança: estimativa por fase soma o total e cada fase tem seu valor', () => {
+  it.skip('governança: estimativa por fase soma o total e cada fase tem seu valor', () => {
     S().responder('prioridades', ['governar']); S().responder('problemas', ['G23']); S().responder('frenteAtiva', 'governanca');
     preencher('governanca');
     const o = orcamentoGovernanca(S()), equipe = o.itens.find(i => i.id === 'g31')!;
@@ -45,7 +47,7 @@ describe('v016: versão de teste', () => {
     expect(o.itens.find(i => i.id === 'g31')!.marcadas.length).toBe(4);
   });
 
-  it('fases desmarcadas saem da conta; valor informado é por fase', () => {
+  it.skip('fases desmarcadas saem da conta; valor informado é por fase', () => {
     S().responder('prioridades', ['governar']); S().responder('problemas', ['G21']); S().responder('frenteAtiva', 'governanca');
     preencher('governanca');
     S().responder('govOrcamento.fases.piloto', { on: false, meses: 4, alcance: 5 });
@@ -56,7 +58,7 @@ describe('v016: versão de teste', () => {
     expect(o.fases.map(f => f.informado)).toEqual([100, 50]);
   });
 
-  it('letramento: só professores e estudantes; lideranças entram na formação', () => {
+  it.skip('letramento: só professores e estudantes; lideranças entram na formação', () => {
     S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11', 'A12', 'A13', 'A16']); S().responder('frenteAtiva', 'letramento');
     expect(publicosLetramento(S()).map(p => p.id)).toEqual(['A11', 'A12']);
     expect(ids()).toEqual(['local', 'prioridades', 'problemas', 'lit-participantes', 'lit-fases', 'lit-recursos']);
@@ -71,7 +73,7 @@ describe('v016: versão de teste', () => {
     expect(orcamentoLetramento(S()).itens.map(i => i.id)).toEqual(['l11', 'l12', 'l13', 'l14', 'l15', 'l21', 'l22', 'l23', 'l31', 'l32', 'l33']);
   });
 
-  it('educação: 8 desafios novos; dimensões com os educadores e conteúdos dos desafios; licença só com IA', () => {
+  it.skip('educação: 8 desafios novos; dimensões com os educadores e conteúdos dos desafios; licença só com IA', () => {
     S().responder('prioridades', ['com']); S().responder('problemas', ['C32', 'C33']); S().responder('frenteAtiva', 'educacao');
     expect(ids()).toContain('ed-fases'); expect(ids()).not.toContain('ed-tecnologia');
     preencher('educacao');
@@ -95,7 +97,7 @@ describe('v016: correções da avaliação por agentes', () => {
     expect(fasesAtivas(S(), 'governanca').map(f => [f.id, f.meses, f.alcance])).toEqual([['piloto', 6, 10], ['implantacao', 12, 33]]);
   });
 
-  it('letramento: 2.2 estima pelos estudantes e 2.3 segue sem estimativa; formação soma as fases sem perder pessoas', () => {
+  it.skip('letramento: 2.2 estima pelos estudantes e 2.3 segue sem estimativa; formação soma as fases sem perder pessoas', () => {
     S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11', 'A12']); S().responder('frenteAtiva', 'letramento');
     S().responder('letramento', alterarLit(S().ctx.letramento, 'publicos.A11.participantes', { valor: 50, situacao: 'informado' }));
     preencher('letramento');
@@ -112,7 +114,7 @@ describe('v016: correções da avaliação por agentes', () => {
     expect(q).toBe(50);
   });
 
-  it('premissa editável substitui o custo por hora em todas as linhas da frente', () => {
+  it.skip('premissa editável substitui o custo por hora em todas as linhas da frente', () => {
     S().responder('prioridades', ['governar']); S().responder('problemas', ['G23']); S().responder('frenteAtiva', 'governanca');
     preencher('governanca');
     const antes = orcamentoGovernanca(S()).itens.find(i => i.id === 'g32')!.estimativa!.valorUSD!;
@@ -130,7 +132,7 @@ describe('v016: correções da avaliação por agentes', () => {
     expect(e.ctx.govOrcamento.quantidades).toEqual(S().ctx.govOrcamento.quantidades);
   });
 
-  it('premissa na moeda do plano: conta direta na moeda local e o resumo diz que é valor da equipe', async () => {
+  it.skip('premissa na moeda do plano: conta direta na moeda local e o resumo diz que é valor da equipe', async () => {
     const { premissaV16, riscosV16, linhasMemoria, taxaV16 } = await import('../../src/percurso/orcamentoV016');
     S().setMoeda({ cod: 'BRL', taxa: '5.222334', taxaDe: 'BRL' });
     S().responder('prioridades', ['governar']); S().responder('problemas', ['G23']); S().responder('frenteAtiva', 'governanca');
@@ -150,7 +152,7 @@ describe('v016: correções da avaliação por agentes', () => {
     expect(linhasMemoria(o).join(' ')).toMatch(/valor da equipe/);
   });
 
-  it('educação: infraestrutura estima conexão e dispositivos; eletricidade vira risco', async () => {
+  it.skip('educação: infraestrutura estima conexão e dispositivos; eletricidade vira risco', async () => {
     const { riscosV16 } = await import('../../src/percurso/orcamentoV016');
     const { alterarEd } = await import('../../src/percurso/pedagogico');
     S().responder('prioridades', ['com']); S().responder('problemas', ['C32']); S().responder('frenteAtiva', 'educacao');

@@ -61,18 +61,8 @@ export function ehSugerido(s: Pick<Estado14, 'ctx'>, frente: FrenteEstimativa, c
 }
 
 const LICENCAS_OPCIONAIS = ['l13', 'l22'];
-/** Situação sugerida de cada item: "Usar estimativa" quando a conta fecha, senão "A levantar". */
-function itens(frente: FrenteEstimativa, _ids: string[], s: Estado, prefixo: string): Desejo[] {
-  // v016: todas as cost options já vêm marcadas; a situação usa a estimativa quando a conta fecha
-  const moeda = String(raizOrcamento(s, frente).moeda || s.moeda?.cod || 'USD');
-  return categoriasV16(s, frente).map(c => {
-    const est = c.base ? estimativaV16(s, frente, c, moeda) : null;
-    // licenças por professor e por estudante no letramento: a estimativa fica disponível, mas só entra se a equipe escolher
-    // (com toda a rede, o preço genérico de licença dominaria o plano)
-    const auto = typeof est?.valor === 'number' && !LICENCAS_OPCIONAIS.includes(c.id);
-    return { caminho: prefixo + c.id, valor: { situacao: auto ? 'referencia' : 'a_estimar', ...(c.opcoes.length ? { opcoes: c.opcoes } : {}) } };
-  });
-}
+/** v017: nenhum item vem marcado — a equipe escolhe as categorias e as opções; só as fases têm padrão. */
+function itens(_frente: FrenteEstimativa, _ids: string[], _s: Estado, _prefixo: string): Desejo[] { return []; }
 function desejosLit(s: Estado): Desejo[] {
   // v016: professores e estudantes; sem período (as fases têm padrão próprio)
   const r = (s.ctx as any).redeNacional || {}, tot = totaisCtx(s.ctx), pubs = publicosLetramento(s).map(p => p.id), out: Desejo[] = [];

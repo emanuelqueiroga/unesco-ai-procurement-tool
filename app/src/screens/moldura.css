@@ -397,3 +397,23 @@ a.pc-faixa-custo:hover { color: var(--on-night); outline: 2px solid var(--primar
   .pc-rec-ctx-mudar, .pr-popover-gatilho { display: inline-flex; align-items: center; padding-inline: 4px; }
 }
 .pc-gov-plano > *, .pv-resumo, .pv-pdfs { min-width: 0; max-width: 100%; }
+/* v017: categorias → opções → valores */
+.pv-v17 { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+.pv-v17-grupo { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.pv-v17-desafio { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.pv-v17-cat { display: flex; flex-direction: column; gap: 10px; padding-block-end: 16px; border-block-end: 1px solid var(--line); min-width: 0; }
+.pv-v17-cat:last-child { border-block-end: 0; }
+.pv-v17-cat-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.pv-v17-cat-nome { margin: 0; font-size: 17px; font-weight: 600; color: var(--ink); }
+.pv-v17-cat-total { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pv-v17-linha { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-1); min-width: 0; }
+.pv-v17-linha--falta { border-style: dashed; }
+.pv-v17-linha-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.pv-v17-op { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); }
+.pv-v17-total { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pv-v17-tipo { max-width: 420px; }
+.pv-v17-falta { margin: 0; font-size: 14px; color: var(--ink-2); }
+.pv-v17-fases, .pv-v17-fases-resumo { margin: 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pv-matriz--opcao th[scope="row"] { padding-inline-start: 28px; font-weight: 400; color: var(--ink-2); }
+.pv-matriz--opcao td { font-size: 13px; }
+.pv-matriz tr:not(.pv-matriz--opcao) th[scope="row"] { font-weight: 600; }

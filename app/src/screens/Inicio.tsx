@@ -30,7 +30,7 @@ export function Inicio() {
   return (
     <Shell nav={false} plano={false} inicio>
       <section className="pc-inicio pc-inicio-simples" aria-labelledby="inicio-titulo">
-        <p className="pc-kicker pc-inicio-kicker">{t('Planejamento de IA na educação')} <span className="pc-inicio-versao" dir="ltr">{TESTE === 'v016' ? 'v016 · teste' : 'v015'}</span></p>
+        <p className="pc-kicker pc-inicio-kicker">{t('Planejamento de IA na educação')} <span className="pc-inicio-versao" dir="ltr">{/^v0\d+$/.test(TESTE) ? TESTE + ' · teste' : 'v015'}</span></p>
         <h1 id="inicio-titulo" className="pc-hero">{t('Planeje a IA na educação a partir do seu contexto')}</h1>
         <p className="pc-lead">{t('Descreva sua rede, defina prioridades e explore os recursos e custos do seu plano.')}</p>
         {comCaso ? (

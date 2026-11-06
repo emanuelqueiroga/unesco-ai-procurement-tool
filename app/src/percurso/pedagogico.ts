@@ -1233,8 +1233,10 @@ export function orcamentoEd(s: EstadoEd) {
 }
 export const TELAS_ED = [
   ["ed-intervencao", 2],
-  ["ed-fases", 3],
-  ["ed-recursos", 3],
+  ["ed-categorias", 2],
+  ["ed-opcoes", 3],
+  ["ed-fases", 4],
+  ["ed-recursos", 4],
 ] as const;
 /** Versão de teste: Intervenção · Uso de IA (só com IA ou mista) · Orçamento. */
 export function telasEd(s: EstadoEd) {
@@ -1268,7 +1270,9 @@ export function edRespondido(s: EstadoEd, id: string) {
       .filter((f) => f.tela === id)
       .every((f) => campoEdRespondido(s, f)) &&
     errosEd(s, id).length === 0 &&
-    (id !== "ed-recursos" || orcamentoEd(s).itens.every((i) => i.respondido)) &&
+    (id !== "ed-recursos" || (orcamentoEd(s).itens.length > 0 && orcamentoEd(s).itens.every((i) => i.respondido))) &&
+    (id !== "ed-categorias" || orcamentoEd(s).itens.length > 0) &&
+    (id !== "ed-opcoes" || (orcamentoEd(s).itens.length > 0 && orcamentoEd(s).itens.every((i) => i.marcadas.length > 0))) &&
     (id !== "ed-fases" || fasesSalvas(s, "educacao"))
   );
 }

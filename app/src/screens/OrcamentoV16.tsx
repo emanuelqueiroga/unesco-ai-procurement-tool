@@ -84,7 +84,7 @@ export function ResumoV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativ
       <table className="pv-matriz">
         <caption>{t('Custo por categoria e fase')}</caption>
         <thead><tr><th scope="col">{t('Categoria')}</th>{o.fases.map(f => <th scope="col" key={f.id}>{f.nome}<span className="pv-matriz-sub">{t('{n} meses', { n: f.meses })} · {f.alcance}%</span></th>)}<th scope="col">{t('Total')}</th></tr></thead>
-        <tbody>{linhas.map(l => <tr key={l.id} className={'pv-matriz--' + l.tipo}><th scope="row">{(l.n ? l.n + ' ' : '') + l.nome}</th>{o.fases.map(f => <td key={f.id}>{val(l.porFase[f.id], l.tipo)}</td>)}<td className="pv-matriz-total">{val(l.total, l.tipo)}</td></tr>)}</tbody>
+        <tbody>{linhas.map(l => <tr key={l.id} className={'pv-matriz--' + l.tipo + (l.nivel ? ' pv-matriz--opcao' : '')}><th scope="row">{(l.n ? l.n + ' ' : '') + l.nome}</th>{o.fases.map(f => <td key={f.id}>{val(l.porFase[f.id], l.tipo)}</td>)}<td className="pv-matriz-total">{val(l.total, l.tipo)}</td></tr>)}</tbody>
         <tfoot><tr><th scope="row">{t('Custo conhecido')}</th>{o.fases.map(f => <td key={f.id}>{formatarMoedaEst(f.informado + f.estimado, o.moeda)}</td>)}<td className="pv-matriz-total">{formatarMoedaEst(totalConhecido(o), o.moeda)}</td></tr></tfoot>
       </table>
     </div>

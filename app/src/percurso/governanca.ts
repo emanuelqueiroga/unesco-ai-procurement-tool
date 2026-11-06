@@ -71,6 +71,8 @@ export function governancaRespondida(s: Estado14, id: string): boolean {
     case 'gov-fases': return fasesSalvas(s, 'governanca');
     case 'gov-equipe': return QUANT_GOV.every(k => numeroPositivo(s.ctx.govOrcamento?.quantidades?.[k]));
     case 'gov-recursos': { const o = orcamentoGovernanca(s); return o.itens.length > 0 && o.itens.every(i => i.respondido); }
+    case 'gov-categorias': return orcamentoGovernanca(s).itens.length > 0;
+    case 'gov-opcoes': { const o = orcamentoGovernanca(s); return o.itens.length > 0 && o.itens.every(i => i.marcadas.length > 0); }
     default: return false;
   }
 }

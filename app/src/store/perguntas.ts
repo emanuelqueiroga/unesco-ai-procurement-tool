@@ -54,22 +54,26 @@ export type EscopoPercurso = { ctx?: Record<string, any> };
 // As telas que saíram continuam conhecidas (TELAS_FORA_DO_FLUXO) para redirecionar links antigos; os dados ficam salvos.
 export const GOVERNANCA: TelaEssencial[] = [
   ...ESSENCIAL.filter(t => ['local', 'prioridades', 'problemas'].includes(t.id)),
-  { id: 'gov-equipe', capitulo: 2, n: [], campos: ['govOrcamento'] },
-  { id: 'gov-fases', capitulo: 3, n: [], campos: ['govOrcamento'] },
-  { id: 'gov-recursos', capitulo: 3, n: [], campos: ['govOrcamento'] },
+  // v017: categorias → opções → fases e valores
+  { id: 'gov-categorias', capitulo: 2, n: [], campos: ['govOrcamento'] },
+  { id: 'gov-opcoes', capitulo: 3, n: [], campos: ['govOrcamento'] },
+  { id: 'gov-fases', capitulo: 4, n: [], campos: ['govOrcamento'] },
+  { id: 'gov-recursos', capitulo: 4, n: [], campos: ['govOrcamento'] },
 ];
 export const LETRAMENTO: TelaEssencial[] = [
  ...ESSENCIAL.filter(t => ['local','prioridades','problemas'].includes(t.id)),
- { id: 'lit-participantes', capitulo: 2, n: [], campos: ['letramento'] },
- { id: 'lit-fases', capitulo: 3, n: [], campos: ['letramento'] },
- { id: 'lit-recursos', capitulo: 3, n: [], campos: ['letramento'] },
+ { id: 'lit-categorias', capitulo: 2, n: [], campos: ['letramento'] },
+ { id: 'lit-opcoes', capitulo: 3, n: [], campos: ['letramento'] },
+ { id: 'lit-fases', capitulo: 4, n: [], campos: ['letramento'] },
+ { id: 'lit-recursos', capitulo: 4, n: [], campos: ['letramento'] },
 ];
 export const PEDAGOGICO: TelaEssencial[] = [...ESSENCIAL.filter(t=>['local','prioridades','etapas','problemas'].includes(t.id)), ...TELAS_ED.map(([id,capitulo])=>({id,capitulo,n:[],campos:['educacao']}))];
 /** Telas dos percursos da v015 que saíram do fluxo na versão de teste → a tela mantida mais próxima. */
 export const TELAS_FORA_DO_FLUXO: Record<string, string> = {
-  'gov-projeto': 'gov-equipe', 'gov-diagnostico': 'gov-equipe', 'gov-instrumentos': 'gov-equipe', 'gov-solucoes': 'gov-equipe',
-  'gov-atores': 'gov-equipe', 'gov-capacidade': 'gov-equipe', 'gov-acoes': 'gov-recursos', 'gov-sandbox': 'gov-recursos', 'gov-revisao': 'gov-recursos',
-  'lit-escolas': 'lit-participantes', 'ed-tecnologia': 'ed-intervencao', 'lit-alcance': 'lit-participantes', 'lit-diagnostico': 'lit-participantes', 'lit-desenho': 'lit-participantes', 'lit-oferta': 'lit-participantes',
+  'gov-equipe': 'gov-categorias', 'lit-participantes': 'lit-categorias',
+  'gov-projeto': 'gov-categorias', 'gov-diagnostico': 'gov-categorias', 'gov-instrumentos': 'gov-categorias', 'gov-solucoes': 'gov-categorias',
+  'gov-atores': 'gov-categorias', 'gov-capacidade': 'gov-categorias', 'gov-acoes': 'gov-recursos', 'gov-sandbox': 'gov-recursos', 'gov-revisao': 'gov-recursos',
+  'lit-escolas': 'lit-categorias', 'ed-tecnologia': 'ed-intervencao', 'lit-alcance': 'lit-categorias', 'lit-diagnostico': 'lit-categorias', 'lit-desenho': 'lit-categorias', 'lit-oferta': 'lit-opcoes',
   'lit-curriculo': 'lit-recursos', 'lit-validacao': 'lit-recursos', 'lit-digital': 'lit-recursos', 'lit-projeto': 'lit-recursos', 'lit-acoes': 'lit-recursos', 'lit-revisao': 'lit-recursos',
   'ed-objetivos': 'ed-intervencao', 'ed-acoes': 'ed-intervencao', 'ed-avaliacao': 'ed-intervencao', 'ed-teste': 'ed-intervencao',
   'ed-digital': 'ed-recursos', 'ed-execucao': 'ed-recursos', 'ed-acompanhamento': 'ed-recursos', 'ed-expansao': 'ed-recursos',

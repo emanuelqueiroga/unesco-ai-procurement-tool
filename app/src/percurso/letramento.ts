@@ -3,7 +3,7 @@ import { PRIORIDADES, ETAPAS_ENS, LOC, nomePais, paisDoCaso, totaisCtx } from '.
 import { orcamentoGovernanca, moedaGovernanca, valorItemOrcamento } from './governanca';
 import { estimativaReferencia, itemEmReferencia, valorEstimado, totaisOrcamento, linhasTotais, notaEstimativas } from './estimativasOrcamento';
 import { t } from './textos';
-import { orcamentoV16, fasesSalvas, linhasFases, proximoV16, instituicaoV16 } from './orcamentoV016';
+import { orcamentoV16, fasesSalvas, linhasFases, proximoV16, instituicaoV16, categoriasEscolhidas } from './orcamentoV016';
 import type { Estado14 } from '../store/tipos';
 type Estado = Pick<Estado14, 'ctx'>;
 export interface OpcaoLit { id: string; texto: string }
@@ -45,7 +45,8 @@ export const digitalLit = (s: Estado) => ['online','hibrida'].some(id => inclui(
 /** Versão de teste: Participantes (com públicos) · Orçamento. Currículo não tem tela: vira uma linha do orçamento. */
 export function telasLetramento(s: Estado): string[] {
  const pubs = publicosLetramento(s).map(p => p.id);
- return ['local','prioridades','problemas',...(pubs.length ? ['lit-participantes'] : []),'lit-fases','lit-recursos'];
+ void pubs; // v017: categorias → opções → fases e valores (as quantidades ficam em cada opção)
+ return ['local','prioridades','problemas','lit-categorias','lit-opcoes','lit-fases','lit-recursos'];
 }
 /** Campos do fluxo de teste. Os demais (diagnóstico, desenho, oferta, ações, revisão, público elegível, total distinto…)
  *  continuam guardados no caso, fora das telas, das pendências, do progresso e dos relatórios. */
@@ -110,6 +111,8 @@ export function orcamentoLetramento(s:Pick<Estado14,'ctx'|'moeda'>) {
 }
 export function letramentoRespondido(s:Estado14,id:string):boolean {
  if(id==='lit-fases')return fasesSalvas(s,'letramento');
+ if(id==='lit-categorias')return categoriasEscolhidas(s,'letramento').length>0;
+ if(id==='lit-opcoes'){const it=orcamentoLetramento(s).itens;return it.length>0&&it.every(i=>i.marcadas.length>0);}
  if(id==='lit-recursos'){const it=orcamentoLetramento(s).itens;return it.length>0&&it.every(i=>i.respondido);}
  const campos=camposLetramento(s).filter(f=>f.tela===id);
  if(!campos.length)return id==='lit-participantes';

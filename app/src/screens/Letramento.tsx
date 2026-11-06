@@ -21,6 +21,7 @@ import { primeiraFrase } from '../percurso/textos';
 import { focarPendencia } from '../percurso/navegacaoOrientada';
 import { usePadroes } from './usePadroes';
 import { FasesV16, OrcamentoV16, ResumoV16, BotoesPDFV16 } from './OrcamentoV16';
+import { CategoriasV17, OpcoesV17, ValoresV17 } from './OrcamentoV17';
 import { instituicaoV16 } from '../percurso/orcamentoV016';
 import { ehSugerido } from '../percurso/padroesTeste';
 import './governanca.css';
@@ -215,6 +216,6 @@ export function Letramento({ rota }: { rota: Rota }) {
       {erros.map(e => <li key={e}>{t(e)}</li>)}
       {!camposFaltando.length && !custosFaltando.length && !erros.length ? <li>{t(id === 'problemas' ? 'Selecione os públicos ou o currículo que fazem parte do plano.' : id === 'local' ? 'Escolha o país para avançar.' : 'Selecione ao menos uma prioridade.')}</li> : null}
     </ul>{pendencias.length > 3 ? <details><summary>{t('Ver outras {n} pendências', { n: pendencias.length - 3 })}</summary><ul>{pendencias.slice(3).map(itemPendente)}</ul></details> : null}</div> : null}
-    {id.startsWith('lit-') ? <div className="pc-lit-campos">{id === 'lit-recursos' ? <OrcamentoV16 s={s} frente="letramento" tentou={tentou} /> : id === 'lit-fases' ? <FasesV16 s={s} frente="letramento" /> : id === 'lit-participantes' ? <Participantes s={s} /> : <CamposLit s={s} id={id} tentou={tentou} />}{erros.length && !tentou ? erros.map(e => <p role="alert" className="pc-lit-erro" key={e}>{t(e)}</p>) : null}</div> : <ControlesTela e={s} tela={ativa} />}
+    {id.startsWith('lit-') ? <div className="pc-lit-campos">{id === 'lit-recursos' ? <ValoresV17 s={s} frente="letramento" /> : id === 'lit-categorias' ? <CategoriasV17 s={s} frente="letramento" /> : id === 'lit-opcoes' ? <OpcoesV17 s={s} frente="letramento" /> : id === 'lit-fases' ? <FasesV16 s={s} frente="letramento" /> : id === 'lit-participantes' ? <Participantes s={s} /> : <CamposLit s={s} id={id} tentou={tentou} />}{erros.length && !tentou ? erros.map(e => <p role="alert" className="pc-lit-erro" key={e}>{t(e)}</p>) : null}</div> : <ControlesTela e={s} tela={ativa} />}
   </QuestionFrame></div></Shell>;
 }

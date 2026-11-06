@@ -2,6 +2,8 @@
 export const E = (pt: string, _en: string) => pt;
 export const TITULOS_ED: Record<string, string> = {
   "ed-intervencao": E("Intervenção", "Intervention"),
+  "ed-categorias": E("Categorias de custo", "Cost categories"),
+  "ed-opcoes": E("Opções de custo", "Cost options"),
   "ed-objetivos": E(
     "Objetivos e resultados esperados",
     "Objectives and expected outcomes",
@@ -15,7 +17,7 @@ export const TITULOS_ED: Record<string, string> = {
   "ed-tecnologia": E("Uso de IA", "AI use"),
   "ed-digital": E("Condições digitais", "Digital conditions"),
   "ed-execucao": E("Execução e participantes", "Delivery and participants"),
-  "ed-recursos": E("Orçamento", "Budget"),
+  "ed-recursos": E("Valores", "Amounts"),
   "ed-fases": E("Fases", "Phases"),
   "ed-acompanhamento": E(
     "Acompanhamento dos resultados",
