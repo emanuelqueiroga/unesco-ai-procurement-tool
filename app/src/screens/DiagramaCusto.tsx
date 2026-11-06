@@ -48,12 +48,12 @@ export function DiagramaCusto() {
       <Bloco n={4} cor="ambar" icone={ICONE.custo} titulo={t('Custo')} sub={t('Por categoria e por fase')}>
         <Item titulo={t('Informado')} texto={t('valores que a equipe já tem')} />
         <Item titulo={t('Estimado')} texto={t('estimativas de referência (equipe, formação, licenças)')} />
-        <Item titulo={t('A levantar')} texto={t('itens ainda sem valor')} />
+        <Item titulo={t('Falta valor')} texto={t('itens ainda sem valor')} />
       </Bloco>
     </div>
     <div className="dg-faixa">
       <span><b>{t('Estimativas de referência')}</b> {t('pessoas × horas × custo por hora; pessoas em tempo integral × meses; usuários × licença × meses')}</span>
-      <span><b>{t('Resultado')}</b> {t('custo por fase e total, com o que falta levantar')}</span>
+      <span><b>{t('Resultado')}</b> {t('custo por fase e total, e o que ainda não tem valor')}</span>
     </div>
   </figure>;
 }

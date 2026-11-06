@@ -227,7 +227,7 @@ export function linhasTotais(o: { informado?: number; subtotal: number; informad
   if (completo !== null && completo !== undefined) linhas.push({ rotulo: est ? t('Total (inclui estimativas de referência)') : t('Total'), valor: formatarMoedaEst(completo, o.moeda), destaque: true });
   linhas.push({ rotulo: t('Informado'), valor: o.informados ? formatarMoedaEst(informado, o.moeda) : t('Não informado') });
   linhas.push({ rotulo: t('Estimado pela ferramenta'), valor: est ? textoEstimado(o.estimado || 0, o.moeda) : t('Nenhum item') });
-  linhas.push({ rotulo: t('Ainda a levantar'), valor: o.faltam === 1 ? t('1 item') : t('{n} itens', { n: o.faltam }) });
+  linhas.push({ rotulo: t('Itens sem valor'), valor: o.faltam === 1 ? t('1 item') : t('{n} itens', { n: o.faltam }) });
   return linhas;
 }
 /** Uma frase só, para painéis e cartões. */

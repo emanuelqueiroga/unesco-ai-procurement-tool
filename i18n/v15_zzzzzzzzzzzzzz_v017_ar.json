@@ -59,5 +59,18 @@
  "preço por unidade": "price per unit",
  "custo anual por pessoa": "annual cost per person",
  "Falta": "Missing",
- "Amounts": "Amounts"
+ "Amounts": "Amounts",
+ "Falta valor": "Amount missing",
+ "falta valor": "amount missing",
+ "Informado {inf}, estimado {est}, {n} sem valor": "Entered {inf}, estimated {est}, {n} without an amount",
+ "\"falta valor\": ainda sem valor, fora do custo conhecido.": "\"amount missing\": no amount yet, outside the known cost.",
+ "* estimado (veja \"O que está sendo custeado\"). \"falta valor\": ainda sem valor, fora do custo conhecido. Meses e alcance acumulado: {fases}.": "* estimated (see \"What is being costed\"). \"amount missing\": no amount yet, outside the known cost. Months and cumulative reach: {fases}.",
+ "1 item sem valor": "1 item without an amount",
+ "{n} itens sem valor": "{n} items without an amount",
+ "custo conhecido · 1 item sem valor": "known cost · 1 item without an amount",
+ "custo conhecido · {n} itens sem valor": "known cost · {n} items without an amount",
+ "O progresso indica o preenchimento das telas. Revise os itens sem valor antes de aprovar o plano.": "Progress shows how far the screens are filled in. Review the items without an amount before approving the plan.",
+ "Telas preenchidas · {n} valores faltando": "Screens done · {n} amounts missing",
+ "Itens sem valor": "Items without an amount",
+ "custo por fase e total, e o que ainda não tem valor": "cost by phase and total, and what still has no amount"
 }

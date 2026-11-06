@@ -26,7 +26,7 @@ function ConsolidadoV16(){
  return <section className="pv-consolidado" aria-labelledby="pv-consolidado-t">
   <h2 id="pv-consolidado-t">{t('Custo do plano (todas as frentes)')}</h2>
   {c.mesmaMoeda?<>
-   <p className="pv-consolidado-total">{formatarMoedaEst(c.conhecido,c.moeda)}<span>{c.faltam===1?t('custo conhecido · 1 item a levantar'):c.faltam?t('custo conhecido · {n} itens a levantar',{n:c.faltam}):t('custo total')}</span></p>
+   <p className="pv-consolidado-total">{formatarMoedaEst(c.conhecido,c.moeda)}<span>{c.faltam===1?t('custo conhecido · 1 item sem valor'):c.faltam?t('custo conhecido · {n} itens sem valor',{n:c.faltam}):t('custo total')}</span></p>
    <dl className="pv-consolidado-lista"><div><dt>{t('Informado')}</dt><dd>{formatarMoedaEst(c.informado,c.moeda)}</dd></div><div><dt>{t('Estimado')}</dt><dd className="pv-matriz-est">{formatarMoedaEst(c.estimado,c.moeda)}</dd></div>{c.fases.map(f=><div key={f.id}><dt>{f.nome}</dt><dd>{formatarMoedaEst(f.valor,c.moeda)}</dd></div>)}</dl>
    <ul className="pv-consolidado-frentes">{c.frentes.map(f=><li key={f.id}><span>{f.titulo}</span><b>{formatarMoedaEst(totalConhecido(f.o),f.o.moeda)}</b></li>)}</ul>
   </>:<p>{t('As frentes usam moedas diferentes ({moedas}); os valores não são somados.',{moedas:c.moedas.join(', ')})}</p>}
@@ -43,14 +43,14 @@ export function PanoramaPlano(){
    const view=estadoDaFrente(s,f.id),p=progressoFrente(s,f.id);
    const o=f.id==='governanca'?orcamentoGovernanca(view):f.id==='letramento'?orcamentoLetramento(view):f.id==='educacao'?orcamentoEd(view):null;
    return <section className="pc-ux-frente-card" key={f.id}>
-    <div className="pc-ux-frente-cab"><h2>{t(f.titulo)}</h2><span className={'pc-ux-status pc-ux-status--'+(p.estado==='completa'&&o?.faltam?'andamento':p.estado)}>{p.estado==='completa'&&o?.faltam?t('Telas preenchidas · {n} valores a levantar',{n:o.faltam}):rotuloEstadoFrente(p.estado)}</span></div>
+    <div className="pc-ux-frente-cab"><h2>{t(f.titulo)}</h2><span className={'pc-ux-status pc-ux-status--'+(p.estado==='completa'&&o?.faltam?'andamento':p.estado)}>{p.estado==='completa'&&o?.faltam?t('Telas preenchidas · {n} valores faltando',{n:o.faltam}):rotuloEstadoFrente(p.estado)}</span></div>
     <p>{t(f.descricao)}</p><p className="pc-nota">{t('{n} de {total} telas desta frente preenchidas',{n:p.feitas,total:p.total})}</p>
     <progress value={p.feitas} max={p.total||1} aria-label={t('Preenchimento: {nome}',{nome:t(f.titulo)})}/>
     {o?<div className="pc-ux-subtotal"><span>{t('Orçamento desta frente')} · {o.moeda}</span><dl className="pc-est-panorama">{linhasTotais(o).map((l,i)=><div key={i} className={l.destaque?'pc-est-total':undefined}><dt>{l.rotulo}</dt><dd>{l.valor}</dd></div>)}</dl></div>:<p className="pc-nota">{t('Consulte os valores no resumo do projeto.')}</p>}
     <div className="pc-botoes"><Button href={href.frente(f.id)}>{t(p.estado==='completa'?'Revisar respostas':'Continuar esta frente')}</Button><Button variant="secondary" href={href.frente(f.id,true)}>{t('Resumo desta frente')}</Button></div>
    </section>;
   })}</div>
-  <p className="pc-nota">{t('O progresso indica o preenchimento das telas. Revise as informações a levantar antes de aprovar o plano.')}</p>
+  <p className="pc-nota">{t('O progresso indica o preenchimento das telas. Revise os itens sem valor antes de aprovar o plano.')}</p>
   <p className="pc-ux-escopo-recursos">{t('Os valores pertencem a cada frente. Custos compartilhados ficam referenciados na frente de origem. Consulte o período e a moeda em cada resumo.')} {t('Estimativas de referência são ilustrativas e aparecem separadas dos valores informados.')}</p>
  </div></Shell>;
 }

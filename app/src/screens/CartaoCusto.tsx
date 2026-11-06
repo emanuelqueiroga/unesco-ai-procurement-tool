@@ -69,7 +69,7 @@ function Barra({ d }: { d: DadosCusto }) {
   const n = d.informados + d.estimados + d.faltam, soma = d.informado + d.estimado;
   const lev = n ? d.faltam / n : 0, resto = 1 - lev;
   const inf = soma > 0 ? resto * d.informado / soma : 0, est = soma > 0 ? resto * d.estimado / soma : 0;
-  const rotulo = t('Informado {inf}, estimado {est}, {n} a levantar', { inf: formatarMoedaEst(d.informado, d.moeda), est: formatarMoedaEst(d.estimado, d.moeda), n: itens(d.faltam) });
+  const rotulo = t('Informado {inf}, estimado {est}, {n} sem valor', { inf: formatarMoedaEst(d.informado, d.moeda), est: formatarMoedaEst(d.estimado, d.moeda), n: itens(d.faltam) });
   return <div className="pc-custo-barra" role="img" aria-label={rotulo}>
     <span className="pc-custo-barra-inf" style={{ inlineSize: (inf * 100).toFixed(2) + '%' }} />
     <span className="pc-custo-barra-est" style={{ inlineSize: (est * 100).toFixed(2) + '%' }} />
@@ -94,13 +94,13 @@ export function CartaoCustoFrente({ d, compacto = false }: { d: DadosCusto; comp
     {compacto ? <dl className="pc-custo-tres">
       <div><dt>{t('Informado')}</dt><dd>{d.informados ? moedaCurta(d.informado, d.moeda) : '—'}</dd></div>
       <div><dt>{t('Estimado')}</dt><dd className="pc-custo-est">{d.estimados ? moedaCurta(d.estimado, d.moeda) : '—'}</dd></div>
-      <div><dt>{t('A levantar')}</dt><dd>{itens(d.faltam)}</dd></div>
+      <div><dt>{t('Falta valor')}</dt><dd>{itens(d.faltam)}</dd></div>
     </dl> : <dl className="pc-custo-lista">
       <dt><i className="pc-custo-marca pc-custo-marca--inf" aria-hidden="true" />{t('Informado')}</dt>
       <dd>{d.informados ? formatarMoedaEst(d.informado, d.moeda) : '—'}</dd>
       <dt><i className="pc-custo-marca pc-custo-marca--est" aria-hidden="true" />{t('Estimado')}</dt>
       <dd className="pc-custo-est">{d.estimados ? formatarMoedaEst(d.estimado, d.moeda) : '—'}</dd>
-      <dt><i className="pc-custo-marca pc-custo-marca--lev" aria-hidden="true" />{t('A levantar')}</dt>
+      <dt><i className="pc-custo-marca pc-custo-marca--lev" aria-hidden="true" />{t('Falta valor')}</dt>
       <dd>{itens(d.faltam)}</dd>
     </dl>}
     {!compacto && d.fases?.length ? <dl className="pc-custo-fases" aria-label={t('Custo por fase')}>{d.fases.map(f => <div key={f.id}><dt>{f.nome}</dt><dd>{f.informado + f.estimado ? moedaCurta(f.informado + f.estimado, d.moeda) : '—'}</dd></div>)}</dl> : null}

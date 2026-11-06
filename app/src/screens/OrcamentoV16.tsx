@@ -76,7 +76,7 @@ export function OrcamentoV16({ s, frente, tentou }: { s: CasoStore; frente: Fren
 /** Resumo da frente: "Em resumo" e a tabela categoria × fase (mesma conta do cartão e dos PDFs). */
 export function ResumoV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativa }) {
   const o = orcamentoV16(s, frente), linhas = matrizFases(o);
-  const val = (v: number | null, tipo: string) => v === null ? (tipo === 'a_levantar' ? t('a levantar') : '—') : formatarMoedaEst(v, o.moeda);
+  const val = (v: number | null, tipo: string) => v === null ? (tipo === 'a_levantar' ? t('falta valor') : '—') : formatarMoedaEst(v, o.moeda);
   return <section className="pv-resumo" aria-labelledby={'pv-resumo-' + frente}>
     <h2 id={'pv-resumo-' + frente} className="pv-resumo-titulo">{t('Em resumo')}</h2>
     <p className="pv-resumo-prosa">{resumoProsa(o)}</p>
@@ -88,7 +88,7 @@ export function ResumoV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativ
         <tfoot><tr><th scope="row">{t('Custo conhecido')}</th>{o.fases.map(f => <td key={f.id}>{formatarMoedaEst(f.informado + f.estimado, o.moeda)}</td>)}<td className="pv-matriz-total">{formatarMoedaEst(totalConhecido(o), o.moeda)}</td></tr></tfoot>
       </table>
     </div>
-    <p className="pv-matriz-nota"><span className="pv-matriz-est">{t('Em âmbar')}</span>: {t('estimado (quantidades e valores unitários abaixo)')}. {t('"a levantar": ainda sem valor, fora do custo conhecido.')}</p>
+    <p className="pv-matriz-nota"><span className="pv-matriz-est">{t('Em âmbar')}</span>: {t('estimado (quantidades e valores unitários abaixo)')}. {t('"falta valor": ainda sem valor, fora do custo conhecido.')}</p>
     {o.memoria.length ? <><h3 className="pv-resumo-sub">{t('O que está sendo custeado')}</h3><ul className="pv-resumo-riscos">{linhasMemoria(o).map(l => <li key={l}>{l}</li>)}</ul></> : null}
     <h3 className="pv-resumo-sub">{t('Riscos e condições')}</h3>
     <ul className="pv-resumo-riscos">{riscosV16(frente, o).map(r => <li key={r}>{r}</li>)}</ul>

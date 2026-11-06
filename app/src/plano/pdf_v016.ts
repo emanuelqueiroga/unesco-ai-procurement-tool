@@ -61,7 +61,7 @@ function escritor(doc: any, cabecalho: string) {
       if (l.grupo && l.grupo !== grupo) { grupo = l.grupo; cabe(16); fonte(8, true, C.muted); doc.text(pdfTxt(grupo.toUpperCase()), M + 4, y); y += 12; }
       const recuo = l.nivel ? 10 : 0; fonte(l.nivel ? 8 : 8.5, !l.nivel, l.nivel ? C.muted : C.tinta); const nome: string[] = doc.splitTextToSize(pdfTxt((l.n ? l.n + ' ' : '') + l.nome), colNome - 8 - recuo);
       const h = Math.max(1, nome.length) * 11 + 4; if (y + h > LIM) { nova(); linhaCab(); }
-      const est = l.tipo === 'estimado', val = (v: number | null) => v === null ? (l.tipo === 'a_levantar' ? t('a levantar') : '—') : curta(v, o.moeda) + (est ? '*' : '');
+      const est = l.tipo === 'estimado', val = (v: number | null) => v === null ? (l.tipo === 'a_levantar' ? t('falta valor') : '—') : curta(v, o.moeda) + (est ? '*' : '');
       nome.forEach((s, i) => doc.text(s, M + 4 + recuo, y + i * 11));
       fonte(8.5, false, est ? C.media : l.tipo === 'a_levantar' ? C.muted : C.tinta);
       fases.forEach((f, i) => doc.text(pdfTxt(val(l.porFase[f.id])), M + colNome + colW * (i + 1) - 4, y, { align: 'right' }));
@@ -72,7 +72,7 @@ function escritor(doc: any, cabecalho: string) {
     doc.text(pdfTxt(t('Custo conhecido')), M + 4, y);
     fases.forEach((f, i) => doc.text(pdfTxt(curta(f.informado + f.estimado, o.moeda)), M + colNome + colW * (i + 1) - 4, y, { align: 'right' }));
     doc.text(pdfTxt(curta(totalConhecido(o), o.moeda)), W - M - 4, y, { align: 'right' }); y += 14;
-    texto(t('* estimado (veja "O que está sendo custeado"). "a levantar": ainda sem valor, fora do custo conhecido. Meses e alcance acumulado: {fases}.', { fases: o.fases.map(f => f.nome + ' ' + t('{n} meses', { n: f.meses }) + ', ' + f.alcance + '%').join(' · ') }), 7.5, false, C.muted);
+    texto(t('* estimado (veja "O que está sendo custeado"). "falta valor": ainda sem valor, fora do custo conhecido. Meses e alcance acumulado: {fases}.', { fases: o.fases.map(f => f.nome + ' ' + t('{n} meses', { n: f.meses }) + ', ' + f.alcance + '%').join(' · ') }), 7.5, false, C.muted);
   };
   const rodape = (rotulo: string, data: string) => { const N = doc.getNumberOfPages(); for (let n = 1; n <= N; n++) { doc.setPage(n); doc.setDrawColor(...C.linha); doc.line(M, H - 47, W - M, H - 47); fonte(8, false, C.muted); doc.text(pdfTxt(rotulo + ' · ' + VERSAO_TESTE + ' · ' + data), M, H - 30); doc.text(n + ' / ' + N, W - M, H - 30, { align: 'right' }); } };
   return { cab, texto, titulo, lista, tabela, rodape, avancar: (n: number) => { y += n; } };
@@ -106,7 +106,7 @@ export async function gerarPDFPlanoV16(s: Estado14, opts: { data?: Date; fontes?
       w.texto(t(c.faltam === 1 ? 'Custo conhecido do plano: {total} ({inf} informado e {est} estimado). 1 item ainda sem valor.' : c.faltam ? 'Custo conhecido do plano: {total} ({inf} informado e {est} estimado). {n} itens ainda sem valor.' : 'Custo do plano: {total} ({inf} informado e {est} estimado).', { total: formatarMoedaEst(c.conhecido, c.moeda), inf: formatarMoedaEst(c.informado, c.moeda), est: formatarMoedaEst(c.estimado, c.moeda), n: c.faltam }), 10.5);
       w.texto(t('Por fase: {fases}.', { fases: c.fases.map(f => f.nome + ' ' + formatarMoedaEst(f.valor, c.moeda)).join('; ') }), 10.5);
     } else w.texto(t('As frentes usam moedas diferentes ({moedas}); os valores não são somados.', { moedas: c.moedas.join(', ') }), 10.5);
-    w.lista(c.frentes.map(f => f.titulo + ': ' + formatarMoedaEst(totalConhecido(f.o), f.o.moeda) + (f.o.faltam ? ' · ' + (f.o.faltam === 1 ? t('1 item a levantar') : t('{n} itens a levantar', { n: f.o.faltam })) : '')));
+    w.lista(c.frentes.map(f => f.titulo + ': ' + formatarMoedaEst(totalConhecido(f.o), f.o.moeda) + (f.o.faltam ? ' · ' + (f.o.faltam === 1 ? t('1 item sem valor') : t('{n} itens sem valor', { n: f.o.faltam })) : '')));
     for (const f of c.frentes) { w.titulo(f.titulo); w.texto(resumoProsa(f.o), 9.5); w.avancar(4); w.tabela(f.o); if (f.o.memoria?.length) { w.texto(t('O que está sendo custeado'), 9.5, true); w.lista(linhasMemoria(f.o)); } }
     w.titulo(t('Riscos e condições')); w.lista([...new Set(c.frentes.flatMap(f => riscosV16(f.id as FrenteEstimativa, f.o)))]);
     w.rodape(rotulo, (opts.data || new Date()).toISOString().slice(0, 10));
