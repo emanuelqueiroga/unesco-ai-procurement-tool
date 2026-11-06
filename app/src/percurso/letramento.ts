@@ -45,8 +45,8 @@ export const digitalLit = (s: Estado) => ['online','hibrida'].some(id => inclui(
 /** Versão de teste: Participantes (com públicos) · Orçamento. Currículo não tem tela: vira uma linha do orçamento. */
 export function telasLetramento(s: Estado): string[] {
  const pubs = publicosLetramento(s).map(p => p.id);
- void pubs; // v017: categorias → opções → fases e valores (as quantidades ficam em cada opção)
- return ['local','prioridades','problemas','lit-categorias','lit-opcoes','lit-fases','lit-recursos'];
+ // v017: Públicos (quem e quantos) → categorias → opções → fases e valores
+ return ['local','prioridades','problemas',...(pubs.length ? ['lit-participantes'] : []),'lit-categorias','lit-opcoes','lit-fases','lit-recursos'];
 }
 /** Campos do fluxo de teste. Os demais (diagnóstico, desenho, oferta, ações, revisão, público elegível, total distinto…)
  *  continuam guardados no caso, fora das telas, das pendências, do progresso e dos relatórios. */
@@ -59,9 +59,7 @@ export function camposLetramento(s: Estado): CampoLit[] {
   n('publicos.A11.participantes',L('Professores','Teachers'));
   campos.push({tela:'lit-participantes',caminho:'publicos.A11.incluiLiderancas',label:L('Inclui diretores e coordenadores?','Include principals and coordinators?'),opcoes:[o('sim','Sim','Yes'),o('nao','Não','No')],opcional:true});
   if (selecoesLit(s,'publicos.A11.incluiLiderancas').includes('sim')) n('publicos.A11.liderancas',L('Diretores e coordenadores','Principals and coordinators'));
-  n('publicos.A11.horas',L('Horas por curso','Hours per course'),'decimal');
-  n('publicos.A11.cursos',L('Cursos por pessoa','Courses per person'));
-  campos.push({tela:'lit-participantes',caminho:'oferta.modalidade',label:L('Forma de entrega','Delivery mode'),opcoes:[o('presencial','Presencial','In person'),o('hibrida','Híbrida','Blended'),o('online','Online','Online')],opcional:true});
+  // v017: horas e forma de entrega ficam nas opções da 1.2 (presencial, online, híbrida…), na tela Valores
  }
  if (pubs.includes('A12')) {
   campos.push({tela:'lit-participantes',caminho:'publicos.A12.niveis',label:L('Níveis','Levels'),opcoes:(ETAPAS_ENS as any[]).filter(([id]:string[])=>['fund1','fund2','medio','superior','profissional','eja'].includes(id)).map(([id,nome]:string[])=>({id,texto:nome})),multipla:true,opcional:true});

@@ -1,7 +1,7 @@
 const L = (pt: string, _en: string) => pt;
 export const TITULOS_LIT: Record<string,string> = {
  'lit-escolas': L('Escolas e etapas','Schools and levels'),
- 'lit-participantes': L('Públicos e formação','Audiences and training'),
+ 'lit-participantes': L('Públicos','Audiences'),
  'lit-fases': L('Fases','Phases'),
  'lit-categorias': L('Categorias de custo','Cost categories'),
  'lit-opcoes': L('Opções de custo','Cost options'),

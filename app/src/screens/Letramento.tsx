@@ -79,7 +79,8 @@ function CamposLit({ s, id, tentou }: { s: CasoStore; id: string; tentou: boolea
   })}</div>;
 }
 /** Participantes: uma linha por público, com participantes previstos e horas por participante (opcionais). */
-/** v016: professores (número, lideranças escolares, horas, cursos, forma de entrega) e estudantes (níveis e número). */
+/** v017: só o público e o número de pessoas — professores (e se inclui diretores e coordenadores) e estudantes (níveis e
+ *  número). Forma de entrega e horas ficam nas opções da 1.2, na tela Valores. */
 function Participantes({ s }: { s: CasoStore }) {
   const pubs = publicosLetramento(s).map(p => p.id), campos = camposLetramento(s);
   const numero = (caminho: string, label: string, decimais = false) => {
@@ -98,16 +99,15 @@ function Participantes({ s }: { s: CasoStore }) {
   const lider = selecoesLit(s, 'publicos.A11.incluiLiderancas').includes('sim');
   return <div className="pv-publicos" id="lit-participantes" tabIndex={-1}>
     {pubs.includes('A11') ? <section className="pv-publico"><h2 className="pc-lit-campo-titulo">{t('Professores')}</h2>
-      <div className="pc-esc-nums">{numero('publicos.A11.participantes', 'Número de professores')}{numero('publicos.A11.horas', 'Horas por curso', true)}{numero('publicos.A11.cursos', 'Cursos por pessoa')}</div>
+      <div className="pc-esc-nums">{numero('publicos.A11.participantes', 'Número de professores')}</div>
       {escolha('publicos.A11.incluiLiderancas')}
       {lider ? <div className="pc-esc-nums">{numero('publicos.A11.liderancas', 'Número de diretores e coordenadores')}</div> : null}
-      {escolha('oferta.modalidade')}
-      <p className="pc-nota">{t('Os professores entram nas estimativas das linhas 1.1 (formação) e 1.3 (plataformas). A forma de entrega fica registrada no plano; a estimativa usa o mesmo custo por hora.')}</p>
+
     </section> : null}
     {pubs.includes('A12') ? <section className="pv-publico"><h2 className="pc-lit-campo-titulo">{t('Estudantes')}</h2>
       {escolha('publicos.A12.niveis')}
       <div className="pc-esc-nums">{numero('publicos.A12.participantes', 'Número de estudantes')}</div>
-      <p className="pc-nota">{t('O número de estudantes entra na estimativa da linha 2.2 (ferramentas e ambientes de aprendizagem).')}</p>
+      
     </section> : null}
   </div>;
 }

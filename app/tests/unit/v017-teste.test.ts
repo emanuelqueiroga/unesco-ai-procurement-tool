@@ -21,7 +21,7 @@ describe('v017: categorias → opções → valores', () => {
     S().responder('prioridades', ['governar']); S().responder('problemas', ['G21', 'G23']); S().responder('frenteAtiva', 'governanca');
     expect(ids()).toEqual(['local', 'prioridades', 'problemas', 'gov-categorias', 'gov-opcoes', 'gov-fases', 'gov-recursos']);
     S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11']); S().responder('frenteAtiva', 'letramento');
-    expect(ids()).toEqual(['local', 'prioridades', 'problemas', 'lit-categorias', 'lit-opcoes', 'lit-fases', 'lit-recursos']);
+    expect(ids()).toEqual(['local', 'prioridades', 'problemas', 'lit-participantes', 'lit-categorias', 'lit-opcoes', 'lit-fases', 'lit-recursos']);
   });
 
   it('nada vem marcado: sem categoria escolhida não há custo e falta 1 item', () => {
@@ -70,6 +70,18 @@ describe('v017: categorias → opções → valores', () => {
     const m = matrizFases(o);
     expect(m.filter(r => r.nivel === 0).map(r => r.id)).toEqual(['g11', 'g31', 'g32']);
     expect(m.find(r => r.id === 'g11')!.porFase).toEqual({ piloto: 1000, implantacao: 5000, expansao: 0 });
+  });
+
+  it('Públicos: professores + diretores e coordenadores viram a quantidade sugerida da formação', async () => {
+    const { alterarLit } = await import('../../src/percurso/letramento');
+    S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11']); S().responder('frenteAtiva', 'letramento');
+    preencher('letramento'); gravarOrc('letramento', 'moeda', 'USD');
+    S().responder('letramento', alterarLit(S().ctx.letramento, 'publicos.A11.participantes', { valor: 800, situacao: 'informado' }));
+    S().responder('letramento', alterarLit(S().ctx.letramento, 'publicos.A11.incluiLiderancas', { escolhas: ['sim'] }));
+    S().responder('letramento', alterarLit(S().ctx.letramento, 'publicos.A11.liderancas', { valor: 200, situacao: 'informado' }));
+    gravarOrc('letramento', 'categorias', ['l12']); gravarOrc('letramento', 'itens.l12.opcoes', ['Formação online']);
+    const l = orcamentoLetramento(S()).itens[0].linhas[0];
+    expect(l.qtd).toBe(1000); expect(l.qtdSugerida).toBe(true);
   });
 
   it('trocar o tipo de custo: sem referência, falta o valor unitário', () => {

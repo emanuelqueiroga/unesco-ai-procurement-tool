@@ -72,5 +72,6 @@
  "O progresso indica o preenchimento das telas. Revise os itens sem valor antes de aprovar o plano.": "Progress shows how far the screens are filled in. Review the items without an amount before approving the plan.",
  "Telas preenchidas · {n} valores faltando": "Screens done · {n} amounts missing",
  "Itens sem valor": "Items without an amount",
- "custo por fase e total, e o que ainda não tem valor": "cost by phase and total, and what still has no amount"
+ "custo por fase e total, e o que ainda não tem valor": "cost by phase and total, and what still has no amount",
+ "Públicos": "Audiences"
 }

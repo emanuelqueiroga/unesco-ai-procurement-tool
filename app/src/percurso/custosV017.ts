@@ -86,7 +86,10 @@ export function quantidadeSugerida(s: Pick<Estado14, 'ctx'>, fonte: Fonte): numb
   const num = (v: any) => { const x = v && typeof v === 'object' ? v.valor : v; return typeof x === 'number' && x > 0 ? x : null; };
   if (fonte === 'estudantes') return num(lerLit(s, 'publicos.A12.participantes')) ?? (alunos || null);
   if (fonte === 'escolas') return escolas || null;
-  return num(lerLit(s, 'publicos.A11.participantes')) ?? (alunos ? Math.max(1, Math.round(alunos / ALUNOS_POR_PROF)) : null);
+  const prof = num(lerLit(s, 'publicos.A11.participantes')) ?? (alunos ? Math.max(1, Math.round(alunos / ALUNOS_POR_PROF)) : null);
+  // professores: soma diretores e coordenadores quando a formação os inclui (tela Públicos do letramento)
+  const lider = (lerLit(s, 'publicos.A11.incluiLiderancas')?.escolhas || []).includes('sim') ? num(lerLit(s, 'publicos.A11.liderancas')) || 0 : 0;
+  return prof === null ? null : prof + lider;
 }
 
 /** Chave estável de uma opção (o texto em português, sem acentos nem pontuação). */

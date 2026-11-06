@@ -98,7 +98,7 @@ export function ResumoV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativ
 /** Botões dos PDFs, iguais nas três frentes. */
 export function BotoesPDFV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativa }) {
   const [erro, setErro] = useState(''), [ocupado, setOcupado] = useState(false);
-  const nomeFrente = frente === 'governanca' ? 'governanca' : frente === 'letramento' ? 'letramento' : 'educacao';
+  const nomeFrente = frente === 'governanca' ? 'Governança' : frente === 'letramento' ? 'letramento' : 'Educação com e sem IA'; // traduzido no nome do arquivo
   const baixar = async (tipo: 'brief' | 'anexo') => {
     setOcupado(true); setErro('');
     try { const m = await import('../plano/pdf_v016'); const doc: any = await m.gerarPDFFrenteV16(s.estado(), { frente, tipo }); doc.save(m.nomeArquivoV16(tipo, nomeFrente)); }
