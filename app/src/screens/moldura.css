@@ -417,3 +417,16 @@ a.pc-faixa-custo:hover { color: var(--on-night); outline: 2px solid var(--primar
 .pv-matriz--opcao th[scope="row"] { padding-inline-start: 28px; font-weight: 400; color: var(--ink-2); }
 .pv-matriz--opcao td { font-size: 13px; }
 .pv-matriz tr:not(.pv-matriz--opcao) th[scope="row"] { font-weight: 600; }
+/* v017: campos de cada opção sempre na mesma grade de 3 colunas; rótulo, campo e dica alinhados por linha (subgrid),
+   para o campo com dica ou rótulo de duas linhas não desalinhar os vizinhos. Em larguras estreitas, uma coluna. */
+.pv-v17-linha { container-type: inline-size; }
+.pv-v17-campos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 24px; row-gap: 0; align-items: start; min-width: 0; }
+.pv-v17-campos > .pr-textfield { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 6px; min-width: 0; }
+.pv-v17-campos .pr-textfield-label { align-self: end; }
+.pv-v17-campos .pr-textfield-row { max-width: none; }
+.pv-v17-campos .pr-textfield-hint { margin: 0; }
+@container (max-width: 520px) {
+  .pv-v17-campos { grid-template-columns: minmax(0, 1fr); row-gap: 12px; }
+  .pv-v17-campos > .pr-textfield { grid-row: auto; grid-template-rows: none; display: flex; flex-direction: column; }
+  .pv-v17-campos .pr-textfield-label { align-self: auto; }
+}

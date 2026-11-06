@@ -85,9 +85,9 @@ function LinhaValor({ s, frente, cat, l, moeda }: { s: CasoStore; frente: Frente
     <Selecao label={t('Como calcular')} value={l.tipo} opcoes={ORDEM_TIPOS.map(k => [k, t(TIPOS[k].rotulo)])}
       onChange={v => gravarOrc(frente, caminho, { ...atual(), tipo: v as TipoCusto, unit: undefined, horas: undefined, ...(v === 'fechado' ? {} : { fases: undefined }) })} />
     {l.tipo === 'fechado'
-      ? <div className="pc-curto-numeros">{fases.map(f => <CampoNumero key={f.id} label={f.nome} value={l.valoresFase[f.id] ?? ''} decimais
+      ? <div className="pv-v17-campos">{fases.map(f => <CampoNumero key={f.id} label={f.nome} value={l.valoresFase[f.id] ?? ''} decimais
           onChange={v => gravarOrc(frente, caminho, { ...atual(), fases: { ...(atual().fases || {}), [f.id]: v === '' ? undefined : v } })} />)}</div>
-      : <div className="pc-curto-numeros">
+      : <div className="pv-v17-campos">
           <CampoNumero label={t(def.qtd!)} value={l.qtd ?? ''} suggested={l.qtdSugerida} onChange={v => gravar('qtd', v)} />
           {def.horas ? <CampoNumero label={t('Horas por pessoa')} value={l.horas ?? ''} decimais onChange={v => gravar('horas', v)} /> : null}
           <CampoNumero label={t(def.unit!) + ' (' + moeda + ')'} value={l.unitDaReferencia ? '' : l.unit ?? ''} decimais placeholder={l.unitRef === null ? undefined : new Intl.NumberFormat(String(LOC()), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(l.unitRef)}
