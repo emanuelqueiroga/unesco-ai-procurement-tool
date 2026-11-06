@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Cores, tipos e estados da proposta</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=Noto+Serif:wght@600&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1200px; height: 760px; box-sizing: border-box; padding: 48px; background: #FFFFFF; color: #111827; font-family: Inter, 'Noto Sans', system-ui, sans-serif; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 56px; font-variant-numeric: tabular-nums;">
+
+  <section style="display: flex; flex-direction: column; gap: 16px;">
+    <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #5B6576;">Cores</span>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;"><span style="height: 64px; border-radius: 10px; background: #2747C4;"></span><span style="font-size: 13px; font-weight: 600;">Cobalto</span><span style="font-size: 12px; color: #5B6576;">#2747C4 · ação, links, progresso</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><span style="height: 64px; border-radius: 10px; background: #0F1B33;"></span><span style="font-size: 13px; font-weight: 600;">Noite</span><span style="font-size: 12px; color: #5B6576;">#0F1B33 · cartão do custo</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><span style="height: 64px; border-radius: 10px; background: #9A4D00;"></span><span style="font-size: 13px; font-weight: 600;">Âmbar</span><span style="font-size: 12px; color: #5B6576;">#9A4D00 · só estimativas</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><span style="height: 64px; border-radius: 10px; background: #111827;"></span><span style="font-size: 13px; font-weight: 600;">Tinta</span><span style="font-size: 12px; color: #5B6576;">#111827 · texto, informado</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><span style="height: 40px; border-radius: 10px; background: #F3F5F8; border: 1px solid #D8DEE6;"></span><span style="font-size: 12px; color: #5B6576;">#F3F5F8 · fundo</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><span style="height: 40px; border-radius: 10px; background: #FFF4E5; border: 1px solid #F0D3A6;"></span><span style="font-size: 12px; color: #5B6576;">#FFF4E5 · fundo da estimativa</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><span style="height: 40px; border-radius: 10px; background: #E8EDFB;"></span><span style="font-size: 12px; color: #5B6576;">#E8EDFB · seleção</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><span style="height: 40px; border-radius: 10px; background: #FFFFFF; border: 1px solid #7A8696;"></span><span style="font-size: 12px; color: #5B6576;">#7A8696 · borda de campo</span></div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px;">
+    <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #5B6576;">Tipos</span>
+    <span style="font-family: 'Noto Serif', Georgia, serif; font-size: 34px; line-height: 42px; font-weight: 600;">Quanto custa cada recurso?</span>
+    <span style="font-size: 12px; color: #5B6576;">Noto Serif 600 · pergunta e títulos do plano (cobre os 9 idiomas)</span>
+    <span style="font-size: 17px; line-height: 26px; color: #374151;">Onde a ferramenta já tem as quantidades, ela oferece uma estimativa de referência.</span>
+    <span style="font-size: 12px; color: #5B6576;">Inter 400 / 600 · interface e texto</span>
+    <span style="font-size: 40px; font-weight: 700; letter-spacing: -0.02em;">R$ 3,56 mi</span>
+    <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.02em; text-transform: uppercase; color: #6B5A45;">Fonte · convenção da ferramenta, ilustrativa · grau C</span>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px;">
+    <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #5B6576;">Os quatro estados de um valor</span>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+      <div style="padding: 14px; border: 1px solid #D8DEE6; border-radius: 12px; display: flex; flex-direction: column; gap: 6px;"><span style="align-self: flex-start; padding: 2px 8px; border-radius: 6px; background: #EBEFF4; font-size: 13px; font-weight: 500;">Informado</span><span style="font-size: 20px; font-weight: 700;">R$ 350.000,00</span></div>
+      <div style="padding: 14px; border: 1px solid #F0D3A6; border-radius: 12px; display: flex; flex-direction: column; gap: 6px; background: #FFFBF5;"><span style="align-self: flex-start; padding: 2px 8px; border-radius: 6px; background: #FFF4E5; color: #9A4D00; font-size: 13px; font-weight: 500;">Estimativa de referência</span><span style="font-size: 20px; font-weight: 700; color: #9A4D00;">R$ 940.020,12</span></div>
+      <div style="padding: 14px; border: 1px dashed #8A96A8; border-radius: 12px; display: flex; flex-direction: column; gap: 6px;"><span style="align-self: flex-start; padding: 2px 8px; border-radius: 6px; border: 1px dashed #8A96A8; color: #5B6576; font-size: 13px; font-weight: 500;">A levantar</span><span style="font-size: 20px; font-weight: 600; color: #5B6576;">—</span></div>
+      <div style="padding: 14px; border: 1px solid #D8DEE6; border-radius: 12px; display: flex; flex-direction: column; gap: 6px;"><span style="align-self: flex-start; padding: 2px 8px; border-radius: 6px; background: #EBEFF4; color: #374151; font-size: 13px; font-weight: 500;">Sem custo</span><span style="font-size: 20px; font-weight: 600; color: #374151;">R$ 0,00</span></div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px;">
+    <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #5B6576;">Estrutura da tela</span>
+    <div style="border: 1px solid #D8DEE6; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; height: 236px; font-size: 12px; color: #374151;">
+      <div style="padding: 10px 12px; background: #F7F9FB; border-bottom: 1px solid #D8DEE6;">Cabeçalho · frente atual · etapas em linha (sem coluna lateral)</div>
+      <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr; gap: 10px; padding: 10px;">
+        <div style="border: 1px dashed #A7B1BF; border-radius: 8px; padding: 10px;">Pergunta (máx. 700 px): título, porquê, opções</div>
+        <div style="background: #0F1B33; color: #FFFFFF; border-radius: 8px; padding: 10px;">Custo da frente, sempre visível</div>
+      </div>
+      <div style="padding: 10px 12px; border-top: 1px solid #D8DEE6;">Barra fixa · Voltar · salvo · Próximo</div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

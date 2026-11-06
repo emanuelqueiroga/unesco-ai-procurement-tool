@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Pergunta da frente de letramento, computador</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif:wght@500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F5F8}
+a{color:#2747C4}a:hover{color:#1D3699}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid #2747C4;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-direction: column; background: #F3F5F8; color: #111827; font-family: Inter, 'Noto Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums;">
+
+  <header style="background: #FFFFFF; border-bottom: 1px solid #D8DEE6;">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 12px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 12px; flex: 1 1 320px; min-width: 0;">
+        <span style="font-weight: 600; font-size: 15px;">AI in Education Procurement Tool</span>
+        <span style="width: 1px; height: 20px; background: #D8DEE6;"></span>
+        <span style="font-size: 14px; color: #5B6576;">Brasil · plano nacional</span>
+      </div>
+      <a href="#" style="display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1px solid #D8DEE6; border-radius: 999px; text-decoration: none; color: #111827; font-size: 14px; background: #F3F5F8;">
+        <span style="width: 8px; height: 8px; border-radius: 999px; background: #2747C4;"></span>
+        Frente: <strong style="font-weight: 600;">Letramento em IA e currículo</strong>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6576" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </a>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <a href="#" style="min-height: 40px; display: flex; align-items: center; padding: 0 12px; font-size: 14px; text-decoration: none;">Plano nacional</a>
+        <button type="button" aria-label="Idioma: português" style="min-height: 40px; min-width: 44px; border: 1px solid #D8DEE6; background: #FFFFFF; border-radius: 8px; font: 500 14px Inter, sans-serif; color: #111827;">PT</button>
+      </div>
+    </div>
+    <nav aria-label="Etapas da frente" style="max-width: 1240px; margin: 0 auto; padding: 0 32px 14px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="height: 4px; border-radius: 999px; background: #2747C4;"></span>
+        <span style="font-size: 13px; color: #374151;">✓ Contexto</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="height: 4px; border-radius: 999px; background: #2747C4;"></span>
+        <span style="font-size: 13px; color: #374151;">✓ Diagnóstico e desenho</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="height: 4px; border-radius: 999px; background: linear-gradient(90deg, #2747C4 50%, #C9D3EE 50%);"></span>
+        <span style="font-size: 13px; color: #111827; font-weight: 600;">Implementação e recursos · 2 de 4</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="height: 4px; border-radius: 999px; background: #D8DEE6;"></span>
+        <span style="font-size: 13px; color: #5B6576;">Acompanhamento</span>
+      </div>
+    </nav>
+  </header>
+
+  <main style="flex: 1 0 auto; width: 100%; max-width: 1240px; margin: 0 auto; box-sizing: border-box; padding: 40px 32px 32px; display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start;">
+
+    <section style="flex: 999 1 560px; min-width: 0; max-width: 700px; display: flex; flex-direction: column; gap: 28px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-size: 13px; font-weight: 600; color: #2747C4;">Pergunta 6 de 11</span>
+        <h1 style="margin: 0; font-family: 'Noto Serif', Georgia, serif; font-size: 34px; line-height: 42px; font-weight: 600; letter-spacing: -0.01em;">Como e por quanto tempo será a formação?</h1>
+        <p style="margin: 0; font-size: 17px; line-height: 26px; color: #374151; max-width: 60ch;">As horas por público entram na estimativa de custo da formação. Dá para mudar depois.</p>
+      </div>
+
+      <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 12px;">
+        <legend style="padding: 0 0 12px; font-size: 15px; font-weight: 600;">Modalidade</legend>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+          <sc-for list="{{ modos }}" as="m" hint-placeholder-count="4">
+            <label style="{{ m.estilo }}">
+              <input type="radio" name="modalidade" checked="{{ m.marcado }}" onChange="{{ m.escolher }}" style="width: 20px; height: 20px; margin: 2px 0 0; accent-color: #2747C4; flex: 0 0 auto;">
+              <span style="display: flex; flex-direction: column; gap: 4px;">
+                <span style="font-size: 16px; font-weight: 600;">{{ m.nome }}</span>
+                <span style="font-size: 14px; line-height: 20px; color: #5B6576;">{{ m.desc }}</span>
+              </span>
+            </label>
+          </sc-for>
+        </div>
+      </fieldset>
+
+      <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 0;">
+        <legend style="padding: 0 0 4px; font-size: 15px; font-weight: 600;">Horas por participante</legend>
+        <p style="margin: 0 0 12px; font-size: 14px; color: #5B6576;">Os participantes vêm da pergunta «Públicos e alcance». <a href="#">Editar</a></p>
+        <div style="background: #FFFFFF; border: 1px solid #D8DEE6; border-radius: 12px;">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 16px 20px; border-bottom: 1px solid #EBEFF4;">
+            <label for="h-prof" style="flex: 1 1 220px; display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 16px; font-weight: 600;">Professores</span>
+              <span style="font-size: 14px; color: #5B6576;">1.000 participantes previstos</span>
+            </label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input id="h-prof" type="number" min="0" value="{{ hp }}" onChange="{{ mudarHp }}" style="width: 96px; min-height: 44px; box-sizing: border-box; padding: 0 12px; border: 1px solid #7A8696; border-radius: 8px; font: 500 17px Inter, sans-serif; text-align: right; font-variant-numeric: tabular-nums;">
+              <span style="font-size: 15px; color: #374151;">horas</span>
+            </div>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 16px 20px;">
+            <label for="h-dir" style="flex: 1 1 220px; display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 16px; font-weight: 600;">Diretores escolares</span>
+              <span style="font-size: 14px; color: #5B6576;">200 participantes previstos</span>
+            </label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input id="h-dir" type="number" min="0" value="{{ hd }}" onChange="{{ mudarHd }}" style="width: 96px; min-height: 44px; box-sizing: border-box; padding: 0 12px; border: 1px solid #7A8696; border-radius: 8px; font: 500 17px Inter, sans-serif; text-align: right; font-variant-numeric: tabular-nums;">
+              <span style="font-size: 15px; color: #374151;">horas</span>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <a href="#" style="align-self: flex-start; font-size: 15px; min-height: 44px; display: flex; align-items: center;">Adicionar detalhes (materiais, formadores, certificação) +</a>
+    </section>
+
+    <aside aria-label="Custo desta frente" style="flex: 1 1 320px; max-width: 380px; display: flex; flex-direction: column; gap: 16px;">
+      <div style="background: #0F1B33; color: #FFFFFF; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #B9C3D8;">Custo desta frente · 24 meses</span>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 40px; line-height: 44px; font-weight: 700; letter-spacing: -0.02em;">{{ totalCurto }}</span>
+          <span style="font-size: 14px; color: #D5DCEA;">inclui estimativas de referência · ainda faltam 2 itens</span>
+        </div>
+        <div role="img" aria-label="{{ barraRotulo }}" style="display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: repeating-linear-gradient(135deg, #3A4A6B 0 4px, #24324F 4px 8px);">
+          <span style="{{ barraInf }}"></span>
+          <span style="{{ barraEst }}"></span>
+        </div>
+        <dl style="margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 10px 16px; font-size: 14px;">
+          <dt style="display: flex; align-items: center; gap: 8px; color: #D5DCEA;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #FFFFFF;"></span>Informado · 1 item</dt>
+          <dd style="margin: 0; text-align: right; font-weight: 600;">{{ informado }}</dd>
+          <dt style="display: flex; align-items: center; gap: 8px; color: #D5DCEA;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #F5B565;"></span>Estimado pela ferramenta · 3</dt>
+          <dd style="margin: 0; text-align: right; font-weight: 600; color: #F8CB8A;">{{ estimado }}</dd>
+          <dt style="display: flex; align-items: center; gap: 8px; color: #D5DCEA;"><span style="width: 10px; height: 10px; border-radius: 3px; background: repeating-linear-gradient(135deg, #8A97B3 0 2px, #3A4A6B 2px 4px);"></span>Ainda a levantar</dt>
+          <dd style="margin: 0; text-align: right; font-weight: 600;">2 itens</dd>
+        </dl>
+      </div>
+
+      <div style="background: #FFFFFF; border: 1px solid #D8DEE6; border-radius: 16px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-size: 13px; font-weight: 600; color: #5B6576;">Esta resposta muda</span>
+        <div style="display: flex; justify-content: space-between; gap: 12px; align-items: baseline;">
+          <span style="font-size: 15px; font-weight: 600;">Formação</span>
+          <span style="font-size: 18px; font-weight: 700; color: #9A4D00;">{{ formacao }}</span>
+        </div>
+        <span style="display: inline-flex; align-self: flex-start; padding: 2px 8px; border-radius: 6px; background: #FFF4E5; color: #9A4D00; font-size: 13px; font-weight: 500;">estimativa de referência, ilustrativa</span>
+        <p style="margin: 0; font-size: 14px; line-height: 20px; color: #374151;">{{ conta }}</p>
+        <a href="#" style="font-size: 14px;">Ver a conta completa e a fonte</a>
+      </div>
+
+      <a href="Orcamento.dc.html" style="display: flex; justify-content: space-between; align-items: center; min-height: 48px; padding: 0 20px; border-radius: 12px; border: 1px solid #D8DEE6; background: #FFFFFF; text-decoration: none; color: #111827; font-size: 15px; font-weight: 500;">Ver o orçamento da frente <span aria-hidden="true">→</span></a>
+    </aside>
+  </main>
+
+  <footer style="position: sticky; bottom: 0; background: #FFFFFF; border-top: 1px solid #D8DEE6;">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 12px 32px; display: flex; align-items: center; gap: 16px;">
+      <a href="#" style="min-height: 48px; display: flex; align-items: center; padding: 0 24px; border: 1px solid #7A8696; border-radius: 10px; text-decoration: none; color: #111827; font-weight: 600; font-size: 16px;">Voltar</a>
+      <span style="flex: 1; text-align: center; font-size: 14px; color: #5B6576;">Salvo neste navegador agora</span>
+      <a href="Orcamento.dc.html" style="min-height: 48px; display: flex; align-items: center; padding: 0 32px; border-radius: 10px; background: #2747C4; text-decoration: none; color: #FFFFFF; font-weight: 600; font-size: 16px;">Próximo</a>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { modo: 'hibrida', hp: 30, hd: 10 }; }
+  renderVals() {
+    const taxa = 5.222334, custoHora = 12;
+    const hp = Number(this.state.hp) || 0, hd = Number(this.state.hd) || 0;
+    const horas = 1000 * hp + 200 * hd;
+    const form = horas * custoHora * taxa;
+    const equipe = 940020.12, aval = 261116.70, inf = 350000;
+    const est = form + equipe + aval, total = inf + est;
+    const brl = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const curto = (v) => v >= 1e6 ? 'R$ ' + (v / 1e6).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' mi' : 'R$ ' + Math.round(v / 1e3).toLocaleString('pt-BR') + ' mil';
+    const pInf = (inf / total * 100).toFixed(1), pEst = (est / total * 100 * 0.86).toFixed(1);
+    const base = 'display: flex; gap: 12px; align-items: flex-start; padding: 16px; border-radius: 12px; cursor: pointer; background: #FFFFFF; min-height: 44px;';
+    const lista = [
+      ['presencial', 'Presencial', 'Encontros com formador, em polos ou escolas.'],
+      ['hibrida', 'Híbrida', 'Parte a distância, parte em encontros.'],
+      ['distancia', 'A distância', 'Curso online, com tutoria.'],
+      ['escola', 'Em serviço, na escola', 'Durante o horário de planejamento.']
+    ];
+    return {
+      modos: lista.map(([id, nome, desc]) => ({ nome, desc, marcado: this.state.modo === id,
+        estilo: base + (this.state.modo === id ? ' border: 2px solid #2747C4; background: #F5F7FE;' : ' border: 1px solid #D8DEE6; margin: 1px;'),
+        escolher: () => this.setState({ modo: id }) })),
+      hp: this.state.hp, hd: this.state.hd,
+      mudarHp: (e) => this.setState({ hp: e.target.value }),
+      mudarHd: (e) => this.setState({ hd: e.target.value }),
+      totalCurto: curto(total), informado: brl(inf), estimado: brl(est), formacao: brl(form),
+      conta: horas.toLocaleString('pt-BR') + ' horas-participante × US$ 12 por hora × 5,22 (câmbio) = ' + brl(form),
+      barraInf: 'width: ' + pInf + '%; background: #FFFFFF;',
+      barraEst: 'width: ' + pEst + '%; background: #F5B565;',
+      barraRotulo: 'Informado ' + brl(inf) + ', estimado ' + brl(est) + ', 2 itens a levantar'
+    };
+  }
+}
+</script>
+</body>
+</html>

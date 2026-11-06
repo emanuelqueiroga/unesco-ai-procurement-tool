@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Pergunta da frente de letramento, celular</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif:wght@600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F5F8}
+a{color:#2747C4}a:hover{color:#1D3699}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid #2747C4;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; display: flex; flex-direction: column; background: #F3F5F8; color: #111827; font-family: Inter, 'Noto Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; overflow: hidden;">
+
+  <header style="background: #FFFFFF; border-bottom: 1px solid #D8DEE6; padding: 10px 16px 12px; display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <a href="#" style="display: flex; align-items: center; gap: 6px; min-height: 40px; text-decoration: none; color: #111827; font-size: 14px; font-weight: 600;">
+        <span style="width: 8px; height: 8px; border-radius: 999px; background: #2747C4;"></span>Letramento em IA
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6576" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </a>
+      <button type="button" aria-label="Menu" style="min-width: 44px; min-height: 40px; border: 1px solid #D8DEE6; background: #FFFFFF; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 13px; color: #374151;"><strong style="font-weight: 600; color: #111827;">Etapa 3 de 4</strong> · Implementação e recursos</span>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px;">
+        <span style="height: 4px; border-radius: 999px; background: #2747C4;"></span>
+        <span style="height: 4px; border-radius: 999px; background: #2747C4;"></span>
+        <span style="height: 4px; border-radius: 999px; background: linear-gradient(90deg, #2747C4 50%, #C9D3EE 50%);"></span>
+        <span style="height: 4px; border-radius: 999px; background: #D8DEE6;"></span>
+      </div>
+    </div>
+  </header>
+
+  <a href="OrcamentoCelular.dc.html" style="margin: 12px 16px 0; padding: 12px 16px; border-radius: 12px; background: #0F1B33; color: #FFFFFF; text-decoration: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+    <span style="display: flex; flex-direction: column; gap: 2px;">
+      <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #B9C3D8;">Custo da frente · 24 meses</span>
+      <span style="font-size: 22px; font-weight: 700; letter-spacing: -0.01em;">R$ 3,56 mi</span>
+    </span>
+    <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px;">
+      <span style="color: #F8CB8A;">R$ 3,21 mi estimado</span>
+      <span style="color: #D5DCEA;">2 itens a levantar ›</span>
+    </span>
+  </a>
+
+  <main style="flex: 1 1 auto; overflow-y: auto; padding: 20px 16px 24px; display: flex; flex-direction: column; gap: 22px;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 13px; font-weight: 600; color: #2747C4;">Pergunta 6 de 11</span>
+      <h1 style="margin: 0; font-family: 'Noto Serif', Georgia, serif; font-size: 26px; line-height: 32px; font-weight: 600;">Como e por quanto tempo será a formação?</h1>
+      <p style="margin: 0; font-size: 16px; line-height: 24px; color: #374151;">As horas por público entram na estimativa de custo da formação.</p>
+    </div>
+
+    <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px;">
+      <legend style="padding: 0 0 8px; font-size: 15px; font-weight: 600;">Modalidade</legend>
+      <sc-for list="{{ modos }}" as="m" hint-placeholder-count="4">
+        <label style="{{ m.estilo }}">
+          <input type="radio" name="modalidade-cel" checked="{{ m.marcado }}" onChange="{{ m.escolher }}" style="width: 20px; height: 20px; margin: 0; accent-color: #2747C4; flex: 0 0 auto;">
+          <span style="display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 16px; font-weight: 600;">{{ m.nome }}</span>
+            <span style="font-size: 14px; color: #5B6576;">{{ m.desc }}</span>
+          </span>
+        </label>
+      </sc-for>
+    </fieldset>
+
+    <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column;">
+      <legend style="padding: 0 0 8px; font-size: 15px; font-weight: 600;">Horas por participante</legend>
+      <div style="background: #FFFFFF; border: 1px solid #D8DEE6; border-radius: 12px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #EBEFF4;">
+          <label for="c-prof" style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 15px; font-weight: 600;">Professores</span><span style="font-size: 13px; color: #5B6576;">1.000 participantes</span></label>
+          <span style="display: flex; align-items: center; gap: 6px;"><input id="c-prof" type="number" value="30" style="width: 72px; min-height: 44px; box-sizing: border-box; padding: 0 10px; border: 1px solid #7A8696; border-radius: 8px; font: 500 16px Inter, sans-serif; text-align: right;"><span style="font-size: 14px;">h</span></span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px;">
+          <label for="c-dir" style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 15px; font-weight: 600;">Diretores escolares</span><span style="font-size: 13px; color: #5B6576;">200 participantes</span></label>
+          <span style="display: flex; align-items: center; gap: 6px;"><input id="c-dir" type="number" value="10" style="width: 72px; min-height: 44px; box-sizing: border-box; padding: 0 10px; border: 1px solid #7A8696; border-radius: 8px; font: 500 16px Inter, sans-serif; text-align: right;"><span style="font-size: 14px;">h</span></span>
+        </div>
+      </div>
+      <p style="margin: 10px 0 0; font-size: 14px; color: #9A4D00;">Formação estimada: <strong>R$ 2.005.376,26</strong> · <a href="#" style="color: #9A4D00;">ver a conta</a></p>
+    </fieldset>
+  </main>
+
+  <footer style="background: #FFFFFF; border-top: 1px solid #D8DEE6; padding: 12px 16px; display: flex; gap: 12px;">
+    <a href="#" style="flex: 1; min-height: 48px; display: flex; align-items: center; justify-content: center; border: 1px solid #7A8696; border-radius: 10px; text-decoration: none; color: #111827; font-weight: 600; font-size: 16px;">Voltar</a>
+    <a href="OrcamentoCelular.dc.html" style="flex: 2; min-height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: #2747C4; text-decoration: none; color: #FFFFFF; font-weight: 600; font-size: 16px;">Próximo</a>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { modo: 'hibrida' }; }
+  renderVals() {
+    const base = 'display: flex; gap: 12px; align-items: center; padding: 14px 16px; border-radius: 12px; background: #FFFFFF; cursor: pointer; min-height: 44px;';
+    const lista = [
+      ['presencial', 'Presencial', 'Encontros com formador.'],
+      ['hibrida', 'Híbrida', 'Parte a distância, parte em encontros.'],
+      ['distancia', 'A distância', 'Curso online, com tutoria.'],
+      ['escola', 'Em serviço, na escola', 'No horário de planejamento.']
+    ];
+    return {
+      modos: lista.map(([id, nome, desc]) => ({ nome, desc, marcado: this.state.modo === id,
+        estilo: base + (this.state.modo === id ? ' border: 2px solid #2747C4; background: #F5F7FE;' : ' border: 1px solid #D8DEE6; margin: 1px;'),
+        escolher: () => this.setState({ modo: id }) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

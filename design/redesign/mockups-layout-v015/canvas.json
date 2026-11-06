@@ -1,0 +1,20 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-02T12:00:00Z"},
+  "title": "v015 — Pergunta e orçamento (proposta de layout)",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 900, "title": "Pergunta · computador", "expand": "fill", "is_interactive": true},
+    "Orcamento.dc.html": {"x": 1520, "y": 0, "w": 1440, "h": 1240, "title": "Orçamento da frente · computador", "expand": "fill", "is_interactive": true},
+    "PerguntaCelular.dc.html": {"x": 0, "y": 1660, "w": 390, "h": 844, "title": "Pergunta · celular", "is_interactive": true},
+    "OrcamentoCelular.dc.html": {"x": 470, "y": 1660, "w": 390, "h": 1180, "title": "Orçamento · celular", "is_interactive": true},
+    "Estilo.dc.html": {"x": 1020, "y": 1660, "w": 1200, "h": 760, "title": "Cores, tipos e regras da proposta"}
+  },
+  "order": ["Main.dc.html", "Orcamento.dc.html", "PerguntaCelular.dc.html", "OrcamentoCelular.dc.html", "Estilo.dc.html"],
+  "notes": {
+    "t-desktop": {"x": 0, "y": -300, "text": "Computador · a frente de letramento em IA, Brasil", "kind": "title1", "maxW": 2960},
+    "t-mobile": {"x": 0, "y": 1360, "text": "Celular e linguagem visual", "kind": "title1", "maxW": 2220}
+  },
+  "designSystems": []
+}

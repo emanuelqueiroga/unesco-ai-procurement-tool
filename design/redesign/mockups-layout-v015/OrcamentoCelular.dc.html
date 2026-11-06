@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Orçamento da frente de letramento, celular</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=Noto+Serif:wght@600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F5F8}
+a{color:#2747C4}a:hover{color:#1D3699}
+button:focus-visible,a:focus-visible{outline:2px solid #2747C4;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1180px; display: flex; flex-direction: column; background: #F3F5F8; color: #111827; font-family: Inter, 'Noto Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums;">
+
+  <header style="background: #FFFFFF; border-bottom: 1px solid #D8DEE6; padding: 10px 16px 12px; display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <a href="#" style="display: flex; align-items: center; gap: 6px; min-height: 40px; text-decoration: none; color: #111827; font-size: 14px; font-weight: 600;">
+        <span style="width: 8px; height: 8px; border-radius: 999px; background: #2747C4;"></span>Letramento em IA
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6576" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </a>
+      <button type="button" aria-label="Menu" style="min-width: 44px; min-height: 40px; border: 1px solid #D8DEE6; background: #FFFFFF; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 13px; color: #374151;"><strong style="font-weight: 600; color: #111827;">Etapa 3 de 4</strong> · Implementação e recursos</span>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px;">
+        <span style="height: 4px; border-radius: 999px; background: #2747C4;"></span>
+        <span style="height: 4px; border-radius: 999px; background: #2747C4;"></span>
+        <span style="height: 4px; border-radius: 999px; background: linear-gradient(90deg, #2747C4 75%, #C9D3EE 75%);"></span>
+        <span style="height: 4px; border-radius: 999px; background: #D8DEE6;"></span>
+      </div>
+    </div>
+  </header>
+
+  <main style="flex: 1 1 auto; padding: 20px 16px 24px; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 13px; font-weight: 600; color: #2747C4;">Pergunta 7 de 11</span>
+      <h1 style="margin: 0; font-family: 'Noto Serif', Georgia, serif; font-size: 26px; line-height: 32px; font-weight: 600;">Quanto custa cada recurso?</h1>
+      <p style="margin: 0; font-size: 15px; line-height: 22px; color: #374151;">24 meses após a aprovação · em reais (1 US$ = 5,22)</p>
+    </div>
+
+    <div style="background: #0F1B33; color: #FFFFFF; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+        <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #B9C3D8;">Custo da frente</span>
+        <span style="font-size: 26px; font-weight: 700; letter-spacing: -0.01em;">R$ 3,56 mi</span>
+      </div>
+      <div role="img" aria-label="Informado R$ 350 mil, estimado R$ 3,21 milhões, 2 itens a levantar" style="display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: repeating-linear-gradient(135deg, #3A4A6B 0 4px, #24324F 4px 8px);">
+        <span style="width: 8.5%; background: #FFFFFF;"></span>
+        <span style="width: 77.5%; background: #F5B565;"></span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font-size: 12px;">
+        <span style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #D5DCEA;">Informado</span><strong style="font-size: 14px;">R$ 350 mil</strong></span>
+        <span style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #D5DCEA;">Estimado</span><strong style="font-size: 14px; color: #F8CB8A;">R$ 3,21 mi</strong></span>
+        <span style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #D5DCEA;">A levantar</span><strong style="font-size: 14px;">2 itens</strong></span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <sc-for list="{{ linhas }}" as="l" hint-placeholder-count="7">
+        <div style="background: #FFFFFF; border: 1px solid #D8DEE6; border-radius: 12px;">
+          <button type="button" aria-expanded="{{ l.aberto }}" onClick="{{ l.alternar }}" style="all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: flex; flex-direction: column; gap: 8px; padding: 14px 16px;">
+            <span style="display: flex; justify-content: space-between; gap: 12px; align-items: baseline;">
+              <span style="font-size: 15px; font-weight: 600; line-height: 20px;">{{ l.nome }}</span>
+              <span style="{{ l.valorEstilo }}">{{ l.valor }}</span>
+            </span>
+            <span style="{{ l.chipEstilo }}">{{ l.situacao }}</span>
+          </button>
+          <sc-if value="{{ l.aberto }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px;">
+              <div role="group" aria-label="Situação" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+                <sc-for list="{{ l.opcoes }}" as="o" hint-placeholder-count="4">
+                  <button type="button" aria-pressed="{{ o.ativo }}" style="{{ o.estilo }}">{{ o.rotulo }}</button>
+                </sc-for>
+              </div>
+              <sc-if value="{{ l.temConta }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 12px; border-radius: 10px; background: #FFF8EE; border: 1px solid #F3D9B1; display: flex; flex-direction: column; gap: 8px;">
+                  <span style="font-size: 13px; font-weight: 600; color: #9A4D00;">Como foi calculado</span>
+                  <span style="font-size: 14px; line-height: 21px;">{{ l.conta }}</span>
+                  <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 11px; line-height: 15px; text-transform: uppercase; color: #6B5A45;">{{ l.fonte }}</span>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <button type="button" style="min-height: 44px; border-radius: 10px; background: #FFF4E5; color: #9A4D00; border: 1px solid #E8C48F; font: 600 15px Inter, sans-serif;">Usar a estimativa nos itens sem valor</button>
+  </main>
+
+  <footer style="position: sticky; bottom: 0; background: #FFFFFF; border-top: 1px solid #D8DEE6; padding: 12px 16px; display: flex; gap: 12px;">
+    <a href="PerguntaCelular.dc.html" style="flex: 1; min-height: 48px; display: flex; align-items: center; justify-content: center; border: 1px solid #7A8696; border-radius: 10px; text-decoration: none; color: #111827; font-weight: 600; font-size: 16px;">Voltar</a>
+    <a href="#" style="flex: 2; min-height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: #2747C4; text-decoration: none; color: #FFFFFF; font-weight: 600; font-size: 16px;">Próximo</a>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1180}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { aberto: 'realizacao' }; }
+  renderVals() {
+    const chipBase = 'align-self: flex-start; padding: 2px 8px; border-radius: 6px; font-size: 13px; font-weight: 500;';
+    const est = { s: 'Estimativa de referência', c: chipBase + ' background: #FFF4E5; color: #9A4D00;', v: 'font-size: 15px; font-weight: 700; color: #9A4D00; white-space: nowrap;' };
+    const inf = { s: 'Informado', c: chipBase + ' background: #EBEFF4; color: #111827;', v: 'font-size: 15px; font-weight: 700; white-space: nowrap;' };
+    const lev = { s: 'A levantar', c: chipBase + ' background: #FFFFFF; color: #5B6576; border: 1px dashed #8A96A8;', v: 'font-size: 15px; font-weight: 600; color: #5B6576;' };
+    const sem = { s: 'Sem custo neste orçamento', c: chipBase + ' background: #EBEFF4; color: #374151;', v: 'font-size: 15px; font-weight: 600; color: #374151; white-space: nowrap;' };
+    const itens = [
+      ['diag', 'Diagnóstico e avaliação de competências', est, 'R$ 261.116,70', true],
+      ['desenho', 'Desenho pedagógico e curricular', lev, '—', false],
+      ['materiais', 'Materiais, tradução e acessibilidade', inf, 'R$ 350.000,00', false],
+      ['equipe', 'Equipe e coordenação', est, 'R$ 940.020,12', true],
+      ['apoio', 'Apoio aos participantes', sem, 'R$ 0,00', false],
+      ['formadores', 'Formação de formadores', lev, '—', false],
+      ['realizacao', 'Realização da formação', est, 'R$ 2.005.376,26', true]
+    ];
+    const op = (rot, ativo, ref) => ({ rotulo: rot, ativo, estilo: 'min-height: 44px; border-radius: 10px; border: 1px solid; font: 500 14px Inter, sans-serif; ' + (ativo ? (ref ? 'background: #9A4D00; color: #FFFFFF; border-color: #9A4D00;' : 'background: #111827; color: #FFFFFF; border-color: #111827;') : (ref ? 'background: #FFF4E5; color: #9A4D00; border-color: #F0D3A6;' : 'background: #FFFFFF; color: #374151; border-color: #C3CBD6;')) });
+    return {
+      linhas: itens.map(([id, nome, t, valor, estimavel]) => {
+        const aberto = this.state.aberto === id;
+        const opcoes = [op('A levantar', t === lev, false), op('Sem custo', t === sem, false), op('Tenho o valor', t === inf, false)];
+        if (estimavel) opcoes.push(op('Usar estimativa', t === est, true));
+        return { nome, valor, situacao: t.s, chipEstilo: t.c, valorEstilo: t.v, aberto,
+          alternar: () => this.setState({ aberto: aberto ? null : id }), opcoes,
+          temConta: id === 'realizacao',
+          conta: '1.000 professores × 30 h + 200 diretores × 10 h = 32.000 h × US$ 12/h × 5,22 = R$ 2.005.376,26',
+          fonte: 'Convenção da ferramenta, ilustrativa · grau C' };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>
