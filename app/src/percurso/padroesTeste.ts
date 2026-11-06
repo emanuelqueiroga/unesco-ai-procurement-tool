@@ -60,13 +60,17 @@ export function ehSugerido(s: Pick<Estado14, 'ctx'>, frente: FrenteEstimativa, c
   return atual?.origem === 'sugerido' || marca !== undefined && !vazio(atual) && J(atual) === marca;
 }
 
+const LICENCAS_OPCIONAIS = ['l13', 'l22'];
 /** Situação sugerida de cada item: "Usar estimativa" quando a conta fecha, senão "A levantar". */
 function itens(frente: FrenteEstimativa, _ids: string[], s: Estado, prefixo: string): Desejo[] {
   // v016: todas as cost options já vêm marcadas; a situação usa a estimativa quando a conta fecha
   const moeda = String(raizOrcamento(s, frente).moeda || s.moeda?.cod || 'USD');
   return categoriasV16(s, frente).map(c => {
     const est = c.base ? estimativaV16(s, frente, c, moeda) : null;
-    return { caminho: prefixo + c.id, valor: { situacao: typeof est?.valor === 'number' ? 'referencia' : 'a_estimar', ...(c.opcoes.length ? { opcoes: c.opcoes } : {}) } };
+    // licenças por professor e por estudante no letramento: a estimativa fica disponível, mas só entra se a equipe escolher
+    // (com toda a rede, o preço genérico de licença dominaria o plano)
+    const auto = typeof est?.valor === 'number' && !LICENCAS_OPCIONAIS.includes(c.id);
+    return { caminho: prefixo + c.id, valor: { situacao: auto ? 'referencia' : 'a_estimar', ...(c.opcoes.length ? { opcoes: c.opcoes } : {}) } };
   });
 }
 function desejosLit(s: Estado): Desejo[] {

@@ -9,7 +9,7 @@ import { t } from '../percurso/textos';
 import { href } from '../percurso/rota';
 import { alterarLit } from '../percurso/letramento';
 import { alterarEd } from '../percurso/pedagogico';
-import { fasesV16, orcamentoV16, raizOrcamento, resumoFases, matrizFases, resumoProsa, riscosV16, totalConhecido, premissaDaBase, chavePremissa } from '../percurso/orcamentoV016';
+import { fasesV16, orcamentoV16, raizOrcamento, resumoFases, matrizFases, resumoProsa, riscosV16, totalConhecido, linhasMemoria, pidsDaBase, premissaV16, taxaV16, chavePremissa, type Base } from '../percurso/orcamentoV016';
 import { formatarMoedaEst, type FrenteEstimativa } from '../percurso/estimativasOrcamento';
 import { TabelaRecursos, type LinhaRecurso } from './TabelaRecursos';
 import './moldura.css';
@@ -50,10 +50,12 @@ export function OrcamentoV16({ s, frente, tentou }: { s: CasoStore; frente: Fren
     onOpcao: (r, on) => { const x = item(i.id), atual: string[] = Array.isArray(x.opcoes) ? x.opcoes : []; salvar(i.id, { ...x, opcoes: on ? [...atual.filter(v => v !== r), r] : atual.filter(v => v !== r) }); },
     fases: o.fases.map(f => ({ id: f.id, nome: f.nome, valor: typeof salvo[i.id]?.valores?.[f.id] === 'number' ? salvo[i.id].valores[f.id] : '' })),
     onValorFase: (fid, v) => { const x = item(i.id); salvar(i.id, { ...x, situacao: 'informado', valores: { ...(x.valores || {}), [fid]: v } }); },
-    quantidades: i.base ? (() => { const pr = premissaDaBase(i.base!), atual = raizOrcamento(s, frente).premissas?.[chavePremissa(pr.pid)];
-      return <div className="pv-premissa"><CampoNumero label={pr.rotulo} value={typeof atual === 'number' ? atual : ''} decimais placeholder={String(pr.padrao)}
-        hint={t('Vazio = valor de referência ({v}). Vale para todas as linhas desta frente que usam este valor.', { v: pr.padrao })}
-        onChange={v => gravarOrc(frente, 'premissas.' + chavePremissa(pr.pid), v === '' ? undefined : v)} /></div>; })() : undefined,
+    quantidades: i.base ? <div className="pv-premissa">{pidsDaBase(i.base as Base).map(pid => { const p = premissaV16(s, frente, pid, o.moeda), taxa = taxaV16(o.moeda, s);
+      const ref = taxa === null ? p.referenciaUSD : Math.round(p.referenciaUSD * taxa * 100) / 100, refTxt = formatarMoedaEst(ref, taxa === null ? 'USD' : o.moeda) + (o.moeda !== 'USD' && taxa !== null ? ' = ' + formatarMoedaEst(p.referenciaUSD, 'USD') : '');
+      const atual = p.equipe ? Math.round(((p.moedaValor === o.moeda ? p.valor : p.valorLocal) ?? p.valor) * 100) / 100 : '';
+      return <CampoNumero key={pid} label={taxa === null ? p.item + ' (US$)' : p.rotulo} value={atual} decimais placeholder={String(ref)}
+        hint={t('Vazio = referência genérica ({v}). Vale para todas as linhas desta frente que usam este valor.', { v: refTxt })}
+        onChange={v => gravarOrc(frente, 'premissas.' + chavePremissa(pid), v === '' ? undefined : { valor: v, moeda: taxa === null ? 'USD' : o.moeda })} />; })}</div> : undefined,
     onSituacao: id => salvar(i.id, { ...item(i.id), situacao: id }),
     onValor: v => salvar(i.id, { ...item(i.id), valor: v, situacao: 'informado' }),
     onDetalhe: v => salvar(i.id, { ...item(i.id), detalhe: v }),
@@ -86,7 +88,8 @@ export function ResumoV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativ
         <tfoot><tr><th scope="row">{t('Custo conhecido')}</th>{o.fases.map(f => <td key={f.id}>{formatarMoedaEst(f.informado + f.estimado, o.moeda)}</td>)}<td className="pv-matriz-total">{formatarMoedaEst(totalConhecido(o), o.moeda)}</td></tr></tfoot>
       </table>
     </div>
-    <p className="pv-matriz-nota"><span className="pv-matriz-est">{t('Em âmbar')}</span>: {t('estimativa de referência, ilustrativa')}. {t('"a levantar": ainda sem valor, fora do custo conhecido.')}</p>
+    <p className="pv-matriz-nota"><span className="pv-matriz-est">{t('Em âmbar')}</span>: {t('estimado (quantidades e valores unitários abaixo)')}. {t('"a levantar": ainda sem valor, fora do custo conhecido.')}</p>
+    {o.memoria.length ? <><h3 className="pv-resumo-sub">{t('O que está sendo custeado')}</h3><ul className="pv-resumo-riscos">{linhasMemoria(o).map(l => <li key={l}>{l}</li>)}</ul></> : null}
     <h3 className="pv-resumo-sub">{t('Riscos e condições')}</h3>
     <ul className="pv-resumo-riscos">{riscosV16(frente, o).map(r => <li key={r}>{r}</li>)}</ul>
   </section>;

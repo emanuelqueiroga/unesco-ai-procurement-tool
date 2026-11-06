@@ -21,6 +21,8 @@ export const PARAMETRO_FORMACAO = 'formacao.custoHora.programa';
 export const PARAMETRO_EQUIPE = 'sal.especialista_pedagogico';
 export const PARAMETRO_AVALIACAO = 'gov.avaliacaoExterna.ano1';
 export const PARAMETRO_LICENCA = 'saas.preco';
+export const PARAMETRO_CONECTIVIDADE = 'k1.conectividade';
+export const PARAMETRO_DISPOSITIVO = 'k1.dispositivo';
 
 /** Categorias com base de cálculo. As demais continuam sem estimativa: a ferramenta não inventa convenção. */
 export const BASES_ESTIMATIVA: Record<FrenteEstimativa, Record<string, Base>> = {
@@ -32,7 +34,7 @@ export const BASES_ESTIMATIVA: Record<FrenteEstimativa, Record<string, Base>> = 
 export const QUANTIDADES_ESTIMATIVA = {
   governanca: { base: 'govOrcamento.quantidades', campos: ['equipeFte', 'servidores', 'horasServidor'] },
   letramento: { base: 'orcamento.quantidades', campos: ['equipeFte'] },
-  educacao: { base: 'orcamento.quantidades', campos: ['equipeFte', 'profissionais', 'horasProfissional', 'usuarios'] },
+  educacao: { base: 'orcamento.quantidades', campos: ['equipeFte', 'profissionais', 'horasProfissional', 'usuarios', 'escolasSemConexao', 'dispositivos', 'escolasSemEletricidade'] },
 } as const;
 
 export interface QuantidadeConta { rotulo: string; valor: number; origem: string }

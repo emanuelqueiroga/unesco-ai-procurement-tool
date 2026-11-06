@@ -44,7 +44,7 @@ export const DIMENSOES_EDU = {
 
 /**
  * Categorias de custo. `desafio`: o desafio que ativa a categoria; `base`: a estimativa de referência disponível
- * (formacao, equipe, licenca); `opcoes`: as cost options, marcadas dentro da linha.
+ * (formacao, equipe, licenca, infra); `opcoes`: as cost options, marcadas dentro da linha.
  */
 export const CATEGORIAS = {
   governanca: [
@@ -61,18 +61,18 @@ export const CATEGORIAS = {
   letramento: [
     { id: 'l11', n: '1.1', desafio: 'A11', nome: 'Escala, duração e frequência da formação', base: 'formacao', opcoes: ['Número de professores a formar', 'Horas por curso', 'Número de cursos por professor', 'Frequência da formação', 'Duração e calendário', 'Frequência de reciclagem'] },
     { id: 'l12', n: '1.2', desafio: 'A11', nome: 'Entrega e implementação da formação', opcoes: ['Formação presencial', 'Formação online', 'Formação híbrida', 'Formação de formadores', 'Formação na escola'] },
-    { id: 'l13', n: '1.3', desafio: 'A11', nome: 'Recursos e plataformas de formação', opcoes: ['Plataformas digitais de formação', 'Ferramentas e licenças de IA para a formação', 'Materiais e recursos de formação', 'Ambientes práticos de experimentação com IA'] },
+    { id: 'l13', n: '1.3', desafio: 'A11', nome: 'Recursos e plataformas de formação', base: 'licenca', opcoes: ['Plataformas digitais de formação', 'Ferramentas e licenças de IA para a formação', 'Materiais e recursos de formação', 'Ambientes práticos de experimentação com IA'] },
     { id: 'l14', n: '1.4', desafio: 'A11', nome: 'Avaliação e certificação de competências docentes', opcoes: ['Avaliações de competências em IA', 'Certificação profissional', 'Credenciais digitais'] },
     { id: 'l15', n: '1.5', desafio: 'A11', nome: 'Desenvolvimento profissional contínuo e apoio', opcoes: ['Cursos de reciclagem', 'Comunidades de aprendizagem profissional', 'Mentoria e coaching', 'Apoio técnico e pedagógico'] },
     { id: 'l21', n: '2.1', desafio: 'A12', nome: 'Recursos de aprendizagem de letramento em IA', opcoes: ['Materiais adequados à idade', 'Atividades interativas de IA', 'Recursos educacionais abertos', 'Recursos multilíngues', 'Materiais acessíveis'] },
-    { id: 'l22', n: '2.2', desafio: 'A12', nome: 'Ferramentas e ambientes de aprendizagem', opcoes: ['Plataformas de aprendizagem de IA', 'Softwares e licenças educacionais de IA', 'Ferramentas práticas de experimentação com IA', 'Recursos offline e desplugados'] },
+    { id: 'l22', n: '2.2', desafio: 'A12', nome: 'Ferramentas e ambientes de aprendizagem', base: 'licenca', opcoes: ['Plataformas de aprendizagem de IA', 'Softwares e licenças educacionais de IA', 'Ferramentas práticas de experimentação com IA', 'Recursos offline e desplugados'] },
     { id: 'l23', n: '2.3', desafio: 'A12', nome: 'Engajamento, conscientização e avaliação dos estudantes', opcoes: ['Campanhas de conscientização sobre IA', 'Clubes de IA e atividades extracurriculares', 'Oficinas para estudantes', 'Competições e desafios de IA', 'Avaliações de letramento em IA'] },
     { id: 'l31', n: '3.1', desafio: 'A16', nome: 'Desenho e desenvolvimento curricular', opcoes: ['Marcos nacionais de currículo de IA', 'Objetivos de aprendizagem por série', 'Modelos de progressão de competências', 'Integração curricular entre disciplinas', 'Consultas às partes interessadas'] },
     { id: 'l32', n: '3.2', desafio: 'A16', nome: 'Conteúdo curricular e materiais de aprendizagem', opcoes: ['Livros didáticos e guias do professor', 'Recursos curriculares digitais', 'Contextualização e localização', 'Recursos educacionais abertos'] },
     { id: 'l33', n: '3.3', desafio: 'A16', nome: 'Implementação, expansão e manutenção do currículo', opcoes: ['Pilotos do currículo', 'Implementação nacional em etapas', 'Apoio à implementação nas escolas', 'Disseminação do currículo', 'Frequência de atualização do currículo'] },
   ],
   educacao: [
-    { id: 'e2', n: '2', nome: 'Infraestrutura', opcoes: ['Eletricidade', 'Conectividade', 'Largura de banda', 'Dispositivos'] },
+    { id: 'e2', n: '2', nome: 'Infraestrutura', base: 'infra', opcoes: ['Eletricidade', 'Conectividade', 'Largura de banda', 'Dispositivos'] },
     { id: 'e3', n: '3', nome: 'Formação docente', base: 'formacao', opcoes: [] },
     { id: 'e4', n: '4', nome: 'Recursos', base: 'licenca', opcoes: ['Plataformas', 'Ferramentas de IA'] },
   ],

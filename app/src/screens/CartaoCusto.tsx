@@ -22,8 +22,8 @@ export const TELA_RECURSOS: Record<FrenteEstimativa, string> = { governanca: 'go
 /** Telas, fora da de recursos, cujas respostas entram numa estimativa (participantes e horas do letramento). */
 const ALIMENTA: Partial<Record<FrenteEstimativa, Record<string, string[]>>> = {
   governanca: { 'gov-equipe': ['g31', 'g32'], 'gov-fases': ['g31', 'g32'] },
-  letramento: { 'lit-participantes': ['l11'], 'lit-fases': ['l11'] },
-  educacao: { 'ed-intervencao': ['e3', 'e4'], 'ed-fases': ['e3', 'e4'] },
+  letramento: { 'lit-participantes': ['l11', 'l13', 'l22'], 'lit-fases': ['l11', 'l13', 'l22'] },
+  educacao: { 'ed-intervencao': ['e2', 'e3', 'e4'], 'ed-fases': ['e2', 'e3', 'e4'] },
 };
 
 interface ItemCusto { id: string; nome: string; estimativa?: Estimativa | null }

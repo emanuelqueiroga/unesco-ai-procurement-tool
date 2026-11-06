@@ -26,7 +26,7 @@ function ConsolidadoV16(){
  return <section className="pv-consolidado" aria-labelledby="pv-consolidado-t">
   <h2 id="pv-consolidado-t">{t('Custo do plano (todas as frentes)')}</h2>
   {c.mesmaMoeda?<>
-   <p className="pv-consolidado-total">{formatarMoedaEst(c.conhecido,c.moeda)}<span>{c.faltam?t('custo conhecido · {n} itens a levantar',{n:c.faltam}):t('custo total')}</span></p>
+   <p className="pv-consolidado-total">{formatarMoedaEst(c.conhecido,c.moeda)}<span>{c.faltam===1?t('custo conhecido · 1 item a levantar'):c.faltam?t('custo conhecido · {n} itens a levantar',{n:c.faltam}):t('custo total')}</span></p>
    <dl className="pv-consolidado-lista"><div><dt>{t('Informado')}</dt><dd>{formatarMoedaEst(c.informado,c.moeda)}</dd></div><div><dt>{t('Estimado')}</dt><dd className="pv-matriz-est">{formatarMoedaEst(c.estimado,c.moeda)}</dd></div>{c.fases.map(f=><div key={f.id}><dt>{f.nome}</dt><dd>{formatarMoedaEst(f.valor,c.moeda)}</dd></div>)}</dl>
    <ul className="pv-consolidado-frentes">{c.frentes.map(f=><li key={f.id}><span>{f.titulo}</span><b>{formatarMoedaEst(totalConhecido(f.o),f.o.moeda)}</b></li>)}</ul>
   </>:<p>{t('As frentes usam moedas diferentes ({moedas}); os valores não são somados.',{moedas:c.moedas.join(', ')})}</p>}

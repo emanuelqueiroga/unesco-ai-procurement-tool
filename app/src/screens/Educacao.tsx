@@ -246,7 +246,10 @@ function QuantidadesEd({ s, id }: { s: CasoStore; id: string }) {
       sugerido={c === "usuarios" ? !lerEd(s, q(c)) && valor != null : ehSugerido(s, "educacao", q(c))} />
   );
   if (id === "ed-intervencao") return <><div className="pc-curto-numeros">{campo("profissionais", "Profissionais a formar")}{campo("horasProfissional", "Horas por profissional", true)}</div>
-    {usaIAEd(s) ? <div className="pc-curto-numeros">{campo("usuarios", E("Usuários da ferramenta", "Tool users"), false, lerEd(s, q("usuarios")) ?? usuariosSugeridosEd(s) ?? undefined)}</div> : null}</>;
+    {usaIAEd(s) ? <div className="pc-curto-numeros">{campo("usuarios", E("Usuários da ferramenta", "Tool users"), false, lerEd(s, q("usuarios")) ?? usuariosSugeridosEd(s) ?? undefined)}</div> : null}
+    <h3 className="pv-campo-titulo">{t("Infraestrutura")}</h3>
+    <div className="pc-curto-numeros">{campo("escolasSemConexao", "Escolas sem conexão adequada")}{campo("dispositivos", "Dispositivos necessários")}{campo("escolasSemEletricidade", "Escolas sem eletricidade")}</div>
+    <p className="pc-nota">{t("Conexão e dispositivos entram na estimativa da linha Infraestrutura. Eletricidade fica registrada e o custo, a levantar.")}</p></>;
   if (id === "ed-tecnologia") return <div className="pc-curto-numeros">{campo("usuarios", E("Usuários da ferramenta", "Tool users"), false, lerEd(s, q("usuarios")) ?? usuariosSugeridosEd(s) ?? undefined)}</div>;
   return null;
 }

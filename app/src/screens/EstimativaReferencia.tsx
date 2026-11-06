@@ -22,7 +22,7 @@ export function ContaEstimativa({ est }: { est: Estimativa }) {
     {c.periodo ? <span><b>{t('Duração das fases')}:</b> {c.periodo.rotulo}</span> : null}
     {c.parametros.map(p => <span className="pc-est-bloco" key={p.id}><b>{t('Parâmetro')}</b>
       <span>{t(p.item)}: {formatarMoedaEst(p.valor, p.moeda)} · {t('unidade: {u}', { u: t(p.unidade) })}</span>
-      <span>{t('Fonte')}: {t(p.fonte)} · {t('grau {g}', { g: p.grau })}{p.ano ? ' · ' + t('preços de {ano}', { ano: p.ano }) : ''}</span></span>)}
+      <span>{t('Fonte')}: {t(p.fonte)}{p.grau ? ' · ' + t('grau {g}', { g: p.grau }) : ''}{p.ano ? ' · ' + t('preços de {ano}', { ano: p.ano }) : ''}</span></span>)}
     <span>{c.nota}</span>
     <span><b>{t('Conversão de moeda')}:</b> {c.conversao
       ? t('1 US$ = {taxa} {moeda} ({fonte}{data}).', { taxa: numero(c.conversao.taxa), moeda: c.conversao.para, fonte: c.conversao.fonte, data: c.conversao.data ? ', ' + c.conversao.data : '' })

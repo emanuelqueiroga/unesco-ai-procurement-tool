@@ -101,12 +101,12 @@ function Participantes({ s }: { s: CasoStore }) {
       {escolha('publicos.A11.incluiLiderancas')}
       {lider ? <div className="pc-esc-nums">{numero('publicos.A11.liderancas', 'Número de diretores e coordenadores')}</div> : null}
       {escolha('oferta.modalidade')}
-      <p className="pc-nota">{t('A forma de entrega fica registrada no plano; a estimativa usa o mesmo custo por hora.')}</p>
+      <p className="pc-nota">{t('Os professores entram nas estimativas das linhas 1.1 (formação) e 1.3 (plataformas). A forma de entrega fica registrada no plano; a estimativa usa o mesmo custo por hora.')}</p>
     </section> : null}
     {pubs.includes('A12') ? <section className="pv-publico"><h2 className="pc-lit-campo-titulo">{t('Estudantes')}</h2>
       {escolha('publicos.A12.niveis')}
       <div className="pc-esc-nums">{numero('publicos.A12.participantes', 'Número de estudantes')}</div>
-      <p className="pc-nota">{t('O número de estudantes fica registrado como alcance; as linhas de estudantes não têm estimativa automática.')}</p>
+      <p className="pc-nota">{t('O número de estudantes entra na estimativa da linha 2.2 (ferramentas e ambientes de aprendizagem).')}</p>
     </section> : null}
   </div>;
 }

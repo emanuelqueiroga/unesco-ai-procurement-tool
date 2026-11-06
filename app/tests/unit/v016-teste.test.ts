@@ -95,13 +95,19 @@ describe('v016: correções da avaliação por agentes', () => {
     expect(fasesAtivas(S(), 'governanca').map(f => [f.id, f.meses, f.alcance])).toEqual([['piloto', 6, 10], ['implantacao', 12, 33]]);
   });
 
-  it('letramento: linhas de estudantes sem estimativa; formação soma as fases sem perder pessoas', () => {
+  it('letramento: 2.2 estima pelos estudantes e 2.3 segue sem estimativa; formação soma as fases sem perder pessoas', () => {
     S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11', 'A12']); S().responder('frenteAtiva', 'letramento');
     S().responder('letramento', alterarLit(S().ctx.letramento, 'publicos.A11.participantes', { valor: 50, situacao: 'informado' }));
     preencher('letramento');
     const o = orcamentoLetramento(S());
-    expect(o.itens.find(i => i.id === 'l22')!.estimativa).toBeNull();
+    expect(o.itens.find(i => i.id === 'l13')!.estimativa!.conta.quantidades[0].valor).toBe(50);
     expect(o.itens.find(i => i.id === 'l23')!.estimativa).toBeNull();
+    S().responder('letramento', alterarLit(S().ctx.letramento, 'publicos.A12.participantes', { valor: 1000, situacao: 'informado' }));
+    const l22 = orcamentoLetramento(S()).itens.find(i => i.id === 'l22')!.estimativa!;
+    // 1000 estudantes: 50 × 4 + 330 × 12 + 1000 × 12 meses de licença a US$ 9
+    expect(l22.valorUSD).toBe((50 * 4 + 330 * 12 + 1000 * 12) * 9);
+    // disponível, mas não entra sozinha no custo
+    expect(orcamentoLetramento(S()).itens.find(i => i.id === 'l22')!.estimado).toBeNull();
     const q = o.itens.find(i => i.id === 'l11')!.estimativa!.conta.quantidades.filter(x => /pessoas novas/.test(x.rotulo)).reduce((n, x) => n + x.valor, 0);
     expect(q).toBe(50);
   });
@@ -122,5 +128,37 @@ describe('v016: correções da avaliação por agentes', () => {
     const e = await decodificarCaso(await codificarCaso(S().estado()));
     expect(e.ctx.local).toBe('Secretaria X');
     expect(e.ctx.govOrcamento.quantidades).toEqual(S().ctx.govOrcamento.quantidades);
+  });
+
+  it('premissa na moeda do plano: conta direta na moeda local e o resumo diz que é valor da equipe', async () => {
+    const { premissaV16, riscosV16, linhasMemoria, taxaV16 } = await import('../../src/percurso/orcamentoV016');
+    S().setMoeda({ cod: 'BRL', taxa: '5.222334', taxaDe: 'BRL' });
+    S().responder('prioridades', ['governar']); S().responder('problemas', ['G23']); S().responder('frenteAtiva', 'governanca');
+    preencher('governanca');
+    S().responder('govOrcamento.moeda', 'BRL');
+    let o = orcamentoGovernanca(S()), g31 = o.itens.find(i => i.id === 'g31')!.estimativa!;
+    expect(taxaV16('BRL', S())).toBe(5.2223);
+    // referência em US$: o total é exatamente US$ total × taxa exibida (4 casas)
+    expect(g31.valor).toBe(Math.round(g31.valorUSD! * 5.2223 * 100) / 100);
+    expect(riscosV16('governanca', o)[0]).toMatch(/iguais para todos os países/);
+    S().responder('govOrcamento.premissas.sal_especialista_pedagogico', { valor: 120000, moeda: 'BRL' });
+    expect(premissaV16(S(), 'governanca', 'sal.especialista_pedagogico', 'BRL').equipe).toBe(true);
+    o = orcamentoGovernanca(S()); g31 = o.itens.find(i => i.id === 'g31')!.estimativa!;
+    const fte = S().ctx.govOrcamento.quantidades.equipeFte; const n = typeof fte === 'number' ? fte : fte.valor;
+    expect(g31.valor).toBe(Math.round(n * 28 / 12 * 120000 * 100) / 100);
+    expect(riscosV16('governanca', o)[0]).toMatch(/valores da equipe|informados pela equipe/);
+    expect(linhasMemoria(o).join(' ')).toMatch(/valor da equipe/);
+  });
+
+  it('educação: infraestrutura estima conexão e dispositivos; eletricidade vira risco', async () => {
+    const { riscosV16 } = await import('../../src/percurso/orcamentoV016');
+    const { alterarEd } = await import('../../src/percurso/pedagogico');
+    S().responder('prioridades', ['com']); S().responder('problemas', ['C32']); S().responder('frenteAtiva', 'educacao');
+    preencher('educacao');
+    for (const [c, v] of [['escolasSemConexao', 100], ['dispositivos', 1000], ['escolasSemEletricidade', 7]] as const) S().responder('educacao', alterarEd(S(), 'orcamento.quantidades.' + c, v));
+    const o = orcamentoEd(S()), e2 = o.itens.find(i => i.id === 'e2')!.estimativa!;
+    // conexão: 5 escolas × 4/12 + 33 × 12/12 + 100 × 12/12 anos × US$ 600; dispositivos: 1000 × US$ 300
+    expect(e2.valorUSD).toBe(Math.round(((5 * 4 / 12 + 33 + 100) * 600 + 1000 * 300) * 100) / 100);
+    expect(riscosV16('educacao', o as any).join(' ')).toMatch(/7 escolas sem eletricidade/);
   });
 });

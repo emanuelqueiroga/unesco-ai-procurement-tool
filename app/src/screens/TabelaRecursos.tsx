@@ -82,12 +82,12 @@ function Falta({ s, est, tela }: { s: CasoStore; est: Estimativa; tela: string }
 
 /** A conta em blocos; a fonte resumida em monoespaçada e o resto em "Ver a conta completa". */
 function ContaBlocos({ est }: { est: Estimativa }) {
-  const blocos = blocosConta(est.conta.calculo || ''), ultimo = blocos.length - 1, grau = est.conta.parametros[0]?.grau;
+  const blocos = blocosConta(est.conta.calculo || ''), ultimo = blocos.length - 1, ps = est.conta.parametros, equipe = ps.filter(p => !p.grau).length;
   const fechar = <button type="button" className="pc-est-fechar" onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))}>{t('Fechar')}</button>;
   return <div className="pc-rec-conta">
     <p className="pc-rec-blocos">{blocos.map((b, i) => <span key={i} className={b.op ? 'pc-rec-op' : i === ultimo ? 'pc-rec-bloco pc-rec-bloco--res' : 'pc-rec-bloco'}>{b.texto}</span>)}</p>
     <div className="pc-rec-conta-pe">
-      <span className="pc-rec-fonte">{grau ? t('Referência genérica, igual para todos os países (grau {g})', { g: grau }) : t('Valor informado pela equipe')}</span>
+      <span className="pc-rec-fonte">{!equipe ? t('Referência genérica, igual para todos os países') : equipe === ps.length ? t('Valor informado pela equipe') : t('Valores da equipe e referências genéricas')}</span>
       <span className="pc-est pc-rec-conta-completa"><Popover className="pc-est-popover" label={t('Ver a conta completa')} title={t('Como a estimativa foi calculada')} actions={fechar}><ContaEstimativa est={est} /></Popover></span>
     </div>
   </div>;

@@ -9,7 +9,7 @@ import { planoGovernanca } from '../percurso/governanca';
 import { planoLetramento } from '../percurso/letramento';
 import { planoEd } from '../percurso/pedagogico';
 import { estadoDaFrente, type FrenteId } from '../percurso/frentes';
-import { instituicaoV16, matrizFases, resumoProsa, riscosV16, totalConhecido, type orcamentoV16 } from '../percurso/orcamentoV016';
+import { instituicaoV16, linhasMemoria, matrizFases, resumoProsa, riscosV16, totalConhecido, type orcamentoV16 } from '../percurso/orcamentoV016';
 import { consolidadoV16 } from '../percurso/consolidadoV016';
 import { formatarMoedaEst, type FrenteEstimativa } from '../percurso/estimativasOrcamento';
 import { nomePais, paisDoCaso } from '../domain/pais.js';
@@ -71,7 +71,7 @@ function escritor(doc: any, cabecalho: string) {
     doc.text(pdfTxt(t('Custo conhecido')), M + 4, y);
     fases.forEach((f, i) => doc.text(pdfTxt(curta(f.informado + f.estimado, o.moeda)), M + colNome + colW * (i + 1) - 4, y, { align: 'right' }));
     doc.text(pdfTxt(curta(totalConhecido(o), o.moeda)), W - M - 4, y, { align: 'right' }); y += 14;
-    texto(t('* estimativa de referência, ilustrativa. "a levantar": ainda sem valor, fora do custo conhecido. Meses e alcance: {fases}.', { fases: o.fases.map(f => f.nome + ' ' + t('{n} meses', { n: f.meses })).join(' · ') }), 7.5, false, C.muted);
+    texto(t('* estimado (veja "O que está sendo custeado"). "a levantar": ainda sem valor, fora do custo conhecido. Meses e alcance acumulado: {fases}.', { fases: o.fases.map(f => f.nome + ' ' + t('{n} meses', { n: f.meses }) + ', ' + f.alcance + '%').join(' · ') }), 7.5, false, C.muted);
   };
   const rodape = (rotulo: string, data: string) => { const N = doc.getNumberOfPages(); for (let n = 1; n <= N; n++) { doc.setPage(n); doc.setDrawColor(...C.linha); doc.line(M, H - 47, W - M, H - 47); fonte(8, false, C.muted); doc.text(pdfTxt(rotulo + ' · ' + VERSAO_TESTE + ' · ' + data), M, H - 30); doc.text(n + ' / ' + N, W - M, H - 30, { align: 'right' }); } };
   return { cab, texto, titulo, lista, tabela, rodape, avancar: (n: number) => { y += n; } };
@@ -87,6 +87,7 @@ export async function gerarPDFFrenteV16(s: Estado14, opts: { frente: FrenteEstim
     w.cab(); w.texto(rotulo, 10, true, PDF_COR.muted); w.avancar(14); w.texto(p.titulo, 20, true); w.texto([inst, pais].filter(Boolean).join(' · ') || t('País a definir'), 12); w.avancar(6);
     w.titulo(t('Em resumo')); w.texto(resumoProsa(o), 10.5);
     w.titulo(t('Custo por categoria e fase')); w.tabela(o);
+    if (o.memoria.length) { w.titulo(t('O que está sendo custeado')); w.lista(linhasMemoria(o)); }
     w.titulo(t('Riscos e condições')); w.lista(riscosV16(opts.frente, o));
     w.titulo(t('Próximo passo')); w.texto(p.proxima, 10.5, true);
     if (opts.tipo === 'anexo') for (const b of p.blocos) { w.titulo(b.titulo, 12); for (const l of b.linhas) { w.texto(l.rotulo, 9, true); w.texto(l.valor, 9.5); w.avancar(3); } }
@@ -101,11 +102,11 @@ export async function gerarPDFPlanoV16(s: Estado14, opts: { data?: Date; fontes?
     w.cab(); w.texto(rotulo, 10, true, PDF_COR.muted); w.avancar(14); w.texto(t('Plano de IA na educação'), 20, true); w.texto([inst, pais].filter(Boolean).join(' · ') || t('País a definir'), 12); w.avancar(6);
     w.titulo(t('Em resumo'));
     if (c.mesmaMoeda) {
-      w.texto(t('Custo conhecido do plano: {total} ({inf} informado e {est} em estimativas de referência). {n} itens ainda sem valor.', { total: formatarMoedaEst(c.conhecido, c.moeda), inf: formatarMoedaEst(c.informado, c.moeda), est: formatarMoedaEst(c.estimado, c.moeda), n: c.faltam }), 10.5);
+      w.texto(t(c.faltam === 1 ? 'Custo conhecido do plano: {total} ({inf} informado e {est} estimado). 1 item ainda sem valor.' : c.faltam ? 'Custo conhecido do plano: {total} ({inf} informado e {est} estimado). {n} itens ainda sem valor.' : 'Custo do plano: {total} ({inf} informado e {est} estimado).', { total: formatarMoedaEst(c.conhecido, c.moeda), inf: formatarMoedaEst(c.informado, c.moeda), est: formatarMoedaEst(c.estimado, c.moeda), n: c.faltam }), 10.5);
       w.texto(t('Por fase: {fases}.', { fases: c.fases.map(f => f.nome + ' ' + formatarMoedaEst(f.valor, c.moeda)).join('; ') }), 10.5);
     } else w.texto(t('As frentes usam moedas diferentes ({moedas}); os valores não são somados.', { moedas: c.moedas.join(', ') }), 10.5);
-    w.lista(c.frentes.map(f => f.titulo + ': ' + formatarMoedaEst(totalConhecido(f.o), f.o.moeda) + (f.o.faltam ? ' · ' + t('{n} itens a levantar', { n: f.o.faltam }) : '')));
-    for (const f of c.frentes) { w.titulo(f.titulo); w.texto(resumoProsa(f.o), 9.5); w.avancar(4); w.tabela(f.o); }
+    w.lista(c.frentes.map(f => f.titulo + ': ' + formatarMoedaEst(totalConhecido(f.o), f.o.moeda) + (f.o.faltam ? ' · ' + (f.o.faltam === 1 ? t('1 item a levantar') : t('{n} itens a levantar', { n: f.o.faltam })) : '')));
+    for (const f of c.frentes) { w.titulo(f.titulo); w.texto(resumoProsa(f.o), 9.5); w.avancar(4); w.tabela(f.o); if (f.o.memoria?.length) { w.texto(t('O que está sendo custeado'), 9.5, true); w.lista(linhasMemoria(f.o)); } }
     w.titulo(t('Riscos e condições')); w.lista([...new Set(c.frentes.flatMap(f => riscosV16(f.id as FrenteEstimativa, f.o)))]);
     w.rodape(rotulo, (opts.data || new Date()).toISOString().slice(0, 10));
   });
