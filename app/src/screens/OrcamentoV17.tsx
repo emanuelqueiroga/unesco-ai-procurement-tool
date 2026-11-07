@@ -9,7 +9,7 @@ import { CampoNumero } from '../percurso/CampoNumero';
 import { LOC } from '../domain';
 import { t } from '../percurso/textos';
 import { href } from '../percurso/rota';
-import { orcamentoV16, raizOrcamento, resumoFases, categoriasEscolhidas, semFases, DURACAO_GOV_PADRAO, type CategoriaV16 } from '../percurso/orcamentoV016';
+import { orcamentoV16, raizOrcamento, resumoFases, categoriasEscolhidas, categoriaObrigatoria, todosObrigatorios, semFases, DURACAO_GOV_PADRAO, type CategoriaV16 } from '../percurso/orcamentoV016';
 import { TIPOS, ORDEM_TIPOS, chaveOpcao, ehParametro, PARAMETROS, type TipoCusto, type LinhaOpcao } from '../percurso/custosV017';
 import { alterarLit, lerLit, selecoesLit } from '../percurso/letramento';
 import { ehSugerido } from '../percurso/padroesTeste';
@@ -30,7 +30,8 @@ function porGrupo<T extends { grupo: string }>(lista: T[]): [string, T[]][] {
 export function CategoriasV17({ s, frente }: { s: CasoStore; frente: FrenteEstimativa }) {
   const o = orcamentoV16(s, frente), sel = categoriasEscolhidas(s, frente);
   const marcar = (id: string, on: boolean) => {
-    const atual = categoriasEscolhidas(useCaso.getState(), frente);
+    if (categoriaObrigatoria(frente, id)) return;
+    const atual = categoriasEscolhidas(useCaso.getState(), frente).filter(x => !categoriaObrigatoria(frente, x));
     gravarOrc(frente, 'moeda', o.moeda);
     gravarOrc(frente, 'categorias', on ? [...atual.filter(x => x !== id), id] : atual.filter(x => x !== id));
   };
@@ -39,7 +40,7 @@ export function CategoriasV17({ s, frente }: { s: CasoStore; frente: FrenteEstim
     {porGrupo(o.disponiveis).map(([grupo, cats]) => <section key={grupo} className="pv-v17-grupo">
       {grupo ? <h2 className="pv-v17-desafio">{grupo}</h2> : null}
       <OptionCardGroup className="pc-lit-opcoes" label={grupo || t('Categorias de custo')} type="checkbox">
-        {cats.map(c => <OptionCard key={c.id} name="categorias" value={c.id} type="checkbox" checked={sel.includes(c.id)} label={nomeCat(c)}
+        {cats.map(c => <OptionCard key={c.id} name="categorias" value={c.id} type="checkbox" checked={sel.includes(c.id)} disabled={categoriaObrigatoria(frente, c.id)} label={nomeCat(c)}
           subtext={c.opcoes.length ? t('{n} opções', { n: c.opcoes.length }) : undefined} onChange={(id, on) => marcar(id, on)} />)}
       </OptionCardGroup>
     </section>)}
@@ -63,7 +64,8 @@ export function OpcoesV17({ s, frente }: { s: CasoStore; frente: FrenteEstimativ
       {grupo ? <h2 className="pv-v17-desafio">{grupo}</h2> : null}
       {itens.map(i => <div key={i.id} className="pv-v17-cat">
         <div className="pv-v17-cat-cab"><h3 className="pv-v17-cat-nome">{nomeCat(i)}</h3><span className="pv-v17-cat-total">{i.valor === null ? '—' : fmt(i.valor)}</span></div>
-        {i.opcoes.length ? <OptionCardGroup className="pc-lit-opcoes" label={nomeCat(i)} type="checkbox">
+        {todosObrigatorios(frente, i.id) ? i.opcoes.map(r => <CampoParametro key={r} s={s} rotulo={r} titulo />)
+        : i.opcoes.length ? <OptionCardGroup className="pc-lit-opcoes" label={nomeCat(i)} type="checkbox">
           {i.opcoes.map(r => { const on = i.marcadas.includes(r), l = i.linhas.find(x => x.rotulo === r);
             return [<OptionCard key={r} name={'op-' + i.id} value={r} type="checkbox" checked={on} label={t(r)} onChange={(_v, v) => marcar(i, r, v)} />,
               on ? <div key={r + '-abre'} className="pv-v17-abre">{ehParametro(frente, i.id, r) ? <CampoParametro s={s} rotulo={r} /> : l ? <LinhaValor s={s} frente={frente} cat={i.id} l={l} moeda={o.moeda} /> : null}</div> : null]; })}
@@ -117,9 +119,10 @@ const valorLit = (v: any) => { const x = v && typeof v === 'object' ? v.valor : 
 const gravarLit = (caminho: string, valor: any) => { const st = useCaso.getState(); st.responder('letramento', alterarLit(st.ctx.letramento, caminho, valor)); };
 const numeroLit = (v: number | '') => ({ valor: v, situacao: 'informado', origem: 'informado' });
 /** Item da 1.1 marcado: o campo do parâmetro (no número de professores, também se inclui diretores e coordenadores). */
-function CampoParametro({ s, rotulo }: { s: CasoStore; rotulo: string }) {
+function CampoParametro({ s, rotulo, titulo }: { s: CasoStore; rotulo: string; titulo?: boolean }) {
   const p = PARAMETROS[rotulo], lider = selecoesLit(s, 'publicos.A11.incluiLiderancas');
   return <div className="pv-v17-linha" role="group" aria-label={t(rotulo)}>
+    {titulo ? <div className="pv-v17-linha-cab"><h4 className="pv-v17-op">{t(rotulo)}</h4></div> : null}
     <div className="pv-v17-campos">
       <CampoNumero label={t(p.rotulo)} value={valorLit(lerLit(s, p.campo))} decimais={p.decimais} suggested={ehSugerido(s, 'letramento', p.campo)} onChange={v => gravarLit(p.campo, numeroLit(v))} />
     </div>

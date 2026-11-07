@@ -12,6 +12,7 @@ import { gravarOrc } from '../../src/screens/OrcamentoV16';
 const S = () => useCaso.getState();
 const ids = () => telasAtivas(S()).map(t => t.id);
 const preencher = (f: 'letramento' | 'governanca' | 'educacao') => { for (let i = 0; i < 6; i++) { const w = escritasPadroes(S(), f); if (!w.length) return; S().preencher(w); } };
+const item = (o: { itens: any[] }, id: string) => o.itens.find(i => i.id === id)!;
 const custo = (f: 'letramento' | 'governanca', cat: string, op: string, v: Record<string, unknown>) => gravarOrc(f, 'itens.' + cat + '.custos.' + chaveOpcao(op), v);
 
 describe('v017: categorias → opções → valores', () => {
@@ -38,18 +39,18 @@ describe('v017: categorias → opções → valores', () => {
     preencher('letramento'); gravarOrc('letramento', 'moeda', 'USD');
     gravarOrc('letramento', 'categorias', ['l12']);
     let o = orcamentoLetramento(S());
-    expect(o.itens[0].marcadas).toEqual([]); expect(o.faltam).toBe(1); // categoria sem opção escolhida
+    expect(item(o, 'l12').marcadas).toEqual([]); expect(item(o, 'l12').pendentes).toBe(1); // categoria sem opção escolhida
     gravarOrc('letramento', 'itens.l12.opcoes', ['Formação presencial']);
     custo('letramento', 'l12', 'Formação presencial', { qtd: 1000 });
     o = orcamentoLetramento(S());
-    expect(o.itens[0].linhas[0].status).toBe('falta'); expect(o.itens[0].linhas[0].falta).toContain('horas por pessoa');
+    expect(item(o, 'l12').linhas[0].status).toBe('falta'); expect(item(o, 'l12').linhas[0].falta).toContain('horas por pessoa');
     custo('letramento', 'l12', 'Formação presencial', { qtd: 1000, horas: 20 });
-    o = orcamentoLetramento(S()); let l = o.itens[0].linhas[0];
+    o = orcamentoLetramento(S()); let l = item(o, 'l12').linhas[0];
     // 1000 pessoas, alcance 5% / 33% / 100%: 50, 280 e 670 pessoas novas × 20 h × US$ 12
     expect(l.status).toBe('referencia'); expect(l.porFase).toEqual({ piloto: 12000, implantacao: 67200, expansao: 160800 }); expect(l.total).toBe(240000);
-    expect(o.estimado).toBe(240000); expect(o.informado).toBe(0); expect(o.faltam).toBe(0);
+    expect(o.estimado).toBe(240000); expect(o.informado).toBe(0); expect(item(o, 'l12').pendentes).toBe(0);
     custo('letramento', 'l12', 'Formação presencial', { qtd: 1000, horas: 20, unit: 10 });
-    o = orcamentoLetramento(S()); l = o.itens[0].linhas[0];
+    o = orcamentoLetramento(S()); l = item(o, 'l12').linhas[0];
     expect(l.status).toBe('informado'); expect(l.total).toBe(200000); expect(o.informado).toBe(200000);
   });
 
@@ -80,7 +81,7 @@ describe('v017: categorias → opções → valores', () => {
     S().responder('letramento', alterarLit(S().ctx.letramento, 'publicos.A11.incluiLiderancas', { escolhas: ['sim'] }));
     S().responder('letramento', alterarLit(S().ctx.letramento, 'publicos.A11.liderancas', { valor: 200, situacao: 'informado' }));
     gravarOrc('letramento', 'categorias', ['l12']); gravarOrc('letramento', 'itens.l12.opcoes', ['Formação online']);
-    const l = orcamentoLetramento(S()).itens[0].linhas[0];
+    const l = item(orcamentoLetramento(S()), 'l12').linhas[0];
     expect(l.qtd).toBe(1000); expect(l.qtdSugerida).toBe(true);
   });
 
@@ -90,10 +91,10 @@ describe('v017: categorias → opções → valores', () => {
     gravarOrc('letramento', 'categorias', ['l22']);
     gravarOrc('letramento', 'itens.l22.opcoes', ['Plataformas de aprendizagem de IA']);
     custo('letramento', 'l22', 'Plataformas de aprendizagem de IA', { qtd: 1000 });
-    let l = orcamentoLetramento(S()).itens[0].linhas[0];
+    let l = item(orcamentoLetramento(S()), 'l22').linhas[0];
     expect(l.tipo).toBe('licenca'); expect(l.total).toBe((50 * 4 + 330 * 12 + 1000 * 12) * 9);
     custo('letramento', 'l22', 'Plataformas de aprendizagem de IA', { qtd: 1000, tipo: 'pessoa' });
-    l = orcamentoLetramento(S()).itens[0].linhas[0];
+    l = item(orcamentoLetramento(S()), 'l22').linhas[0];
     expect(l.status).toBe('falta'); expect(l.falta).toContain('custo por pessoa');
   });
 
@@ -106,13 +107,26 @@ describe('v017: categorias → opções → valores', () => {
     expect(orcamentoGovernanca(S()).itens[0].linhas[0].total).toBe(144000);
   });
 
-  it('1.1: os itens são parâmetros, não linhas de custo', () => {
+  it('categorias obrigatórias: 1.1–1.3, 2.1–2.2 e 3.1–3.2 do letramento entram sozinhas; governança não tem', () => {
+    S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11', 'A12', 'A16']); S().responder('frenteAtiva', 'letramento');
+    expect(orcamentoLetramento(S()).itens.map(i => i.id)).toEqual(['l11', 'l12', 'l13', 'l21', 'l22', 'l31', 'l32']);
+    gravarOrc('letramento', 'categorias', ['l14']);
+    expect(orcamentoLetramento(S()).itens.map(i => i.id)).toEqual(['l11', 'l12', 'l13', 'l14', 'l21', 'l22', 'l31', 'l32']);
+    S().responder('prioridades', ['governar']); S().responder('problemas', ['G21', 'G22', 'G23']); S().responder('frenteAtiva', 'governanca');
+    expect(orcamentoGovernanca(S()).itens).toEqual([]);
+  });
+
+  it('1.1: os 6 itens são parâmetros obrigatórios, sem linha de custo', async () => {
+    const { alterarLit } = await import('../../src/percurso/letramento');
     S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11']); S().responder('frenteAtiva', 'letramento');
-    preencher('letramento');
-    gravarOrc('letramento', 'categorias', ['l11']); gravarOrc('letramento', 'itens.l11.opcoes', ['Número de professores a formar', 'Horas por curso']);
-    const o = orcamentoLetramento(S());
-    expect(o.itens[0].parametros).toEqual(['Número de professores a formar', 'Horas por curso']);
-    expect(o.itens[0].linhas).toEqual([]);
+    const g = (c: string, v: number) => S().responder('letramento', alterarLit(S().ctx.letramento, c, { valor: v, situacao: 'informado' }));
+    let i = item(orcamentoLetramento(S()), 'l11');
+    expect(i.parametros).toHaveLength(6); expect(i.linhas).toEqual([]); expect(i.respondido).toBe(false);
+    g('publicos.A11.participantes', 800); g('publicos.A11.horas', 20); g('publicos.A11.cursos', 2);
+    g('orcamento.parametros.frequencia', 1); g('orcamento.parametros.duracao', 12);
+    expect(item(orcamentoLetramento(S()), 'l11').pendentes).toBe(1);
+    g('orcamento.parametros.reciclagem', 0);
+    i = item(orcamentoLetramento(S()), 'l11'); expect(i.pendentes).toBe(0); expect(i.respondido).toBe(true);
   });
 
   it('sem tela Valores: Opções só fica respondida com os valores; o plano mantém o bloco de valores', async () => {
@@ -120,7 +134,10 @@ describe('v017: categorias → opções → valores', () => {
     const { planoLetramento } = await import('../../src/percurso/letramento');
     S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11']); S().responder('frenteAtiva', 'letramento');
     preencher('letramento'); gravarOrc('letramento', 'moeda', 'USD');
-    gravarOrc('letramento', 'categorias', ['l12']); gravarOrc('letramento', 'itens.l12.opcoes', ['Formação presencial']);
+    gravarOrc('letramento', 'itens.l12.opcoes', ['Formação presencial']); gravarOrc('letramento', 'itens.l13.opcoes', ['Materiais e recursos de formação']);
+    custo('letramento', 'l13', 'Materiais e recursos de formação', { fases: { piloto: 100 } });
+    for (const [c, v] of [['publicos.A11.participantes', 800], ['publicos.A11.horas', 20], ['publicos.A11.cursos', 1], ['orcamento.parametros.frequencia', 1], ['orcamento.parametros.duracao', 12], ['orcamento.parametros.reciclagem', 0]] as const)
+      S().responder('letramento', (await import('../../src/percurso/letramento')).alterarLit(S().ctx.letramento, c, { valor: v, situacao: 'informado' }));
     const tela = telasAtivas(S()).find(t => t.id === 'lit-opcoes')!;
     expect(telaRespondida(S(), tela)).toBe(false);
     custo('letramento', 'l12', 'Formação presencial', { qtd: 1000, horas: 20 });

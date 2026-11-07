@@ -28,7 +28,7 @@ describe('v015: panorama, progresso e controles acessíveis',()=>{
  });
  it('o progresso de um desafio pertence somente à sua frente',()=>{
   S().responder('prioridades',todas);S().responder('problemas',['A11']);
-  expect(progressoFrente(S(),'letramento')).toMatchObject({feitas:1,estado:'andamento'});
+  expect(progressoFrente(S(),'letramento')).toMatchObject({feitas:2,estado:'andamento'}); // v017: Desafios e Categorias (1.1–1.3 entram sozinhas)
   expect(progressoFrente(S(),'governanca')).toMatchObject({feitas:0,estado:'nova'});
   expect(progressoFrente(S(),'educacao')).toMatchObject({feitas:0,estado:'nova'});
  });

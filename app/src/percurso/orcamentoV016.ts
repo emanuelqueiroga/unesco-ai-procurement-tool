@@ -5,7 +5,7 @@ import { CATEGORIAS, DIMENSOES_EDU, FASES_V016 } from '../domain/catalogo_v016.j
 import { LOC } from '../domain';
 import type { Estado14 } from '../store/tipos';
 import { t } from './textos';
-import { calcularOpcao, chaveOpcao, ehParametro, type LinhaOpcao } from './custosV017';
+import { calcularOpcao, chaveOpcao, ehParametro, PARAMETROS, type LinhaOpcao } from './custosV017';
 import { lerLit } from './letramento';
 import { chaveEd, lerEd, usaIAEd, usuariosIAEd } from './pedagogico';
 import { PROBLEMA_POR_ID } from '../domain/prioridades.js';
@@ -236,15 +236,34 @@ export interface ItemV16 {
   compartilhado: boolean; origem: any; pendentes: number;
 }
 /** Categorias escolhidas pela equipe (v017: nada vem marcado). */
+/** Categorias que entram sempre que o desafio é escolhido (pedido do especialista, 06/11): o plano não fica de pé
+ *  sem elas. A governança não tem categorias obrigatórias. */
+export const OBRIGATORIAS: Record<FrenteEstimativa, string[]> = {
+  governanca: [],
+  letramento: ['l11', 'l12', 'l13', 'l21', 'l22', 'l31', 'l32'],
+  educacao: ['e3', 'e4'],
+};
+export const categoriaObrigatoria = (f: FrenteEstimativa, id: string) => OBRIGATORIAS[f].includes(id);
+/** Categorias cujos itens são todos obrigatórios (vêm abertos, sem caixa de marcar): a 1.1 do letramento. */
+export const todosObrigatorios = (f: FrenteEstimativa, id: string) => f === 'letramento' && id === 'l11';
+/** Escolhidas pela equipe mais as obrigatórias dos desafios marcados. */
 export function categoriasEscolhidas(s: Estado, f: FrenteEstimativa): string[] {
   const sel: unknown = raizOrcamento(s, f).categorias;
-  return Array.isArray(sel) ? sel.filter((x): x is string => typeof x === 'string') : [];
+  const escolhidas = Array.isArray(sel) ? sel.filter((x): x is string => typeof x === 'string') : [];
+  const obrig = OBRIGATORIAS[f].length ? categoriasV16(s, f).map(c => c.id).filter(id => categoriaObrigatoria(f, id) && !escolhidas.includes(id)) : [];
+  return [...escolhidas, ...obrig];
+}
+/** Parâmetro da 1.1 preenchido: número de professores maior que zero; os demais, zero ou mais. */
+function parametroPreenchido(s: Estado, rotulo: string): boolean {
+  const v = lerLit(s, PARAMETROS[rotulo].campo), x = v && typeof v === 'object' ? (v.situacao === 'a_levantar' ? null : v.valor) : v;
+  return typeof x === 'number' && Number.isFinite(x) && (rotulo === 'Número de professores a formar' ? x > 0 : x >= 0);
 }
 /** Opções de uma categoria: as do catálogo, ou a própria categoria quando ela não tem opções. */
 export const opcoesDaCategoria = (c: CategoriaV16) => c.opcoes.length ? c.opcoes : [c.nome];
 /** Opções escolhidas de uma categoria; na categoria sem opções, a própria categoria conta como escolhida. */
 export function opcoesEscolhidas(s: Estado, f: FrenteEstimativa, c: CategoriaV16): string[] {
   if (!c.opcoes.length) return [c.nome];
+  if (todosObrigatorios(f, c.id)) return [...c.opcoes];
   const x = raizOrcamento(s, f).itens?.[c.id]?.opcoes;
   return Array.isArray(x) ? c.opcoes.filter(o => x.includes(o)) : [];
 }
@@ -260,7 +279,8 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
     const linhas = marcadas.filter(r => !ehParametro(f, c.id, r)).map(r => calcularOpcao(s, f, c.id, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num));
     const inf = linhas.filter(l => l.status === 'informado'), est = linhas.filter(l => l.status === 'referencia');
     const informadoCat = centavos(inf.reduce((n, l) => n + (l.total as number), 0)), estimadoCat = centavos(est.reduce((n, l) => n + (l.total as number), 0));
-    const pendentes = linhas.filter(l => l.status === 'falta').length + (marcadas.length ? 0 : 1);
+    const pendentes = linhas.filter(l => l.status === 'falta').length + (marcadas.length ? 0 : 1)
+      + (todosObrigatorios(f, c.id) ? parametros.filter(r => !parametroPreenchido(s, r)).length : 0);
     const valor = inf.length + est.length ? centavos(informadoCat + estimadoCat) : null;
     return { ...c, nome: t(c.nome), marcadas, linhas, parametros, valor, informadoCat, estimadoCat, valores: {}, situacao: '', detalhe: String(x.detalhe || ''),
       estimativa: null, referencia: est.length > 0, emReferencia: est.length > 0, estimado: est.length ? estimadoCat : null,
