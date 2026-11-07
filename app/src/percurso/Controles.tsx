@@ -1136,7 +1136,7 @@ export function ControlesTela({ e, tela }: { e: Estado14; tela: TelaEssencial })
     case 'formados': return <Formacao e={e} />;
     case 'implantacao': return <Implantacao e={e} />;
     case 'elegiveis': return <><Numero e={e} campo="elegiveis" rotulo={t('Pessoas em toda a rede')} /><NotaPremissa e={e} campo="elegiveis" /></>;
-    case 'local': return <><Pais semNota={temGovernanca(e.ctx)} /><Texto e={e} campo="local" rotulo={t('Instituição responsável (ex.: Secretaria Municipal de Educação de …)')} /></>;
+    case 'local': return <><Pais semNota={temGovernanca(e.ctx)} sugerir /><Texto e={e} campo="local" rotulo={t('Instituição responsável (ex.: Secretaria Municipal de Educação de …)')} /></>;
     default: return <Fragment>{tela.campos.map((c) => <ControleCampo key={c} e={e} campo={c} />)}</Fragment>;
   }
 }

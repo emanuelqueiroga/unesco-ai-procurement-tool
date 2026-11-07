@@ -1,12 +1,13 @@
 // v015: país do planejamento nacional, com catálogo completo e instituição opcional na mesma tela.
 // Identidade do país independe da existência de dados locais. A política anterior de moeda e referências é preservada.
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { TextField } from '../ui';
 import { notaPais, paisesOrdenados, nomeMoeda, tr, LOC, OUTRO_PAIS } from '../domain';
 import { useCaso } from '../store';
 import { confirmar, avisar } from '../screens/Confirmar';
 import { taxaReferencia } from '../screens/refinar/calc';
 import { t } from './textos';
+import { paisDoNavegador } from './paisLocal';
 import '../screens/refinar.css';
 import '../screens/refinar/referencias.css';
 
@@ -26,7 +27,10 @@ export function textoNotaPais(pais: string): string {
   return partes.filter(Boolean).join(' ');
 }
 
-export function Pais({ semNota }: { semNota?: boolean }) {
+/** Sugestão pelo fuso horário: no máximo uma vez por carregamento da página. */
+let jaSugerido = false;
+
+export function Pais({ semNota, sugerir }: { semNota?: boolean; sugerir?: boolean }) {
   const pais = useCaso((s) => String(s.caso.pais || ''));
   const nEditados = useCaso((s) => Object.keys(s.caso.editados || {}).length);
   const escolherPais = useCaso((s) => s.escolherPais);
@@ -48,6 +52,15 @@ export function Pais({ semNota }: { semNota?: boolean }) {
     const r = escolherPais(v);
     if (r.moeda) avisar(t('Moeda ajustada para') + ' ' + r.moeda + '.');
   };
+  // Campo vazio na tela de local: vem com o país do fuso horário do navegador (ou da região do idioma); nunca troca
+  // um país já escolhido ou salvo.
+  useEffect(() => {
+    if (!sugerir || pais || jaSugerido) return;
+    jaSugerido = true;
+    const i2 = paisDoNavegador(new Set(todos.map((p: any) => p.iso2).filter(Boolean)));
+    const p = i2 ? todos.find((x: any) => x.iso2 === i2) : null;
+    if (p) void mudar(p.iso3);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="rf-pais">
       <p className="pc-nota">{t('Planejamento no nível do país.')}</p>
