@@ -45,8 +45,8 @@ export const digitalLit = (s: Estado) => ['online','hibrida'].some(id => inclui(
 /** Versão de teste: Participantes (com públicos) · Orçamento. Currículo não tem tela: vira uma linha do orçamento. */
 export function telasLetramento(s: Estado): string[] {
  const pubs = publicosLetramento(s).map(p => p.id);
- // v017: Públicos (quem e quantos) → categorias → opções → fases e valores
- return ['local','prioridades','problemas',...(pubs.length ? ['lit-participantes'] : []),'lit-categorias','lit-opcoes','lit-fases','lit-recursos'];
+ void pubs; // v017: os números de professores e estudantes abrem nas opções (1.1 e grupo de estudantes)
+ return ['local','prioridades','problemas','lit-categorias','lit-fases','lit-recursos'];
 }
 /** Campos do fluxo de teste. Os demais (diagnóstico, desenho, oferta, ações, revisão, público elegível, total distinto…)
  *  continuam guardados no caso, fora das telas, das pendências, do progresso e dos relatórios. */

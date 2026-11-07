@@ -89,12 +89,13 @@ describe('v016: correções da avaliação por agentes', () => {
   beforeEach(() => { setLang('pt'); S().setMoeda({ cod: 'USD', taxa: '', taxaDe: '' }); S().carregarExemplo('novo'); S().escolherPais('BRA'); });
 
   it('fases editadas não voltam ao padrão com o pré-preenchimento', () => {
-    S().responder('prioridades', ['governar']); S().responder('problemas', ['G23']); S().responder('frenteAtiva', 'governanca');
-    preencher('governanca');
-    S().responder('govOrcamento.fases.piloto', { on: true, meses: 6, alcance: 10 });
-    S().responder('govOrcamento.fases.expansao', { on: false, meses: 12, alcance: 100 });
-    preencher('governanca');
-    expect(fasesAtivas(S(), 'governanca').map(f => [f.id, f.meses, f.alcance])).toEqual([['piloto', 6, 10], ['implantacao', 12, 33]]);
+    // v017: a governança não tem fases; o teste usa o letramento
+    S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11']); S().responder('frenteAtiva', 'letramento');
+    preencher('letramento');
+    S().responder('letramento', alterarLit(S().ctx.letramento, 'orcamento.fases.piloto', { on: true, meses: 6, alcance: 10 }));
+    S().responder('letramento', alterarLit(S().ctx.letramento, 'orcamento.fases.expansao', { on: false, meses: 12, alcance: 100 }));
+    preencher('letramento');
+    expect(fasesAtivas(S(), 'letramento').map(f => [f.id, f.meses, f.alcance])).toEqual([['piloto', 6, 10], ['implantacao', 12, 33]]);
   });
 
   it.skip('letramento: 2.2 estima pelos estudantes e 2.3 segue sem estimativa; formação soma as fases sem perder pessoas', () => {

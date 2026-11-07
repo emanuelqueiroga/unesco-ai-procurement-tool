@@ -62,8 +62,8 @@ describe('v015: panorama, progresso e controles acessíveis',()=>{
   const html=renderToString(<ProgressoPergunta s={S()} n={2} id="lit-categorias"/>);
   expect(html).toMatch(/Pergunta \d+ de \d+/);expect(html).not.toContain('Etapa');
   const etapas=etapasDaFrente(S(),{capitulo:2,tela:'lit-categorias'});
-  // v017: Contexto · Categorias · Opções · Fases e valores
-  expect(etapas.map(e=>e.label)).toEqual(['Contexto','Categorias','Opções','Fases e valores']);
+  // v017: Contexto · Categorias · Fases · Opções e valores
+  expect(etapas.map(e=>e.label)).toEqual(['Contexto','Categorias','Fases','Opções e valores']);
   expect(etapas.find(e=>e.state==='current')).toMatchObject({n:2}); // Participantes agora tem Escolas e etapas + Participantes
  });
  it('associa o erro ao grupo e aos controles que recebem foco',()=>{

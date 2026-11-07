@@ -17,11 +17,11 @@ const custo = (f: 'letramento' | 'governanca', cat: string, op: string, v: Recor
 describe('v017: categorias → opções → valores', () => {
   beforeEach(() => { setLang('pt'); S().setMoeda({ cod: 'USD', taxa: '', taxaDe: '' }); S().carregarExemplo('novo'); S().escolherPais('BRA'); });
 
-  it('as etapas visíveis são Categorias, Opções, Fases e valores', () => {
+  it('as etapas visíveis: Categorias, Fases (só letramento e educação), Opções e valores', () => {
     S().responder('prioridades', ['governar']); S().responder('problemas', ['G21', 'G23']); S().responder('frenteAtiva', 'governanca');
-    expect(ids()).toEqual(['local', 'prioridades', 'problemas', 'gov-categorias', 'gov-opcoes', 'gov-fases', 'gov-recursos']);
+    expect(ids()).toEqual(['local', 'prioridades', 'problemas', 'gov-categorias', 'gov-recursos']); // governança sem fases
     S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11']); S().responder('frenteAtiva', 'letramento');
-    expect(ids()).toEqual(['local', 'prioridades', 'problemas', 'lit-participantes', 'lit-categorias', 'lit-opcoes', 'lit-fases', 'lit-recursos']);
+    expect(ids()).toEqual(['local', 'prioridades', 'problemas', 'lit-categorias', 'lit-fases', 'lit-recursos']);
   });
 
   it('nada vem marcado: sem categoria escolhida não há custo e falta 1 item', () => {
@@ -33,9 +33,11 @@ describe('v017: categorias → opções → valores', () => {
     expect(resumoProsa(o)).toMatch(/Nenhuma categoria/);
   });
 
-  it('formação presencial: pessoas × horas × custo por hora, por fase; trocar o custo por hora vira valor informado', () => {
+  it('formação presencial: pessoas × horas × custo por hora, por fase; trocar o custo por hora vira valor informado', async () => {
     S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11']); S().responder('frenteAtiva', 'letramento');
     preencher('letramento'); gravarOrc('letramento', 'moeda', 'USD');
+    const { alterarLit: alt } = await import('../../src/percurso/letramento');
+    S().responder('letramento', alt(S().ctx.letramento, 'publicos.A11.horas', { valor: '', situacao: 'informado' })); // sem horas da 1.1
     gravarOrc('letramento', 'categorias', ['l12']);
     let o = orcamentoLetramento(S());
     expect(o.itens[0].marcadas).toEqual([]); expect(o.faltam).toBe(1); // categoria sem opção escolhida
@@ -59,17 +61,19 @@ describe('v017: categorias → opções → valores', () => {
     gravarOrc('governanca', 'categorias', ['g11', 'g31', 'g32']);
     gravarOrc('governanca', 'itens.g11.opcoes', ['Proteção de dados pessoais e privacidade']);
     gravarOrc('governanca', 'itens.g31.opcoes', ['Especialistas em IA e educação']);
-    custo('governanca', 'g11', 'Proteção de dados pessoais e privacidade', { fases: { piloto: 1000, implantacao: 5000 } });
+    custo('governanca', 'g11', 'Proteção de dados pessoais e privacidade', { fases: { total: 6000 } });
     custo('governanca', 'g31', 'Especialistas em IA e educação', { qtd: 2 });
     const o = orcamentoGovernanca(S()), [g11, g31, g32] = o.itens;
     expect(g11.linhas[0]).toMatchObject({ tipo: 'fechado', status: 'informado', total: 6000 });
-    // 2 pessoas × (4 + 12 + 12) / 12 × US$ 36.000
-    expect(g31.linhas[0]).toMatchObject({ tipo: 'equipe', status: 'referencia', total: 168000 });
+    // governança sem fases: 2 pessoas × 12 meses / 12 × US$ 36.000
+    expect(g31.linhas[0]).toMatchObject({ tipo: 'equipe', status: 'referencia', total: 72000 });
     expect(g32.marcadas).toEqual(['Formação e desenvolvimento profissional']); expect(g32.linhas[0].tipo).toBe('formacao');
     expect(o.faltam).toBe(1); // g32 sem quantidades
     const m = matrizFases(o);
     expect(m.filter(r => r.nivel === 0).map(r => r.id)).toEqual(['g11', 'g31', 'g32']);
-    expect(m.find(r => r.id === 'g11')!.porFase).toEqual({ piloto: 1000, implantacao: 5000, expansao: 0 });
+    expect(m.find(r => r.id === 'g11')!.porFase).toEqual({ total: 6000 });
+    gravarOrc('governanca', 'duracao', 24);
+    expect(orcamentoGovernanca(S()).itens[1].linhas[0].total).toBe(144000);
   });
 
   it('Públicos: professores + diretores e coordenadores viram a quantidade sugerida da formação', async () => {
@@ -82,6 +86,20 @@ describe('v017: categorias → opções → valores', () => {
     gravarOrc('letramento', 'categorias', ['l12']); gravarOrc('letramento', 'itens.l12.opcoes', ['Formação online']);
     const l = orcamentoLetramento(S()).itens[0].linhas[0];
     expect(l.qtd).toBe(1000); expect(l.qtdSugerida).toBe(true);
+  });
+
+  it('1.1: itens marcados são parâmetros (sem linha de custo) e alimentam pessoas e horas da 1.2', async () => {
+    const { alterarLit } = await import('../../src/percurso/letramento');
+    S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11']); S().responder('frenteAtiva', 'letramento');
+    preencher('letramento'); gravarOrc('letramento', 'moeda', 'USD');
+    gravarOrc('letramento', 'categorias', ['l11', 'l12']);
+    gravarOrc('letramento', 'itens.l11.opcoes', ['Número de professores a formar', 'Horas por curso', 'Número de cursos por professor']);
+    for (const [c, v] of [['publicos.A11.participantes', 500], ['publicos.A11.horas', 10], ['publicos.A11.cursos', 2]] as const) S().responder('letramento', alterarLit(S().ctx.letramento, c, { valor: v, situacao: 'informado' }));
+    gravarOrc('letramento', 'itens.l12.opcoes', ['Formação presencial']);
+    const o = orcamentoLetramento(S()), [l11, l12] = o.itens;
+    expect(l11.linhas).toEqual([]); expect(l11.parametros).toHaveLength(3); expect(l11.respondido).toBe(true);
+    expect(l12.linhas[0]).toMatchObject({ qtd: 500, horas: 20, horasSugerida: true, total: 500 * 20 * 12 });
+    expect(matrizFases(o).some(r => r.id === 'l11')).toBe(false);
   });
 
   it('trocar o tipo de custo: sem referência, falta o valor unitário', () => {

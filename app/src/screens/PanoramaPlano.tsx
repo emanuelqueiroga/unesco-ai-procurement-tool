@@ -28,6 +28,7 @@ function ConsolidadoV16(){
   {c.mesmaMoeda?<>
    <p className="pv-consolidado-total">{formatarMoedaEst(c.conhecido,c.moeda)}<span>{c.faltam===1?t('custo conhecido · 1 item sem valor'):c.faltam?t('custo conhecido · {n} itens sem valor',{n:c.faltam}):t('custo total')}</span></p>
    <dl className="pv-consolidado-lista"><div><dt>{t('Informado')}</dt><dd>{formatarMoedaEst(c.informado,c.moeda)}</dd></div><div><dt>{t('Estimado')}</dt><dd className="pv-matriz-est">{formatarMoedaEst(c.estimado,c.moeda)}</dd></div>{c.fases.map(f=><div key={f.id}><dt>{f.nome}</dt><dd>{formatarMoedaEst(f.valor,c.moeda)}</dd></div>)}</dl>
+   {c.frentes.some(f=>f.id==='governanca')&&c.fases.length?<p className="pc-nota">{t('A governança não tem fases: entra só no total.')}</p>:null}
    <ul className="pv-consolidado-frentes">{c.frentes.map(f=><li key={f.id}><span>{f.titulo}</span><b>{formatarMoedaEst(totalConhecido(f.o),f.o.moeda)}</b></li>)}</ul>
   </>:<p>{t('As frentes usam moedas diferentes ({moedas}); os valores não são somados.',{moedas:c.moedas.join(', ')})}</p>}
   <div className="pc-botoes"><Button disabled={ocupado} onClick={()=>void baixar()}>{t('Resumo do plano completo (PDF)')}</Button></div>{erro?<p role="alert">{erro}</p>:null}

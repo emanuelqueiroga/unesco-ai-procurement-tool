@@ -51,7 +51,7 @@ function escritor(doc: any, cabecalho: string) {
   const titulo = (s: string, n = 13) => { cabe(n * 3); y += 8; texto(s, n, true, C.titulo); y += 2; };
   const lista = (itens: string[]) => { for (const i of itens) { cabe(14); fonte(10); doc.text('•', M, y); const yy = y; texto(i, 10, false, undefined, W - M * 2 - 12, M + 12); if (y === yy) y += 14; } };
   const tabela = (o: Orc) => {
-    const linhas = matrizFases(o), fases = o.fases, colNome = 190, colW = (W - M * 2 - colNome) / (fases.length + 1);
+    const linhas = matrizFases(o), fases = o.fases.length === 1 && o.fases[0].id === 'total' ? [] : o.fases, colNome = 190, colW = (W - M * 2 - colNome) / (fases.length + 1);
     const linhaCab = () => { cabe(24); doc.setFillColor(...C.cab); doc.rect(M, y - 11, W - M * 2, 18, 'F'); fonte(8, true);
       doc.text(pdfTxt(t('Categoria')), M + 4, y); fases.forEach((f, i) => doc.text(pdfTxt(f.nome), M + colNome + colW * (i + 1) - 4, y, { align: 'right' }));
       doc.text(pdfTxt(t('Total')), W - M - 4, y, { align: 'right' }); y += 14; };
@@ -72,7 +72,7 @@ function escritor(doc: any, cabecalho: string) {
     doc.text(pdfTxt(t('Custo conhecido')), M + 4, y);
     fases.forEach((f, i) => doc.text(pdfTxt(curta(f.informado + f.estimado, o.moeda)), M + colNome + colW * (i + 1) - 4, y, { align: 'right' }));
     doc.text(pdfTxt(curta(totalConhecido(o), o.moeda)), W - M - 4, y, { align: 'right' }); y += 14;
-    texto(t('* estimado (veja "O que está sendo custeado"). "falta valor": ainda sem valor, fora do custo conhecido. Meses e alcance acumulado: {fases}.', { fases: o.fases.map(f => f.nome + ' ' + t('{n} meses', { n: f.meses }) + ', ' + f.alcance + '%').join(' · ') }), 7.5, false, C.muted);
+    texto(fases.length ? t('* estimado (veja "O que está sendo custeado"). "falta valor": ainda sem valor, fora do custo conhecido. Meses e alcance acumulado: {fases}.', { fases: o.fases.map(f => f.nome + ' ' + t('{n} meses', { n: f.meses }) + ', ' + f.alcance + '%').join(' · ') }) : t('* estimado (veja "O que está sendo custeado"). "falta valor": ainda sem valor, fora do custo conhecido. Duração: {n} meses.', { n: o.fases[0]?.meses || 0 }), 7.5, false, C.muted);
   };
   const rodape = (rotulo: string, data: string) => { const N = doc.getNumberOfPages(); for (let n = 1; n <= N; n++) { doc.setPage(n); doc.setDrawColor(...C.linha); doc.line(M, H - 47, W - M, H - 47); fonte(8, false, C.muted); doc.text(pdfTxt(rotulo + ' · ' + VERSAO_TESTE + ' · ' + data), M, H - 30); doc.text(n + ' / ' + N, W - M, H - 30, { align: 'right' }); } };
   return { cab, texto, titulo, lista, tabela, rodape, avancar: (n: number) => { y += n; } };
@@ -104,7 +104,7 @@ export async function gerarPDFPlanoV16(s: Estado14, opts: { data?: Date; fontes?
     w.titulo(t('Em resumo'));
     if (c.mesmaMoeda) {
       w.texto(t(c.faltam === 1 ? 'Custo conhecido do plano: {total} ({inf} informado e {est} estimado). 1 item ainda sem valor.' : c.faltam ? 'Custo conhecido do plano: {total} ({inf} informado e {est} estimado). {n} itens ainda sem valor.' : 'Custo do plano: {total} ({inf} informado e {est} estimado).', { total: formatarMoedaEst(c.conhecido, c.moeda), inf: formatarMoedaEst(c.informado, c.moeda), est: formatarMoedaEst(c.estimado, c.moeda), n: c.faltam }), 10.5);
-      w.texto(t('Por fase: {fases}.', { fases: c.fases.map(f => f.nome + ' ' + formatarMoedaEst(f.valor, c.moeda)).join('; ') }), 10.5);
+      w.texto(t('Por fase: {fases}.', { fases: c.fases.map(f => f.nome + ' ' + formatarMoedaEst(f.valor, c.moeda)).join('; ') }) + (c.frentes.some(f => f.id === 'governanca') ? ' ' + t('A governança não tem fases: entra só no total.') : ''), 10.5);
     } else w.texto(t('As frentes usam moedas diferentes ({moedas}); os valores não são somados.', { moedas: c.moedas.join(', ') }), 10.5);
     w.lista(c.frentes.map(f => f.titulo + ': ' + formatarMoedaEst(totalConhecido(f.o), f.o.moeda) + (f.o.faltam ? ' · ' + (f.o.faltam === 1 ? t('1 item sem valor') : t('{n} itens sem valor', { n: f.o.faltam })) : '')));
     for (const f of c.frentes) { w.titulo(f.titulo); w.texto(resumoProsa(f.o), 9.5); w.avancar(4); w.tabela(f.o); if (f.o.memoria?.length) { w.texto(t('O que está sendo custeado'), 9.5, true); w.lista(linhasMemoria(f.o)); } }

@@ -75,7 +75,7 @@ export function OrcamentoV16({ s, frente, tentou }: { s: CasoStore; frente: Fren
 
 /** Resumo da frente: "Em resumo" e a tabela categoria × fase (mesma conta do cartão e dos PDFs). */
 export function ResumoV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativa }) {
-  const o = orcamentoV16(s, frente), linhas = matrizFases(o);
+  const o = orcamentoV16(s, frente), linhas = matrizFases(o), fasesCol = o.fases.length === 1 && o.fases[0].id === 'total' ? [] : o.fases;
   const val = (v: number | null, tipo: string) => v === null ? (tipo === 'a_levantar' ? t('falta valor') : '—') : formatarMoedaEst(v, o.moeda);
   return <section className="pv-resumo" aria-labelledby={'pv-resumo-' + frente}>
     <h2 id={'pv-resumo-' + frente} className="pv-resumo-titulo">{t('Em resumo')}</h2>
@@ -83,9 +83,9 @@ export function ResumoV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativ
     <div className="pv-matriz-rolagem" tabIndex={0} role="region" aria-label={t('Custo por categoria e fase')}>
       <table className="pv-matriz">
         <caption>{t('Custo por categoria e fase')}</caption>
-        <thead><tr><th scope="col">{t('Categoria')}</th>{o.fases.map(f => <th scope="col" key={f.id}>{f.nome}<span className="pv-matriz-sub">{t('{n} meses', { n: f.meses })} · {f.alcance}%</span></th>)}<th scope="col">{t('Total')}</th></tr></thead>
-        <tbody>{linhas.map(l => <tr key={l.id} className={'pv-matriz--' + l.tipo + (l.nivel ? ' pv-matriz--opcao' : '')}><th scope="row">{(l.n ? l.n + ' ' : '') + l.nome}</th>{o.fases.map(f => <td key={f.id}>{val(l.porFase[f.id], l.tipo)}</td>)}<td className="pv-matriz-total">{val(l.total, l.tipo)}</td></tr>)}</tbody>
-        <tfoot><tr><th scope="row">{t('Custo conhecido')}</th>{o.fases.map(f => <td key={f.id}>{formatarMoedaEst(f.informado + f.estimado, o.moeda)}</td>)}<td className="pv-matriz-total">{formatarMoedaEst(totalConhecido(o), o.moeda)}</td></tr></tfoot>
+        <thead><tr><th scope="col">{t('Categoria')}</th>{fasesCol.map(f => <th scope="col" key={f.id}>{f.nome}<span className="pv-matriz-sub">{t('{n} meses', { n: f.meses })} · {f.alcance}%</span></th>)}<th scope="col">{t('Total')}</th></tr></thead>
+        <tbody>{linhas.map(l => <tr key={l.id} className={'pv-matriz--' + l.tipo + (l.nivel ? ' pv-matriz--opcao' : '')}><th scope="row">{(l.n ? l.n + ' ' : '') + l.nome}</th>{fasesCol.map(f => <td key={f.id}>{val(l.porFase[f.id], l.tipo)}</td>)}<td className="pv-matriz-total">{val(l.total, l.tipo)}</td></tr>)}</tbody>
+        <tfoot><tr><th scope="row">{t('Custo conhecido')}</th>{fasesCol.map(f => <td key={f.id}>{formatarMoedaEst(f.informado + f.estimado, o.moeda)}</td>)}<td className="pv-matriz-total">{formatarMoedaEst(totalConhecido(o), o.moeda)}</td></tr></tfoot>
       </table>
     </div>
     <p className="pv-matriz-nota"><span className="pv-matriz-est">{t('Em âmbar')}</span>: {t('estimado (quantidades e valores unitários abaixo)')}. {t('"falta valor": ainda sem valor, fora do custo conhecido.')}</p>

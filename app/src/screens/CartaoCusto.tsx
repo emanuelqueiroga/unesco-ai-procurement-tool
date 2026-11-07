@@ -103,7 +103,7 @@ export function CartaoCustoFrente({ d, compacto = false }: { d: DadosCusto; comp
       <dt><i className="pc-custo-marca pc-custo-marca--lev" aria-hidden="true" />{t('Falta valor')}</dt>
       <dd>{itens(d.faltam)}</dd>
     </dl>}
-    {!compacto && d.fases?.length ? <dl className="pc-custo-fases" aria-label={t('Custo por fase')}>{d.fases.map(f => <div key={f.id}><dt>{f.nome}</dt><dd>{f.informado + f.estimado ? moedaCurta(f.informado + f.estimado, d.moeda) : '—'}</dd></div>)}</dl> : null}
+    {!compacto && d.fases?.length && !(d.fases.length === 1 && d.fases[0].id === 'total') ? <dl className="pc-custo-fases" aria-label={t('Custo por fase')}>{d.fases.map(f => <div key={f.id}><dt>{f.nome}</dt><dd>{f.informado + f.estimado ? moedaCurta(f.informado + f.estimado, d.moeda) : '—'}</dd></div>)}</dl> : null}
   </section>;
 }
 
@@ -123,7 +123,7 @@ export function RespostaMuda({ d, tela }: { d: DadosCusto; tela: string }) {
 function Links({ d, tela }: { d: DadosCusto | null; tela?: string }) {
   const naRecursos = !!d && tela === TELA_RECURSOS[d.frente];
   return <nav className="pc-custo-links" aria-label={t('Orçamento e resumo')}>
-    {d?.recursos && !naRecursos ? <a className="pc-custo-link" href={d.recursos}>{t('Valores')} <span aria-hidden="true">→</span></a> : null}
+    {d?.recursos && !naRecursos ? <a className="pc-custo-link" href={d.recursos}>{t('Opções e valores')} <span aria-hidden="true">→</span></a> : null}
     <a className="pc-custo-link" href={href.plano()}>{t('Resumo desta frente')} <span aria-hidden="true">→</span></a>
   </nav>;
 }
@@ -152,7 +152,7 @@ export function FaixaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
   </>;
   const rotulo = t('Custo desta frente') + ': ' + (p.valor === null ? '—' : formatarMoedaEst(p.valor, d.moeda)) + (p.nota ? '. ' + p.nota : '');
   return <div className="pc-faixa-custo-wrap">{d.recursos
-    ? <a className="pc-faixa-custo" href={d.recursos} aria-label={rotulo + '. ' + t('Valores')}>{conteudo}</a>
+    ? <a className="pc-faixa-custo" href={d.recursos} aria-label={rotulo + '. ' + t('Opções e valores')}>{conteudo}</a>
     : <div className="pc-faixa-custo" aria-label={rotulo}>{conteudo}</div>}</div>;
 }
 

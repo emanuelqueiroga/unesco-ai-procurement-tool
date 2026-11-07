@@ -14,6 +14,6 @@ export const TITULOS_LIT: Record<string,string> = {
  'lit-validacao': L('Validação pedagógica','Pedagogical validation'),
  'lit-digital': L('Condições para atividades digitais','Conditions for digital activities'),
  'lit-projeto': L('Projeto concreto de uso de IA','Specific AI use project'),
- 'lit-recursos': L('Valores','Amounts'),
+ 'lit-recursos': L('Opções e valores','Options and amounts'),
  'lit-revisao': L('Resultados e revisão do programa','Programme outcomes and review'),
 };

@@ -182,14 +182,14 @@ export function infoCapitulo(n: Capitulo, s?: { ctx?: Record<string, any> }): In
   // v017: Contexto → Categorias → Opções → Fases e valores
   if (!(percursoPedagogico(s?.ctx) || percursoLetramento(s?.ctx) || percursoGovernanca(s?.ctx))) return CAPITULOS_INFO[n];
   const categorias = etapa('Categorias', 'Quais categorias de custo entram no plano?');
-  const opcoes = { ...GOVERNANCA_INFO[3], titulo: 'Opções', guia: 'O que será feito em cada categoria?' };
-  const valores = { ...GOVERNANCA_INFO[4], titulo: 'Fases e valores', guia: 'Quanto custa cada opção, em cada fase?' };
-  return ({ 1: CAPITULOS_INFO[1], 2: categorias, 3: opcoes, 4: valores } as Record<Capitulo, InfoCapitulo>)[n];
+  const fases = { ...GOVERNANCA_INFO[3], titulo: 'Fases', guia: 'Quanto dura e quantas pessoas alcança cada fase?' };
+  const opcoes = { ...GOVERNANCA_INFO[4], titulo: 'Opções e valores', guia: 'O que será feito em cada categoria e quanto custa?' };
+  return ({ 1: CAPITULOS_INFO[1], 2: categorias, 3: fases, 4: opcoes } as Record<Capitulo, InfoCapitulo>)[n];
 }
 Object.assign(CURTO, {
  'gov-projeto': 'Projeto de uso de IA', 'gov-diagnostico': 'Lacunas e resultados', 'gov-instrumentos': 'Instrumentos e evidências',
  'gov-solucoes': 'Soluções de política educacional', 'gov-atores': 'Instituições e grupos afetados', 'gov-acoes': 'Ações e responsabilidades',
- 'gov-capacidade': 'Capacidade institucional', 'gov-recursos': 'Valores', 'gov-fases': 'Fases', 'gov-equipe': 'Equipe e formação', 'gov-categorias': 'Categorias de custo', 'gov-opcoes': 'Opções de custo', 'ed-categorias': 'Categorias de custo', 'ed-opcoes': 'Opções de custo', 'ed-recursos': 'Valores', 'gov-sandbox': 'Experimentação supervisionada', 'gov-revisao': 'Indicadores e revisão',
+ 'gov-capacidade': 'Capacidade institucional', 'gov-recursos': 'Opções e valores', 'gov-fases': 'Fases', 'gov-equipe': 'Equipe e formação', 'gov-categorias': 'Categorias de custo', 'gov-opcoes': 'Opções de custo', 'ed-categorias': 'Categorias de custo', 'ed-opcoes': 'Opções de custo', 'ed-recursos': 'Opções e valores', 'gov-sandbox': 'Experimentação supervisionada', 'gov-revisao': 'Indicadores e revisão',
 });
 
 Object.assign(CURTO, TITULOS_LIT);
