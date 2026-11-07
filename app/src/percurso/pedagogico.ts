@@ -1236,7 +1236,6 @@ export const TELAS_ED = [
   ["ed-categorias", 2],
   ["ed-opcoes", 3],
   ["ed-fases", 4],
-  ["ed-recursos", 4],
 ] as const;
 /** Versão de teste: Intervenção · Uso de IA (só com IA ou mista) · Orçamento. */
 export function telasEd(s: EstadoEd) {
@@ -1272,7 +1271,7 @@ export function edRespondido(s: EstadoEd, id: string) {
     errosEd(s, id).length === 0 &&
     (id !== "ed-recursos" || (orcamentoEd(s).itens.length > 0 && orcamentoEd(s).itens.every((i) => i.respondido))) &&
     (id !== "ed-categorias" || orcamentoEd(s).itens.length > 0) &&
-    (id !== "ed-opcoes" || (orcamentoEd(s).itens.length > 0 && orcamentoEd(s).itens.every((i) => i.marcadas.length > 0))) &&
+    (id !== "ed-opcoes" || (orcamentoEd(s).itens.length > 0 && orcamentoEd(s).itens.every((i) => i.marcadas.length > 0 && i.respondido))) &&
     (id !== "ed-fases" || fasesSalvas(s, "educacao"))
   );
 }
@@ -1410,7 +1409,8 @@ export function planoEd(s: EstadoEd) {
         })),
       ],
     },
-    ...telasEd(s).map((id) => ({
+    // v017: a tela Valores saiu do fluxo, mas o bloco de valores continua no plano
+    ...[...telasEd(s), "ed-recursos" as const].map((id) => ({
       titulo: t(TITULOS_ED[id]),
       linhas: [
         ...fs

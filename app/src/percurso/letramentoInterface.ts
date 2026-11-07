@@ -51,7 +51,7 @@ export function pendenciasCamposLit(s: Estado14, tela: string) {
   return camposLetramento(s).filter(f => f.tela === tela && !f.opcional && !campoLitRespondido(s, f));
 }
 export function pendenciasCustosLit(s: Estado14, tela: string) {
-  return tela === 'lit-recursos' ? orcamentoLetramento(s).itens.filter(i => !i.respondido) : [];
+  return tela === 'lit-recursos' || tela === 'lit-opcoes' ? orcamentoLetramento(s).itens.filter(i => !i.respondido) : [];
 }
 
 export const GUIAS_LIT: Record<string, string> = {

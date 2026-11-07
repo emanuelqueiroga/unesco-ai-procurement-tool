@@ -182,9 +182,9 @@ export function Letramento({ rota }: { rota: Rota }) {
   usePadroes('letramento', telaAtual.startsWith('lit-'));
   const lista = telasDoCapitulo(n, s), telas = telasAtivas(s), ativa = rota.tipo === 'pergunta' ? lista.find(q => q.id === rota.tela) : undefined;
   const legado = rota.tipo === 'pergunta' ? telaLetramentoLegada(rota.tela) : '';
-  const alvo = telas.find(q => q.id === legado) || telas.find(q => q.id === TELAS_FORA_DO_FLUXO[legado]) || telas.find(q => q.id === 'lit-recursos');
+  const alvo = telas.find(q => q.id === legado) || telas.find(q => q.id === TELAS_FORA_DO_FLUXO[legado]) || telas.find(q => q.id === 'lit-opcoes');
   const semPublicos = !(s.ctx.problemas || []).some((id: string) => /^A\d+$/.test(id));
-  const remap = rota.tipo === 'refinar' ? href.pergunta(3, 'lit-recursos')
+  const remap = rota.tipo === 'refinar' ? href.pergunta(3, 'lit-opcoes')
     : rota.tipo !== 'plano' && semPublicos && n > 1 ? href.pergunta(1, 'problemas')
     : rota.tipo === 'abertura' ? entradaEtapaLit(s, n)
     : rota.tipo === 'sintese' ? n < 4 ? entradaEtapaLit(s, (n + 1) as Capitulo) : href.plano()

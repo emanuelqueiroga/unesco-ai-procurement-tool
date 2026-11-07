@@ -48,24 +48,33 @@ export function CategoriasV17({ s, frente }: { s: CasoStore; frente: FrenteEstim
 
 /** Passo 2: opções de cada categoria escolhida. */
 export function OpcoesV17({ s, frente }: { s: CasoStore; frente: FrenteEstimativa }) {
-  const o = orcamentoV16(s, frente);
+  const o = orcamentoV16(s, frente), fmt = (v: number) => formatarMoedaEst(v, o.moeda);
   const marcar = (c: CategoriaV16, r: string, on: boolean) => {
     const x = raizOrcamento(useCaso.getState(), frente).itens?.[c.id]?.opcoes, atual: string[] = Array.isArray(x) ? x : [];
     gravarOrc(frente, 'itens.' + c.id + '.opcoes', on ? [...atual.filter(v => v !== r), r] : atual.filter(v => v !== r));
   };
   if (!o.itens.length) return <p className="pc-nota">{t('Volte e escolha pelo menos uma categoria de custo.')}</p>;
+  // v017: a tela Valores saiu; o que só existia nela (duração ou resumo das fases, total da categoria, valor das
+  // categorias sem opções e custo por fase) fica aqui.
   return <div className="pv-v17" id="opcoes" tabIndex={-1}>
+    {semFases(frente) ? <div className="pv-v17-campos"><CampoNumero label={t('Duração do plano (meses)')} value={raizOrcamento(s, frente).duracao ?? ''} placeholder={String(DURACAO_GOV_PADRAO)} onChange={v => gravarOrc(frente, 'duracao', v === '' ? undefined : v)} /></div>
+      : <p className="pv-v17-fases-resumo">{resumoFases(s, frente)} · {o.moeda} · <a href={href.pergunta(4, telaFases(frente))}>{t('Alterar fases')}</a></p>}
     {porGrupo(o.itens).map(([grupo, itens]) => <section key={grupo} className="pv-v17-grupo">
       {grupo ? <h2 className="pv-v17-desafio">{grupo}</h2> : null}
       {itens.map(i => <div key={i.id} className="pv-v17-cat">
-        <h3 className="pv-v17-cat-nome">{nomeCat(i)}</h3>
+        <div className="pv-v17-cat-cab"><h3 className="pv-v17-cat-nome">{nomeCat(i)}</h3><span className="pv-v17-cat-total">{i.valor === null ? '—' : fmt(i.valor)}</span></div>
         {i.opcoes.length ? <OptionCardGroup className="pc-lit-opcoes" label={nomeCat(i)} type="checkbox">
           {i.opcoes.map(r => { const on = i.marcadas.includes(r), l = i.linhas.find(x => x.rotulo === r);
             return [<OptionCard key={r} name={'op-' + i.id} value={r} type="checkbox" checked={on} label={t(r)} onChange={(_v, v) => marcar(i, r, v)} />,
               on ? <div key={r + '-abre'} className="pv-v17-abre">{ehParametro(frente, i.id, r) ? <CampoParametro s={s} rotulo={r} /> : l ? <LinhaValor s={s} frente={frente} cat={i.id} l={l} moeda={o.moeda} /> : null}</div> : null]; })}
-        </OptionCardGroup> : <p className="pc-nota">{t('Esta categoria não tem opções: o custo é informado para a categoria inteira.')}</p>}
+        </OptionCardGroup> : i.linhas.map(l => <LinhaValor key={l.chave} s={s} frente={frente} cat={i.id} l={l} moeda={o.moeda} />)}
       </div>)}
     </section>)}
+    {!semFases(frente) && o.fases.length ? <div className="pv-por-fase" aria-label={t('Custo por fase')}>
+      <h3 className="pv-rec-grupo">{t('Custo por fase')}</h3>
+      {o.fases.map(f => <div key={f.id} className="pv-por-fase-linha"><span>{f.nome} · {t('{n} meses', { n: f.meses })}</span>
+        <span className="pv-por-fase-num">{f.informado + f.estimado ? fmt(f.informado + f.estimado) : '—'}</span></div>)}
+    </div> : null}
   </div>;
 }
 

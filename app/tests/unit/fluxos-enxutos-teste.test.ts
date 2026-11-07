@@ -56,11 +56,11 @@ describe('versão de teste: fluxos enxutos por prioridade', () => {
   });
   it('links antigos levam à tela mantida mais próxima', () => {
     expect(telaGovernancaLegada('gov-diagnostico')).toEqual({ n: 2, id: 'gov-equipe' });
-    expect(telaGovernancaLegada('gov-revisao')).toEqual({ n: 3, id: 'gov-recursos' });
+    expect(telaGovernancaLegada('gov-revisao')).toEqual({ n: 3, id: 'gov-opcoes' });
     expect(TELAS_FORA_DO_FLUXO['lit-oferta']).toBe('lit-opcoes'); // v017: a forma de entrega virou opção da 1.2
     expect(TELAS_FORA_DO_FLUXO['lit-participantes']).toBeUndefined(); // v017: Públicos voltou ao fluxo
     expect(TELAS_FORA_DO_FLUXO['ed-objetivos']).toBe('ed-intervencao');
-    expect(TELAS_FORA_DO_FLUXO['ed-expansao']).toBe('ed-recursos');
+    expect(TELAS_FORA_DO_FLUXO['ed-expansao']).toBe('ed-opcoes'); expect(TELAS_FORA_DO_FLUXO['gov-recursos']).toBe('gov-opcoes'); // v017: a tela Valores saiu
   });
   it.skip('letramento: Participantes (participantes × horas por público) e Orçamento; total distinto e elegíveis guardados não contam', () => {
     S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11', 'A14']);

@@ -141,7 +141,7 @@ function formacao(frente: FrenteEstimativa, s: EstadoEst): Parcial {
     formula: gov ? t('Servidores a formar × horas por servidor × custo por hora de formação') : t('Profissionais a formar × horas por profissional × custo por hora de formação'),
     calculo: x => `${num(p || 0)} × ${num(h || 0)} h × ${formatarMoedaEst(x.valor, x.moeda)}` };
 }
-const telaRecursos = (f: FrenteEstimativa) => f === 'governanca' ? 'gov-equipe' : f === 'letramento' ? 'lit-recursos' : 'ed-recursos';
+const telaRecursos = (f: FrenteEstimativa) => f === 'governanca' ? 'gov-equipe' : f === 'letramento' ? 'lit-opcoes' : 'ed-opcoes';
 const ancoraPeriodo = (f: FrenteEstimativa) => f === 'governanca' ? 'gov-govOrcamento-periodo' : f === 'letramento' ? 'lit-orcamento-periodo' : 'ed-orcamento-periodo';
 
 /**

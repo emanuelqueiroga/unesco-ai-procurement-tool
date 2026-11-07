@@ -396,7 +396,7 @@ function PlanoEd({ s }: { s: CasoStore }) {
           </dl>
         </section>
       ))}
-      <Button variant="secondary" href={href.pergunta(3, "ed-recursos")}>
+      <Button variant="secondary" href={href.pergunta(3, "ed-opcoes")}>
         {t("Voltar")}
       </Button>
     </div>
@@ -420,7 +420,7 @@ export function Educacao({ rota }: { rota: Rota }) {
     rota.tipo === "plano"
       ? null
       : rota.tipo === "refinar"
-        ? href.pergunta(3, "ed-recursos")
+        ? href.pergunta(3, "ed-opcoes")
         : !temasEd(s).length && n > 1
           ? href.pergunta(1, "problemas")
           : rota.tipo === "abertura"
@@ -454,7 +454,7 @@ export function Educacao({ rota }: { rota: Rota }) {
       (f) => f.tela === id && !campoEdRespondido(s, f),
     ),
     custos =
-      id === "ed-recursos"
+      id === "ed-recursos" || id === "ed-opcoes"
         ? orcamentoEd(s).itens.filter((i) => !i.respondido)
         : [],
     erros = errosEd(s, id),

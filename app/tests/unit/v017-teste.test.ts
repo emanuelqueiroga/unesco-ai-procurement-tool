@@ -17,11 +17,11 @@ const custo = (f: 'letramento' | 'governanca', cat: string, op: string, v: Recor
 describe('v017: categorias → opções → valores', () => {
   beforeEach(() => { setLang('pt'); S().setMoeda({ cod: 'USD', taxa: '', taxaDe: '' }); S().carregarExemplo('novo'); S().escolherPais('BRA'); });
 
-  it('as etapas visíveis: governança sem Fases', () => {
+  it('as etapas visíveis: sem tela Valores; governança sem Fases', () => {
     S().responder('prioridades', ['governar']); S().responder('problemas', ['G21', 'G23']); S().responder('frenteAtiva', 'governanca');
-    expect(ids()).toEqual(['local', 'prioridades', 'problemas', 'gov-categorias', 'gov-opcoes', 'gov-recursos']);
+    expect(ids()).toEqual(['local', 'prioridades', 'problemas', 'gov-categorias', 'gov-opcoes']);
     S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11']); S().responder('frenteAtiva', 'letramento');
-    expect(ids()).toEqual(['local', 'prioridades', 'problemas', 'lit-participantes', 'lit-categorias', 'lit-opcoes', 'lit-fases', 'lit-recursos']);
+    expect(ids()).toEqual(['local', 'prioridades', 'problemas', 'lit-participantes', 'lit-categorias', 'lit-opcoes', 'lit-fases']);
   });
 
   it('nada vem marcado: sem categoria escolhida não há custo e falta 1 item', () => {
@@ -113,5 +113,18 @@ describe('v017: categorias → opções → valores', () => {
     const o = orcamentoLetramento(S());
     expect(o.itens[0].parametros).toEqual(['Número de professores a formar', 'Horas por curso']);
     expect(o.itens[0].linhas).toEqual([]);
+  });
+
+  it('sem tela Valores: Opções só fica respondida com os valores; o plano mantém o bloco de valores', async () => {
+    const { telaRespondida } = await import('../../src/store');
+    const { planoLetramento } = await import('../../src/percurso/letramento');
+    S().responder('prioridades', ['sobre']); S().responder('problemas', ['A11']); S().responder('frenteAtiva', 'letramento');
+    preencher('letramento'); gravarOrc('letramento', 'moeda', 'USD');
+    gravarOrc('letramento', 'categorias', ['l12']); gravarOrc('letramento', 'itens.l12.opcoes', ['Formação presencial']);
+    const tela = telasAtivas(S()).find(t => t.id === 'lit-opcoes')!;
+    expect(telaRespondida(S(), tela)).toBe(false);
+    custo('letramento', 'l12', 'Formação presencial', { qtd: 1000, horas: 20 });
+    expect(telaRespondida(S(), tela)).toBe(true);
+    expect(planoLetramento(S()).blocos.map(b => b.titulo)).toContain('Valores');
   });
 });

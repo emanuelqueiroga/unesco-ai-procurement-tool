@@ -11,7 +11,7 @@ import { abrirFrente, type FrenteId } from '../percurso/frentes';
 import { presetGovernanca, selecoesGov, detalheGov, textoSelecaoGov } from '../percurso/governancaPresets';
 import { entradaEtapa, vizinhos, focarPendencia } from '../percurso/navegacaoOrientada';
 import { useEffect, useState, useContext } from 'react';
-import { useCaso, telasDoCapitulo, telasAtivas, faltamDe, telaRespondida, type CasoStore, type Capitulo } from '../store';
+import { useCaso, telasDoCapitulo, telasAtivas, faltamDe, telaRespondida, TELAS_FORA_DO_FLUXO, type CasoStore, type Capitulo } from '../store';
 import { temEducacao, percursoPedagogico, temGovernanca, temLetramento, percursoLetramento, percursoGovernanca, projetoUsoDefinido, tamanhoRedeValido, LOC } from '../domain';
 import { Button, TextField, OptionCard, OptionCardGroup, QuestionFrame, ChapterOpening, PlanPanel, PlanDrawer, useMediaQuery, BREAKPOINTS, Alert, Chip, ChipGroup } from '../ui';
 import { Shell } from './Shell';
@@ -196,15 +196,15 @@ function PlanoGov({ s }: { s: CasoStore }) {
     <ResumoV16 s={s} frente="governanca" /><BotoesPDFV16 s={s} frente="governanca" />
     {faltam.length ? <details className="pc-gov-card" open><summary>{t('Respostas que faltam')} ({faltam.length})</summary><ul>{faltam.map(q => <li key={q.id}><a href={href.pergunta(q.capitulo, q.id)}>{t(CURTO[q.id] || q.id)}</a></li>)}</ul></details> : null}
     {p.blocos.map((b, i) => <section className="pc-gov-card" key={i}><h2>{b.titulo}</h2><dl className="pc-gov-dados">{b.linhas.map((l, j) => <div key={j}><dt>{l.rotulo}</dt><dd>{l.valor}</dd></div>)}</dl></section>)}
-    <p><Button variant="secondary" href={href.pergunta(3, 'gov-recursos')}>{t('Voltar')}</Button></p>
+    <p><Button variant="secondary" href={href.pergunta(3, 'gov-opcoes')}>{t('Voltar')}</Button></p>
   </div>;
 }
 // Links e posições antigas são remapeados; as respostas antigas continuam guardadas no caso.
 export function Governanca({ rota }: { rota: Rota }) {
  const s=useCaso(),[tentou,setTentou]=useState(false),n:Capitulo=rota.tipo==='abertura'||rota.tipo==='pergunta'||rota.tipo==='sintese'?rota.n:3;
  const lista=telasDoCapitulo(n,s),qs=telasAtivas(s),ativa=rota.tipo==='pergunta'?lista.find(q=>q.id===rota.tela):undefined,legada=rota.tipo==='pergunta'?telaGovernancaLegada(rota.tela):null;
- const alvo=legada?qs.find(q=>q.id===legada.id):undefined;
- const remap=rota.tipo==='plano'?null:rota.tipo==='refinar'?href.pergunta(3,'gov-recursos'):rota.tipo==='abertura'?entradaEtapa(s,n):rota.tipo==='sintese'?n<4?entradaEtapa(s,(n+1) as Capitulo):href.plano():!ativa?alvo?href.pergunta(alvo.capitulo,alvo.id):entradaEtapa(s,n):null;
+ const alvo=legada?qs.find(q=>q.id===legada.id):rota.tipo==='pergunta'?qs.find(q=>q.id===TELAS_FORA_DO_FLUXO[rota.tela]):undefined;
+ const remap=rota.tipo==='plano'?null:rota.tipo==='refinar'?href.pergunta(3,'gov-opcoes'):rota.tipo==='abertura'?entradaEtapa(s,n):rota.tipo==='sintese'?n<4?entradaEtapa(s,(n+1) as Capitulo):href.plano():!ativa?alvo?href.pergunta(alvo.capitulo,alvo.id):entradaEtapa(s,n):null;
  usePadroes('governanca',rota.tipo==='pergunta'&&rota.tela.startsWith('gov-'));
  useEffect(()=>{if(remap)window.location.replace(remap);},[remap]);if(remap)return null;
  if(rota.tipo==='plano')return <Shell plano={false}><PlanoGov s={s}/></Shell>;

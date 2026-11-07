@@ -22,7 +22,7 @@ export function gravarOrc(frente: FrenteEstimativa, caminho: string, valor: any)
   else s.responder('educacao', alterarEd(s, 'orcamento.' + caminho, valor));
 }
 const telaFases = (f: FrenteEstimativa) => f === 'governanca' ? 'gov-fases' : f === 'letramento' ? 'lit-fases' : 'ed-fases';
-export const telaOrcamento = (f: FrenteEstimativa) => f === 'governanca' ? 'gov-recursos' : f === 'letramento' ? 'lit-recursos' : 'ed-recursos';
+export const telaOrcamento = (f: FrenteEstimativa) => f === 'governanca' ? 'gov-opcoes' : f === 'letramento' ? 'lit-opcoes' : 'ed-opcoes';
 
 /** Fases: incluir, meses e alcance acumulado (% das pessoas) de cada uma. */
 export function FasesV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativa }) {

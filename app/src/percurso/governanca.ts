@@ -72,7 +72,7 @@ export function governancaRespondida(s: Estado14, id: string): boolean {
     case 'gov-equipe': return QUANT_GOV.every(k => numeroPositivo(s.ctx.govOrcamento?.quantidades?.[k]));
     case 'gov-recursos': { const o = orcamentoGovernanca(s); return o.itens.length > 0 && o.itens.every(i => i.respondido); }
     case 'gov-categorias': return orcamentoGovernanca(s).itens.length > 0;
-    case 'gov-opcoes': { const o = orcamentoGovernanca(s); return o.itens.length > 0 && o.itens.every(i => i.marcadas.length > 0); }
+    case 'gov-opcoes': { const o = orcamentoGovernanca(s); return o.itens.length > 0 && o.itens.every(i => i.marcadas.length > 0 && i.respondido); }
     default: return false;
   }
 }
@@ -95,7 +95,7 @@ export function planoGovernanca(s: Estado14) {
       ...orcamento.itens.map(i => linha(i.nome, valorItemOrcamento(i, orcamento.moeda))),
       ...linhasTotais(orcamento).map(l => ({ rotulo: l.rotulo, valor: l.valor })), ...linhasFases(orcamento), ...notaEstimativas(orcamento)] },
   ];
-  const faltam = ['gov-equipe', 'gov-recursos'].filter(id => !governancaRespondida(s, id));
+  const faltam = ['gov-equipe', 'gov-opcoes'].filter(id => !governancaRespondida(s, id));
   if (!s.caso.pais || !s.respC.pais) faltam.unshift('local');
   if (!qs.length || !(preenchido(x.problemaOutro) || s.respC.problemas)) faltam.unshift('problemas');
   const pendentes = orcamento.faltam;
@@ -109,17 +109,17 @@ export function planoGovernanca(s: Estado14) {
 export function telaGovernancaLegada(id: string): { n: 1 | 2 | 3 | 4; id: string } | null {
   const mapa: Record<string, [1 | 2 | 3 | 4, string]> = {
     etapas: [1, 'problemas'], problema: [2, 'gov-equipe'], impactos: [2, 'gov-equipe'], linhaBase: [2, 'gov-equipe'], alternativa: [2, 'gov-equipe'],
-    governanca: [2, 'gov-equipe'], testes: [3, 'gov-recursos'], tarefas: [3, 'gov-recursos'], usuarios: [2, 'gov-equipe'], afetados: [2, 'gov-equipe'],
-    tipoTec: [3, 'gov-recursos'], pagamento: [3, 'gov-recursos'], piloto: [3, 'gov-recursos'], internet: [3, 'gov-recursos'], modeloDisp: [3, 'gov-recursos'],
-    formados: [2, 'gov-equipe'], suporteNivel: [2, 'gov-equipe'], implantacao: [3, 'gov-recursos'], elegiveis: [3, 'gov-recursos'], expansao: [3, 'gov-recursos'],
+    governanca: [2, 'gov-equipe'], testes: [3, 'gov-opcoes'], tarefas: [3, 'gov-opcoes'], usuarios: [2, 'gov-equipe'], afetados: [2, 'gov-equipe'],
+    tipoTec: [3, 'gov-opcoes'], pagamento: [3, 'gov-opcoes'], piloto: [3, 'gov-opcoes'], internet: [3, 'gov-opcoes'], modeloDisp: [3, 'gov-opcoes'],
+    formados: [2, 'gov-equipe'], suporteNivel: [2, 'gov-equipe'], implantacao: [3, 'gov-opcoes'], elegiveis: [3, 'gov-opcoes'], expansao: [3, 'gov-opcoes'],
     'gov-projeto': [2, 'gov-equipe'], 'gov-diagnostico': [2, 'gov-equipe'], 'gov-instrumentos': [2, 'gov-equipe'], 'gov-solucoes': [2, 'gov-equipe'],
-    'gov-atores': [2, 'gov-equipe'], 'gov-capacidade': [2, 'gov-equipe'], 'gov-acoes': [3, 'gov-recursos'], 'gov-sandbox': [3, 'gov-recursos'], 'gov-revisao': [3, 'gov-recursos'],
+    'gov-atores': [2, 'gov-equipe'], 'gov-capacidade': [2, 'gov-equipe'], 'gov-acoes': [3, 'gov-opcoes'], 'gov-sandbox': [3, 'gov-opcoes'], 'gov-revisao': [3, 'gov-opcoes'],
   };
   return mapa[id] ? { n: mapa[id][0], id: mapa[id][1] } : null;
 }
 
 export function pendenciasGov(s:Estado14,id:string) {
  const x=contextoGovProjetado(s), out:{caminho:string;label:string}[]=[];
- if(id==='gov-recursos')for(const i of orcamentoGovernanca(s).itens){const extra=i.id.startsWith('extra-'),p=extra?'govOrcamento.extras.'+i.id.slice(6):'govOrcamento.itens.'+i.id,item=p.split('.').reduce((o:any,k)=>o?.[k],x);if(i.valor===null&&item?.situacao!=='a_estimar'&&!i.referencia)out.push({caminho:p,label:i.nome});if(extra&&!preenchido(item?.nome))out.push({caminho:p+'.nome',label:'Recurso adicional'});}
+ if(id==='gov-recursos'||id==='gov-opcoes')for(const i of orcamentoGovernanca(s).itens){const extra=i.id.startsWith('extra-'),p=extra?'govOrcamento.extras.'+i.id.slice(6):'govOrcamento.itens.'+i.id,item=p.split('.').reduce((o:any,k)=>o?.[k],x);if(i.valor===null&&item?.situacao!=='a_estimar'&&!i.referencia)out.push({caminho:p,label:i.nome});if(extra&&!preenchido(item?.nome))out.push({caminho:p+'.nome',label:'Recurso adicional'});}
  return out;
 }

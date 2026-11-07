@@ -179,14 +179,13 @@ export const GOVERNANCA_INFO: Record<Capitulo, InfoCapitulo> = {
 /** Versão de teste: Contexto · <etapa da frente> · Orçamento (o capítulo 4 fica vazio e some da barra). */
 export function infoCapitulo(n: Capitulo, s?: { ctx?: Record<string, any> }): InfoCapitulo {
   const etapa = (titulo: string, guia: string) => ({ ...GOVERNANCA_INFO[2], titulo, guia });
-  // v017: Contexto → Categorias → Opções → Fases e valores
+  // v017: Contexto → Categorias → Opções (os valores abrem em cada opção marcada) → Fases (só letramento e educação;
+  // na governança a etapa 4 fica vazia e some da barra)
   if (!(percursoPedagogico(s?.ctx) || percursoLetramento(s?.ctx) || percursoGovernanca(s?.ctx))) return CAPITULOS_INFO[n];
   const categorias = etapa('Categorias', 'Quais categorias de custo entram no plano?');
   const opcoes = { ...GOVERNANCA_INFO[3], titulo: 'Opções', guia: 'O que será feito em cada categoria?' };
-  // governança não tem fases: a etapa 4 é só "Valores"
-  const soValores = percursoGovernanca(s?.ctx) && !percursoLetramento(s?.ctx) && !percursoPedagogico(s?.ctx);
-  const valores = { ...GOVERNANCA_INFO[4], titulo: soValores ? 'Valores' : 'Fases e valores', guia: soValores ? 'Quanto custa cada opção?' : 'Quanto custa cada opção, em cada fase?' };
-  return ({ 1: CAPITULOS_INFO[1], 2: categorias, 3: opcoes, 4: valores } as Record<Capitulo, InfoCapitulo>)[n];
+  const fases = { ...GOVERNANCA_INFO[4], titulo: 'Fases', guia: 'Quanto dura e quantas pessoas alcança cada fase?' };
+  return ({ 1: CAPITULOS_INFO[1], 2: categorias, 3: opcoes, 4: fases } as Record<Capitulo, InfoCapitulo>)[n];
 }
 Object.assign(CURTO, {
  'gov-projeto': 'Projeto de uso de IA', 'gov-diagnostico': 'Lacunas e resultados', 'gov-instrumentos': 'Instrumentos e evidências',

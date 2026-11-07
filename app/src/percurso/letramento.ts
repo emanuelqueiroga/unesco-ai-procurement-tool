@@ -45,8 +45,8 @@ export const digitalLit = (s: Estado) => ['online','hibrida'].some(id => inclui(
 /** Versão de teste: Participantes (com públicos) · Orçamento. Currículo não tem tela: vira uma linha do orçamento. */
 export function telasLetramento(s: Estado): string[] {
  const pubs = publicosLetramento(s).map(p => p.id);
- // v017: Públicos (quem e quantos) → categorias → opções → fases e valores
- return ['local','prioridades','problemas',...(pubs.length ? ['lit-participantes'] : []),'lit-categorias','lit-opcoes','lit-fases','lit-recursos'];
+ // v017: Públicos (quem e quantos) → categorias → opções (com os valores) → fases
+ return ['local','prioridades','problemas',...(pubs.length ? ['lit-participantes'] : []),'lit-categorias','lit-opcoes','lit-fases'];
 }
 /** Campos do fluxo de teste. Os demais (diagnóstico, desenho, oferta, ações, revisão, público elegível, total distinto…)
  *  continuam guardados no caso, fora das telas, das pendências, do progresso e dos relatórios. */
@@ -110,7 +110,7 @@ export function orcamentoLetramento(s:Pick<Estado14,'ctx'|'moeda'>) {
 export function letramentoRespondido(s:Estado14,id:string):boolean {
  if(id==='lit-fases')return fasesSalvas(s,'letramento');
  if(id==='lit-categorias')return categoriasEscolhidas(s,'letramento').length>0;
- if(id==='lit-opcoes'){const it=orcamentoLetramento(s).itens;return it.length>0&&it.every(i=>i.marcadas.length>0);}
+ if(id==='lit-opcoes'){const it=orcamentoLetramento(s).itens;return it.length>0&&it.every(i=>i.marcadas.length>0&&i.respondido);}
  if(id==='lit-recursos'){const it=orcamentoLetramento(s).itens;return it.length>0&&it.every(i=>i.respondido);}
  const campos=camposLetramento(s).filter(f=>f.tela===id);
  if(!campos.length)return id==='lit-participantes';
@@ -121,7 +121,7 @@ export function planoLetramento(s:Estado14) {
  const faltam=telasLetramento(s).filter(id=>id.startsWith('lit-')&&!letramentoRespondido(s,id));
  if(!s.respC.pais||!s.caso.pais)faltam.unshift('local');if(!qs.length||!s.respC.problemas)faltam.unshift('problemas');
  const indefinidos=campos.filter(f=>{const v=lerLit(s,f.caminho);return v?.situacao==='a_levantar'||selecoesLit(s,f.caminho).includes('_pendente');}).length;
- const blocos=[{titulo:t('Contexto'),linhas:[{rotulo:t('País'),valor:nomePais(paisDoCaso(s.caso))},{rotulo:t('Instituição responsável'),valor:instituicaoV16(s)||t('Não informado')},...(textoValido(lerLit(s,'contexto.detalhe'))?[{rotulo:t('Informações adicionais'),valor:lerLit(s,'contexto.detalhe')}]:[]),...(textoValido(s.ctx.problemaOutro)?[{rotulo:t('Informações adicionais'),valor:s.ctx.problemaOutro}]:[]),{rotulo:t(L('Públicos selecionados','Selected audiences')),valor:[...pubs.map(p=>t(p.nome)),...(curriculo(s)?[t(L('Currículo nacional de IA','National AI curriculum'))]:[])].join('; ')||t('Não informado')}]},...telasLetramento(s).filter(id=>id.startsWith('lit-')&&id!=='lit-fases').map(id=>({titulo:t(tituloDaTelaLit(s,id)),linhas:campos.filter(f=>f.tela===id).map(f=>({rotulo:rotuloLit(f.label),valor:valorCampoLit(s,f)}))}))];
+ const blocos=[{titulo:t('Contexto'),linhas:[{rotulo:t('País'),valor:nomePais(paisDoCaso(s.caso))},{rotulo:t('Instituição responsável'),valor:instituicaoV16(s)||t('Não informado')},...(textoValido(lerLit(s,'contexto.detalhe'))?[{rotulo:t('Informações adicionais'),valor:lerLit(s,'contexto.detalhe')}]:[]),...(textoValido(s.ctx.problemaOutro)?[{rotulo:t('Informações adicionais'),valor:s.ctx.problemaOutro}]:[]),{rotulo:t(L('Públicos selecionados','Selected audiences')),valor:[...pubs.map(p=>t(p.nome)),...(curriculo(s)?[t(L('Currículo nacional de IA','National AI curriculum'))]:[])].join('; ')||t('Não informado')}]},...[...telasLetramento(s),'lit-recursos'].filter(id=>id.startsWith('lit-')&&id!=='lit-fases').map(id=>({titulo:t(tituloDaTelaLit(s,id)),linhas:campos.filter(f=>f.tela===id).map(f=>({rotulo:rotuloLit(f.label),valor:valorCampoLit(s,f)}))}))];
  const recursos=blocos.find(b=>b.titulo===t(TITULOS_LIT['lit-recursos']))!;
  recursos.linhas.push({rotulo:t('Fases'),valor:String(o.periodo)},...o.itens.map(i=>({rotulo:i.nome,valor:i.compartilhado?t(L('Custeado na governança: {item} — {valor}. Não somado novamente.','Funded under governance: {item} — {valor}. Not counted again.'),{item:i.origem?.nome||t('Não informado'),valor:i.origem?valorItemOrcamento(i.origem,orcamentoGovernanca(s).moeda):t('Não informado')}):valorItemOrcamento(i,o.moeda)})),...linhasTotais(o).map(l=>({rotulo:l.rotulo,valor:l.valor})),...linhasFases(o),...notaEstimativas(o),...(o.itens.some(i=>i.compartilhado)?[{rotulo:t('Custos compartilhados'),valor:t('Registrados na frente de origem; não somados novamente.')}]:[]));
  return {titulo:t(L('Plano de letramento em IA e currículo','AI literacy and curriculum plan')),pais:nomePais(paisDoCaso(s.caso)),blocos,faltam,pendentes:indefinidos+o.faltam,orcamento:o,projeto:null,acoes:[],escopo:o.estimados?t('O orçamento separa os valores informados das estimativas de referência escolhidas, que são ilustrativas, e mostra o custo por fase.'):t('O orçamento usa apenas valores informados e mostra o custo por fase.'),proxima:proximoV16(o)};

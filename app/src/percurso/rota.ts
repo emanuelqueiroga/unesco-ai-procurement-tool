@@ -9,7 +9,7 @@
 import { useEffect, useState } from 'react';
 import type { FrenteId } from './frentes';
 import type { Capitulo } from '../store';
-import { TODAS_TELAS, telaDoCampo, capituloDoCampo } from '../store';
+import { TODAS_TELAS, TELAS_FORA_DO_FLUXO, telaDoCampo, capituloDoCampo } from '../store';
 
 export type PaginaPlano = 'resumo' | 'custa' | 'fazer' | 'exigir' | 'apendice' | 'faltam';
 const PAGINAS: PaginaPlano[] = ['resumo', 'custa', 'fazer', 'exigir', 'apendice', 'faltam'];
@@ -50,7 +50,8 @@ export function lerRota(hash: string): Rota {
     if (n === 1 && p[2] === 'situacao') return { tipo: 'pergunta', n: 1, tela: 'prioridades' };
     if (n === 1 && p[2] === 'nivel') return { tipo: 'pergunta', n: 1, tela: 'local' };
     const t = TODAS_TELAS.find((x) => x.id === p[2] && x.capitulo === n);
-    return t ? { tipo: 'pergunta', n, tela: t.id } : { tipo: 'abertura', n };
+    // telas que saíram do fluxo seguem como pergunta: cada frente leva à tela mantida mais próxima
+    return t || TELAS_FORA_DO_FLUXO[p[2]] ? { tipo: 'pergunta', n, tela: t ? t.id : p[2] } : { tipo: 'abertura', n };
   }
   return { tipo: 'inicio' };
 }
