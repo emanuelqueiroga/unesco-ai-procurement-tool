@@ -60,8 +60,8 @@ const PADROES: Record<string, [TipoCusto, Fonte, string | null]> = {
   'Plataformas': ['licenca', 'estudantes', PARAMETRO_LICENCA],
   'Ferramentas de IA': ['licenca', 'professores', PARAMETRO_LICENCA],
 };
-/** v017: itens da 1.1 são parâmetros da formação (não viram linha de custo). Ao marcar, abrem um campo, gravado no
- *  caminho do letramento que já existia (públicos de professores), para alimentar as opções de formação. */
+/** Itens da 1.1 são parâmetros da formação (não viram linha de custo): ao marcar, abrem um campo, gravado nos campos de
+ *  professores do letramento que já existiam (os mesmos da tela Públicos). */
 export interface Parametro { campo: string; rotulo: string; decimais?: boolean; liderancas?: boolean }
 export const PARAMETROS: Record<string, Parametro> = {
   'Número de professores a formar': { campo: 'publicos.A11.participantes', rotulo: 'Número de professores', liderancas: true },
@@ -72,12 +72,6 @@ export const PARAMETROS: Record<string, Parametro> = {
   'Frequência de reciclagem': { campo: 'orcamento.parametros.reciclagem', rotulo: 'Reciclagens por ano' },
 };
 export const ehParametro = (f: FrenteEstimativa, catId: string, rotulo: string) => f === 'letramento' && catId === 'l11' && Object.hasOwn(PARAMETROS, rotulo);
-/** Horas por pessoa sugeridas para as opções de formação do letramento: horas por curso × cursos por professor (1.1). */
-export function horasSugeridas(s: Pick<Estado14, 'ctx'>): number | null {
-  const num = (v: any) => { const x = v && typeof v === 'object' ? v.valor : v; return typeof x === 'number' && x > 0 ? x : null; };
-  const h = num(lerLit(s, 'publicos.A11.horas')), c = num(lerLit(s, 'publicos.A11.cursos')) || 1;
-  return h === null ? null : h * c;
-}
 
 /** Opções de formação docente da educação (um tipo de profissional por desafio). */
 const FORMACAO_ED = /^(Educadores|Professores|Instrutores)/;
@@ -118,7 +112,7 @@ export interface FaseCalc { id: string; nome: string; meses: number; alcance: nu
 export interface CustoSalvo { tipo?: TipoCusto; qtd?: number; horas?: number; unit?: number; fases?: Record<string, number> }
 export interface LinhaOpcao {
   chave: string; rotulo: string; tipo: TipoCusto; tipoPadrao: TipoCusto; fonte: Fonte;
-  qtd: number | null; qtdSugerida: boolean; horas: number | null; horasSugerida: boolean; unit: number | null; unitRef: number | null; unitDaReferencia: boolean;
+  qtd: number | null; qtdSugerida: boolean; horas: number | null; unit: number | null; unitRef: number | null; unitDaReferencia: boolean;
   valoresFase: Record<string, number | ''>;
   porFase: Record<string, number>; total: number | null;
   status: 'informado' | 'referencia' | 'falta'; falta: string[];
@@ -135,8 +129,7 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
   const pad = padraoOpcao(f, catId, rotulo), tipo: TipoCusto = salvo.tipo && TIPOS[salvo.tipo] ? salvo.tipo : pad.tipo, def = TIPOS[tipo];
   const sug = def.qtd ? quantidadeSugerida(s, pad.fonte) : null;
   const qtd = positivo(salvo.qtd) ? salvo.qtd : (tipo === pad.tipo ? sug : null), qtdSugerida = !positivo(salvo.qtd) && qtd !== null;
-  const hSug = def.horas && f === 'letramento' && pad.fonte === 'professores' ? horasSugeridas(s) : null;
-  const horas = positivo(salvo.horas) ? salvo.horas : hSug, horasSugerida = !positivo(salvo.horas) && horas !== null;
+  const horas = positivo(salvo.horas) ? salvo.horas : null;
   const refUSD = referenciaUSD(refDoTipo(tipo, pad)), unitRef = refUSD === null || taxa === null ? null : centavos(refUSD * taxa);
   const unit = naoNeg(salvo.unit) ? salvo.unit : unitRef, unitDaReferencia = !naoNeg(salvo.unit) && unitRef !== null;
   const valoresFase: Record<string, number | ''> = {}; for (const x of fases) valoresFase[x.id] = naoNeg(salvo.fases?.[x.id]) ? salvo.fases![x.id] : '';
@@ -171,5 +164,5 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
         + (unitDaReferencia ? ' · ' + t('referência genérica, igual para todos os países') : '');
   }
   const status = falta.length ? 'falta' : tipo !== 'fechado' && unitDaReferencia ? 'referencia' : 'informado';
-  return { chave: chaveOpcao(rotulo), rotulo, tipo, tipoPadrao: pad.tipo, fonte: pad.fonte, qtd, qtdSugerida, horas, horasSugerida, unit, unitRef, unitDaReferencia, valoresFase, porFase, total, status, falta, memoria };
+  return { chave: chaveOpcao(rotulo), rotulo, tipo, tipoPadrao: pad.tipo, fonte: pad.fonte, qtd, qtdSugerida, horas, unit, unitRef, unitDaReferencia, valoresFase, porFase, total, status, falta, memoria };
 }

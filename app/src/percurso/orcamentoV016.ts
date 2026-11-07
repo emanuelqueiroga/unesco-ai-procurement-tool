@@ -5,7 +5,7 @@ import { CATEGORIAS, DIMENSOES_EDU, FASES_V016 } from '../domain/catalogo_v016.j
 import { LOC } from '../domain';
 import type { Estado14 } from '../store/tipos';
 import { t } from './textos';
-import { calcularOpcao, chaveOpcao, ehParametro, PARAMETROS, type LinhaOpcao } from './custosV017';
+import { calcularOpcao, chaveOpcao, ehParametro, type LinhaOpcao } from './custosV017';
 import { lerLit } from './letramento';
 import { chaveEd, lerEd, usaIAEd, usuariosIAEd } from './pedagogico';
 import { PROBLEMA_POR_ID } from '../domain/prioridades.js';
@@ -33,7 +33,7 @@ export function caminhoOrcamento(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, 
   return { campo: 'educacao', sub: 'percursos.' + chaveEd(s) + '.orcamento.' + caminho };
 }
 
-/** Governança (v017): sem fases — uma "fase" única com a duração do plano (padrão 12 meses) e alcance total. */
+/** Governança: sem fases — o custo é direto, com uma duração do plano em meses (padrão 12) e alcance total. */
 export const DURACAO_GOV_PADRAO = 12;
 export const semFases = (f: FrenteEstimativa) => f === 'governanca';
 export function duracaoGov(s: Pick<Estado14, 'ctx'>): number { const d = raizOrcamento(s, 'governanca').duracao; return positivo(d) ? d : DURACAO_GOV_PADRAO; }
@@ -227,7 +227,7 @@ export interface ItemV16 {
   id: string; n: string; nome: string; grupo: string; opcoes: string[]; marcadas: string[]; base?: Base;
   /** v017: uma linha de custo por opção escolhida (ou uma só, na categoria sem opções) */
   linhas: LinhaOpcao[];
-  /** v017: itens da 1.1 marcados (parâmetros da formação, sem linha de custo) */
+  /** itens da 1.1 marcados (parâmetros da formação, sem linha de custo) */
   parametros: string[];
   /** custo conhecido da categoria (informado + estimado); null quando nada tem valor */
   valor: number | null; informadoCat: number; estimadoCat: number;
@@ -256,8 +256,8 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
   const itens: ItemV16[] = disponiveis.filter(c => sel.includes(c.id)).map(c => {
     const x = o.itens?.[c.id] || {}, custos = x.custos && typeof x.custos === 'object' ? x.custos : {};
     const marcadas = opcoesEscolhidas(s, f, c);
-    const custosMarcados = marcadas.filter(r => !ehParametro(f, c.id, r)), parametros = marcadas.filter(r => ehParametro(f, c.id, r));
-    const linhas = custosMarcados.map(r => calcularOpcao(s, f, c.id, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num));
+    const parametros = marcadas.filter(r => ehParametro(f, c.id, r));
+    const linhas = marcadas.filter(r => !ehParametro(f, c.id, r)).map(r => calcularOpcao(s, f, c.id, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num));
     const inf = linhas.filter(l => l.status === 'informado'), est = linhas.filter(l => l.status === 'referencia');
     const informadoCat = centavos(inf.reduce((n, l) => n + (l.total as number), 0)), estimadoCat = centavos(est.reduce((n, l) => n + (l.total as number), 0));
     const pendentes = linhas.filter(l => l.status === 'falta').length + (marcadas.length ? 0 : 1);
@@ -273,11 +273,7 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
   const porFase = fases.map(p => ({ id: p.id, nome: p.nome, meses: p.meses, alcance: p.alcance,
     informado: centavos(todas.filter(l => l.status === 'informado').reduce((n, l) => n + (l.porFase[p.id] || 0), 0)),
     estimado: centavos(todas.filter(l => l.status === 'referencia').reduce((n, l) => n + (l.porFase[p.id] || 0), 0)) }));
-  const valorLit = (c: string) => { const v = lerLit(s, c); const x = v && typeof v === 'object' ? v.valor : v; return typeof x === 'number' && x > 0 ? x : null; };
-  const memParam = itens.filter(i => i.parametros.length).map(i => ({ id: i.id + ':param', n: i.n, nome: i.nome, opcao: t('parâmetros da formação'),
-    texto: i.parametros.map(r => { const p = PARAMETROS[r], v = valorLit(p.campo); const lid = p.liderancas && (lerLit(s, 'publicos.A11.incluiLiderancas')?.escolhas || []).includes('sim') ? valorLit('publicos.A11.liderancas') : null;
-      return t(p.rotulo) + ' ' + (v === null ? '—' : num(v)) + (lid ? ' + ' + num(lid) + ' ' + t('diretores e coordenadores') : ''); }).join(' · ') }));
-  const memoria = [...memParam, ...itens.flatMap(i => i.linhas.filter(l => l.status !== 'falta' && l.tipo !== 'fechado').map(l => ({ id: i.id + ':' + l.chave, n: i.n, nome: i.nome, opcao: t(l.rotulo), texto: l.memoria })))];
+  const memoria = itens.flatMap(i => i.linhas.filter(l => l.status !== 'falta' && l.tipo !== 'fechado').map(l => ({ id: i.id + ':' + l.chave, n: i.n, nome: i.nome, opcao: t(l.rotulo), texto: l.memoria })));
   const usadas = todas.filter(l => l.status !== 'falta' && l.tipo !== 'fechado');
   return { itens, moeda, periodo: resumoFases(s, f), fonte: '', fases: porFase, disponiveis, selecionadas: sel,
     informado, informados, estimado, estimados, faltam, subtotal: informado, temSubtotal: informados > 0,

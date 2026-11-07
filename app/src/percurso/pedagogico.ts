@@ -1234,7 +1234,8 @@ export function orcamentoEd(s: EstadoEd) {
 export const TELAS_ED = [
   ["ed-intervencao", 2],
   ["ed-categorias", 2],
-  ["ed-fases", 3],
+  ["ed-opcoes", 3],
+  ["ed-fases", 4],
   ["ed-recursos", 4],
 ] as const;
 /** Versão de teste: Intervenção · Uso de IA (só com IA ou mista) · Orçamento. */

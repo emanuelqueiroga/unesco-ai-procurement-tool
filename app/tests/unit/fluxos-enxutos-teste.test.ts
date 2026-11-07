@@ -57,8 +57,8 @@ describe('versão de teste: fluxos enxutos por prioridade', () => {
   it('links antigos levam à tela mantida mais próxima', () => {
     expect(telaGovernancaLegada('gov-diagnostico')).toEqual({ n: 2, id: 'gov-equipe' });
     expect(telaGovernancaLegada('gov-revisao')).toEqual({ n: 3, id: 'gov-recursos' });
-    expect(TELAS_FORA_DO_FLUXO['lit-oferta']).toBe('lit-recursos'); // v017: a forma de entrega virou opção da 1.2
-    expect(TELAS_FORA_DO_FLUXO['lit-participantes']).toBe('lit-recursos'); // v017: professores e estudantes abrem nas opções
+    expect(TELAS_FORA_DO_FLUXO['lit-oferta']).toBe('lit-opcoes'); // v017: a forma de entrega virou opção da 1.2
+    expect(TELAS_FORA_DO_FLUXO['lit-participantes']).toBeUndefined(); // v017: Públicos voltou ao fluxo
     expect(TELAS_FORA_DO_FLUXO['ed-objetivos']).toBe('ed-intervencao');
     expect(TELAS_FORA_DO_FLUXO['ed-expansao']).toBe('ed-recursos');
   });
