@@ -53,7 +53,7 @@ describe('painel do plano', () => {
     expect(p.temNumeros).toBe(false);
     expect(p.kpis.every((k) => k.value === undefined)).toBe(true);
     expect(p.recs).toEqual([]);
-    expect(p.faltam).toBe(25);
+    expect(p.faltam).toBe(23);
   });
   it('o primeiro número aparece ao responder o tipo de tecnologia (2.3.4)', () => {
     rede();

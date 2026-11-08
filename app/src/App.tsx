@@ -24,7 +24,8 @@ export function App() {
   const tela = (() => {
     switch (rota.tipo) {
       case 'galeria': return <Galeria />;
-      case 'abertura': return <Abertura key={`a${rota.n}`} n={rota.n} />;
+      // v018: sem abertura do capítulo 1; o início leva direto à primeira pergunta, como na v017
+      case 'abertura': return rota.n === 1 ? <Pergunta key="p1local" n={1} tela="local" /> : <Abertura key={`a${rota.n}`} n={rota.n} />;
       case 'pergunta': return <Pergunta key={`p${rota.tela}`} n={rota.n} tela={rota.tela} />;
       case 'sintese': return <Sintese key={`s${rota.n}`} n={rota.n} foco={rota.foco} />;
       case 'plano': return <Plano pagina={rota.pagina} />;

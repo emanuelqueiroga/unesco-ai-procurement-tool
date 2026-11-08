@@ -62,7 +62,7 @@ describe('migrar: formato 13 → 14', () => {
     Object.keys(e.respC).forEach(k => expect(['informado', 'refinado']).toContain(e.origem[k]));
   });
   it('começa no Essencial, capítulo 1', () => {
-    expect(e.modo).toBe('essencial'); expect(e.capitulo.atual).toBe(1); expect(e.capitulo.pergunta).toBe('nivel');
+    expect(e.modo).toBe('essencial'); expect(e.capitulo.atual).toBe(1); expect(e.capitulo.pergunta).toBe('local');
   });
 });
 

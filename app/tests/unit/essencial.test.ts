@@ -7,10 +7,10 @@ import { CAMPOS, QUESTOES_G, REGRAS_REC } from '../../src/domain';
 const ids = new Set((CAMPOS as any[]).map(f => f.id).concat((QUESTOES_G as any[]).map(q => q.id)));
 
 describe('perguntas do Essencial', () => {
-  it('são 25 telas, em quatro capítulos, com ids únicos', () => {
-    expect(ESSENCIAL.length).toBe(25);
-    expect(new Set(ESSENCIAL.map(t => t.id)).size).toBe(25);
-    expect(telasDoCapitulo(1).length).toBe(11);
+  it('são 23 telas (v018: sem 1.1.1 e 1.1.3), em quatro capítulos, com ids únicos', () => {
+    expect(ESSENCIAL.length).toBe(23);
+    expect(new Set(ESSENCIAL.map(t => t.id)).size).toBe(23);
+    expect(telasDoCapitulo(1).length).toBe(9);
     expect(telasDoCapitulo(2).length).toBe(11);
     expect(telasDoCapitulo(3).length).toBe(1);
     expect(telasDoCapitulo(4).length).toBe(2);

@@ -170,7 +170,7 @@ describe('TRA-17: título da aba por tela', () => {
   it('início: só o nome da ferramenta', () => { expect(tituloDaAba({ tipo: 'inicio' })).toBe(NOME_FERRAMENTA); });
   it('pergunta: número, total e nome curto', () => {
     const t = tituloDaAba({ tipo: 'pergunta', n: 1, tela: ESSENCIAL[0].id });
-    expect(t).toBe(`Pergunta 1 de ${ESSENCIAL.length} · Nível da decisão · ${NOME_FERRAMENTA}`);
+    expect(t).toBe(`Pergunta 1 de ${ESSENCIAL.length} · Nome da rede · ${NOME_FERRAMENTA}`);
   });
   it('plano, abertura, síntese e refinar identificam a tela', () => {
     expect(tituloDaAba({ tipo: 'plano', pagina: 'custa' })).toBe(`Seu plano · Quanto custa · ${NOME_FERRAMENTA}`);

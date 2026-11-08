@@ -19,11 +19,11 @@ export interface TelaEssencial {
 // governança (1.3.1–1.3.6, uma tela), 2.0, 2.1.1, 2.2.1, 2.2.2+2.2.3, 2.3.4, 2.3.5, 2.3.8, 2.4.1+2.4.2, 2.4.3, 2.5.1+2.5.4,
 // 2.6.2, 3.1.1, 4.1.1, 4.1.2. As demais perguntas de CAMPOS ficam no modo Refinar com a premissa padrão.
 export const ESSENCIAL: TelaEssencial[] = [
-  { id: 'nivel', capitulo: 1, n: ['1.1.1'], campos: ['nivel'] },
+  // v018: o planejamento é sempre do país (sem 1.1.1) e vai do lugar direto à prioridade (sem 1.1.3), como na v017;
+  // os valores já salvos de nível e situação continuam guardados, e a situação usa a premissa padrão.
   { id: 'local', capitulo: 1, n: ['1.1.2'], campos: ['local'] },
-  { id: 'situacao', capitulo: 1, n: ['1.1.3'], campos: ['situacao'] },
-  { id: 'etapas', capitulo: 1, n: ['1.1.4', '1.1.5'], campos: ['etapas', 'grade'], nota: 'só totais; detalhe por ano em Refinar' },
   { id: 'prioridades', capitulo: 1, n: ['1.2.1'], campos: ['prioridades'] },
+  { id: 'etapas', capitulo: 1, n: ['1.1.4', '1.1.5'], campos: ['etapas', 'grade'], nota: 'só totais; detalhe por ano em Refinar' },
   { id: 'problemas', capitulo: 1, n: ['1.2.2'], campos: ['problemas'], nota: 'até 3; subcategorias e "outro problema" em Refinar' },
   { id: 'problema', capitulo: 1, n: ['1.2.4'], campos: ['problema'] },
   { id: 'impactos', capitulo: 1, n: ['1.2.5'], campos: ['impactos'] },

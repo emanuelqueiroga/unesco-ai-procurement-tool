@@ -122,7 +122,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
       <DentroDaMoldura.Provider value>
         <div className="pc-app pc-app--inicio">
           <a className="pc-pular" href="#conteudo" onClick={(e) => { e.preventDefault(); document.getElementById('conteudo')?.focus(); }}>{t('Pular para o conteúdo')}</a>
-          <Header logos={LOGOS} href={href.inicio()} compact={estreito} context={contexto} actions={<><SeletorIdioma compacto={estreito} />{botaoTema}{botaoCaso}</>} />
+          <Header logos={LOGOS} href={href.inicio()} compact={estreito} context={contexto} actions={<><SeletorIdioma compacto={estreito} />{botaoTema}</>} />
           {faixas}
           <div className="pc-corpo"><main id="conteudo" className="pc-main" tabIndex={-1}>{children}</main></div>
           <RodapeCompleto />

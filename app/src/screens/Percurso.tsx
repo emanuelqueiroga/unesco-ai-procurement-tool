@@ -99,7 +99,7 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
   const i = telas.findIndex((x) => x.id === id);
   const tela = telas[i];
   const prox = telas[i + 1] ? href.pergunta(n, telas[i + 1].id) : href.sintese(n);
-  const ant = i > 0 ? href.pergunta(n, telas[i - 1].id) : href.abertura(n);
+  const ant = i > 0 ? href.pergunta(n, telas[i - 1].id) : n === 1 ? href.inicio() : href.abertura(n);
   const sugeridos = sugeridosDaTela(s, tela);
   const ajuda = ajudaDeTela(tela.n, { modo: modoTeste(s.caso) });
   const dica = dicaDaTela(tela.campos);

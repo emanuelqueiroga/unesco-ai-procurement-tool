@@ -56,7 +56,7 @@ const TODAS = [1, 2, 3].flatMap(c => POR_CAPITULO[c]);
 
 describe('REC-52: as 13 perguntas existem, fora do Essencial, numeradas no capítulo certo', () => {
   it('o Essencial continua com exatamente 25 telas, e nenhuma pergunta nova está nele', () => {
-    expect(ESSENCIAL.length).toBe(25);
+    expect(ESSENCIAL.length).toBe(23);
     TODAS.forEach(c => expect(CAMPOS_ESSENCIAIS, c).not.toContain(c));
   });
   it('são 13, todas em CAMPOS, marcadas `opcional`, do caso, com tipo que o Refinar sabe desenhar', () => {
