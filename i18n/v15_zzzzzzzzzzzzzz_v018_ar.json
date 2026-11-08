@@ -1,0 +1,17 @@
+{
+ "{n} de {total}": "{n} of {total}",
+ "{nome}, concluída": "{nome}, completed",
+ "{nome}: {pct}% respondido": "{nome}: تمت الإجابة عن {pct}%",
+ "Ao avançar, você aceita as sugestões exibidas.": "بالانتقال إلى الخطوة التالية، تقبل الاقتراحات المعروضة.",
+ "Custo deste projeto": "Cost of this project",
+ "Etapa {n} de {total}": "Stage {n} of {total}",
+ "Etapas da frente": "Workstream stages",
+ "Fechar o menu": "Close the menu",
+ "Menu": "Menu",
+ "Navegação do planejamento": "Planning navigation",
+ "País: ———": "البلد: ———",
+ "Plano": "Plan",
+ "Próximo": "التالي",
+ "Voltar": "رجوع",
+ "Versão de teste {v} — não substitui a versão publicada": "Test version {v} — does not replace the published version"
+}

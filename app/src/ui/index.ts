@@ -60,7 +60,7 @@ export { Toast } from './Toast/Toast';
 export type { ToastProps } from './Toast/Toast';
 
 // Componentes de estrutura.
-export { QuestionFrame } from './QuestionFrame/QuestionFrame';
+export { QuestionFrame, AcoesForaDoQuadro } from './QuestionFrame/QuestionFrame';
 export type { QuestionFrameProps } from './QuestionFrame/QuestionFrame';
 
 export { PlanDrawer } from './PlanDrawer/PlanDrawer';
@@ -88,3 +88,5 @@ export { formatarDigitando, lerDigitado, paraTexto, separadores } from './Numero
 export { Popover } from './Popover/Popover';
 export type { PopoverProps } from './Popover/Popover';
 export { Termo, TextoComTermos } from './Termo';
+export { StepBar } from './StepBar/StepBar';
+export type { StepBarProps, Step } from './StepBar/StepBar';

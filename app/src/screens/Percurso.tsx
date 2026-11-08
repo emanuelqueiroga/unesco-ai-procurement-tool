@@ -1,4 +1,5 @@
 // Telas do percurso: abertura de capítulo (D2), pergunta (D3–D6, M2, M3) e síntese de capítulo (D7).
+import { AcoesPercurso } from './AcoesPercurso';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   CAMPO_POR_ID, textoCampo, tr, REF_TCO, INFO_C236, modoTeste, ajudaDeTela, dicaDaTela, dicaDoCampo, quemSabe,
@@ -110,12 +111,10 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
   const lead = id === 'problemas' && s.modo === 'refinar'
     ? 'Marque os problemas que quer resolver; no modo Refinar não há limite. Cada problema já traz uma descrição, impactos e tarefas que a IA pode apoiar; você ajusta depois.'
     : LEAD[id] || null;
-  const numeroGlobal = ESSENCIAL.indexOf(tela) + 1;
   return (
     <Shell pos={{ capitulo: n, tela: id }} contexto={t('Capítulo {n} · {nome}', { n, nome: t(CAPITULOS_INFO[n].titulo) })}>
       <div className="pc-pergunta" data-tela={id}>
         <QuestionFrame
-          kicker={t('Capítulo {n} · {nome} · pergunta {i} de {total}', { n, nome: t(CAPITULOS_INFO[n].titulo), i: i + 1, total: telas.length })}
           title={tituloTela(s, id)}
           explanation={
             <>
@@ -124,26 +123,20 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
             </>
           }
           help={porque && ajuda ? <AjudaPergunta ajuda={ajuda} /> : null}
-          actions={
-            <div className="pc-botoes">
-              <Button onClick={continuar}>{confirmaveis.length ? t('Aceitar a sugestão e continuar') : t('Continuar')}</Button>
-              <Button variant="secondary" href={prox}>{t('Pular por agora')}</Button>
-              {ajuda ? (
-                <Button variant="link" aria-expanded={porque} aria-controls={porque ? 'pc-ajuda' : undefined} onClick={() => setPorque((x) => !x)}>
-                  {porque ? t('Fechar a explicação') : t('Por que perguntamos isso?')}
-                </Button>
-              ) : null}
-            </div>
-          }
+          actions={<AcoesPercurso anterior={ant} avancar={continuar} />}
           affectsPrefix={t('Esta resposta muda no plano:')}
           affects={linhaAfeta(afetados, +s.caso.horizonte || 3)}
         >
           <ControlesTela e={s} tela={tela} />
+          {ajuda ? (
+            <div className="pc-botoes">
+              <Button variant="link" aria-expanded={porque} aria-controls={porque ? 'pc-ajuda' : undefined} onClick={() => setPorque((x) => !x)}>
+                {porque ? t('Fechar a explicação') : t('Por que perguntamos isso?')}
+              </Button>
+            </div>
+          ) : null}
+          {confirmaveis.length ? <p className="pc-nota">{t('Ao avançar, você aceita as sugestões exibidas.')}</p> : null}
         </QuestionFrame>
-        <nav className="pc-voltar" aria-label={t('Navegação entre perguntas')}>
-          <a href={ant}><span aria-hidden="true" className="pc-seta-voltar">← </span>{i > 0 ? t('Pergunta anterior') : t('Abertura do capítulo')}</a>
-          <span className="pc-nota">{t('Pergunta {i} de {n} do Essencial', { i: numeroGlobal, n: ESSENCIAL.length })}</span>
-        </nav>
       </div>
     </Shell>
   );

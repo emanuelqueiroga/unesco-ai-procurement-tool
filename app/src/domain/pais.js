@@ -51,7 +51,7 @@ function nomePais(p) {
 }
 /** países em ordem alfabética do nome exibido */
 function paisesOrdenados() {
-  const L = listaPaises().map(p => ({ iso3: p.iso3, nome: nomePais(p), moeda: p.moeda, regiao: p.regiao }));
+  const L = listaPaises().map(p => ({ iso2: ISO2[p.iso3], iso3: p.iso3, nome: nomePais(p), moeda: p.moeda, regiao: p.regiao }));
   try { return L.sort((a, b) => a.nome.localeCompare(b.nome, String(LOC()))); } catch (e) { return L; }
 }
 /** cadeia de escopos do país (['BRA', 'LAC', 'global']); null sem país (não listado ou não respondido): vale só o global, como na v13 */

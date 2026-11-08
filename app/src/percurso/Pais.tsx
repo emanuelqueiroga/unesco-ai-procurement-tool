@@ -4,12 +4,13 @@
 // o país anterior que a pôs); a nota diz moeda, taxa de referência, região e grupo de renda, com a fonte. Trocar de
 // país com valores do perfil editados pede confirmação (eles voltam aos da base); com a calculadora editada, o aviso
 // `pendente` da calculadora pergunta se mantém as edições (nada é descartado em silêncio).
-import { useId } from 'react';
+import { useEffect, useId } from 'react';
 import { notaPais, paisesOrdenados, nomeMoeda, tr, LOC, OUTRO_PAIS } from '../domain';
 import { useCaso } from '../store';
 import { confirmar, avisar } from '../screens/Confirmar';
 import { taxaReferencia } from '../screens/refinar/calc';
 import { t } from './textos';
+import { paisDoNavegador } from './paisLocal';
 import '../screens/refinar.css';
 import '../screens/refinar/referencias.css';
 
@@ -28,7 +29,10 @@ export function textoNotaPais(pais: string): string {
   return partes.filter(Boolean).join(' ');
 }
 
-export function Pais({ semNota }: { semNota?: boolean }) {
+/** Sugestão pelo fuso horário: no máximo uma vez por carregamento da página. */
+let jaSugerido = false;
+
+export function Pais({ semNota, sugerir }: { semNota?: boolean; sugerir?: boolean }) {
   const pais = useCaso((s) => String(s.caso.pais || ''));
   const nEditados = useCaso((s) => Object.keys(s.caso.editados || {}).length);
   const escolherPais = useCaso((s) => s.escolherPais);
@@ -45,6 +49,16 @@ export function Pais({ semNota }: { semNota?: boolean }) {
     const r = escolherPais(v);
     if (r.moeda) avisar(t('Moeda ajustada para') + ' ' + r.moeda + '.');
   };
+  // Campo vazio na tela do lugar: vem com o país do fuso horário do navegador (ou da região do idioma); nunca troca
+  // um país já escolhido ou salvo.
+  useEffect(() => {
+    if (!sugerir || pais || jaSugerido) return;
+    jaSugerido = true;
+    const todos = paisesOrdenados();
+    const i2 = paisDoNavegador(new Set(todos.map((p: any) => p.iso2).filter(Boolean)));
+    const p = i2 ? todos.find((x: any) => x.iso2 === i2) : null;
+    if (p) void mudar(p.iso3);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="rf-pais">
       <label className="rf-rotulo" htmlFor={id}>{t('Em que país fica a rede?')} ({t('opcional')})</label>

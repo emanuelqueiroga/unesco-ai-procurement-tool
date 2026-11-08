@@ -11,22 +11,27 @@
 .pr-questionframe-kicker {
   font-size: 13px;
   line-height: 18px;
-  color: var(--muted);
+  font-weight: 600;
+  color: var(--primary);
 }
 
+/* A pergunta em Noto Serif 600 (cobre os nove idiomas). */
 .pr-questionframe-title {
-  font-size: 26px;
-  line-height: 32px;
+  font-family: var(--font-serif);
+  font-size: 34px;
+  line-height: 42px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--ink);
-  max-width: 640px;
+  max-width: 700px;
+  text-wrap: balance;
 }
 
 .pr-questionframe-text {
-  font-size: 16px;
-  line-height: 24px;
+  font-size: 17px;
+  line-height: 26px;
   color: var(--ink-2);
-  max-width: 560px;
+  max-width: 60ch;
 }
 
 .pr-questionframe-help {
@@ -35,7 +40,7 @@
 }
 
 .pr-questionframe-control {
-  max-width: 640px;
+  max-width: 700px;
 }
 
 .pr-questionframe-actions {
@@ -61,8 +66,12 @@
     gap: var(--space-4);
   }
   .pr-questionframe-title {
-    font-size: 24px;
-    line-height: 30px;
+    font-size: 26px;
+    line-height: 32px;
+  }
+  .pr-questionframe-text {
+    font-size: 16px;
+    line-height: 24px;
   }
 }
 
