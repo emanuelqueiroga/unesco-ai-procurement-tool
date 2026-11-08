@@ -1,0 +1,23 @@
+/* v018: "i" de explicação do fluxo da governança (InfoDica.tsx) */
+.pc-dica { position: relative; display: inline-flex; vertical-align: middle; }
+.pc-dica-botao { display: inline-flex; align-items: center; justify-content: center; inline-size: 32px; block-size: 32px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--ink-3, var(--ink-2)); cursor: help; }
+.pc-dica-botao:hover, .pc-dica-botao[aria-expanded="true"] { color: var(--primary); background: var(--primary-tint, transparent); }
+.pc-dica-botao:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.pc-dica-balao { position: absolute; z-index: 40; inset-block-start: calc(100% + 4px); inset-inline-end: 0; inline-size: min(300px, calc(100vw - 48px)); padding: var(--space-3) var(--space-4); background: var(--surface-1); color: var(--ink-2); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-md); font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: normal; text-transform: none; text-align: start; white-space: normal; }
+.pc-dica--inicio .pc-dica-balao { inset-inline-end: auto; inset-inline-start: 0; }
+
+/* no cartão de opção: o "i" no canto superior, fora do <label> */
+.pc-dica-cartao { position: relative; display: flex; min-width: 0; }
+.pc-dica-cartao > .pr-optioncard { flex: 1; min-width: 0; }
+/* mais específico que .pc-lit-opcoes .pr-optioncard(--selected), que define o padding do cartão */
+.pc-dica-cartao > .pr-optioncard.pr-optioncard { padding-inline-end: 44px; }
+.pc-dica-cartao > .pc-dica { position: absolute; inset-block-start: 6px; inset-inline-end: 6px; }
+.pc-lit-opcoes > .pc-dica-cartao:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+/* ao lado de um título ou rótulo */
+.pc-dica-titulo { display: inline-flex; align-items: center; gap: 2px; }
+.pc-dica-campo { display: flex; align-items: flex-end; gap: 4px; min-width: 0; }
+.pc-dica-campo > .pc-dica { margin-block-end: 6px; }
+.pc-dica-campo > .pr-textfield { min-inline-size: max-content; }
+.pv-v17-cat-nome > .pc-dica, .pv-v17-cat-nome .pc-dica-botao { vertical-align: middle; }
+.pc-dica-campo .pr-textfield-label { text-align: start; align-self: flex-start; }

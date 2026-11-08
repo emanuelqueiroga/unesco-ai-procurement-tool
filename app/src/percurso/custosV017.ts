@@ -126,7 +126,8 @@ const novos = (n: number, x: FaseCalc, anterior: number) => Math.max(0, Math.rou
 /** Custo de uma opção por fase. `taxa` = moeda do plano por US$ (4 casas), para a referência sugerida. */
 export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, catId: string, rotulo: string, salvo: CustoSalvo, fases: FaseCalc[], taxa: number | null,
   fmt: (v: number) => string, num: (v: number) => string): LinhaOpcao {
-  const pad = padraoOpcao(f, catId, rotulo), tipo: TipoCusto = salvo.tipo && TIPOS[salvo.tipo] ? salvo.tipo : pad.tipo, def = TIPOS[tipo];
+  // v018: na governança cada opção tem a forma de cálculo fixa (sem "Como calcular"); um tipo salvo antes fica guardado
+  const pad = padraoOpcao(f, catId, rotulo), tipo: TipoCusto = f !== 'governanca' && salvo.tipo && TIPOS[salvo.tipo] ? salvo.tipo : pad.tipo, def = TIPOS[tipo];
   const sug = def.qtd ? quantidadeSugerida(s, pad.fonte) : null;
   const qtd = positivo(salvo.qtd) ? salvo.qtd : (tipo === pad.tipo ? sug : null), qtdSugerida = !positivo(salvo.qtd) && qtd !== null;
   const horas = positivo(salvo.horas) ? salvo.horas : null;

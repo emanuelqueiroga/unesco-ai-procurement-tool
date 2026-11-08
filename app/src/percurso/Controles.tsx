@@ -17,6 +17,7 @@ import {
 import { fmt } from './ambiente';
 import { CampoNumero } from './CampoNumero';
 import { t, plural } from './textos';
+import { CartaoComDica } from '../screens/InfoDica';
 import { href } from './rota';
 import {
   MAX_POR_CAMPO, linhasDeOndas, ondaEditada, errosDaOnda, avisoOndas, casasDoCampo, valorComCasas, erroDeIntervalo, horizonteDoCaso,
@@ -699,10 +700,10 @@ function ProblemasGov({ e }: { e: Estado14 }) {
         const legados = p.problemas.filter((q: any) => !q.v016 && atual.includes(q.id));
         const cartao = (q: any) => {
           const on = atual.includes(q.id);
-          return <OptionCard key={q.id} type="checkbox" name="problemas" value={q.id}
+          return <CartaoComDica key={q.id} chave={q.t}><OptionCard type="checkbox" name="problemas" value={q.id}
             label={<>{t(q.t)}{q.v015 ? (q.desc ? <span className="pr-optioncard-desc">{t(q.desc)}</span> : null) : <span className="pr-optioncard-desc"><span className="pcx-obj">{t('Objetivo:')}</span> {t(q.obj)}</span>}</>}
             checked={on}
-            onChange={(v, marcado) => grava(problemasDoGrupo(atual, ORDEM_PROBLEMAS, [v], marcado))} />;
+            onChange={(v, marcado) => grava(problemasDoGrupo(atual, ORDEM_PROBLEMAS, [v], marcado))} /></CartaoComDica>;
         };
         const ids: string[] = [...atuais, ...legados].map((q: any) => q.id);
         const n = ids.filter((k) => atual.includes(k)).length;
