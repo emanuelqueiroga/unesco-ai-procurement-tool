@@ -1,0 +1,71 @@
+/* Anatomia comum aos percursos revisados, sem alterar a página estável ou a v014. */
+.pc-app--orientado .pc-gov-escolha {
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.pc-app--orientado .pc-gov-campos {
+  margin: 0;
+  gap: 28px;
+}
+.pc-app--orientado .pc-gov-escolha .pc-gov-rotulo {
+  margin: 0;
+  font-size: 15px;
+  line-height: 22px;
+}
+.pc-app--orientado .pc-gov-card {
+  margin: 0;
+}
+.pc-app--orientado .pc-gov-lista {
+  margin: 0;
+  gap: 24px;
+}
+.pc-app--orientado .pc-gov-grupo-conteudo {
+  display: grid;
+  gap: 24px;
+}
+.pc-app--orientado .pc-gov-grupo-conteudo > h2 {
+  margin: 0;
+}
+.pc-app--orientado .pc-gov-detalhes {
+  margin: 0;
+}
+.pc-app--orientado .pc-pergunta .pc-grupo-titulo {
+  margin-block: 0 16px;
+}
+.pc-app--orientado .pc-pergunta .pr-optiongroup {
+  max-width: none;
+}
+.pc-app--orientado .pcx-anos-campos {
+  min-width: 0;
+}
+.pc-app--orientado .pc-gov-frentes .pc-botoes {
+  flex-wrap: wrap;
+}
+.pc-app--orientado .pc-gov-plano {
+  display: grid;
+  gap: 24px;
+  max-width: 900px;
+  margin-inline: auto;
+}
+.pc-app--orientado .pc-gov-plano > .pc-gov-card {
+  margin: 0;
+}
+.pc-app--orientado .pc-lit-grupo-dados > .pc-lit-opcoes {
+  grid-column: 1/-1;
+}
+@media (max-width: 600px) {
+  .pc-app--orientado .pr-questionframe-actions {
+    width: 100%;
+  }
+  .pc-app--orientado .pc-gov-frentes {
+    margin-bottom: 24px;
+  }
+}
+@media (max-width: 600px) {
+  .pc-gov-frentes .pc-botoes { display: grid; grid-template-columns: minmax(0,1fr); }
+  .pc-gov-frentes .pc-botoes > .pr-button { width: 100%; justify-content: center; white-space: normal; }
+}
+:is(.pc-app--orientado,.pc-app--letramento) .pc-gov-frentes { max-width: 760px; margin-inline: auto; }
+.pc-app--orientado .pc-gov-plano { max-width: 760px; }

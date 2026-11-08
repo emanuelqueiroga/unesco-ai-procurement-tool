@@ -1,3 +1,4 @@
+import { DESAFIOS_GOV_V016 } from './catalogo_v016.js';
 import { OPC } from './framework.js';
 
 // =====================================================================
@@ -119,6 +120,8 @@ const PRIORIDADES = [
     ],
   },
 ];
+// v018: os desafios da governança da v017 (G21–G23); aparecem só no fluxo da governança (prioridade única)
+PRIORIDADES.find(p => p.id === 'governar').problemas.push(...DESAFIOS_GOV_V016);
 const PROBLEMA_POR_ID = {};
 const PRIORIDADE_DO_PROBLEMA = {};
 PRIORIDADES.forEach(p => p.problemas.forEach(q => { PROBLEMA_POR_ID[q.id] = q; PRIORIDADE_DO_PROBLEMA[q.id] = p.id; }));

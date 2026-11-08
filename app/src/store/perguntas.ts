@@ -1,6 +1,6 @@
 // Perguntas do modo Essencial e vínculo resposta → trecho do plano
 // (spec, "Mapa das 51 perguntas para as 24 do Essencial" e "Comportamentos que fazem a narrativa").
-import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste } from '../domain';
+import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoGovernanca } from '../domain';
 import type { Capitulo } from './tipos';
 
 export interface TelaEssencial {
@@ -49,8 +49,24 @@ export const ESSENCIAL: TelaEssencial[] = [
 /** ids de todos os campos do Essencial (inclui g-*) */
 export const CAMPOS_ESSENCIAIS: string[] = ESSENCIAL.flatMap(t => t.campos);
 export const CAPITULOS: Capitulo[] = [1, 2, 3, 4];
-export function telasDoCapitulo(n: Capitulo): TelaEssencial[] { return ESSENCIAL.filter(t => t.capitulo === n); }
-export function telaDoCampo(campo: string): TelaEssencial | undefined { return ESSENCIAL.find(t => t.campos.includes(campo)); }
+export type EscopoPercurso = { ctx?: Record<string, any> };
+// v018: o fluxo da governança é o da v017 (Contexto → Categorias → Opções, com os valores de cada opção marcada); vale
+// quando a única prioridade é a governança. As demais combinações seguem o percurso da 0.0.14 (ESSENCIAL).
+export const GOVERNANCA: TelaEssencial[] = [
+  ...ESSENCIAL.filter(t => ['local', 'prioridades', 'problemas'].includes(t.id)),
+  { id: 'gov-categorias', capitulo: 2, n: [], campos: ['govOrcamento'] },
+  { id: 'gov-opcoes', capitulo: 3, n: [], campos: ['govOrcamento'] },
+];
+/** Telas da governança que saíram do fluxo nas versões anteriores → a tela mantida mais próxima. */
+export const TELAS_FORA_DO_FLUXO: Record<string, string> = {
+  'gov-recursos': 'gov-opcoes', 'gov-equipe': 'gov-categorias', 'gov-fases': 'gov-opcoes',
+  'gov-projeto': 'gov-categorias', 'gov-diagnostico': 'gov-categorias', 'gov-instrumentos': 'gov-categorias', 'gov-solucoes': 'gov-categorias',
+  'gov-atores': 'gov-categorias', 'gov-capacidade': 'gov-categorias', 'gov-acoes': 'gov-opcoes', 'gov-sandbox': 'gov-opcoes', 'gov-revisao': 'gov-opcoes',
+};
+export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id))];
+export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] { return percursoGovernanca(e?.ctx) ? GOVERNANCA : ESSENCIAL; }
+export function telasDoCapitulo(n: Capitulo, e?: EscopoPercurso): TelaEssencial[] { return telasAtivas(e).filter(t => t.capitulo === n); }
+export function telaDoCampo(campo: string): TelaEssencial | undefined { return ESSENCIAL.find(t => t.campos.includes(campo)) || TODAS_TELAS.find(t => t.campos.includes(campo)); }
 export function essencial(campo: string): boolean { return CAMPOS_ESSENCIAIS.includes(campo); }
 // Campos que o Refinar grava em ctx/caso mas que não são perguntas de CAMPOS (subcategorias e "Outro problema" do 1.2.2).
 // ondeMora (caso.ts) procura o campo em CAMPO_POR_ID para saber se mora em ctx; sem este registro eles iriam para `caso`.
@@ -58,6 +74,8 @@ export function essencial(campo: string): boolean { return CAMPOS_ESSENCIAIS.inc
   const reg: any = CAMPO_POR_ID;
   if (!reg.subs) reg.subs = { id: 'subs', onde: 'ctx', tipo: 'extra', passo: '' };
   if (!reg.problemaOutro) reg.problemaOutro = { id: 'problemaOutro', onde: 'ctx', tipo: 'extra', passo: '' };
+  // v018: dados do fluxo da governança (v017), guardados em ctx
+  for (const id of ['govOrcamento', 'frenteAtiva', 'govSelecoes', 'govDetalhes', 'letramento', 'educacao']) { if (!reg[id]) reg[id] = { id, onde: 'ctx', tipo: 'extra', passo: '' }; }
 }
 /** capítulo dos campos de detalhe que não são perguntas de CAMPOS */
 const CAPITULO_EXTRA: Record<string, Capitulo> = { subs: 1, problemaOutro: 1, linhaBaseProblemas: 1, linhaBaseProblemaTxt: 1, linhaBaseMedida: 1 };

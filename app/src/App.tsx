@@ -3,6 +3,9 @@ import { Galeria } from './screens/Galeria';
 import { Inicio } from './screens/Inicio';
 import { Abertura, Pergunta, Sintese } from './screens/Percurso';
 import { Prioridades } from './screens/Prioridades';
+import { Governanca } from './screens/Governanca';
+import { RecebidoHost } from './screens/CompartilharV16';
+import { percursoGovernanca } from './domain';
 import { Plano } from './screens/Plano';
 import { useRota } from './percurso/rota';
 import { useCaso } from './store';
@@ -15,6 +18,7 @@ export function App() {
   const rota = useRota();
   // a posição no percurso fica no caso (capitulo.atual/pergunta), para "continuar de onde parei"
   const irPara = useCaso((s) => s.irPara);
+  const ctx = useCaso((s) => s.ctx);
   const chave = rota.tipo === 'pergunta' ? `${rota.n}/${rota.tela}` : '';
   useEffect(() => {
     if (rota.tipo !== 'pergunta') return;
@@ -23,6 +27,11 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chave]);
   const tela = (() => {
+    // v018: com a governança como única prioridade, o fluxo é o da v017 (Contexto → Categorias → Opções → resumo)
+    // o lugar e as prioridades continuam as telas da v018 (iguais às da v017)
+    const telaPrioridades = rota.tipo === 'pergunta' && rota.n === 1 && ['local', 'prioridades'].includes(rota.tela);
+    if (percursoGovernanca(ctx) && !telaPrioridades && !['inicio', 'galeria'].includes(rota.tipo))
+      return <Governanca key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo === 'abertura' || rota.tipo === 'sintese' ? `${rota.tipo}${rota.n}` : rota.tipo} rota={rota} />;
     switch (rota.tipo) {
       case 'galeria': return <Galeria />;
       // v018: sem abertura do capítulo 1; o início leva direto à primeira pergunta, como na v017
@@ -34,5 +43,5 @@ export function App() {
       default: return <Inicio />;
     }
   })();
-  return <><FaixaRevisao />{tela}<ConfirmacaoHost /><AvisosHost /></>;
+  return <><FaixaRevisao /><RecebidoHost />{tela}<ConfirmacaoHost /><AvisosHost /></>;
 }

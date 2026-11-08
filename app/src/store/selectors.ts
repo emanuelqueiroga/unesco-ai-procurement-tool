@@ -1,9 +1,10 @@
 // Seletores: derivações puras do estado v14 para a interface (plano, KPIs, recomendações, progresso).
 // Recebem o Estado14 (ou o store) e nunca o mutam: cfgAtual guarda a cfg em estado.custo, por isso recebe uma cópia.
 import { clone, cfgAtual, numerosCusto, casoAtual, perfil, recomendacoesCaso, premissasUnitarias, faltasEstimativa, modoTeste, QUESTOES_G, CAMPO_POR_ID,
-  etapasAtivas, alunosEtapa, problemasMarcados, temLacuna } from '../domain';
+  etapasAtivas, alunosEtapa, problemasMarcados, temLacuna, prioridadesDoPercurso } from '../domain';
 import type { Estado14, Origem, Capitulo } from './tipos';
-import { ESSENCIAL, telasDoCapitulo, type TelaEssencial } from './perguntas';
+import { ESSENCIAL, telasAtivas, telasDoCapitulo, type TelaEssencial } from './perguntas';
+import { governancaRespondida } from '../percurso/governanca';
 import { soEstado, valorDe } from './caso';
 
 /** cfg de custo do caso (ou do preset escolhido em custo.base), sem gravar no estado */
@@ -47,7 +48,7 @@ export function respostaReal(s: Estado14, campo: string): boolean {
     case 'texto': case 'area': return String(v ?? '').trim() !== '' && !temLacuna(String(v));
     case 'num': case 'horas': return +v > 0;
     case 'etapas': return etapasAtivas(s.ctx).length > 0;
-    case 'problemas': return problemasMarcados(s.ctx).length > 0 || String(s.ctx.problemaOutro || '').trim() !== '';
+    case 'problemas': return problemasMarcados({ ...s.ctx, prioridades: prioridadesDoPercurso(s.ctx) }).length > 0 || String(s.ctx.problemaOutro || '').trim() !== '';
     case 'setup': case 'implant': return v != null && typeof v === 'object' && Object.values(v).some((x: any) => +x > 0);
     default: return temValor(v);
   }
@@ -60,6 +61,7 @@ export function etapasCompletas(s: Estado14): boolean {
 /** a tela do Essencial está respondida? (governança: as seis perguntas; as demais: o campo principal e os ativos obrigatórios,
  *  cada um com resposta real; etapas: todas as marcadas com escolas e estudantes; problemas: ao menos um ou "Outro problema") */
 export function telaRespondida(s: Estado14, t: TelaEssencial): boolean {
+  if (t.id.startsWith('gov-')) return governancaRespondida(s, t.id);
   if (t.id === 'governanca') return t.campos.every(g => !!s.resp[g]);
   if (t.id === 'etapas') return (respondido(s, 'etapas') || respondido(s, 'grade')) && etapasCompletas(s);
   if (t.id === 'problemas') return String(s.ctx.problemaOutro || '').trim() !== '' || (respondido(s, 'problemas') && respostaReal(s, 'problemas'));
@@ -69,19 +71,19 @@ export function telaRespondida(s: Estado14, t: TelaEssencial): boolean {
 export interface Progresso { capitulo: Capitulo; total: number; feitas: number; completo: boolean }
 export function progressoDe(s: Estado14): Progresso[] {
   return ([1, 2, 3, 4] as Capitulo[]).map(c => {
-    const telas = telasDoCapitulo(c), feitas = telas.filter(t => telaRespondida(s, t)).length;
+    const telas = telasDoCapitulo(c, s), feitas = telas.filter(t => telaRespondida(s, t)).length;
     return { capitulo: c, total: telas.length, feitas, completo: feitas === telas.length };
   });
 }
-export function faltamDe(s: Estado14): TelaEssencial[] { return ESSENCIAL.filter(t => !telaRespondida(s, t)); }
-export function telaAtual(s: Estado14): TelaEssencial { return ESSENCIAL.find(t => t.id === s.capitulo.pergunta) || telasDoCapitulo(s.capitulo.atual)[0] || ESSENCIAL[0]; }
+export function faltamDe(s: Estado14): TelaEssencial[] { return telasAtivas(s).filter(t => !telaRespondida(s, t)); }
+export function telaAtual(s: Estado14): TelaEssencial { return telasAtivas(s).find(t => t.id === s.capitulo.pergunta) || telasDoCapitulo(s.capitulo.atual, s)[0] || ESSENCIAL[0]; }
 export function proximaTela(s: Estado14): TelaEssencial | null {
-  const i = ESSENCIAL.indexOf(telaAtual(s));
-  return ESSENCIAL[i + 1] || null;
+  const telas = telasAtivas(s), i = telas.indexOf(telaAtual(s));
+  return telas[i + 1] || null;
 }
 export function telaAnterior(s: Estado14): TelaEssencial | null {
-  const i = ESSENCIAL.indexOf(telaAtual(s));
-  return i > 0 ? ESSENCIAL[i - 1] : null;
+  const telas = telasAtivas(s), i = telas.indexOf(telaAtual(s));
+  return i > 0 ? telas[i - 1] : null;
 }
 /** campos do modo Refinar: os de CAMPOS que não estão em nenhuma tela do Essencial, por capítulo */
 export function camposRefinar(capitulo: Capitulo): string[] {

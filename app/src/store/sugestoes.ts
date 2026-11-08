@@ -3,7 +3,7 @@
 // pelo store com sugerir(); só campos ainda 'padrao' ou 'sugerido' entram. Para os campos de experiência de uso
 // (2.2) já informados, a união nova com o que as tarefas sugerem (juntarSugestao) vai em `revisar`, para a
 // interface pedir revisão em vez de substituir a resposta (no legado o valor era trocado e desconfirmado).
-import { CASO_VAZIO, padroesGerados, sugProblemas, juntarSugestao, perfisSugeridos, totaisCtx,
+import { somenteGovernanca, CASO_VAZIO, padroesGerados, sugProblemas, juntarSugestao, perfisSugeridos, totaisCtx,
   CAMPOS_GERADOS, CAMPOS_PROB, CAMPOS_SUGERIDOS, SUB_OBJ, clone } from '../domain';
 import type { Estado14, Sugestao } from './tipos';
 
@@ -17,6 +17,8 @@ export function aceitaSugestao(estado: Estado14, campo: string): boolean {
 export interface ResultadoSugestoes { sugestoes: Sugestao[]; revisar: { campo: string; valor: any }[] }
 
 export function aplicarSugestoes(estado: Estado14): ResultadoSugestoes {
+  // v018: o fluxo da governança (v017) não sugere ferramenta, tarefas nem custos de projeto
+  if (somenteGovernanca(estado.ctx)) return { sugestoes: [], revisar: [] };
   const c: any = estado.caso || {}, x: any = estado.ctx || {};
   const out: Sugestao[] = [], revisar: { campo: string; valor: any }[] = [];
   const push = (campo: string, valor: any, deQuem: string, atual: any) => { if (!igual(atual, valor)) out.push({ campo, valor, deQuem }); };

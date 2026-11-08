@@ -7,7 +7,7 @@
 import { Fragment, createContext, useContext, useId, useState, type ReactNode } from 'react';
 import {
   CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
-  listaOpc, totaisCtx, alunosEtapa, etapasAtivas, modoTeste, horasEstimativa, lerNumero, problemasMarcados, sugProblemas, temLacuna, rotulo, pct, tr,
+  somenteGovernanca, prioridadesDoPercurso, listaOpc, totaisCtx, alunosEtapa, etapasAtivas, modoTeste, horasEstimativa, lerNumero, problemasMarcados, sugProblemas, temLacuna, rotulo, pct, tr,
 } from '../domain';
 import { useCaso, origemDe, valorDe, type Estado14, type TelaEssencial } from '../store';
 import {
@@ -683,9 +683,58 @@ function OutroProblema({ e }: { e: Estado14 }) {
   );
 }
 
+/** v018: os desafios do fluxo da governança, como na v017 (G21–G23, sem limite; escolhas antigas recolhidas). */
+function ProblemasGov({ e }: { e: Estado14 }) {
+  const responder = useCaso((s) => s.responder);
+  const refinando = useRefinando();
+  const pr: string[] = prioridadesDoPercurso(e.ctx);
+  const atual: string[] = e.ctx.problemas || [];
+  const P = (PRIORIDADES as any[]).filter((p) => pr.includes(p.id));
+  if (!P.length) return <p className="pc-aviso">{t('Escolha uma prioridade para ver os desafios.')}</p>;
+  const grava = (lista: string[]) => responder('problemas', lista);
+  return (
+    <div className="pc-grupos">
+      {P.map((p) => {
+        const atuais = p.problemas.filter((q: any) => q.v016);
+        const legados = p.problemas.filter((q: any) => !q.v016 && atual.includes(q.id));
+        const cartao = (q: any) => {
+          const on = atual.includes(q.id);
+          return <OptionCard key={q.id} type="checkbox" name="problemas" value={q.id}
+            label={<>{t(q.t)}{q.v015 ? (q.desc ? <span className="pr-optioncard-desc">{t(q.desc)}</span> : null) : <span className="pr-optioncard-desc"><span className="pcx-obj">{t('Objetivo:')}</span> {t(q.obj)}</span>}</>}
+            checked={on}
+            onChange={(v, marcado) => grava(problemasDoGrupo(atual, ORDEM_PROBLEMAS, [v], marcado))} />;
+        };
+        const ids: string[] = [...atuais, ...legados].map((q: any) => q.id);
+        const n = ids.filter((k) => atual.includes(k)).length;
+        return (
+          <section key={p.id} className="pc-grupo">
+            <div className="pcx-grupo-cab">
+              <h2 className="pc-grupo-titulo">{t(p.nome)}</h2>
+              {refinando ? (
+                <>
+                  <span className="pc-contador" aria-live="polite">{t('{n} de {m} marcados', { n, m: ids.length })}</span>
+                  <span className="pcx-grupo-acoes">
+                    <Button variant="secondary" size="sm" disabled={n === ids.length} onClick={() => grava(problemasDoGrupo(atual, ORDEM_PROBLEMAS, ids, true))}>{t('Marcar todos')}</Button>
+                    <Button variant="secondary" size="sm" disabled={n === 0} onClick={() => grava(problemasDoGrupo(atual, ORDEM_PROBLEMAS, ids, false))}>{t('Desmarcar todos')}</Button>
+                  </span>
+                </>
+              ) : null}
+            </div>
+            <OptionCardGroup label={t(p.nome)} type="checkbox">{atuais.map(cartao)}</OptionCardGroup>
+            {legados.length ? <Recolher titulo={t('Desafios de versões anteriores')} aberto>
+              <OptionCardGroup label={t('Desafios de versões anteriores')} type="checkbox">{legados.map(cartao)}</OptionCardGroup>
+            </Recolher> : null}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 function Problemas({ e }: { e: Estado14 }) {
   const responder = useCaso((s) => s.responder);
   const refinando = useRefinando();
+  if (somenteGovernanca(e.ctx)) return <ProblemasGov e={e} />;
   const pr: string[] = e.ctx.prioridades || [];
   const atual: string[] = e.ctx.problemas || [];
   const P = (PRIORIDADES as any[]).filter((p) => pr.includes(p.id));
@@ -702,7 +751,9 @@ function Problemas({ e }: { e: Estado14 }) {
         </>
       )}
       {P.map((p) => {
-        const ids: string[] = p.problemas.map((q: any) => q.id);
+        // v018: os desafios da governança da v017 (G21–G23) ficam só no fluxo da governança
+        const lista = p.problemas.filter((q: any) => !q.v016);
+        const ids: string[] = lista.map((q: any) => q.id);
         const n = ids.filter((k) => atual.includes(k)).length;
         return (
           <section key={p.id} className="pc-grupo">
@@ -719,7 +770,7 @@ function Problemas({ e }: { e: Estado14 }) {
               ) : null}
             </div>
             <OptionCardGroup label={String(tr(p.nome))} type="checkbox">
-              {p.problemas.map((q: any) => {
+              {lista.map((q: any) => {
                 const on = atual.includes(q.id);
                 return (
                   <OptionCard

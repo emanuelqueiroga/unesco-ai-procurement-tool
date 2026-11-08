@@ -1,13 +1,17 @@
 // Moldura das telas (v018: a 0.0.14 com o visual atual). Cabeçalho com os atalhos e as quatro etapas em linha (sem a
 // coluna lateral "Seu caminho"), a coluna da pergunta e, à direita, o cartão de custo do projeto (≥ 1024 px; abaixo,
 // uma faixa noite sob o cabeçalho que leva ao plano) e o rodapé institucional. No celular (≤ 900 px) o cabeçalho fica
-// compacto: a marca, o menu e a barra de etapas. A página inicial usa o cabeçalho simples.
+// compacto: a marca, o menu e a barra de etapas. A página inicial usa o cabeçalho simples. Com a governança como única
+// prioridade, a moldura é a do fluxo da governança da v017: etapas Contexto · Categorias · Opções, a frente numa pílula,
+// sem Matriz, Calculadora e modo, e o cartão "Custo desta frente".
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useCaso, ESSENCIAL, telasDoCapitulo, progressoDe, type Capitulo, type CasoStore } from '../store';
+import { useCaso, telasAtivas, telasDoCapitulo, progressoDe, type Capitulo, type CasoStore } from '../store';
 import { AcoesForaDoQuadro, Header, StepBar, Segmented, Button, IconMoon, IconSun, IconMenu, IconClose, useMediaQuery, useTheme, BREAKPOINTS, type Step } from '../ui';
-import { CAPITULOS_INFO, t } from '../percurso/textos';
+import { infoCapitulo, t } from '../percurso/textos';
+import { entradaEtapa } from '../percurso/navegacaoOrientada';
+import { frentesDoPlano, frenteAtual } from '../percurso/frentes';
 import { href, lerRota } from '../percurso/rota';
-import { nomePais, paisDoCaso, tr } from '../domain';
+import { nomePais, paisDoCaso, percursoGovernanca, tr } from '../domain';
 import { ColunaCusto, FaixaCusto } from './CartaoCusto';
 import { CasoDialog } from './CasoDialog';
 import { SeletorIdioma, AvisoTraducao } from './Idioma';
@@ -30,14 +34,24 @@ export interface Posicao { capitulo?: Capitulo; tela?: string; sintese?: boolean
 
 /** Os quatro capítulos em linha: ✓ nos concluídos, "nome · n de m" e o segmento preenchido até a pergunta atual. */
 export function etapas(s: CasoStore, pos: Posicao): Step[] {
-  return progressoDe(s).map((p) => {
-    const n = p.capitulo as Capitulo, label = t(CAPITULOS_INFO[n].titulo), atual = pos.capitulo === n;
+  const gov = percursoGovernanca(s.ctx);
+  // governança (v017): etapas sem telas (a 4) não aparecem na barra, e cada etapa leva à primeira tela pendente
+  return progressoDe(s).filter((p) => !gov || p.capitulo === 1 || p.total > 0).map((p) => {
+    const n = p.capitulo as Capitulo, label = t(infoCapitulo(n, s).titulo), atual = pos.capitulo === n;
+    const destino = gov ? entradaEtapa(s, n) : href.abertura(n);
     const state = atual ? 'current' : p.completo ? 'done' : 'todo';
     const progress = p.total ? p.feitas / p.total : 0;
-    if (!atual || !pos.tela) return { n, label, href: href.abertura(n), state, progress };
-    const qs = telasDoCapitulo(n), i = qs.findIndex((q) => q.id === pos.tela);
-    return { n, label, href: href.abertura(n), state, progress: i < 0 ? progress : (i + 1) / qs.length, position: i < 0 || qs.length < 2 ? undefined : t('{n} de {total}', { n: i + 1, total: qs.length }) };
+    if (!atual || !pos.tela) return { n, label, href: destino, state, progress };
+    const qs = telasDoCapitulo(n, s), i = qs.findIndex((q) => q.id === pos.tela);
+    return { n, label, href: destino, state, progress: i < 0 ? progress : (i + 1) / qs.length, position: i < 0 || qs.length < 2 ? undefined : t('{n} de {total}', { n: i + 1, total: qs.length }) };
   });
+}
+
+/** Governança (v017): a frente atual numa pílula. */
+function PilulaFrente({ s }: { s: CasoStore }) {
+  const atual = frentesDoPlano(s).find(f => f.id === frenteAtual(s));
+  if (!atual) return null;
+  return <span className="pc-frente-pilula pc-frente-pilula--fixa"><i className="pc-frente-ponto" aria-hidden="true" /><span className="pc-frente-rotulo">{t('Frente:')}</span> <strong>{t(atual.titulo)}</strong></span>;
 }
 
 export function Shell({ children, pos = {}, nav = true, plano = true, contexto }: { children: ReactNode; pos?: Posicao; nav?: boolean; plano?: boolean; contexto?: ReactNode }) {
@@ -52,16 +66,17 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   const botaoMenu = useRef<HTMLButtonElement>(null);
   const [tema, , alternarTema] = useTheme();
   const salvamento = useSalvamento();
-  const respondidas = ESSENCIAL.length - progressoDe(s).reduce((a, p) => a + (p.total - p.feitas), 0);
+  const gov = percursoGovernanca(s.ctx);
+  const respondidas = telasAtivas(s).length - progressoDe(s).reduce((a, p) => a + (p.total - p.feitas), 0);
   const rota = lerRota(typeof window === 'undefined' ? '' : window.location.hash);
 
   // título da aba por tela (e no idioma da interface)
   useEffect(() => {
-    const atualizar = () => { document.title = tituloDaAba(lerRota(window.location.hash)); setMenu(false); };
+    const atualizar = () => { document.title = tituloDaAba(lerRota(window.location.hash), useCaso.getState()); setMenu(false); };
     atualizar();
     window.addEventListener('hashchange', atualizar);
     return () => window.removeEventListener('hashchange', atualizar);
-  }, [s.lang]);
+  }, [s.lang, s.ctx.prioridades]);
   useEffect(() => {
     if (!menu) return;
     const tecla = (e: KeyboardEvent) => { if (e.key === 'Escape') { setMenu(false); botaoMenu.current?.focus(); } };
@@ -78,7 +93,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
       {s.modo === 'refinar' ? <Button variant="secondary" size="sm" href={href.refinar()}>{t('Calculadora')}</Button> : null}
     </>
   );
-  const modo = (
+  const modo = gov ? null : (
     <Segmented
       label={t('Modo')}
       value={s.modo}
@@ -136,7 +151,8 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   }
 
   const pais = s.caso?.pais ? nomePais(paisDoCaso(s.caso)) : '';
-  const lugar = String(s.caso?.local || '').trim();
+  // governança (v017): a instituição responsável · o país
+  const lugar = String((gov ? s.ctx.local : s.caso?.local) || '').trim();
   const ctxCab = [lugar, pais].filter(Boolean).join(' · ') || contexto;
   const passos = nav ? etapas(s, pos) : [];
   const marca = (
@@ -147,12 +163,13 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   );
   return (
     <DentroDaMoldura.Provider value>
-      <div data-barra-acoes={barraAcoes || undefined} data-coluna={plano || undefined} className="pc-app pc-app--novo">
+      <div data-barra-acoes={barraAcoes || undefined} data-coluna={plano || undefined} className={'pc-app pc-app--novo' + (gov ? ' pc-app--orientado' : '')}>
         <a className="pc-pular" href="#conteudo" onClick={(e) => { e.preventDefault(); document.getElementById('conteudo')?.focus(); }}>{t('Pular para o conteúdo')}</a>
         <header className={'pc-cab' + (celular ? ' pc-cab--celular' : '')}>
           <div className="pc-cab-linha pc-container">
             <div className="pc-cab-esq">
               {marca}
+              {gov ? <PilulaFrente s={s} /> : null}
               {!celular && ctxCab ? <span className="pc-cab-ctx">{ctxCab}</span> : null}
             </div>
             {celular ? (
@@ -161,7 +178,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
               </button>
             ) : (
               <div className="pc-cab-acoes">
-                {atalhos}
+                {gov ? null : atalhos}
                 {modo}
                 {verPlano}
                 <SeletorIdioma compacto />
@@ -173,21 +190,21 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
           {celular && menu ? (
             <nav id="pc-menu" className="pc-menu pc-container" aria-label={t('Menu')}>
               {ctxCab ? <p className="pc-menu-ctx">{ctxCab}</p> : null}
-              <div className="pc-menu-acoes">{atalhos}{verPlano}</div>
-              <div className="pc-menu-linha">{modo}</div>
+              <div className="pc-menu-acoes">{gov ? null : atalhos}{verPlano}</div>
+              {modo ? <div className="pc-menu-linha">{modo}</div> : null}
               <div className="pc-menu-linha"><SeletorIdioma />{botaoTema}{botaoCaso}</div>
             </nav>
           ) : null}
           {nav && passos.length ? <div className="pc-cab-etapas pc-container"><StepBar steps={passos} compact={celular} label={t('Seu caminho')} /></div> : null}
         </header>
         {faixas}
-        {plano && semColuna ? <div className="pc-container"><FaixaCusto s={s} /></div> : null}
+        {plano && semColuna ? <div className="pc-container"><FaixaCusto s={s} tela={pos.tela} /></div> : null}
         <div className={'pc-corpo pc-corpo--novo pc-container pc-grade' + (plano && !semColuna ? ' pc-corpo--custo' : '')}>
           <main id="conteudo" className="pc-main" tabIndex={-1}><AcoesForaDoQuadro.Provider value>
-            {rota.tipo === 'plano' ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Anexo técnico (PDF)".')}</p> : null}
+            {rota.tipo === 'plano' && !gov ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Anexo técnico (PDF)".')}</p> : null}
             {children}
           </AcoesForaDoQuadro.Provider></main>
-          {plano && !semColuna ? <ColunaCusto s={s} /> : null}
+          {plano && !semColuna ? <ColunaCusto s={s} tela={pos.tela} /> : null}
         </div>
         <div className="pc-rodape-faixa"><div className="pc-container"><RodapeCompleto /></div></div>
         <CasoDialog open={caso} onClose={() => setCaso(false)} />

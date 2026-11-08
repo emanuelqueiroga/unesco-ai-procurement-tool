@@ -17,7 +17,7 @@ import { clone, CASO_VAZIO, CASOS, CTX_EX, RESP_EX, CAMPO_POR_ID, CAMPOS_CUSTO, 
 import type { Estado14, Origem, Modo, Capitulo, DadosCaso14, Custo } from './tipos';
 import { estadoInicial, migrar, ErroImportacao } from './migracoes';
 import { aplicarSugestoes } from './sugestoes';
-import { afetadosPor, telaDoCampo, ESSENCIAL, CAPITULOS } from './perguntas';
+import { afetadosPor, telaDoCampo, ESSENCIAL, telasDoCapitulo, CAPITULOS } from './perguntas';
 import { dadosCaso } from '../export/json';
 
 // ----------------------------------------------------------- calculadora do modo Refinar (#/refinar)
@@ -127,6 +127,8 @@ export interface CasoStore extends Estado14 {
   migradoDe: '' | 'v14' | 'v13' | 'v8';
 
   responder(campo: string, valor: any): void;
+  /** v018 (governança da v017): grava valores pré-preenchidos sem marcar como informados nem mudar a posição */
+  preencher(escritas: { campo: string; valor: any }[]): void;
   sugerir(campo: string, valor: any, deQuem: string): void;
   confirmar(campo: string): void;
   refinar(campo: string, valor: any): void;
@@ -278,6 +280,12 @@ export const useCaso = create<CasoStore>()((set, get) => ({
     proximaTela(e, campo);
     set({ ...e, recente: recenteDe(campo, tocados) });
   },
+  preencher(escritas) {
+    if (!escritas.length) return;
+    const e = copiar(get());
+    for (const { campo, valor } of escritas) gravar(e, campo, valor);
+    set({ ...e });
+  },
   sugerir(campo, valor, deQuem) {
     const e = copiar(get());
     const o = e.origem[campo];
@@ -317,7 +325,7 @@ export const useCaso = create<CasoStore>()((set, get) => ({
   },
   setModo(modo) { set({ modo }); },
   irPara(capitulo, pergunta) {
-    const t = ESSENCIAL.find(x => x.capitulo === capitulo);
+    const t = telasDoCapitulo(capitulo, get())[0];
     set({ capitulo: { atual: capitulo, pergunta: pergunta || (t ? t.id : '') } });
   },
   setLang(lang) { set({ lang }); },

@@ -1,0 +1,7 @@
+.pc-leitura{margin-top:var(--space-12,48px);padding-top:32px;border-top:2px solid var(--color-primary,#1b5c6c);text-align:left;overflow-wrap:anywhere}
+.pc-leitura header>p:not(.pc-kicker),.pc-leitura-pais{color:var(--color-text-muted,#526771);font-size:14px}
+.pc-leitura h2{font-size:26px;line-height:1.25;margin:8px 0 12px}.pc-leitura h3{font-size:20px;margin:0 0 12px}.pc-leitura h4{font-size:16px;margin:0 0 12px}
+.pc-leitura>section,.pc-leitura-relatorio{margin-top:24px;padding:24px;border:1px solid #d4dde0;border-radius:8px;background:#fff}
+.pc-leitura-dados{margin:16px 0 24px}.pc-leitura-dados>div{padding:12px 0;border-bottom:1px solid #e6ebed}.pc-leitura-dados>div:last-child{border-bottom:0}.pc-leitura-dados dt{font-weight:600;font-size:14px}.pc-leitura-dados dd{margin:4px 0 0;line-height:1.55;white-space:pre-line}
+.pc-leitura-relatorio>summary{font-size:20px;font-weight:600;cursor:pointer}.pc-leitura-relatorio>summary:focus-visible{outline:2px solid #1b5c6c;outline-offset:6px}.pc-leitura-relatorio>section{margin:24px 0}.pc-leitura>.pc-nota{margin-top:20px}
+@media(max-width:600px){.pc-leitura>section,.pc-leitura-relatorio{padding:16px}.pc-leitura h2{font-size:23px}}

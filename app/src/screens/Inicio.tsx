@@ -2,7 +2,7 @@
 // importar, "Como funciona" recolhido e o diagrama do modelo de custo. Com um caso salvo, oferece continuar ou
 // começar um novo (o que pede confirmação, porque apaga o caso salvo).
 import { useState } from 'react';
-import { useCaso, faltamDe, temRespostas, ESSENCIAL, type Capitulo } from '../store';
+import { useCaso, faltamDe, temRespostas, telasAtivas, type Capitulo } from '../store';
 import { Button, Alert } from '../ui';
 import { Shell } from './Shell';
 import { CampoImportar } from './CasoDialog';
@@ -34,7 +34,7 @@ export function Inicio() {
         <p className="pc-lead">{t('Descreva sua rede, defina prioridades e explore os recursos e custos do seu plano.')}</p>
         {comCaso ? (
           <Alert kind="info" title={titulo}>
-            {t('{r} de {n} perguntas essenciais respondidas.', { r: ESSENCIAL.length - faltam.length, n: ESSENCIAL.length })}
+            {t('{r} de {n} perguntas essenciais respondidas.', { r: telasAtivas(s).length - faltam.length, n: telasAtivas(s).length })}
           </Alert>
         ) : null}
         {erro ? <Alert kind="atencao" title={erro} /> : null}

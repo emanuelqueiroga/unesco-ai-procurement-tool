@@ -1,7 +1,7 @@
 // Textos do percurso (v14): capítulos, a frase de abertura de cada pergunta e os rótulos dos trechos do plano.
 // Português é a chave de tradução; `t()` traduz quando há dicionário (os textos novos entram nos
 // dicionários em i18n/v14_<l>.json; até lá aparecem em português nos outros idiomas).
-import { tr } from '../domain';
+import { tr, percursoGovernanca } from '../domain';
 import type { Capitulo } from '../store';
 
 export const t = (s: string, vars?: Record<string, string | number>): string => {
@@ -146,3 +146,21 @@ export const TEXTOS_REC_R6_TELAS = [
   'Nenhuma condição aberta', '1 condição aberta', '{0} condições abertas', '{n} condição', '{n} condições',
   'Como a arquitetura não foi definida, o modelo usa {arq} como ponto de partida (presumida; confirme na pergunta 3.2.1).',
 ];
+
+// v018: o fluxo da governança é o da v017 — Contexto → Categorias → Opções (a etapa 4 fica vazia e some da barra).
+export const GOVERNANCA_INFO: Record<Capitulo, InfoCapitulo> = {
+  1: { ...CAPITULOS_INFO[1], titulo: 'Contexto', guia: 'Qual é o contexto da sua rede e o que você quer melhorar?' },
+  2: { n: 2, titulo: 'Categorias', guia: 'Quais categorias de custo entram no plano?', texto: '', minutos: 5, entrega: '', alimenta: '' },
+  3: { n: 3, titulo: 'Opções', guia: 'O que será feito em cada categoria?', texto: '', minutos: 8, entrega: '', alimenta: '' },
+  4: { n: 4, titulo: 'Fases', guia: 'Quanto dura e quantas pessoas alcança cada fase?', texto: '', minutos: 3, entrega: '', alimenta: '' },
+};
+/** Capítulo n do percurso ativo: o da governança (v017) quando ela é a única prioridade; senão, o da 0.0.14. */
+export function infoCapitulo(n: Capitulo, s?: { ctx?: Record<string, any> }): InfoCapitulo {
+  return percursoGovernanca(s?.ctx) ? GOVERNANCA_INFO[n] : CAPITULOS_INFO[n];
+}
+Object.assign(CURTO, {
+  'gov-projeto': 'Projeto de uso de IA', 'gov-diagnostico': 'Lacunas e resultados', 'gov-instrumentos': 'Instrumentos e evidências',
+  'gov-solucoes': 'Soluções de política educacional', 'gov-atores': 'Instituições e grupos afetados', 'gov-acoes': 'Ações e responsabilidades',
+  'gov-capacidade': 'Capacidade institucional', 'gov-recursos': 'Valores', 'gov-fases': 'Fases', 'gov-equipe': 'Equipe e formação',
+  'gov-categorias': 'Categorias de custo', 'gov-opcoes': 'Opções de custo', 'gov-sandbox': 'Experimentação supervisionada', 'gov-revisao': 'Indicadores e revisão',
+});

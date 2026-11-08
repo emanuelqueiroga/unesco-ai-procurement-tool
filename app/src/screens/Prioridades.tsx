@@ -1,7 +1,7 @@
 // Prioridades (v018): a tela da v017 — três cartões quadrados com ícone, no gerúndio, escolha de uma ou mais.
 // "Educar para a era da IA" não é oferecida; casos salvos com ela guardam os dados.
 import { useState, type ReactNode } from 'react';
-import { useCaso, telasDoCapitulo } from '../store';
+import { useCaso, telasDoCapitulo, telasAtivas } from '../store';
 import { QuestionFrame } from '../ui';
 import { PRIORIDADES } from '../domain';
 import { CAPITULOS_INFO, t } from '../percurso/textos';
@@ -27,13 +27,14 @@ export function Prioridades() {
   const alternar = (id: string) => setRascunho(r => { const n = new Set(r); if (n.has(id)) n.delete(id); else n.add(id); return P.map(p => p.id).filter(k => n.has(k)); });
   const telas = telasDoCapitulo(1), i = telas.findIndex(x => x.id === 'prioridades');
   const ant = i > 0 ? href.pergunta(1, telas[i - 1].id) : href.inicio();
-  const prox = telas[i + 1] ? href.pergunta(1, telas[i + 1].id) : href.sintese(1);
   const avancar = () => {
     if (!rascunho.length) return;
     // mantém uma prioridade antiga ("para a era da IA") que já estava salva
     const antigas = (useCaso.getState().ctx.prioridades || []).filter((id: string) => !OFERECIDAS.includes(id));
     s.responder('prioridades', [...rascunho, ...antigas]);
-    ir(prox);
+    // a próxima tela depende do percurso: só governança → desafios (v017); as demais → etapas (0.0.14)
+    const qs = telasAtivas(useCaso.getState()), j = qs.findIndex(x => x.id === 'prioridades');
+    ir(qs[j + 1] ? href.pergunta(qs[j + 1].capitulo, qs[j + 1].id) : href.sintese(1));
   };
   return <Shell pos={{ capitulo: 1, tela: 'prioridades' }} contexto={t(CAPITULOS_INFO[1].titulo)}>
     <div className="pc-pergunta" data-tela="prioridades"><QuestionFrame title={t('Prioridades')}
