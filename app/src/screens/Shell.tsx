@@ -42,6 +42,8 @@ export function etapas(s: CasoStore, pos: Posicao): Step[] {
 
 export function Shell({ children, pos = {}, nav = true, plano = true, contexto }: { children: ReactNode; pos?: Posicao; nav?: boolean; plano?: boolean; contexto?: ReactNode }) {
   const s = useCaso();
+  // como na v017: o cartão de custo aparece depois que a prioridade é escolhida
+  plano = plano && (s.ctx.prioridades || []).length > 0;
   const estreito = useMediaQuery(BREAKPOINTS.cards);
   const celular = useMediaQuery(BREAKPOINTS.bar);           // cabeçalho compacto com menu
   const semColuna = useMediaQuery('(max-width: 1023px)');   // custo numa faixa sob o cabeçalho (uma coluna só)

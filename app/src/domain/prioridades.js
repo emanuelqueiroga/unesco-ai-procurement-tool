@@ -10,8 +10,8 @@ import { OPC } from './framework.js';
 const LACUNA = '__';
 const PRIORIDADES = [
   {
-    id: 'governar', nome: 'Governar a IA na educação',
-    desc: 'Criar as regras, as equipes e os processos para que o uso de IA na rede seja seguro, legal, equitativo e sustentável.',
+    id: 'governar', nome: 'Governando a IA na educação',
+    desc: 'Regras, soberania e capacidade do setor público para a IA na educação.',
     ex: ['Uma rede sem orientações para o uso de IA por estudantes', 'Escolas que usam ferramentas gratuitas sem análise de privacidade', 'Contratos de tecnologia assinados sem estimar o custo de vários anos', 'Nenhuma pessoa responsável pelo tema'],
     problemas: [
       { id: 'G1', t: 'Não há regras claras para o uso de IA por professores e estudantes.', obj: 'Publicar orientações de uso de IA para __ escolas até __.',
@@ -37,8 +37,8 @@ const PRIORIDADES = [
     ],
   },
   {
-    id: 'sobre', nome: 'Educar sobre a IA',
-    desc: 'Ensinar o que é a IA, como funciona, para que serve e quais são os seus limites e riscos: o letramento em IA de estudantes, professores, gestores e famílias.',
+    id: 'sobre', nome: 'Educando sobre a IA',
+    desc: 'Letramento em IA de professores e estudantes e currículo de IA.',
     ex: ['Estudantes que aceitam qualquer resposta de um chatbot', 'Professores que não sabem explicar por que uma IA erra', 'Nenhuma atividade sobre IA no currículo', 'Famílias preocupadas e sem informação'],
     formacao: true,
     problemas: [
@@ -65,8 +65,8 @@ const PRIORIDADES = [
     ],
   },
   {
-    id: 'com', nome: 'Educar com a IA',
-    desc: 'Usar a IA para apoiar o ensino, a aprendizagem e a gestão: planejar aulas, dar retorno, oferecer prática, identificar quem precisa de apoio e atender as escolas.',
+    id: 'com', nome: 'Educando com e sem IA',
+    desc: 'Melhorar a aprendizagem e a inclusão, com ou sem IA.',
     ex: ['Estudantes do 5º ano abaixo do nível esperado em leitura', 'Baixa proficiência em matemática ao fim do ensino fundamental', 'Professores que gastam muitas horas no planejamento', 'Escolas que esperam dias por respostas da secretaria'],
     problemas: [
       { id: 'C1', t: 'Estudantes abaixo do nível esperado em leitura e escrita.', obj: 'Reduzir de __% para __% os estudantes de __ abaixo do nível adequado em leitura em __ anos.',

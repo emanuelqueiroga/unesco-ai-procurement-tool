@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Galeria } from './screens/Galeria';
 import { Inicio } from './screens/Inicio';
 import { Abertura, Pergunta, Sintese } from './screens/Percurso';
+import { Prioridades } from './screens/Prioridades';
 import { Plano } from './screens/Plano';
 import { useRota } from './percurso/rota';
 import { useCaso } from './store';
@@ -26,7 +27,7 @@ export function App() {
       case 'galeria': return <Galeria />;
       // v018: sem abertura do capítulo 1; o início leva direto à primeira pergunta, como na v017
       case 'abertura': return rota.n === 1 ? <Pergunta key="p1local" n={1} tela="local" /> : <Abertura key={`a${rota.n}`} n={rota.n} />;
-      case 'pergunta': return <Pergunta key={`p${rota.tela}`} n={rota.n} tela={rota.tela} />;
+      case 'pergunta': return rota.n === 1 && rota.tela === 'prioridades' ? <Prioridades /> : <Pergunta key={`p${rota.tela}`} n={rota.n} tela={rota.tela} />;
       case 'sintese': return <Sintese key={`s${rota.n}`} n={rota.n} foco={rota.foco} />;
       case 'plano': return <Plano pagina={rota.pagina} />;
       case 'refinar': return <Refinar aba={rota.aba} foco={rota.foco} />;
