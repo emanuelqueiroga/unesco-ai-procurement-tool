@@ -1677,5 +1677,7 @@
  "Vazio = {p}% (referência com fonte).": "Akunalutho = {p}% (isibonelo esinomthombo).",
  "Viagens, overhead e taxa administrativa": "Uhambo, izindleko ezingaqondile nemali yokuphatha",
  "Percentual sobre os custos das opções (%)": "Iphesenti lezindleko zezinketho (%)",
- "Percentual sobre os custos diretos (%)": "Iphesenti lezindleko eziqondile (%)"
+ "Percentual sobre os custos diretos (%)": "Iphesenti lezindleko eziqondile (%)",
+ "Fase {n}": "Isigaba {n}",
+ "Camada {n}:": "Ungqimba {n}:"
 }

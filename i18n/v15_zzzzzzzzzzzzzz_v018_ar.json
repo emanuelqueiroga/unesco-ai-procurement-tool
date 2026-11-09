@@ -1677,5 +1677,7 @@
  "Vazio = {p}% (referência com fonte).": "فارغ = {p}% (مرجع موثق المصدر).",
  "Viagens, overhead e taxa administrativa": "السفر والتكاليف غير المباشرة والرسوم الإدارية",
  "Percentual sobre os custos das opções (%)": "النسبة من تكاليف الخيارات (%)",
- "Percentual sobre os custos diretos (%)": "النسبة من التكاليف المباشرة (%)"
+ "Percentual sobre os custos diretos (%)": "النسبة من التكاليف المباشرة (%)",
+ "Fase {n}": "المرحلة {n}",
+ "Camada {n}:": "الطبقة {n}:"
 }

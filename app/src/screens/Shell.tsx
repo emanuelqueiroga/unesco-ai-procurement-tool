@@ -60,7 +60,8 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   plano = plano && (s.ctx.prioridades || []).length > 0;
   const estreito = useMediaQuery(BREAKPOINTS.cards);
   const celular = useMediaQuery(BREAKPOINTS.bar);           // cabeçalho compacto com menu
-  const semColuna = useMediaQuery('(max-width: 1023px)');   // custo numa faixa sob o cabeçalho (uma coluna só)
+  const semColuna = useMediaQuery('(max-width: 1023px)');
+  const matrizCurta = useMediaQuery('(max-width: 1279px)'); // no cabeçalho do percurso, rótulo curto abaixo de 1280 px   // custo numa faixa sob o cabeçalho (uma coluna só)
   const [caso, setCaso] = useState(false);
   const [menu, setMenu] = useState(false);
   const botaoMenu = useRef<HTMLButtonElement>(null);
@@ -86,10 +87,13 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   useEffect(() => { if (!celular) setMenu(false); }, [celular]);
 
   const comPlano = respondidas > 0 || s.exemplo !== 'novo';
+  // v018: o botão da matriz camadas × fases (como na 0.0.14), também na página inicial e no percurso da governança
+  const curtoMatriz = rota.tipo === 'inicio' ? estreito : matrizCurta;
+  const botaoMatriz = <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={curtoMatriz ? t('Matriz camadas × fases') : undefined}>{curtoMatriz ? t('Matriz') : t('Matriz camadas × fases')}</Button>;
   const atalhos = (
     <>
       <Button variant="secondary" size="sm" href={href.inicio()}>{t('Início')}</Button>
-      <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={t('Matriz camadas × fases')}>{t('Matriz')}</Button>
+      {botaoMatriz}
       {s.modo === 'refinar' ? <Button variant="secondary" size="sm" href={href.refinar()}>{t('Calculadora')}</Button> : null}
     </>
   );
@@ -139,7 +143,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
       <DentroDaMoldura.Provider value>
         <div className="pc-app pc-app--inicio">
           <a className="pc-pular" href="#conteudo" onClick={(e) => { e.preventDefault(); document.getElementById('conteudo')?.focus(); }}>{t('Pular para o conteúdo')}</a>
-          <Header logos={LOGOS} href={href.inicio()} compact={estreito} context={contexto} actions={<><SeletorIdioma compacto={estreito} />{botaoTema}</>} />
+          <Header logos={LOGOS} href={href.inicio()} compact={estreito} context={contexto} actions={<>{estreito ? null : botaoMatriz}<SeletorIdioma compacto={estreito} />{botaoTema}</>} />
           {faixas}
           <div className="pc-corpo"><main id="conteudo" className="pc-main" tabIndex={-1}>{children}</main></div>
           <RodapeCompleto />
@@ -178,7 +182,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
               </button>
             ) : (
               <div className="pc-cab-acoes">
-                {gov ? null : atalhos}
+                {gov ? botaoMatriz : atalhos}
                 {modo}
                 {verPlano}
                 <SeletorIdioma compacto />
@@ -190,7 +194,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
           {celular && menu ? (
             <nav id="pc-menu" className="pc-menu pc-container" aria-label={t('Menu')}>
               {ctxCab ? <p className="pc-menu-ctx">{ctxCab}</p> : null}
-              <div className="pc-menu-acoes">{gov ? null : atalhos}{verPlano}</div>
+              <div className="pc-menu-acoes">{gov ? botaoMatriz : atalhos}{verPlano}</div>
               {modo ? <div className="pc-menu-linha">{modo}</div> : null}
               <div className="pc-menu-linha"><SeletorIdioma />{botaoTema}{botaoCaso}</div>
             </nav>

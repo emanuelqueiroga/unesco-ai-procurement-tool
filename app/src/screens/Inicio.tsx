@@ -1,6 +1,7 @@
 // Início (v018): a página da v017, limpa: título, um botão principal que leva direto à primeira pergunta, exemplo,
 // importar, "Como funciona" recolhido e o diagrama do modelo de custo. Com um caso salvo, oferece continuar ou
-// começar um novo (o que pede confirmação, porque apaga o caso salvo).
+// começar um novo (o que pede confirmação, porque apaga o caso salvo). Volta da 0.0.14: o mapa das quatro fases com as
+// camadas que cada uma alimenta e a legenda das sete camadas (FasesCamadas).
 import { useState } from 'react';
 import { useCaso, faltamDe, temRespostas, telasAtivas, type Capitulo } from '../store';
 import { Button, Alert } from '../ui';
@@ -10,6 +11,7 @@ import { abrirMatriz } from './Matriz';
 import { abrirExemplo, comecarEmBranco, exportarCaso } from './acoes';
 import { destinoContinuar } from './transversal';
 import { DiagramaCusto } from './DiagramaCusto';
+import { FasesCamadas } from './FasesCamadas';
 import { TESTE } from '../percurso/canal';
 import { CAPITULOS_INFO, t } from '../percurso/textos';
 import { href, ir } from '../percurso/rota';
@@ -73,6 +75,7 @@ export function Inicio() {
             </div>
           </details>
         </div>
+        <FasesCamadas />
         <DiagramaCusto />
       </section>
     </Shell>

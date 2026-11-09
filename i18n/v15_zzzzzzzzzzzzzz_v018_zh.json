@@ -1677,5 +1677,7 @@
  "Vazio = {p}% (referência com fonte).": "留空 = {p}%（有来源的参考值）。",
  "Viagens, overhead e taxa administrativa": "差旅、间接成本和管理费",
  "Percentual sobre os custos das opções (%)": "占选项成本的百分比（%）",
- "Percentual sobre os custos diretos (%)": "占直接成本的百分比（%）"
+ "Percentual sobre os custos diretos (%)": "占直接成本的百分比（%）",
+ "Fase {n}": "第 {n} 阶段",
+ "Camada {n}:": "第 {n} 层："
 }

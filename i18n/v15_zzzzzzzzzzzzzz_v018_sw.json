@@ -1677,5 +1677,7 @@
  "Vazio = {p}% (referência com fonte).": "Tupu = {p}% (marejeo yenye chanzo).",
  "Viagens, overhead e taxa administrativa": "Safari, gharama zisizo za moja kwa moja na ada ya utawala",
  "Percentual sobre os custos das opções (%)": "Asilimia ya gharama za machaguo (%)",
- "Percentual sobre os custos diretos (%)": "Asilimia ya gharama za moja kwa moja (%)"
+ "Percentual sobre os custos diretos (%)": "Asilimia ya gharama za moja kwa moja (%)",
+ "Fase {n}": "Awamu {n}",
+ "Camada {n}:": "Tabaka {n}:"
 }

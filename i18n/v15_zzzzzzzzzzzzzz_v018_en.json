@@ -1963,5 +1963,7 @@
  "Viagens e atividades presenciais": "Travel and in-person activities",
  "Fundo Global, Data Explorer: orçamentos por categoria de custo, ciclos 5 a 7 (custos relacionados a viagens, TRC)": "Global Fund, Data Explorer: budgets by cost category, cycles 5 to 7 (travel-related costs, TRC)",
  "No Fundo Global, os custos de viagem e de atividades presenciais (passagens, diárias, transporte, oficinas, reuniões técnicas, capacitações e supervisão) somam 24,7% do orçamento dos programas, sem contar a compra de produtos de saúde e a cadeia de suprimentos, no ciclo 7 (27,6% no ciclo 6 e 28,2% no ciclo 5). O padrão arredonda para 25%.": "In the Global Fund, travel and in-person activity costs (fares, per diems, transport, workshops, technical meetings, training and supervision) account for 24.7% of programme budgets, excluding the purchase of health products and the supply chain, in cycle 7 (27.6% in cycle 6 and 28.2% in cycle 5). The default rounds this to 25%.",
- "Passagens, diárias, transporte e os custos das atividades presenciais (reuniões técnicas, oficinas, consultas, capacitações, visitas às escolas), como percentual dos custos das opções.": "Fares, per diems, transport and the costs of in-person activities (technical meetings, workshops, consultations, training, school visits), as a percentage of the options' costs."
+ "Passagens, diárias, transporte e os custos das atividades presenciais (reuniões técnicas, oficinas, consultas, capacitações, visitas às escolas), como percentual dos custos das opções.": "Fares, per diems, transport and the costs of in-person activities (technical meetings, workshops, consultations, training, school visits), as a percentage of the options' costs.",
+ "Fase {n}": "Phase {n}",
+ "Camada {n}:": "Layer {n}:"
 }
