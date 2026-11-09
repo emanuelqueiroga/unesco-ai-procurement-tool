@@ -1731,5 +1731,7 @@
  "O plano prevê {n} meses; {tipo} costumam exigir {prazo}.": "计划预计{n}个月；{tipo}通常需要{prazo}。",
  "Prever nos orçamentos dos exercícios seguintes os custos continuados: {lista}.": "在以后各财政年度的预算中列入持续性成本：{lista}。",
  "Roteiro de implementação do plano de governança": "治理计划实施路线图",
- "Solicitar à consultoria jurídica parecer sobre a competência e o instrumento normativo (lei, decreto ou portaria) de cada medida: {medidas}.": "请法律顾问部门就每项措施的职权归属及规范性文书（法律、法令或部门规章）出具意见：{medidas}。"
+ "Solicitar à consultoria jurídica parecer sobre a competência e o instrumento normativo (lei, decreto ou portaria) de cada medida: {medidas}.": "请法律顾问部门就每项措施的职权归属及规范性文书（法律、法令或部门规章）出具意见：{medidas}。",
+ "Baixar a nota técnica (PDF)": "下载技术说明（PDF）",
+ "Baixar a planilha de cálculo (Excel)": "下载计算表（Excel）"
 }

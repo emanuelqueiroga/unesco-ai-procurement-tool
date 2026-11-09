@@ -1733,5 +1733,7 @@
  "O plano prevê {n} meses; {tipo} costumam exigir {prazo}.": "Labɛn bɛ kalo {n} de jate; {tipo} bɛ {prazo} ɲini tuma caman.",
  "Prever nos orçamentos dos exercícios seguintes os custos continuados: {lista}.": "Musaka minnu bɛ taa a fɛ, olu jate wari san nataw ka wari bolodalenw na: {lista}.",
  "Roteiro de implementação do plano de governança": "Ɲɛmɔgɔya labɛn waleyali sira",
- "Solicitar à consultoria jurídica parecer sobre a competência e o instrumento normativo (lei, decreto ou portaria) de cada medida: {medidas}.": "Sariya ladilikan ɲini a ka hakilina di fɛɛrɛ kelen kelen bɛɛ ka sebaaya ni sariya sɛbɛn kan (sariya, dekrɛ walima minisiri ka latigɛ): {medidas}."
+ "Solicitar à consultoria jurídica parecer sobre a competência e o instrumento normativo (lei, decreto ou portaria) de cada medida: {medidas}.": "Sariya ladilikan ɲini a ka hakilina di fɛɛrɛ kelen kelen bɛɛ ka sebaaya ni sariya sɛbɛn kan (sariya, dekrɛ walima minisiri ka latigɛ): {medidas}.",
+ "Baixar a nota técnica (PDF)": "Fɛɛrɛ sɛbɛn jigin (PDF)",
+ "Baixar a planilha de cálculo (Excel)": "Jatebɔ sɛbɛn jigin (Excel)"
 }

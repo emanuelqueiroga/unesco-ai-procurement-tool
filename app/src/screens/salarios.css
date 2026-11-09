@@ -24,3 +24,10 @@
 .pc-esf > h3 { margin: 0 0 4px; }
 .pc-esf.pc-sal-atual { background: none; border-inline-start: 4px solid var(--primary); padding-inline-start: 12px; }
 .pc-esf-meta { margin: 0 0 8px; color: var(--muted); font-size: 14px; }
+/* v018: como o custo é calculado */
+.pc-met-arquivos { display: flex; flex-wrap: wrap; gap: 8px 12px; margin: 0 0 var(--space-2, 8px); }
+.pc-met-baixar { display: inline-flex; align-items: center; min-height: 40px; padding: 8px 14px; border: 1px solid var(--primary); border-radius: var(--radius-md, 8px); font-weight: 600; text-decoration: none; }
+.pc-met-baixar:hover { background: var(--primary-tint, transparent); }
+.pc-met-fig svg { display: block; width: 100%; min-width: 640px; height: auto; color: var(--text, inherit); padding: 8px; }
+.pc-met-formula { font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace); font-size: 15px; padding: 8px 12px; background: var(--surface-1); border-radius: var(--radius-md, 8px); overflow-x: auto; }
+.pc-met-num { white-space: nowrap; font-variant-numeric: tabular-nums; }

@@ -6,6 +6,7 @@ import { Prioridades } from './screens/Prioridades';
 import { Governanca } from './screens/Governanca';
 import { Salarios } from './screens/Salarios';
 import { Esforcos } from './screens/Esforcos';
+import { Metodologia } from './screens/Metodologia';
 import { RecebidoHost } from './screens/CompartilharV16';
 import { percursoGovernanca } from './domain';
 import { Plano } from './screens/Plano';
@@ -34,6 +35,7 @@ export function App() {
     const telaPrioridades = rota.tipo === 'pergunta' && rota.n === 1 && ['local', 'prioridades'].includes(rota.tela);
     if (rota.tipo === 'salarios') return <Salarios pais={rota.pais} />;
     if (rota.tipo === 'esforcos') return <Esforcos chave={rota.chave} />;
+    if (rota.tipo === 'metodologia') return <Metodologia />;
     if (percursoGovernanca(ctx) && !telaPrioridades && !['inicio', 'galeria'].includes(rota.tipo))
       return <Governanca key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo === 'abertura' || rota.tipo === 'sintese' ? `${rota.tipo}${rota.n}` : rota.tipo} rota={rota} />;
     switch (rota.tipo) {

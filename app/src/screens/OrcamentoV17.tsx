@@ -237,5 +237,6 @@ function ComoCalculado({ l }: { l: LinhaOpcao }) {
       {p.pagina ? <span className="pv-conta-fonte"><a href={p.pagina}>{p.pagina.startsWith('#/esforcos') ? t('Ver as equipes de referência') : t('Ver salários e encargos por país')}</a></span> : null}
     </span>)}</span>
     <span className="pv-conta-grau">{t('Graus de confiança: A = estatística oficial; B = estudo ou caso real com fonte; C = convenção da ferramenta, a calibrar.')}</span>
+    <span className="pv-conta-fonte"><a href={href.metodologia()}>{t('Como o custo é calculado')}</a></span>
   </Popover></p>;
 }

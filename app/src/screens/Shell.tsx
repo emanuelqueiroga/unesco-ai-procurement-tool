@@ -62,6 +62,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   const celular = useMediaQuery(BREAKPOINTS.bar);           // cabeçalho compacto com menu
   const semColuna = useMediaQuery('(max-width: 1023px)');
   const matrizCurta = useMediaQuery('(max-width: 1279px)'); // no cabeçalho do percurso, rótulo curto abaixo de 1280 px   // custo numa faixa sob o cabeçalho (uma coluna só)
+  const calculoCurto = useMediaQuery('(max-width: 1599px)'); // v018: "Cálculo" abaixo de 1600 px
   const [caso, setCaso] = useState(false);
   const [menu, setMenu] = useState(false);
   const botaoMenu = useRef<HTMLButtonElement>(null);
@@ -90,6 +91,8 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   // v018: o botão da matriz camadas × fases (como na 0.0.14), também na página inicial e no percurso da governança
   const curtoMatriz = rota.tipo === 'inicio' ? estreito : matrizCurta;
   const botaoMatriz = <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={curtoMatriz ? t('Matriz camadas × fases') : undefined}>{curtoMatriz ? t('Matriz') : t('Matriz camadas × fases')}</Button>;
+  // v018: como o custo da governança é calculado (ao lado da matriz, no percurso da governança)
+  const botaoCalculo = <Button variant="secondary" size="sm" href={href.metodologia()} aria-label={calculoCurto ? t('Como o custo é calculado') : undefined} title={calculoCurto ? t('Como o custo é calculado') : undefined}>{calculoCurto ? t('Cálculo') : t('Como o custo é calculado')}</Button>;
   const atalhos = (
     <>
       <Button variant="secondary" size="sm" href={href.inicio()}>{t('Início')}</Button>
@@ -182,7 +185,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
               </button>
             ) : (
               <div className="pc-cab-acoes">
-                {gov ? botaoMatriz : atalhos}
+                {gov ? <>{botaoMatriz}{botaoCalculo}</> : atalhos}
                 {modo}
                 {verPlano}
                 <SeletorIdioma compacto />
@@ -194,7 +197,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
           {celular && menu ? (
             <nav id="pc-menu" className="pc-menu pc-container" aria-label={t('Menu')}>
               {ctxCab ? <p className="pc-menu-ctx">{ctxCab}</p> : null}
-              <div className="pc-menu-acoes">{gov ? botaoMatriz : atalhos}{verPlano}</div>
+              <div className="pc-menu-acoes">{gov ? <>{botaoMatriz}{botaoCalculo}</> : atalhos}{verPlano}</div>
               {modo ? <div className="pc-menu-linha">{modo}</div> : null}
               <div className="pc-menu-linha"><SeletorIdioma />{botaoTema}{botaoCaso}</div>
             </nav>

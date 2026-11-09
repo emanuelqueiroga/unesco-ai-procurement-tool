@@ -11,6 +11,7 @@ import { Button } from '../ui';
 import { abrirMatriz, abrirFigura } from './Matriz';
 import figuraTCO from '../../../assets/fig1_tco.jpg';
 import { CAPITULOS_INFO, t } from '../percurso/textos';
+import { href } from '../percurso/rota';
 import { CATEGORIAS, DESAFIOS_GOV_V016 } from '../domain/catalogo_v016.js';
 import './fasesCamadas.css';
 
@@ -83,6 +84,7 @@ export function FasesCamadas() {
         <div className="cf-gov-cam">
           <span className="cf-gov-l">{t('Camadas que alimenta')}</span><Cams ks={camadasGov} />
           <button type="button" className="cf-link" aria-expanded={aberta === 'gov'} aria-controls="cf-painel-gov" onClick={() => alternar('gov')}>{t(aberta === 'gov' ? 'Fechar' : 'Ver por categoria')}<Chevron /></button>
+          <a className="cf-link" href={href.metodologia()}>{t('Como o custo é calculado')}</a>
         </div>
         {aberta === 'gov' ? <div className="cf-painel cf-painel-gov" id="cf-painel-gov" role="region" aria-labelledby="cf-gov-t">
           <div className="cf-painel-cab"><h3 id="cf-gov-t">{t('Categorias de custo da governança e as camadas que alimentam')}</h3></div>

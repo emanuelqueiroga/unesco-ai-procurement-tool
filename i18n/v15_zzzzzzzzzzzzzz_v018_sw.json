@@ -1731,5 +1731,7 @@
  "O plano prevê {n} meses; {tipo} costumam exigir {prazo}.": "Mpango unatarajia miezi {n}; {tipo} kwa kawaida huhitaji {prazo}.",
  "Prever nos orçamentos dos exercícios seguintes os custos continuados: {lista}.": "Kutenga katika bajeti za miaka ya fedha inayofuata gharama zinazoendelea: {lista}.",
  "Roteiro de implementação do plano de governança": "Mwongozo wa utekelezaji wa mpango wa utawala",
- "Solicitar à consultoria jurídica parecer sobre a competência e o instrumento normativo (lei, decreto ou portaria) de cada medida: {medidas}.": "Kuomba ushauri wa kisheria kutoa maoni kuhusu mamlaka na chombo cha kisheria (sheria, amri au agizo la wizara) cha kila hatua: {medidas}."
+ "Solicitar à consultoria jurídica parecer sobre a competência e o instrumento normativo (lei, decreto ou portaria) de cada medida: {medidas}.": "Kuomba ushauri wa kisheria kutoa maoni kuhusu mamlaka na chombo cha kisheria (sheria, amri au agizo la wizara) cha kila hatua: {medidas}.",
+ "Baixar a nota técnica (PDF)": "Pakua dokezo la kiufundi (PDF)",
+ "Baixar a planilha de cálculo (Excel)": "Pakua jedwali la hesabu (Excel)"
 }

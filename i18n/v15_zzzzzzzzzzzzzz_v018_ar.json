@@ -1731,5 +1731,7 @@
  "O plano prevê {n} meses; {tipo} costumam exigir {prazo}.": "تتوقع الخطة {n} شهرًا؛ وعادةً ما تتطلب {tipo} {prazo}.",
  "Prever nos orçamentos dos exercícios seguintes os custos continuados: {lista}.": "رصد التكاليف المستمرة في ميزانيات السنوات المالية التالية: {lista}.",
  "Roteiro de implementação do plano de governança": "خارطة طريق تنفيذ خطة الحوكمة",
- "Solicitar à consultoria jurídica parecer sobre a competência e o instrumento normativo (lei, decreto ou portaria) de cada medida: {medidas}.": "طلب رأي من الاستشارة القانونية بشأن الاختصاص والأداة التنظيمية (قانون، أو مرسوم، أو قرار وزاري) لكل إجراء: {medidas}."
+ "Solicitar à consultoria jurídica parecer sobre a competência e o instrumento normativo (lei, decreto ou portaria) de cada medida: {medidas}.": "طلب رأي من الاستشارة القانونية بشأن الاختصاص والأداة التنظيمية (قانون، أو مرسوم، أو قرار وزاري) لكل إجراء: {medidas}.",
+ "Baixar a nota técnica (PDF)": "تنزيل المذكرة الفنية (PDF)",
+ "Baixar a planilha de cálculo (Excel)": "تنزيل جدول الحساب (Excel)"
 }

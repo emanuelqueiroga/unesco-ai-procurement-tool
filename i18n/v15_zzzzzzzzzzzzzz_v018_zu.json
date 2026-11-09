@@ -1731,5 +1731,7 @@
  "O plano prevê {n} meses; {tipo} costumam exigir {prazo}.": "Uhlelo lulindele izinyanga ezingu-{n}; {tipo} kuvame ukudinga {prazo}.",
  "Prever nos orçamentos dos exercícios seguintes os custos continuados: {lista}.": "Ukuhlinzekela ezabelomalini zeminyaka yezimali elandelayo izindleko eziqhubekayo: {lista}.",
  "Roteiro de implementação do plano de governança": "Umhlahlandlela wokusebenzisa uhlelo lokuphatha",
- "Solicitar à consultoria jurídica parecer sobre a competência e o instrumento normativo (lei, decreto ou portaria) de cada medida: {medidas}.": "Ukucela iseluleko sezomthetho ukuthi sinikeze umbono ngegunya nethuluzi lomthetho (umthetho, isimemezelo noma umyalo womnyango) wesinyathelo ngasinye: {medidas}."
+ "Solicitar à consultoria jurídica parecer sobre a competência e o instrumento normativo (lei, decreto ou portaria) de cada medida: {medidas}.": "Ukucela iseluleko sezomthetho ukuthi sinikeze umbono ngegunya nethuluzi lomthetho (umthetho, isimemezelo noma umyalo womnyango) wesinyathelo ngasinye: {medidas}.",
+ "Baixar a nota técnica (PDF)": "Landa inothi lobuchwepheshe (PDF)",
+ "Baixar a planilha de cálculo (Excel)": "Landa ishidi lokubala (Excel)"
 }
