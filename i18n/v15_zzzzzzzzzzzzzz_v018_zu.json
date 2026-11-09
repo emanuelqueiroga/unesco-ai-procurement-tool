@@ -1663,5 +1663,19 @@
  "trabalhadores de apoio administrativo (ISCO-08, grupo 4)": "abasizi bokuphatha (ISCO-08, iqembu 4)",
  "{pais}: ILOSTAT, {fonte}, {ano}; grau A": "{pais}: ILOSTAT, {fonte}, {ano}; izinga A",
  "estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B": "kulinganiselwe: i-median yamazwe angu-{n} anedatha ye-ILOSTAT ({grupo}); izinga B",
- "Todas as versões": "Zonke izinguqulo"
+ "Todas as versões": "Zonke izinguqulo",
+ "{p} dos {base}": "{p} we-{base}",
+ "Custos adicionais": "Izindleko ezengeziwe",
+ "custos das opções": "izindleko zezinketho",
+ "Custos das opções": "Izindleko zezinketho",
+ "custos diretos (opções + viagens)": "izindleko eziqondile (izinketho + uhambo)",
+ "Custos diretos (opções + viagens)": "Izindleko eziqondile (izinketho + uhambo)",
+ "Percentual": "Iphesenti",
+ "referência (grau B)": "isibonelo (izinga B)",
+ "soma das opções que já têm valor": "isamba sezinketho esezinenani",
+ "soma das opções que já têm valor, mais as viagens; o overhead e a taxa administrativa não entram na base um do outro": "isamba sezinketho esezinenani, kanye nohambo; izindleko ezingaqondile nemali yokuphatha azingeni esisekelweni somunye",
+ "Vazio = {p}% (referência com fonte).": "Akunalutho = {p}% (isibonelo esinomthombo).",
+ "Viagens, overhead e taxa administrativa": "Uhambo, izindleko ezingaqondile nemali yokuphatha",
+ "Percentual sobre os custos das opções (%)": "Iphesenti lezindleko zezinketho (%)",
+ "Percentual sobre os custos diretos (%)": "Iphesenti lezindleko eziqondile (%)"
 }

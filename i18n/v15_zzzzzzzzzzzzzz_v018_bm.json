@@ -1665,5 +1665,19 @@
  "trabalhadores de apoio administrativo (ISCO-08, grupo 4)": "ɲɛmɔgɔya dɛmɛbagaw (ISCO-08, jɛkulu 4)",
  "{pais}: ILOSTAT, {fonte}, {ano}; grau A": "{pais}: ILOSTAT, {fonte}, {ano}; hakɛ A",
  "estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B": "jateminɛ: jamana {n} minnu kunnafoni bɛ ILOSTAT la, olu cɛmancɛ ({grupo}); hakɛ B",
- "Todas as versões": "Bɔli bɛɛ"
+ "Todas as versões": "Bɔli bɛɛ",
+ "{p} dos {base}": "{base} ka {p}",
+ "Custos adicionais": "Musaka farali",
+ "custos das opções": "sugandiliw ka musakaw",
+ "Custos das opções": "Sugandiliw ka musakaw",
+ "custos diretos (opções + viagens)": "musaka tilennenw (sugandiliw + taamaw)",
+ "Custos diretos (opções + viagens)": "Musaka tilennenw (sugandiliw + taamaw)",
+ "Percentual": "Kɛmɛsarada",
+ "referência (grau B)": "misali (hakɛ B)",
+ "soma das opções que já têm valor": "sugandili minnu hakɛ bɛ yen, olu lajɛlen",
+ "soma das opções que já têm valor, mais as viagens; o overhead e a taxa administrativa não entram na base um do outro": "sugandili minnu hakɛ bɛ yen, olu lajɛlen ni taamaw ye; musaka dogolenw ni ɲɛmɔgɔya sara tɛ don ɲɔgɔn ka jɔyɔrɔ la",
+ "Vazio = {p}% (referência com fonte).": "Lankolon = {p}% (misali ni a sɔrɔyɔrɔ ye).",
+ "Viagens, overhead e taxa administrativa": "Taamaw, musaka dogolenw ani ɲɛmɔgɔya sara",
+ "Percentual sobre os custos das opções (%)": "Sugandiliw ka musakaw kɛmɛsarada (%)",
+ "Percentual sobre os custos diretos (%)": "Musaka tilennenw kɛmɛsarada (%)"
 }

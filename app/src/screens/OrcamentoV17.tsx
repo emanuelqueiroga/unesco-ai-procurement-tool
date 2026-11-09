@@ -17,6 +17,7 @@ import { formatarMoedaEst, type FrenteEstimativa } from '../percurso/estimativas
 import { gravarOrc } from './OrcamentoV16';
 import { CartaoComDica, DicaGov } from './InfoDica';
 import { CATEGORIAS } from '../domain/catalogo_v016.js';
+import { ADICIONAIS, ID_ADICIONAIS, type ChaveAdicional } from '../percurso/adicionaisGov';
 import './moldura.css';
 
 const telaFases = (f: FrenteEstimativa) => f === 'letramento' ? 'lit-fases' : 'ed-fases';
@@ -71,7 +72,8 @@ export function OpcoesV17({ s, frente }: { s: CasoStore; frente: FrenteEstimativ
       {grupo ? <h2 className="pv-v17-desafio">{grupo}</h2> : null}
       {itens.map(i => <div key={i.id} className="pv-v17-cat">
         <div className="pv-v17-cat-cab"><h3 className="pv-v17-cat-nome">{nomeCat(i)}{frente === 'governanca' ? <DicaGov chave={nomeGovPt(i.id)} nome={nomeCat(i)} inicio /> : null}</h3><span className="pv-v17-cat-total">{i.valor === null ? '—' : fmt(i.valor)}</span></div>
-        {todosObrigatorios(frente, i.id) ? i.opcoes.map(r => <CampoParametro key={r} s={s} rotulo={r} titulo />)
+        {i.id === ID_ADICIONAIS ? <AdicionaisV18 s={s} linhas={i.linhas} moeda={o.moeda} />
+        : todosObrigatorios(frente, i.id) ? i.opcoes.map(r => <CampoParametro key={r} s={s} rotulo={r} titulo />)
         : i.opcoes.length ? <OptionCardGroup className="pc-lit-opcoes" label={nomeCat(i)} type="checkbox">
           {i.opcoes.map(r => { const on = i.marcadas.includes(r), l = i.linhas.find(x => x.rotulo === r);
             const cartao = <OptionCard key={r} name={'op-' + i.id} value={r} type="checkbox" checked={on} label={t(r)} onChange={(_v, v) => marcar(i, r, v)} />;
@@ -147,6 +149,27 @@ function EquipeV18({ l, moeda, atual, gravar }: { l: LinhaOpcao; moeda: string; 
       </div>)}
     </details>
   </>;
+}
+
+/** v018 (governança): viagens, overhead e taxa administrativa — um percentual editável cada, com o padrão de fonte
+ *  pública e "Como foi calculado". */
+function AdicionaisV18({ s, linhas, moeda }: { s: CasoStore; linhas: LinhaOpcao[]; moeda: string }) {
+  const fmt = (v: number) => formatarMoedaEst(v, moeda), n = (v: number) => new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 2 }).format(v);
+  const salvo = (raizOrcamento(s, 'governanca').adicionais || {}) as Partial<Record<ChaveAdicional, number>>;
+  return <>{linhas.map(l => { const a = ADICIONAIS.find(x => x.chave === l.chave)!, nome = t(l.rotulo);
+    return <div key={l.chave} className={'pv-v17-linha pv-v17-linha--' + l.status} role="group" aria-label={nome}>
+      <div className="pv-v17-linha-cab">
+        <h4 className="pv-v17-op">{nome}<DicaGov chave={a.rotulo} nome={nome} inicio /></h4>
+        <p className={'pv-v17-total' + (l.status === 'referencia' ? ' pc-rec-valor--est' : '')}>{l.total === null ? '—' : fmt(l.total)}</p>
+      </div>
+      <div className="pv-v17-campos">
+        <CampoNumero label={t(a.base === 'opcoes' ? 'Percentual sobre os custos das opções (%)' : 'Percentual sobre os custos diretos (%)')} value={typeof salvo[a.chave] === 'number' ? salvo[a.chave] as number : ''}
+          placeholder={n(a.padrao)} decimais hint={t('Vazio = {p}% (referência com fonte).', { p: n(a.padrao) })}
+          onChange={v => gravarOrc('governanca', 'adicionais', { ...(raizOrcamento(useCaso.getState(), 'governanca').adicionais || {}), [a.chave]: v === '' ? undefined : v })} />
+      </div>
+      {l.conta && l.status !== 'falta' ? <ComoCalculado l={l} /> : null}
+      {l.status === 'falta' ? <p className="pv-v17-falta">{t('Falta')}: {l.falta.join(', ')}</p> : null}
+    </div>; })}</>;
 }
 
 const valorLit = (v: any) => { const x = v && typeof v === 'object' ? v.valor : v; return typeof x === 'number' ? x : ''; };

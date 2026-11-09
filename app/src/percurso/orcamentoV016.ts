@@ -6,6 +6,7 @@ import { LOC } from '../domain';
 import type { Estado14 } from '../store/tipos';
 import { t } from './textos';
 import { calcularOpcao, chaveOpcao, ehParametro, PARAMETROS, type LinhaOpcao } from './custosV017';
+import { linhasAdicionais, ID_ADICIONAIS, ADICIONAIS } from './adicionaisGov';
 import { lerLit } from './letramento';
 import { chaveEd, lerEd, usaIAEd, usuariosIAEd } from './pedagogico';
 import { PROBLEMA_POR_ID } from '../domain/prioridades.js';
@@ -286,6 +287,18 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
       estimativa: null, referencia: est.length > 0, emReferencia: est.length > 0, estimado: est.length ? estimadoCat : null,
       respondido: pendentes === 0, compartilhado: false, origem: null, pendentes };
   });
+  // v018 (governança): viagens, overhead e taxa administrativa, sobre o custo por fase das opções que já têm valor
+  if (f === 'governanca' && itens.length) {
+    const direto: Record<string, number> = {};
+    for (const x of fases) direto[x.id] = centavos(itens.flatMap(i => i.linhas).filter(l => l.status !== 'falta').reduce((n, l) => n + (l.porFase[x.id] || 0), 0));
+    const linhas = linhasAdicionais(direto, o.adicionais && typeof o.adicionais === 'object' ? o.adicionais : {}, fases, fmt, num);
+    const inf = linhas.filter(l => l.status === 'informado'), est = linhas.filter(l => l.status === 'referencia');
+    const informadoCat = centavos(inf.reduce((n, l) => n + (l.total as number), 0)), estimadoCat = centavos(est.reduce((n, l) => n + (l.total as number), 0));
+    itens.push({ id: ID_ADICIONAIS, n: '', nome: t('Viagens, overhead e taxa administrativa'), grupo: t('Custos adicionais'), opcoes: [], marcadas: ADICIONAIS.map(a => a.rotulo),
+      linhas, parametros: [], valor: inf.length + est.length ? centavos(informadoCat + estimadoCat) : null, informadoCat, estimadoCat, valores: {}, situacao: '', detalhe: '',
+      estimativa: null, referencia: est.length > 0, emReferencia: est.length > 0, estimado: est.length ? estimadoCat : null,
+      respondido: true, compartilhado: false, origem: null, pendentes: linhas.filter(l => l.status === 'falta').length });
+  }
   const todas = itens.flatMap(i => i.linhas);
   const informado = centavos(itens.reduce((n, i) => n + i.informadoCat, 0)), estimado = centavos(itens.reduce((n, i) => n + i.estimadoCat, 0));
   const informados = todas.filter(l => l.status === 'informado').length, estimados = todas.filter(l => l.status === 'referencia').length;

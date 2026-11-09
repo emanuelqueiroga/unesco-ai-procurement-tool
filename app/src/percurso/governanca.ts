@@ -120,6 +120,6 @@ export function telaGovernancaLegada(id: string): { n: 1 | 2 | 3 | 4; id: string
 
 export function pendenciasGov(s:Estado14,id:string) {
  const x=contextoGovProjetado(s), out:{caminho:string;label:string}[]=[];
- if(id==='gov-recursos'||id==='gov-opcoes')for(const i of orcamentoGovernanca(s).itens){const extra=i.id.startsWith('extra-'),p=extra?'govOrcamento.extras.'+i.id.slice(6):'govOrcamento.itens.'+i.id,item=p.split('.').reduce((o:any,k)=>o?.[k],x);if(i.valor===null&&item?.situacao!=='a_estimar'&&!i.referencia)out.push({caminho:p,label:i.nome});if(extra&&!preenchido(item?.nome))out.push({caminho:p+'.nome',label:'Recurso adicional'});}
+ if(id==='gov-recursos'||id==='gov-opcoes')for(const i of orcamentoGovernanca(s).itens){if(i.id==='adicionais')continue;const extra=i.id.startsWith('extra-'),p=extra?'govOrcamento.extras.'+i.id.slice(6):'govOrcamento.itens.'+i.id,item=p.split('.').reduce((o:any,k)=>o?.[k],x);if(i.valor===null&&item?.situacao!=='a_estimar'&&!i.referencia)out.push({caminho:p,label:i.nome});if(extra&&!preenchido(item?.nome))out.push({caminho:p+'.nome',label:'Recurso adicional'});}
  return out;
 }

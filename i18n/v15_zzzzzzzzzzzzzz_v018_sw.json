@@ -1663,5 +1663,19 @@
  "trabalhadores de apoio administrativo (ISCO-08, grupo 4)": "wasaidizi wa ofisi (ISCO-08, kundi 4)",
  "{pais}: ILOSTAT, {fonte}, {ano}; grau A": "{pais}: ILOSTAT, {fonte}, {ano}; daraja A",
  "estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B": "makadirio: wastani wa kati wa nchi {n} zenye takwimu za ILOSTAT ({grupo}); daraja B",
- "Todas as versões": "Matoleo yote"
+ "Todas as versões": "Matoleo yote",
+ "{p} dos {base}": "{p} ya {base}",
+ "Custos adicionais": "Gharama za ziada",
+ "custos das opções": "gharama za machaguo",
+ "Custos das opções": "Gharama za machaguo",
+ "custos diretos (opções + viagens)": "gharama za moja kwa moja (machaguo + safari)",
+ "Custos diretos (opções + viagens)": "Gharama za moja kwa moja (machaguo + safari)",
+ "Percentual": "Asilimia",
+ "referência (grau B)": "marejeo (daraja B)",
+ "soma das opções que já têm valor": "jumla ya machaguo ambayo tayari yana thamani",
+ "soma das opções que já têm valor, mais as viagens; o overhead e a taxa administrativa não entram na base um do outro": "jumla ya machaguo ambayo tayari yana thamani, pamoja na safari; gharama zisizo za moja kwa moja na ada ya utawala haziingii katika msingi wa kila mmoja",
+ "Vazio = {p}% (referência com fonte).": "Tupu = {p}% (marejeo yenye chanzo).",
+ "Viagens, overhead e taxa administrativa": "Safari, gharama zisizo za moja kwa moja na ada ya utawala",
+ "Percentual sobre os custos das opções (%)": "Asilimia ya gharama za machaguo (%)",
+ "Percentual sobre os custos diretos (%)": "Asilimia ya gharama za moja kwa moja (%)"
 }

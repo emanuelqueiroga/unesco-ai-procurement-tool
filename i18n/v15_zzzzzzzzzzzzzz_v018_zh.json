@@ -1663,5 +1663,19 @@
  "trabalhadores de apoio administrativo (ISCO-08, grupo 4)": "办事人员（ISCO-08，第 4 大类）",
  "{pais}: ILOSTAT, {fonte}, {ano}; grau A": "{pais}：ILOSTAT，{fonte}，{ano}；A 级",
  "estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B": "估算：{n} 个有 ILOSTAT 数据国家的中位数（{grupo}）；B 级",
- "Todas as versões": "所有版本"
+ "Todas as versões": "所有版本",
+ "{p} dos {base}": "{base}的 {p}",
+ "Custos adicionais": "附加成本",
+ "custos das opções": "各选项成本",
+ "Custos das opções": "各选项成本",
+ "custos diretos (opções + viagens)": "直接成本（选项 + 差旅）",
+ "Custos diretos (opções + viagens)": "直接成本（选项 + 差旅）",
+ "Percentual": "百分比",
+ "referência (grau B)": "参考值（B 级）",
+ "soma das opções que já têm valor": "已有数值的选项之和",
+ "soma das opções que já têm valor, mais as viagens; o overhead e a taxa administrativa não entram na base um do outro": "已有数值的选项之和加上差旅；间接成本和管理费互不计入对方的基数",
+ "Vazio = {p}% (referência com fonte).": "留空 = {p}%（有来源的参考值）。",
+ "Viagens, overhead e taxa administrativa": "差旅、间接成本和管理费",
+ "Percentual sobre os custos das opções (%)": "占选项成本的百分比（%）",
+ "Percentual sobre os custos diretos (%)": "占直接成本的百分比（%）"
 }

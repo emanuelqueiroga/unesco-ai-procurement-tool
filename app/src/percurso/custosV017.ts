@@ -13,7 +13,7 @@ import { EQUIPES_GOV, pessoasDaEquipe, type EquipeRef, type Papel } from './equi
 import { paisPorIso, nomePais } from '../domain/pais.js';
 import { formatarMoedaEst, parametro, PARAMETRO_EQUIPE, PARAMETRO_FORMACAO, PARAMETRO_LICENCA, PARAMETRO_CONECTIVIDADE, PARAMETRO_DISPOSITIVO, type FrenteEstimativa } from './estimativasOrcamento';
 
-export type TipoCusto = 'formacao' | 'pessoa' | 'licenca' | 'escola_ano' | 'escola' | 'unidade' | 'equipe' | 'trabalho' | 'time' | 'fechado';
+export type TipoCusto = 'formacao' | 'pessoa' | 'licenca' | 'escola_ano' | 'escola' | 'unidade' | 'equipe' | 'trabalho' | 'time' | 'percentual' | 'fechado';
 export type Fonte = 'professores' | 'estudantes' | 'escolas' | null;
 type Dist = 'novos' | 'acumulado_mes' | 'acumulado_ano' | 'tempo' | 'direto';
 
@@ -29,6 +29,8 @@ export const TIPOS: Record<TipoCusto, { rotulo: string; qtd?: string; horas?: bo
   trabalho: { rotulo: 'Pessoas × meses × custo mensal', qtd: 'Pessoas', horas: true, horasRotulo: 'Meses de trabalho', unit: 'Custo mensal por pessoa', dist: 'novos' },
   // v018 (governança): equipe de referência por papel (equipesGov.ts): soma de pessoas × dedicação × meses × custo mensal do perfil
   time: { rotulo: 'Equipe de referência', horas: true, horasRotulo: 'Meses de trabalho', unit: 'Custo mensal por pessoa', dist: 'direto' },
+  // v018 (governança): custos adicionais (viagens, overhead, taxa administrativa) = percentual sobre os custos diretos
+  percentual: { rotulo: 'Percentual', dist: 'direto' },
   fechado: { rotulo: 'Valor por fase', dist: 'direto' },
 };
 export const ORDEM_TIPOS: TipoCusto[] = ['fechado', 'formacao', 'pessoa', 'licenca', 'equipe', 'escola_ano', 'escola', 'unidade'];

@@ -1663,5 +1663,19 @@
  "trabalhadores de apoio administrativo (ISCO-08, grupo 4)": "موظفو الدعم المكتبي (ISCO-08، المجموعة 4)",
  "{pais}: ILOSTAT, {fonte}, {ano}; grau A": "{pais}: ILOSTAT، {fonte}، {ano}؛ الدرجة A",
  "estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B": "تقديري: الوسيط لـ {n} بلدان لديها بيانات في ILOSTAT ({grupo})؛ الدرجة B",
- "Todas as versões": "جميع الإصدارات"
+ "Todas as versões": "جميع الإصدارات",
+ "{p} dos {base}": "{p} من {base}",
+ "Custos adicionais": "تكاليف إضافية",
+ "custos das opções": "تكاليف الخيارات",
+ "Custos das opções": "تكاليف الخيارات",
+ "custos diretos (opções + viagens)": "التكاليف المباشرة (الخيارات + السفر)",
+ "Custos diretos (opções + viagens)": "التكاليف المباشرة (الخيارات + السفر)",
+ "Percentual": "النسبة المئوية",
+ "referência (grau B)": "مرجع (الدرجة B)",
+ "soma das opções que já têm valor": "مجموع الخيارات التي لها قيمة بالفعل",
+ "soma das opções que já têm valor, mais as viagens; o overhead e a taxa administrativa não entram na base um do outro": "مجموع الخيارات التي لها قيمة بالفعل، مضافًا إليه السفر؛ ولا تدخل التكاليف غير المباشرة والرسوم الإدارية في أساس بعضهما",
+ "Vazio = {p}% (referência com fonte).": "فارغ = {p}% (مرجع موثق المصدر).",
+ "Viagens, overhead e taxa administrativa": "السفر والتكاليف غير المباشرة والرسوم الإدارية",
+ "Percentual sobre os custos das opções (%)": "النسبة من تكاليف الخيارات (%)",
+ "Percentual sobre os custos diretos (%)": "النسبة من التكاليف المباشرة (%)"
 }
