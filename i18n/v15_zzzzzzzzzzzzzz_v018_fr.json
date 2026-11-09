@@ -1926,5 +1926,11 @@
  "Liga a política às escolas e às redes.": "Relie la politique aux écoles et aux réseaux.",
  "Apoia os projetos e os relatórios.": "Appuie les projets et les rapports.",
  "{pais}: ILOSTAT, {fonte}, {ano}; grau A": "{pais} : ILOSTAT, {fonte}, {ano} ; niveau A",
- "estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B": "estimé : médiane de {n} pays disposant de données ILOSTAT ({grupo}) ; niveau B"
+ "estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B": "estimé : médiane de {n} pays disposant de données ILOSTAT ({grupo}) ; niveau B",
+ "Um ano de sandbox regulatório com 4 projetos, como no caso da Noruega (de 3 a 6 meses cada). Sem infraestrutura própria: os fornecedores testam com a infraestrutura deles; um ambiente técnico do governo entra na 2.2.": "Un an de bac à sable réglementaire avec 4 projets, comme en Norvège (de 3 à 6 mois chacun). Sans infrastructure propre : les fournisseurs testent sur leur propre infrastructure ; un environnement technique de l'État relève du 2.2.",
+ "Especialista em infraestrutura e segurança de TI": "Spécialiste de l'infrastructure et de la sécurité informatiques",
+ "Avalia a infraestrutura de cada projeto (onde os dados ficam, segurança, integração com as redes das escolas) e orienta fornecedores e escolas.": "Évalue l'infrastructure de chaque projet (où sont stockées les données, sécurité, intégration aux réseaux des écoles) et conseille fournisseurs et écoles.",
+ "Articulador com as escolas piloto": "Référent des écoles pilotes",
+ "Acompanha as escolas piloto, orienta os professores e coleta os dados de uso e de aprendizagem.": "Accompagne les écoles pilotes, guide les enseignants et recueille les données d'usage et d'apprentissage.",
+ "Estrutura para testar soluções de IA em poucas escolas ou redes, por tempo limitado, com critérios de entrada, de saída e de avaliação. É um sandbox regulatório: os fornecedores testam com a infraestrutura deles. Se o governo quiser oferecer um ambiente técnico próprio, marque também a 2.2.": "Structure pour tester des solutions d'IA dans quelques écoles ou réseaux, pour une durée limitée, avec des critères d'entrée, de sortie et d'évaluation. C'est un bac à sable réglementaire : les fournisseurs testent sur leur propre infrastructure. Si l'État veut offrir son propre environnement technique, cochez aussi le 2.2."
 }

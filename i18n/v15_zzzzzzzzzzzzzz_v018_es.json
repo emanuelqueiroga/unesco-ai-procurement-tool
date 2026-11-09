@@ -1926,5 +1926,11 @@
  "Liga a política às escolas e às redes.": "Conecta la política con las escuelas y las redes.",
  "Apoia os projetos e os relatórios.": "Apoya los proyectos y los informes.",
  "{pais}: ILOSTAT, {fonte}, {ano}; grau A": "{pais}: ILOSTAT, {fonte}, {ano}; grado A",
- "estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B": "estimado: mediana de {n} países con dato en ILOSTAT ({grupo}); grado B"
+ "estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B": "estimado: mediana de {n} países con dato en ILOSTAT ({grupo}); grado B",
+ "Um ano de sandbox regulatório com 4 projetos, como no caso da Noruega (de 3 a 6 meses cada). Sem infraestrutura própria: os fornecedores testam com a infraestrutura deles; um ambiente técnico do governo entra na 2.2.": "Un año de sandbox regulatorio con 4 proyectos, como en el caso de Noruega (de 3 a 6 meses cada uno). Sin infraestructura propia: los proveedores prueban con su propia infraestructura; un entorno técnico del gobierno va en la 2.2.",
+ "Especialista em infraestrutura e segurança de TI": "Especialista en infraestructura y seguridad de TI",
+ "Avalia a infraestrutura de cada projeto (onde os dados ficam, segurança, integração com as redes das escolas) e orienta fornecedores e escolas.": "Evalúa la infraestructura de cada proyecto (dónde quedan los datos, seguridad, integración con las redes de las escuelas) y orienta a proveedores y escuelas.",
+ "Articulador com as escolas piloto": "Articulador con las escuelas piloto",
+ "Acompanha as escolas piloto, orienta os professores e coleta os dados de uso e de aprendizagem.": "Acompaña a las escuelas piloto, orienta a los docentes y recoge los datos de uso y de aprendizaje.",
+ "Estrutura para testar soluções de IA em poucas escolas ou redes, por tempo limitado, com critérios de entrada, de saída e de avaliação. É um sandbox regulatório: os fornecedores testam com a infraestrutura deles. Se o governo quiser oferecer um ambiente técnico próprio, marque também a 2.2.": "Estructura para probar soluciones de IA en pocas escuelas o redes, por tiempo limitado, con criterios de entrada, de salida y de evaluación. Es un sandbox regulatorio: los proveedores prueban con su propia infraestructura. Si el gobierno quiere ofrecer un entorno técnico propio, marque también la 2.2."
 }

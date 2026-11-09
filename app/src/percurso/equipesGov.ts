@@ -58,11 +58,13 @@ export const EQUIPES_GOV: Record<string, EquipeRef> = {
     P('Especialista em IA generativa', 2, 1, 0.25, 'Explica como os modelos usam e geram conteúdos.'),
     APOIO(0.5)] },
   // 1.2 Sandboxes regulatórios
-  'Ambientes de teste controlados': { meses: 12, base: 'noruega', porque: 'Um ano de sandbox com 4 projetos, como no caso da Noruega (de 3 a 6 meses cada).', papeis: [
+  'Ambientes de teste controlados': { meses: 12, base: 'noruega', porque: 'Um ano de sandbox regulatório com 4 projetos, como no caso da Noruega (de 3 a 6 meses cada). Sem infraestrutura própria: os fornecedores testam com a infraestrutura deles; um ambiente técnico do governo entra na 2.2.', papeis: [
     COORD(1, 'Conduz o sandbox, seleciona os projetos e decide a saída de cada um.'),
     P('Especialista em IA', 2, 1, 1, 'Acompanha os testes técnicos de cada projeto.'),
     P('Especialista em regulação', 2, 1, 1, 'Define as regras do sandbox e as exceções permitidas.'),
     P('Especialista em avaliação educacional', 2, 1, 0.5, 'Avalia os resultados na aprendizagem e nas escolas.'),
+    P('Especialista em infraestrutura e segurança de TI', 2, 1, 0.5, 'Avalia a infraestrutura de cada projeto (onde os dados ficam, segurança, integração com as redes das escolas) e orienta fornecedores e escolas.'),
+    P('Articulador com as escolas piloto', 3, 1, 1, 'Acompanha as escolas piloto, orienta os professores e coleta os dados de uso e de aprendizagem.'),
     P('Analista técnico', 3, 1, 1, 'Organiza os dados e os relatórios dos projetos.'),
     APOIO(0.5)] },
   'Supervisão regulatória': { base: 'aiact', porque: 'Unidade de supervisão dedicada à educação, na parte baixa da faixa estimada para o AI Act (de 1 a 25 servidores por país).', papeis: [

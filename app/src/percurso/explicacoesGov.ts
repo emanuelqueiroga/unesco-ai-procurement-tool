@@ -23,7 +23,7 @@ export const EXPLICACOES_GOV: Record<string, string> = {
   'Cibersegurança e notificação de incidentes': 'Requisitos de segurança dos sistemas e a obrigação de comunicar vazamentos, falhas e outros incidentes às autoridades e às pessoas afetadas.',
   'Propriedade intelectual e direitos autorais': 'Regras sobre a autoria e o uso de conteúdos gerados por IA ou usados para treiná-la, incluindo materiais didáticos e trabalhos de estudantes e professores.',
   // 1.2
-  'Ambientes de teste controlados': 'Estrutura para testar soluções de IA em poucas escolas ou redes, por tempo limitado, com critérios de entrada, de saída e de avaliação.',
+  'Ambientes de teste controlados': 'Estrutura para testar soluções de IA em poucas escolas ou redes, por tempo limitado, com critérios de entrada, de saída e de avaliação. É um sandbox regulatório: os fornecedores testam com a infraestrutura deles. Se o governo quiser oferecer um ambiente técnico próprio, marque também a 2.2.',
   'Supervisão regulatória': 'Equipe e procedimentos do órgão regulador para acompanhar os testes, receber relatórios e decidir se a solução pode avançar.',
   'Avaliações de risco': 'Análise dos riscos da solução para estudantes, professores e dados, antes e durante o teste, com medidas para reduzi-los.',
   // 1.3
