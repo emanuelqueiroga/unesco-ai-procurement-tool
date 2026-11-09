@@ -34,7 +34,7 @@ function FiguraCusto() {
       {no(c2, 236, w2, false, t(MET.fInf), t(MET.fInf2))}
       {no(c3, 56, w3, false, t(MET.fMeses), t(MET.fMeses2))}
       {no(c3, 116, w3, false, t(MET.fPessoas), t(MET.fPessoas2))}
-      {no(c3, 176, w3, false, t(MET.fMensal), 'w (ILOSTAT) × (1 + e)')}
+      {no(c3, 176, w3, false, t(MET.fMensal), 'w × I × (1 + e) × (1 + p·s)')}
     </svg>
   </div>;
 }
@@ -54,32 +54,22 @@ export function Metodologia() {
       <h2>{t(MET.figura)}</h2>
       <FiguraCusto />
 
-      <h2>{t(MET.hGeral)}</h2>
-      <p className="pc-met-formula">C = D + V + O + T</p>
-      <p>{t(MET.geral)}</p>
+      <h2>{t(MET.hParcelas)}</h2>
+      {MET.parcelas.map(pa => <section key={pa.titulo} className="pc-met-parcela" aria-label={t(pa.titulo)}>
+        <h3>{t(pa.titulo)}</h3>
+        {pa.formula.map(f => <p key={f} className="pc-met-formula">{t(f)}</p>)}
+        <dl className="pc-met-termos">{pa.termos.map(([k, v]) => <div key={k}><dt>{t(k)}</dt><dd>{t(v)}</dd></div>)}</dl>
+      </section>)}
 
-      <h2>{t(MET.hEquipe)}</h2>
-      <p className="pc-met-formula">Cₒ = M × Σ (q × d × c) · c = w × (1 + e)</p>
-      <p>{t(MET.equipe)}</p>
-      <ul className="pc-sal-lista">{MET.equipeItens.map(x => <li key={x}>{t(x)}</li>)}</ul>
+      <h2>{t(MET.hDesembolso)}</h2>
+      <p>{t(MET.desembolso)}</p>
+
+      <h2>{t(MET.hAjustes)}</h2>
+      <ul className="pc-sal-lista">{MET.ajustes.map(x => <li key={x}>{t(x)}</li>)}</ul>
       <p><a href={href.esforcos()}>{t('Ver as equipes de referência')}</a> · <a href={href.salarios()}>{t('Ver salários e encargos por país')}</a></p>
 
-      <h2>{t(MET.hDemais)}</h2>
-      <ul className="pc-sal-lista">{MET.demais.map(([a, b]) => <li key={a}><b>{t(a)}:</b> {t(b)}</li>)}</ul>
-
-      <h2>{t(MET.hAdic)}</h2>
-      <p>{t(MET.adic)}</p>
-      <div className="pc-sal-rolagem" tabIndex={0} role="region" aria-label={t(MET.hAdic)}>
-        <table className="pc-sal-tabela">
-          <tbody>{MET.adicItens.map(([a, b, c]) => <tr key={a}><th scope="row">{t(a)}</th><td className="pc-met-num">{b}</td><td>{t(c)}</td></tr>)}</tbody>
-        </table>
-      </div>
-
-      <h2>{t(MET.hTotais)}</h2>
-      <p>{t(MET.totais)}</p>
-
-      <h2>{t(MET.hLimites)}</h2>
-      <ul className="pc-sal-lista">{MET.limites.map(x => <li key={x}>{t(x)}</li>)}</ul>
+      <h2>{t(MET.hGraus)}</h2>
+      <p>{t(MET.graus)}</p>
 
       <p><Button variant="secondary" onClick={() => history.length > 1 ? history.back() : (location.hash = href.plano())}>{t('Voltar')}</Button></p>
     </section>

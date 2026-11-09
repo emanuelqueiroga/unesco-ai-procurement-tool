@@ -175,11 +175,12 @@ export async function gerarPDFFrenteV16(s: Estado14, opts: { frente: FrenteEstim
     const inst = instituicaoV16(v), pais = nomePais(paisDoCaso(v.caso));
     w.cab(); w.texto(rotulo, 10, true, PDF_COR.muted); w.avancar(14); w.texto(p.titulo, 20, true); w.texto([inst, pais].filter(Boolean).join(' · ') || t('País a definir'), 12); w.avancar(6);
     w.titulo(t('Em resumo')); w.texto(resumoProsa(o), 10.5);
+    if (opts.frente === 'governanca' && o.existentes > 0) w.texto(t('Desembolso novo: {v}. O custo conhecido inclui {e} de servidores que já existem, marcados em "Ajustar a equipe".', { v: formatarMoedaEst(totalConhecido(o) - o.existentes, o.moeda), e: formatarMoedaEst(o.existentes, o.moeda) }), 10);
     w.titulo(t('Custo por categoria e fase')); w.tabela(o);
     if (o.memoria.length) { w.titulo(t('O que está sendo custeado')); w.lista(linhasMemoria(o)); }
     // v018: fontes públicas dos valores (governança)
     if (opts.frente === 'governanca') { const fs = fontesDasContas(o.itens.flatMap((i: any) => i.linhas)); const conv = o.itens.some((i: any) => i.linhas.some((l: any) => l.esforcoC));
-      if (fs.length || conv) { w.titulo(t('Fontes dos valores')); w.lista([...fs.map(f => f.titulo + ': ' + f.url), ...(conv ? [t('Equipes de referência (papéis, pessoas, dedicação e meses): convenção da ferramenta (grau C), a calibrar.')] : [])]); } }
+      if (fs.length || conv) { w.titulo(t('Fontes dos valores')); w.lista([...fs.map(f => f.titulo + ': ' + f.url), ...(conv ? [t('Equipes de referência (papéis, pessoas, dedicação e meses): estimativas da ferramenta (grau C), que podem variar conforme o contexto.')] : [])]); } }
     w.titulo(t('Riscos e condições')); w.lista(riscosV16(opts.frente, o));
     w.titulo(t('Próximo passo')); w.texto(p.proxima, 10.5, true);
     if (opts.tipo === 'anexo') for (const b of p.blocos) { w.titulo(b.titulo, 12); for (const l of b.linhas) { w.texto(l.rotulo, 9, true); w.texto(l.valor, 9.5); w.avancar(3); } }

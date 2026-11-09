@@ -158,3 +158,28 @@ export const EQUIPES_GOV: Record<string, EquipeRef> = {
 
 /** Total de pessoas da equipe de referência (soma das quantidades). */
 export const pessoasDaEquipe = (e: EquipeRef) => e.papeis.reduce((n, p) => n + p.qtd, 0);
+
+/** v018: papéis que exigem competências de IA, dados ou segurança digital: o mercado paga acima da média do grupo
+ *  ocupacional, e a ferramenta aplica o prêmio salarial de especialista sobre o salário do país. */
+export const PAPEIS_ESPECIALISTA = new Set([
+  'Arquiteto de TI', 'Arquiteto de dados e interoperabilidade', 'Cientista de dados', 'Desenvolvedor', 'Encarregado de proteção de dados',
+  'Especialista em IA', 'Especialista em IA e avaliação de risco', 'Especialista em IA generativa', 'Especialista em TI', 'Especialista em avaliação de risco de IA',
+  'Especialista em dados', 'Especialista em dados educacionais', 'Especialista em direito de proteção de dados', 'Especialista em direito digital',
+  'Especialista em direito digital e regulação', 'Especialista em explicabilidade de IA', 'Especialista em governança de dados',
+  'Especialista em infraestrutura e segurança de TI', 'Especialista em proteção de dados', 'Especialista em segurança da informação',
+  'Especialista em supervisão de IA', 'Especialista em ética de IA', 'Especialista em ética e equidade de IA', 'Líder técnico',
+  'Analista de dados', 'Analista de resposta a incidentes',
+]);
+/** Opções de pessoal em tempo integral (3.1) que recebem o prêmio de especialista. */
+export const OPCOES_ESPECIALISTA = new Set(['Especialistas em TI (IA, dados, segurança, infraestrutura)', 'Pessoal de governança de IA', 'Especialistas em IA e educação']);
+/** Prêmio salarial de especialista (%): padrão com fonte (grau B); a pessoa pode trocar na tela. */
+export const PREMIO_ESPECIALISTA = {
+  padrao: 28,
+  fonte: { titulo: 'Lightcast, Beyond the Buzz (2025): vagas que pedem competências de IA pagam 28% a mais (1,3 bilhão de anúncios)', url: 'https://lightcast.io/resources/research/beyond-the-buzz-developing-the-ai-skills-employers-actually-need' },
+  comparacao: { titulo: 'PwC, 2025 Global AI Jobs Barometer: prêmio médio de 56% para vagas que exigem competências de IA, frente a 25% no ano anterior', url: 'https://www.pwc.com/gx/en/news-room/press-releases/2025/ai-linked-to-a-fourfold-increase-in-productivity-growth.html' },
+};
+/** Prêmio em uso (fração): o informado em govOrcamento.premioEspecialista ou o padrão. */
+export function premioEspecialista(s: { ctx?: any }): { pct: number; informado: boolean } {
+  const v = s?.ctx?.govOrcamento?.premioEspecialista;
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? { pct: v, informado: true } : { pct: PREMIO_ESPECIALISTA.padrao, informado: false };
+}

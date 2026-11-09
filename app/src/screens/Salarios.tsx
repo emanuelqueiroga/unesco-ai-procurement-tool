@@ -65,6 +65,7 @@ export function Salarios({ pais }: { pais?: string }) {
     <section className="pc-sal" aria-labelledby="sal-titulo">
       <h1 id="sal-titulo">{t('Salários de referência por país')}</h1>
       <p className="pc-lead">{t('O custo de pessoal da governança é o salário médio mensal do país para o perfil do cargo, multiplicado pelos encargos do empregador. Os valores foram fixados na ferramenta a partir das fontes abaixo.')}</p>
+      <p>{t('Na conta, cada salário é atualizado até 2026 pela inflação do país (FMI), e os papéis de IA, dados e segurança digital recebem o prêmio de especialista.')} <a href={href.metodologia()}>{t('Como o custo é calculado')}</a></p>
       {destaque ? <div className="pc-sal-caso">
         <h2>{t('Este país')}</h2>
         <div className="pc-sal-rolagem"><table className="pc-sal-tabela pc-sal-tabela--um">{cabecalho}<tbody>{linha(destaque, nomeDoPaisIso(destaque))}</tbody></table></div>

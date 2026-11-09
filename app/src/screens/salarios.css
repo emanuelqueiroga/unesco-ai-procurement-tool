@@ -31,3 +31,11 @@
 .pc-met-fig svg { display: block; width: 100%; min-width: 640px; height: auto; color: var(--text, inherit); padding: 8px; }
 .pc-met-formula { font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace); font-size: 15px; padding: 8px 12px; background: var(--surface-1); border-radius: var(--radius-md, 8px); overflow-x: auto; }
 .pc-met-num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pc-met-parcela { border-top: 1px solid var(--line); padding-top: var(--space-3, 12px); margin-top: var(--space-3, 12px); }
+.pc-met-parcela h3 { font-size: 16px; margin: 0 0 6px; }
+.pc-met-parcela .pc-met-formula { margin: 0 0 6px; }
+.pc-met-termos { margin: 6px 0 0; display: grid; gap: 4px; }
+.pc-met-termos > div { display: grid; grid-template-columns: minmax(64px, max-content) 1fr; gap: 12px; }
+.pc-met-termos dt { font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace); font-weight: 600; }
+.pc-met-termos dd { margin: 0; }
+@media (max-width: 640px) { .pc-met-termos > div { grid-template-columns: 1fr; gap: 0; } }

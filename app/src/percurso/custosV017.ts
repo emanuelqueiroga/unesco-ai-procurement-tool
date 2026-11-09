@@ -9,7 +9,8 @@ import { t } from './textos';
 import { lerLit } from './letramento';
 import { fatorEncargos, encargosDoPais } from './encargosPais';
 import { SALARIOS_ILO, FONTES_ILO, REGIOES_WB, RENDA_WB, URL_ILOSTAT, type Grupo } from './salariosPais';
-import { EQUIPES_GOV, pessoasDaEquipe, type EquipeRef, type Papel } from './equipesGov';
+import { EQUIPES_GOV, pessoasDaEquipe, PAPEIS_ESPECIALISTA, OPCOES_ESPECIALISTA, PREMIO_ESPECIALISTA, premioEspecialista, type EquipeRef, type Papel } from './equipesGov';
+import { fatorInflacao, ANO_REF_SALARIO, URL_FMI_INFLACAO } from './inflacaoPais';
 import { paisPorIso, nomePais } from '../domain/pais.js';
 import { formatarMoedaEst, parametro, PARAMETRO_EQUIPE, PARAMETRO_FORMACAO, PARAMETRO_LICENCA, PARAMETRO_CONECTIVIDADE, PARAMETRO_DISPOSITIVO, type FrenteEstimativa } from './estimativasOrcamento';
 
@@ -110,11 +111,26 @@ export function salarioDoPais(iso: string | undefined, perfil: Grupo, moeda: str
   if (!e || !p) return null;
   const [ano, lcu, usd, metodo, n] = p, moedaPais = paisPorIso(iso!)?.moeda;
   const viaLCU = metodo === 'd' && lcu !== null && !!moeda && moedaPais === moeda;
-  const mensal = viaLCU ? lcu as number : usd !== null && taxa !== null ? usd * taxa : null;
-  if (mensal === null) return null;
+  const base = viaLCU ? lcu as number : usd !== null && taxa !== null ? usd * taxa : null;
+  if (base === null) return null;
+  // v018: atualizado do ano do dado até o ano de referência pela inflação do FMI (do país, em moeda local; dos EUA, em US$)
+  const inflacao = metodo === 'd' ? fatorInflacao(viaLCU ? iso : 'USA', ano) : null;
+  const mensal = base * (inflacao ? inflacao.fator : 1);
   const grupo = metodo === 'r' ? t(REGIOES_WB[e.r!]) + ', ' + t(RENDA_WB[e.g!]) : t(RENDA_WB[e.g!] || '');
-  return { mensal, viaLCU, lcu, usd, ano, metodo, n: n || 0, perfil, pais: nomeDoPaisIso(iso!), fonte: e.f === null ? null : FONTES_ILO[e.f], grupo };
+  return { mensal, base, inflacao, viaLCU, lcu, usd, ano, metodo, n: n || 0, perfil, pais: nomeDoPaisIso(iso!), fonte: e.f === null ? null : FONTES_ILO[e.f], grupo };
 }
+/** v018: mediana mundial do salário mensal em US$ por perfil (países com dado próprio no ILOSTAT), usada quando o país
+ *  não tem dado nem estimativa regional. */
+export const MEDIANA_MUNDIAL: Record<Grupo, number> = (() => {
+  const med = (xs: number[]) => { const v = [...xs].sort((a, b) => a - b), m = v.length >> 1; return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; };
+  const out = {} as Record<Grupo, number>;
+  for (const g of [1, 2, 3, 4] as Grupo[]) out[g] = Math.round(med(Object.values(SALARIOS_ILO).map(e => e[('p' + g) as 'p1']).filter(p => p && p[3] === 'd' && typeof p[2] === 'number').map(p => p![2] as number)) * 100) / 100;
+  return out;
+})();
+/** v018: textos da conta sobre a atualização pela inflação e o prêmio de especialista. */
+export const textoInflacao = (sal: ReturnType<typeof salarioDoPais>, num: (v: number) => string) => sal && sal.inflacao
+  ? t('atualizado de {de} para {ate} pela inflação ({onde}, FMI): × {f}', { de: sal.inflacao.de, ate: sal.inflacao.ate, onde: t(sal.viaLCU ? 'do país' : 'dos EUA, em US$'), f: num(Math.round(sal.inflacao.fator * 1000) / 1000) }) : '';
+export const FONTE_INFLACAO: FonteConta = { titulo: 'FMI, World Economic Outlook: inflação anual ao consumidor (PCPIPCH)', url: URL_FMI_INFLACAO };
 /** v018: fontes públicas citadas na explicação das contas da governança. */
 export interface FonteConta { titulo: string; url: string | null }
 export const FONTES_GOV: Record<'aiact' | 'noruega' | 'quenia', FonteConta> = {
@@ -173,9 +189,10 @@ export const chaveOpcao = (rotulo: string) => rotulo.normalize('NFD').replace(/[
 export interface FaseCalc { id: string; nome: string; meses: number; alcance: number }
 export interface CustoSalvo { tipo?: TipoCusto; qtd?: number; horas?: number; unit?: number; fases?: Record<string, number>;
   /** v018 (equipe de referência): pessoas e custo mensal informados por papel (chave = nome do papel) */
-  papeis?: Record<string, { qtd?: number; unit?: number }> }
+  papeis?: Record<string, { qtd?: number; unit?: number; existente?: boolean }> }
 /** v018: um papel da equipe de referência, já com a quantidade, o custo mensal (com encargos) e o custo no plano. */
-export interface PapelCalc extends Papel { qtdRef: number; qtdInformada: boolean; ref: number | null; unit: number | null; daRef: boolean; viaPais: boolean; salPais: boolean; custo: number | null }
+export interface PapelCalc extends Papel { qtdRef: number; qtdInformada: boolean; ref: number | null; unit: number | null; daRef: boolean; viaPais: boolean; salPais: boolean; custo: number | null;
+  /** v018: papel com prêmio de especialista (IA, dados, segurança digital) */ especialista: boolean; /** v018: servidor que já existe (fora do desembolso novo) */ existente: boolean }
 export interface ParteConta { rotulo: string; valor: string; texto: string; fontes: FonteConta[]; /** link para a página de salários por país */ pagina?: string }
 export interface ContaOpcao { formula: string; partes: ParteConta[] }
 export interface LinhaOpcao {
@@ -186,6 +203,8 @@ export interface LinhaOpcao {
   status: 'informado' | 'referencia' | 'falta'; falta: string[];
   /** v018: a linha usa o esforço de referência da governança (grau C) */
   esforcoC?: boolean;
+  /** v018: custo sem os servidores que já existem (desembolso novo) */
+  desembolso?: number | null;
   /** v018 (custos adicionais): a pessoa respondeu que este custo não se aplica */
   naoAplica?: boolean;
   /** v018: a equipe de referência da opção (governança), mesmo quando a pessoa já trocou os números */
@@ -215,11 +234,18 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
   // v018 (governança): custo de pessoal = salário médio mensal do país por ocupação (ILOSTAT) × encargos do país (SSA e
   // ISSA). Sem dado do país (ou país "outro"), vale a referência genérica, que já é custo carregado (sem encargos por cima).
   const pidRef = refDoTipo(tipo, pad), iso = (s as any).caso?.pais as string | undefined;
-  const sal = f === 'governanca' && (tipo === 'equipe' || tipo === 'trabalho') && pidRef === PARAMETRO_EQUIPE ? salarioDoPais(iso, 2, moeda, taxa) : null;
+  // v018: na governança, todo o pessoal (inclusive "Especialistas em TI") usa o salário do país, atualizado pela inflação;
+  // opções de IA, dados e segurança recebem o prêmio de especialista; sem dado do país, a mediana mundial do ILOSTAT
+  const pessoalGov = f === 'governanca' && (tipo === 'equipe' || tipo === 'trabalho') && (pidRef === PARAMETRO_EQUIPE || pidRef === 'sal.eng_integracao');
+  const sal = pessoalGov ? salarioDoPais(iso, 2, moeda, taxa) : null;
+  const medMundial = pessoalGov && !sal && taxa !== null;
+  const premio = pessoalGov && OPCOES_ESPECIALISTA.has(rotulo) ? premioEspecialista(s as any) : null;
+  const fPremio = premio ? 1 + premio.pct / 100 : 1;
   const fator = sal ? fatorEncargos(iso) : 1;
-  const refCarregada = !sal && !!pidRef && /carregado/i.test(parametro(pidRef).item);
+  const refCarregada = !sal && !medMundial && !!pidRef && /carregado/i.test(parametro(pidRef).item);
   let unitRef: number | null;
-  if (sal) unitRef = centavos(sal.mensal * fator * (tipo === 'equipe' ? 12 : 1));
+  if (sal) unitRef = centavos(sal.mensal * fator * fPremio * (tipo === 'equipe' ? 12 : 1));
+  else if (medMundial) unitRef = centavos(MEDIANA_MUNDIAL[2] * (taxa as number) * fPremio * (tipo === 'equipe' ? 12 : 1));
   else {
     const refBase = referenciaUSD(pidRef), refUSD = refBase === null ? null : (tipo === 'trabalho' ? refBase / 12 : refBase);
     unitRef = refUSD === null || taxa === null ? null : centavos(refUSD * taxa);
@@ -254,7 +280,8 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
     total = centavos(Object.values(porFase).reduce((a, b) => a + b, 0));
     memoria = tipo === 'fechado' ? fases.map(x => x.nome + ' ' + fmt(porFase[x.id])).join(' · ')
       : [num(qtd as number) + ' ' + t(def.qtd!).toLowerCase(), def.horas ? (tipo === 'trabalho' ? num(horas as number) + ' ' + t('meses') : num(horas as number) + ' h') : '', fmt(unit as number) + ' (' + t(def.unit!).toLowerCase() + ')'].filter(Boolean).join(' × ')
-        + (unitDaReferencia ? ' · ' + (sal ? t('salário do país (ILOSTAT)') : t('referência genérica, igual para todos os países')) : '')
+        + (unitDaReferencia ? ' · ' + (sal ? t('salário do país (ILOSTAT)') : medMundial ? t('mediana mundial do ILOSTAT') : f === 'governanca' ? t('estimativa de referência, que pode variar conforme o contexto') : t('referência genérica, igual para todos os países')) : '')
+        + (unitDaReferencia && premio ? ' · ' + t('com prêmio de especialista de {p}%', { p: num(premio.pct) }) : '')
         + (unitDaReferencia && fator !== 1 ? ' · ' + t('com encargos do país (× {f})', { f: num(Math.round(fator * 1000) / 1000) }) : '')
         + '';
   }
@@ -277,10 +304,23 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
             ? t('Salário médio mensal de {perfil}, {pais}: {v} (ILOSTAT, {fonte}, {ano}; grau A)', { perfil, pais: sal.pais, v, fonte: sal.fonte || '', ano: sal.ano as number })
             : t('Salário médio mensal estimado de {perfil}: {v} (mediana de {n} países com dado no ILOSTAT: {grupo}; grau B)', { perfil, v, n: sal.n, grupo: sal.grupo })];
           if (!sal.viaLCU && tx && taxa !== 1) pedacos.push(t('× câmbio de {tx} por US$', { tx }));
+          if (sal.inflacao) { pedacos.push(textoInflacao(sal, num)); fontes.push(FONTE_INFLACAO); }
+          if (premio) { pedacos.push(t('× prêmio de especialista de {p}% (competências de IA, dados e segurança)', { p: num(premio.pct) })); if (!premio.informado) fontes.push(PREMIO_ESPECIALISTA.fonte); }
           if (tipo === 'equipe') pedacos.push(t('× 12 meses'));
           if (enc) { pedacos.push(t('× encargos do país {f} (contribuição patronal de {p}%, SSA e ISSA, {vol} {ano})', { f: num(Math.round(fator * 1000) / 1000), p: num(enc.taxa), vol: t(enc.volume), ano: enc.ano })); fontes.push({ titulo: t('Social Security Programs Throughout the World, SSA e ISSA ({vol} {ano}), tabela 4', { vol: t(enc.volume), ano: enc.ano }), url: enc.url }); }
           else pedacos.push(t('(sem dado de encargos para o país)'));
           partes.push({ rotulo: t(def.unit!), valor: fmt(unit), texto: pedacos.join(' '), fontes, pagina: '#/salarios/' + iso });
+        } else if (medMundial) {
+          const tx = taxa === null ? '' : new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 4 }).format(taxa);
+          const pedacos = [t('Sem salário do país no ILOSTAT: mediana mundial do perfil 2 (países com dado próprio), {v} por mês', { v: formatarMoedaEst(MEDIANA_MUNDIAL[2], 'USD') })];
+          if (tx && taxa !== 1) pedacos.push(t('× câmbio de {tx} por US$', { tx }));
+          if (premio) pedacos.push(t('× prêmio de especialista de {p}% (competências de IA, dados e segurança)', { p: num(premio.pct) }));
+          if (tipo === 'equipe') pedacos.push(t('× 12 meses'));
+          partes.push({ rotulo: t(def.unit!), valor: fmt(unit), texto: pedacos.join(' '), fontes: [{ titulo: t('ILOSTAT (OIT): salário médio mensal dos empregados por ocupação'), url: URL_ILOSTAT }, ...(premio && !premio.informado ? [PREMIO_ESPECIALISTA.fonte] : [])] });
+        } else if (f === 'governanca' && pidRef === PARAMETRO_FORMACAO) {
+          const par = parametro(pidRef), tx = taxa === null ? '' : new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 4 }).format(taxa);
+          partes.push({ rotulo: t(def.unit!), valor: fmt(unit), fontes: [],
+            texto: t('Custo da hora de formação por participante: {v} (estimativa de referência, grau C, que pode variar conforme o contexto)', { v: formatarMoedaEst(par.valor, 'USD') }) + (tx && taxa !== 1 ? ' ' + t('× câmbio de {tx} por US$', { tx }) : '') });
         } else {
           const pid = pidRef!, par = parametro(pid), fontes: FonteConta[] = [];
           const usd = (v: number) => formatarMoedaEst(v, 'USD');
@@ -309,16 +349,18 @@ function calcularTime(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: CustoSalv
   const eq = EQUIPES_GOV[rotulo], iso = (s as any).caso?.pais as string | undefined, continua = !eq.meses;
   const duracao = fases.reduce((n, x) => n + x.meses, 0);
   const meses = continua ? (duracao || null) : positivo(salvo.horas) ? salvo.horas : eq.meses!;
-  const fator = fatorEncargos(iso), refGenUSD = referenciaUSD(PARAMETRO_EQUIPE);
-  const refGen = refGenUSD === null || taxa === null ? null : centavos(refGenUSD / 12 * taxa);
+  const fator = fatorEncargos(iso), premio = premioEspecialista(s as any), fPrem = 1 + premio.pct / 100;
+  // sem salário do país: mediana mundial do ILOSTAT do perfil, em US$ × câmbio (sem encargos, que dependem do país)
+  const refMundial = (g: Grupo) => taxa === null ? null : MEDIANA_MUNDIAL[g] * taxa;
   const sals = new Map<Grupo, ReturnType<typeof salarioDoPais>>();
   const salDe = (g: Grupo) => { if (!sals.has(g)) sals.set(g, salarioDoPais(iso, g, moeda, taxa)); return sals.get(g)!; };
   const time: PapelCalc[] = eq.papeis.map(p => {
     const sv = salvo.papeis?.[p.papel] || {}, qtdInformada = naoNeg(sv.qtd), qtd = qtdInformada ? sv.qtd as number : p.qtd;
-    const sal = salDe(p.perfil), ref = sal ? centavos(sal.mensal * fator) : refGen;
+    const sal = salDe(p.perfil), especialista = PAPEIS_ESPECIALISTA.has(p.papel), base = sal ? sal.mensal * fator : refMundial(p.perfil);
+    const ref = base === null ? null : centavos(base * (especialista ? fPrem : 1));
     const unit = positivo(sv.unit) ? sv.unit : ref, daRef = !positivo(sv.unit) && ref !== null;
     const custo = unit === null || meses === null ? null : centavos(qtd * p.dedicacao * meses * unit);
-    return { ...p, qtd, qtdRef: p.qtd, qtdInformada, ref, unit, daRef, viaPais: daRef && !!sal, salPais: !!sal, custo };
+    return { ...p, qtd, qtdRef: p.qtd, qtdInformada, ref, unit, daRef, viaPais: daRef && !!sal, salPais: !!sal, custo, especialista, existente: sv.existente === true };
   });
   const falta: string[] = [];
   if (!fases.length) falta.push(t('as fases do plano'));
@@ -337,7 +379,8 @@ function calcularTime(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: CustoSalv
     });
     total = centavos(Object.values(porFase).reduce((a, b) => a + b, 0));
     memoria = t('equipe de {n} pessoas ({e} em tempo integral) × {m} meses', { n: num(pessoas), e: num(integral), m: num(meses as number) })
-      + (time.some(p => p.viaPais) ? ' · ' + t('custo mensal de cada perfil: salário do país (ILOSTAT)') : time.some(p => p.daRef) ? ' · ' + t('referência genérica, igual para todos os países') : '')
+      + (time.some(p => p.viaPais) ? ' · ' + t('custo mensal de cada perfil: salário do país (ILOSTAT)') : time.some(p => p.daRef) ? ' · ' + t('mediana mundial do ILOSTAT') : '')
+      + (time.some(p => p.especialista && p.daRef) ? ' · ' + t('com prêmio de especialista de {p}%', { p: num(premio.pct) }) : '')
       + (time.some(p => p.viaPais) && fator !== 1 ? ' · ' + t('com encargos do país (× {f})', { f: num(Math.round(fator * 1000) / 1000) }) : '')
       + ' · ' + t('equipe de referência (grau C)');
   }
@@ -346,7 +389,7 @@ function calcularTime(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: CustoSalv
   const partes: ParteConta[] = [], voce = t('informado por você'), pagEsf = '#/esforcos/' + chaveOpcao(rotulo);
   const fonteEq = eq.base ? [FONTES_GOV[eq.base]] : [];
   if (meses !== null) partes.push({ rotulo: continua ? t('Duração do plano') : t('Meses de trabalho'), valor: num(meses), fontes: !continua && !positivo(salvo.horas) ? fonteEq : [],
-    texto: continua ? t('operação contínua: a equipe trabalha durante todo o plano.') + ' ' + t(eq.porque) : positivo(salvo.horas) ? voce : t('equipe de referência (grau C): convenção da ferramenta, a calibrar.') + ' ' + t(eq.porque),
+    texto: continua ? t('operação contínua: a equipe trabalha durante todo o plano.') + ' ' + t(eq.porque) : positivo(salvo.horas) ? voce : t('equipe de referência (grau C): estimativa da ferramenta, que pode variar conforme o contexto.') + ' ' + t(eq.porque),
     pagina: pagEsf });
   if (continua && eq.base) partes[partes.length - 1].fontes = fonteEq;
   for (const p of time) {
@@ -354,7 +397,7 @@ function calcularTime(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: CustoSalv
     const quem = t(p.qtd === 1 ? '{q} pessoa, {d}% do tempo' : '{q} pessoas, {d}% do tempo cada', { q: num(p.qtd), d: pct }) + (p.qtdInformada ? ' (' + voce + ')' : '');
     const custoMes = p.unit === null ? '' : ' · ' + t('{v} por mês por pessoa', { v: fmt(p.unit) }) + (p.daRef ? '' : ' (' + voce + ')');
     partes.push({ rotulo: t(p.papel), valor: p.custo === null ? '—' : fmt(p.custo), fontes: [],
-      texto: quem + ' · ' + t(NOME_PERFIL[p.perfil]) + custoMes + '. ' + t(p.faz) });
+      texto: quem + ' · ' + t(NOME_PERFIL[p.perfil]) + custoMes + (p.especialista && p.daRef ? ' · ' + t('com prêmio de especialista') : '') + (p.existente ? ' · ' + t('servidor que já existe') : '') + '. ' + t(p.faz) });
   }
   const usdF = (v: number) => formatarMoedaEst(v, 'USD');
   const tx = taxa === null ? '' : new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 4 }).format(taxa);
@@ -367,9 +410,10 @@ function calcularTime(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: CustoSalv
     const txt = (sal.metodo === 'd'
       ? t('{pais}: ILOSTAT, {fonte}, {ano}; grau A', { pais: sal.pais, fonte: sal.fonte || '', ano: sal.ano as number })
       : t('estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B', { n: sal.n, grupo: sal.grupo }))
-      + (!sal.viaLCU ? ' · ' + usdF(sal.usd as number) + (tx && taxa !== 1 ? ' ' + t('× câmbio de {tx} por US$', { tx }) : '') : '');
+      + (!sal.viaLCU ? ' · ' + usdF(sal.usd as number) + (tx && taxa !== 1 ? ' ' + t('× câmbio de {tx} por US$', { tx }) : '') : '')
+      + (sal.inflacao ? ' · ' + textoInflacao(sal, num) : '');
     partes.push({ rotulo: t('Salário mensal: {perfil}', { perfil }), valor: fmt(sal.mensal), texto: txt,
-      fontes: i === 0 ? [{ titulo: t('ILOSTAT (OIT): salário médio mensal dos empregados por ocupação'), url: URL_ILOSTAT }] : [], pagina: i === comSal.length - 1 ? '#/salarios/' + iso : undefined });
+      fontes: i === 0 ? [{ titulo: t('ILOSTAT (OIT): salário médio mensal dos empregados por ocupação'), url: URL_ILOSTAT }, ...(comSal.some(g => salDe(g)!.inflacao) ? [FONTE_INFLACAO] : [])] : [], pagina: i === comSal.length - 1 ? '#/salarios/' + iso : undefined });
   });
   if (perfis.some(g => salDe(g))) {
     const enc = encargosDoPais(iso);
@@ -378,17 +422,20 @@ function calcularTime(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: CustoSalv
           fontes: [{ titulo: t('Social Security Programs Throughout the World, SSA e ISSA ({vol} {ano}), tabela 4', { vol: t(enc.volume), ano: enc.ano }), url: enc.url }] }
       : { rotulo: t('Encargos do país'), valor: '—', texto: t('(sem dado de encargos para o país)'), fontes: [] });
   }
-  if (usouGenerica && refGenUSD !== null) {
-    const par = parametro(PARAMETRO_EQUIPE);
-    partes.push({ rotulo: t('Custo mensal sem dado do país'), valor: refGen === null ? '—' : fmt(refGen),
-      texto: t('{item}: {v} ({unidade}; {fonte}, grau {g})', { item: t(par.item), v: usdF(par.valor), unidade: t(par.unidade), fonte: t(par.fonte), g: par.grau }) + ' ' + t('÷ 12 meses') + (tx && taxa !== 1 ? ' ' + t('× câmbio de {tx} por US$', { tx }) : '') + ' ' + t('(o custo carregado já inclui os encargos)'),
-      fontes: [], pagina: '#/salarios' + (iso && iso !== 'outro' ? '/' + iso : '') });
+  if (usouGenerica && taxa !== null) {
+    partes.push({ rotulo: t('Salário mensal sem dado do país'), valor: perfis.filter(g => !salDe(g)).map(g => 'G' + g + ' ' + fmt(refMundial(g) as number)).join(' · '),
+      texto: t('mediana mundial do ILOSTAT por perfil (países com dado próprio), em US$') + (tx && taxa !== 1 ? ' ' + t('× câmbio de {tx} por US$', { tx }) : ''),
+      fontes: [{ titulo: t('ILOSTAT (OIT): salário médio mensal dos empregados por ocupação'), url: URL_ILOSTAT }], pagina: '#/salarios' + (iso && iso !== 'outro' ? '/' + iso : '') });
   }
+  if (time.some(p => p.especialista && p.daRef)) partes.push({ rotulo: t('Prêmio de especialista'), valor: '+' + num(premio.pct) + '%',
+    texto: (premio.informado ? t('informado por você') + '. ' : '') + t('Aplicado aos papéis que exigem competências de IA, dados ou segurança digital, que o mercado paga acima da média do grupo ocupacional.'),
+    fontes: premio.informado ? [] : [PREMIO_ESPECIALISTA.fonte, PREMIO_ESPECIALISTA.comparacao] });
   const formula = total === null ? '' : t('Soma dos papéis: pessoas × dedicação × {m} meses × custo mensal do perfil', { m: num(meses as number) }) + ' = ' + fmt(total);
   const unitDaReferencia = time.some(p => p.daRef);
   const status = falta.length ? 'falta' : unitDaReferencia ? 'referencia' : 'informado';
   const valoresFase: Record<string, number | ''> = {}; for (const x of fases) valoresFase[x.id] = '';
-  return { refPais: time.some(p => p.viaPais), esforco: eq, time, continua, conta: { formula, partes }, esforcoC, chave: chaveOpcao(rotulo), rotulo, tipo: 'time', tipoPadrao: 'time', fonte: null,
+  const desembolso = total === null ? null : centavos(total - time.filter(p => p.existente).reduce((n, p) => n + (p.custo || 0), 0));
+  return { desembolso, refPais: time.some(p => p.viaPais), esforco: eq, time, continua, conta: { formula, partes }, esforcoC, chave: chaveOpcao(rotulo), rotulo, tipo: 'time', tipoPadrao: 'time', fonte: null,
     qtd: pessoasDaEquipe({ ...eq, papeis: time }), qtdSugerida: false, horas: meses, unit: null, unitRef: null, unitDaReferencia, valoresFase, porFase, total, status, falta, memoria };
 }
 

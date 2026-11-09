@@ -81,6 +81,7 @@ export function ResumoV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativ
   return <section className="pv-resumo" aria-labelledby={'pv-resumo-' + frente}>
     <h2 id={'pv-resumo-' + frente} className="pv-resumo-titulo">{t('Em resumo')}</h2>
     <p className="pv-resumo-prosa">{resumoProsa(o)}</p>
+    {frente === 'governanca' && o.existentes > 0 ? <p className="pc-nota">{t('Desembolso novo: {v}. O custo conhecido inclui {e} de servidores que já existem, marcados em "Ajustar a equipe".', { v: formatarMoedaEst(totalConhecido(o) - o.existentes, o.moeda), e: formatarMoedaEst(o.existentes, o.moeda) })}</p> : null}
     <div className="pv-matriz-rolagem" tabIndex={0} role="region" aria-label={t('Custo por categoria e fase')}>
       <table className="pv-matriz">
         <caption>{t('Custo por categoria e fase')}</caption>
@@ -124,7 +125,7 @@ function FontesValores({ linhas }: { linhas: { conta?: import('../percurso/custo
   return <><h3 className="pv-resumo-sub">{t('Fontes dos valores')}</h3>
     <ul className="pv-resumo-riscos">
       {fontes.map(f => <li key={f.url}><a href={f.url!} target="_blank" rel="noopener noreferrer">{f.titulo}</a></li>)}
-      {conv ? <li>{t('Equipes de referência (papéis, pessoas, dedicação e meses): convenção da ferramenta (grau C), a calibrar.')}</li> : null}
+      {conv ? <li>{t('Equipes de referência (papéis, pessoas, dedicação e meses): estimativas da ferramenta (grau C), que podem variar conforme o contexto.')}</li> : null}
       <li><a href={href.metodologia()}>{t('Como o custo é calculado')}</a></li>
     </ul></>;
 }

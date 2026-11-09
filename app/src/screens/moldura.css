@@ -433,3 +433,6 @@ a.pc-faixa-custo:hover { color: var(--on-night); outline: 2px solid var(--primar
 }
 /* opção marcada na tela de opções: os campos abrem logo abaixo, na largura toda */
 .pc-lit-opcoes > .pv-v17-abre { grid-column: 1 / -1; min-width: 0; }
+/* v018: servidor que já existe (equipe de referência) */
+.pv-equipe-existente { display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 4px 0 0; cursor: pointer; }
+.pv-equipe-existente input { width: 18px; height: 18px; }

@@ -312,7 +312,9 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
     informado, informados, estimado, estimados, faltam, subtotal: informado, temSubtotal: informados > 0,
     total: !faltam && !estimados ? informado : null, totalComEstimativas: !faltam ? centavos(informado + estimado) : null,
     memoria, premissasEquipe: usadas.filter(l => !l.unitDaReferencia).map(l => ({ pid: l.chave, item: t(l.rotulo) })), todasEquipe: usadas.length > 0 && usadas.every(l => !l.unitDaReferencia),
-    eletricidade: null as number | null };
+    eletricidade: null as number | null,
+    /** v018 (governança): parte do custo conhecido que é de servidores que já existem (fora do desembolso novo) */
+    existentes: centavos(todas.reduce((n, l) => n + (l.total !== null && typeof l.desembolso === 'number' ? l.total - l.desembolso : 0), 0)) };
 }
 
 /** Linhas "Custo por fase" para o resumo, o panorama e os PDFs (informado + estimado de cada fase). */
