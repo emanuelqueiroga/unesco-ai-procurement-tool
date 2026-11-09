@@ -1,8 +1,9 @@
-// v018: "Roteiro para pôr o plano em prática" da governança (terceiro PDF, só para imprimir). Um checklist em linguagem simples, montado
-// a partir do que a pessoa escolheu: primeiro os passos que valem para qualquer plano (decidir, base legal, recursos,
-// equipe, ouvir e medir), depois os passos de cada opção escolhida, com a equipe, os meses e o custo que o plano já
-// calculou, e um calendário sugerido. Cada passo diz o que fazer, quem costuma fazer, como saber que terminou, o prazo
-// típico, do que depende, se depende das regras do país e a fonte. Prazos sem fonte são convenção da ferramenta.
+// v018: "Roteiro de implementação" do plano de governança (terceiro PDF). Documento formal, montado a partir do plano:
+// sete etapas (decisão, base legal, recursos, equipe, participação, execução das medidas e monitoramento), cada uma com
+// objetivo, justificativa, período de referência e ações no infinitivo; cada ação indica o responsável usual, o produto
+// que comprova a conclusão, o prazo de referência, a ação de que depende, se depende do ordenamento do país e a fonte.
+// A etapa de execução traz uma seção por tipo de medida escolhida, com custo, duração e equipe do plano. Prazos sem
+// fonte são convenção da ferramenta (marcados com * no PDF).
 import { orcamentoV16, raizOrcamento } from './orcamentoV016';
 import { formatarMoedaEst } from './estimativasOrcamento';
 import type { Estado14 } from '../store/tipos';
@@ -16,7 +17,7 @@ export interface Passo {
   /** depende do ordenamento jurídico ou orçamentário do país */
   adaptar?: boolean; fonte?: keyof typeof FONTES; nota?: string;
 }
-export interface Etapa { id: string; titulo: string; quando: string; porque: string; passos: Passo[] }
+export interface Etapa { id: string; n: number; titulo: string; quando: string; objetivo: string; porque: string; passos: Passo[] }
 export type TipoOpcao = 'norma' | 'diretriz' | 'sandbox' | 'risco' | 'supervisao' | 'dados' | 'infra' | 'independencia' | 'coordenacao' | 'pessoal' | 'formacao';
 
 export const FONTES = {
@@ -59,108 +60,109 @@ export const TIPO_OPCAO: Record<string, TipoOpcao> = {
   'Comitês de governança': 'coordenacao', 'Coordenação interministerial': 'coordenacao', 'Estruturas institucionais de governança': 'coordenacao',
 };
 
-/** Passos de cada tipo de opção. `{opcao}` é trocado pelo nome da opção. */
+/** Ações de cada tipo de medida, no infinitivo. */
 export const PASSOS_TIPO: Record<TipoOpcao, { resumo: string; prazo: string; passos: Omit<Passo, 'id'>[] }> = {
-  norma: { resumo: 'Uma norma passa por estudo, minuta, consulta pública, revisão jurídica, aprovação e publicação.', prazo: '9 a 24 meses (mais, se precisar de lei)', passos: [
-    { oque: 'Descreva o problema com dados e diga o que a norma precisa mudar.', quem: 'Coordenação e especialistas da equipe', pronto: 'Nota técnica com o problema e os objetivos', fonte: 'ocde_air' },
-    { oque: 'Compare alternativas, inclusive as que não exigem norma (orientação, contrato, formação).', quem: 'Especialistas da equipe', pronto: 'Análise de impacto regulatório, mesmo que simples', fonte: 'ocde_air' },
-    { oque: 'Redija a minuta da norma.', quem: '{JUR}', pronto: 'Minuta revisada pela coordenação' },
-    { oque: 'Faça consulta pública da minuta, em linguagem simples, e publique as respostas do governo.', quem: '{CONSULTA}', pronto: 'Relatório da consulta publicado', prazo: '1 a 3 meses', fonte: 'uk_consulta' },
-    { oque: 'Envie a versão final para revisão jurídica.', quem: 'Consultoria jurídica do ministério', pronto: 'Parecer jurídico favorável', adaptar: true },
-    { oque: 'Leve a norma à autoridade que pode aprová-la e publique-a no diário oficial.', quem: 'Gabinete', pronto: 'Norma publicada no diário oficial ou no meio oficial de publicação do país', adaptar: true },
-    { oque: 'Publique um guia de aplicação e perguntas frequentes para escolas, redes e fornecedores.', quem: 'Equipe da opção', pronto: 'Guia publicado' },
-    { oque: 'Marque a avaliação dos efeitos da norma, de 1 a 2 anos depois.', quem: 'Coordenação', pronto: 'Data e indicadores da avaliação definidos', fonte: 'ocde_air' },
+  norma: { resumo: 'A edição de uma norma compreende estudo do problema, elaboração de minuta, consulta pública, revisão jurídica, aprovação e publicação oficial.', prazo: '9 a 24 meses (mais, se exigir lei)', passos: [
+    { oque: 'Caracterizar o problema com base em dados e definir os objetivos da norma.', quem: 'Coordenação e especialistas da equipe', pronto: 'Nota técnica com o problema e os objetivos', fonte: 'ocde_air' },
+    { oque: 'Comparar alternativas, inclusive as que não exigem norma (orientação, cláusula contratual, formação).', quem: 'Especialistas da equipe', pronto: 'Análise de impacto regulatório, ainda que simplificada', fonte: 'ocde_air' },
+    { oque: 'Elaborar a minuta da norma.', quem: '{JUR}', pronto: 'Minuta revisada pela coordenação' },
+    { oque: 'Submeter a minuta a consulta pública, em linguagem acessível, e publicar as respostas do governo às contribuições.', quem: '{CONSULTA}', pronto: 'Relatório da consulta publicado', prazo: '1 a 3 meses', fonte: 'uk_consulta' },
+    { oque: 'Encaminhar a versão final para revisão jurídica.', quem: 'Consultoria jurídica do ministério', pronto: 'Parecer jurídico favorável', adaptar: true },
+    { oque: 'Submeter a norma à autoridade competente e publicá-la no meio oficial.', quem: 'Gabinete', pronto: 'Norma publicada no diário oficial ou no meio oficial de publicação do país', adaptar: true },
+    { oque: 'Publicar guia de aplicação e perguntas frequentes para escolas, redes de ensino e fornecedores.', quem: 'Equipe da opção', pronto: 'Guia publicado' },
+    { oque: 'Programar a avaliação dos efeitos da norma para um a dois anos após a publicação.', quem: 'Coordenação', pronto: 'Data e indicadores da avaliação definidos', fonte: 'ocde_air' },
   ] },
-  diretriz: { resumo: 'Uma diretriz não tem força de lei: parte de referências que já existem, é validada com escolas e redes e é publicada em linguagem simples.', prazo: '4 a 9 meses', passos: [
-    { oque: 'Defina o escopo e para quem é a diretriz (gestores, professores, estudantes, fornecedores).', quem: 'Coordenação', pronto: 'Termo de abertura de uma página' },
-    { oque: 'Parta de referências existentes em vez de começar do zero.', quem: 'Especialistas da equipe', pronto: 'Lista de referências usadas', nota: 'Exemplos: a Recomendação da UNESCO sobre a Ética da IA, as orientações da UNESCO sobre IA generativa na educação e, para compras, o AI Procurement in a Box.' },
-    { oque: 'Forme um grupo técnico com escolas, redes, academia e sociedade civil.', quem: 'Coordenação', pronto: 'Grupo nomeado e primeira reunião feita', fonte: 'iso' },
-    { oque: 'Redija a diretriz e abra para comentários.', quem: 'Especialistas e redator técnico', pronto: 'Minuta com comentários recebidos' },
-    { oque: 'Ajuste o texto, aprove e publique em linguagem simples.', quem: 'Coordenação e gabinete', pronto: 'Diretriz publicada' },
-    { oque: 'Defina a data da primeira revisão.', quem: 'Coordenação', pronto: 'Data de revisão publicada junto com a diretriz' },
+  diretriz: { resumo: 'Uma diretriz não tem força de lei: parte de referências existentes, é validada com escolas e redes de ensino e é publicada em linguagem acessível.', prazo: '4 a 9 meses', passos: [
+    { oque: 'Definir o escopo e o público da diretriz (gestores, professores, estudantes, fornecedores).', quem: 'Coordenação', pronto: 'Termo de abertura' },
+    { oque: 'Partir de referências existentes, em vez de elaborar o texto do zero.', quem: 'Especialistas da equipe', pronto: 'Lista de referências adotadas', nota: 'Por exemplo: a Recomendação da UNESCO sobre a Ética da IA, as orientações da UNESCO sobre IA generativa na educação e, para contratações, o AI Procurement in a Box.' },
+    { oque: 'Constituir grupo técnico com escolas, redes de ensino, academia e sociedade civil.', quem: 'Coordenação', pronto: 'Grupo designado e primeira reunião realizada', fonte: 'iso' },
+    { oque: 'Elaborar a minuta da diretriz e abri-la a comentários.', quem: 'Especialistas e redator técnico', pronto: 'Minuta com comentários recebidos' },
+    { oque: 'Ajustar o texto, aprovar e publicar a diretriz em linguagem acessível.', quem: 'Coordenação e gabinete', pronto: 'Diretriz publicada' },
+    { oque: 'Definir a data da primeira revisão.', quem: 'Coordenação', pronto: 'Data de revisão publicada com a diretriz' },
   ] },
-  sandbox: { resumo: 'Um sandbox regulatório permite testar soluções por tempo limitado, com regras próprias e acompanhamento, e termina com um relatório de saída.', prazo: '6 a 12 meses para montar; 3 a 6 meses por projeto testado', passos: [
-    { oque: 'Confirme que um sandbox é necessário: há uma regra que impede ou deixa dúvida sobre o teste?', quem: 'Coordenação e jurídico', pronto: 'Nota de decisão', fonte: 'agu' },
-    { oque: 'Faça a análise legal e publique o ato que cria o sandbox: regras, exceções permitidas, salvaguardas, supervisão e plano de saída.', quem: 'Especialista em regulação e consultoria jurídica', pronto: 'Ato do sandbox publicado', prazo: '3 a 6 meses, se for ato do próprio órgão', adaptar: true, fonte: 'agu' },
-    { oque: 'Publique o edital com os critérios de elegibilidade e seleção.', quem: 'Coordenação', pronto: 'Edital publicado', prazo: 'inscrições de cerca de 6 semanas, como no edital da ANPD', fonte: 'anpd' },
-    { oque: 'Selecione os projetos e acorde um plano de teste com cada participante.', quem: 'Coordenação e especialista em IA', pronto: 'Planos individuais assinados', fonte: 'aiact57' },
-    { oque: 'Antes de qualquer teste com estudantes, avalie o impacto sobre dados pessoais e direitos da criança e obtenha o consentimento das famílias, como a lei do país exigir.', quem: 'Especialista em regulação e encarregado de proteção de dados', pronto: 'Avaliação de impacto aprovada e termos de consentimento assinados', adaptar: true },
-    { oque: 'Acompanhe os testes nas escolas piloto e registre as evidências.', quem: 'Articulador com as escolas e analista técnico', pronto: 'Relatórios de acompanhamento', prazo: '3 a 6 meses por projeto', fonte: 'noruega' },
-    { oque: 'Entregue um relatório de saída por projeto e decida a regra que vale depois do teste.', quem: 'Coordenação', pronto: 'Relatórios de saída e decisão publicados', fonte: 'aiact57' },
+  sandbox: { resumo: 'Um sandbox regulatório permite testar soluções por tempo limitado, com regras próprias e acompanhamento do poder público, e termina com relatório de saída.', prazo: '6 a 12 meses para a implantação; 3 a 6 meses por projeto testado', passos: [
+    { oque: 'Verificar a necessidade do sandbox: identificar a regra que impede o teste ou gera insegurança jurídica.', quem: 'Coordenação e jurídico', pronto: 'Nota de decisão', fonte: 'agu' },
+    { oque: 'Realizar a análise jurídica e publicar o ato de criação do sandbox: regras, exceções admitidas, salvaguardas, supervisão e plano de saída.', quem: 'Especialista em regulação e consultoria jurídica', pronto: 'Ato do sandbox publicado', prazo: '3 a 6 meses, se for ato do próprio órgão', adaptar: true, fonte: 'agu' },
+    { oque: 'Publicar edital com critérios de elegibilidade e seleção.', quem: 'Coordenação', pronto: 'Edital publicado', prazo: 'inscrições de cerca de 6 semanas, como no edital da ANPD', fonte: 'anpd' },
+    { oque: 'Selecionar os projetos e pactuar plano de teste com cada participante.', quem: 'Coordenação e especialista em IA', pronto: 'Planos individuais assinados', fonte: 'aiact57' },
+    { oque: 'Antes de qualquer teste com estudantes, avaliar o impacto sobre dados pessoais e direitos da criança e obter o consentimento das famílias, nos termos da legislação do país.', quem: 'Especialista em regulação e encarregado de proteção de dados', pronto: 'Avaliação de impacto aprovada e termos de consentimento assinados', adaptar: true },
+    { oque: 'Acompanhar os testes nas escolas piloto e registrar as evidências.', quem: 'Articulador com as escolas e analista técnico', pronto: 'Relatórios de acompanhamento', prazo: '3 a 6 meses por projeto', fonte: 'noruega' },
+    { oque: 'Elaborar relatório de saída por projeto e definir a regra aplicável após o teste.', quem: 'Coordenação', pronto: 'Relatórios de saída e decisão publicados', fonte: 'aiact57' },
   ] },
-  risco: { resumo: 'Cada projeto testado passa por uma avaliação de risco antes e durante o teste.', prazo: 'cerca de 1,5 mês por projeto', passos: [
-    { oque: 'Adote um modelo de avaliação de risco (impacto em estudantes, professores e dados).', quem: 'Especialista em avaliação de risco', pronto: 'Modelo aprovado pela coordenação', fonte: 'uk_ia' },
-    { oque: 'Avalie cada projeto antes do teste e defina medidas para reduzir os riscos.', quem: 'Especialista em avaliação de risco e cientista de dados', pronto: 'Avaliação assinada por projeto' },
-    { oque: 'Revise a avaliação nos pontos de decisão do teste.', quem: 'Equipe da opção', pronto: 'Avaliações atualizadas no relatório de saída', fonte: 'uk_ia' },
+  risco: { resumo: 'Cada projeto testado é submetido a avaliação de risco antes e durante o teste.', prazo: 'cerca de 1,5 mês por projeto', passos: [
+    { oque: 'Adotar modelo de avaliação de risco (impactos sobre estudantes, professores e dados).', quem: 'Especialista em avaliação de risco', pronto: 'Modelo aprovado pela coordenação', fonte: 'uk_ia' },
+    { oque: 'Avaliar cada projeto antes do teste e definir medidas de mitigação.', quem: 'Especialista em avaliação de risco e cientista de dados', pronto: 'Avaliação assinada por projeto' },
+    { oque: 'Revisar a avaliação nos pontos de decisão do teste.', quem: 'Equipe da opção', pronto: 'Avaliações atualizadas no relatório de saída', fonte: 'uk_ia' },
   ] },
-  supervisao: { resumo: 'Uma unidade de supervisão precisa de funções claras, independência, procedimentos e pessoal permanente.', prazo: '6 a 18 meses para estar funcionando', passos: [
-    { oque: 'Crie a unidade por ato normativo, com funções que não conflitem com as de fomento.', quem: 'Gabinete e jurídico', pronto: 'Ato de criação publicado', adaptar: true, fonte: 'ocde_reg' },
-    { oque: 'Defina como a unidade decide, presta contas e evita influência indevida.', quem: 'Chefia da unidade', pronto: 'Regimento interno aprovado', fonte: 'ocde_reg' },
-    { oque: 'Abra um ponto de contato público para escolas, fornecedores e cidadãos.', quem: 'Chefia da unidade', pronto: 'Ponto de contato divulgado', fonte: 'aiact70' },
-    { oque: 'Garanta pessoal permanente com conhecimento técnico e jurídico, e revise a equipe todo ano.', quem: 'Gabinete e RH', pronto: 'Equipe lotada e revisão anual marcada', adaptar: true, fonte: 'aiact70' },
-    { oque: 'Publique um relatório anual de atividades.', quem: 'Chefia da unidade', pronto: 'Primeiro relatório publicado' },
+  supervisao: { resumo: 'Uma unidade de supervisão requer funções definidas, independência, procedimentos e quadro permanente.', prazo: '6 a 18 meses até o pleno funcionamento', passos: [
+    { oque: 'Criar a unidade por ato normativo, com funções que não conflitem com as de fomento.', quem: 'Gabinete e jurídico', pronto: 'Ato de criação publicado', adaptar: true, fonte: 'ocde_reg' },
+    { oque: 'Definir o processo decisório, a prestação de contas e as salvaguardas contra influência indevida.', quem: 'Chefia da unidade', pronto: 'Regimento interno aprovado', fonte: 'ocde_reg' },
+    { oque: 'Instituir canal de atendimento público para escolas, fornecedores e cidadãos.', quem: 'Chefia da unidade', pronto: 'Canal de atendimento divulgado', fonte: 'aiact70' },
+    { oque: 'Assegurar quadro permanente com conhecimento técnico e jurídico e revisar o dimensionamento anualmente.', quem: 'Gabinete e RH', pronto: 'Equipe lotada e revisão anual programada', adaptar: true, fonte: 'aiact70' },
+    { oque: 'Publicar relatório anual de atividades.', quem: 'Chefia da unidade', pronto: 'Primeiro relatório publicado' },
   ] },
-  dados: { resumo: 'Governança de dados começa por um diagnóstico e um responsável, e avança por etapas, com salvaguardas de direitos.', prazo: '12 a 36 meses, por etapas', passos: [
-    { oque: 'Faça um diagnóstico: política, leis, instituições e infraestrutura de dados da educação.', quem: 'Coordenação', pronto: 'Relatório de diagnóstico', fonte: 'bm_dados' },
-    { oque: 'Nomeie um responsável pela governança dos dados educacionais.', quem: 'Gabinete', pronto: 'Ato de nomeação' },
-    { oque: 'Faça o inventário e a classificação dos dados (o que existe, onde, quem acessa).', quem: 'Especialistas em governança de dados', pronto: 'Inventário publicado internamente' },
-    { oque: 'Defina regras de acesso, compartilhamento e interoperabilidade, com salvaguardas de direitos.', quem: 'Especialistas e jurídico', pronto: 'Regras aprovadas', fonte: 'dpi' },
-    { oque: 'Implante por etapas, começando pelos dados mais usados.', quem: 'Arquiteto de dados', pronto: 'Primeira etapa em uso', fonte: 'bm_dados' },
+  dados: { resumo: 'A governança de dados começa por diagnóstico e designação de responsável, e avança por etapas, com salvaguardas de direitos.', prazo: '12 a 36 meses, por etapas', passos: [
+    { oque: 'Realizar diagnóstico da política, da legislação, das instituições e da infraestrutura de dados educacionais.', quem: 'Coordenação', pronto: 'Relatório de diagnóstico', fonte: 'bm_dados' },
+    { oque: 'Designar responsável pela governança dos dados educacionais.', quem: 'Gabinete', pronto: 'Ato de designação' },
+    { oque: 'Inventariar e classificar os dados (o que existe, onde está armazenado, quem tem acesso).', quem: 'Especialistas em governança de dados', pronto: 'Inventário de dados' },
+    { oque: 'Definir regras de acesso, compartilhamento e interoperabilidade, com salvaguardas de direitos.', quem: 'Especialistas e jurídico', pronto: 'Regras aprovadas', fonte: 'dpi' },
+    { oque: 'Implantar por etapas, a começar pelos dados de maior uso.', quem: 'Arquiteto de dados', pronto: 'Primeira etapa implantada', fonte: 'bm_dados' },
   ] },
-  infra: { resumo: 'Contratar infraestrutura pede uma estratégia de hospedagem, um caso de negócio e um contrato com cláusulas de dados e de saída.', prazo: '4 a 9 meses até o contrato', passos: [
-    { oque: 'Junte tecnologia, compras e segurança numa equipe de contratação.', quem: 'Coordenação', pronto: 'Equipe designada', fonte: 'uk_nuvem' },
-    { oque: 'Defina onde os dados podem ficar e quem pode acessá-los.', quem: 'Segurança e jurídico', pronto: 'Decisão registrada', adaptar: true, fonte: 'uk_nuvem' },
-    { oque: 'Inclua a hospedagem na proposta orçamentária do plano e aprove o caso de negócio.', quem: 'Equipe de contratação e orçamento', pronto: 'Caso de negócio aprovado', adaptar: true },
-    { oque: 'Publique o edital descrevendo o problema, com cláusulas de dados, saída e controle de custos variáveis.', quem: 'Compras', pronto: 'Edital publicado', adaptar: true, fonte: 'uk_ia' },
-    { oque: 'Contrate e acompanhe o gasto todo mês.', quem: 'Gestor do contrato', pronto: 'Contrato assinado e painel de gastos', fonte: 'uk_nuvem' },
+  infra: { resumo: 'A contratação de infraestrutura requer estratégia de hospedagem, caso de negócio e contrato com cláusulas de dados e de saída.', prazo: '4 a 9 meses até a assinatura do contrato', passos: [
+    { oque: 'Constituir equipe de contratação com as áreas de tecnologia, compras e segurança.', quem: 'Coordenação', pronto: 'Equipe designada', fonte: 'uk_nuvem' },
+    { oque: 'Definir onde os dados podem ser armazenados e quem pode acessá-los.', quem: 'Segurança e jurídico', pronto: 'Decisão registrada', adaptar: true, fonte: 'uk_nuvem' },
+    { oque: 'Incluir a hospedagem na proposta orçamentária e aprovar o caso de negócio.', quem: 'Equipe de contratação e orçamento', pronto: 'Caso de negócio aprovado', adaptar: true },
+    { oque: 'Publicar edital que descreva o problema, com cláusulas de dados, de saída e de controle de custos variáveis.', quem: 'Compras', pronto: 'Edital publicado', adaptar: true, fonte: 'uk_ia' },
+    { oque: 'Contratar e acompanhar mensalmente os gastos.', quem: 'Gestor do contrato', pronto: 'Contrato assinado e painel de gastos', fonte: 'uk_nuvem' },
   ] },
-  independencia: { resumo: 'Independência tecnológica se faz com política de software livre, cláusulas nos contratos e equipe interna que entende o sistema.', prazo: '3 a 6 meses para a primeira política; depois, contínuo', passos: [
-    { oque: 'Considere software livre em pé de igualdade com o proprietário nas compras.', quem: 'Líder técnico e compras', pronto: 'Regra escrita na política de compras', fonte: 'uk_aberto' },
-    { oque: 'Avalie cada solução por maturidade, suporte, segurança, licença e custo total, incluindo a saída.', quem: 'Líder técnico', pronto: 'Avaliação registrada', fonte: 'uk_aberto' },
-    { oque: 'Exija nos contratos licença de uso, acesso ao código e aos dados e um plano de saída.', quem: 'Compras e jurídico', pronto: 'Cláusulas nos contratos', fonte: 'wef' },
-    { oque: 'Planeje a transferência de conhecimento para a equipe interna e reserve orçamento de manutenção.', quem: 'Líder técnico', pronto: 'Plano de transferência aprovado' },
+  independencia: { resumo: 'A independência tecnológica depende de política de software livre, de cláusulas contratuais e de equipe interna que conheça os sistemas.', prazo: '3 a 6 meses para a primeira política; depois, contínua', passos: [
+    { oque: 'Considerar o software livre em condições de igualdade com o proprietário nas contratações.', quem: 'Líder técnico e compras', pronto: 'Regra incluída na política de contratações', fonte: 'uk_aberto' },
+    { oque: 'Avaliar cada solução quanto a maturidade, suporte, segurança, licença e custo total, incluindo a saída.', quem: 'Líder técnico', pronto: 'Avaliação registrada', fonte: 'uk_aberto' },
+    { oque: 'Exigir nos contratos licença de uso, acesso ao código e aos dados e plano de saída.', quem: 'Compras e jurídico', pronto: 'Cláusulas incluídas nos contratos', fonte: 'wef' },
+    { oque: 'Planejar a transferência de conhecimento para a equipe interna e reservar orçamento de manutenção.', quem: 'Líder técnico', pronto: 'Plano de transferência aprovado' },
   ] },
-  coordenacao: { resumo: 'Comitês e coordenação entre órgãos precisam de ato formal, regimento e um calendário de reuniões.', prazo: '2 a 4 meses', passos: [
-    { oque: 'Liste os órgãos que precisam estar na mesa.', quem: '{COORD}', pronto: 'Lista de órgãos e pontos focais' },
-    { oque: 'Converse com cada órgão e combine o papel de cada um.', quem: '{COORD}', pronto: 'Pontos focais indicados' },
-    { oque: 'Formalize por resolução conjunta ou acordo de cooperação.', quem: 'Gabinete e jurídico', pronto: 'Ato publicado ou acordo assinado', adaptar: true },
-    { oque: 'Aprove o regimento: mandato, membros, quórum, secretaria e calendário.', quem: '{SEC}', pronto: 'Regimento aprovado' },
-    { oque: 'Faça a primeira reunião e aprove o plano de trabalho do ano.', quem: '{SEC}', pronto: 'Ata da primeira reunião' },
+  coordenacao: { resumo: 'Comitês e instâncias de coordenação entre órgãos requerem ato formal, regimento e calendário de reuniões.', prazo: '2 a 4 meses', passos: [
+    { oque: 'Identificar os órgãos que devem integrar a instância.', quem: '{COORD}', pronto: 'Lista de órgãos e pontos focais' },
+    { oque: 'Pactuar com cada órgão o respectivo papel.', quem: '{COORD}', pronto: 'Pontos focais indicados' },
+    { oque: 'Formalizar a instância por resolução conjunta ou acordo de cooperação.', quem: 'Gabinete e jurídico', pronto: 'Ato publicado ou acordo assinado', adaptar: true },
+    { oque: 'Aprovar o regimento: mandato, composição, quórum, secretaria e calendário.', quem: '{SEC}', pronto: 'Regimento aprovado' },
+    { oque: 'Realizar a primeira reunião e aprovar o plano de trabalho anual.', quem: '{SEC}', pronto: 'Ata da primeira reunião' },
   ] },
-  pessoal: { resumo: 'Antes de contratar, veja quem já existe na casa; depois, designe ou contrate com termos de referência.', prazo: '2 a 6 meses', passos: [
-    { oque: 'Levante as competências que já existem no ministério.', quem: 'RH e coordenação', pronto: 'Levantamento feito', fonte: 'wef' },
-    { oque: 'Decida, perfil por perfil, entre designar, contratar ou buscar cooperação.', quem: 'Coordenação', pronto: 'Quadro de pessoal definido' },
-    { oque: 'Escreva os termos de referência dos perfis a contratar e conduza a seleção.', quem: 'RH e compras', pronto: 'Pessoas contratadas', adaptar: true },
+  pessoal: { resumo: 'O provimento de pessoal especializado parte das competências já existentes no órgão e se completa por designação ou contratação.', prazo: '2 a 6 meses', passos: [
+    { oque: 'Levantar as competências já existentes no órgão.', quem: 'RH e coordenação', pronto: 'Levantamento concluído', fonte: 'wef' },
+    { oque: 'Definir, por perfil, a forma de provimento: designação, contratação ou cooperação.', quem: 'Coordenação', pronto: 'Quadro de pessoal definido' },
+    { oque: 'Elaborar os termos de referência dos perfis a contratar e conduzir a seleção.', quem: 'RH e compras', pronto: 'Profissionais contratados', adaptar: true },
   ] },
-  formacao: { resumo: 'A formação dos servidores da governança começa pelas competências que o plano exige e por um diagnóstico, e passa por um piloto antes de escalar.', prazo: '6 a 12 meses até a primeira turma em escala', passos: [
-    { oque: 'Defina as competências que os servidores da governança precisam (regulação, compras, dados, ética de IA).', quem: 'Coordenação e RH', pronto: 'Referencial de competências aprovado', nota: 'Pode partir da Recomendação da UNESCO sobre a Ética da IA.' },
-    { oque: 'Faça o diagnóstico das lacunas por perfil.', quem: 'Equipe de formação', pronto: 'Diagnóstico publicado' },
-    { oque: 'Desenhe trilhas por perfil e faça uma turma piloto.', quem: 'Equipe de formação', pronto: 'Piloto concluído e avaliado' },
-    { oque: 'Escale e avalie a mudança na prática.', quem: 'Equipe de formação', pronto: 'Relatório de avaliação' },
+  formacao: { resumo: 'A formação dos servidores parte das competências exigidas pelo plano e de um diagnóstico, e passa por piloto antes da ampliação.', prazo: '6 a 12 meses até a primeira turma em escala', passos: [
+    { oque: 'Definir as competências exigidas dos servidores (regulação, contratações, dados, ética da IA).', quem: 'Coordenação e RH', pronto: 'Referencial de competências aprovado', nota: 'Referência possível: Recomendação da UNESCO sobre a Ética da IA.' },
+    { oque: 'Diagnosticar as lacunas de competência por perfil.', quem: 'Equipe de formação', pronto: 'Diagnóstico concluído' },
+    { oque: 'Desenhar trilhas por perfil e realizar turma piloto.', quem: 'Equipe de formação', pronto: 'Piloto concluído e avaliado' },
+    { oque: 'Ampliar a oferta e avaliar a mudança na prática profissional.', quem: 'Equipe de formação', pronto: 'Relatório de avaliação' },
   ] },
 };
 
-/** Mês de início sugerido de cada tipo. Coordenação e pessoal primeiro; normas, diretrizes, dados e infraestrutura com o
- *  parecer jurídico em mãos (mês 3); sandbox, avaliação de risco e supervisão juntos, a partir do mês 4. */
+/** Mês de início de referência de cada tipo. Coordenação e pessoal primeiro; normas, diretrizes, dados e infraestrutura com o
+ *  parecer jurídico em mãos (mês 3); sandbox, avaliação de risco e supervisão a partir do mês 4. Convenção da ferramenta. */
 const INICIO_TIPO: Record<TipoOpcao, number> = { coordenacao: 1, pessoal: 1, dados: 3, norma: 3, diretriz: 3, infra: 3, independencia: 3, formacao: 4, sandbox: 4, risco: 4, supervisao: 4 };
-/** Prazo mínimo habitual (meses) por tipo, para avisar quando o plano prevê menos. */
+/** Prazo mínimo habitual (meses) por tipo, para alertar quando o plano prevê menos. */
 const MINIMO_TIPO: Partial<Record<TipoOpcao, number>> = { norma: 9, diretriz: 4 };
-const TITULO_TIPO: Record<TipoOpcao, string> = { norma: 'Normas', diretriz: 'Diretrizes e padrões', sandbox: 'Sandbox regulatório', risco: 'Avaliações de risco', supervisao: 'Unidade de supervisão',
+export const TITULO_TIPO: Record<TipoOpcao, string> = { norma: 'Normas', diretriz: 'Diretrizes e padrões', sandbox: 'Sandbox regulatório', risco: 'Avaliações de risco', supervisao: 'Unidade de supervisão',
   dados: 'Governança de dados', infra: 'Contratação de infraestrutura', independencia: 'Independência tecnológica', coordenacao: 'Coordenação e comitês', pessoal: 'Pessoal especializado', formacao: 'Formação dos servidores' };
 
 export interface OpcaoInfo { rotulo: string; categoria: string; meses: number | null; continua: boolean; equipe: string; custo: string | null; inicio: number; fim: number | null; falta: string | null; alerta: string | null }
 export interface GrupoRoteiro { tipo: TipoOpcao; titulo: string; resumo: string; prazoTipico: string; opcoes: OpcaoInfo[]; passos: Passo[] }
 export interface Roteiro {
-  titulo: string; duracao: number; totais: { opcoes: string; adicionais: string; total: string; semValor: string[] };
-  primeiras: Passo[]; etapas: Etapa[]; grupos: GrupoRoteiro[];
+  titulo: string; duracao: number; totais: { opcoes: string; adicionais: string; total: string; semValor: string[]; medidas: number };
+  /** etapas 1 a 7; a etapa 6 (execução das medidas) não tem ações próprias: as ações estão em `grupos` */
+  etapas: Etapa[]; grupos: GrupoRoteiro[];
   calendario: { rotulo: string; inicio: number; fim: number | null; continua: boolean; semPrazo: boolean; passa: boolean }[];
-  armadilhas: string[]; glossario: [string, string][];
+  riscos: string[]; glossario: [string, string][];
 }
 
 /** Traduz os textos de um passo (o português é a chave). */
 const traduzir = (p: Passo): Passo => ({ ...p, oque: t(p.oque), quem: t(p.quem), pronto: t(p.pronto), prazo: p.prazo ? t(p.prazo) : undefined, nota: p.nota ? t(p.nota) : undefined });
 const minus1 = (x: string) => /^.[A-Z]/.test(x) ? x : x.charAt(0).toLowerCase() + x.slice(1);
-/** Troca os marcadores de "Quem" pelo papel que a equipe da opção tem (ou pelo setor que costuma fazer). */
+/** Troca os marcadores de responsável pelo papel que a equipe da opção tem (ou pela área que costuma fazer). */
 function resolverQuem(quem: string, papeis: string[]): string {
   const tem = (re: RegExp) => papeis.find(p => re.test(p));
   return quem
@@ -187,50 +189,69 @@ export function montarRoteiro(s: Pick<Estado14, 'ctx' | 'moeda'>): Roteiro {
   const temComite = linhas.some(({ l }) => TIPO_OPCAO[l.rotulo] === 'coordenacao');
   const num = (v: number) => new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 1 }).format(v);
   const executor = ((raizOrcamento(s as any, 'governanca').adicionais || {}) as SalvoAdicionais).executor;
-  const QUEM_EXECUTA = { proprio: 'o próprio órgão', onu: 'uma agência da ONU ou organismo internacional', fundacao: 'uma fundação de apoio ou outra entidade' };
+  const QUEM_EXECUTA = { proprio: 'o próprio órgão', onu: 'agência das Nações Unidas ou organismo internacional', fundacao: 'fundação de apoio ou outra entidade' };
 
-  const P: Record<string, Passo> = {
-    d4: { id: 'd4', oque: 'Escreva em uma página o problema que o plano resolve e o resultado esperado, a partir dos desafios escolhidos.', quem: 'Quem vai coordenar o plano', pronto: 'Nota conceitual de uma página', prazo: '1 semana', fonte: 'uk_ia' },
-    d1: { id: 'd1', oque: 'Apresente o resumo para decisão deste plano à autoridade máxima e peça a aprovação formal.', quem: 'Gabinete do ministro ou secretário', pronto: 'Despacho ou nota de aprovação', prazo: '2 a 4 semanas' },
-    d2: { id: 'd2', oque: 'Nomeie um patrocinador: uma pessoa de alto nível que responde pelo resultado do plano e destrava decisões.', quem: 'Autoridade máxima', pronto: 'Ato de nomeação publicado', adaptar: true, fonte: 'uk_sro' },
-    d3: { id: 'd3', oque: 'Nomeie a coordenação executiva, com tempo dedicado ao plano.', quem: 'Patrocinador', pronto: 'Ato com o nome e o tempo dedicado', depende: ['d2'] },
-    r2: { id: 'r2', oque: executor ? (executor === 'proprio' ? t('O plano considera que o próprio órgão executa o recurso, sem taxa administrativa. Confirme essa decisão com o gabinete e o planejamento.')
-        : t('O plano considera que o recurso será executado por {quem}, com taxa administrativa de {p}%. Confirme a decisão, negocie a taxa e assine o acordo.', { quem: t(QUEM_EXECUTA[executor]), p: num(taxa?.qtd ?? 0) }))
-        : taxa && taxa.qtd !== null ? t('Decida quem vai executar o recurso: o próprio ministério, uma agência da ONU ou uma fundação de apoio. Isso muda a taxa administrativa (o plano usa {p}% hoje) e o total.', { p: num(taxa.qtd) })
-        : t('Decida quem vai executar o recurso: o próprio ministério, uma agência da ONU ou uma fundação de apoio. Isso muda a taxa administrativa e o total.'),
-      quem: 'Gabinete e planejamento', pronto: executor === 'proprio' ? 'Decisão registrada' : 'Decisão registrada e, se houver intermediário, acordo assinado', prazo: executor === 'proprio' ? undefined : '3 a 6 meses para o acordo', adaptar: true },
-    l1: { id: 'l1', oque: normas.length ? t('Peça à consultoria jurídica um parecer sobre quem pode editar cada medida e por qual instrumento (lei, decreto, portaria): {medidas}.', { medidas: normas.map(x => t(x)).join('; ') }) : 'Peça à consultoria jurídica um parecer sobre a competência do ministério para cada medida do plano e o instrumento de cada uma.',
-      quem: 'Consultoria jurídica do ministério', pronto: 'Parecer jurídico', prazo: '4 a 8 semanas', adaptar: true },
-    r1: { id: 'r1', oque: t('Leve o orçamento deste plano (cerca de {total} em {meses} meses) à proposta orçamentária, dividido por ano e por tipo de gasto (pessoal, serviços, viagens).', { total: redondo(somaOp + somaAd), meses: duracao }), quem: 'Unidade de planejamento e orçamento', pronto: 'Recurso previsto no orçamento do ano', prazo: 'conforme o calendário do orçamento; pode levar um ano', adaptar: true, depende: ['r2'] },
-    e1: { id: 'e1', oque: t('Para cada papel das equipes de referência, decida: designar um servidor, contratar ou buscar cooperação. Somando as opções, são {postos} postos ({eti} em tempo integral); uma mesma pessoa pode ocupar o mesmo papel em mais de uma opção, como a coordenação.', { postos: num(postos), eti: num(eti) }), quem: 'Coordenação e RH', pronto: 'Quadro com o nome ou a forma de contratação de cada papel', depende: ['d3'] },
-    e3: { id: 'e3', oque: temComite ? 'Constitua o comitê do plano (é a opção "Comitês de governança" do seu plano; veja os passos dela, abaixo).' : 'Constitua um comitê do plano, com mandato, membros e calendário de reuniões.', quem: 'Patrocinador', pronto: 'Ato publicado e ata da primeira reunião', depende: ['d2'] },
-    o1: { id: 'o1', oque: 'Liste quem é afetado pelo plano: escolas, professores, estudantes e famílias, fornecedores, sociedade civil.', quem: 'Coordenação', pronto: 'Lista de partes interessadas' },
-  };
-  const primeiras = ['d4', 'd1', 'd2', 'd3', 'r2', 'l1', 'r1', 'e1', 'e3', 'o1'].map(k => traduzir(P[k]));
+  const r2: Passo = { id: 'r2', oque: executor === 'proprio' ? t('Confirmar a execução dos recursos pelo próprio órgão, sem incidência de taxa administrativa.')
+      : executor ? t('Formalizar a execução dos recursos por {quem}, com taxa administrativa de {p}%: negociar as condições e celebrar o acordo.', { quem: t(QUEM_EXECUTA[executor]), p: num(taxa?.qtd ?? 0) })
+      : taxa && taxa.qtd !== null ? t('Definir a instância executora dos recursos (o próprio órgão, agência das Nações Unidas ou fundação de apoio), considerando o efeito sobre a taxa administrativa (atualmente {p}% no plano) e sobre o custo total.', { p: num(taxa.qtd) })
+      : t('Definir a instância executora dos recursos (o próprio órgão, agência das Nações Unidas ou fundação de apoio), considerando o efeito sobre a taxa administrativa e sobre o custo total.'),
+    quem: 'Gabinete e planejamento', pronto: executor === 'proprio' ? 'Decisão registrada' : 'Decisão registrada e, se houver intermediário, acordo assinado', prazo: executor === 'proprio' ? undefined : '3 a 6 meses para o acordo', adaptar: true, depende: ['d1'] };
 
-  const etapas = ([
-    { id: 'legal', titulo: 'Base legal', quando: 'Meses 1 a 3', porque: 'Além do parecer, os órgãos que dividem o tema precisam combinar como trabalham juntos.', passos: [
-      { id: 'l2', oque: 'Identifique os órgãos que também têm competência no tema (autoridade de proteção de dados, de cibersegurança) e combine como trabalhar juntos.', quem: 'Coordenação', pronto: 'Matriz de competências ou acordo de cooperação', fonte: 'aiact57' },
+  const etapas: Etapa[] = ([
+    { id: 'decisao', n: 1, titulo: 'Decisão e governança do plano', quando: 'Meses 1 e 2',
+      objetivo: 'Assegurar a aprovação formal do plano e definir quem responde por sua execução.',
+      porque: 'Sem respaldo formal e sem responsáveis designados, as demais etapas não avançam: contratações, normas e orçamento dependem de decisões da autoridade máxima.', passos: [
+      { id: 'd4', oque: 'Elaborar nota conceitual de até uma página com o problema a ser enfrentado e o resultado esperado, a partir dos desafios selecionados no plano.', quem: 'Coordenação do plano', pronto: 'Nota conceitual', prazo: '1 semana', fonte: 'uk_ia' },
+      { id: 'd1', oque: 'Submeter o resumo para decisão à autoridade máxima e obter a aprovação formal do plano.', quem: 'Gabinete do ministro ou secretário', pronto: 'Despacho ou nota de aprovação', prazo: '2 a 4 semanas', depende: ['d4'] },
+      { id: 'd2', oque: 'Designar o patrocinador do plano: dirigente de alto nível responsável pelos resultados e pela resolução de impasses.', quem: 'Autoridade máxima', pronto: 'Ato de designação publicado', adaptar: true, fonte: 'uk_sro', depende: ['d1'] },
+      { id: 'd3', oque: 'Designar a coordenação executiva, com dedicação de tempo definida.', quem: 'Patrocinador', pronto: 'Ato de designação com a dedicação prevista', depende: ['d2'] },
+      { id: 'e3', oque: temComite ? 'Instituir o comitê do plano por meio da medida “Comitês de governança” (ver etapa 6).' : 'Instituir o comitê do plano, com mandato, composição e calendário de reuniões.', quem: 'Patrocinador', pronto: 'Ato publicado e ata da primeira reunião', depende: ['d2'] },
     ] },
-    { id: 'recursos', titulo: 'Recursos para os anos seguintes', quando: 'Meses 1 a 6', porque: 'Parte do plano continua depois do primeiro ano e precisa estar no orçamento plurianual.', passos: [
-      ...(continuas.length ? [{ id: 'r3', oque: t('Preveja nos orçamentos dos anos seguintes os custos que continuam: {lista}.', { lista: continuas.map(({ l }) => t('{opcao} (cerca de {valor} por ano)', { opcao: t(l.rotulo), valor: redondo((l.total as number) / duracao * 12) })).join('; ') }), quem: 'Planejamento e orçamento', pronto: 'Custos recorrentes no plano plurianual', adaptar: true }] : []),
-      ...(semValor.length ? [{ id: 'r4', oque: t('Levante o valor do que ainda está sem custo no plano: {lista}.', { lista: semValor.map(x => t(x)).join('; ') }), quem: 'Coordenação e compras', pronto: 'Valores informados na ferramenta' }] : []),
+    { id: 'legal', n: 2, titulo: 'Base legal', quando: 'Meses 1 a 3',
+      objetivo: 'Confirmar a competência do órgão e o instrumento jurídico adequado a cada medida do plano.',
+      porque: 'Normas, sandbox e unidades de supervisão exigem base legal; identificar cedo o instrumento necessário (lei, decreto ou portaria) evita retrabalho e atrasos.', passos: [
+      { id: 'l1', oque: normas.length ? t('Solicitar à consultoria jurídica parecer sobre a competência e o instrumento normativo (lei, decreto ou portaria) de cada medida: {medidas}.', { medidas: normas.map(x => t(x)).join('; ') }) : 'Solicitar à consultoria jurídica parecer sobre a competência do órgão e o instrumento normativo de cada medida do plano.',
+        quem: 'Consultoria jurídica do ministério', pronto: 'Parecer jurídico', prazo: '4 a 8 semanas', adaptar: true, depende: ['d1'] },
+      { id: 'l2', oque: 'Identificar os demais órgãos com competência no tema (como as autoridades de proteção de dados e de cibersegurança) e pactuar a forma de atuação conjunta.', quem: 'Coordenação', pronto: 'Matriz de competências ou acordo de cooperação', fonte: 'aiact57' },
     ] },
-    { id: 'equipe', titulo: 'Equipe', quando: 'Meses 1 a 6', porque: 'Depois de decidir quem é designado e quem é contratado, as contratações seguem as regras do país.', passos: [
-      { id: 'e2', oque: 'Escreva os termos de referência dos papéis a contratar (produtos, prazos, qualificações) e conduza a seleção.', quem: 'RH e compras', pronto: 'Pessoas contratadas ou designadas', prazo: '4 a 12 semanas até a contratação', adaptar: true, depende: ['e1', 'r1'] },
+    { id: 'recursos', n: 3, titulo: 'Recursos orçamentários', quando: 'Meses 1 a 6',
+      objetivo: 'Assegurar os recursos do plano no orçamento do exercício e nos exercícios seguintes.',
+      porque: 'O orçamento estimado nesta ferramenta precisa entrar no ciclo orçamentário do país; os custos que continuam após o primeiro ano devem constar do planejamento plurianual.', passos: [
+      r2,
+      { id: 'r1', oque: t('Incluir o orçamento do plano (cerca de {total} em {meses} meses) na proposta orçamentária, discriminado por exercício e por natureza de despesa (pessoal, serviços, viagens).', { total: redondo(somaOp + somaAd), meses: duracao }),
+        quem: 'Unidade de planejamento e orçamento', pronto: 'Recursos previstos na lei orçamentária', prazo: 'conforme o calendário orçamentário do país (até um ano)', adaptar: true, depende: ['r2'] },
+      ...(continuas.length ? [{ id: 'r3', oque: t('Prever nos orçamentos dos exercícios seguintes os custos continuados: {lista}.', { lista: continuas.map(({ l }) => t('{opcao} (cerca de {valor} por ano)', { opcao: t(l.rotulo), valor: redondo((l.total as number) / duracao * 12) })).join('; ') }),
+        quem: 'Planejamento e orçamento', pronto: 'Custos continuados no plano plurianual', adaptar: true, depende: ['r1'] }] : []),
+      ...(semValor.length ? [{ id: 'r4', oque: t('Levantar o custo dos itens ainda sem valor no plano: {lista}.', { lista: semValor.map(x => t(x)).join('; ') }), quem: 'Coordenação e área de compras', pronto: 'Valores registrados na ferramenta' }] : []),
     ] },
-    { id: 'ouvir', titulo: 'Ouvir e medir', quando: 'Meses 2 a 5', porque: 'Consulta e indicadores definidos no início evitam retrabalho e permitem mostrar resultados.', passos: [
-      { id: 'o2', oque: 'Planeje a consulta pública: quando, como, em linguagem simples, e como as respostas serão publicadas.', quem: 'Coordenação', pronto: 'Plano de consulta aprovado', fonte: 'uk_consulta' },
-      { id: 'o3', oque: 'Defina os indicadores de cada desafio, o ponto de partida (linha de base) e quem coleta os dados.', quem: 'Coordenação', pronto: 'Quadro de indicadores com linha de base', fonte: 'ocde_air' },
+    { id: 'equipe', n: 4, titulo: 'Equipe', quando: 'Meses 1 a 6',
+      objetivo: 'Compor a equipe necessária à execução das medidas do plano.',
+      porque: 'As equipes de referência da ferramenta indicam os papéis e a dedicação de cada medida; cabe definir quais serão supridos por servidores do órgão, por contratação ou por cooperação.', passos: [
+      { id: 'e1', oque: t('Definir, para cada papel das equipes de referência, a forma de provimento: designação de servidor, contratação ou cooperação. O plano soma {postos} postos ({eti} em tempo integral); um mesmo profissional pode exercer o mesmo papel em mais de uma medida, como a coordenação.', { postos: num(postos), eti: num(eti) }),
+        quem: 'Coordenação e RH', pronto: 'Quadro de provimento por papel', depende: ['d3'] },
+      { id: 'e2', oque: 'Elaborar os termos de referência dos papéis a contratar (produtos, prazos e qualificações) e conduzir a seleção.', quem: 'RH e compras', pronto: 'Profissionais contratados ou designados', prazo: '4 a 12 semanas até a contratação', adaptar: true, depende: ['e1', 'r1'] },
     ] },
-    { id: 'acompanhar', titulo: 'Acompanhar e prestar contas', quando: 'Durante todo o plano', porque: 'Revisar os marcos todo mês e publicar resultados mantém o apoio e mostra quando corrigir o rumo.', passos: [
-      { id: 'a1', oque: 'Reúna o comitê todo mês para revisar este roteiro e os marcos de cada opção.', quem: 'Coordenação', pronto: 'Atas mensais', depende: ['e3'] },
-      { id: 'a2', oque: 'Publique um relatório anual com o que foi feito, o que custou e os indicadores.', quem: 'Coordenação', pronto: 'Relatório anual publicado' },
-      { id: 'a3', oque: 'Ao fim do plano, avalie os resultados e decida o que continua, o que muda e o que termina.', quem: 'Patrocinador e comitê', pronto: 'Relatório de avaliação e decisão', fonte: 'ocde_air' },
+    { id: 'participacao', n: 5, titulo: 'Participação e indicadores', quando: 'Meses 2 a 5',
+      objetivo: 'Envolver as partes interessadas e definir como os resultados do plano serão medidos.',
+      porque: 'Consulta pública e indicadores definidos desde o início conferem legitimidade ao plano e permitem demonstrar resultados.', passos: [
+      { id: 'o1', oque: 'Mapear as partes interessadas: escolas, professores, estudantes e famílias, fornecedores e sociedade civil.', quem: 'Coordenação', pronto: 'Mapa de partes interessadas' },
+      { id: 'o2', oque: 'Planejar a consulta pública: calendário, meios, linguagem acessível e forma de publicação das contribuições e das respostas.', quem: 'Coordenação', pronto: 'Plano de consulta aprovado', fonte: 'uk_consulta', depende: ['o1'] },
+      { id: 'o3', oque: 'Definir os indicadores de cada desafio, a linha de base e os responsáveis pela coleta.', quem: 'Coordenação', pronto: 'Matriz de indicadores com linha de base', fonte: 'ocde_air' },
     ] },
-  ] as Etapa[]).filter(e => e.passos.length).map(e => ({ ...e, titulo: t(e.titulo), quando: t(e.quando), porque: t(e.porque), passos: e.passos.map(traduzir) }));
+    { id: 'execucao', n: 6, titulo: 'Execução das medidas do plano', quando: 'Conforme o calendário de referência',
+      objetivo: 'Implementar as medidas selecionadas no plano, conforme o rito próprio de cada tipo.',
+      porque: 'Cada tipo de medida segue um rito próprio: uma norma exige consulta pública e publicação oficial; um sandbox exige ato de criação e relatório de saída; uma unidade de supervisão exige estrutura permanente.', passos: [] },
+    { id: 'acompanhamento', n: 7, titulo: 'Monitoramento e prestação de contas', quando: 'Durante toda a execução',
+      objetivo: 'Acompanhar a execução, corrigir o rumo e prestar contas dos resultados.',
+      porque: 'A revisão periódica dos marcos permite identificar atrasos cedo; a publicação de resultados sustenta o apoio institucional ao plano.', passos: [
+      { id: 'a1', oque: 'Realizar reuniões mensais do comitê para revisar este roteiro e os marcos de cada medida.', quem: 'Coordenação', pronto: 'Atas mensais', depende: ['e3'] },
+      { id: 'a2', oque: 'Publicar relatório anual de execução, com as ações realizadas, os custos e os indicadores.', quem: 'Coordenação', pronto: 'Relatório anual publicado', depende: ['o3'] },
+      { id: 'a3', oque: 'Avaliar os resultados ao final do plano e decidir sobre a continuidade, o ajuste ou o encerramento de cada medida.', quem: 'Patrocinador e comitê', pronto: 'Relatório de avaliação e decisão', fonte: 'ocde_air' },
+    ] },
+  ] as Etapa[]).filter(e => e.id !== 'execucao' || linhas.length)
+    .map(e => ({ ...e, titulo: t(e.titulo), quando: t(e.quando), objetivo: t(e.objetivo), porque: t(e.porque), passos: e.passos.map(traduzir) }));
 
-  // uma ficha por tipo de opção: os passos aparecem uma vez, com as opções que eles cobrem
+  // uma seção por tipo de medida: as ações aparecem uma vez, com as medidas que elas cobrem
   const porTipo = new Map<TipoOpcao, OpcaoInfo[]>(); const papeisTipo = new Map<TipoOpcao, string[]>();
   for (const { i, l } of linhas) {
     const tipo = TIPO_OPCAO[l.rotulo] || 'diretriz', ini = INICIO_TIPO[tipo];
@@ -240,8 +261,8 @@ export function montarRoteiro(s: Pick<Estado14, 'ctx' | 'moeda'>): Roteiro {
     const min = MINIMO_TIPO[tipo];
     const info: OpcaoInfo = { rotulo: l.rotulo, categoria: (i.n ? i.n + ' ' : '') + i.nome, meses, continua: !!l.continua, equipe, custo: l.total === null ? null : redondo(l.total), inicio: ini,
       fim: l.continua ? null : meses ? ini + meses - 1 : null,
-      falta: l.total === null ? t('Ainda sem valor no plano: volte às opções e informe o custo.') : null,
-      alerta: meses && min && meses < min ? t('O plano prevê {n} meses; {tipo} costumam levar {prazo}.', { n: meses, tipo: minus1(t(TITULO_TIPO[tipo])), prazo: t(PASSOS_TIPO[tipo].prazo) }) : null };
+      falta: l.total === null ? t('Item ainda sem custo no plano: informar o valor na etapa de opções.') : null,
+      alerta: meses && min && meses < min ? t('O plano prevê {n} meses; {tipo} costumam exigir {prazo}.', { n: meses, tipo: minus1(t(TITULO_TIPO[tipo])), prazo: t(PASSOS_TIPO[tipo].prazo) }) : null };
     porTipo.set(tipo, [...(porTipo.get(tipo) || []), info]);
     papeisTipo.set(tipo, [...(papeisTipo.get(tipo) || []), ...papeis.map(p => p.papel)]);
   }
@@ -252,24 +273,25 @@ export function montarRoteiro(s: Pick<Estado14, 'ctx' | 'moeda'>): Roteiro {
   });
 
   const calendario = grupos.flatMap(g => g.opcoes.map(x => ({ rotulo: x.rotulo, inicio: x.inicio, fim: x.fim, continua: x.continua, semPrazo: !x.continua && x.fim === null, passa: x.fim !== null && x.fim > duracao })));
-  const armadilhas = [
-    'Começar sem patrocínio formal e sem coordenação com tempo dedicado.',
-    'Contratar tecnologia antes de saber quais dados existem e quem responde por eles.',
-    'Descrever a solução no edital em vez do problema: isso afasta fornecedores e prende o governo a um só.',
-    'Orçar só o primeiro ano e esquecer os custos que continuam (supervisão, manutenção, nuvem, pessoal).',
-    'Fazer a consulta pública tarde demais, ou não publicar as respostas.',
-    'Usar o sandbox para driblar a lei: ele precisa de base legal, salvaguardas e plano de saída.',
+  const riscos = [
+    'Iniciar a execução sem patrocínio formal e sem coordenação com dedicação definida.',
+    'Contratar tecnologia antes de conhecer os dados disponíveis e seus responsáveis.',
+    'Descrever a solução no edital, em vez do problema, o que restringe a concorrência e gera dependência de um único fornecedor.',
+    'Orçar apenas o primeiro ano e omitir os custos continuados (supervisão, manutenção, nuvem, pessoal).',
+    'Realizar a consulta pública tardiamente ou não publicar as respostas às contribuições.',
+    'Utilizar o sandbox para contornar a legislação: o instrumento requer base legal, salvaguardas e plano de saída.',
   ];
   const glossario: [string, string][] = [
-    ['Patrocinador', 'Pessoa de alto nível que responde pelo plano e destrava decisões; não precisa trabalhar nele todo dia.'],
-    ['Parecer jurídico', 'Documento da consultoria jurídica que diz se o órgão pode fazer a medida e com que instrumento.'],
-    ['Termo de referência', 'Documento que descreve o que uma pessoa ou empresa contratada vai entregar, em que prazo e com que qualificação.'],
-    ['Linha de base', 'O valor de um indicador antes do plano começar, para comparar depois.'],
-    ['Consulta pública', 'Período em que qualquer pessoa pode comentar uma proposta antes de ela ser aprovada.'],
-    ['Sandbox regulatório', 'Teste de soluções por tempo limitado, com regras próprias e acompanhamento do governo.'],
-    ['Análise de impacto regulatório', 'Estudo que compara alternativas antes de criar uma norma: o problema, as opções, custos e benefícios.'],
-    ['Tempo integral equivalente', 'Soma do tempo das pessoas: duas pessoas com metade do tempo valem uma em tempo integral.'],
+    ['Patrocinador', 'Dirigente de alto nível responsável pelos resultados do plano e pela resolução de impasses; não precisa atuar na execução cotidiana.'],
+    ['Parecer jurídico', 'Manifestação da consultoria jurídica sobre a competência do órgão e o instrumento adequado a cada medida.'],
+    ['Termo de referência', 'Documento que descreve os produtos, os prazos e as qualificações exigidos do profissional ou da empresa a contratar.'],
+    ['Linha de base', 'Valor de um indicador antes do início do plano, usado como referência de comparação.'],
+    ['Consulta pública', 'Período em que qualquer interessado pode se manifestar sobre uma proposta antes de sua aprovação.'],
+    ['Sandbox regulatório', 'Ambiente de teste de soluções por tempo limitado, com regras próprias e acompanhamento do poder público.'],
+    ['Análise de impacto regulatório', 'Estudo que compara alternativas antes da edição de uma norma: problema, opções, custos e benefícios.'],
+    ['Tempo integral equivalente', 'Soma da dedicação dos profissionais: dois profissionais com dedicação de 50% equivalem a um em tempo integral.'],
   ];
-  return { titulo: t('Roteiro para pôr o plano em prática'), duracao, totais: { opcoes: redondo(somaOp), adicionais: redondo(somaAd), total: redondo(somaOp + somaAd), semValor },
-    primeiras, etapas, grupos, calendario, armadilhas: armadilhas.map(x => t(x)), glossario: glossario.map(([a, b]) => [t(a), t(b)] as [string, string]) };
+  return { titulo: t('Roteiro de implementação do plano de governança'), duracao,
+    totais: { opcoes: redondo(somaOp), adicionais: redondo(somaAd), total: redondo(somaOp + somaAd), semValor, medidas: linhas.length },
+    etapas, grupos, calendario, riscos: riscos.map(x => t(x)), glossario: glossario.map(([a, b]) => [t(a), t(b)] as [string, string]) };
 }

@@ -1719,5 +1719,17 @@
  "Roteiro de implementação (PDF)": "خارطة طريق التنفيذ (PDF)",
  "Roteiro para pôr o plano em prática": "خارطة طريق لوضع الخطة موضع التنفيذ",
  "Roteiro: os passos para pôr o plano em prática, para imprimir e marcar.": "خارطة الطريق: خطوات وضع الخطة موضع التنفيذ، للطباعة ووضع العلامات.",
- "soma das opções que já têm valor (sem viagens); o overhead e a taxa administrativa não entram na base um do outro": "مجموع الخيارات التي لها قيمة بالفعل (دون السفر)؛ ولا تدخل التكاليف غير المباشرة والرسوم الإدارية في أساس بعضهما"
+ "soma das opções que já têm valor (sem viagens); o overhead e a taxa administrativa não entram na base um do outro": "مجموع الخيارات التي لها قيمة بالفعل (دون السفر)؛ ولا تدخل التكاليف غير المباشرة والرسوم الإدارية في أساس بعضهما",
+ "Confirmar a execução dos recursos pelo próprio órgão, sem incidência de taxa administrativa.": "تأكيد تنفيذ الموارد من قِبل الجهة نفسها، دون فرض رسوم إدارية.",
+ "Definir a instância executora dos recursos (o próprio órgão, agência das Nações Unidas ou fundação de apoio), considerando o efeito sobre a taxa administrativa (atualmente {p}% no plano) e sobre o custo total.": "تحديد الجهة المنفِّذة للموارد (الجهة نفسها، أو وكالة تابعة للأمم المتحدة، أو مؤسسة دعم)، مع مراعاة الأثر على الرسوم الإدارية (حاليًا {p}% في الخطة) وعلى التكلفة الإجمالية.",
+ "Definir a instância executora dos recursos (o próprio órgão, agência das Nações Unidas ou fundação de apoio), considerando o efeito sobre a taxa administrativa e sobre o custo total.": "تحديد الجهة المنفِّذة للموارد (الجهة نفسها، أو وكالة تابعة للأمم المتحدة، أو مؤسسة دعم)، مع مراعاة الأثر على الرسوم الإدارية وعلى التكلفة الإجمالية.",
+ "Definir, para cada papel das equipes de referência, a forma de provimento: designação de servidor, contratação ou cooperação. O plano soma {postos} postos ({eti} em tempo integral); um mesmo profissional pode exercer o mesmo papel em mais de uma medida, como a coordenação.": "تحديد طريقة شغل كل دور من أدوار الفرق المرجعية: تكليف موظف، أو التعاقد، أو التعاون. تبلغ الخطة في مجموعها {postos} وظيفة ({eti} بدوام كامل)؛ ويجوز للمهني نفسه أن يؤدي الدور نفسه في أكثر من إجراء، مثل التنسيق.",
+ "Formalizar a execução dos recursos por {quem}, com taxa administrativa de {p}%: negociar as condições e celebrar o acordo.": "إضفاء الطابع الرسمي على تنفيذ الموارد من قِبل {quem}، برسوم إدارية قدرها {p}%: التفاوض على الشروط وإبرام الاتفاق.",
+ "Incluir o orçamento do plano (cerca de {total} em {meses} meses) na proposta orçamentária, discriminado por exercício e por natureza de despesa (pessoal, serviços, viagens).": "إدراج ميزانية الخطة (نحو {total} على مدى {meses} شهرًا) في مقترح الميزانية، مفصّلة حسب السنة المالية وطبيعة الإنفاق (الموظفون، الخدمات، السفر).",
+ "Item ainda sem custo no plano: informar o valor na etapa de opções.": "بند لا يزال دون تكلفة في الخطة: يُرجى إدخال القيمة في مرحلة الخيارات.",
+ "Levantar o custo dos itens ainda sem valor no plano: {lista}.": "حصر تكلفة البنود التي لا تزال دون قيمة في الخطة: {lista}.",
+ "O plano prevê {n} meses; {tipo} costumam exigir {prazo}.": "تتوقع الخطة {n} شهرًا؛ وعادةً ما تتطلب {tipo} {prazo}.",
+ "Prever nos orçamentos dos exercícios seguintes os custos continuados: {lista}.": "رصد التكاليف المستمرة في ميزانيات السنوات المالية التالية: {lista}.",
+ "Roteiro de implementação do plano de governança": "خارطة طريق تنفيذ خطة الحوكمة",
+ "Solicitar à consultoria jurídica parecer sobre a competência e o instrumento normativo (lei, decreto ou portaria) de cada medida: {medidas}.": "طلب رأي من الاستشارة القانونية بشأن الاختصاص والأداة التنظيمية (قانون، أو مرسوم، أو قرار وزاري) لكل إجراء: {medidas}."
 }

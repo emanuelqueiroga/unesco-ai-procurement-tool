@@ -1719,5 +1719,17 @@
  "Roteiro de implementação (PDF)": "实施路线图（PDF）",
  "Roteiro para pôr o plano em prática": "将计划付诸实施的路线图",
  "Roteiro: os passos para pôr o plano em prática, para imprimir e marcar.": "路线图：将计划付诸实施的步骤，可打印并逐项勾选。",
- "soma das opções que já têm valor (sem viagens); o overhead e a taxa administrativa não entram na base um do outro": "已有数值的选项之和（不含差旅）；间接成本和管理费互不计入对方的基数"
+ "soma das opções que já têm valor (sem viagens); o overhead e a taxa administrativa não entram na base um do outro": "已有数值的选项之和（不含差旅）；间接成本和管理费互不计入对方的基数",
+ "Confirmar a execução dos recursos pelo próprio órgão, sem incidência de taxa administrativa.": "确认由本机构自行执行资金，不收取管理费。",
+ "Definir a instância executora dos recursos (o próprio órgão, agência das Nações Unidas ou fundação de apoio), considerando o efeito sobre a taxa administrativa (atualmente {p}% no plano) e sobre o custo total.": "确定资金执行主体（本机构、联合国机构或支持基金会），并考虑其对管理费（计划目前为{p}%）和总成本的影响。",
+ "Definir a instância executora dos recursos (o próprio órgão, agência das Nações Unidas ou fundação de apoio), considerando o efeito sobre a taxa administrativa e sobre o custo total.": "确定资金执行主体（本机构、联合国机构或支持基金会），并考虑其对管理费和总成本的影响。",
+ "Definir, para cada papel das equipes de referência, a forma de provimento: designação de servidor, contratação ou cooperação. O plano soma {postos} postos ({eti} em tempo integral); um mesmo profissional pode exercer o mesmo papel em mais de uma medida, como a coordenação.": "为参考团队中的每个角色确定配置方式：指派公务人员、招聘或合作。本计划合计{postos}个岗位（折合{eti}名全职人员）；同一专业人员可在多项措施中担任同一角色，例如协调。",
+ "Formalizar a execução dos recursos por {quem}, com taxa administrativa de {p}%: negociar as condições e celebrar o acordo.": "正式确定由{quem}执行资金，管理费为{p}%：协商相关条件并签订协议。",
+ "Incluir o orçamento do plano (cerca de {total} em {meses} meses) na proposta orçamentária, discriminado por exercício e por natureza de despesa (pessoal, serviços, viagens).": "将本计划预算（{meses}个月内约{total}）纳入预算提案，按财政年度和支出性质（人员、服务、差旅）分列。",
+ "Item ainda sem custo no plano: informar o valor na etapa de opções.": "计划中尚未定价的项目：请在选项阶段填写金额。",
+ "Levantar o custo dos itens ainda sem valor no plano: {lista}.": "核算计划中尚无金额项目的成本：{lista}。",
+ "O plano prevê {n} meses; {tipo} costumam exigir {prazo}.": "计划预计{n}个月；{tipo}通常需要{prazo}。",
+ "Prever nos orçamentos dos exercícios seguintes os custos continuados: {lista}.": "在以后各财政年度的预算中列入持续性成本：{lista}。",
+ "Roteiro de implementação do plano de governança": "治理计划实施路线图",
+ "Solicitar à consultoria jurídica parecer sobre a competência e o instrumento normativo (lei, decreto ou portaria) de cada medida: {medidas}.": "请法律顾问部门就每项措施的职权归属及规范性文书（法律、法令或部门规章）出具意见：{medidas}。"
 }
