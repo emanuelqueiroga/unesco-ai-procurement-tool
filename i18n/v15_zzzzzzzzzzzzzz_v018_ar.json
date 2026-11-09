@@ -1662,5 +1662,6 @@
  "técnicos e profissionais de nível médio (ISCO-08, grupo 3)": "الفنيون والمهنيون المساعدون (ISCO-08، المجموعة 3)",
  "trabalhadores de apoio administrativo (ISCO-08, grupo 4)": "موظفو الدعم المكتبي (ISCO-08، المجموعة 4)",
  "{pais}: ILOSTAT, {fonte}, {ano}; grau A": "{pais}: ILOSTAT، {fonte}، {ano}؛ الدرجة A",
- "estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B": "تقديري: الوسيط لـ {n} بلدان لديها بيانات في ILOSTAT ({grupo})؛ الدرجة B"
+ "estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B": "تقديري: الوسيط لـ {n} بلدان لديها بيانات في ILOSTAT ({grupo})؛ الدرجة B",
+ "Todas as versões": "جميع الإصدارات"
 }

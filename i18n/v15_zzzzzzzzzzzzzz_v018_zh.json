@@ -1662,5 +1662,6 @@
  "técnicos e profissionais de nível médio (ISCO-08, grupo 3)": "技术员和助理专业人员（ISCO-08，第 3 大类）",
  "trabalhadores de apoio administrativo (ISCO-08, grupo 4)": "办事人员（ISCO-08，第 4 大类）",
  "{pais}: ILOSTAT, {fonte}, {ano}; grau A": "{pais}：ILOSTAT，{fonte}，{ano}；A 级",
- "estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B": "估算：{n} 个有 ILOSTAT 数据国家的中位数（{grupo}）；B 级"
+ "estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B": "估算：{n} 个有 ILOSTAT 数据国家的中位数（{grupo}）；B 级",
+ "Todas as versões": "所有版本"
 }

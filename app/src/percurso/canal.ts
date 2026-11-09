@@ -11,3 +11,5 @@ export const CANAL: 'estavel' | 'revisao' = import.meta.env.VITE_CANAL === 'revi
 export const TESTE: string = String(import.meta.env.VITE_TESTE || '').trim();
 export const CHAVE_CASO = TESTE ? `${CHAVE}@${VERSAO}-teste-${TESTE}` : CANAL === 'revisao' ? `${CHAVE}@${VERSAO}` : CHAVE;
 export const URL_ESTAVEL = 'https://emanuelqueiroga.github.io/unesco-ai-procurement-tool/';
+/** v018: página com todas as versões publicadas e o link de cada uma. */
+export const URL_VERSOES = URL_ESTAVEL + 'versoes/';

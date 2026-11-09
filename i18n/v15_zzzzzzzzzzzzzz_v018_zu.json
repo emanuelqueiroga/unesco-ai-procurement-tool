@@ -1662,5 +1662,6 @@
  "técnicos e profissionais de nível médio (ISCO-08, grupo 3)": "osomabhizinisi bezobuchwepheshe nabasizi bochwepheshe (ISCO-08, iqembu 3)",
  "trabalhadores de apoio administrativo (ISCO-08, grupo 4)": "abasizi bokuphatha (ISCO-08, iqembu 4)",
  "{pais}: ILOSTAT, {fonte}, {ano}; grau A": "{pais}: ILOSTAT, {fonte}, {ano}; izinga A",
- "estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B": "kulinganiselwe: i-median yamazwe angu-{n} anedatha ye-ILOSTAT ({grupo}); izinga B"
+ "estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B": "kulinganiselwe: i-median yamazwe angu-{n} anedatha ye-ILOSTAT ({grupo}); izinga B",
+ "Todas as versões": "Zonke izinguqulo"
 }
