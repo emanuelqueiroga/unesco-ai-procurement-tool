@@ -1679,5 +1679,21 @@
  "Percentual sobre os custos das opções (%)": "النسبة من تكاليف الخيارات (%)",
  "Percentual sobre os custos diretos (%)": "النسبة من التكاليف المباشرة (%)",
  "Fase {n}": "المرحلة {n}",
- "Camada {n}:": "الطبقة {n}:"
+ "Camada {n}:": "الطبقة {n}:",
+ "(no modo Refinar)": "(في وضع التحسين)",
+ "{n} telas": "{n} شاشات",
+ "1 tela": "شاشة واحدة",
+ "Categorias de custo da governança e as camadas que alimentam": "فئات تكلفة الحوكمة والطبقات التي تغذيها",
+ "Com": "مع",
+ "Dois caminhos, conforme a prioridade": "مساران، حسب الأولوية",
+ "Educando sobre a IA ou Educando com e sem IA": "التعليم حول الذكاء الاصطناعي أو التعليم بالذكاء الاصطناعي ومن دونه",
+ "Ligação entre categorias e camadas: elaboração desta ferramenta.": "الربط بين الفئات والطبقات: من إعداد هذه الأداة.",
+ "Plano de governança, resumo e anexo em PDF": "خطة الحوكمة والملخص والملحق بصيغة PDF",
+ "Só": "فقط",
+ "Todo plano começa pelo país, pela instituição e pela prioridade. Depois, o caminho muda.": "تبدأ كل خطة بالبلد والمؤسسة والأولوية. بعد ذلك يتغير المسار.",
+ "Opções e valores": "الخيارات والقيم",
+ "Perfil da rede e diagnóstico de governança": "ملف النظام التعليمي وتشخيص الحوكمة",
+ "Custo do primeiro ano": "تكلفة السنة الأولى",
+ "Custo do ciclo, recomendações e PDF": "تكلفة الدورة والتوصيات وملف PDF",
+ "Ver por categoria": "عرض حسب الفئة"
 }

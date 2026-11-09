@@ -1681,5 +1681,21 @@
  "Percentual sobre os custos das opções (%)": "Sugandiliw ka musakaw kɛmɛsarada (%)",
  "Percentual sobre os custos diretos (%)": "Musaka tilennenw kɛmɛsarada (%)",
  "Fase {n}": "Waati {n}",
- "Camada {n}:": "Dakun {n}:"
+ "Camada {n}:": "Dakun {n}:",
+ "(no modo Refinar)": "(Labɛnni kɛcogo la)",
+ "{n} telas": "ɲɛ {n}",
+ "1 tela": "ɲɛ 1",
+ "Categorias de custo da governança e as camadas que alimentam": "Ɲɛmɔgɔya musaka sugandiliw ani dakun minnu u bɛ balo",
+ "Com": "Ni",
+ "Dois caminhos, conforme a prioridade": "Sira fila, ka kɛɲɛ ni ɲɛtaa ye",
+ "Educando sobre a IA ou Educando com e sem IA": "IA kalan walima kalan ni IA ye ani IA tɛ",
+ "Ligação entre categorias e camadas: elaboração desta ferramenta.": "Sugandiliw ni dakunw cɛ sira: nin minɛn ye a labɛn.",
+ "Plano de governança, resumo e anexo em PDF": "Ɲɛmɔgɔya labɛn, kuma surunyalen ani farankan PDF la",
+ "Só": "Dɔrɔn",
+ "Todo plano começa pelo país, pela instituição e pela prioridade. Depois, o caminho muda.": "Labɛn bɛɛ bɛ daminɛ ni jamana, baarakɛyɔrɔ ani ɲɛtaa ye. O kɔ, sira bɛ yɛlɛma.",
+ "Opções e valores": "Sugandiliw ani hakɛw",
+ "Perfil da rede e diagnóstico de governança": "Kalanso jɛkulu cogoya ani ɲɛmɔgɔya sɛgɛsɛgɛli",
+ "Custo do primeiro ano": "San fɔlɔ musaka",
+ "Custo do ciclo, recomendações e PDF": "Sira bɛɛ musaka, laadilikanw ani PDF",
+ "Ver por categoria": "A lajɛ ka kɛɲɛ ni sugandili ye"
 }

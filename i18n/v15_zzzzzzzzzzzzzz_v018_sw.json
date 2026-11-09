@@ -1679,5 +1679,21 @@
  "Percentual sobre os custos das opções (%)": "Asilimia ya gharama za machaguo (%)",
  "Percentual sobre os custos diretos (%)": "Asilimia ya gharama za moja kwa moja (%)",
  "Fase {n}": "Awamu {n}",
- "Camada {n}:": "Tabaka {n}:"
+ "Camada {n}:": "Tabaka {n}:",
+ "(no modo Refinar)": "(katika hali ya Kuboresha)",
+ "{n} telas": "skrini {n}",
+ "1 tela": "skrini 1",
+ "Categorias de custo da governança e as camadas que alimentam": "Aina za gharama za utawala na tabaka zinazolisha",
+ "Com": "Pamoja na",
+ "Dois caminhos, conforme a prioridade": "Njia mbili, kulingana na kipaumbele",
+ "Educando sobre a IA ou Educando com e sem IA": "Kuelimisha kuhusu AI au Kuelimisha kwa AI na bila AI",
+ "Ligação entre categorias e camadas: elaboração desta ferramenta.": "Uhusiano kati ya aina na tabaka: umeandaliwa na zana hii.",
+ "Plano de governança, resumo e anexo em PDF": "Mpango wa utawala, muhtasari na kiambatisho kwa PDF",
+ "Só": "Pekee",
+ "Todo plano começa pelo país, pela instituição e pela prioridade. Depois, o caminho muda.": "Kila mpango huanza na nchi, taasisi na kipaumbele. Kisha njia hubadilika.",
+ "Opções e valores": "Machaguo na thamani",
+ "Perfil da rede e diagnóstico de governança": "Wasifu wa mfumo wa elimu na tathmini ya utawala",
+ "Custo do primeiro ano": "Gharama ya mwaka wa kwanza",
+ "Custo do ciclo, recomendações e PDF": "Gharama ya mzunguko, mapendekezo na PDF",
+ "Ver por categoria": "Tazama kwa aina"
 }

@@ -1965,5 +1965,21 @@
  "No Fundo Global, os custos de viagem e de atividades presenciais (passagens, diárias, transporte, oficinas, reuniões técnicas, capacitações e supervisão) somam 24,7% do orçamento dos programas, sem contar a compra de produtos de saúde e a cadeia de suprimentos, no ciclo 7 (27,6% no ciclo 6 e 28,2% no ciclo 5). O padrão arredonda para 25%.": "In the Global Fund, travel and in-person activity costs (fares, per diems, transport, workshops, technical meetings, training and supervision) account for 24.7% of programme budgets, excluding the purchase of health products and the supply chain, in cycle 7 (27.6% in cycle 6 and 28.2% in cycle 5). The default rounds this to 25%.",
  "Passagens, diárias, transporte e os custos das atividades presenciais (reuniões técnicas, oficinas, consultas, capacitações, visitas às escolas), como percentual dos custos das opções.": "Fares, per diems, transport and the costs of in-person activities (technical meetings, workshops, consultations, training, school visits), as a percentage of the options' costs.",
  "Fase {n}": "Phase {n}",
- "Camada {n}:": "Layer {n}:"
+ "Camada {n}:": "Layer {n}:",
+ "(no modo Refinar)": "(in Refine mode)",
+ "{n} telas": "{n} screens",
+ "1 tela": "1 screen",
+ "Categorias de custo da governança e as camadas que alimentam": "Governance cost categories and the layers they feed",
+ "Com": "With",
+ "Dois caminhos, conforme a prioridade": "Two paths, depending on the priority",
+ "Educando sobre a IA ou Educando com e sem IA": "Educating about AI or Educating with and without AI",
+ "Ligação entre categorias e camadas: elaboração desta ferramenta.": "Link between categories and layers: developed for this tool.",
+ "Plano de governança, resumo e anexo em PDF": "Governance plan, summary and annex in PDF",
+ "Só": "Only",
+ "Todo plano começa pelo país, pela instituição e pela prioridade. Depois, o caminho muda.": "Every plan starts with the country, the institution and the priority. Then the path changes.",
+ "Opções e valores": "Options and amounts",
+ "Perfil da rede e diagnóstico de governança": "Education system profile and governance diagnosis",
+ "Custo do primeiro ano": "First-year cost",
+ "Custo do ciclo, recomendações e PDF": "Life-cycle cost, recommendations and PDF",
+ "Ver por categoria": "See by category"
 }

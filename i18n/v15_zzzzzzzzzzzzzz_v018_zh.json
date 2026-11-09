@@ -1679,5 +1679,21 @@
  "Percentual sobre os custos das opções (%)": "占选项成本的百分比（%）",
  "Percentual sobre os custos diretos (%)": "占直接成本的百分比（%）",
  "Fase {n}": "第 {n} 阶段",
- "Camada {n}:": "第 {n} 层："
+ "Camada {n}:": "第 {n} 层：",
+ "(no modo Refinar)": "（在细化模式中）",
+ "{n} telas": "{n} 个页面",
+ "1 tela": "1 个页面",
+ "Categorias de custo da governança e as camadas que alimentam": "治理成本类别及其涉及的层",
+ "Com": "包含",
+ "Dois caminhos, conforme a prioridade": "两条路径，取决于优先事项",
+ "Educando sobre a IA ou Educando com e sem IA": "关于人工智能的教育或有无人工智能的教育",
+ "Ligação entre categorias e camadas: elaboração desta ferramenta.": "类别与层的对应：本工具自行制定。",
+ "Plano de governança, resumo e anexo em PDF": "治理计划、摘要和附件（PDF）",
+ "Só": "仅",
+ "Todo plano começa pelo país, pela instituição e pela prioridade. Depois, o caminho muda.": "每个计划都从国家、机构和优先事项开始。之后，路径会不同。",
+ "Opções e valores": "选项与金额",
+ "Perfil da rede e diagnóstico de governança": "教育系统概况与治理诊断",
+ "Custo do primeiro ano": "第一年成本",
+ "Custo do ciclo, recomendações e PDF": "生命周期成本、建议和 PDF",
+ "Ver por categoria": "按类别查看"
 }

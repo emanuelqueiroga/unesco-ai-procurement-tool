@@ -1965,5 +1965,21 @@
  "No Fundo Global, os custos de viagem e de atividades presenciais (passagens, diárias, transporte, oficinas, reuniões técnicas, capacitações e supervisão) somam 24,7% do orçamento dos programas, sem contar a compra de produtos de saúde e a cadeia de suprimentos, no ciclo 7 (27,6% no ciclo 6 e 28,2% no ciclo 5). O padrão arredonda para 25%.": "Au Fonds mondial, les coûts de déplacement et d'activités en présentiel (billets, indemnités, transport, ateliers, réunions techniques, formations et supervision) représentent 24,7 % des budgets des programmes, hors achats de produits de santé et chaîne d'approvisionnement, au cycle 7 (27,6 % au cycle 6 et 28,2 % au cycle 5). La valeur par défaut est arrondie à 25 %.",
  "Passagens, diárias, transporte e os custos das atividades presenciais (reuniões técnicas, oficinas, consultas, capacitações, visitas às escolas), como percentual dos custos das opções.": "Billets, indemnités, transport et coûts des activités en présentiel (réunions techniques, ateliers, consultations, formations, visites d'écoles), en pourcentage des coûts des options.",
  "Fase {n}": "Phase {n}",
- "Camada {n}:": "Couche {n} :"
+ "Camada {n}:": "Couche {n} :",
+ "(no modo Refinar)": "(en mode Affiner)",
+ "{n} telas": "{n} écrans",
+ "1 tela": "1 écran",
+ "Categorias de custo da governança e as camadas que alimentam": "Catégories de coûts de la gouvernance et les couches qu'elles alimentent",
+ "Com": "Avec",
+ "Dois caminhos, conforme a prioridade": "Deux parcours, selon la priorité",
+ "Educando sobre a IA ou Educando com e sem IA": "Éduquer à l'IA ou Éduquer avec et sans IA",
+ "Ligação entre categorias e camadas: elaboração desta ferramenta.": "Lien entre catégories et couches : élaboration de cet outil.",
+ "Plano de governança, resumo e anexo em PDF": "Plan de gouvernance, résumé et annexe en PDF",
+ "Só": "Seulement",
+ "Todo plano começa pelo país, pela instituição e pela prioridade. Depois, o caminho muda.": "Tout plan commence par le pays, l'institution et la priorité. Ensuite, le parcours change.",
+ "Opções e valores": "Options et montants",
+ "Perfil da rede e diagnóstico de governança": "Profil du réseau et diagnostic de gouvernance",
+ "Custo do primeiro ano": "Coût de la première année",
+ "Custo do ciclo, recomendações e PDF": "Coût du cycle, recommandations et PDF",
+ "Ver por categoria": "Voir par catégorie"
 }

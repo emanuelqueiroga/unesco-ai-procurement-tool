@@ -1679,5 +1679,21 @@
  "Percentual sobre os custos das opções (%)": "Iphesenti lezindleko zezinketho (%)",
  "Percentual sobre os custos diretos (%)": "Iphesenti lezindleko eziqondile (%)",
  "Fase {n}": "Isigaba {n}",
- "Camada {n}:": "Ungqimba {n}:"
+ "Camada {n}:": "Ungqimba {n}:",
+ "(no modo Refinar)": "(kumodi yokuCwenga)",
+ "{n} telas": "izikrini ezingu-{n}",
+ "1 tela": "isikrini esisodwa",
+ "Categorias de custo da governança e as camadas que alimentam": "Izigaba zezindleko zokubusa nezingqimba ezizinikayo",
+ "Com": "Nge",
+ "Dois caminhos, conforme a prioridade": "Izindlela ezimbili, kuya ngokubalulekile",
+ "Educando sobre a IA ou Educando com e sem IA": "Ukufundisa nge-AI noma ukufundisa nge-AI nangaphandle kwayo",
+ "Ligação entre categorias e camadas: elaboração desta ferramenta.": "Ukuxhumana phakathi kwezigaba nezingqimba: kwenziwe yileli thuluzi.",
+ "Plano de governança, resumo e anexo em PDF": "Uhlelo lokubusa, isifinyezo nesithasiselo nge-PDF",
+ "Só": "Kuphela",
+ "Todo plano começa pelo país, pela instituição e pela prioridade. Depois, o caminho muda.": "Lonke uhlelo luqala ngezwe, isikhungo nokubalulekile. Bese indlela iyashintsha.",
+ "Opções e valores": "Izinketho namanani",
+ "Perfil da rede e diagnóstico de governança": "Iphrofayili yesistimu yemfundo nokuhlolwa kokubusa",
+ "Custo do primeiro ano": "Izindleko zonyaka wokuqala",
+ "Custo do ciclo, recomendações e PDF": "Izindleko zomjikelezo, izincomo ne-PDF",
+ "Ver por categoria": "Bona ngesigaba"
 }
