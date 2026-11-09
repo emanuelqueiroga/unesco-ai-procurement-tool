@@ -1579,5 +1579,12 @@
  "Trabalho conjunto da educação com outras áreas do governo, como tecnologia, justiça, fazenda e ciência.": "Joint work between education and other areas of government, such as technology, justice, finance and science.",
  "Unidade, cargo ou setor formal responsável pela IA na educação, com atribuições e orçamento definidos.": "A formal unit, post or department responsible for AI in education, with defined duties and budget.",
  "Período coberto pelo orçamento. Os custos mensais e anuais são calculados para esse período.": "The period covered by the budget. Monthly and annual costs are calculated for this period.",
- "O que é: {nome}": "What it is: {nome}"
+ "O que é: {nome}": "What it is: {nome}",
+ "com encargos do país (× {f})": "with country payroll charges (× {f})",
+ "esforço de referência (grau C)": "reference effort (grade C)",
+ "Esforço de referência (grau C, convenção a calibrar); altere se precisar.": "Reference effort (grade C, a convention to calibrate); change it if needed.",
+ "Pessoas × meses × custo mensal": "People × months × monthly cost",
+ "Meses de trabalho": "Months of work",
+ "Custo mensal por pessoa": "Monthly cost per person",
+ "meses": "months"
 }

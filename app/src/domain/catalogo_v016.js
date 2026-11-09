@@ -52,7 +52,8 @@ export const CATEGORIAS = {
     { id: 'g12', n: '1.2', desafio: 'G21', nome: 'Sandboxes regulatórios', opcoes: ['Ambientes de teste controlados', 'Supervisão regulatória', 'Avaliações de risco'] },
     { id: 'g13', n: '1.3', desafio: 'G21', nome: 'Diretrizes e padrões', opcoes: ['Diretrizes éticas de IA para a educação', 'Diretrizes de contratação de IA e avaliação de fornecedores', 'Diretrizes de uso de IA adequado à idade', 'Políticas de uso de IA por professores e estudantes', 'Padrões de gestão de riscos de IA', 'Padrões de transparência e documentação de IA', 'Padrões de governança e segurança de dados', 'Diretrizes de garantia de qualidade e avaliação de IA'] },
     { id: 'g21', n: '2.1', desafio: 'G22', nome: 'Governança e proteção de dados e infraestrutura pública digital', opcoes: [] },
-    { id: 'g22', n: '2.2', desafio: 'G22', nome: 'Infraestrutura digital e hospedagem', opcoes: ['Serviços de nuvem soberana', 'Data centers locais', 'Hospedagem segura', 'Armazenamento de dados', 'Infraestrutura de computação'] },
+    // v018: "Data centers locais" saiu (decisão de 08/11/2026); casos salvos com ela guardam a marcação
+    { id: 'g22', n: '2.2', desafio: 'G22', nome: 'Infraestrutura digital e hospedagem', opcoes: ['Serviços de nuvem soberana', 'Hospedagem segura', 'Armazenamento de dados', 'Infraestrutura de computação'] },
     { id: 'g23', n: '2.3', desafio: 'G22', nome: 'Independência tecnológica', opcoes: ['Adoção e manutenção de código aberto', 'Transferência de tecnologia', 'Customização local', 'Redução da dependência de fornecedores'] },
     { id: 'g31', n: '3.1', desafio: 'G23', nome: 'Recursos humanos especializados', base: 'equipe', opcoes: ['Especialistas em TI (IA, dados, segurança, infraestrutura)', 'Profissionais jurídicos', 'Pessoal de governança de IA', 'Especialistas em IA e educação'] },
     { id: 'g32', n: '3.2', desafio: 'G23', nome: 'Formação e desenvolvimento profissional', base: 'formacao', opcoes: [] },

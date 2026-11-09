@@ -111,12 +111,13 @@ function LinhaValor({ s, frente, cat, l, moeda }: { s: CasoStore; frente: Frente
       ? <div className="pv-v17-campos">{fases.map(f => <CampoNumero key={f.id} label={semFases(frente) ? t('Valor total') + ' (' + moeda + ')' : f.nome} value={l.valoresFase[f.id] ?? ''} decimais
           onChange={v => gravarOrc(frente, caminho, { ...atual(), fases: { ...(atual().fases || {}), [f.id]: v === '' ? undefined : v } })} />)}</div>
       : <div className="pv-v17-campos">
-          <CampoNumero label={t(def.qtd!)} value={l.qtd ?? ''} suggested={l.qtdSugerida} onChange={v => gravar('qtd', v)} />
-          {def.horas ? <CampoNumero label={t('Horas por pessoa')} value={l.horas ?? ''} decimais onChange={v => gravar('horas', v)} /> : null}
+          <CampoNumero label={t(def.qtd!)} value={l.qtd ?? ''} suggested={l.qtdSugerida} decimais={l.tipo === 'equipe'} onChange={v => gravar('qtd', v)} />
+          {def.horas ? <CampoNumero label={t(def.horasRotulo || 'Horas por pessoa')} value={l.horas ?? ''} suggested={l.esforcoC && !!l.horas} decimais onChange={v => gravar('horas', v)} /> : null}
           <CampoNumero label={t(def.unit!) + ' (' + moeda + ')'} value={l.unitDaReferencia ? '' : l.unit ?? ''} decimais placeholder={l.unitRef === null ? undefined : new Intl.NumberFormat(String(LOC()), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(l.unitRef)}
             hint={l.unitRef === null ? undefined : t('Vazio = referência genérica ({v}).', { v: fmt(l.unitRef) })} onChange={v => gravar('unit', v)} />
         </div>}
-    {l.qtdSugerida ? <p className="pc-nota">{t('Quantidade sugerida a partir do Contexto; altere se precisar.')}</p> : null}
+    {l.esforcoC ? <p className="pc-nota">{t('Esforço de referência (grau C, convenção a calibrar); altere se precisar.')}</p>
+      : l.qtdSugerida ? <p className="pc-nota">{t('Quantidade sugerida a partir do Contexto; altere se precisar.')}</p> : null}
     {l.status === 'falta' ? <p className="pv-v17-falta">{t('Falta')}: {l.falta.join(', ')}</p>
       : semFases(frente) ? (l.status === 'referencia' ? <p className="pv-v17-fases">{t('referência genérica, igual para todos os países')}</p> : null)
       : <p className="pv-v17-fases">{fases.map(f => f.nome + ' ' + fmt(l.porFase[f.id] || 0)).join(' · ')}{l.status === 'referencia' ? ' · ' + t('referência genérica, igual para todos os países') : ''}</p>}

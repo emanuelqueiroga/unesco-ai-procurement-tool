@@ -1579,5 +1579,12 @@
  "Trabalho conjunto da educação com outras áreas do governo, como tecnologia, justiça, fazenda e ciência.": "Travail conjoint de l’éducation avec d’autres secteurs de l’État, comme le numérique, la justice, les finances et la recherche.",
  "Unidade, cargo ou setor formal responsável pela IA na educação, com atribuições e orçamento definidos.": "Unité, poste ou service formel chargé de l’IA dans l’éducation, avec des missions et un budget définis.",
  "Período coberto pelo orçamento. Os custos mensais e anuais são calculados para esse período.": "Période couverte par le budget. Les coûts mensuels et annuels sont calculés pour cette période.",
- "O que é: {nome}": "Qu’est-ce que : {nome}"
+ "O que é: {nome}": "Qu’est-ce que : {nome}",
+ "com encargos do país (× {f})": "avec charges sociales du pays (× {f})",
+ "esforço de referência (grau C)": "effort de référence (niveau C)",
+ "Esforço de referência (grau C, convenção a calibrar); altere se precisar.": "Effort de référence (niveau C, convention à calibrer) ; modifiez-le si besoin.",
+ "Pessoas × meses × custo mensal": "Personnes × mois × coût mensuel",
+ "Meses de trabalho": "Mois de travail",
+ "Custo mensal por pessoa": "Coût mensuel par personne",
+ "meses": "mois"
 }

@@ -1535,5 +1535,8 @@
  "Cursos por professor": "Courses per teacher",
  "Vezes por ano": "Times per year",
  "Reciclagens por ano": "Refreshers per year",
- "O que é: {nome}": "Nin ye mun ye: {nome}"
+ "O que é: {nome}": "Nin ye mun ye: {nome}",
+ "com encargos do país (× {f})": "jamana baarakɛlaw ka sarali (× {f})",
+ "esforço de referência (grau C)": "baara hakɛ misali (C)",
+ "Esforço de referência (grau C, convenção a calibrar); altere se precisar.": "Baara hakɛ misali (C, a ka kan ka sɛgɛsɛgɛ); a yɛlɛma ni a ka kan."
 }

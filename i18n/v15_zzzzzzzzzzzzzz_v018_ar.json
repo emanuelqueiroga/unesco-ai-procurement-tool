@@ -1533,5 +1533,8 @@
  "Cursos por professor": "Courses per teacher",
  "Vezes por ano": "Times per year",
  "Reciclagens por ano": "Refreshers per year",
- "O que é: {nome}": "ما هذا: {nome}"
+ "O que é: {nome}": "ما هذا: {nome}",
+ "com encargos do país (× {f})": "مع اشتراكات صاحب العمل في البلد (× {f})",
+ "esforço de referência (grau C)": "الجهد المرجعي (الدرجة C)",
+ "Esforço de referência (grau C, convenção a calibrar); altere se precisar.": "الجهد المرجعي (الدرجة C، اصطلاح يحتاج إلى معايرة)؛ غيّره إذا لزم الأمر."
 }
