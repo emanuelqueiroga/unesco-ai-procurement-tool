@@ -102,16 +102,19 @@ export function ResumoV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativ
 export function BotoesPDFV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativa }) {
   const [erro, setErro] = useState(''), [ocupado, setOcupado] = useState(false);
   const nomeFrente = frente === 'governanca' ? 'Governança' : frente === 'letramento' ? 'letramento' : 'Educação com e sem IA'; // traduzido no nome do arquivo
-  const baixar = async (tipo: 'brief' | 'anexo') => {
+  const baixar = async (tipo: 'brief' | 'anexo' | 'roteiro') => {
     setOcupado(true); setErro('');
-    try { const m = await import('../plano/pdf_v016'); const doc: any = await m.gerarPDFFrenteV16(s.estado(), { frente, tipo }); doc.save(m.nomeArquivoV16(tipo, nomeFrente)); }
+    try { const m = await import('../plano/pdf_v016');
+      const doc: any = tipo === 'roteiro' ? await m.gerarPDFRoteiroGov(s.estado()) : await m.gerarPDFFrenteV16(s.estado(), { frente, tipo }); doc.save(m.nomeArquivoV16(tipo, nomeFrente)); }
     catch (e) { console.error(e); setErro(t('Não foi possível gerar o PDF.')); }
     finally { setOcupado(false); }
   };
   return <div className="pv-pdfs"><div className="pc-botoes">
     <Button disabled={ocupado} onClick={() => void baixar('brief')}>{t('Resumo para decisão (PDF)')}</Button>
     <Button disabled={ocupado} variant="secondary" onClick={() => void baixar('anexo')}>{t('Anexo técnico (PDF)')}</Button>
-  </div><BotaoLinkPlano /><p className="pc-nota">{t('Resumo: 1–2 páginas para quem decide. Anexo: todas as respostas e a memória das estimativas.')}</p>{erro ? <p role="alert">{erro}</p> : null}</div>;
+    {frente === 'governanca' ? <Button disabled={ocupado} variant="secondary" onClick={() => void baixar('roteiro')}>{t('Roteiro de implementação (PDF)')}</Button> : null}
+  </div><BotaoLinkPlano /><p className="pc-nota">{t('Resumo: 1–2 páginas para quem decide. Anexo: todas as respostas e a memória das estimativas.')}
+    {frente === 'governanca' ? ' ' + t('Roteiro: os passos para pôr o plano em prática, para imprimir e marcar.') : ''}</p>{erro ? <p role="alert">{erro}</p> : null}</div>;
 }
 
 /** v018: "Fontes dos valores" — as fontes públicas usadas nas contas e a nota sobre as convenções da ferramenta. */

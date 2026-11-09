@@ -343,6 +343,7 @@ a.pc-faixa-custo:hover { color: var(--on-night); outline: 2px solid var(--primar
 .pv-campo-titulo { margin: 0 0 10px; font-size: 15px; line-height: 22px; font-weight: 600; }
 .pv-publico > .pc-lit-campo-titulo { font-family: var(--font-serif); font-size: 20px; line-height: 28px; margin: 0; }
 .pc-lit-opcoes.pv-opcoes-linha { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.pc-lit-opcoes.pv-opcoes-coluna { grid-template-columns: minmax(0, 1fr); }
 .pv-rec-grupo { padding-inline: 32px; }
 @media (max-width: 720px) { .pv-rec-grupo { padding-inline: 4px; } }
 

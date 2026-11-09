@@ -17,7 +17,7 @@ import { formatarMoedaEst, type FrenteEstimativa } from '../percurso/estimativas
 import { gravarOrc } from './OrcamentoV16';
 import { CartaoComDica, DicaGov } from './InfoDica';
 import { CATEGORIAS } from '../domain/catalogo_v016.js';
-import { ADICIONAIS, ID_ADICIONAIS, type ChaveAdicional } from '../percurso/adicionaisGov';
+import { ADICIONAIS, ID_ADICIONAIS, PERGUNTAS_ADICIONAIS, type SalvoAdicionais } from '../percurso/adicionaisGov';
 import './moldura.css';
 
 const telaFases = (f: FrenteEstimativa) => f === 'letramento' ? 'lit-fases' : 'ed-fases';
@@ -155,20 +155,29 @@ function EquipeV18({ l, moeda, atual, gravar }: { l: LinhaOpcao; moeda: string; 
  *  pública e "Como foi calculado". */
 function AdicionaisV18({ s, linhas, moeda }: { s: CasoStore; linhas: LinhaOpcao[]; moeda: string }) {
   const fmt = (v: number) => formatarMoedaEst(v, moeda), n = (v: number) => new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 2 }).format(v);
-  const salvo = (raizOrcamento(s, 'governanca').adicionais || {}) as Partial<Record<ChaveAdicional, number>>;
-  return <>{linhas.map(l => { const a = ADICIONAIS.find(x => x.chave === l.chave)!, nome = t(l.rotulo);
+  const salvo = (raizOrcamento(s, 'governanca').adicionais || {}) as SalvoAdicionais;
+  const gravar = (k: string, v: unknown) => gravarOrc('governanca', 'adicionais', { ...(raizOrcamento(useCaso.getState(), 'governanca').adicionais || {}), [k]: v });
+  return <>{linhas.map(l => { const a = ADICIONAIS.find(x => x.chave === l.chave)!, nome = t(l.rotulo), q = PERGUNTAS_ADICIONAIS[a.chave];
+    const fundacao = a.chave === 'taxa' && salvo.executor === 'fundacao';
     return <div key={l.chave} className={'pv-v17-linha pv-v17-linha--' + l.status} role="group" aria-label={nome}>
       <div className="pv-v17-linha-cab">
         <h4 className="pv-v17-op">{nome}<DicaGov chave={a.rotulo} nome={nome} inicio /></h4>
         <p className={'pv-v17-total' + (l.status === 'referencia' ? ' pc-rec-valor--est' : '')}>{l.total === null ? '—' : fmt(l.total)}</p>
       </div>
-      <div className="pv-v17-campos">
-        <CampoNumero label={t(a.base === 'opcoes' ? 'Percentual sobre os custos das opções (%)' : 'Percentual sobre os custos diretos (%)')} value={typeof salvo[a.chave] === 'number' ? salvo[a.chave] as number : ''}
-          placeholder={n(a.padrao)} decimais hint={t('Vazio = {p}% (referência com fonte).', { p: n(a.padrao) })}
-          onChange={v => gravarOrc('governanca', 'adicionais', { ...(raizOrcamento(useCaso.getState(), 'governanca').adicionais || {}), [a.chave]: v === '' ? undefined : v })} />
-      </div>
-      {l.conta && l.status !== 'falta' ? <ComoCalculado l={l} /> : null}
-      {l.status === 'falta' ? <p className="pv-v17-falta">{t('Falta')}: {l.falta.join(', ')}</p> : null}
+      <p className="pv-campo-titulo" aria-hidden="true">{t(q.pergunta)}</p>
+      <OptionCardGroup className={'pc-lit-opcoes ' + (q.opcoes.length > 2 ? 'pv-opcoes-coluna' : 'pv-opcoes-linha')} label={t(q.pergunta)} type="radio">
+        {q.opcoes.map(([id, txt]) => <OptionCard key={id} name={'adic-' + a.chave} value={id} type="radio" label={t(txt)} checked={salvo[q.campo] === id}
+          onChange={() => gravar(q.campo, id)} />)}
+      </OptionCardGroup>
+      {l.naoAplica ? <p className="pc-nota">{l.memoria}</p> : <>
+        <div className="pv-v17-campos">
+          <CampoNumero label={t(a.base === 'opcoes' ? 'Percentual sobre os custos das opções (%)' : 'Percentual sobre os custos diretos (%)')} value={typeof salvo[a.chave] === 'number' ? salvo[a.chave] as number : ''}
+            placeholder={n(a.padrao)} decimais hint={(fundacao ? t('Informe a taxa do contrato; no Brasil, fundações de apoio podem cobrar até 15%.') + ' ' : '') + t('Vazio = {p}% (referência com fonte).', { p: n(a.padrao) })}
+            onChange={v => gravar(a.chave, v === '' ? undefined : v)} />
+        </div>
+        {l.conta && l.status !== 'falta' ? <ComoCalculado l={l} /> : null}
+        {l.status === 'falta' ? <p className="pv-v17-falta">{t('Falta')}: {l.falta.join(', ')}</p> : null}
+      </>}
     </div>; })}</>;
 }
 

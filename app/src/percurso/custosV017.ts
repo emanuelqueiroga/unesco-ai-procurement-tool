@@ -186,6 +186,8 @@ export interface LinhaOpcao {
   status: 'informado' | 'referencia' | 'falta'; falta: string[];
   /** v018: a linha usa o esforço de referência da governança (grau C) */
   esforcoC?: boolean;
+  /** v018 (custos adicionais): a pessoa respondeu que este custo não se aplica */
+  naoAplica?: boolean;
   /** v018: a equipe de referência da opção (governança), mesmo quando a pessoa já trocou os números */
   esforco?: EquipeRef;
   /** v018: os papéis da equipe com o custo de cada um; `continua` = operação durante todo o plano */
