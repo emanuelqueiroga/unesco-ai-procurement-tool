@@ -24,7 +24,8 @@ export type Rota =
   | { tipo: 'plano'; pagina: PaginaPlano }
   | { tipo: 'refinar'; aba: AbaRefinar; foco?: string }
   | { tipo: 'galeria' }
-  | { tipo: 'salarios'; pais?: string };
+  | { tipo: 'salarios'; pais?: string }
+  | { tipo: 'esforcos'; chave?: string };
 
 const cap = (s: string): Capitulo | null => (['1', '2', '3', '4'].includes(s) ? (+s as Capitulo) : null);
 
@@ -33,6 +34,7 @@ export function lerRota(hash: string): Rota {
   if (p[0] === 'galeria') return { tipo: 'galeria' };
   // v018: salários de referência por país (ILOSTAT) e encargos
   if (p[0] === 'salarios') return p[1] ? { tipo: 'salarios', pais: p[1] } : { tipo: 'salarios' };
+  if (p[0] === 'esforcos') return p[1] ? { tipo: 'esforcos', chave: p[1] } : { tipo: 'esforcos' };
   // #/refinar/premissas/<campo> abre a aba com o campo em foco ("Ajustar premissas" do "de onde vem?")
   if (p[0] === 'refinar') return { tipo: 'refinar', aba: ABAS.includes(p[1] as AbaRefinar) ? (p[1] as AbaRefinar) : 'premissas', foco: p[2] || undefined };
   if (p[0] === 'plano') return { tipo: 'plano', pagina: PAGINAS.includes(p[1] as PaginaPlano) ? (p[1] as PaginaPlano) : 'resumo' };

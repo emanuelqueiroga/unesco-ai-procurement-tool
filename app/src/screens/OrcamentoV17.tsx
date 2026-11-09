@@ -7,7 +7,7 @@ import { useCaso, type CasoStore } from '../store';
 import { OptionCard, OptionCardGroup, Popover } from '../ui';
 import { CampoNumero } from '../percurso/CampoNumero';
 import { LOC } from '../domain';
-import { t } from '../percurso/textos';
+import { t, minusc1 } from '../percurso/textos';
 import { href } from '../percurso/rota';
 import { orcamentoV16, raizOrcamento, resumoFases, categoriasEscolhidas, categoriaObrigatoria, todosObrigatorios, semFases, DURACAO_GOV_PADRAO, type CategoriaV16 } from '../percurso/orcamentoV016';
 import { TIPOS, ORDEM_TIPOS, chaveOpcao, ehParametro, PARAMETROS, type TipoCusto, type LinhaOpcao } from '../percurso/custosV017';
@@ -114,14 +114,14 @@ function LinhaValor({ s, frente, cat, l, moeda }: { s: CasoStore; frente: Frente
           <CampoNumero label={t(def.qtd!)} value={l.qtd ?? ''} suggested={l.qtdSugerida} decimais={l.tipo === 'equipe'} onChange={v => gravar('qtd', v)} />
           {def.horas ? <CampoNumero label={t(def.horasRotulo || 'Horas por pessoa')} value={l.horas ?? ''} suggested={l.esforcoC && !!l.horas} decimais onChange={v => gravar('horas', v)} /> : null}
           <CampoNumero label={t(def.unit!) + ' (' + moeda + ')'} value={l.unitDaReferencia ? '' : l.unit ?? ''} decimais placeholder={l.unitRef === null ? undefined : new Intl.NumberFormat(String(LOC()), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(l.unitRef)}
-            hint={l.unitRef === null ? undefined : t('Vazio = referência genérica ({v}).', { v: fmt(l.unitRef) })} onChange={v => gravar('unit', v)} />
+            hint={l.unitRef === null ? undefined : l.refPais ? t('Vazio = salário do país (ILOSTAT) com encargos ({v}).', { v: fmt(l.unitRef) }) : t('Vazio = referência genérica ({v}).', { v: fmt(l.unitRef) })} onChange={v => gravar('unit', v)} />
         </div>}
     {frente === 'governanca' && l.conta && l.status !== 'falta' ? <ComoCalculado l={l} /> : null}
-    {l.esforcoC ? <p className="pc-nota">{t('Esforço de referência (grau C, convenção a calibrar); altere se precisar.')}</p>
+    {l.esforcoC && l.esforco ? <p className="pc-nota">{t(l.esforco.meses ? 'Pessoas e meses: esforço de referência (grau C, convenção da ferramenta), pensado para {equipe}. Altere se precisar.' : 'Pessoas: esforço de referência (grau C, convenção da ferramenta), pensado para {equipe}. Altere se precisar.', { equipe: minusc1(t(l.esforco.equipe)) })} <a href={'#/esforcos/' + l.chave}>{t('De onde vem')}</a></p>
       : l.qtdSugerida ? <p className="pc-nota">{t('Quantidade sugerida a partir do Contexto; altere se precisar.')}</p> : null}
     {l.status === 'falta' ? <p className="pv-v17-falta">{t('Falta')}: {l.falta.join(', ')}</p>
-      : semFases(frente) ? (l.status === 'referencia' ? <p className="pv-v17-fases">{t('referência genérica, igual para todos os países')}</p> : null)
-      : <p className="pv-v17-fases">{fases.map(f => f.nome + ' ' + fmt(l.porFase[f.id] || 0)).join(' · ')}{l.status === 'referencia' ? ' · ' + t('referência genérica, igual para todos os países') : ''}</p>}
+      : semFases(frente) ? (l.status === 'referencia' && !l.refPais ? <p className="pv-v17-fases">{t('referência genérica, igual para todos os países')}</p> : null)
+      : <p className="pv-v17-fases">{fases.map(f => f.nome + ' ' + fmt(l.porFase[f.id] || 0)).join(' · ')}{l.status === 'referencia' ? ' · ' + (l.refPais ? t('salário do país (ILOSTAT)') : t('referência genérica, igual para todos os países')) : ''}</p>}
   </div>;
 }
 
@@ -178,7 +178,7 @@ function ComoCalculado({ l }: { l: LinhaOpcao }) {
     <span className="pv-conta-partes">{c.partes.map(p => <span key={p.rotulo} className="pv-conta-parte">
       <b>{p.rotulo}: {p.valor}</b> <span>{p.texto}</span>
       {p.fontes.map(f => <span key={f.titulo} className="pv-conta-fonte">{t('Fonte')}: {f.url ? <a href={f.url} target="_blank" rel="noopener noreferrer">{f.titulo}</a> : f.titulo}</span>)}
-      {p.pagina ? <span className="pv-conta-fonte"><a href={p.pagina}>{t('Ver salários e encargos por país')}</a></span> : null}
+      {p.pagina ? <span className="pv-conta-fonte"><a href={p.pagina}>{p.pagina.startsWith('#/esforcos') ? t('Ver de onde vem este esforço') : t('Ver salários e encargos por país')}</a></span> : null}
     </span>)}</span>
     <span className="pv-conta-grau">{t('Graus de confiança: A = estatística oficial; B = estudo ou caso real com fonte; C = convenção da ferramenta, a calibrar.')}</span>
   </Popover></p>;

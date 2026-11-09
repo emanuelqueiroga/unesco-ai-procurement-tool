@@ -91,7 +91,6 @@ const PADROES: Record<string, [TipoCusto, Fonte, string | null]> = {
   'Plataformas': ['licenca', 'estudantes', PARAMETRO_LICENCA],
   'Ferramentas de IA': ['licenca', 'professores', PARAMETRO_LICENCA],
 };
-/** v018: esforço de referência das opções da governança (grau C: convenção, a calibrar): pessoas e, no trabalho pontual, meses. */
 /** v018: perfil ocupacional (ISCO-08, grande grupo) de cada opção de pessoal da governança; o resto usa o grupo 2. */
 export const PERFIL_GOV: Record<string, 1 | 2> = { 'Coordenação interministerial': 1 };
 export const NOME_PERFIL: Record<1 | 2, string> = { 1: 'diretores e gerentes (ISCO-08, grupo 1)', 2: 'profissionais das ciências e intelectuais (ISCO-08, grupo 2)' };
@@ -119,32 +118,35 @@ export const FONTES_GOV: Record<'aiact' | 'noruega' | 'quenia', FonteConta> = {
   noruega: { titulo: 'Sandbox de IA da Noruega: 4 projetos por ano, de 3 a 6 meses cada (Cambridge Forum on AI: Law and Governance)', url: 'https://www.cambridge.org/core/journals/cambridge-forum-on-ai-law-and-governance/article/from-watchdogs-to-partners-in-tech-innovation-navigating-regulatory-roles-in-norways-ai-sandbox/7E2FA0B1F75E6803B2DE4124EB0FC6CB' },
   quenia: { titulo: 'Orçamento do órgão de proteção de dados do Quênia, 2021–2025 (Open Budget Kenya)', url: 'https://openbudget.or.ke/project/1122002100_The_Office_of_the_Data_Protection_Commi/2024' },
 };
-export const ESFORCO_GOV: Record<string, { qtd: number; meses?: number; base?: keyof typeof FONTES_GOV }> = {
-  'Classificação de segurança e risco de IA': { qtd: 3, meses: 6 },
-  'Direitos e proteção de crianças': { qtd: 2, meses: 4 },
-  'Proteção de dados pessoais e privacidade': { qtd: 3, meses: 6, base: 'quenia' },
-  'Equidade algorítmica, não discriminação, transparência, explicabilidade e prestação de contas': { qtd: 2, meses: 6 },
-  'Cibersegurança e notificação de incidentes': { qtd: 2, meses: 4 },
-  'Propriedade intelectual e direitos autorais': { qtd: 2, meses: 4 },
-  'Ambientes de teste controlados': { qtd: 3, meses: 6, base: 'noruega' },
-  'Avaliações de risco': { qtd: 1, meses: 4 },
-  'Diretrizes éticas de IA para a educação': { qtd: 2, meses: 3 },
-  'Diretrizes de contratação de IA e avaliação de fornecedores': { qtd: 2, meses: 3 },
-  'Diretrizes de uso de IA adequado à idade': { qtd: 2, meses: 3 },
-  'Políticas de uso de IA por professores e estudantes': { qtd: 2, meses: 3 },
-  'Padrões de gestão de riscos de IA': { qtd: 2, meses: 3 },
-  'Padrões de transparência e documentação de IA': { qtd: 2, meses: 3 },
-  'Padrões de governança e segurança de dados': { qtd: 2, meses: 3 },
-  'Diretrizes de garantia de qualidade e avaliação de IA': { qtd: 2, meses: 3 },
-  'Transferência de tecnologia': { qtd: 2, meses: 6 },
-  'Customização local': { qtd: 3, meses: 6 },
-  'Redução da dependência de fornecedores': { qtd: 1, meses: 3 },
-  'Supervisão regulatória': { qtd: 2, base: 'aiact' },
-  'Adoção e manutenção de código aberto': { qtd: 2 },
-  'Comitês de governança': { qtd: 0.5 },
-  'Coordenação interministerial': { qtd: 1 },
-  'Estruturas institucionais de governança': { qtd: 4, base: 'quenia' },
-  'Governança e proteção de dados e infraestrutura pública digital': { qtd: 3, base: 'quenia' },
+/** v018: esforço de referência das opções da governança (grau C: convenção da ferramenta, a calibrar): pessoas e, no trabalho
+ *  pontual, meses; a composição da equipe pensada e o porquê do valor; `base` = caso real citado (página #/esforcos). */
+export interface Esforco { qtd: number; meses?: number; base?: keyof typeof FONTES_GOV; equipe: string; porque: string }
+export const ESFORCO_GOV: Record<string, Esforco> = {
+  'Classificação de segurança e risco de IA': { qtd: 3, meses: 6, equipe: '1 especialista jurídico, 1 especialista em IA e 1 analista de políticas educacionais', porque: 'Estudo técnico, minuta da norma, consulta pública e versão final.' },
+  'Direitos e proteção de crianças': { qtd: 2, meses: 4, equipe: '1 especialista jurídico e 1 especialista em proteção da infância', porque: 'Norma específica que se apoia nas leis de proteção da infância já existentes.' },
+  'Proteção de dados pessoais e privacidade': { qtd: 3, meses: 6, base: 'quenia', equipe: '1 especialista jurídico, 1 especialista em dados e 1 analista de políticas', porque: 'Adapta a lei de proteção de dados do país ao uso de IA na educação. O caso do Quênia mostra o custo de manter um órgão próprio, para comparar.' },
+  'Equidade algorítmica, não discriminação, transparência, explicabilidade e prestação de contas': { qtd: 2, meses: 6, equipe: '1 especialista em IA e 1 especialista jurídico', porque: 'Requisitos técnicos de transparência e explicabilidade pedem análise técnica mais longa.' },
+  'Cibersegurança e notificação de incidentes': { qtd: 2, meses: 4, equipe: '1 especialista em segurança da informação e 1 especialista jurídico', porque: 'Parte das normas de cibersegurança que o país já tem.' },
+  'Propriedade intelectual e direitos autorais': { qtd: 2, meses: 4, equipe: '1 especialista jurídico e 1 especialista em educação', porque: 'Ajusta as regras de direitos autorais a conteúdos gerados por IA e a materiais didáticos.' },
+  'Ambientes de teste controlados': { qtd: 3, meses: 6, base: 'noruega', equipe: '1 coordenador, 1 especialista em IA e 1 especialista jurídico', porque: 'Um ciclo de testes de 6 meses. No sandbox da Noruega, cada projeto dura de 3 a 6 meses.' },
+  'Avaliações de risco': { qtd: 1, meses: 4, base: 'noruega', equipe: '1 especialista em IA', porque: '1 mês por projeto testado, para 4 projetos, o número de projetos por ano do sandbox da Noruega.' },
+  'Diretrizes éticas de IA para a educação': { qtd: 2, meses: 3, equipe: '1 especialista no tema e 1 analista de políticas educacionais', porque: 'Documento orientador, sem força de lei: tramitação mais curta que a de uma norma.' },
+  'Diretrizes de contratação de IA e avaliação de fornecedores': { qtd: 2, meses: 3, equipe: '1 especialista em contratações públicas e 1 especialista em IA', porque: 'Documento orientador, sem força de lei: tramitação mais curta que a de uma norma.' },
+  'Diretrizes de uso de IA adequado à idade': { qtd: 2, meses: 3, equipe: '1 especialista em educação e 1 especialista em IA', porque: 'Documento orientador, sem força de lei: tramitação mais curta que a de uma norma.' },
+  'Políticas de uso de IA por professores e estudantes': { qtd: 2, meses: 3, equipe: '1 especialista em educação e 1 analista de políticas educacionais', porque: 'Documento orientador, sem força de lei: tramitação mais curta que a de uma norma.' },
+  'Padrões de gestão de riscos de IA': { qtd: 2, meses: 3, equipe: '1 especialista em IA e 1 especialista em gestão de riscos', porque: 'Padrão técnico de referência, adaptado de padrões internacionais.' },
+  'Padrões de transparência e documentação de IA': { qtd: 2, meses: 3, equipe: '1 especialista em IA e 1 especialista jurídico', porque: 'Padrão técnico de referência, adaptado de padrões internacionais.' },
+  'Padrões de governança e segurança de dados': { qtd: 2, meses: 3, equipe: '1 especialista em dados e 1 especialista em segurança da informação', porque: 'Padrão técnico de referência, adaptado de padrões internacionais.' },
+  'Diretrizes de garantia de qualidade e avaliação de IA': { qtd: 2, meses: 3, equipe: '1 especialista em IA e 1 especialista em avaliação educacional', porque: 'Documento orientador, sem força de lei: tramitação mais curta que a de uma norma.' },
+  'Transferência de tecnologia': { qtd: 2, meses: 6, equipe: '1 especialista em TI e 1 gestor de contratos', porque: 'Acordos com fornecedores e capacitação das equipes ao longo de um semestre.' },
+  'Customização local': { qtd: 3, meses: 6, equipe: '2 especialistas em TI e 1 especialista pedagógico', porque: 'Adaptação das soluções à língua e ao currículo do país.' },
+  'Redução da dependência de fornecedores': { qtd: 1, meses: 3, equipe: '1 especialista em contratações públicas', porque: 'Revisão de contratos, padrões abertos e cláusulas de saída.' },
+  'Supervisão regulatória': { qtd: 2, base: 'aiact', equipe: '2 especialistas em tempo integral', porque: 'Ponta baixa da faixa estimada para o AI Act (de 1 a 25 servidores por país), para uma unidade dedicada à educação.' },
+  'Adoção e manutenção de código aberto': { qtd: 2, equipe: '2 especialistas em TI em tempo integral', porque: 'Manutenção, atualização e suporte contínuos das soluções.' },
+  'Comitês de governança': { qtd: 0.5, equipe: '1 secretaria executiva em meio período', porque: 'Só a secretaria do comitê; o tempo dos membros fica de fora.' },
+  'Coordenação interministerial': { qtd: 1, equipe: '1 coordenador em tempo integral (perfil de diretor)', porque: 'Ponto focal permanente entre os ministérios.' },
+  'Estruturas institucionais de governança': { qtd: 4, base: 'quenia', equipe: '1 coordenador e 3 especialistas', porque: 'Unidade pequena dedicada à IA na educação. O caso do Quênia mostra o custo de um órgão novo inteiro, para comparar.' },
+  'Governança e proteção de dados e infraestrutura pública digital': { qtd: 3, base: 'quenia', equipe: '3 especialistas em dados e governança', porque: 'Equipe permanente de gestão dos dados educacionais. O caso do Quênia mostra o custo de um órgão de proteção de dados, para comparar.' },
 };
 /** Itens da 1.1 são parâmetros da formação (não viram linha de custo): ao marcar, abrem um campo, gravado nos campos de
  *  professores do letramento que já existiam (os mesmos da tela Públicos). */
@@ -206,6 +208,10 @@ export interface LinhaOpcao {
   status: 'informado' | 'referencia' | 'falta'; falta: string[];
   /** v018: a linha usa o esforço de referência da governança (grau C) */
   esforcoC?: boolean;
+  /** v018: o esforço de referência da opção (governança), mesmo quando a pessoa já trocou os números */
+  esforco?: Esforco;
+  /** v018: a referência do valor unitário é o salário do país (ILOSTAT) com encargos */
+  refPais?: boolean;
   /** v018: a conta e de onde vem cada número (explicação "Como foi calculado") */
   conta?: ContaOpcao;
   memoria: string;
@@ -277,13 +283,14 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
   if (f === 'governanca') {
     const partes: ParteConta[] = [], voce = t('informado por você');
     const fonteEsf = esf?.base ? [FONTES_GOV[esf.base]] : [];
-    const txtEsf = t('esforço de referência (grau C): convenção da ferramenta, a calibrar') + (esf?.base ? '; ' + t('ordem de grandeza conferida em caso real') : '');
+    const txtEsf = t('esforço de referência (grau C): convenção da ferramenta, a calibrar') + (esf ? ' — ' + t(esf.equipe) + '. ' + t(esf.porque) : '');
+    const pagEsf = esf ? '#/esforcos/' + chaveOpcao(rotulo) : undefined;
     if (tipo === 'fechado') partes.push({ rotulo: t('Valor total'), valor: total === null ? '—' : fmt(total), texto: total === null ? t('ainda sem valor') : voce, fontes: [] });
     else {
       if (qtd !== null) partes.push({ rotulo: t(def.qtd!), valor: num(qtd), fontes: positivo(salvo.qtd) ? [] : esf && qtd === esf.qtd ? fonteEsf : [],
-        texto: positivo(salvo.qtd) ? voce : esf && qtd === esf.qtd ? txtEsf : t('sugerido a partir do Contexto') });
+        texto: positivo(salvo.qtd) ? voce : esf && qtd === esf.qtd ? txtEsf : t('sugerido a partir do Contexto'), pagina: !positivo(salvo.qtd) && esf && qtd === esf.qtd ? pagEsf : undefined });
       if (def.horas && horas !== null) partes.push({ rotulo: t(def.horasRotulo || 'Horas por pessoa'), valor: num(horas), fontes: positivo(salvo.horas) ? [] : esf?.meses ? fonteEsf : [],
-        texto: positivo(salvo.horas) ? voce : esf?.meses ? txtEsf : '' });
+        texto: positivo(salvo.horas) ? voce : esf?.meses ? t('esforço de referência (grau C), mesma equipe') : '' });
       if (unit !== null) {
         if (!unitDaReferencia) partes.push({ rotulo: t(def.unit!), valor: fmt(unit), texto: voce, fontes: [] });
         else if (sal) {
@@ -315,7 +322,7 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
     conta = { formula, partes };
   }
   const status = falta.length ? 'falta' : tipo !== 'fechado' && unitDaReferencia ? 'referencia' : 'informado';
-  return { conta, esforcoC, chave: chaveOpcao(rotulo), rotulo, tipo, tipoPadrao: pad.tipo, fonte: pad.fonte, qtd, qtdSugerida, horas, unit, unitRef, unitDaReferencia, valoresFase, porFase, total, status, falta, memoria };
+  return { refPais: !!sal, esforco: esf, conta, esforcoC, chave: chaveOpcao(rotulo), rotulo, tipo, tipoPadrao: pad.tipo, fonte: pad.fonte, qtd, qtdSugerida, horas, unit, unitRef, unitDaReferencia, valoresFase, porFase, total, status, falta, memoria };
 }
 
 /** v018: as fontes públicas usadas nas contas de um orçamento, sem repetição (resumo e PDF). */

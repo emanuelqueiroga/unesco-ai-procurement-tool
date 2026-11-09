@@ -18,3 +18,4 @@
 .pc-sal-fonte { display: block; }
 .pc-sal-metodo { min-width: 200px; }
 @media (max-width: 640px) { .pc-sal-tabela { font-size: 13px; } .pc-sal-metodo { min-width: 140px; } }
+.pc-sal-tabela th .pc-sal-fonte { font-weight: 400; }
