@@ -8,11 +8,12 @@ import type { Estado14 } from '../store/tipos';
 import { t } from './textos';
 import { lerLit } from './letramento';
 import { fatorEncargos, encargosDoPais } from './encargosPais';
-import { SALARIOS_ILO, FONTES_ILO, REGIOES_WB, RENDA_WB, URL_ILOSTAT } from './salariosPais';
+import { SALARIOS_ILO, FONTES_ILO, REGIOES_WB, RENDA_WB, URL_ILOSTAT, type Grupo } from './salariosPais';
+import { EQUIPES_GOV, pessoasDaEquipe, type EquipeRef, type Papel } from './equipesGov';
 import { paisPorIso, nomePais } from '../domain/pais.js';
 import { formatarMoedaEst, parametro, PARAMETRO_EQUIPE, PARAMETRO_FORMACAO, PARAMETRO_LICENCA, PARAMETRO_CONECTIVIDADE, PARAMETRO_DISPOSITIVO, type FrenteEstimativa } from './estimativasOrcamento';
 
-export type TipoCusto = 'formacao' | 'pessoa' | 'licenca' | 'escola_ano' | 'escola' | 'unidade' | 'equipe' | 'trabalho' | 'fechado';
+export type TipoCusto = 'formacao' | 'pessoa' | 'licenca' | 'escola_ano' | 'escola' | 'unidade' | 'equipe' | 'trabalho' | 'time' | 'fechado';
 export type Fonte = 'professores' | 'estudantes' | 'escolas' | null;
 type Dist = 'novos' | 'acumulado_mes' | 'acumulado_ano' | 'tempo' | 'direto';
 
@@ -26,6 +27,8 @@ export const TIPOS: Record<TipoCusto, { rotulo: string; qtd?: string; horas?: bo
   equipe: { rotulo: 'Pessoas em tempo integral × custo anual', qtd: 'Pessoas em tempo integral', unit: 'Custo anual por pessoa', dist: 'tempo' },
   // v018 (governança): trabalho pontual = pessoas × meses × custo mensal por pessoa
   trabalho: { rotulo: 'Pessoas × meses × custo mensal', qtd: 'Pessoas', horas: true, horasRotulo: 'Meses de trabalho', unit: 'Custo mensal por pessoa', dist: 'novos' },
+  // v018 (governança): equipe de referência por papel (equipesGov.ts): soma de pessoas × dedicação × meses × custo mensal do perfil
+  time: { rotulo: 'Equipe de referência', horas: true, horasRotulo: 'Meses de trabalho', unit: 'Custo mensal por pessoa', dist: 'direto' },
   fechado: { rotulo: 'Valor por fase', dist: 'direto' },
 };
 export const ORDEM_TIPOS: TipoCusto[] = ['fechado', 'formacao', 'pessoa', 'licenca', 'equipe', 'escola_ano', 'escola', 'unidade'];
@@ -38,32 +41,32 @@ const PADROES: Record<string, [TipoCusto, Fonte, string | null]> = {
   'Pessoal de governança de IA': ['equipe', null, PARAMETRO_EQUIPE],
   'Especialistas em IA e educação': ['equipe', null, PARAMETRO_EQUIPE],
   'Formação e desenvolvimento profissional': ['formacao', null, PARAMETRO_FORMACAO],
-  // v018: governança — esforço de referência (docs "Referências de custo da governança", grau C) × custo local
-  'Classificação de segurança e risco de IA': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Direitos e proteção de crianças': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Proteção de dados pessoais e privacidade': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Equidade algorítmica, não discriminação, transparência, explicabilidade e prestação de contas': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Cibersegurança e notificação de incidentes': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Propriedade intelectual e direitos autorais': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Ambientes de teste controlados': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Avaliações de risco': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Diretrizes éticas de IA para a educação': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Diretrizes de contratação de IA e avaliação de fornecedores': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Diretrizes de uso de IA adequado à idade': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Políticas de uso de IA por professores e estudantes': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Padrões de gestão de riscos de IA': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Padrões de transparência e documentação de IA': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Padrões de governança e segurança de dados': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Diretrizes de garantia de qualidade e avaliação de IA': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Transferência de tecnologia': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Customização local': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Redução da dependência de fornecedores': ['trabalho', null, PARAMETRO_EQUIPE],
-  'Supervisão regulatória': ['equipe', null, PARAMETRO_EQUIPE],
-  'Adoção e manutenção de código aberto': ['equipe', null, PARAMETRO_EQUIPE],
-  'Comitês de governança': ['equipe', null, PARAMETRO_EQUIPE],
-  'Coordenação interministerial': ['equipe', null, PARAMETRO_EQUIPE],
-  'Estruturas institucionais de governança': ['equipe', null, PARAMETRO_EQUIPE],
-  'Governança e proteção de dados e infraestrutura pública digital': ['equipe', null, PARAMETRO_EQUIPE],
+  // v018: governança — equipe de referência por papel (equipesGov.ts, grau C) × salário do país por perfil
+  'Classificação de segurança e risco de IA': ['time', null, PARAMETRO_EQUIPE],
+  'Direitos e proteção de crianças': ['time', null, PARAMETRO_EQUIPE],
+  'Proteção de dados pessoais e privacidade': ['time', null, PARAMETRO_EQUIPE],
+  'Equidade algorítmica, não discriminação, transparência, explicabilidade e prestação de contas': ['time', null, PARAMETRO_EQUIPE],
+  'Cibersegurança e notificação de incidentes': ['time', null, PARAMETRO_EQUIPE],
+  'Propriedade intelectual e direitos autorais': ['time', null, PARAMETRO_EQUIPE],
+  'Ambientes de teste controlados': ['time', null, PARAMETRO_EQUIPE],
+  'Avaliações de risco': ['time', null, PARAMETRO_EQUIPE],
+  'Diretrizes éticas de IA para a educação': ['time', null, PARAMETRO_EQUIPE],
+  'Diretrizes de contratação de IA e avaliação de fornecedores': ['time', null, PARAMETRO_EQUIPE],
+  'Diretrizes de uso de IA adequado à idade': ['time', null, PARAMETRO_EQUIPE],
+  'Políticas de uso de IA por professores e estudantes': ['time', null, PARAMETRO_EQUIPE],
+  'Padrões de gestão de riscos de IA': ['time', null, PARAMETRO_EQUIPE],
+  'Padrões de transparência e documentação de IA': ['time', null, PARAMETRO_EQUIPE],
+  'Padrões de governança e segurança de dados': ['time', null, PARAMETRO_EQUIPE],
+  'Diretrizes de garantia de qualidade e avaliação de IA': ['time', null, PARAMETRO_EQUIPE],
+  'Transferência de tecnologia': ['time', null, PARAMETRO_EQUIPE],
+  'Customização local': ['time', null, PARAMETRO_EQUIPE],
+  'Redução da dependência de fornecedores': ['time', null, PARAMETRO_EQUIPE],
+  'Supervisão regulatória': ['time', null, PARAMETRO_EQUIPE],
+  'Adoção e manutenção de código aberto': ['time', null, PARAMETRO_EQUIPE],
+  'Comitês de governança': ['time', null, PARAMETRO_EQUIPE],
+  'Coordenação interministerial': ['time', null, PARAMETRO_EQUIPE],
+  'Estruturas institucionais de governança': ['time', null, PARAMETRO_EQUIPE],
+  'Governança e proteção de dados e infraestrutura pública digital': ['time', null, PARAMETRO_EQUIPE],
   // letramento: professores
   'Formação presencial': ['formacao', 'professores', PARAMETRO_FORMACAO],
   'Formação online': ['formacao', 'professores', PARAMETRO_FORMACAO],
@@ -91,9 +94,8 @@ const PADROES: Record<string, [TipoCusto, Fonte, string | null]> = {
   'Plataformas': ['licenca', 'estudantes', PARAMETRO_LICENCA],
   'Ferramentas de IA': ['licenca', 'professores', PARAMETRO_LICENCA],
 };
-/** v018: perfil ocupacional (ISCO-08, grande grupo) de cada opção de pessoal da governança; o resto usa o grupo 2. */
-export const PERFIL_GOV: Record<string, 1 | 2> = { 'Coordenação interministerial': 1 };
-export const NOME_PERFIL: Record<1 | 2, string> = { 1: 'diretores e gerentes (ISCO-08, grupo 1)', 2: 'profissionais das ciências e intelectuais (ISCO-08, grupo 2)' };
+/** v018: perfis ocupacionais (ISCO-08, grandes grupos) usados no custo de pessoal da governança. */
+export const NOME_PERFIL: Record<Grupo, string> = { 1: 'diretores e gerentes (ISCO-08, grupo 1)', 2: 'profissionais das ciências e intelectuais (ISCO-08, grupo 2)', 3: 'técnicos e profissionais de nível médio (ISCO-08, grupo 3)', 4: 'trabalhadores de apoio administrativo (ISCO-08, grupo 4)' };
 /** Nome do país no idioma da tela: o da base da ferramenta, ou o do navegador pelo código ISO de 2 letras. */
 export function nomeDoPaisIso(iso: string): string {
   const p = paisPorIso(iso); if (p) return nomePais(p);
@@ -101,8 +103,8 @@ export function nomeDoPaisIso(iso: string): string {
   try { return i2 ? new Intl.DisplayNames([String(LOC())], { type: 'region' }).of(i2) || iso : iso; } catch { return iso; }
 }
 /** Salário médio mensal do país para o perfil, na moeda do plano (moeda local quando o plano usa a moeda do país). */
-export function salarioDoPais(iso: string | undefined, perfil: 1 | 2, moeda: string | undefined, taxa: number | null) {
-  const e = iso ? SALARIOS_ILO[iso] : undefined, p = e ? (perfil === 1 ? e.p1 : e.p2) : null;
+export function salarioDoPais(iso: string | undefined, perfil: Grupo, moeda: string | undefined, taxa: number | null) {
+  const e = iso ? SALARIOS_ILO[iso] : undefined, p = e ? e[('p' + perfil) as 'p1' | 'p2' | 'p3' | 'p4'] : null;
   if (!e || !p) return null;
   const [ano, lcu, usd, metodo, n] = p, moedaPais = paisPorIso(iso!)?.moeda;
   const viaLCU = metodo === 'd' && lcu !== null && !!moeda && moedaPais === moeda;
@@ -117,36 +119,6 @@ export const FONTES_GOV: Record<'aiact' | 'noruega' | 'quenia', FonteConta> = {
   aiact: { titulo: 'Proposta do AI Act, COM(2021) 206, seção 4: de 1 a 25 servidores em tempo integral por país na supervisão', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:52021PC0206' },
   noruega: { titulo: 'Sandbox de IA da Noruega: 4 projetos por ano, de 3 a 6 meses cada (Cambridge Forum on AI: Law and Governance)', url: 'https://www.cambridge.org/core/journals/cambridge-forum-on-ai-law-and-governance/article/from-watchdogs-to-partners-in-tech-innovation-navigating-regulatory-roles-in-norways-ai-sandbox/7E2FA0B1F75E6803B2DE4124EB0FC6CB' },
   quenia: { titulo: 'Orçamento do órgão de proteção de dados do Quênia, 2021–2025 (Open Budget Kenya)', url: 'https://openbudget.or.ke/project/1122002100_The_Office_of_the_Data_Protection_Commi/2024' },
-};
-/** v018: esforço de referência das opções da governança (grau C: convenção da ferramenta, a calibrar): pessoas e, no trabalho
- *  pontual, meses; a composição da equipe pensada e o porquê do valor; `base` = caso real citado (página #/esforcos). */
-export interface Esforco { qtd: number; meses?: number; base?: keyof typeof FONTES_GOV; equipe: string; porque: string }
-export const ESFORCO_GOV: Record<string, Esforco> = {
-  'Classificação de segurança e risco de IA': { qtd: 3, meses: 6, equipe: '1 especialista jurídico, 1 especialista em IA e 1 analista de políticas educacionais', porque: 'Estudo técnico, minuta da norma, consulta pública e versão final.' },
-  'Direitos e proteção de crianças': { qtd: 2, meses: 4, equipe: '1 especialista jurídico e 1 especialista em proteção da infância', porque: 'Norma específica que se apoia nas leis de proteção da infância já existentes.' },
-  'Proteção de dados pessoais e privacidade': { qtd: 3, meses: 6, base: 'quenia', equipe: '1 especialista jurídico, 1 especialista em dados e 1 analista de políticas', porque: 'Adapta a lei de proteção de dados do país ao uso de IA na educação. O caso do Quênia mostra o custo de manter um órgão próprio, para comparar.' },
-  'Equidade algorítmica, não discriminação, transparência, explicabilidade e prestação de contas': { qtd: 2, meses: 6, equipe: '1 especialista em IA e 1 especialista jurídico', porque: 'Requisitos técnicos de transparência e explicabilidade pedem análise técnica mais longa.' },
-  'Cibersegurança e notificação de incidentes': { qtd: 2, meses: 4, equipe: '1 especialista em segurança da informação e 1 especialista jurídico', porque: 'Parte das normas de cibersegurança que o país já tem.' },
-  'Propriedade intelectual e direitos autorais': { qtd: 2, meses: 4, equipe: '1 especialista jurídico e 1 especialista em educação', porque: 'Ajusta as regras de direitos autorais a conteúdos gerados por IA e a materiais didáticos.' },
-  'Ambientes de teste controlados': { qtd: 3, meses: 6, base: 'noruega', equipe: '1 coordenador, 1 especialista em IA e 1 especialista jurídico', porque: 'Um ciclo de testes de 6 meses. No sandbox da Noruega, cada projeto dura de 3 a 6 meses.' },
-  'Avaliações de risco': { qtd: 1, meses: 4, base: 'noruega', equipe: '1 especialista em IA', porque: '1 mês por projeto testado, para 4 projetos, o número de projetos por ano do sandbox da Noruega.' },
-  'Diretrizes éticas de IA para a educação': { qtd: 2, meses: 3, equipe: '1 especialista no tema e 1 analista de políticas educacionais', porque: 'Documento orientador, sem força de lei: tramitação mais curta que a de uma norma.' },
-  'Diretrizes de contratação de IA e avaliação de fornecedores': { qtd: 2, meses: 3, equipe: '1 especialista em contratações públicas e 1 especialista em IA', porque: 'Documento orientador, sem força de lei: tramitação mais curta que a de uma norma.' },
-  'Diretrizes de uso de IA adequado à idade': { qtd: 2, meses: 3, equipe: '1 especialista em educação e 1 especialista em IA', porque: 'Documento orientador, sem força de lei: tramitação mais curta que a de uma norma.' },
-  'Políticas de uso de IA por professores e estudantes': { qtd: 2, meses: 3, equipe: '1 especialista em educação e 1 analista de políticas educacionais', porque: 'Documento orientador, sem força de lei: tramitação mais curta que a de uma norma.' },
-  'Padrões de gestão de riscos de IA': { qtd: 2, meses: 3, equipe: '1 especialista em IA e 1 especialista em gestão de riscos', porque: 'Padrão técnico de referência, adaptado de padrões internacionais.' },
-  'Padrões de transparência e documentação de IA': { qtd: 2, meses: 3, equipe: '1 especialista em IA e 1 especialista jurídico', porque: 'Padrão técnico de referência, adaptado de padrões internacionais.' },
-  'Padrões de governança e segurança de dados': { qtd: 2, meses: 3, equipe: '1 especialista em dados e 1 especialista em segurança da informação', porque: 'Padrão técnico de referência, adaptado de padrões internacionais.' },
-  'Diretrizes de garantia de qualidade e avaliação de IA': { qtd: 2, meses: 3, equipe: '1 especialista em IA e 1 especialista em avaliação educacional', porque: 'Documento orientador, sem força de lei: tramitação mais curta que a de uma norma.' },
-  'Transferência de tecnologia': { qtd: 2, meses: 6, equipe: '1 especialista em TI e 1 gestor de contratos', porque: 'Acordos com fornecedores e capacitação das equipes ao longo de um semestre.' },
-  'Customização local': { qtd: 3, meses: 6, equipe: '2 especialistas em TI e 1 especialista pedagógico', porque: 'Adaptação das soluções à língua e ao currículo do país.' },
-  'Redução da dependência de fornecedores': { qtd: 1, meses: 3, equipe: '1 especialista em contratações públicas', porque: 'Revisão de contratos, padrões abertos e cláusulas de saída.' },
-  'Supervisão regulatória': { qtd: 2, base: 'aiact', equipe: '2 especialistas em tempo integral', porque: 'Ponta baixa da faixa estimada para o AI Act (de 1 a 25 servidores por país), para uma unidade dedicada à educação.' },
-  'Adoção e manutenção de código aberto': { qtd: 2, equipe: '2 especialistas em TI em tempo integral', porque: 'Manutenção, atualização e suporte contínuos das soluções.' },
-  'Comitês de governança': { qtd: 0.5, equipe: '1 secretaria executiva em meio período', porque: 'Só a secretaria do comitê; o tempo dos membros fica de fora.' },
-  'Coordenação interministerial': { qtd: 1, equipe: '1 coordenador em tempo integral (perfil de diretor)', porque: 'Ponto focal permanente entre os ministérios.' },
-  'Estruturas institucionais de governança': { qtd: 4, base: 'quenia', equipe: '1 coordenador e 3 especialistas', porque: 'Unidade pequena dedicada à IA na educação. O caso do Quênia mostra o custo de um órgão novo inteiro, para comparar.' },
-  'Governança e proteção de dados e infraestrutura pública digital': { qtd: 3, base: 'quenia', equipe: '3 especialistas em dados e governança', porque: 'Equipe permanente de gestão dos dados educacionais. O caso do Quênia mostra o custo de um órgão de proteção de dados, para comparar.' },
 };
 /** Itens da 1.1 são parâmetros da formação (não viram linha de custo): ao marcar, abrem um campo, gravado nos campos de
  *  professores do letramento que já existiam (os mesmos da tela Públicos). */
@@ -197,7 +169,11 @@ export function quantidadeSugerida(s: Pick<Estado14, 'ctx'>, fonte: Fonte): numb
 export const chaveOpcao = (rotulo: string) => rotulo.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || '_';
 
 export interface FaseCalc { id: string; nome: string; meses: number; alcance: number }
-export interface CustoSalvo { tipo?: TipoCusto; qtd?: number; horas?: number; unit?: number; fases?: Record<string, number> }
+export interface CustoSalvo { tipo?: TipoCusto; qtd?: number; horas?: number; unit?: number; fases?: Record<string, number>;
+  /** v018 (equipe de referência): pessoas e custo mensal informados por papel (chave = nome do papel) */
+  papeis?: Record<string, { qtd?: number; unit?: number }> }
+/** v018: um papel da equipe de referência, já com a quantidade, o custo mensal (com encargos) e o custo no plano. */
+export interface PapelCalc extends Papel { qtdRef: number; qtdInformada: boolean; ref: number | null; unit: number | null; daRef: boolean; viaPais: boolean; salPais: boolean; custo: number | null }
 export interface ParteConta { rotulo: string; valor: string; texto: string; fontes: FonteConta[]; /** link para a página de salários por país */ pagina?: string }
 export interface ContaOpcao { formula: string; partes: ParteConta[] }
 export interface LinhaOpcao {
@@ -208,8 +184,10 @@ export interface LinhaOpcao {
   status: 'informado' | 'referencia' | 'falta'; falta: string[];
   /** v018: a linha usa o esforço de referência da governança (grau C) */
   esforcoC?: boolean;
-  /** v018: o esforço de referência da opção (governança), mesmo quando a pessoa já trocou os números */
-  esforco?: Esforco;
+  /** v018: a equipe de referência da opção (governança), mesmo quando a pessoa já trocou os números */
+  esforco?: EquipeRef;
+  /** v018: os papéis da equipe com o custo de cada um; `continua` = operação durante todo o plano */
+  time?: PapelCalc[]; continua?: boolean;
   /** v018: a referência do valor unitário é o salário do país (ILOSTAT) com encargos */
   refPais?: boolean;
   /** v018: a conta e de onde vem cada número (explicação "Como foi calculado") */
@@ -226,16 +204,14 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
   fmt: (v: number) => string, num: (v: number) => string, moeda?: string): LinhaOpcao {
   // v018: na governança cada opção tem a forma de cálculo fixa (sem "Como calcular"); um tipo salvo antes fica guardado
   const pad = padraoOpcao(f, catId, rotulo), tipo: TipoCusto = f !== 'governanca' && salvo.tipo && TIPOS[salvo.tipo] ? salvo.tipo : pad.tipo, def = TIPOS[tipo];
-  const esf = f === 'governanca' && tipo === pad.tipo ? ESFORCO_GOV[rotulo] : undefined;
-  const sug = def.qtd ? quantidadeSugerida(s, pad.fonte) ?? esf?.qtd ?? null : null;
+  if (tipo === 'time' && EQUIPES_GOV[rotulo]) return calcularTime(s, rotulo, salvo, fases, taxa, fmt, num, moeda);
+  const sug = def.qtd ? quantidadeSugerida(s, pad.fonte) : null;
   const qtd = positivo(salvo.qtd) ? salvo.qtd : (tipo === pad.tipo ? sug : null), qtdSugerida = !positivo(salvo.qtd) && qtd !== null;
-  const horas = positivo(salvo.horas) ? salvo.horas : (esf?.meses ?? null);
-  // v018: esforço de referência em uso (grau C) e, na governança, encargos do país sobre o custo de pessoal
-  const esforcoC = !!esf && ((!positivo(salvo.qtd) && qtd === esf.qtd) || (!!esf.meses && !positivo(salvo.horas)));
+  const horas = positivo(salvo.horas) ? salvo.horas : null;
   // v018 (governança): custo de pessoal = salário médio mensal do país por ocupação (ILOSTAT) × encargos do país (SSA e
   // ISSA). Sem dado do país (ou país "outro"), vale a referência genérica, que já é custo carregado (sem encargos por cima).
   const pidRef = refDoTipo(tipo, pad), iso = (s as any).caso?.pais as string | undefined;
-  const sal = f === 'governanca' && (tipo === 'equipe' || tipo === 'trabalho') && pidRef === PARAMETRO_EQUIPE ? salarioDoPais(iso, PERFIL_GOV[rotulo] || 2, moeda, taxa) : null;
+  const sal = f === 'governanca' && (tipo === 'equipe' || tipo === 'trabalho') && pidRef === PARAMETRO_EQUIPE ? salarioDoPais(iso, 2, moeda, taxa) : null;
   const fator = sal ? fatorEncargos(iso) : 1;
   const refCarregada = !sal && !!pidRef && /carregado/i.test(parametro(pidRef).item);
   let unitRef: number | null;
@@ -276,21 +252,16 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
       : [num(qtd as number) + ' ' + t(def.qtd!).toLowerCase(), def.horas ? (tipo === 'trabalho' ? num(horas as number) + ' ' + t('meses') : num(horas as number) + ' h') : '', fmt(unit as number) + ' (' + t(def.unit!).toLowerCase() + ')'].filter(Boolean).join(' × ')
         + (unitDaReferencia ? ' · ' + (sal ? t('salário do país (ILOSTAT)') : t('referência genérica, igual para todos os países')) : '')
         + (unitDaReferencia && fator !== 1 ? ' · ' + t('com encargos do país (× {f})', { f: num(Math.round(fator * 1000) / 1000) }) : '')
-        + (esforcoC ? ' · ' + t('esforço de referência (grau C)') : '');
+        + '';
   }
   // v018: de onde vem cada número da conta (governança)
   let conta: ContaOpcao | undefined;
   if (f === 'governanca') {
     const partes: ParteConta[] = [], voce = t('informado por você');
-    const fonteEsf = esf?.base ? [FONTES_GOV[esf.base]] : [];
-    const txtEsf = t('esforço de referência (grau C): convenção da ferramenta, a calibrar') + (esf ? ' — ' + t(esf.equipe) + '. ' + t(esf.porque) : '');
-    const pagEsf = esf ? '#/esforcos/' + chaveOpcao(rotulo) : undefined;
     if (tipo === 'fechado') partes.push({ rotulo: t('Valor total'), valor: total === null ? '—' : fmt(total), texto: total === null ? t('ainda sem valor') : voce, fontes: [] });
     else {
-      if (qtd !== null) partes.push({ rotulo: t(def.qtd!), valor: num(qtd), fontes: positivo(salvo.qtd) ? [] : esf && qtd === esf.qtd ? fonteEsf : [],
-        texto: positivo(salvo.qtd) ? voce : esf && qtd === esf.qtd ? txtEsf : t('sugerido a partir do Contexto'), pagina: !positivo(salvo.qtd) && esf && qtd === esf.qtd ? pagEsf : undefined });
-      if (def.horas && horas !== null) partes.push({ rotulo: t(def.horasRotulo || 'Horas por pessoa'), valor: num(horas), fontes: positivo(salvo.horas) ? [] : esf?.meses ? fonteEsf : [],
-        texto: positivo(salvo.horas) ? voce : esf?.meses ? t('esforço de referência (grau C), mesma equipe') : '' });
+      if (qtd !== null) partes.push({ rotulo: t(def.qtd!), valor: num(qtd), fontes: [], texto: positivo(salvo.qtd) ? voce : t('sugerido a partir do Contexto') });
+      if (def.horas && horas !== null) partes.push({ rotulo: t(def.horasRotulo || 'Horas por pessoa'), valor: num(horas), fontes: [], texto: voce });
       if (unit !== null) {
         if (!unitDaReferencia) partes.push({ rotulo: t(def.unit!), valor: fmt(unit), texto: voce, fontes: [] });
         else if (sal) {
@@ -322,7 +293,99 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
     conta = { formula, partes };
   }
   const status = falta.length ? 'falta' : tipo !== 'fechado' && unitDaReferencia ? 'referencia' : 'informado';
-  return { refPais: !!sal, esforco: esf, conta, esforcoC, chave: chaveOpcao(rotulo), rotulo, tipo, tipoPadrao: pad.tipo, fonte: pad.fonte, qtd, qtdSugerida, horas, unit, unitRef, unitDaReferencia, valoresFase, porFase, total, status, falta, memoria };
+  return { refPais: !!sal, conta, chave: chaveOpcao(rotulo), rotulo, tipo, tipoPadrao: pad.tipo, fonte: pad.fonte, qtd, qtdSugerida, horas, unit, unitRef, unitDaReferencia, valoresFase, porFase, total, status, falta, memoria };
+}
+
+/** v018 (governança): custo da equipe de referência da opção. Cada papel custa pessoas × dedicação × meses × custo mensal
+ *  do perfil; o custo mensal é o salário médio do país para o grande grupo da ISCO-08 (ILOSTAT) × encargos do país (SSA e
+ *  ISSA). Sem dado do país, vale a referência genérica de custo carregado (já com encargos). Trabalho pontual ocupa as
+ *  primeiras fases até somar os meses; operação contínua dura todo o plano. Pessoas e custo mensal podem ser trocados por papel. */
+function calcularTime(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: CustoSalvo, fases: FaseCalc[], taxa: number | null,
+  fmt: (v: number) => string, num: (v: number) => string, moeda?: string): LinhaOpcao {
+  const eq = EQUIPES_GOV[rotulo], iso = (s as any).caso?.pais as string | undefined, continua = !eq.meses;
+  const duracao = fases.reduce((n, x) => n + x.meses, 0);
+  const meses = continua ? (duracao || null) : positivo(salvo.horas) ? salvo.horas : eq.meses!;
+  const fator = fatorEncargos(iso), refGenUSD = referenciaUSD(PARAMETRO_EQUIPE);
+  const refGen = refGenUSD === null || taxa === null ? null : centavos(refGenUSD / 12 * taxa);
+  const sals = new Map<Grupo, ReturnType<typeof salarioDoPais>>();
+  const salDe = (g: Grupo) => { if (!sals.has(g)) sals.set(g, salarioDoPais(iso, g, moeda, taxa)); return sals.get(g)!; };
+  const time: PapelCalc[] = eq.papeis.map(p => {
+    const sv = salvo.papeis?.[p.papel] || {}, qtdInformada = naoNeg(sv.qtd), qtd = qtdInformada ? sv.qtd as number : p.qtd;
+    const sal = salDe(p.perfil), ref = sal ? centavos(sal.mensal * fator) : refGen;
+    const unit = positivo(sv.unit) ? sv.unit : ref, daRef = !positivo(sv.unit) && ref !== null;
+    const custo = unit === null || meses === null ? null : centavos(qtd * p.dedicacao * meses * unit);
+    return { ...p, qtd, qtdRef: p.qtd, qtdInformada, ref, unit, daRef, viaPais: daRef && !!sal, salPais: !!sal, custo };
+  });
+  const falta: string[] = [];
+  if (!fases.length) falta.push(t('as fases do plano'));
+  if (meses === null) falta.push(t('meses de trabalho'));
+  if (time.some(p => p.unit === null)) falta.push(t('custo mensal por pessoa'));
+  const mensal = time.reduce((n, p) => n + (p.unit === null ? 0 : p.qtd * p.dedicacao * p.unit), 0);
+  const porFase: Record<string, number> = {};
+  let total: number | null = null, memoria = '';
+  const pessoas = time.reduce((n, p) => n + p.qtd, 0), integral = Math.round(time.reduce((n, p) => n + p.qtd * p.dedicacao, 0) * 100) / 100;
+  if (!falta.length) {
+    let resta = meses as number;
+    fases.forEach((x, i) => {
+      const m = continua ? x.meses : i === fases.length - 1 ? resta : Math.min(resta, x.meses);
+      if (!continua) resta = Math.max(0, resta - m);
+      porFase[x.id] = centavos(mensal * m);
+    });
+    total = centavos(Object.values(porFase).reduce((a, b) => a + b, 0));
+    memoria = t('equipe de {n} pessoas ({e} em tempo integral) × {m} meses', { n: num(pessoas), e: num(integral), m: num(meses as number) })
+      + (time.some(p => p.viaPais) ? ' · ' + t('custo mensal de cada perfil: salário do país (ILOSTAT)') : time.some(p => p.daRef) ? ' · ' + t('referência genérica, igual para todos os países') : '')
+      + (time.some(p => p.viaPais) && fator !== 1 ? ' · ' + t('com encargos do país (× {f})', { f: num(Math.round(fator * 1000) / 1000) }) : '')
+      + ' · ' + t('equipe de referência (grau C)');
+  }
+  const esforcoC = (!continua && !positivo(salvo.horas)) || time.some(p => !p.qtdInformada);
+  // a conta: meses, cada papel (com o que faz), o salário de cada perfil e os encargos
+  const partes: ParteConta[] = [], voce = t('informado por você'), pagEsf = '#/esforcos/' + chaveOpcao(rotulo);
+  const fonteEq = eq.base ? [FONTES_GOV[eq.base]] : [];
+  if (meses !== null) partes.push({ rotulo: continua ? t('Duração do plano') : t('Meses de trabalho'), valor: num(meses), fontes: !continua && !positivo(salvo.horas) ? fonteEq : [],
+    texto: continua ? t('operação contínua: a equipe trabalha durante todo o plano.') + ' ' + t(eq.porque) : positivo(salvo.horas) ? voce : t('equipe de referência (grau C): convenção da ferramenta, a calibrar.') + ' ' + t(eq.porque),
+    pagina: pagEsf });
+  if (continua && eq.base) partes[partes.length - 1].fontes = fonteEq;
+  for (const p of time) {
+    const pct = Math.round(p.dedicacao * 100);
+    const quem = t(p.qtd === 1 ? '{q} pessoa, {d}% do tempo' : '{q} pessoas, {d}% do tempo cada', { q: num(p.qtd), d: pct }) + (p.qtdInformada ? ' (' + voce + ')' : '');
+    const custoMes = p.unit === null ? '' : ' · ' + t('{v} por mês por pessoa', { v: fmt(p.unit) }) + (p.daRef ? '' : ' (' + voce + ')');
+    partes.push({ rotulo: t(p.papel), valor: p.custo === null ? '—' : fmt(p.custo), fontes: [],
+      texto: quem + ' · ' + t(NOME_PERFIL[p.perfil]) + custoMes + '. ' + t(p.faz) });
+  }
+  const usdF = (v: number) => formatarMoedaEst(v, 'USD');
+  const tx = taxa === null ? '' : new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 4 }).format(taxa);
+  const perfis = [...new Set(time.filter(p => p.daRef).map(p => p.perfil))].sort();
+  let usouGenerica = false;
+  const comSal = perfis.filter(g => salDe(g));
+  if (perfis.length > comSal.length) usouGenerica = true;
+  comSal.forEach((g, i) => {
+    const sal = salDe(g)!, perfil = t(NOME_PERFIL[g]);
+    const txt = (sal.metodo === 'd'
+      ? t('{pais}: ILOSTAT, {fonte}, {ano}; grau A', { pais: sal.pais, fonte: sal.fonte || '', ano: sal.ano as number })
+      : t('estimado: mediana de {n} países com dado no ILOSTAT ({grupo}); grau B', { n: sal.n, grupo: sal.grupo }))
+      + (!sal.viaLCU ? ' · ' + usdF(sal.usd as number) + (tx && taxa !== 1 ? ' ' + t('× câmbio de {tx} por US$', { tx }) : '') : '');
+    partes.push({ rotulo: t('Salário mensal: {perfil}', { perfil }), valor: fmt(sal.mensal), texto: txt,
+      fontes: i === 0 ? [{ titulo: t('ILOSTAT (OIT): salário médio mensal dos empregados por ocupação'), url: URL_ILOSTAT }] : [], pagina: i === comSal.length - 1 ? '#/salarios/' + iso : undefined });
+  });
+  if (perfis.some(g => salDe(g))) {
+    const enc = encargosDoPais(iso);
+    partes.push(enc
+      ? { rotulo: t('Encargos do país'), valor: '× ' + num(Math.round(fator * 1000) / 1000), texto: t('contribuição patronal de {p}% sobre o salário (SSA e ISSA, {vol} {ano})', { p: num(enc.taxa), vol: t(enc.volume), ano: enc.ano }),
+          fontes: [{ titulo: t('Social Security Programs Throughout the World, SSA e ISSA ({vol} {ano}), tabela 4', { vol: t(enc.volume), ano: enc.ano }), url: enc.url }] }
+      : { rotulo: t('Encargos do país'), valor: '—', texto: t('(sem dado de encargos para o país)'), fontes: [] });
+  }
+  if (usouGenerica && refGenUSD !== null) {
+    const par = parametro(PARAMETRO_EQUIPE);
+    partes.push({ rotulo: t('Custo mensal sem dado do país'), valor: refGen === null ? '—' : fmt(refGen),
+      texto: t('{item}: {v} ({unidade}; {fonte}, grau {g})', { item: t(par.item), v: usdF(par.valor), unidade: t(par.unidade), fonte: t(par.fonte), g: par.grau }) + ' ' + t('÷ 12 meses') + (tx && taxa !== 1 ? ' ' + t('× câmbio de {tx} por US$', { tx }) : '') + ' ' + t('(o custo carregado já inclui os encargos)'),
+      fontes: [], pagina: '#/salarios' + (iso && iso !== 'outro' ? '/' + iso : '') });
+  }
+  const formula = total === null ? '' : t('Soma dos papéis: pessoas × dedicação × {m} meses × custo mensal do perfil', { m: num(meses as number) }) + ' = ' + fmt(total);
+  const unitDaReferencia = time.some(p => p.daRef);
+  const status = falta.length ? 'falta' : unitDaReferencia ? 'referencia' : 'informado';
+  const valoresFase: Record<string, number | ''> = {}; for (const x of fases) valoresFase[x.id] = '';
+  return { refPais: time.some(p => p.viaPais), esforco: eq, time, continua, conta: { formula, partes }, esforcoC, chave: chaveOpcao(rotulo), rotulo, tipo: 'time', tipoPadrao: 'time', fonte: null,
+    qtd: pessoasDaEquipe({ ...eq, papeis: time }), qtdSugerida: false, horas: meses, unit: null, unitRef: null, unitDaReferencia, valoresFase, porFase, total, status, falta, memoria };
 }
 
 /** v018: as fontes públicas usadas nas contas de um orçamento, sem repetição (resumo e PDF). */

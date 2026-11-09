@@ -121,6 +121,6 @@ function FontesValores({ linhas }: { linhas: { conta?: import('../percurso/custo
   return <><h3 className="pv-resumo-sub">{t('Fontes dos valores')}</h3>
     <ul className="pv-resumo-riscos">
       {fontes.map(f => <li key={f.url}><a href={f.url!} target="_blank" rel="noopener noreferrer">{f.titulo}</a></li>)}
-      {conv ? <li>{t('Esforços de referência (pessoas e meses): convenção da ferramenta (grau C), a calibrar.')}</li> : null}
+      {conv ? <li>{t('Equipes de referência (papéis, pessoas, dedicação e meses): convenção da ferramenta (grau C), a calibrar.')}</li> : null}
     </ul></>;
 }

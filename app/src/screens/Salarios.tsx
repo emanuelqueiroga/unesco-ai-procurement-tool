@@ -9,7 +9,8 @@ import { t } from '../percurso/textos';
 import { href } from '../percurso/rota';
 import { SALARIOS_ILO, FONTES_ILO, REGIOES_WB, RENDA_WB, URL_ILOSTAT, URL_ILOSTAT_API, URL_WB_PAISES, type Perfil } from '../percurso/salariosPais';
 import { CONTRIBUICAO_PATRONAL, encargosDoPais } from '../percurso/encargosPais';
-import { nomeDoPaisIso, NOME_PERFIL, PERFIL_GOV } from '../percurso/custosV017';
+import { nomeDoPaisIso, NOME_PERFIL } from '../percurso/custosV017';
+import { EQUIPES_GOV } from '../percurso/equipesGov';
 import { formatarMoedaEst } from '../percurso/estimativasOrcamento';
 import { LOC } from '../domain';
 import './salarios.css';
@@ -44,15 +45,18 @@ export function Salarios({ pais }: { pais?: string }) {
   const filtrada = lista.filter(x => !q || x.nome.toLocaleLowerCase().includes(q) || x.iso.toLowerCase() === q);
   const destaque = doCaso && SALARIOS_ILO[doCaso] ? doCaso : '';
   const enc = destaque ? encargosDoPais(destaque) : null;
-  const cargos2 = ['Especialistas em TI (IA, dados, segurança, infraestrutura)', 'Profissionais jurídicos', 'Pessoal de governança de IA', 'Especialistas em IA e educação'];
-  const cargos1 = Object.keys(PERFIL_GOV).filter(k => PERFIL_GOV[k] === 1);
-  const cabecalho = <thead><tr><th scope="col">{t('País')}</th><th scope="col">{t('Profissionais (ISCO 2), por mês')}</th><th scope="col">{t('Diretores e gerentes (ISCO 1), por mês')}</th><th scope="col">{t('Como foi obtido')}</th><th scope="col">{t('Fator de encargos')}</th></tr></thead>;
+  // os papéis das equipes de referência, por perfil (sem repetição); no grupo 2 entram também as opções de pessoal da 3.1
+  const papeis = (g: 1 | 2 | 3 | 4) => [...new Set(Object.values(EQUIPES_GOV).flatMap(e => e.papeis.filter(p => p.perfil === g).map(p => p.papel)))];
+  const cargos31 = ['Profissionais jurídicos', 'Pessoal de governança de IA', 'Especialistas em IA e educação'];
+  const cabecalho = <thead><tr><th scope="col">{t('País')}</th><th scope="col">{t('Diretores e gerentes (ISCO 1), por mês')}</th><th scope="col">{t('Profissionais (ISCO 2), por mês')}</th><th scope="col">{t('Técnicos de nível médio (ISCO 3), por mês')}</th><th scope="col">{t('Apoio administrativo (ISCO 4), por mês')}</th><th scope="col">{t('Como foi obtido')}</th><th scope="col">{t('Fator de encargos')}</th></tr></thead>;
   const linha = (iso: string, nome: string) => {
     const e = SALARIOS_ILO[iso], c = CONTRIBUICAO_PATRONAL[iso];
     return <tr key={iso} id={'sal-' + iso} className={iso === destaque ? 'pc-sal-atual' : ''}>
       <th scope="row">{nome}</th>
-      <td><Valor p={e.p2} /></td>
       <td><Valor p={e.p1} /></td>
+      <td><Valor p={e.p2} /></td>
+      <td><Valor p={e.p3} /></td>
+      <td><Valor p={e.p4} /></td>
       <td className="pc-sal-metodo"><Metodo iso={iso} /></td>
       <td>{c ? <>{n2(1 + c[0] / 100)}<span className="pc-sal-fonte">{n2(c[0])}%</span></> : '—'}</td>
     </tr>;
@@ -67,9 +71,9 @@ export function Salarios({ pais }: { pais?: string }) {
         {!enc ? <p className="pc-nota">{t('Sem dado de encargos para este país: o custo usa só o salário.')}</p> : null}
       </div> : null}
       <h2>{t('Cargos e perfis')}</h2>
+      <p>{t('Cada papel das equipes de referência usa o salário de um destes perfis.')} <a href={href.esforcos()}>{t('Ver as equipes de referência')}</a></p>
       <ul className="pc-sal-lista">
-        <li><b>{t(NOME_PERFIL[2])}</b>: {cargos2.map(c => t(c)).join('; ')}; {t('e as equipes das demais opções de pessoal (elaborar normas e diretrizes, sandbox, supervisão, comitês, código aberto e outras).')}</li>
-        <li><b>{t(NOME_PERFIL[1])}</b>: {cargos1.map(c => t(c)).join('; ')}.</li>
+        {([1, 2, 3, 4] as const).map(g => <li key={g}><b>{t(NOME_PERFIL[g])}</b>: {[...papeis(g), ...(g === 2 ? cargos31 : [])].map(c => t(c)).join('; ')}.</li>)}
       </ul>
       <h2>{t('Como cada valor foi obtido')}</h2>
       <ul className="pc-sal-lista">

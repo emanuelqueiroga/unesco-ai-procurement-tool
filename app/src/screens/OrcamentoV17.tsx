@@ -7,10 +7,10 @@ import { useCaso, type CasoStore } from '../store';
 import { OptionCard, OptionCardGroup, Popover } from '../ui';
 import { CampoNumero } from '../percurso/CampoNumero';
 import { LOC } from '../domain';
-import { t, minusc1 } from '../percurso/textos';
+import { t } from '../percurso/textos';
 import { href } from '../percurso/rota';
 import { orcamentoV16, raizOrcamento, resumoFases, categoriasEscolhidas, categoriaObrigatoria, todosObrigatorios, semFases, DURACAO_GOV_PADRAO, type CategoriaV16 } from '../percurso/orcamentoV016';
-import { TIPOS, ORDEM_TIPOS, chaveOpcao, ehParametro, PARAMETROS, type TipoCusto, type LinhaOpcao } from '../percurso/custosV017';
+import { TIPOS, ORDEM_TIPOS, NOME_PERFIL, chaveOpcao, ehParametro, PARAMETROS, type TipoCusto, type LinhaOpcao } from '../percurso/custosV017';
 import { alterarLit, lerLit, selecoesLit } from '../percurso/letramento';
 import { ehSugerido } from '../percurso/padroesTeste';
 import { formatarMoedaEst, type FrenteEstimativa } from '../percurso/estimativasOrcamento';
@@ -107,7 +107,8 @@ function LinhaValor({ s, frente, cat, l, moeda }: { s: CasoStore; frente: Frente
     </div>
     {frente === 'governanca' ? null : <Selecao label={t('Como calcular')} value={l.tipo} opcoes={ORDEM_TIPOS.map(k => [k, t(k === 'fechado' && semFases(frente) ? 'Valor total' : TIPOS[k].rotulo)])}
       onChange={v => gravarOrc(frente, caminho, { ...atual(), tipo: v as TipoCusto, unit: undefined, horas: undefined, ...(v === 'fechado' ? {} : { fases: undefined }) })} />}
-    {l.tipo === 'fechado'
+    {l.tipo === 'time' ? <EquipeV18 l={l} moeda={moeda} atual={atual} gravar={gravar} />
+      : l.tipo === 'fechado'
       ? <div className="pv-v17-campos">{fases.map(f => <CampoNumero key={f.id} label={semFases(frente) ? t('Valor total') + ' (' + moeda + ')' : f.nome} value={l.valoresFase[f.id] ?? ''} decimais
           onChange={v => gravarOrc(frente, caminho, { ...atual(), fases: { ...(atual().fases || {}), [f.id]: v === '' ? undefined : v } })} />)}</div>
       : <div className="pv-v17-campos">
@@ -117,12 +118,35 @@ function LinhaValor({ s, frente, cat, l, moeda }: { s: CasoStore; frente: Frente
             hint={l.unitRef === null ? undefined : l.refPais ? t('Vazio = salário do país (ILOSTAT) com encargos ({v}).', { v: fmt(l.unitRef) }) : t('Vazio = referência genérica ({v}).', { v: fmt(l.unitRef) })} onChange={v => gravar('unit', v)} />
         </div>}
     {frente === 'governanca' && l.conta && l.status !== 'falta' ? <ComoCalculado l={l} /> : null}
-    {l.esforcoC && l.esforco ? <p className="pc-nota">{t(l.esforco.meses ? 'Pessoas e meses: esforço de referência (grau C, convenção da ferramenta), pensado para {equipe}. Altere se precisar.' : 'Pessoas: esforço de referência (grau C, convenção da ferramenta), pensado para {equipe}. Altere se precisar.', { equipe: minusc1(t(l.esforco.equipe)) })} <a href={'#/esforcos/' + l.chave}>{t('De onde vem')}</a></p>
+    {l.tipo === 'time' ? null
       : l.qtdSugerida ? <p className="pc-nota">{t('Quantidade sugerida a partir do Contexto; altere se precisar.')}</p> : null}
     {l.status === 'falta' ? <p className="pv-v17-falta">{t('Falta')}: {l.falta.join(', ')}</p>
       : semFases(frente) ? (l.status === 'referencia' && !l.refPais ? <p className="pv-v17-fases">{t('referência genérica, igual para todos os países')}</p> : null)
       : <p className="pv-v17-fases">{fases.map(f => f.nome + ' ' + fmt(l.porFase[f.id] || 0)).join(' · ')}{l.status === 'referencia' ? ' · ' + (l.refPais ? t('salário do país (ILOSTAT)') : t('referência genérica, igual para todos os países')) : ''}</p>}
   </div>;
+}
+
+/** v018 (governança): a equipe de referência da opção — meses (no trabalho pontual), resumo da equipe e, aberto sob
+ *  pedido, pessoas e custo mensal de cada papel. Os detalhes de cada papel ficam em "Como foi calculado". */
+function EquipeV18({ l, moeda, atual, gravar }: { l: LinhaOpcao; moeda: string; atual: () => any; gravar: (campo: string, v: unknown) => void }) {
+  const n2 = (v: number) => new Intl.NumberFormat(String(LOC()), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+  const gravarPapel = (papel: string, campo: 'qtd' | 'unit', v: number | '') => { const ps = { ...(atual().papeis || {}) }; ps[papel] = { ...(ps[papel] || {}), [campo]: v === '' ? undefined : v }; gravar('papeis', ps); };
+  const salvo = atual(), time = l.time || [];
+  return <>
+    {l.continua ? null : <div className="pv-v17-campos"><CampoNumero label={t('Meses de trabalho')} value={l.horas ?? ''} suggested={!(salvo.horas > 0)} decimais onChange={v => gravar('horas', v)} /></div>}
+    <p className="pc-nota">{t(l.continua ? 'Equipe de referência (grau C): {n} pessoas durante todo o plano.' : 'Equipe de referência (grau C): {n} pessoas.', { n: new Intl.NumberFormat(String(LOC())).format(l.qtd || 0) })} <a href={'#/esforcos/' + l.chave}>{t('De onde vem')}</a></p>
+    <details className="pv-equipe">
+      <summary>{t('Ajustar a equipe')}</summary>
+      {time.map(p => <div key={p.papel} className="pv-equipe-papel" role="group" aria-label={t(p.papel)}>
+        <p className="pv-equipe-nome"><b>{t(p.papel)}</b> <span>{Math.round(p.dedicacao * 100)}% · {t(NOME_PERFIL[p.perfil])}</span></p>
+        <div className="pv-v17-campos">
+          <CampoNumero label={t('Pessoas')} value={p.qtdInformada ? p.qtd : ''} placeholder={String(p.qtdRef)} decimais onChange={v => gravarPapel(p.papel, 'qtd', v)} />
+          <CampoNumero label={t('Custo mensal por pessoa') + ' (' + moeda + ')'} value={p.daRef ? '' : p.unit ?? ''} placeholder={p.ref === null ? undefined : n2(p.ref)} decimais
+            hint={p.ref === null ? undefined : p.salPais ? t('Vazio = salário do país (ILOSTAT) com encargos.') : t('Vazio = referência genérica.')} onChange={v => gravarPapel(p.papel, 'unit', v)} />
+        </div>
+      </div>)}
+    </details>
+  </>;
 }
 
 const valorLit = (v: any) => { const x = v && typeof v === 'object' ? v.valor : v; return typeof x === 'number' ? x : ''; };
@@ -175,10 +199,10 @@ function ComoCalculado({ l }: { l: LinhaOpcao }) {
   const fechar = <button type="button" className="pc-est-fechar" onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))}>{t('Fechar')}</button>;
   return <p className="pc-est-acoes pv-v17-conta"><Popover className="pc-est-popover" label={t('Como foi calculado')} title={t('Como foi calculado')} actions={fechar}>
     {c.formula ? <span className="pv-conta-formula">{c.formula}</span> : null}
-    <span className="pv-conta-partes">{c.partes.map(p => <span key={p.rotulo} className="pv-conta-parte">
+    <span className="pv-conta-partes">{c.partes.map((p, i) => <span key={i} className="pv-conta-parte">
       <b>{p.rotulo}: {p.valor}</b> <span>{p.texto}</span>
       {p.fontes.map(f => <span key={f.titulo} className="pv-conta-fonte">{t('Fonte')}: {f.url ? <a href={f.url} target="_blank" rel="noopener noreferrer">{f.titulo}</a> : f.titulo}</span>)}
-      {p.pagina ? <span className="pv-conta-fonte"><a href={p.pagina}>{p.pagina.startsWith('#/esforcos') ? t('Ver de onde vem este esforço') : t('Ver salários e encargos por país')}</a></span> : null}
+      {p.pagina ? <span className="pv-conta-fonte"><a href={p.pagina}>{p.pagina.startsWith('#/esforcos') ? t('Ver as equipes de referência') : t('Ver salários e encargos por país')}</a></span> : null}
     </span>)}</span>
     <span className="pv-conta-grau">{t('Graus de confiança: A = estatística oficial; B = estudo ou caso real com fonte; C = convenção da ferramenta, a calibrar.')}</span>
   </Popover></p>;

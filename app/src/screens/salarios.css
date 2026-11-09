@@ -19,3 +19,8 @@
 .pc-sal-metodo { min-width: 200px; }
 @media (max-width: 640px) { .pc-sal-tabela { font-size: 13px; } .pc-sal-metodo { min-width: 140px; } }
 .pc-sal-tabela th .pc-sal-fonte { font-weight: 400; }
+/* v018: equipes de referência */
+.pc-esf { border-top: 1px solid var(--line); padding-block: var(--space-3, 16px); scroll-margin-top: 72px; }
+.pc-esf > h3 { margin: 0 0 4px; }
+.pc-esf.pc-sal-atual { background: none; border-inline-start: 4px solid var(--primary); padding-inline-start: 12px; }
+.pc-esf-meta { margin: 0 0 8px; color: var(--muted); font-size: 14px; }

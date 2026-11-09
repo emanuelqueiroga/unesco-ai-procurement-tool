@@ -31,3 +31,11 @@
 .pv-conta-fonte { display: block; margin-top: 2px; font-size: 13px; }
 .pv-conta-fonte a { color: var(--primary); overflow-wrap: anywhere; }
 .pv-conta-grau { display: block; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: var(--space-2); }
+/* v018: equipe de referência (governança) */
+.pv-equipe { margin-block: var(--space-2); }
+.pv-equipe > summary { cursor: pointer; color: var(--primary); font-weight: 600; inline-size: fit-content; }
+.pv-equipe > summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+.pv-equipe-papel { border-top: 1px solid var(--line); padding-top: var(--space-2); margin-top: var(--space-2); }
+.pv-equipe-nome { margin: 0 0 var(--space-1); }
+.pv-equipe-nome > span { color: var(--muted); font-size: 13px; }
+.pv-v17-conta .pr-popover-painel { width: min(560px, calc(100vw - 32px)); max-height: 75vh; overflow: auto; }

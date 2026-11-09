@@ -61,6 +61,7 @@ export const href = {
   /** v018: sem o seletor de frentes da v017; trocar de frente é voltar às prioridades. */
   frentes: () => '#/capitulo/1/prioridades',
   salarios: (pais?: string) => '#/salarios' + (pais ? '/' + pais : ''),
+  esforcos: (chave?: string) => '#/esforcos' + (chave ? '/' + chave : ''),
   /** Onde responder um campo qualquer: a tela do Essencial, ou a síntese do capítulo com o campo em foco (Refinar). */
   campo: (campo: string) => {
     const base = String(campo).split('.')[0];
