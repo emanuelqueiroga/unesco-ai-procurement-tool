@@ -178,6 +178,7 @@ function ComoCalculado({ l }: { l: LinhaOpcao }) {
     <span className="pv-conta-partes">{c.partes.map(p => <span key={p.rotulo} className="pv-conta-parte">
       <b>{p.rotulo}: {p.valor}</b> <span>{p.texto}</span>
       {p.fontes.map(f => <span key={f.titulo} className="pv-conta-fonte">{t('Fonte')}: {f.url ? <a href={f.url} target="_blank" rel="noopener noreferrer">{f.titulo}</a> : f.titulo}</span>)}
+      {p.pagina ? <span className="pv-conta-fonte"><a href={p.pagina}>{t('Ver salários e encargos por país')}</a></span> : null}
     </span>)}</span>
     <span className="pv-conta-grau">{t('Graus de confiança: A = estatística oficial; B = estudo ou caso real com fonte; C = convenção da ferramenta, a calibrar.')}</span>
   </Popover></p>;

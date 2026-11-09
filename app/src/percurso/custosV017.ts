@@ -8,6 +8,8 @@ import type { Estado14 } from '../store/tipos';
 import { t } from './textos';
 import { lerLit } from './letramento';
 import { fatorEncargos, encargosDoPais } from './encargosPais';
+import { SALARIOS_ILO, FONTES_ILO, REGIOES_WB, RENDA_WB, URL_ILOSTAT } from './salariosPais';
+import { paisPorIso, nomePais } from '../domain/pais.js';
 import { formatarMoedaEst, parametro, PARAMETRO_EQUIPE, PARAMETRO_FORMACAO, PARAMETRO_LICENCA, PARAMETRO_CONECTIVIDADE, PARAMETRO_DISPOSITIVO, type FrenteEstimativa } from './estimativasOrcamento';
 
 export type TipoCusto = 'formacao' | 'pessoa' | 'licenca' | 'escola_ano' | 'escola' | 'unidade' | 'equipe' | 'trabalho' | 'fechado';
@@ -32,8 +34,8 @@ export const ORDEM_TIPOS: TipoCusto[] = ['fechado', 'formacao', 'pessoa', 'licen
 const PADROES: Record<string, [TipoCusto, Fonte, string | null]> = {
   // governança
   'Especialistas em TI (IA, dados, segurança, infraestrutura)': ['equipe', null, 'sal.eng_integracao'],
-  'Profissionais jurídicos': ['equipe', null, null],
-  'Pessoal de governança de IA': ['equipe', null, null],
+  'Profissionais jurídicos': ['equipe', null, PARAMETRO_EQUIPE],
+  'Pessoal de governança de IA': ['equipe', null, PARAMETRO_EQUIPE],
   'Especialistas em IA e educação': ['equipe', null, PARAMETRO_EQUIPE],
   'Formação e desenvolvimento profissional': ['formacao', null, PARAMETRO_FORMACAO],
   // v018: governança — esforço de referência (docs "Referências de custo da governança", grau C) × custo local
@@ -90,6 +92,26 @@ const PADROES: Record<string, [TipoCusto, Fonte, string | null]> = {
   'Ferramentas de IA': ['licenca', 'professores', PARAMETRO_LICENCA],
 };
 /** v018: esforço de referência das opções da governança (grau C: convenção, a calibrar): pessoas e, no trabalho pontual, meses. */
+/** v018: perfil ocupacional (ISCO-08, grande grupo) de cada opção de pessoal da governança; o resto usa o grupo 2. */
+export const PERFIL_GOV: Record<string, 1 | 2> = { 'Coordenação interministerial': 1 };
+export const NOME_PERFIL: Record<1 | 2, string> = { 1: 'diretores e gerentes (ISCO-08, grupo 1)', 2: 'profissionais das ciências e intelectuais (ISCO-08, grupo 2)' };
+/** Nome do país no idioma da tela: o da base da ferramenta, ou o do navegador pelo código ISO de 2 letras. */
+export function nomeDoPaisIso(iso: string): string {
+  const p = paisPorIso(iso); if (p) return nomePais(p);
+  const i2 = SALARIOS_ILO[iso]?.i2;
+  try { return i2 ? new Intl.DisplayNames([String(LOC())], { type: 'region' }).of(i2) || iso : iso; } catch { return iso; }
+}
+/** Salário médio mensal do país para o perfil, na moeda do plano (moeda local quando o plano usa a moeda do país). */
+export function salarioDoPais(iso: string | undefined, perfil: 1 | 2, moeda: string | undefined, taxa: number | null) {
+  const e = iso ? SALARIOS_ILO[iso] : undefined, p = e ? (perfil === 1 ? e.p1 : e.p2) : null;
+  if (!e || !p) return null;
+  const [ano, lcu, usd, metodo, n] = p, moedaPais = paisPorIso(iso!)?.moeda;
+  const viaLCU = metodo === 'd' && lcu !== null && !!moeda && moedaPais === moeda;
+  const mensal = viaLCU ? lcu as number : usd !== null && taxa !== null ? usd * taxa : null;
+  if (mensal === null) return null;
+  const grupo = metodo === 'r' ? t(REGIOES_WB[e.r!]) + ', ' + t(RENDA_WB[e.g!]) : t(RENDA_WB[e.g!] || '');
+  return { mensal, viaLCU, lcu, usd, ano, metodo, n: n || 0, perfil, pais: nomeDoPaisIso(iso!), fonte: e.f === null ? null : FONTES_ILO[e.f], grupo };
+}
 /** v018: fontes públicas citadas na explicação das contas da governança. */
 export interface FonteConta { titulo: string; url: string | null }
 export const FONTES_GOV: Record<'aiact' | 'noruega' | 'quenia', FonteConta> = {
@@ -174,7 +196,7 @@ export const chaveOpcao = (rotulo: string) => rotulo.normalize('NFD').replace(/[
 
 export interface FaseCalc { id: string; nome: string; meses: number; alcance: number }
 export interface CustoSalvo { tipo?: TipoCusto; qtd?: number; horas?: number; unit?: number; fases?: Record<string, number> }
-export interface ParteConta { rotulo: string; valor: string; texto: string; fontes: FonteConta[] }
+export interface ParteConta { rotulo: string; valor: string; texto: string; fontes: FonteConta[]; /** link para a página de salários por país */ pagina?: string }
 export interface ContaOpcao { formula: string; partes: ParteConta[] }
 export interface LinhaOpcao {
   chave: string; rotulo: string; tipo: TipoCusto; tipoPadrao: TipoCusto; fonte: Fonte;
@@ -195,7 +217,7 @@ const novos = (n: number, x: FaseCalc, anterior: number) => Math.max(0, Math.rou
 
 /** Custo de uma opção por fase. `taxa` = moeda do plano por US$ (4 casas), para a referência sugerida. */
 export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, catId: string, rotulo: string, salvo: CustoSalvo, fases: FaseCalc[], taxa: number | null,
-  fmt: (v: number) => string, num: (v: number) => string): LinhaOpcao {
+  fmt: (v: number) => string, num: (v: number) => string, moeda?: string): LinhaOpcao {
   // v018: na governança cada opção tem a forma de cálculo fixa (sem "Como calcular"); um tipo salvo antes fica guardado
   const pad = padraoOpcao(f, catId, rotulo), tipo: TipoCusto = f !== 'governanca' && salvo.tipo && TIPOS[salvo.tipo] ? salvo.tipo : pad.tipo, def = TIPOS[tipo];
   const esf = f === 'governanca' && tipo === pad.tipo ? ESFORCO_GOV[rotulo] : undefined;
@@ -204,11 +226,18 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
   const horas = positivo(salvo.horas) ? salvo.horas : (esf?.meses ?? null);
   // v018: esforço de referência em uso (grau C) e, na governança, encargos do país sobre o custo de pessoal
   const esforcoC = !!esf && ((!positivo(salvo.qtd) && qtd === esf.qtd) || (!!esf.meses && !positivo(salvo.horas)));
-  // encargos do país só sobre salário bruto: a referência atual já é "custo carregado" (inclui encargos), então não se aplica
-  const pidRef = refDoTipo(tipo, pad), refCarregada = !!pidRef && /carregado/i.test(parametro(pidRef).item);
-  const fator = f === 'governanca' && (tipo === 'equipe' || tipo === 'trabalho') && !refCarregada ? fatorEncargos((s as any).caso?.pais) : 1;
-  const refBase = referenciaUSD(refDoTipo(tipo, pad)), refUSD = refBase === null ? null : (tipo === 'trabalho' ? refBase / 12 : refBase) * fator;
-  const unitRef = refUSD === null || taxa === null ? null : centavos(refUSD * taxa);
+  // v018 (governança): custo de pessoal = salário médio mensal do país por ocupação (ILOSTAT) × encargos do país (SSA e
+  // ISSA). Sem dado do país (ou país "outro"), vale a referência genérica, que já é custo carregado (sem encargos por cima).
+  const pidRef = refDoTipo(tipo, pad), iso = (s as any).caso?.pais as string | undefined;
+  const sal = f === 'governanca' && (tipo === 'equipe' || tipo === 'trabalho') && pidRef === PARAMETRO_EQUIPE ? salarioDoPais(iso, PERFIL_GOV[rotulo] || 2, moeda, taxa) : null;
+  const fator = sal ? fatorEncargos(iso) : 1;
+  const refCarregada = !sal && !!pidRef && /carregado/i.test(parametro(pidRef).item);
+  let unitRef: number | null;
+  if (sal) unitRef = centavos(sal.mensal * fator * (tipo === 'equipe' ? 12 : 1));
+  else {
+    const refBase = referenciaUSD(pidRef), refUSD = refBase === null ? null : (tipo === 'trabalho' ? refBase / 12 : refBase);
+    unitRef = refUSD === null || taxa === null ? null : centavos(refUSD * taxa);
+  }
   const unit = naoNeg(salvo.unit) ? salvo.unit : unitRef, unitDaReferencia = !naoNeg(salvo.unit) && unitRef !== null;
   const valoresFase: Record<string, number | ''> = {}; for (const x of fases) valoresFase[x.id] = naoNeg(salvo.fases?.[x.id]) ? salvo.fases![x.id] : '';
   const falta: string[] = [];
@@ -239,7 +268,7 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
     total = centavos(Object.values(porFase).reduce((a, b) => a + b, 0));
     memoria = tipo === 'fechado' ? fases.map(x => x.nome + ' ' + fmt(porFase[x.id])).join(' · ')
       : [num(qtd as number) + ' ' + t(def.qtd!).toLowerCase(), def.horas ? (tipo === 'trabalho' ? num(horas as number) + ' ' + t('meses') : num(horas as number) + ' h') : '', fmt(unit as number) + ' (' + t(def.unit!).toLowerCase() + ')'].filter(Boolean).join(' × ')
-        + (unitDaReferencia ? ' · ' + t('referência genérica, igual para todos os países') : '')
+        + (unitDaReferencia ? ' · ' + (sal ? t('salário do país (ILOSTAT)') : t('referência genérica, igual para todos os países')) : '')
         + (unitDaReferencia && fator !== 1 ? ' · ' + t('com encargos do país (× {f})', { f: num(Math.round(fator * 1000) / 1000) }) : '')
         + (esforcoC ? ' · ' + t('esforço de referência (grau C)') : '');
   }
@@ -257,17 +286,28 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
         texto: positivo(salvo.horas) ? voce : esf?.meses ? txtEsf : '' });
       if (unit !== null) {
         if (!unitDaReferencia) partes.push({ rotulo: t(def.unit!), valor: fmt(unit), texto: voce, fontes: [] });
-        else {
-          const pid = refDoTipo(tipo, pad)!, par = parametro(pid), fontes: FonteConta[] = [];
+        else if (sal) {
+          const usdF = (v: number) => formatarMoedaEst(v, 'USD');
+          const tx = taxa === null ? '' : new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 4 }).format(taxa);
+          const enc = encargosDoPais(iso), fontes: FonteConta[] = [{ titulo: t('ILOSTAT (OIT): salário médio mensal dos empregados por ocupação'), url: URL_ILOSTAT }];
+          const perfil = t(NOME_PERFIL[sal.perfil]), v = sal.viaLCU ? fmt(sal.lcu as number) : usdF(sal.usd as number);
+          const pedacos = [sal.metodo === 'd'
+            ? t('Salário médio mensal de {perfil}, {pais}: {v} (ILOSTAT, {fonte}, {ano}; grau A)', { perfil, pais: sal.pais, v, fonte: sal.fonte || '', ano: sal.ano as number })
+            : t('Salário médio mensal estimado de {perfil}: {v} (mediana de {n} países com dado no ILOSTAT: {grupo}; grau B)', { perfil, v, n: sal.n, grupo: sal.grupo })];
+          if (!sal.viaLCU && tx && taxa !== 1) pedacos.push(t('× câmbio de {tx} por US$', { tx }));
+          if (tipo === 'equipe') pedacos.push(t('× 12 meses'));
+          if (enc) { pedacos.push(t('× encargos do país {f} (contribuição patronal de {p}%, SSA e ISSA, {vol} {ano})', { f: num(Math.round(fator * 1000) / 1000), p: num(enc.taxa), vol: t(enc.volume), ano: enc.ano })); fontes.push({ titulo: t('Social Security Programs Throughout the World, SSA e ISSA ({vol} {ano}), tabela 4', { vol: t(enc.volume), ano: enc.ano }), url: enc.url }); }
+          else pedacos.push(t('(sem dado de encargos para o país)'));
+          partes.push({ rotulo: t(def.unit!), valor: fmt(unit), texto: pedacos.join(' '), fontes, pagina: '#/salarios/' + iso });
+        } else {
+          const pid = pidRef!, par = parametro(pid), fontes: FonteConta[] = [];
           const usd = (v: number) => formatarMoedaEst(v, 'USD');
           const tx = taxa === null ? '' : new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 4 }).format(taxa);
-          const enc = fator !== 1 ? encargosDoPais((s as any).caso?.pais) : null;
           const pedacos = [t('{item}: {v} ({unidade}; {fonte}, grau {g})', { item: t(par.item), v: usd(par.valor), unidade: t(par.unidade), fonte: t(par.fonte), g: par.grau })];
           if (tipo === 'trabalho') pedacos.push(t('÷ 12 meses'));
           if (tx && taxa !== 1) pedacos.push(t('× câmbio de {tx} por US$', { tx }));
           if (refCarregada) pedacos.push(t('(o custo carregado já inclui os encargos)'));
-          if (enc) { pedacos.push(t('× encargos do país {f} (contribuição patronal de {p}%, SSA e ISSA, {vol} {ano})', { f: num(Math.round(fator * 1000) / 1000), p: num(enc.taxa), vol: t(enc.volume), ano: enc.ano })); fontes.push({ titulo: t('Social Security Programs Throughout the World, SSA e ISSA ({vol} {ano}), tabela 4', { vol: t(enc.volume), ano: enc.ano }), url: enc.url }); }
-          partes.push({ rotulo: t(def.unit!), valor: fmt(unit), texto: pedacos.join(' '), fontes });
+          partes.push({ rotulo: t(def.unit!), valor: fmt(unit), texto: pedacos.join(' '), fontes, pagina: f === 'governanca' && pid === PARAMETRO_EQUIPE ? '#/salarios' + (iso && iso !== 'outro' ? '/' + iso : '') : undefined });
         }
       }
     }

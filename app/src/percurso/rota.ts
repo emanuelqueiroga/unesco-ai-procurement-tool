@@ -23,13 +23,16 @@ export type Rota =
   | { tipo: 'sintese'; n: Capitulo; foco?: string }
   | { tipo: 'plano'; pagina: PaginaPlano }
   | { tipo: 'refinar'; aba: AbaRefinar; foco?: string }
-  | { tipo: 'galeria' };
+  | { tipo: 'galeria' }
+  | { tipo: 'salarios'; pais?: string };
 
 const cap = (s: string): Capitulo | null => (['1', '2', '3', '4'].includes(s) ? (+s as Capitulo) : null);
 
 export function lerRota(hash: string): Rota {
   const p = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   if (p[0] === 'galeria') return { tipo: 'galeria' };
+  // v018: salários de referência por país (ILOSTAT) e encargos
+  if (p[0] === 'salarios') return p[1] ? { tipo: 'salarios', pais: p[1] } : { tipo: 'salarios' };
   // #/refinar/premissas/<campo> abre a aba com o campo em foco ("Ajustar premissas" do "de onde vem?")
   if (p[0] === 'refinar') return { tipo: 'refinar', aba: ABAS.includes(p[1] as AbaRefinar) ? (p[1] as AbaRefinar) : 'premissas', foco: p[2] || undefined };
   if (p[0] === 'plano') return { tipo: 'plano', pagina: PAGINAS.includes(p[1] as PaginaPlano) ? (p[1] as PaginaPlano) : 'resumo' };
@@ -55,6 +58,7 @@ export const href = {
   plano: (pagina: PaginaPlano = 'resumo') => (pagina === 'resumo' ? '#/plano' : `#/plano/${pagina}`),
   /** v018: sem o seletor de frentes da v017; trocar de frente é voltar às prioridades. */
   frentes: () => '#/capitulo/1/prioridades',
+  salarios: (pais?: string) => '#/salarios' + (pais ? '/' + pais : ''),
   /** Onde responder um campo qualquer: a tela do Essencial, ou a síntese do capítulo com o campo em foco (Refinar). */
   campo: (campo: string) => {
     const base = String(campo).split('.')[0];

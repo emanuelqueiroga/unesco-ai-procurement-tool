@@ -1,0 +1,20 @@
+/* v018: página de salários de referência por país */
+.pc-sal { max-width: 960px; }
+.pc-sal h1 { font-size: 28px; line-height: 1.25; margin: 0 0 var(--space-3, 12px); }
+.pc-sal .pc-lead { margin: 0 0 var(--space-4, 16px); }
+.pc-sal h2 { font-size: 18px; margin: var(--space-5, 24px) 0 var(--space-2, 8px); }
+.pc-sal-lista { padding-inline-start: 20px; display: flex; flex-direction: column; gap: 6px; }
+.pc-sal-caso { border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); background: var(--surface-1); }
+.pc-sal-caso h2 { margin-top: 0; }
+.pc-sal-busca { max-width: 320px; margin-bottom: var(--space-3, 12px); }
+.pc-sal-rolagem { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-md); }
+.pc-sal-tabela { width: 100%; border-collapse: collapse; font-size: 14px; }
+.pc-sal-tabela th, .pc-sal-tabela td { text-align: start; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.pc-sal-tabela thead th { font-size: 13px; color: var(--muted); font-weight: 600; background: var(--surface-2, var(--surface-1)); position: sticky; top: 0; }
+.pc-sal-tabela--um tbody th, .pc-sal-tabela--um tbody td { border-bottom: 0; }
+.pc-sal-atual { background: var(--primary-tint, transparent); }
+.pc-sal-valor { display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }
+.pc-sal-moeda, .pc-sal-ano, .pc-sal-fonte, .pc-sal-usd { font-size: 12px; color: var(--muted); }
+.pc-sal-fonte { display: block; }
+.pc-sal-metodo { min-width: 200px; }
+@media (max-width: 640px) { .pc-sal-tabela { font-size: 13px; } .pc-sal-metodo { min-width: 140px; } }

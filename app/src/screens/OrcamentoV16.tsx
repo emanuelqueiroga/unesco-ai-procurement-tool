@@ -116,11 +116,11 @@ export function BotoesPDFV16({ s, frente }: { s: CasoStore; frente: FrenteEstima
 
 /** v018: "Fontes dos valores" — as fontes públicas usadas nas contas e a nota sobre as convenções da ferramenta. */
 function FontesValores({ linhas }: { linhas: { conta?: import('../percurso/custosV017').ContaOpcao; esforcoC?: boolean }[] }) {
-  const fontes = fontesDasContas(linhas), conv = linhas.some(l => l.esforcoC || l.conta?.partes.some(p => /grau C/.test(p.texto)));
+  const fontes = fontesDasContas(linhas), conv = linhas.some(l => l.esforcoC);
   if (!fontes.length && !conv) return null;
   return <><h3 className="pv-resumo-sub">{t('Fontes dos valores')}</h3>
     <ul className="pv-resumo-riscos">
       {fontes.map(f => <li key={f.url}><a href={f.url!} target="_blank" rel="noopener noreferrer">{f.titulo}</a></li>)}
-      {conv ? <li>{t('Esforços de referência e salário de referência: convenções da ferramenta (grau C), iguais para todos os países, a calibrar.')}</li> : null}
+      {conv ? <li>{t('Esforços de referência (pessoas e meses): convenção da ferramenta (grau C), a calibrar.')}</li> : null}
     </ul></>;
 }

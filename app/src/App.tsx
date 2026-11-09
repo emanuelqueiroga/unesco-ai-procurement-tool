@@ -4,6 +4,7 @@ import { Inicio } from './screens/Inicio';
 import { Abertura, Pergunta, Sintese } from './screens/Percurso';
 import { Prioridades } from './screens/Prioridades';
 import { Governanca } from './screens/Governanca';
+import { Salarios } from './screens/Salarios';
 import { RecebidoHost } from './screens/CompartilharV16';
 import { percursoGovernanca } from './domain';
 import { Plano } from './screens/Plano';
@@ -30,6 +31,7 @@ export function App() {
     // v018: com a governança como única prioridade, o fluxo é o da v017 (Contexto → Categorias → Opções → resumo)
     // o lugar e as prioridades continuam as telas da v018 (iguais às da v017)
     const telaPrioridades = rota.tipo === 'pergunta' && rota.n === 1 && ['local', 'prioridades'].includes(rota.tela);
+    if (rota.tipo === 'salarios') return <Salarios pais={rota.pais} />;
     if (percursoGovernanca(ctx) && !telaPrioridades && !['inicio', 'galeria'].includes(rota.tipo))
       return <Governanca key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo === 'abertura' || rota.tipo === 'sintese' ? `${rota.tipo}${rota.n}` : rota.tipo} rota={rota} />;
     switch (rota.tipo) {

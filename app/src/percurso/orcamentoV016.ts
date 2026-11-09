@@ -276,7 +276,7 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
     const x = o.itens?.[c.id] || {}, custos = x.custos && typeof x.custos === 'object' ? x.custos : {};
     const marcadas = opcoesEscolhidas(s, f, c);
     const parametros = marcadas.filter(r => ehParametro(f, c.id, r));
-    const linhas = marcadas.filter(r => !ehParametro(f, c.id, r)).map(r => calcularOpcao(s, f, c.id, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num));
+    const linhas = marcadas.filter(r => !ehParametro(f, c.id, r)).map(r => calcularOpcao(s, f, c.id, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num, moeda));
     const inf = linhas.filter(l => l.status === 'informado'), est = linhas.filter(l => l.status === 'referencia');
     const informadoCat = centavos(inf.reduce((n, l) => n + (l.total as number), 0)), estimadoCat = centavos(est.reduce((n, l) => n + (l.total as number), 0));
     const pendentes = linhas.filter(l => l.status === 'falta').length + (marcadas.length ? 0 : 1)
