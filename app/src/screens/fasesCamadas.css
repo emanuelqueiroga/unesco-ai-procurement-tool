@@ -127,33 +127,44 @@
 }
 @media (max-width: 480px) { .ini-f-nome { font-size: 1.12rem; } }
 
-/* v018 (proposta): "Como funciona" com os dois caminhos */
-.cf .ini-p h4 { margin: 0; font-family: var(--font-serif, Georgia, serif); font-weight: 600; font-size: 1.6rem; line-height: 1.2; color: var(--ini-head); }
-.cf .ini-f-h { font-size: inherit; }
-.cf-n { flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: var(--surface-1, #fff); font-weight: 700; font-variant-numeric: tabular-nums; }
-.cf-comum { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 12px; }
-.cf-comum li, .cf-etapas li { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border: 1px solid var(--ini-line); border-radius: 10px; background: var(--ini-card); }
-.cf-comum li > div, .cf-etapas li > div { display: grid; gap: 4px; min-width: 0; }
-.cf-comum b, .cf-etapas b { color: var(--ini-head); font-size: 1.02rem; }
-.cf-comum span, .cf-etapas span { color: var(--ini-txt); font-size: .95rem; line-height: 1.4; }
-.cf-prio { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
-.cf-prio > span { padding: 3px 10px; border-radius: 999px; background: var(--ini-bg); border: 1px solid var(--ini-line); font-size: .9rem; }
-.cf-caminhos { display: grid; gap: 18px; position: relative; }
-.cf-caminho { display: grid; gap: 16px; padding: 20px; border-radius: 12px; border: 1px solid var(--ini-line); background: var(--ini-bg); }
-.cf-caminho-cab { display: grid; gap: 4px; max-width: 80ch; }
-.cf-caminho-cab h3 { margin: 0; font-family: var(--font-serif, Georgia, serif); font-weight: 600; font-size: 1.4rem; line-height: 1.2; color: var(--ini-head); }
-.cf-caminho-cab p { color: var(--ini-muted); }
-.cf-se { font-size: .82rem !important; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--primary) !important; }
-.cf-gov { border-inline-start: 5px solid var(--cam1); }
-.cf-ed { border-inline-start: 5px solid var(--f3); }
-.cf-etapas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; position: relative; }
-.cf-etapas li + li::before { content: "→"; position: absolute; margin-inline-start: -22px; margin-top: 2px; color: var(--primary); font-weight: 700; }
-.cf-etapas li { position: relative; }
-.cf-res { margin: 0 !important; }
-.cf-cam { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .95rem; color: var(--ini-txt); }
-.cf-cam .ini-cams { display: inline-flex; }
+/* v018 (proposta, enxuta): "Como funciona" com os dois caminhos */
+.cf { display: grid; gap: 4px; }
+.cf-cab { display: grid; gap: 6px; max-width: 70ch; margin-bottom: 12px; }
+.cf-cab h2 { margin: 0; font-size: 1.6rem; line-height: 1.2; color: var(--ini-head); }
+.cf-sub { color: var(--ini-muted); }
+.cf-trilha { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 16px 24px; align-items: start; padding-block: 18px; border-top: 1px solid var(--ini-line); }
+.cf-quando { font-weight: 700; color: var(--ini-head); line-height: 1.3; padding-top: 6px; }
+.cf-quando span { display: block; font-size: .78rem; letter-spacing: .07em; text-transform: uppercase; color: var(--primary); margin-bottom: 2px; }
+.cf-passos { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 26px; align-items: center; }
+.cf-passos li { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 6px; border: 1px solid var(--ini-line); border-radius: 999px; background: var(--ini-card); color: var(--ini-txt); font-size: .95rem; }
+.cf-passos li + li::before { content: "→"; position: absolute; inset-inline-start: -19px; color: var(--primary); font-weight: 700; }
+[dir="rtl"] .cf-passos li + li::before { content: "←"; }
+.cf-passos .cf-fim { padding-inline-start: 14px; background: var(--ini-bg); font-weight: 600; color: var(--ini-head); }
+.cf-n { flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--cam1); color: #fff; font-weight: 700; font-size: .88rem; font-variant-numeric: tabular-nums; }
+.cf-caps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.cf-cap { display: grid; grid-template-rows: auto 1fr; border: 1px solid var(--ini-line); border-radius: 10px; background: var(--ini-card); overflow: hidden; min-width: 0; }
+.cf-cap.aberta { border-color: var(--fs); box-shadow: 0 0 0 2px var(--fs); }
+.cf-cap-b { display: grid; gap: 4px; width: 100%; padding: 12px 14px; border: 0; background: var(--fc); color: var(--fi); text-align: start; font: inherit; cursor: pointer; }
+.cf-cap-b:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.cf-cap-cab { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.cf-cap-n { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; border: 2px solid currentColor; font: 700 .95rem/1 var(--font-serif, Georgia, serif); }
+.cf-cap-nome { font-family: var(--font-serif, Georgia, serif); font-weight: 600; font-size: 1.05rem; line-height: 1.2; }
+.cf-cap-fase { font-size: .8rem; font-weight: 600; letter-spacing: .03em; opacity: .9; padding-inline-start: 38px; }
+.cf-cap.aberta .ini-chev { transform: rotate(180deg); }
+.cf-cap-corpo { display: grid; gap: 8px; align-content: start; padding: 10px 14px 12px; }
+.cf-cams .ini-cn { width: 24px; height: 24px; font-size: .8rem; }
+.cf-cams { gap: 4px; }
+.cf-cap-rec { font-size: .9rem; line-height: 1.35; color: var(--ini-txt); }
+.cf-painel { grid-column: 2; display: grid; gap: 12px; margin-top: -4px; padding: 18px 20px; border: 1px solid var(--ini-line); border-top: 5px solid var(--fc); border-radius: 10px; background: var(--ini-card); }
+.cf-painel-cab { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.cf-painel-cab h3 { margin: 0; font-family: var(--font-serif, Georgia, serif); font-weight: 600; font-size: 1.3rem; color: var(--ini-head); }
+.cf-painel-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr); gap: 20px; align-items: start; }
+.cf-painel .ini-pn { background: var(--ini-bg); box-shadow: inset 0 0 0 1px var(--ini-line); }
 .cf-ref { font-style: normal; color: var(--ini-muted); font-size: .88rem; }
-.cf-valores { font-size: .92rem; color: var(--ini-muted); margin-top: 4px !important; }
-.cf .ini-fases { gap: 16px 14px; }
-@media (max-width: 1099px) { .cf-etapas { grid-template-columns: minmax(0, 1fr); } .cf-etapas li + li::before { display: none; } }
-@media (max-width: 760px) { .cf-comum { grid-template-columns: minmax(0, 1fr); } .cf-caminho { padding: 14px; } }
+.cf-leg { display: grid; gap: 10px; padding-top: 18px; border-top: 1px solid var(--ini-line); }
+.cf-leg-l { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px 18px; }
+.cf-leg-l li { display: flex; gap: 8px; align-items: center; font-size: .9rem; line-height: 1.3; color: var(--ini-txt); }
+.cf-leg-l .ini-cn { width: 22px; height: 22px; font-size: .78rem; }
+.cf-leg-pe { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-top: 4px; }
+@media (max-width: 1023px) { .cf-trilha { grid-template-columns: minmax(0, 1fr); gap: 10px; } .cf-painel { grid-column: 1; } .cf-caps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cf-painel-grade { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) { .cf-caps { grid-template-columns: minmax(0, 1fr); } .cf-passos { flex-direction: column; align-items: stretch; gap: 22px; } .cf-passos li + li::before { content: "↓"; inset-inline-start: 18px; top: -21px; } .cf-painel { padding: 14px; } }
