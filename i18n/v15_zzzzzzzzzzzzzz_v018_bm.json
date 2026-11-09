@@ -1538,5 +1538,20 @@
  "O que é: {nome}": "Nin ye mun ye: {nome}",
  "com encargos do país (× {f})": "jamana baarakɛlaw ka sarali (× {f})",
  "esforço de referência (grau C)": "baara hakɛ misali (C)",
- "Esforço de referência (grau C, convenção a calibrar); altere se precisar.": "Baara hakɛ misali (C, a ka kan ka sɛgɛsɛgɛ); a yɛlɛma ni a ka kan."
+ "Esforço de referência (grau C, convenção a calibrar); altere se precisar.": "Baara hakɛ misali (C, a ka kan ka sɛgɛsɛgɛ); a yɛlɛma ni a ka kan.",
+ "{item}: {v} ({unidade}; {fonte}, grau {g})": "{item}: {v} ({unidade}; {fonte}, hakɛ {g})",
+ "÷ 12 meses": "÷ kalo 12",
+ "× câmbio de {tx} por US$": "× wari falenni {tx} US$ kelen na",
+ "× encargos do país {f} (contribuição patronal de {p}%, SSA e ISSA, {vol} {ano})": "× jamana baarakɛlaw ka sarali {f} ({p}%, SSA ni ISSA, {vol} {ano})",
+ "ainda sem valor": "hakɛ tɛ yen fɔlɔ",
+ "Como foi calculado": "A jatera cogo min na",
+ "esforço de referência (grau C): convenção da ferramenta, a calibrar": "baara hakɛ misali (C): baarakɛminɛn ka bɛnkan, a ka kan ka sɛgɛsɛgɛ",
+ "Esforços de referência e salário de referência: convenções da ferramenta (grau C), iguais para todos os países, a calibrar.": "Baara hakɛ misaliw ni sara misali: baarakɛminɛn ka bɛnkanw (C), jamana bɛɛ ta ye kelen ye, u ka kan ka sɛgɛsɛgɛ.",
+ "Fontes dos valores": "Hakɛw sɔrɔyɔrɔw",
+ "Graus de confiança: A = estatística oficial; B = estudo ou caso real com fonte; C = convenção da ferramenta, a calibrar.": "Dannaya hakɛw: A = jateminɛ fanga ta; B = sɛgɛsɛgɛli walima ko lakika min sɔrɔyɔrɔ bɛ yen; C = baarakɛminɛn ka bɛnkan, a ka kan ka sɛgɛsɛgɛ.",
+ "informado por você": "i yɛrɛ y'a sɛbɛn",
+ "ordem de grandeza conferida em caso real": "hakɛ bonya sɛgɛsɛgɛra ko lakika la",
+ "Social Security Programs Throughout the World, SSA e ISSA ({vol} {ano}), tabela 4": "Social Security Programs Throughout the World, SSA ni ISSA ({vol} {ano}), tabili 4",
+ "sugerido a partir do Contexto": "a jirala Kɔnɔkow la",
+ "(o custo carregado já inclui os encargos)": "(musaka bɛɛ jɛlen bɛ sarali kɔnɔ kaban)"
 }

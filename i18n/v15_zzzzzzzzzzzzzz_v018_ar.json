@@ -1536,5 +1536,20 @@
  "O que é: {nome}": "ما هذا: {nome}",
  "com encargos do país (× {f})": "مع اشتراكات صاحب العمل في البلد (× {f})",
  "esforço de referência (grau C)": "الجهد المرجعي (الدرجة C)",
- "Esforço de referência (grau C, convenção a calibrar); altere se precisar.": "الجهد المرجعي (الدرجة C، اصطلاح يحتاج إلى معايرة)؛ غيّره إذا لزم الأمر."
+ "Esforço de referência (grau C, convenção a calibrar); altere se precisar.": "الجهد المرجعي (الدرجة C، اصطلاح يحتاج إلى معايرة)؛ غيّره إذا لزم الأمر.",
+ "{item}: {v} ({unidade}; {fonte}, grau {g})": "{item}: {v} ({unidade}؛ {fonte}، الدرجة {g})",
+ "÷ 12 meses": "÷ 12 شهرًا",
+ "× câmbio de {tx} por US$": "× سعر صرف {tx} لكل دولار أمريكي",
+ "× encargos do país {f} (contribuição patronal de {p}%, SSA e ISSA, {vol} {ano})": "× اشتراكات صاحب العمل في البلد {f} (مساهمة صاحب العمل {p}%، SSA وISSA، {vol} {ano})",
+ "ainda sem valor": "لا توجد قيمة بعد",
+ "Como foi calculado": "كيف تم الحساب",
+ "esforço de referência (grau C): convenção da ferramenta, a calibrar": "الجهد المرجعي (الدرجة C): اصطلاح الأداة، يحتاج إلى معايرة",
+ "Esforços de referência e salário de referência: convenções da ferramenta (grau C), iguais para todos os países, a calibrar.": "الجهود المرجعية والراتب المرجعي: اصطلاحات الأداة (الدرجة C)، متماثلة لجميع البلدان، تحتاج إلى معايرة.",
+ "Fontes dos valores": "مصادر القيم",
+ "Graus de confiança: A = estatística oficial; B = estudo ou caso real com fonte; C = convenção da ferramenta, a calibrar.": "درجات الثقة: A = إحصاء رسمي؛ B = دراسة أو حالة حقيقية لها مصدر؛ C = اصطلاح الأداة، يحتاج إلى معايرة.",
+ "informado por você": "أدخلته أنت",
+ "ordem de grandeza conferida em caso real": "تم التحقق من رتبة الحجم في حالة حقيقية",
+ "Social Security Programs Throughout the World, SSA e ISSA ({vol} {ano}), tabela 4": "Social Security Programs Throughout the World، SSA وISSA ({vol} {ano})، الجدول 4",
+ "sugerido a partir do Contexto": "مقترح انطلاقًا من السياق",
+ "(o custo carregado já inclui os encargos)": "(التكلفة المحمّلة تشمل الاشتراكات بالفعل)"
 }

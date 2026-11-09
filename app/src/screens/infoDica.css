@@ -21,3 +21,13 @@
 .pc-dica-campo > .pr-textfield { min-inline-size: max-content; }
 .pv-v17-cat-nome > .pc-dica, .pv-v17-cat-nome .pc-dica-botao { vertical-align: middle; }
 .pc-dica-campo .pr-textfield-label { text-align: start; align-self: flex-start; }
+
+/* v018: "Como foi calculado" nas opções da governança */
+.pv-v17-conta { margin: 4px 0 0; }
+.pv-conta-formula { display: block; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.pv-conta-partes { display: flex; flex-direction: column; gap: var(--space-2); }
+.pv-conta-parte { display: block; }
+.pv-conta-parte > b { color: var(--ink); font-weight: 600; }
+.pv-conta-fonte { display: block; margin-top: 2px; font-size: 13px; }
+.pv-conta-fonte a { color: var(--primary); overflow-wrap: anywhere; }
+.pv-conta-grau { display: block; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: var(--space-2); }

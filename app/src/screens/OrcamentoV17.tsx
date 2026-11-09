@@ -4,7 +4,7 @@
 // Nada vem marcado; só quantidades e valores unitários com referência aparecem sugeridos depois da escolha.
 import { useId } from 'react';
 import { useCaso, type CasoStore } from '../store';
-import { OptionCard, OptionCardGroup } from '../ui';
+import { OptionCard, OptionCardGroup, Popover } from '../ui';
 import { CampoNumero } from '../percurso/CampoNumero';
 import { LOC } from '../domain';
 import { t } from '../percurso/textos';
@@ -116,6 +116,7 @@ function LinhaValor({ s, frente, cat, l, moeda }: { s: CasoStore; frente: Frente
           <CampoNumero label={t(def.unit!) + ' (' + moeda + ')'} value={l.unitDaReferencia ? '' : l.unit ?? ''} decimais placeholder={l.unitRef === null ? undefined : new Intl.NumberFormat(String(LOC()), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(l.unitRef)}
             hint={l.unitRef === null ? undefined : t('Vazio = referência genérica ({v}).', { v: fmt(l.unitRef) })} onChange={v => gravar('unit', v)} />
         </div>}
+    {frente === 'governanca' && l.conta && l.status !== 'falta' ? <ComoCalculado l={l} /> : null}
     {l.esforcoC ? <p className="pc-nota">{t('Esforço de referência (grau C, convenção a calibrar); altere se precisar.')}</p>
       : l.qtdSugerida ? <p className="pc-nota">{t('Quantidade sugerida a partir do Contexto; altere se precisar.')}</p> : null}
     {l.status === 'falta' ? <p className="pv-v17-falta">{t('Falta')}: {l.falta.join(', ')}</p>
@@ -166,4 +167,18 @@ export function ValoresV17({ s, frente }: { s: CasoStore; frente: FrenteEstimati
         <span className="pv-por-fase-num">{f.informado + f.estimado ? fmt(f.informado + f.estimado) : '—'}</span></div>)}
     </div> : null}
   </div>;
+}
+
+/** v018: "Como foi calculado" — a conta da opção e de onde vem cada número, com o link das fontes públicas. */
+function ComoCalculado({ l }: { l: LinhaOpcao }) {
+  const c = l.conta!;
+  const fechar = <button type="button" className="pc-est-fechar" onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))}>{t('Fechar')}</button>;
+  return <p className="pc-est-acoes pv-v17-conta"><Popover className="pc-est-popover" label={t('Como foi calculado')} title={t('Como foi calculado')} actions={fechar}>
+    {c.formula ? <span className="pv-conta-formula">{c.formula}</span> : null}
+    <span className="pv-conta-partes">{c.partes.map(p => <span key={p.rotulo} className="pv-conta-parte">
+      <b>{p.rotulo}: {p.valor}</b> <span>{p.texto}</span>
+      {p.fontes.map(f => <span key={f.titulo} className="pv-conta-fonte">{t('Fonte')}: {f.url ? <a href={f.url} target="_blank" rel="noopener noreferrer">{f.titulo}</a> : f.titulo}</span>)}
+    </span>)}</span>
+    <span className="pv-conta-grau">{t('Graus de confiança: A = estatística oficial; B = estudo ou caso real com fonte; C = convenção da ferramenta, a calibrar.')}</span>
+  </Popover></p>;
 }

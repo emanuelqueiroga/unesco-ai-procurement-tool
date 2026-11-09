@@ -1536,5 +1536,20 @@
  "O que é: {nome}": "这是什么：{nome}",
  "com encargos do país (× {f})": "含本国雇主社保缴费（× {f}）",
  "esforço de referência (grau C)": "参考工作量（C 级）",
- "Esforço de referência (grau C, convenção a calibrar); altere se precisar.": "参考工作量（C 级，待校准的约定）；如有需要请修改。"
+ "Esforço de referência (grau C, convenção a calibrar); altere se precisar.": "参考工作量（C 级，待校准的约定）；如有需要请修改。",
+ "{item}: {v} ({unidade}; {fonte}, grau {g})": "{item}：{v}（{unidade}；{fonte}，{g} 级）",
+ "÷ 12 meses": "÷ 12 个月",
+ "× câmbio de {tx} por US$": "× 汇率 {tx}/美元",
+ "× encargos do país {f} (contribuição patronal de {p}%, SSA e ISSA, {vol} {ano})": "× 本国雇主缴费系数 {f}（雇主缴费率 {p}%，SSA 与 ISSA，{vol} {ano}）",
+ "ainda sem valor": "尚无金额",
+ "Como foi calculado": "计算方式",
+ "esforço de referência (grau C): convenção da ferramenta, a calibrar": "参考工作量（C 级）：工具约定，待校准",
+ "Esforços de referência e salário de referência: convenções da ferramenta (grau C), iguais para todos os países, a calibrar.": "参考工作量和参考工资：工具约定（C 级），各国相同，待校准。",
+ "Fontes dos valores": "金额来源",
+ "Graus de confiança: A = estatística oficial; B = estudo ou caso real com fonte; C = convenção da ferramenta, a calibrar.": "可信度等级：A = 官方统计；B = 有来源的研究或真实案例；C = 工具约定，待校准。",
+ "informado por você": "由您填写",
+ "ordem de grandeza conferida em caso real": "数量级已对照真实案例核对",
+ "Social Security Programs Throughout the World, SSA e ISSA ({vol} {ano}), tabela 4": "Social Security Programs Throughout the World，SSA 与 ISSA（{vol} {ano}），表 4",
+ "sugerido a partir do Contexto": "根据“背景”建议",
+ "(o custo carregado já inclui os encargos)": "（含负担成本已包括雇主缴费）"
 }

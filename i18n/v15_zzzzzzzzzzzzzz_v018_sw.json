@@ -1536,5 +1536,20 @@
  "O que é: {nome}": "Ni nini: {nome}",
  "com encargos do país (× {f})": "pamoja na michango ya mwajiri nchini (× {f})",
  "esforço de referência (grau C)": "juhudi ya marejeo (daraja C)",
- "Esforço de referência (grau C, convenção a calibrar); altere se precisar.": "Juhudi ya marejeo (daraja C, makubaliano ya kurekebishwa); ibadilishe ikihitajika."
+ "Esforço de referência (grau C, convenção a calibrar); altere se precisar.": "Juhudi ya marejeo (daraja C, makubaliano ya kurekebishwa); ibadilishe ikihitajika.",
+ "{item}: {v} ({unidade}; {fonte}, grau {g})": "{item}: {v} ({unidade}; {fonte}, daraja {g})",
+ "÷ 12 meses": "÷ miezi 12",
+ "× câmbio de {tx} por US$": "× kiwango cha ubadilishaji {tx} kwa US$",
+ "× encargos do país {f} (contribuição patronal de {p}%, SSA e ISSA, {vol} {ano})": "× michango ya mwajiri nchini {f} (mchango wa mwajiri wa {p}%, SSA na ISSA, {vol} {ano})",
+ "ainda sem valor": "bado hakuna kiasi",
+ "Como foi calculado": "Jinsi ilivyokokotolewa",
+ "esforço de referência (grau C): convenção da ferramenta, a calibrar": "juhudi ya marejeo (daraja C): makubaliano ya zana, ya kurekebishwa",
+ "Esforços de referência e salário de referência: convenções da ferramenta (grau C), iguais para todos os países, a calibrar.": "Juhudi za marejeo na mshahara wa marejeo: makubaliano ya zana (daraja C), sawa kwa nchi zote, ya kurekebishwa.",
+ "Fontes dos valores": "Vyanzo vya viwango",
+ "Graus de confiança: A = estatística oficial; B = estudo ou caso real com fonte; C = convenção da ferramenta, a calibrar.": "Viwango vya uhakika: A = takwimu rasmi; B = utafiti au kisa halisi chenye chanzo; C = makubaliano ya zana, ya kurekebishwa.",
+ "informado por você": "umeingiza wewe",
+ "ordem de grandeza conferida em caso real": "ukubwa umehakikiwa kwa kisa halisi",
+ "Social Security Programs Throughout the World, SSA e ISSA ({vol} {ano}), tabela 4": "Social Security Programs Throughout the World, SSA na ISSA ({vol} {ano}), jedwali 4",
+ "sugerido a partir do Contexto": "imependekezwa kutokana na Muktadha",
+ "(o custo carregado já inclui os encargos)": "(gharama kamili tayari inajumuisha michango ya mwajiri)"
 }

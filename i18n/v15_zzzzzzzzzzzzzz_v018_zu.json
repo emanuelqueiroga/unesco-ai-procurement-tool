@@ -1536,5 +1536,20 @@
  "O que é: {nome}": "Kuyini: {nome}",
  "com encargos do país (× {f})": "kuhlanganise neminikelo yomqashi yezwe (× {f})",
  "esforço de referência (grau C)": "umzamo wesethenjwa (ibanga C)",
- "Esforço de referência (grau C, convenção a calibrar); altere se precisar.": "Umzamo wesethenjwa (ibanga C, isivumelwano okufanele silungiswe); wushintshe uma kudingeka."
+ "Esforço de referência (grau C, convenção a calibrar); altere se precisar.": "Umzamo wesethenjwa (ibanga C, isivumelwano okufanele silungiswe); wushintshe uma kudingeka.",
+ "{item}: {v} ({unidade}; {fonte}, grau {g})": "{item}: {v} ({unidade}; {fonte}, ibanga {g})",
+ "÷ 12 meses": "÷ izinyanga eziyi-12",
+ "× câmbio de {tx} por US$": "× izinga lokushintshaniswa lika-{tx} nge-US$",
+ "× encargos do país {f} (contribuição patronal de {p}%, SSA e ISSA, {vol} {ano})": "× iminikelo yomqashi yezwe {f} (umnikelo womqashi ka-{p}%, SSA ne-ISSA, {vol} {ano})",
+ "ainda sem valor": "akukabi nenani",
+ "Como foi calculado": "Kubalwe kanjani",
+ "esforço de referência (grau C): convenção da ferramenta, a calibrar": "umzamo wesethenjwa (ibanga C): isivumelwano sethuluzi, okufanele silungiswe",
+ "Esforços de referência e salário de referência: convenções da ferramenta (grau C), iguais para todos os países, a calibrar.": "Imizamo yesethenjwa neholo lesethenjwa: izivumelwano zethuluzi (ibanga C), ziyafana kuwo wonke amazwe, okufanele zilungiswe.",
+ "Fontes dos valores": "Imithombo yamanani",
+ "Graus de confiança: A = estatística oficial; B = estudo ou caso real com fonte; C = convenção da ferramenta, a calibrar.": "Amazinga okwethembeka: A = izibalo ezisemthethweni; B = ucwaningo noma isimo sangempela esinomthombo; C = isivumelwano sethuluzi, okufanele silungiswe.",
+ "informado por você": "kufakwe nguwe",
+ "ordem de grandeza conferida em caso real": "ubukhulu buhlolwe esimweni sangempela",
+ "Social Security Programs Throughout the World, SSA e ISSA ({vol} {ano}), tabela 4": "Social Security Programs Throughout the World, SSA ne-ISSA ({vol} {ano}), ithebula 4",
+ "sugerido a partir do Contexto": "kuphakanyiswe kusukela kuMongo",
+ "(o custo carregado já inclui os encargos)": "(izindleko ezigcwele sezivele zifaka iminikelo)"
 }

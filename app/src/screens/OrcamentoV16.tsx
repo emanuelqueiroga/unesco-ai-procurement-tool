@@ -1,5 +1,6 @@
 // Versão de teste v016: tela de fases (Piloto, Implantação, Expansão) e tabela de orçamento por categoria,
 // comuns às três frentes.
+import { fontesDasContas } from '../percurso/custosV017';
 import { useState } from 'react';
 import { useCaso, type CasoStore } from '../store';
 import { Button } from '../ui';
@@ -92,6 +93,8 @@ export function ResumoV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativ
     {o.memoria.length ? <><h3 className="pv-resumo-sub">{t('O que está sendo custeado')}</h3><ul className="pv-resumo-riscos">{linhasMemoria(o).map(l => <li key={l}>{l}</li>)}</ul></> : null}
     <h3 className="pv-resumo-sub">{t('Riscos e condições')}</h3>
     <ul className="pv-resumo-riscos">{riscosV16(frente, o).map(r => <li key={r}>{r}</li>)}</ul>
+    {/* v018: fontes públicas dos valores (governança) */}
+    {frente === 'governanca' ? <FontesValores linhas={o.itens.flatMap(i => i.linhas)} /> : null}
   </section>;
 }
 
@@ -109,4 +112,15 @@ export function BotoesPDFV16({ s, frente }: { s: CasoStore; frente: FrenteEstima
     <Button disabled={ocupado} onClick={() => void baixar('brief')}>{t('Resumo para decisão (PDF)')}</Button>
     <Button disabled={ocupado} variant="secondary" onClick={() => void baixar('anexo')}>{t('Anexo técnico (PDF)')}</Button>
   </div><BotaoLinkPlano /><p className="pc-nota">{t('Resumo: 1–2 páginas para quem decide. Anexo: todas as respostas e a memória das estimativas.')}</p>{erro ? <p role="alert">{erro}</p> : null}</div>;
+}
+
+/** v018: "Fontes dos valores" — as fontes públicas usadas nas contas e a nota sobre as convenções da ferramenta. */
+function FontesValores({ linhas }: { linhas: { conta?: import('../percurso/custosV017').ContaOpcao; esforcoC?: boolean }[] }) {
+  const fontes = fontesDasContas(linhas), conv = linhas.some(l => l.esforcoC || l.conta?.partes.some(p => /grau C/.test(p.texto)));
+  if (!fontes.length && !conv) return null;
+  return <><h3 className="pv-resumo-sub">{t('Fontes dos valores')}</h3>
+    <ul className="pv-resumo-riscos">
+      {fontes.map(f => <li key={f.url}><a href={f.url!} target="_blank" rel="noopener noreferrer">{f.titulo}</a></li>)}
+      {conv ? <li>{t('Esforços de referência e salário de referência: convenções da ferramenta (grau C), iguais para todos os países, a calibrar.')}</li> : null}
+    </ul></>;
 }

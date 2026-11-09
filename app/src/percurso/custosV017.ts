@@ -3,12 +3,12 @@
 // ou valor por fase). Cada opção tem um "tipo de custo" padrão, que a equipe pode trocar; só há valor unitário sugerido
 // onde a base de referências tem um (formação, equipe, licença, conexão, dispositivo). Sem botões de situação: uma opção
 // sem valor é uma pendência que diz o que falta.
-import { ALUNOS_POR_PROF, totaisCtx } from '../domain';
+import { ALUNOS_POR_PROF, totaisCtx, LOC } from '../domain';
 import type { Estado14 } from '../store/tipos';
 import { t } from './textos';
 import { lerLit } from './letramento';
-import { fatorEncargos } from './encargosPais';
-import { parametro, PARAMETRO_EQUIPE, PARAMETRO_FORMACAO, PARAMETRO_LICENCA, PARAMETRO_CONECTIVIDADE, PARAMETRO_DISPOSITIVO, type FrenteEstimativa } from './estimativasOrcamento';
+import { fatorEncargos, encargosDoPais } from './encargosPais';
+import { formatarMoedaEst, parametro, PARAMETRO_EQUIPE, PARAMETRO_FORMACAO, PARAMETRO_LICENCA, PARAMETRO_CONECTIVIDADE, PARAMETRO_DISPOSITIVO, type FrenteEstimativa } from './estimativasOrcamento';
 
 export type TipoCusto = 'formacao' | 'pessoa' | 'licenca' | 'escola_ano' | 'escola' | 'unidade' | 'equipe' | 'trabalho' | 'fechado';
 export type Fonte = 'professores' | 'estudantes' | 'escolas' | null;
@@ -90,14 +90,21 @@ const PADROES: Record<string, [TipoCusto, Fonte, string | null]> = {
   'Ferramentas de IA': ['licenca', 'professores', PARAMETRO_LICENCA],
 };
 /** v018: esforço de referência das opções da governança (grau C: convenção, a calibrar): pessoas e, no trabalho pontual, meses. */
-export const ESFORCO_GOV: Record<string, { qtd: number; meses?: number }> = {
+/** v018: fontes públicas citadas na explicação das contas da governança. */
+export interface FonteConta { titulo: string; url: string | null }
+export const FONTES_GOV: Record<'aiact' | 'noruega' | 'quenia', FonteConta> = {
+  aiact: { titulo: 'Proposta do AI Act, COM(2021) 206, seção 4: de 1 a 25 servidores em tempo integral por país na supervisão', url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:52021PC0206' },
+  noruega: { titulo: 'Sandbox de IA da Noruega: 4 projetos por ano, de 3 a 6 meses cada (Cambridge Forum on AI: Law and Governance)', url: 'https://www.cambridge.org/core/journals/cambridge-forum-on-ai-law-and-governance/article/from-watchdogs-to-partners-in-tech-innovation-navigating-regulatory-roles-in-norways-ai-sandbox/7E2FA0B1F75E6803B2DE4124EB0FC6CB' },
+  quenia: { titulo: 'Orçamento do órgão de proteção de dados do Quênia, 2021–2025 (Open Budget Kenya)', url: 'https://openbudget.or.ke/project/1122002100_The_Office_of_the_Data_Protection_Commi/2024' },
+};
+export const ESFORCO_GOV: Record<string, { qtd: number; meses?: number; base?: keyof typeof FONTES_GOV }> = {
   'Classificação de segurança e risco de IA': { qtd: 3, meses: 6 },
   'Direitos e proteção de crianças': { qtd: 2, meses: 4 },
-  'Proteção de dados pessoais e privacidade': { qtd: 3, meses: 6 },
+  'Proteção de dados pessoais e privacidade': { qtd: 3, meses: 6, base: 'quenia' },
   'Equidade algorítmica, não discriminação, transparência, explicabilidade e prestação de contas': { qtd: 2, meses: 6 },
   'Cibersegurança e notificação de incidentes': { qtd: 2, meses: 4 },
   'Propriedade intelectual e direitos autorais': { qtd: 2, meses: 4 },
-  'Ambientes de teste controlados': { qtd: 3, meses: 6 },
+  'Ambientes de teste controlados': { qtd: 3, meses: 6, base: 'noruega' },
   'Avaliações de risco': { qtd: 1, meses: 4 },
   'Diretrizes éticas de IA para a educação': { qtd: 2, meses: 3 },
   'Diretrizes de contratação de IA e avaliação de fornecedores': { qtd: 2, meses: 3 },
@@ -110,12 +117,12 @@ export const ESFORCO_GOV: Record<string, { qtd: number; meses?: number }> = {
   'Transferência de tecnologia': { qtd: 2, meses: 6 },
   'Customização local': { qtd: 3, meses: 6 },
   'Redução da dependência de fornecedores': { qtd: 1, meses: 3 },
-  'Supervisão regulatória': { qtd: 2 },
+  'Supervisão regulatória': { qtd: 2, base: 'aiact' },
   'Adoção e manutenção de código aberto': { qtd: 2 },
   'Comitês de governança': { qtd: 0.5 },
   'Coordenação interministerial': { qtd: 1 },
-  'Estruturas institucionais de governança': { qtd: 4 },
-  'Governança e proteção de dados e infraestrutura pública digital': { qtd: 3 },
+  'Estruturas institucionais de governança': { qtd: 4, base: 'quenia' },
+  'Governança e proteção de dados e infraestrutura pública digital': { qtd: 3, base: 'quenia' },
 };
 /** Itens da 1.1 são parâmetros da formação (não viram linha de custo): ao marcar, abrem um campo, gravado nos campos de
  *  professores do letramento que já existiam (os mesmos da tela Públicos). */
@@ -167,6 +174,8 @@ export const chaveOpcao = (rotulo: string) => rotulo.normalize('NFD').replace(/[
 
 export interface FaseCalc { id: string; nome: string; meses: number; alcance: number }
 export interface CustoSalvo { tipo?: TipoCusto; qtd?: number; horas?: number; unit?: number; fases?: Record<string, number> }
+export interface ParteConta { rotulo: string; valor: string; texto: string; fontes: FonteConta[] }
+export interface ContaOpcao { formula: string; partes: ParteConta[] }
 export interface LinhaOpcao {
   chave: string; rotulo: string; tipo: TipoCusto; tipoPadrao: TipoCusto; fonte: Fonte;
   qtd: number | null; qtdSugerida: boolean; horas: number | null; unit: number | null; unitRef: number | null; unitDaReferencia: boolean;
@@ -175,6 +184,8 @@ export interface LinhaOpcao {
   status: 'informado' | 'referencia' | 'falta'; falta: string[];
   /** v018: a linha usa o esforço de referência da governança (grau C) */
   esforcoC?: boolean;
+  /** v018: a conta e de onde vem cada número (explicação "Como foi calculado") */
+  conta?: ContaOpcao;
   memoria: string;
 }
 const positivo = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0;
@@ -193,7 +204,9 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
   const horas = positivo(salvo.horas) ? salvo.horas : (esf?.meses ?? null);
   // v018: esforço de referência em uso (grau C) e, na governança, encargos do país sobre o custo de pessoal
   const esforcoC = !!esf && ((!positivo(salvo.qtd) && qtd === esf.qtd) || (!!esf.meses && !positivo(salvo.horas)));
-  const fator = f === 'governanca' && (tipo === 'equipe' || tipo === 'trabalho') ? fatorEncargos((s as any).caso?.pais) : 1;
+  // encargos do país só sobre salário bruto: a referência atual já é "custo carregado" (inclui encargos), então não se aplica
+  const pidRef = refDoTipo(tipo, pad), refCarregada = !!pidRef && /carregado/i.test(parametro(pidRef).item);
+  const fator = f === 'governanca' && (tipo === 'equipe' || tipo === 'trabalho') && !refCarregada ? fatorEncargos((s as any).caso?.pais) : 1;
   const refBase = referenciaUSD(refDoTipo(tipo, pad)), refUSD = refBase === null ? null : (tipo === 'trabalho' ? refBase / 12 : refBase) * fator;
   const unitRef = refUSD === null || taxa === null ? null : centavos(refUSD * taxa);
   const unit = naoNeg(salvo.unit) ? salvo.unit : unitRef, unitDaReferencia = !naoNeg(salvo.unit) && unitRef !== null;
@@ -230,6 +243,44 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
         + (unitDaReferencia && fator !== 1 ? ' · ' + t('com encargos do país (× {f})', { f: num(Math.round(fator * 1000) / 1000) }) : '')
         + (esforcoC ? ' · ' + t('esforço de referência (grau C)') : '');
   }
+  // v018: de onde vem cada número da conta (governança)
+  let conta: ContaOpcao | undefined;
+  if (f === 'governanca') {
+    const partes: ParteConta[] = [], voce = t('informado por você');
+    const fonteEsf = esf?.base ? [FONTES_GOV[esf.base]] : [];
+    const txtEsf = t('esforço de referência (grau C): convenção da ferramenta, a calibrar') + (esf?.base ? '; ' + t('ordem de grandeza conferida em caso real') : '');
+    if (tipo === 'fechado') partes.push({ rotulo: t('Valor total'), valor: total === null ? '—' : fmt(total), texto: total === null ? t('ainda sem valor') : voce, fontes: [] });
+    else {
+      if (qtd !== null) partes.push({ rotulo: t(def.qtd!), valor: num(qtd), fontes: positivo(salvo.qtd) ? [] : esf && qtd === esf.qtd ? fonteEsf : [],
+        texto: positivo(salvo.qtd) ? voce : esf && qtd === esf.qtd ? txtEsf : t('sugerido a partir do Contexto') });
+      if (def.horas && horas !== null) partes.push({ rotulo: t(def.horasRotulo || 'Horas por pessoa'), valor: num(horas), fontes: positivo(salvo.horas) ? [] : esf?.meses ? fonteEsf : [],
+        texto: positivo(salvo.horas) ? voce : esf?.meses ? txtEsf : '' });
+      if (unit !== null) {
+        if (!unitDaReferencia) partes.push({ rotulo: t(def.unit!), valor: fmt(unit), texto: voce, fontes: [] });
+        else {
+          const pid = refDoTipo(tipo, pad)!, par = parametro(pid), fontes: FonteConta[] = [];
+          const usd = (v: number) => formatarMoedaEst(v, 'USD');
+          const tx = taxa === null ? '' : new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 4 }).format(taxa);
+          const enc = fator !== 1 ? encargosDoPais((s as any).caso?.pais) : null;
+          const pedacos = [t('{item}: {v} ({unidade}; {fonte}, grau {g})', { item: t(par.item), v: usd(par.valor), unidade: t(par.unidade), fonte: t(par.fonte), g: par.grau })];
+          if (tipo === 'trabalho') pedacos.push(t('÷ 12 meses'));
+          if (tx && taxa !== 1) pedacos.push(t('× câmbio de {tx} por US$', { tx }));
+          if (refCarregada) pedacos.push(t('(o custo carregado já inclui os encargos)'));
+          if (enc) { pedacos.push(t('× encargos do país {f} (contribuição patronal de {p}%, SSA e ISSA, {vol} {ano})', { f: num(Math.round(fator * 1000) / 1000), p: num(enc.taxa), vol: t(enc.volume), ano: enc.ano })); fontes.push({ titulo: t('Social Security Programs Throughout the World, SSA e ISSA ({vol} {ano}), tabela 4', { vol: t(enc.volume), ano: enc.ano }), url: enc.url }); }
+          partes.push({ rotulo: t(def.unit!), valor: fmt(unit), texto: pedacos.join(' '), fontes });
+        }
+      }
+    }
+    const formula = tipo === 'fechado' ? '' : partes.map((p, i) => i < partes.length - 1 ? p.valor + ' ' + p.rotulo.toLocaleLowerCase() : p.valor).join(' × ') + (total === null ? '' : ' = ' + fmt(total));
+    conta = { formula, partes };
+  }
   const status = falta.length ? 'falta' : tipo !== 'fechado' && unitDaReferencia ? 'referencia' : 'informado';
-  return { esforcoC, chave: chaveOpcao(rotulo), rotulo, tipo, tipoPadrao: pad.tipo, fonte: pad.fonte, qtd, qtdSugerida, horas, unit, unitRef, unitDaReferencia, valoresFase, porFase, total, status, falta, memoria };
+  return { conta, esforcoC, chave: chaveOpcao(rotulo), rotulo, tipo, tipoPadrao: pad.tipo, fonte: pad.fonte, qtd, qtdSugerida, horas, unit, unitRef, unitDaReferencia, valoresFase, porFase, total, status, falta, memoria };
+}
+
+/** v018: as fontes públicas usadas nas contas de um orçamento, sem repetição (resumo e PDF). */
+export function fontesDasContas(linhas: { conta?: ContaOpcao }[]): FonteConta[] {
+  const vistas = new Map<string, FonteConta>();
+  for (const l of linhas) for (const p of l.conta?.partes || []) for (const f of p.fontes) if (f.url && !vistas.has(f.url)) vistas.set(f.url, f);
+  return [...vistas.values()];
 }

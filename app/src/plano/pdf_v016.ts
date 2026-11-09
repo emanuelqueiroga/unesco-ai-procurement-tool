@@ -1,6 +1,7 @@
 // Versão de teste v016: PDFs das frentes e do plano completo.
 // "Resumo para decisão": 1–2 páginas com o parágrafo "Em resumo", a tabela categoria × fase, riscos e o próximo passo.
 // "Anexo técnico": o mesmo começo e, depois, todos os blocos do resumo da frente com a memória das estimativas.
+import { fontesDasContas } from '../percurso/custosV017';
 import type { Estado14 } from '../store/tipos';
 import { getLang, setLang } from '../domain/i18n.js';
 import { LOC } from '../domain';
@@ -89,6 +90,9 @@ export async function gerarPDFFrenteV16(s: Estado14, opts: { frente: FrenteEstim
     w.titulo(t('Em resumo')); w.texto(resumoProsa(o), 10.5);
     w.titulo(t('Custo por categoria e fase')); w.tabela(o);
     if (o.memoria.length) { w.titulo(t('O que está sendo custeado')); w.lista(linhasMemoria(o)); }
+    // v018: fontes públicas dos valores (governança)
+    if (opts.frente === 'governanca') { const fs = fontesDasContas(o.itens.flatMap((i: any) => i.linhas)); const conv = o.itens.some((i: any) => i.linhas.some((l: any) => l.esforcoC));
+      if (fs.length || conv) { w.titulo(t('Fontes dos valores')); w.lista([...fs.map(f => f.titulo + ': ' + f.url), ...(conv ? [t('Esforços de referência e salário de referência: convenções da ferramenta (grau C), iguais para todos os países, a calibrar.')] : [])]); } }
     w.titulo(t('Riscos e condições')); w.lista(riscosV16(opts.frente, o));
     w.titulo(t('Próximo passo')); w.texto(p.proxima, 10.5, true);
     if (opts.tipo === 'anexo') for (const b of p.blocos) { w.titulo(b.titulo, 12); for (const l of b.linhas) { w.texto(l.rotulo, 9, true); w.texto(l.valor, 9.5); w.avancar(3); } }
