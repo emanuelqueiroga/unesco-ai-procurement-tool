@@ -182,3 +182,11 @@
 .cf-gov-cat { display: flex; gap: 8px; align-items: baseline; font-size: .92rem; line-height: 1.3; color: var(--ini-txt); }
 .cf-gov-n { font-size: .8rem; font-weight: 700; color: var(--ini-muted); font-variant-numeric: tabular-nums; }
 @media (max-width: 1023px) { .cf-gov .cf-passos, .cf-gov .cf-gov-cam, .cf-gov .cf-painel { grid-column: 1; } .cf-gov-grade { grid-template-columns: minmax(0, 1fr); } }
+.cf-leg { grid-template-columns: minmax(0, 1fr) 150px; gap: 16px 28px; align-items: start; }
+.cf-leg-txt { display: grid; gap: 10px; min-width: 0; }
+.cf-fig { display: grid; gap: 6px; padding: 8px; border: 1px solid var(--ini-line); border-radius: 8px; background: var(--ini-card); cursor: zoom-in; text-align: start; font: inherit; }
+.cf-fig img { display: block; width: 100%; height: auto; border-radius: 4px; }
+.cf-fig span { font-size: .78rem; line-height: 1.3; color: var(--ini-muted); }
+.cf-fig:hover { border-color: var(--primary); }
+.cf-fig:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+@media (max-width: 600px) { .cf-leg { grid-template-columns: minmax(0, 1fr); } .cf-fig { max-width: 180px; } }

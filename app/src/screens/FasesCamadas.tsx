@@ -5,10 +5,11 @@
 // (telas, camadas que alimenta, o que entrega); os passos e o que a fase exige em cada camada abrem ao clicar. Embaixo,
 // as sete camadas (Krueger e Jackson, 2026) e o botão da matriz.
 import { useState } from 'react';
-import { FASES, PASSOS, PASSO_INFO, CAMADAS, MATRIZ, CREDITO_MATRIZ, numPergunta } from '../domain';
+import { FASES, PASSOS, PASSO_INFO, CAMADAS, MATRIZ, CREDITO_MATRIZ, FIG_INFO, numPergunta, tr } from '../domain';
 import { ESSENCIAL, type Capitulo } from '../store';
 import { Button } from '../ui';
-import { abrirMatriz } from './Matriz';
+import { abrirMatriz, abrirFigura } from './Matriz';
+import figuraTCO from '../../../assets/fig1_tco.jpg';
 import { CAPITULOS_INFO, t } from '../percurso/textos';
 import { CATEGORIAS, DESAFIOS_GOV_V016 } from '../domain/catalogo_v016.js';
 import './fasesCamadas.css';
@@ -134,12 +135,19 @@ export function FasesCamadas() {
       </div>
 
       <div className="cf-leg">
-        <p className="ini-leg-t">{t('As sete camadas do custo total')}</p>
-        <ol className="cf-leg-l">{CAM.map(([k, nome]) => <li key={k} className={'cam-' + k}><span className="ini-cn" aria-hidden="true">{k}</span><span>{t(nome)}</span></li>)}</ol>
-        <div className="cf-leg-pe">
-          <Button variant="secondary" size="sm" icon={<Grade />} onClick={() => abrirMatriz(aberta || undefined)} aria-haspopup="dialog">{t('Ver a matriz completa')}</Button>
-          <span className="ini-cred">{t(String(CREDITO_MATRIZ))}</span>
+        <div className="cf-leg-txt">
+          <p className="ini-leg-t">{t('As sete camadas do custo total')}</p>
+          <ol className="cf-leg-l">{CAM.map(([k, nome]) => <li key={k} className={'cam-' + k}><span className="ini-cn" aria-hidden="true">{k}</span><span>{t(nome)}</span></li>)}</ol>
+          <div className="cf-leg-pe">
+            <Button variant="secondary" size="sm" icon={<Grade />} onClick={() => abrirMatriz(aberta && aberta !== 'gov' ? aberta : undefined)} aria-haspopup="dialog">{t('Ver a matriz completa')}</Button>
+            <Button variant="secondary" size="sm" onClick={abrirFigura} aria-haspopup="dialog">{String(tr((FIG_INFO as any).botao))}</Button>
+            <span className="ini-cred">{t(String(CREDITO_MATRIZ))}</span>
+          </div>
         </div>
+        <button type="button" className="cf-fig" onClick={abrirFigura} aria-haspopup="dialog" aria-label={String(tr((FIG_INFO as any).botao))}>
+          <img src={figuraTCO} alt="" loading="lazy" width={900} height={1225} />
+          <span>{t('Figura original: Krueger e Jackson (2026, p. 11)')}</span>
+        </button>
       </div>
     </section>
   );
