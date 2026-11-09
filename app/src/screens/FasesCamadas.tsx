@@ -10,6 +10,7 @@ import { ESSENCIAL, type Capitulo } from '../store';
 import { Button } from '../ui';
 import { abrirMatriz } from './Matriz';
 import { CAPITULOS_INFO, t } from '../percurso/textos';
+import { CATEGORIAS, DESAFIOS_GOV_V016 } from '../domain/catalogo_v016.js';
 import './fasesCamadas.css';
 
 type Celula = { t: string; q: string[]; na?: boolean };
@@ -29,6 +30,14 @@ const ENTREGA: Record<string, string> = {
 const SO_REFINAR = new Set(['3b']);
 const RESULTADO = new Set(['4b', '4c']);
 const ETAPAS_GOV = ['Contexto', 'Categorias de custo', 'Opções e valores'];
+/** Camadas do custo total que cada categoria da governança alimenta (elaboração desta ferramenta, como a distribuição
+ *  da matriz): regulação, sandboxes, diretrizes e coordenação na camada 1; proteção de dados e cibersegurança na 5;
+ *  dados e interoperabilidade na 4; hospedagem na 3; independência tecnológica nas 2 e 7; pessoas e formação na 6. */
+const CAMADAS_GOV: Record<string, number[]> = { g11: [1, 5], g12: [1], g13: [1, 5], g21: [4, 5], g22: [3], g23: [2, 7], g31: [6], g32: [6], g33: [1] };
+const CATS_GOV = (CATEGORIAS as any).governanca as { id: string; n: string; desafio: string; nome: string }[];
+const DES_GOV = DESAFIOS_GOV_V016 as unknown as { id: string; t?: string; nome?: string }[];
+const nomeDesafio = (d: { t?: string; nome?: string }) => d.nome || d.t || '';
+const camadasGov = [...new Set(Object.values(CAMADAS_GOV).flat())].sort();
 
 const camadasDaFase = (fid: string) => CAM.filter(([k]) => { const c = MTZ[k]?.[fid]; return c && !c.na && (c.q || []).length; }).map(([k]) => k);
 
@@ -70,6 +79,19 @@ export function FasesCamadas() {
           {ETAPAS_GOV.map((e, i) => <li key={e}><span className="cf-n" aria-hidden="true">{i + 1}</span>{t(e)}</li>)}
           <li className="cf-fim">{t('Plano de governança, resumo e anexo em PDF')}</li>
         </ol>
+        <div className="cf-gov-cam">
+          <span className="cf-gov-l">{t('Camadas que alimenta')}</span><Cams ks={camadasGov} />
+          <button type="button" className="cf-link" aria-expanded={aberta === 'gov'} aria-controls="cf-painel-gov" onClick={() => alternar('gov')}>{t(aberta === 'gov' ? 'Fechar' : 'Ver por categoria')}<Chevron /></button>
+        </div>
+        {aberta === 'gov' ? <div className="cf-painel cf-painel-gov" id="cf-painel-gov" role="region" aria-labelledby="cf-gov-t">
+          <div className="cf-painel-cab"><h3 id="cf-gov-t">{t('Categorias de custo da governança e as camadas que alimentam')}</h3></div>
+          <div className="cf-gov-grade">{DES_GOV.map((d) => <div key={d.id}>
+            <p className="ini-f-l">{t(nomeDesafio(d))}</p>
+            <ul className="cf-gov-cats">{CATS_GOV.filter((c) => c.desafio === d.id).map((c) => <li key={c.id}>
+              <span className="cf-gov-cat"><span className="cf-gov-n">{c.n}</span>{t(c.nome)}</span><Cams ks={CAMADAS_GOV[c.id] || []} /></li>)}</ul>
+          </div>)}</div>
+          <p className="ini-cred">{t('Ligação entre categorias e camadas: elaboração desta ferramenta.')}</p>
+        </div> : null}
       </div>
 
       <div className="cf-trilha cf-ed">
