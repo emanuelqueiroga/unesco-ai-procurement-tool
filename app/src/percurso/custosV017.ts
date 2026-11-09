@@ -8,7 +8,7 @@ import type { Estado14 } from '../store/tipos';
 import { t } from './textos';
 import { lerLit } from './letramento';
 import { fatorEncargos, encargosDoPais } from './encargosPais';
-import { SALARIOS_ILO, FONTES_ILO, REGIOES_WB, RENDA_WB, URL_ILOSTAT, type Grupo } from './salariosPais';
+import { SALARIOS_ILO, FONTES_ILO, REGIOES_WB, RENDA_WB, URL_ILOSTAT, LCU_NAO_LOCAL, REDENOMINACAO, type Grupo } from './salariosPais';
 import { EQUIPES_GOV, pessoasDaEquipe, PAPEIS_ESPECIALISTA, OPCOES_ESPECIALISTA, PREMIO_ESPECIALISTA, premioEspecialista, type EquipeRef, type Papel } from './equipesGov';
 import { fatorInflacao, ANO_REF_SALARIO, URL_FMI_INFLACAO } from './inflacaoPais';
 import { paisPorIso, nomePais } from '../domain/pais.js';
@@ -110,14 +110,15 @@ export function salarioDoPais(iso: string | undefined, perfil: Grupo, moeda: str
   const e = iso ? SALARIOS_ILO[iso] : undefined, p = e ? e[('p' + perfil) as 'p1' | 'p2' | 'p3' | 'p4'] : null;
   if (!e || !p) return null;
   const [ano, lcu, usd, metodo, n] = p, moedaPais = paisPorIso(iso!)?.moeda;
-  const viaLCU = metodo === 'd' && lcu !== null && !!moeda && moedaPais === moeda;
-  const base = viaLCU ? lcu as number : usd !== null && taxa !== null ? usd * taxa : null;
+  const viaLCU = metodo === 'd' && lcu !== null && !!moeda && moedaPais === moeda && !LCU_NAO_LOCAL.has(iso!);
+  const red = REDENOMINACAO[iso!], lcuAj = lcu !== null && red && ano !== null && ano <= red.ate ? lcu / red.divisor : lcu;
+  const base = viaLCU ? lcuAj as number : usd !== null && taxa !== null ? usd * taxa : null;
   if (base === null) return null;
   // v018: atualizado do ano do dado até o ano de referência pela inflação do FMI (do país, em moeda local; dos EUA, em US$)
   const inflacao = metodo === 'd' ? fatorInflacao(viaLCU ? iso : 'USA', ano) : null;
   const mensal = base * (inflacao ? inflacao.fator : 1);
   const grupo = metodo === 'r' ? t(REGIOES_WB[e.r!]) + ', ' + t(RENDA_WB[e.g!]) : t(RENDA_WB[e.g!] || '');
-  return { mensal, base, inflacao, viaLCU, lcu, usd, ano, metodo, n: n || 0, perfil, pais: nomeDoPaisIso(iso!), fonte: e.f === null ? null : FONTES_ILO[e.f], grupo };
+  return { mensal, base, inflacao, viaLCU, lcu: lcuAj, usd, ano, metodo, n: n || 0, perfil, pais: nomeDoPaisIso(iso!), fonte: e.f === null ? null : FONTES_ILO[e.f], grupo };
 }
 /** v018: mediana mundial do salário mensal em US$ por perfil (países com dado próprio no ILOSTAT), usada quando o país
  *  não tem dado nem estimativa regional. */

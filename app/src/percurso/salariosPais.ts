@@ -235,6 +235,13 @@ export const SALARIOS_ILO: Record<string, SalarioPais> = {
   ZMB: { i2: 'ZM', r: 'SSA', g: 'LM', f: 0, p1: [2024, 13318.44, 508.99, 'd'], p2: [2024, 8148.02, 311.39, 'd'], p3: [2024, 8648.89, 330.53, 'd'], p4: [2024, 5717.76, 218.51, 'd'] },
   ZWE: { i2: 'ZW', r: 'SSA', g: 'LM', f: null, p1: [null, null, 473.13, 'r', 14], p2: [null, null, 298.45, 'r', 14], p3: [null, null, 288.2, 'r', 14], p4: [null, null, 212.44, 'r', 14] },
 };
+/** v018: países cujo valor "em moeda local" no ILOSTAT não está na moeda atual do país (em euro, nas pesquisas europeias;
+ *  em dólar, na Libéria) ou está em escala não comparável (Madagascar): a conta usa o valor em US$ do ILOSTAT ou, sem
+ *  ele, a mediana mundial. */
+export const LCU_NAO_LOCAL = new Set(['CZE', 'DNK', 'HUN', 'ISL', 'NOR', 'POL', 'ROU', 'SRB', 'SWE', 'LBR', 'MDG']);
+/** v018: moeda redenominada depois do ano do dado: o valor em moeda local é dividido (Serra Leoa: 1 leone novo, de
+ *  2022, = 1.000 leones antigos). */
+export const REDENOMINACAO: Record<string, { ate: number; divisor: number }> = { SLE: { ate: 2021, divisor: 1000 } };
 export const URL_ILOSTAT = 'https://ilostat.ilo.org/data/';
 export const URL_ILOSTAT_API = 'https://sdmx.ilo.org/rest/data/ILO,DF_EAR_EMTA_SEX_OCU_CUR_NB,1.0/.A..SEX_T.OCU_ISCO08_1+OCU_ISCO08_2+OCU_ISCO08_3+OCU_ISCO08_4.CUR_TYPE_LCU+CUR_TYPE_USD?startPeriod=2015&format=csvfilewithlabels';
 export const URL_WB_PAISES = 'https://api.worldbank.org/v2/country?format=json&per_page=400';

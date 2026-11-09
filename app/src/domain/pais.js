@@ -5,6 +5,9 @@
 // país ou da região na base de referências → linha global (valor ilustrativo). A lista das premissas do caso
 // (premissasDoCaso) e a versão das bases ficam em referencias.js, o contrato com o relatório.
 // =====================================================================
+// v018: catálogo com todos os países da tabela de salários (nome, moeda, região e grupo de renda); os perfis de
+// paises.json têm precedência.
+import CATALOGO from '../../../data/paises-catalogo.json';
 import { PAISES_DADOS, refLinha, temFaixa, foraDaFaixaLinha, origemDaLinha } from './referencias_base.js';
 import { tr, LOC, getLang, lerNumero } from './i18n.js';
 
@@ -31,11 +34,11 @@ const OUTRO_PAIS = 'outro';
 /** horas de trabalho por pessoa por ano: converte o salário anual do professor em custo da hora de formação */
 const ID_HORAS_ANO = 'conv.horasAno';
 // ISO 3166-1 alfa-2 dos países da base, para o nome no idioma da tela (Intl.DisplayNames)
-const ISO2 = { BRA: 'BR', MEX: 'MX', KEN: 'KE', MAR: 'MA', IDN: 'ID' };
+const ISO2 = Object.fromEntries(CATALOGO.paises.filter(p => p.iso2).map(p => [p.iso3, p.iso2]));
 
 // ---------------------------------------------------------------- país e escopos
 function listaPaises() { return PAISES_DADOS.paises || []; }
-function paisPorIso(iso) { return listaPaises().find(p => p.iso3 === iso) || null; }
+function paisPorIso(iso) { return listaPaises().find(p => p.iso3 === iso) || CATALOGO.paises.find(p => p.iso3 === iso) || null; }
 function paisDoCaso(caso) { return caso && caso.pais && caso.pais !== OUTRO_PAIS ? paisPorIso(caso.pais) : null; }
 function nomeRegiao(cod) { const r = (PAISES_DADOS.regioes || []).find(x => x.codigo === cod); return r ? r.nome : cod; }
 /** nome do país no idioma da tela: em português, o da base; nos outros, o do Intl (sem ele, a tradução do dicionário) */
@@ -49,9 +52,9 @@ function nomePais(p) {
   } catch (e) { /* Intl sem nomes de região: vale o dicionário */ }
   return String(tr(p.nome));
 }
-/** países em ordem alfabética do nome exibido */
+/** países em ordem alfabética do nome exibido (v018: todos os do catálogo) */
 function paisesOrdenados() {
-  const L = listaPaises().map(p => ({ iso2: ISO2[p.iso3], iso3: p.iso3, nome: nomePais(p), moeda: p.moeda, regiao: p.regiao }));
+  const L = CATALOGO.paises.map(c => paisPorIso(c.iso3)).map(p => ({ iso2: ISO2[p.iso3], iso3: p.iso3, nome: nomePais(p), moeda: p.moeda, regiao: p.regiao }));
   try { return L.sort((a, b) => a.nome.localeCompare(b.nome, String(LOC()))); } catch (e) { return L; }
 }
 /** cadeia de escopos do país (['BRA', 'LAC', 'global']); null sem país (não listado ou não respondido): vale só o global, como na v13 */

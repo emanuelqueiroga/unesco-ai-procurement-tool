@@ -53,7 +53,7 @@ export const MET = {
   desembolso: 'O custo do plano inclui o trabalho de todas as pessoas, mesmo as que já são servidoras. Em "Ajustar a equipe", marque os papéis ocupados por servidores que já existem: o resumo mostra também o desembolso novo, que é o custo do plano sem esses servidores.',
   hAjustes: 'Como o modelo trata as principais incertezas',
   ajustes: [
-    'Especialistas em IA, dados e segurança digital ganham acima da média do seu grupo ocupacional: o modelo aplica o prêmio de 28% (Lightcast, 2025), que você pode ajustar; a PwC (2025) encontrou até 56% para vagas que exigem competências de IA.',
+    'Especialistas em IA, dados e segurança digital ganham acima da média do seu grupo ocupacional: o modelo aplica o prêmio de 28% (Lightcast, 2025); a PwC (2025) encontrou até 56% para vagas que exigem competências de IA.',
     'Os salários do ILOSTAT são de anos diferentes, conforme o país: o modelo atualiza cada valor até 2026 pela inflação ao consumidor do país, segundo o FMI.',
     'Países sem dado próprio no ILOSTAT usam a mediana dos países da mesma região e do mesmo grupo de renda; sem estimativa regional, a mediana mundial.',
     'A composição das equipes, a dedicação e os meses foram definidos para cada tipo de trabalho e comparados com casos públicos (AI Act, sandbox da Noruega, órgão de proteção de dados do Quênia); os valores podem ter leve variação conforme o contexto e podem ser ajustados papel a papel.',

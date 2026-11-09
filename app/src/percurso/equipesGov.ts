@@ -172,14 +172,14 @@ export const PAPEIS_ESPECIALISTA = new Set([
 ]);
 /** Opções de pessoal em tempo integral (3.1) que recebem o prêmio de especialista. */
 export const OPCOES_ESPECIALISTA = new Set(['Especialistas em TI (IA, dados, segurança, infraestrutura)', 'Pessoal de governança de IA', 'Especialistas em IA e educação']);
-/** Prêmio salarial de especialista (%): padrão com fonte (grau B); a pessoa pode trocar na tela. */
+/** Prêmio salarial de especialista (%): valor fixo com fonte (grau B); não aparece na tela como opção. */
 export const PREMIO_ESPECIALISTA = {
   padrao: 28,
   fonte: { titulo: 'Lightcast, Beyond the Buzz (2025): vagas que pedem competências de IA pagam 28% a mais (1,3 bilhão de anúncios)', url: 'https://lightcast.io/resources/research/beyond-the-buzz-developing-the-ai-skills-employers-actually-need' },
   comparacao: { titulo: 'PwC, 2025 Global AI Jobs Barometer: prêmio médio de 56% para vagas que exigem competências de IA, frente a 25% no ano anterior', url: 'https://www.pwc.com/gx/en/news-room/press-releases/2025/ai-linked-to-a-fourfold-increase-in-productivity-growth.html' },
 };
-/** Prêmio em uso (fração): o informado em govOrcamento.premioEspecialista ou o padrão. */
-export function premioEspecialista(s: { ctx?: any }): { pct: number; informado: boolean } {
-  const v = s?.ctx?.govOrcamento?.premioEspecialista;
-  return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? { pct: v, informado: true } : { pct: PREMIO_ESPECIALISTA.padrao, informado: false };
+/** Prêmio em uso: sempre o padrão. O campo saiu da tela; um valor gravado antes em govOrcamento.premioEspecialista
+ *  fica no caso, mas não entra na conta (não há onde vê-lo nem alterá-lo). */
+export function premioEspecialista(_s?: { ctx?: any }): { pct: number; informado: boolean } {
+  return { pct: PREMIO_ESPECIALISTA.padrao, informado: false };
 }

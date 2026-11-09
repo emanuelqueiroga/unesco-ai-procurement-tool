@@ -18,7 +18,6 @@ import { gravarOrc } from './OrcamentoV16';
 import { CartaoComDica, DicaGov } from './InfoDica';
 import { CATEGORIAS } from '../domain/catalogo_v016.js';
 import { ADICIONAIS, ID_ADICIONAIS, PERGUNTAS_ADICIONAIS, type SalvoAdicionais } from '../percurso/adicionaisGov';
-import { PREMIO_ESPECIALISTA } from '../percurso/equipesGov';
 import './moldura.css';
 
 const telaFases = (f: FrenteEstimativa) => f === 'letramento' ? 'lit-fases' : 'ed-fases';
@@ -67,9 +66,7 @@ export function OpcoesV17({ s, frente }: { s: CasoStore; frente: FrenteEstimativ
   // categorias sem opções e custo por fase) fica aqui.
   return <div className="pv-v17" id="opcoes" tabIndex={-1}>
     {semFases(frente) ? <div className="pv-v17-campos">{(() => { const campo = <CampoNumero label={t('Duração do plano (meses)')} value={raizOrcamento(s, frente).duracao ?? ''} placeholder={String(DURACAO_GOV_PADRAO)} onChange={v => gravarOrc(frente, 'duracao', v === '' ? undefined : v)} />;
-      return frente === 'governanca' ? <><div className="pc-dica-campo">{campo}<DicaGov chave="Duração do plano (meses)" inicio /></div>
-        <CampoNumero label={t('Prêmio salarial de especialistas em IA, dados e segurança (%)')} value={raizOrcamento(s, frente).premioEspecialista ?? ''} placeholder={String(PREMIO_ESPECIALISTA.padrao)} decimais
-          hint={t('Vazio = {p}% (Lightcast, 2025). Vale para os papéis que exigem essas competências.', { p: PREMIO_ESPECIALISTA.padrao })} onChange={v => gravarOrc(frente, 'premioEspecialista', v === '' ? undefined : v)} /></> : campo; })()}</div>
+      return frente === 'governanca' ? <div className="pc-dica-campo">{campo}<DicaGov chave="Duração do plano (meses)" inicio /></div> : campo; })()}</div>
       : <p className="pv-v17-fases-resumo">{resumoFases(s, frente)} · {o.moeda} · <a href={href.pergunta(4, telaFases(frente))}>{t('Alterar fases')}</a></p>}
     {porGrupo(o.itens).map(([grupo, itens]) => <section key={grupo} className="pv-v17-grupo">
       {grupo ? <h2 className="pv-v17-desafio">{grupo}</h2> : null}

@@ -1,0 +1,2635 @@
+{
+ "versao": "1.0.0",
+ "atualizado": "2026-11-09",
+ "nota": "Catálogo de países da v018: os mesmos 220 países e territórios da tabela de salários (ILOSTAT, Banco Mundial). Nome em português e moeda de curso legal: Unicode CLDR (via Babel); região e grupo de renda: classificação de países do Banco Mundial. Bulgária em euro desde 1/1/2026. Os perfis com dados próprios ficam em paises.json e têm precedência.",
+ "paises": [
+  {
+   "iso3": "ABW",
+   "iso2": "AW",
+   "nome": "Aruba",
+   "moeda": "AWG",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "AFG",
+   "iso2": "AF",
+   "nome": "Afeganistão",
+   "moeda": "AFN",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "AGO",
+   "iso2": "AO",
+   "nome": "Angola",
+   "moeda": "AOA",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ALB",
+   "iso2": "AL",
+   "nome": "Albânia",
+   "moeda": "ALL",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "AND",
+   "iso2": "AD",
+   "nome": "Andorra",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ARE",
+   "iso2": "AE",
+   "nome": "Emirados Árabes Unidos",
+   "moeda": "AED",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ARG",
+   "iso2": "AR",
+   "nome": "Argentina",
+   "moeda": "ARS",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ARM",
+   "iso2": "AM",
+   "nome": "Armênia",
+   "moeda": "AMD",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ASM",
+   "iso2": "AS",
+   "nome": "Samoa Americana",
+   "moeda": "USD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ATG",
+   "iso2": "AG",
+   "nome": "Antígua e Barbuda",
+   "moeda": "XCD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "AUS",
+   "iso2": "AU",
+   "nome": "Austrália",
+   "moeda": "AUD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "AUT",
+   "iso2": "AT",
+   "nome": "Áustria",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "AZE",
+   "iso2": "AZ",
+   "nome": "Azerbaijão",
+   "moeda": "AZN",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BDI",
+   "iso2": "BI",
+   "nome": "Burundi",
+   "moeda": "BIF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BEL",
+   "iso2": "BE",
+   "nome": "Bélgica",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BEN",
+   "iso2": "BJ",
+   "nome": "Benin",
+   "moeda": "XOF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BFA",
+   "iso2": "BF",
+   "nome": "Burquina Faso",
+   "moeda": "XOF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BGD",
+   "iso2": "BD",
+   "nome": "Bangladesh",
+   "moeda": "BDT",
+   "regiao": "SA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BGR",
+   "iso2": "BG",
+   "nome": "Bulgária",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BHR",
+   "iso2": "BH",
+   "nome": "Barein",
+   "moeda": "BHD",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BHS",
+   "iso2": "BS",
+   "nome": "Bahamas",
+   "moeda": "BSD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BIH",
+   "iso2": "BA",
+   "nome": "Bósnia e Herzegovina",
+   "moeda": "BAM",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BLR",
+   "iso2": "BY",
+   "nome": "Bielorrússia",
+   "moeda": "BYN",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BLZ",
+   "iso2": "BZ",
+   "nome": "Belize",
+   "moeda": "BZD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BMU",
+   "iso2": "BM",
+   "nome": "Bermudas",
+   "moeda": "BMD",
+   "regiao": "NA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BOL",
+   "iso2": "BO",
+   "nome": "Bolívia",
+   "moeda": "BOB",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BRA",
+   "iso2": "BR",
+   "nome": "Brasil",
+   "moeda": "BRL",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BRB",
+   "iso2": "BB",
+   "nome": "Barbados",
+   "moeda": "BBD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BRN",
+   "iso2": "BN",
+   "nome": "Brunei",
+   "moeda": "BND",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BTN",
+   "iso2": "BT",
+   "nome": "Butão",
+   "moeda": "INR",
+   "regiao": "SA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "BWA",
+   "iso2": "BW",
+   "nome": "Botsuana",
+   "moeda": "BWP",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "CAF",
+   "iso2": "CF",
+   "nome": "República Centro-Africana",
+   "moeda": "XAF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "CAN",
+   "iso2": "CA",
+   "nome": "Canadá",
+   "moeda": "CAD",
+   "regiao": "NA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "CHE",
+   "iso2": "CH",
+   "nome": "Suíça",
+   "moeda": "CHF",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "CHI",
+   "iso2": null,
+   "nome": "Ilhas do Canal",
+   "moeda": "GBP",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "CHL",
+   "iso2": "CL",
+   "nome": "Chile",
+   "moeda": "CLP",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "CHN",
+   "iso2": "CN",
+   "nome": "China",
+   "moeda": "CNY",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "CIV",
+   "iso2": "CI",
+   "nome": "Costa do Marfim",
+   "moeda": "XOF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "CMR",
+   "iso2": "CM",
+   "nome": "Camarões",
+   "moeda": "XAF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "COD",
+   "iso2": "CD",
+   "nome": "Congo - Kinshasa",
+   "moeda": "CDF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "COG",
+   "iso2": "CG",
+   "nome": "República do Congo",
+   "moeda": "XAF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "COK",
+   "iso2": "CK",
+   "nome": "Ilhas Cook",
+   "moeda": "NZD",
+   "regiao": "EAP",
+   "grupoRenda": null
+  },
+  {
+   "iso3": "COL",
+   "iso2": "CO",
+   "nome": "Colômbia",
+   "moeda": "COP",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "COM",
+   "iso2": "KM",
+   "nome": "Comores",
+   "moeda": "KMF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "CPV",
+   "iso2": "CV",
+   "nome": "Cabo Verde",
+   "moeda": "CVE",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "CRI",
+   "iso2": "CR",
+   "nome": "Costa Rica",
+   "moeda": "CRC",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "CUB",
+   "iso2": "CU",
+   "nome": "Cuba",
+   "moeda": "CUP",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "CUW",
+   "iso2": "CW",
+   "nome": "Curaçao",
+   "moeda": "XCG",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "CYM",
+   "iso2": "KY",
+   "nome": "Ilhas Cayman",
+   "moeda": "KYD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "CYP",
+   "iso2": "CY",
+   "nome": "Chipre",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "CZE",
+   "iso2": "CZ",
+   "nome": "Tchéquia",
+   "moeda": "CZK",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "DEU",
+   "iso2": "DE",
+   "nome": "Alemanha",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "DJI",
+   "iso2": "DJ",
+   "nome": "Djibuti",
+   "moeda": "DJF",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "DMA",
+   "iso2": "DM",
+   "nome": "Dominica",
+   "moeda": "XCD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "DNK",
+   "iso2": "DK",
+   "nome": "Dinamarca",
+   "moeda": "DKK",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "DOM",
+   "iso2": "DO",
+   "nome": "República Dominicana",
+   "moeda": "DOP",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "DZA",
+   "iso2": "DZ",
+   "nome": "Argélia",
+   "moeda": "DZD",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ECU",
+   "iso2": "EC",
+   "nome": "Equador",
+   "moeda": "USD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "EGY",
+   "iso2": "EG",
+   "nome": "Egito",
+   "moeda": "EGP",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ERI",
+   "iso2": "ER",
+   "nome": "Eritreia",
+   "moeda": "ERN",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ESP",
+   "iso2": "ES",
+   "nome": "Espanha",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "EST",
+   "iso2": "EE",
+   "nome": "Estônia",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ETH",
+   "iso2": "ET",
+   "nome": "Etiópia",
+   "moeda": "ETB",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "FIN",
+   "iso2": "FI",
+   "nome": "Finlândia",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "FJI",
+   "iso2": "FJ",
+   "nome": "Fiji",
+   "moeda": "FJD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "FRA",
+   "iso2": "FR",
+   "nome": "França",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "FRO",
+   "iso2": "FO",
+   "nome": "Ilhas Faroé",
+   "moeda": "DKK",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "FSM",
+   "iso2": "FM",
+   "nome": "Micronésia",
+   "moeda": "USD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "GAB",
+   "iso2": "GA",
+   "nome": "Gabão",
+   "moeda": "XAF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "GBR",
+   "iso2": "GB",
+   "nome": "Reino Unido",
+   "moeda": "GBP",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "GEO",
+   "iso2": "GE",
+   "nome": "Geórgia",
+   "moeda": "GEL",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "GHA",
+   "iso2": "GH",
+   "nome": "Gana",
+   "moeda": "GHS",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "GIB",
+   "iso2": "GI",
+   "nome": "Gibraltar",
+   "moeda": "GIP",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "GIN",
+   "iso2": "GN",
+   "nome": "Guiné",
+   "moeda": "GNF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "GMB",
+   "iso2": "GM",
+   "nome": "Gâmbia",
+   "moeda": "GMD",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "GNB",
+   "iso2": "GW",
+   "nome": "Guiné-Bissau",
+   "moeda": "XOF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "GNQ",
+   "iso2": "GQ",
+   "nome": "Guiné Equatorial",
+   "moeda": "XAF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "GRC",
+   "iso2": "GR",
+   "nome": "Grécia",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "GRD",
+   "iso2": "GD",
+   "nome": "Granada",
+   "moeda": "XCD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "GRL",
+   "iso2": "GL",
+   "nome": "Groenlândia",
+   "moeda": "DKK",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "GTM",
+   "iso2": "GT",
+   "nome": "Guatemala",
+   "moeda": "GTQ",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "GUM",
+   "iso2": "GU",
+   "nome": "Guam",
+   "moeda": "USD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "GUY",
+   "iso2": "GY",
+   "nome": "Guiana",
+   "moeda": "GYD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "HKG",
+   "iso2": "HK",
+   "nome": "Hong Kong, RAE da China",
+   "moeda": "HKD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "HND",
+   "iso2": "HN",
+   "nome": "Honduras",
+   "moeda": "HNL",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "HRV",
+   "iso2": "HR",
+   "nome": "Croácia",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "HTI",
+   "iso2": "HT",
+   "nome": "Haiti",
+   "moeda": "HTG",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "HUN",
+   "iso2": "HU",
+   "nome": "Hungria",
+   "moeda": "HUF",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "IDN",
+   "iso2": "ID",
+   "nome": "Indonésia",
+   "moeda": "IDR",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "IMN",
+   "iso2": "IM",
+   "nome": "Ilha de Man",
+   "moeda": "GBP",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "IND",
+   "iso2": "IN",
+   "nome": "Índia",
+   "moeda": "INR",
+   "regiao": "SA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "IRL",
+   "iso2": "IE",
+   "nome": "Irlanda",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "IRN",
+   "iso2": "IR",
+   "nome": "Irã",
+   "moeda": "IRR",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "IRQ",
+   "iso2": "IQ",
+   "nome": "Iraque",
+   "moeda": "IQD",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ISL",
+   "iso2": "IS",
+   "nome": "Islândia",
+   "moeda": "ISK",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ISR",
+   "iso2": "IL",
+   "nome": "Israel",
+   "moeda": "ILS",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ITA",
+   "iso2": "IT",
+   "nome": "Itália",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "JAM",
+   "iso2": "JM",
+   "nome": "Jamaica",
+   "moeda": "JMD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "JOR",
+   "iso2": "JO",
+   "nome": "Jordânia",
+   "moeda": "JOD",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "JPN",
+   "iso2": "JP",
+   "nome": "Japão",
+   "moeda": "JPY",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "KAZ",
+   "iso2": "KZ",
+   "nome": "Cazaquistão",
+   "moeda": "KZT",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "KEN",
+   "iso2": "KE",
+   "nome": "Quênia",
+   "moeda": "KES",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "KGZ",
+   "iso2": "KG",
+   "nome": "Quirguistão",
+   "moeda": "KGS",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "KHM",
+   "iso2": "KH",
+   "nome": "Camboja",
+   "moeda": "KHR",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "KIR",
+   "iso2": "KI",
+   "nome": "Quiribati",
+   "moeda": "AUD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "KNA",
+   "iso2": "KN",
+   "nome": "São Cristóvão e Névis",
+   "moeda": "XCD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "KOR",
+   "iso2": "KR",
+   "nome": "Coreia do Sul",
+   "moeda": "KRW",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "KWT",
+   "iso2": "KW",
+   "nome": "Kuwait",
+   "moeda": "KWD",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "LAO",
+   "iso2": "LA",
+   "nome": "Laos",
+   "moeda": "LAK",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "LBN",
+   "iso2": "LB",
+   "nome": "Líbano",
+   "moeda": "LBP",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "LBR",
+   "iso2": "LR",
+   "nome": "Libéria",
+   "moeda": "LRD",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "LBY",
+   "iso2": "LY",
+   "nome": "Líbia",
+   "moeda": "LYD",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "LCA",
+   "iso2": "LC",
+   "nome": "Santa Lúcia",
+   "moeda": "XCD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "LIE",
+   "iso2": "LI",
+   "nome": "Liechtenstein",
+   "moeda": "CHF",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "LKA",
+   "iso2": "LK",
+   "nome": "Sri Lanka",
+   "moeda": "LKR",
+   "regiao": "SA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "LSO",
+   "iso2": "LS",
+   "nome": "Lesoto",
+   "moeda": "ZAR",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "LTU",
+   "iso2": "LT",
+   "nome": "Lituânia",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "LUX",
+   "iso2": "LU",
+   "nome": "Luxemburgo",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "LVA",
+   "iso2": "LV",
+   "nome": "Letônia",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MAC",
+   "iso2": "MO",
+   "nome": "Macau, RAE da China",
+   "moeda": "MOP",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MAF",
+   "iso2": "MF",
+   "nome": "São Martinho",
+   "moeda": "EUR",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MAR",
+   "iso2": "MA",
+   "nome": "Marrocos",
+   "moeda": "MAD",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MCO",
+   "iso2": "MC",
+   "nome": "Mônaco",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MDA",
+   "iso2": "MD",
+   "nome": "Moldávia",
+   "moeda": "MDL",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MDG",
+   "iso2": "MG",
+   "nome": "Madagascar",
+   "moeda": "MGA",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MDV",
+   "iso2": "MV",
+   "nome": "Maldivas",
+   "moeda": "MVR",
+   "regiao": "SA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MEX",
+   "iso2": "MX",
+   "nome": "México",
+   "moeda": "MXN",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MHL",
+   "iso2": "MH",
+   "nome": "Ilhas Marshall",
+   "moeda": "USD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MKD",
+   "iso2": "MK",
+   "nome": "Macedônia do Norte",
+   "moeda": "MKD",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MLI",
+   "iso2": "ML",
+   "nome": "Mali",
+   "moeda": "XOF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MLT",
+   "iso2": "MT",
+   "nome": "Malta",
+   "moeda": "EUR",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MMR",
+   "iso2": "MM",
+   "nome": "Mianmar (Birmânia)",
+   "moeda": "MMK",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MNE",
+   "iso2": "ME",
+   "nome": "Montenegro",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MNG",
+   "iso2": "MN",
+   "nome": "Mongólia",
+   "moeda": "MNT",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MNP",
+   "iso2": "MP",
+   "nome": "Ilhas Marianas do Norte",
+   "moeda": "USD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MOZ",
+   "iso2": "MZ",
+   "nome": "Moçambique",
+   "moeda": "MZN",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MRT",
+   "iso2": "MR",
+   "nome": "Mauritânia",
+   "moeda": "MRU",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MUS",
+   "iso2": "MU",
+   "nome": "Maurício",
+   "moeda": "MUR",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MWI",
+   "iso2": "MW",
+   "nome": "Malaui",
+   "moeda": "MWK",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "MYS",
+   "iso2": "MY",
+   "nome": "Malásia",
+   "moeda": "MYR",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "NAM",
+   "iso2": "NA",
+   "nome": "Namíbia",
+   "moeda": "ZAR",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "NCL",
+   "iso2": "NC",
+   "nome": "Nova Caledônia",
+   "moeda": "XPF",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "NER",
+   "iso2": "NE",
+   "nome": "Níger",
+   "moeda": "XOF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "NGA",
+   "iso2": "NG",
+   "nome": "Nigéria",
+   "moeda": "NGN",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "NIC",
+   "iso2": "NI",
+   "nome": "Nicarágua",
+   "moeda": "NIO",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "NLD",
+   "iso2": "NL",
+   "nome": "Países Baixos",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "NOR",
+   "iso2": "NO",
+   "nome": "Noruega",
+   "moeda": "NOK",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "NPL",
+   "iso2": "NP",
+   "nome": "Nepal",
+   "moeda": "NPR",
+   "regiao": "SA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "NRU",
+   "iso2": "NR",
+   "nome": "Nauru",
+   "moeda": "AUD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "NZL",
+   "iso2": "NZ",
+   "nome": "Nova Zelândia",
+   "moeda": "NZD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "OMN",
+   "iso2": "OM",
+   "nome": "Omã",
+   "moeda": "OMR",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "PAK",
+   "iso2": "PK",
+   "nome": "Paquistão",
+   "moeda": "PKR",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "PAN",
+   "iso2": "PA",
+   "nome": "Panamá",
+   "moeda": "PAB",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "PER",
+   "iso2": "PE",
+   "nome": "Peru",
+   "moeda": "PEN",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "PHL",
+   "iso2": "PH",
+   "nome": "Filipinas",
+   "moeda": "PHP",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "PLW",
+   "iso2": "PW",
+   "nome": "Palau",
+   "moeda": "USD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "PNG",
+   "iso2": "PG",
+   "nome": "Papua-Nova Guiné",
+   "moeda": "PGK",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "POL",
+   "iso2": "PL",
+   "nome": "Polônia",
+   "moeda": "PLN",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "PRI",
+   "iso2": "PR",
+   "nome": "Porto Rico",
+   "moeda": "USD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "PRK",
+   "iso2": "KP",
+   "nome": "Coreia do Norte",
+   "moeda": "USD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "PRT",
+   "iso2": "PT",
+   "nome": "Portugal",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "PRY",
+   "iso2": "PY",
+   "nome": "Paraguai",
+   "moeda": "PYG",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "PSE",
+   "iso2": "PS",
+   "nome": "Territórios palestinos",
+   "moeda": "ILS",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "PYF",
+   "iso2": "PF",
+   "nome": "Polinésia Francesa",
+   "moeda": "XPF",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "QAT",
+   "iso2": "QA",
+   "nome": "Catar",
+   "moeda": "QAR",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ROU",
+   "iso2": "RO",
+   "nome": "Romênia",
+   "moeda": "RON",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "RUS",
+   "iso2": "RU",
+   "nome": "Rússia",
+   "moeda": "RUB",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "RWA",
+   "iso2": "RW",
+   "nome": "Ruanda",
+   "moeda": "RWF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SAU",
+   "iso2": "SA",
+   "nome": "Arábia Saudita",
+   "moeda": "SAR",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SDN",
+   "iso2": "SD",
+   "nome": "Sudão",
+   "moeda": "SDG",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SEN",
+   "iso2": "SN",
+   "nome": "Senegal",
+   "moeda": "XOF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SGP",
+   "iso2": "SG",
+   "nome": "Singapura",
+   "moeda": "SGD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SLB",
+   "iso2": "SB",
+   "nome": "Ilhas Salomão",
+   "moeda": "SBD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SLE",
+   "iso2": "SL",
+   "nome": "Serra Leoa",
+   "moeda": "SLE",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SLV",
+   "iso2": "SV",
+   "nome": "El Salvador",
+   "moeda": "USD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SMR",
+   "iso2": "SM",
+   "nome": "San Marino",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SOM",
+   "iso2": "SO",
+   "nome": "Somália",
+   "moeda": "SOS",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SRB",
+   "iso2": "RS",
+   "nome": "Sérvia",
+   "moeda": "RSD",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SSD",
+   "iso2": "SS",
+   "nome": "Sudão do Sul",
+   "moeda": "SSP",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "STP",
+   "iso2": "ST",
+   "nome": "São Tomé e Príncipe",
+   "moeda": "STN",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SUR",
+   "iso2": "SR",
+   "nome": "Suriname",
+   "moeda": "SRD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SVK",
+   "iso2": "SK",
+   "nome": "Eslováquia",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SVN",
+   "iso2": "SI",
+   "nome": "Eslovênia",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SWE",
+   "iso2": "SE",
+   "nome": "Suécia",
+   "moeda": "SEK",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SWZ",
+   "iso2": "SZ",
+   "nome": "Essuatíni",
+   "moeda": "SZL",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SXM",
+   "iso2": "SX",
+   "nome": "Sint Maarten",
+   "moeda": "XCG",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SYC",
+   "iso2": "SC",
+   "nome": "Seicheles",
+   "moeda": "SCR",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "SYR",
+   "iso2": "SY",
+   "nome": "Síria",
+   "moeda": "SYP",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "TCA",
+   "iso2": "TC",
+   "nome": "Ilhas Turcas e Caicos",
+   "moeda": "USD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "TCD",
+   "iso2": "TD",
+   "nome": "Chade",
+   "moeda": "XAF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "TGO",
+   "iso2": "TG",
+   "nome": "Togo",
+   "moeda": "XOF",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "THA",
+   "iso2": "TH",
+   "nome": "Tailândia",
+   "moeda": "THB",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "TJK",
+   "iso2": "TJ",
+   "nome": "Tadjiquistão",
+   "moeda": "TJS",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "TKL",
+   "iso2": "TK",
+   "nome": "Tokelau",
+   "moeda": "NZD",
+   "regiao": "EAP",
+   "grupoRenda": null
+  },
+  {
+   "iso3": "TKM",
+   "iso2": "TM",
+   "nome": "Turcomenistão",
+   "moeda": "TMT",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "TLS",
+   "iso2": "TL",
+   "nome": "Timor-Leste",
+   "moeda": "USD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "TON",
+   "iso2": "TO",
+   "nome": "Tonga",
+   "moeda": "TOP",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "TTO",
+   "iso2": "TT",
+   "nome": "Trinidad e Tobago",
+   "moeda": "TTD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "TUN",
+   "iso2": "TN",
+   "nome": "Tunísia",
+   "moeda": "TND",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "TUR",
+   "iso2": "TR",
+   "nome": "Turquia",
+   "moeda": "TRY",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "TUV",
+   "iso2": "TV",
+   "nome": "Tuvalu",
+   "moeda": "AUD",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "TZA",
+   "iso2": "TZ",
+   "nome": "Tanzânia",
+   "moeda": "TZS",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "UGA",
+   "iso2": "UG",
+   "nome": "Uganda",
+   "moeda": "UGX",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "UKR",
+   "iso2": "UA",
+   "nome": "Ucrânia",
+   "moeda": "UAH",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "URY",
+   "iso2": "UY",
+   "nome": "Uruguai",
+   "moeda": "UYU",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "USA",
+   "iso2": "US",
+   "nome": "Estados Unidos",
+   "moeda": "USD",
+   "regiao": "NA",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "UZB",
+   "iso2": "UZ",
+   "nome": "Uzbequistão",
+   "moeda": "UZS",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "VCT",
+   "iso2": "VC",
+   "nome": "São Vicente e Granadinas",
+   "moeda": "XCD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "VEN",
+   "iso2": "VE",
+   "nome": "Venezuela",
+   "moeda": "VES",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "VGB",
+   "iso2": "VG",
+   "nome": "Ilhas Virgens Britânicas",
+   "moeda": "USD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "VIR",
+   "iso2": "VI",
+   "nome": "Ilhas Virgens Americanas",
+   "moeda": "USD",
+   "regiao": "LAC",
+   "grupoRenda": {
+    "valor": "alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "VNM",
+   "iso2": "VN",
+   "nome": "Vietnã",
+   "moeda": "VND",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "VUT",
+   "iso2": "VU",
+   "nome": "Vanuatu",
+   "moeda": "VUV",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "WLF",
+   "iso2": "WF",
+   "nome": "Wallis e Futuna",
+   "moeda": "XPF",
+   "regiao": "EAP",
+   "grupoRenda": null
+  },
+  {
+   "iso3": "WSM",
+   "iso2": "WS",
+   "nome": "Samoa",
+   "moeda": "WST",
+   "regiao": "EAP",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "XKX",
+   "iso2": "XK",
+   "nome": "Kosovo",
+   "moeda": "EUR",
+   "regiao": "ECA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "YEM",
+   "iso2": "YE",
+   "nome": "Iêmen",
+   "moeda": "YER",
+   "regiao": "MENA",
+   "grupoRenda": {
+    "valor": "baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ZAF",
+   "iso2": "ZA",
+   "nome": "África do Sul",
+   "moeda": "ZAR",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-alta",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ZMB",
+   "iso2": "ZM",
+   "nome": "Zâmbia",
+   "moeda": "ZMW",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  },
+  {
+   "iso3": "ZWE",
+   "iso2": "ZW",
+   "nome": "Zimbábue",
+   "moeda": "USD",
+   "regiao": "SSA",
+   "grupoRenda": {
+    "valor": "media-baixa",
+    "fonte": "Banco Mundial",
+    "ano": null
+   }
+  }
+ ]
+}
