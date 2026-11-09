@@ -1,6 +1,6 @@
 // v018 (governança): custos adicionais sobre as opções — viagens, overhead (custos indiretos) e taxa administrativa.
 // Cada um é um percentual editável, com padrão de fonte pública (grau B):
-//  - viagens: % dos custos das opções (UNESCO 2024: missões = 2,2% dos gastos totais);
+//  - viagens e atividades presenciais: % dos custos das opções (Fundo Global, ciclos 5 a 7: 24,7% a 28,2% dos orçamentos sem produtos de saúde);
 //  - overhead: % dos custos diretos, opções + viagens (EUA, 2 CFR 200.414(f): até 15%);
 //  - taxa administrativa: % dos custos diretos, opções + viagens (ONU, política do UNSDG: 7% dos custos de programa).
 // O overhead e a taxa incidem sobre a mesma base, sem um entrar na base do outro. Entram como uma categoria a mais
@@ -12,9 +12,9 @@ export type ChaveAdicional = 'viagens' | 'overhead' | 'taxa';
 export interface Adicional { chave: ChaveAdicional; rotulo: string; padrao: number; base: 'opcoes' | 'diretos'; fonte: FonteConta; nota: string }
 export const ID_ADICIONAIS = 'adicionais';
 export const ADICIONAIS: Adicional[] = [
-  { chave: 'viagens', rotulo: 'Viagens (diárias e passagens)', padrao: 2.2, base: 'opcoes',
-    fonte: { titulo: 'UNESCO, relatório financeiro e demonstrações financeiras auditadas de 2024 (222 EX/30.I), nota 20.2', url: 'https://www.un.org/sites/un2.un.org/files/unesco_auditors_report_and_audited_financial_statements_for_2024_-_sp.pdf' },
-    nota: 'Em 2024, as missões do pessoal e de delegados da UNESCO (passagens e diárias) somaram 18,3 milhões de US$, 2,2% dos 848,7 milhões de gastos totais. Não inclui as viagens de consultores, que a UNESCO soma aos honorários: é um piso.' },
+  { chave: 'viagens', rotulo: 'Viagens e atividades presenciais', padrao: 25, base: 'opcoes',
+    fonte: { titulo: 'Fundo Global, Data Explorer: orçamentos por categoria de custo, ciclos 5 a 7 (custos relacionados a viagens, TRC)', url: 'https://data.theglobalfund.org/financial-insights' },
+    nota: 'No Fundo Global, os custos de viagem e de atividades presenciais (passagens, diárias, transporte, oficinas, reuniões técnicas, capacitações e supervisão) somam 24,7% do orçamento dos programas, sem contar a compra de produtos de saúde e a cadeia de suprimentos, no ciclo 7 (27,6% no ciclo 6 e 28,2% no ciclo 5). O padrão arredonda para 25%.' },
   { chave: 'overhead', rotulo: 'Overhead (custos indiretos)', padrao: 15, base: 'diretos',
     fonte: { titulo: 'EUA, 2 CFR 200.414(f): custos indiretos de até 15% dos custos diretos sem taxa negociada (revisão de 2024)', url: 'https://www.ecfr.gov/current/title-2/subtitle-A/chapter-II/part-200/subpart-E/subject-group-ECFRd93f2a98b1f6455/section-200.414' },
     nota: 'Cobre o que a instituição gasta para o trabalho existir e não dá para atribuir a uma opção: espaço, TI, RH, contabilidade, jurídico. Para comparar: a União Europeia usa 7% nas subvenções comuns e 25% no Horizon Europe.' },

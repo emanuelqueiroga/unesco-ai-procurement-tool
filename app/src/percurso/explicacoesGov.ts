@@ -58,7 +58,7 @@ export const EXPLICACOES_GOV: Record<string, string> = {
   // tela de opções
   'Duração do plano (meses)': 'Período coberto pelo orçamento. Os custos mensais e anuais são calculados para esse período.',
   // v018: custos adicionais (percentual sobre as opções)
-  'Viagens (diárias e passagens)': 'Passagens e diárias das viagens de trabalho (consultas, visitas às escolas, supervisão), como percentual dos custos das opções.',
+  'Viagens e atividades presenciais': 'Passagens, diárias, transporte e os custos das atividades presenciais (reuniões técnicas, oficinas, consultas, capacitações, visitas às escolas), como percentual dos custos das opções.',
   'Overhead (custos indiretos)': 'Custos da instituição que não dá para atribuir a uma opção (espaço, TI, RH, contabilidade, jurídico), como percentual dos custos diretos.',
   'Taxa administrativa': 'Valor cobrado por quem administra o recurso (agência da ONU, fundação de apoio, fundo), como percentual dos custos diretos. Sem intermediário, use 0%.',
 };
