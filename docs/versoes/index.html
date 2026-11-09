@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Versões da ferramenta</title>
+<style>
+:root {
+  --bg: #F3F5F7; --surface: #FFFFFF; --line: #DDE3E9; --ink: #17212B; --muted: #586674; --head: #0C2D4D;
+  --brand: #0069B4; --brand-strong: #00528F; --brand-tint: #E5F0FA; --ok: #2A6A4A; --ok-bg: #E8F4EC;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0F1720; --surface: #17212B; --line: #2C3A47; --ink: #E6ECF1; --muted: #A3B1BE; --head: #E6ECF1;
+    --brand: #6FB3EC; --brand-strong: #9ACBF3; --brand-tint: #16314A; --ok: #8FD3AE; --ok-bg: #173326; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 "Source Sans 3", -apple-system, "Segoe UI", Roboto, "Noto Sans", system-ui, sans-serif; }
+main { max-width: 880px; margin: 0 auto; padding: 32px 16px 56px; }
+h1, h2 { color: var(--head); line-height: 1.25; margin: 0; }
+h1 { font-size: 1.75rem; }
+h2 { font-size: 1.15rem; margin-top: 36px; }
+p { margin: 8px 0 0; }
+.lead { color: var(--muted); max-width: 64ch; }
+a { color: var(--brand); }
+a:hover { color: var(--brand-strong); }
+a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 2px; }
+.atual { margin-top: 24px; background: var(--surface); border: 1px solid var(--line); border-inline-start: 5px solid var(--brand); border-radius: 8px; padding: 18px 20px; }
+.atual .rotulo { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: var(--brand); }
+.atual h2 { margin-top: 4px; font-size: 1.35rem; }
+.botao { display: inline-block; margin-top: 12px; background: var(--brand); color: #fff; text-decoration: none; font-weight: 600; padding: 9px 16px; border-radius: 6px; }
+.botao:hover { background: var(--brand-strong); color: #fff; }
+@media (prefers-color-scheme: dark) { .botao, .botao:hover { color: #0F1720; } }
+.lista { list-style: none; margin: 12px 0 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.lista li { padding: 14px 18px; border-top: 1px solid var(--line); }
+.lista li:first-child { border-top: 0; }
+.cab { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.cab a { font-weight: 700; font-size: 1.05rem; }
+.data { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.selo { font-size: 12px; font-weight: 700; color: var(--ok); background: var(--ok-bg); border-radius: 999px; padding: 1px 8px; }
+.desc { margin-top: 4px; }
+.url { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.nota { margin-top: 36px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Versões da AI in Education Procurement Tool</h1>
+  <p class="lead">Todas as versões publicadas, com o link de cada uma. Só uma é a versão em revisão agora; as outras ficam para consulta.</p>
+
+  <section class="atual" aria-labelledby="atual-titulo">
+    <span class="rotulo">Revise esta</span>
+    <h2 id="atual-titulo">v018 · versão de teste atual</h2>
+    <p>A versão estável (0.0.14) com o visual da v017. Quando a prioridade é só a governança, segue o fluxo completo da v017: desafios, categorias, opções e custos com equipes de referência por papel, salários do país (ILOSTAT) e encargos. Atualizada em 09/11/2026.</p>
+    <a class="botao" href="../teste/v018/">Abrir a v018</a>
+    <span class="url">emanuelqueiroga.github.io/unesco-ai-procurement-tool/teste/v018/</span>
+  </section>
+
+  <h2>Versão publicada</h2>
+  <ul class="lista">
+    <li><div class="cab"><a href="../">0.0.14 · estável</a><span class="selo">publicada</span><span class="data">27/10/2026</span></div>
+      <p class="desc">A ferramenta publicada. As versões de teste e de revisão não a substituem.</p>
+      <span class="url">emanuelqueiroga.github.io/unesco-ai-procurement-tool/</span></li>
+  </ul>
+
+  <h2>Versões de teste anteriores</h2>
+  <ul class="lista">
+    <li><div class="cab"><a href="../teste/v017/">v017</a><span class="data">06/11/2026</span></div>
+      <p class="desc">O custo nasce das opções: categorias, depois opções, depois valores. Categorias obrigatórias no letramento e na educação.</p>
+      <span class="url">…/teste/v017/</span></li>
+    <li><div class="cab"><a href="../teste/v017-anterior/">v017, build anterior</a><span class="data">06/11/2026</span></div>
+      <p class="desc">A v017 antes das últimas correções, guardada para comparação.</p>
+      <span class="url">…/teste/v017-anterior/</span></li>
+    <li><div class="cab"><a href="../teste/v016/">v016</a><span class="data">04 a 06/11/2026</span></div>
+      <p class="desc">Três prioridades, novos desafios e categorias de custo, fases com custo por fase.</p>
+      <span class="url">…/teste/v016/</span></li>
+    <li><div class="cab"><a href="../teste/layout-v015/">layout-v015</a><span class="data">02 a 04/11/2026</span></div>
+      <p class="desc">Teste do layout novo sobre a v015, com percursos enxutos e valores pré-preenchidos.</p>
+      <span class="url">…/teste/layout-v015/</span></li>
+  </ul>
+
+  <h2>Versões de revisão anteriores</h2>
+  <ul class="lista">
+    <li><div class="cab"><a href="../revisao/v015/">v015</a><span class="data">29/10 a 01/11/2026</span></div>
+      <p class="desc">Percurso separado por prioridade, estimativas de referência opcionais nos orçamentos e resumo em linguagem simples.</p>
+      <span class="url">…/revisao/v015/</span></li>
+    <li><div class="cab"><a href="../revisao/v014/">0.1.0-alpha.7</a><span class="data">28 e 29/10/2026</span></div>
+      <p class="desc">Redesenho com o design system Prumo, novo sistema de recomendações e policy brief.</p>
+      <span class="url">…/revisao/v014/</span></li>
+    <li><div class="cab"><a href="../revisao/">0.0.15-rc.1</a><span class="data">27/10/2026</span></div>
+      <p class="desc">Antiga versão 14 de revisão.</p>
+      <span class="url">…/revisao/</span></li>
+    <li><div class="cab"><a href="../revisao/a/">0.0.16-alpha.a</a><span class="data">27/10/2026</span></div>
+      <p class="desc">Proposta de redesenho A: assistente guiado.</p>
+      <span class="url">…/revisao/a/</span></li>
+    <li><div class="cab"><a href="../revisao/b/">0.0.16-alpha.b</a><span class="data">27/10/2026</span></div>
+      <p class="desc">Proposta de redesenho B: espaço de trabalho com painel de custos.</p>
+      <span class="url">…/revisao/b/</span></li>
+    <li><div class="cab"><a href="../revisao/b3/">0.0.16-alpha.b3</a><span class="data">27/10/2026</span></div>
+      <p class="desc">Proposta de redesenho B3: espaço de trabalho, preenchimento mais fácil e três aparências.</p>
+      <span class="url">…/revisao/b3/</span></li>
+    <li><div class="cab"><a href="../revisao/c/">0.0.16-alpha.c</a><span class="data">27/10/2026</span></div>
+      <p class="desc">Proposta de redesenho C: documento vivo.</p>
+      <span class="url">…/revisao/c/</span></li>
+  </ul>
+
+  <p class="nota">As respostas ficam guardadas no navegador de quem usa, e cada versão de teste ou de revisão usa um espaço próprio: o que você preencher numa versão não aparece na outra.</p>
+</main>
+</body>
+</html>
