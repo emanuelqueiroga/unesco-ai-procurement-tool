@@ -3,17 +3,15 @@
 // começar um novo (o que pede confirmação, porque apaga o caso salvo). Volta da 0.0.14: o mapa das quatro fases com as
 // camadas que cada uma alimenta e a legenda das sete camadas (FasesCamadas).
 import { useState } from 'react';
-import { useCaso, faltamDe, temRespostas, telasAtivas, type Capitulo } from '../store';
+import { useCaso, faltamDe, temRespostas, telasAtivas } from '../store';
 import { Button, Alert } from '../ui';
 import { Shell } from './Shell';
 import { CampoImportar } from './CasoDialog';
-import { abrirMatriz } from './Matriz';
 import { abrirExemplo, comecarEmBranco, exportarCaso } from './acoes';
 import { destinoContinuar } from './transversal';
-import { DiagramaCusto } from './DiagramaCusto';
 import { FasesCamadas } from './FasesCamadas';
 import { TESTE } from '../percurso/canal';
-import { CAPITULOS_INFO, t } from '../percurso/textos';
+import { t } from '../percurso/textos';
 import { href, ir } from '../percurso/rota';
 import './inicio.css';
 
@@ -62,21 +60,8 @@ export function Inicio() {
               <CampoImportar onPronto={(e) => { setErro(e); if (!e) ir(href.plano()); }} />
             </div>
           </details>
-          <details className="pc-inicio-detalhe">
-            <summary>{t('Como funciona')}</summary>
-            <div className="pc-inicio-detalhe-corpo">
-              <ol className="pc-inicio-passos">
-                {([1, 2, 3, 4] as Capitulo[]).map((n) => (
-                  <li key={n}><b>{t(CAPITULOS_INFO[n].titulo)}</b><p>{t(CAPITULOS_INFO[n].guia)}</p></li>
-                ))}
-              </ol>
-              <p>{t('Os valores são estimativas. Você pode revisar as premissas ao longo do planejamento.')}</p>
-              <Button variant="link" onClick={() => abrirMatriz()} aria-haspopup="dialog">{t('Ver a matriz completa')}</Button>
-            </div>
-          </details>
         </div>
         <FasesCamadas />
-        <DiagramaCusto />
       </section>
     </Shell>
   );

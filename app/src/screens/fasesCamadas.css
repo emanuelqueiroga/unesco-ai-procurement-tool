@@ -126,3 +126,34 @@
   .ini-leg-l { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 480px) { .ini-f-nome { font-size: 1.12rem; } }
+
+/* v018 (proposta): "Como funciona" com os dois caminhos */
+.cf .ini-p h4 { margin: 0; font-family: var(--font-serif, Georgia, serif); font-weight: 600; font-size: 1.6rem; line-height: 1.2; color: var(--ini-head); }
+.cf .ini-f-h { font-size: inherit; }
+.cf-n { flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: var(--surface-1, #fff); font-weight: 700; font-variant-numeric: tabular-nums; }
+.cf-comum { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 12px; }
+.cf-comum li, .cf-etapas li { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border: 1px solid var(--ini-line); border-radius: 10px; background: var(--ini-card); }
+.cf-comum li > div, .cf-etapas li > div { display: grid; gap: 4px; min-width: 0; }
+.cf-comum b, .cf-etapas b { color: var(--ini-head); font-size: 1.02rem; }
+.cf-comum span, .cf-etapas span { color: var(--ini-txt); font-size: .95rem; line-height: 1.4; }
+.cf-prio { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.cf-prio > span { padding: 3px 10px; border-radius: 999px; background: var(--ini-bg); border: 1px solid var(--ini-line); font-size: .9rem; }
+.cf-caminhos { display: grid; gap: 18px; position: relative; }
+.cf-caminho { display: grid; gap: 16px; padding: 20px; border-radius: 12px; border: 1px solid var(--ini-line); background: var(--ini-bg); }
+.cf-caminho-cab { display: grid; gap: 4px; max-width: 80ch; }
+.cf-caminho-cab h3 { margin: 0; font-family: var(--font-serif, Georgia, serif); font-weight: 600; font-size: 1.4rem; line-height: 1.2; color: var(--ini-head); }
+.cf-caminho-cab p { color: var(--ini-muted); }
+.cf-se { font-size: .82rem !important; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--primary) !important; }
+.cf-gov { border-inline-start: 5px solid var(--cam1); }
+.cf-ed { border-inline-start: 5px solid var(--f3); }
+.cf-etapas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; position: relative; }
+.cf-etapas li + li::before { content: "→"; position: absolute; margin-inline-start: -22px; margin-top: 2px; color: var(--primary); font-weight: 700; }
+.cf-etapas li { position: relative; }
+.cf-res { margin: 0 !important; }
+.cf-cam { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .95rem; color: var(--ini-txt); }
+.cf-cam .ini-cams { display: inline-flex; }
+.cf-ref { font-style: normal; color: var(--ini-muted); font-size: .88rem; }
+.cf-valores { font-size: .92rem; color: var(--ini-muted); margin-top: 4px !important; }
+.cf .ini-fases { gap: 16px 14px; }
+@media (max-width: 1099px) { .cf-etapas { grid-template-columns: minmax(0, 1fr); } .cf-etapas li + li::before { display: none; } }
+@media (max-width: 760px) { .cf-comum { grid-template-columns: minmax(0, 1fr); } .cf-caminho { padding: 14px; } }
