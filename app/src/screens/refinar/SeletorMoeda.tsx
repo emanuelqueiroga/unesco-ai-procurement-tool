@@ -5,14 +5,14 @@
 // moeda (moeda.doPais, REF-07), uma linha diz isso; escolher outra moeda aqui é escolha da pessoa e o país não a muda mais.
 import { useId } from 'react';
 import { useCaso } from '../../store';
-import { nomeMoeda, lerNumero, LOC, paisPorIso, nomePais } from '../../domain';
+import { nomeMoeda, lerNumero, LOC, paisPorIso, nomePais, getTabelaMoedas } from '../../domain';
 import { CampoNumero } from '../../percurso/CampoNumero';
-import { MOEDAS } from '../../percurso/ambiente';
 import { t } from '../../percurso/textos';
 import { listaMoedas, taxaReferencia } from './calc';
 import '../refinar.css';
 
 export function dataTaxa(): string {
+  const MOEDAS = getTabelaMoedas();
   try { return new Date(MOEDAS.data + 'T12:00:00').toLocaleDateString(String(LOC())); } catch (e) { return MOEDAS.data; }
 }
 
@@ -61,7 +61,7 @@ export function SeletorMoeda({ compacto, semNota }: { compacto?: boolean; semNot
       ) : null}
       {semNota ? null : (
         <p className="rf-nota">
-          {t('O modelo calcula em dólares (US$) e converte para a moeda escolhida pela taxa de referência de {data} ({fonte}), que você pode substituir. A conversão é de exibição. O risco de variação cambial sobre os itens cotados em dólar está nas premissas (trajetória do câmbio) e nos cenários.', { data: dataTaxa(), fonte: MOEDAS.fonte })}
+          {t('O modelo calcula em dólares (US$) e converte para a moeda escolhida pela taxa de referência de {data} ({fonte}), que você pode substituir. A conversão é de exibição. O risco de variação cambial sobre os itens cotados em dólar está nas premissas (trajetória do câmbio) e nos cenários.', { data: dataTaxa(), fonte: getTabelaMoedas().fonte })}
         </p>
       )}
     </div>

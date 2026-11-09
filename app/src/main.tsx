@@ -11,6 +11,7 @@ import { setTradutorUI } from './ui';
 import { tr } from './domain';
 import { vigiarSalvamento } from './screens/salvamento';
 import { iniciarCapacidades } from './screens/acoes';
+import { carregarCotacoes } from './percurso/cotacoes';
 import './styles/idiomas.css';
 
 // Os textos fixos dos componentes passam pelo mesmo tradutor do domínio.
@@ -39,12 +40,14 @@ window.addEventListener('hashchange', marcarGaleria);
 
 // Idioma: o do caso guardado, senão inglês (como na v13). A primeira pintura espera o dicionário (um arquivo
 // local, carregado sob demanda), para a tela não aparecer em português e trocar de idioma em seguida.
+// v018: espera também a cotação do dia (no máximo 2,5 s; sem resposta, vale a última guardada ou a embutida).
 const desenhar = () => createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
   </StrictMode>,
 );
-usarIdioma(idiomaInicial(useCaso.getState().lang))
+const idioma = usarIdioma(idiomaInicial(useCaso.getState().lang))
   .then((l) => { if (useCaso.getState().lang !== l) useCaso.getState().setLang(l); })
-  .catch((e) => console.error('idioma', e))
-  .finally(desenhar);
+  .catch((e) => console.error('idioma', e));
+const cotacoes = carregarCotacoes().catch((e) => console.error('cotações', e));
+void Promise.all([idioma, cotacoes]).finally(desenhar);

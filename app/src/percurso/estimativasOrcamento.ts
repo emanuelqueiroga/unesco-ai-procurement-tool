@@ -2,8 +2,7 @@
 // Função pura: lê as quantidades já respondidas e os parâmetros de data/referencias.json, converte de US$ pela taxa
 // da ferramenta e devolve a conta inteira. Nada é gravado aqui; só o clique em "Usar esta estimativa" muda a situação
 // do item para 'referencia'. Sem período, quantidade ou taxa conhecida, não estima e diz o que falta.
-import moedas from '../../../data/moedas.json';
-import { refLinha, lerNumero, LOC } from '../domain';
+import { refLinha, lerNumero, LOC, getTabelaMoedas } from '../domain';
 import { t } from './textos';
 import { lerLit, publicosLetramento } from './letramento';
 import { lerEd, usuariosIAEd } from './pedagogico';
@@ -95,13 +94,14 @@ function moedaDoOrcamento(frente: FrenteEstimativa, s: EstadoEst): string {
   const salvo = frente === 'governanca' ? s.ctx.govOrcamento?.moeda : frente === 'letramento' ? s.ctx.letramento?.orcamento?.moeda : lerEd(s, 'orcamento.moeda');
   return String(salvo || s.moeda?.cod || 'USD');
 }
-/** Taxa por US$ que a ferramenta já usa: a taxa informada no caso para esta moeda, senão a tabela de data/moedas.json. */
+/** Taxa por US$ que a ferramenta já usa: a taxa informada no caso para esta moeda, senão a cotação em uso (a do dia ou, sem rede, a guardada). */
 export function taxaMoeda(cod: string, s: Pick<Estado14, 'moeda'>): ConversaoConta | null {
   if (cod === 'USD') return null;
   const m = s.moeda, manual = m?.cod === cod && m?.taxaDe === cod ? Number(lerNumero(m.taxa)) : NaN;
   if (manual > 0) return { de: 'USD', para: cod, taxa: manual, fonte: t('Taxa informada no caso'), data: '', manual: true };
-  const tx = (moedas as { taxas: Record<string, number> }).taxas[cod];
-  return typeof tx === 'number' && tx > 0 ? { de: 'USD', para: cod, taxa: tx, fonte: String((moedas as any).fonte || ''), data: String((moedas as any).data || ''), manual: false } : null;
+  const moedas = getTabelaMoedas() as { fonte?: string; data?: string; taxas: Record<string, number> };
+  const tx = moedas.taxas[cod];
+  return typeof tx === 'number' && tx > 0 ? { de: 'USD', para: cod, taxa: tx, fonte: String(moedas.fonte || ''), data: String(moedas.data || ''), manual: false } : null;
 }
 export function parametro(id: string): ParametroConta {
   const r = refLinha(id, ['global']);

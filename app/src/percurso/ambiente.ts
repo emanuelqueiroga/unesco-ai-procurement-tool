@@ -4,6 +4,7 @@ import moedas from '../../../data/moedas.json';
 import { setTabelaMoedas, setMoeda, getMoeda, grande, din, LOC } from '../domain';
 import type { Estado14 } from '../store';
 
+// Tabela embutida; a cotação do dia (percurso/cotacoes.ts) a substitui na abertura.
 setTabelaMoedas(moedas);
 
 /** Chamar antes de calcular ou formatar com o estado `e` (barato: só troca a referência). */
@@ -21,4 +22,3 @@ export const fmt = {
   int: (v: number | string) => { const n = +v; return isFinite(n) && String(v) !== '' ? Math.round(n).toLocaleString(LOC()) : '—'; },
 };
 
-export const MOEDAS = moedas as { fonte: string; data: string; taxas: Record<string, number> };
