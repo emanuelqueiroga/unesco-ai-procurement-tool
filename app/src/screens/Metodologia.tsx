@@ -12,16 +12,17 @@ import { EQUIPES_GOV, PAPEIS_ESPECIALISTA, pessoasDaEquipe } from '../percurso/e
 import { MEDIANA_MUNDIAL } from '../percurso/custosV017';
 import { CASOS_SOBERANA, NOME_GRUPO_FMI, paisSoberana, soberanaNacional } from '../percurso/nuvemSoberana';
 import { LOC } from '../domain';
+import { rotuloClasse } from '../percurso/desafio2Gov';
 import './salarios.css';
 
 /** Estrutura do custo: do total aos parâmetros (mesma figura da nota técnica). */
 function FiguraCusto() {
   const edge = 'var(--muted)', accent = 'var(--primary)', ink = 'currentColor', quiet = 'var(--muted)', h = 48;
-  const c0 = 16, w0 = 124, c1 = 164, w1 = 184, c2 = 372, w2 = 180, c3 = 576, w3 = 168;
+  const c0 = 16, w0 = 136, c1 = 164, w1 = 184, c2 = 372, w2 = 180, c3 = 576, w3 = 168;
   const no = (x: number, y: number, w: number, main: boolean, a: string, b: string) => <g>
     <rect x={x} y={y} width={w} height={h} rx="8" fill={main ? accent : 'none'} fillOpacity={main ? 0.12 : 1} stroke={main ? accent : edge} strokeWidth={main ? 2 : 1.25} />
     <text x={x + 12} y={y + 20} fontWeight="600" fill={ink}>{a}</text>
-    <text x={x + 12} y={y + 37} fontSize="11.5" fill={quiet}>{b}</text>
+    <text x={x + 12} y={y + 37} fontSize={b.length > 18 ? 10.5 : 11.5} fill={quiet}>{b}</text>
   </g>;
   const caminhos = [`M${c0 + w0} 305H152V170H${c1}`, 'M152 305V320H164', 'M152 320V380H164', 'M152 380V440H164', `M${c1 + w1} 170H360V80H${c2}`,
     `M360 170V140H${c2}`, `M360 170V200H${c2}`, `M360 200V260H${c2}`, `M${c2 + w2} 80H${c3}`, `M564 80V140H${c3}`, `M564 140V200H${c3}`];
@@ -81,7 +82,7 @@ export function Metodologia() {
   const med = { m1: usd(MEDIANA_MUNDIAL[1]), m2: usd(MEDIANA_MUNDIAL[2]), m3: usd(MEDIANA_MUNDIAL[3]), m4: usd(MEDIANA_MUNDIAL[4]) };
   const ir = (id: string) => (e: React.MouseEvent) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   const secoes: [string, string][] = [['met-notacao', MET.hNotacao], ['met-equacoes', MET.hEquacoes], ['met-parametros', MET.hParametros], ['met-dados', MET.hDados],
-    ['met-equipes', MET.hEquipes], ['met-soberana', MET.hSoberana], ['met-incertezas', MET.hIncertezas], ['met-graus', MET.hGraus], ['met-refs', MET.hRefs]];
+    ['met-d2', MET.hD2], ['met-equipes', MET.hEquipes], ['met-soberana', MET.hSoberana], ['met-incertezas', MET.hIncertezas], ['met-graus', MET.hGraus], ['met-refs', MET.hRefs]];
   let n = 0;
   return <Shell nav={false} plano={false}>
     <section className="pc-sal pc-met" aria-labelledby="met-titulo">
@@ -140,6 +141,16 @@ export function Metodologia() {
 
       <h3 id="met-dados">{t(MET.hDados)}</h3>
       <ul className="pc-sal-lista">{MET.dados.map(x => <li key={x}>{t(x)}</li>)}</ul>
+
+      {/* v018.1: partes das opções do desafio 2 */}
+      <h3 id="met-d2">{t(MET.hD2)}</h3>
+      <p>{t(MET.d2)}</p>
+      <div className="pc-sal-rolagem" tabIndex={0} role="region" aria-label={t(MET.hD2)}>
+        <table className="pc-sal-tabela"><thead><tr>{MET.cabD2.map(c => <th key={c} scope="col">{t(c)}</th>)}</tr></thead>
+          <tbody>{MET.partesD2.map(([n, op, parte, conta, classe]) => <tr key={op + parte}>
+            <th scope="row">{n + ' ' + t(op)}</th><td>{t(parte)}</td><td>{t(conta)}</td><td>{rotuloClasse(classe)}</td>
+          </tr>)}</tbody></table>
+      </div>
 
       <h3 id="met-equipes">{t(MET.hEquipes)}</h3>
       <p>{t(MET.equipes)}</p>

@@ -99,7 +99,7 @@ export function linhasAdicionais(diretoPorFase: Record<string, number>, salvo: S
 /** v018.1: formação de pessoas nos custos adicionais. A pessoa decide se lança o custo e quantas pessoas serão formadas;
  *  a conta é a mesma da categoria 3.2 (criação do curso, instrutores, sala e alimentação, deslocamento dos instrutores e
  *  coordenação), com as horas por pessoa e a parte presencial que a pessoa pode trocar. */
-export const FORMACAO_AD = { chave: 'formacao', rotulo: 'Formação de pessoas', horas: FORMACAO_GOV.horasPadrao,
+export const FORMACAO_AD = { chave: 'formacao', rotulo: 'Formação de pessoas', get horas() { return FORMACAO_GOV.horasPadrao; },
   pergunta: 'Deseja lançar o custo de formação de pessoas (servidores, gestores, equipes técnicas)?', opcoes: [['sim', 'Sim'], ['nao', 'Não']] as [string, string][] };
 export function linhaFormacao(s: Pick<Estado14, 'ctx'>, salvo: SalvoAdicionais, fases: FaseCalc[], taxa: number | null, fmt: (v: number) => string, num: (v: number) => string, moeda?: string): LinhaOpcao {
   const base = { chave: FORMACAO_AD.chave, rotulo: FORMACAO_AD.rotulo, tipo: 'percentual' as const, tipoPadrao: 'percentual' as const, fonte: null, qtdSugerida: false, unit: null, valoresFase: {} };
