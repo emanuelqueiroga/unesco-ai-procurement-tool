@@ -9,6 +9,7 @@ import { calcularOpcao, chaveOpcao, ehParametro, PARAMETROS, PESSOAS_31, type Li
 import { EQUIPES_GOV } from './equipesGov';
 import { linhasAdicionais, linhaFormacao, ID_ADICIONAIS, ADICIONAIS } from './adicionaisGov';
 import { calcularD2, ehOpcaoD2, classeDaOpcao } from './desafio2Gov';
+import { linhaFormacao32, OPCAO_FORMACAO_32 } from './formacaoGov';
 import { lerLit } from './letramento';
 import { chaveEd, lerEd, usaIAEd, usuariosIAEd } from './pedagogico';
 import { PROBLEMA_POR_ID } from '../domain/prioridades.js';
@@ -277,7 +278,7 @@ function pessoasDoPlano(s: Estado, sel: { c: CategoriaV16; marcadas: string[]; c
   for (const { c, marcadas, custos } of sel) for (const r of marcadas) {
     const salvo = custos[chaveOpcao(r)] || {}, eq = EQUIPES_GOV[r];
     if (c.id === 'g31') { n += typeof salvo.qtd === 'number' && salvo.qtd > 0 ? salvo.qtd : PESSOAS_31; continue; }
-    if (!eq || (r === 'Nuvem soberana' && salvo.escolha?.modelo !== 'contratar')) continue;
+    if (!eq || (r === 'Nuvem soberana' && salvo.escolha?.modelo === 'construir')) continue;
     for (const p of eq.papeis) { const q = salvo.papeis?.[p.papel]?.qtd; n += typeof q === 'number' && q > 0 ? q : p.qtd; }
     for (const x of Array.isArray(salvo.papeisExtra) ? salvo.papeisExtra : []) if (x && typeof x.qtd === 'number' && x.qtd > 0 && String(x.papel || '').trim()) n += x.qtd;
   }
@@ -298,6 +299,8 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
     const linhas = marcadas.filter(r => !ehParametro(f, c.id, r)).map(r => {
       // v018.1 (governança): o desafio 2 tem conta própria (equipe + partes); as demais opções são inteiras CapEx ou OpEx
       if (f === 'governanca' && ehOpcaoD2(r)) return calcularD2(s, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num, moeda);
+      // v018.1: a formação 3.2 é contada por componentes (criação, instrutores, sala e alimentação, deslocamento, coordenação)
+      if (f === 'governanca' && r === OPCAO_FORMACAO_32) return linhaFormacao32(sx, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num, moeda);
       const l = calcularOpcao(sx, f, c.id, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num, moeda);
       if (f === 'governanca') { const cl = classeDaOpcao(r); l.capex = l.total === null ? null : cl === 'capex' ? l.total : 0; l.opex = l.total === null ? null : cl === 'opex' ? l.total : 0; l.uso = l.total === null ? null : 0; }
       return l;
@@ -332,7 +335,7 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
       l.opex = l.total === null ? null : centavos(l.total - (l.capex as number) - (l.uso as number));
     }
     // v018.1: formação de pessoas (pergunta própria; quantidade de pessoas definida por quem faz o plano), OpEx
-    linhas.push(linhaFormacao(salvoAd, fases, taxa, fmt, num));
+    linhas.push(linhaFormacao(s, salvoAd, fases, taxa, fmt, num, moeda));
     const inf = linhas.filter(l => l.status === 'informado'), est = linhas.filter(l => l.status === 'referencia');
     const informadoCat = centavos(inf.reduce((n, l) => n + (l.total as number), 0)), estimadoCat = centavos(est.reduce((n, l) => n + (l.total as number), 0));
     itens.push({ id: ID_ADICIONAIS, n: '', nome: t('Viagens, overhead, taxa administrativa e formação'), grupo: t('Custos adicionais'), opcoes: [], marcadas: ADICIONAIS.map(a => a.rotulo),

@@ -68,8 +68,8 @@ function valoresExemplo(): Record<string, string | number> {
   const num = (v: number, d: number) => new Intl.NumberFormat(loc, { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
   const r: Record<string, string | number> = { ano: x.ano, meses: x.meses, h: x.h, participantes: x.participantes, horas: x.horas,
     pi1: pct(x.pi[0]), pi2: pct(x.pi[1]), e: pct(x.e), f1: num(1 + x.pi[0], 2), f2: num(1 + x.pi[1], 2), I: num(k.I, 4), fe: num(1 + x.e, 2), fp: num(1 + x.p, 2),
-    w1: usd(x.w1), w2: usd(x.w2), w4: usd(x.w4), tb: x.tb, equip: usd(x.equip), sobM: num(k.sobM, 2) };
-  for (const c of ['w2i', 'c1', 'c2', 'c4', 'c2e', 'r1', 'r2', 'r3', 'r4', 'mensal', 'norma', 'integral', 'formacao', 'hosp', 'vmsV', 'comp', 'P', 'D', 'V', 'O', 'T', 'C', 'TK', 'K', 'TU', 'U', 'X', 'existente', 'desembolso', 'sobK', 'sobKe'] as const) r[c] = usd(k[c]);
+    w1: usd(x.w1), w2: usd(x.w2), w4: usd(x.w4), tb: x.tb, equip: usd(x.equip), sobM: num(k.sobM, 2), tau: k.tau, dias: k.dias, hp: num(k.hp, 0), ho: num(k.ho, 0) };
+  for (const c of ['w2i', 'c1', 'c2', 'c4', 'c2e', 'r1', 'r2', 'r3', 'r4', 'mensal', 'norma', 'integral', 'hf', 'fCri', 'fIns', 'fSala', 'fDes', 'fCoo', 'formacao', 'hosp', 'vmsV', 'comp', 'P', 'D', 'V', 'O', 'T', 'C', 'TK', 'K', 'TU', 'U', 'X', 'existente', 'desembolso', 'sobK', 'sobKe'] as const) r[c] = usd(k[c]);
   return r;
 }
 

@@ -248,6 +248,8 @@ export interface LinhaOpcao {
   pessoas?: number | null; pessoasCapex?: number | null;
   /** v018.1 (desafio 2): campos da opção além da equipe (quantidades, valores e escolhas) */
   entradas?: EntradaD2[];
+  /** v018.1 (formação): informação mostrada abaixo da linha, fora do total (tempo dos participantes) */
+  nota?: string;
   memoria: string;
 }
 const positivo = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0;

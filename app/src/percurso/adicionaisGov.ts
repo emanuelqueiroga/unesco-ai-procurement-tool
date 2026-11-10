@@ -9,8 +9,10 @@
 // sem resposta, entra o padrão. O overhead e a taxa incidem sobre a mesma base, sem um entrar na base do outro. Entram como uma categoria a mais
 // ("Custos adicionais") no orçamento, para somar no total, nas fases, no resumo e nos PDFs.
 import { t } from './textos';
+import type { Estado14 } from '../store/tipos';
 import type { LinhaOpcao, ParteConta, FonteConta, FaseCalc } from './custosV017';
-import { parametro, formatarMoedaEst, PARAMETRO_FORMACAO } from './estimativasOrcamento';
+import { parametro, formatarMoedaEst } from './estimativasOrcamento';
+import { custoFormacao, entradasFormacao, FORMACAO_GOV } from './formacaoGov';
 import { LOC } from '../domain';
 
 export type ChaveAdicional = 'viagens' | 'overhead' | 'taxa';
@@ -19,7 +21,7 @@ export const ID_ADICIONAIS = 'adicionais';
 /** O que fica gravado em govOrcamento.adicionais: os percentuais e as três perguntas (se se aplica). */
 export interface SalvoAdicionais extends Partial<Record<ChaveAdicional, number>> { temViagens?: 'sim' | 'nao'; overheadCoberto?: 'sim' | 'nao'; executor?: 'proprio' | 'onu' | 'fundacao';
   /** v018.1: formação de pessoas — se entra no plano, quantas pessoas, horas por pessoa e custo da hora (moeda do plano) */
-  temFormacao?: 'sim' | 'nao'; formPessoas?: number; formHoras?: number; formHora?: number }
+  temFormacao?: 'sim' | 'nao'; formPessoas?: number; formHoras?: number; formHora?: number; formPresencial?: number }
 export interface PerguntaAdicional { campo: 'temViagens' | 'overheadCoberto' | 'executor'; pergunta: string; opcoes: [string, string][]; naoAplica: string; motivo: string }
 /** v018: uma pergunta por custo adicional, para saber se ele se aplica (sem resposta, entra com o padrão). */
 export const PERGUNTAS_ADICIONAIS: Record<ChaveAdicional, PerguntaAdicional> = {
@@ -95,33 +97,19 @@ export function linhasAdicionais(diretoPorFase: Record<string, number>, salvo: S
 }
 
 /** v018.1: formação de pessoas nos custos adicionais. A pessoa decide se lança o custo e quantas pessoas serão formadas;
- *  as horas (padrão de 20 por pessoa) e o custo da hora (US$ 12 por hora-participante, convertido) podem ser trocados. */
-export const FORMACAO_AD = { chave: 'formacao', rotulo: 'Formação de pessoas', horas: 20,
+ *  a conta é a mesma da categoria 3.2 (criação do curso, instrutores, sala e alimentação, deslocamento dos instrutores e
+ *  coordenação), com as horas por pessoa e a parte presencial que a pessoa pode trocar. */
+export const FORMACAO_AD = { chave: 'formacao', rotulo: 'Formação de pessoas', horas: FORMACAO_GOV.horasPadrao,
   pergunta: 'Deseja lançar o custo de formação de pessoas (servidores, gestores, equipes técnicas)?', opcoes: [['sim', 'Sim'], ['nao', 'Não']] as [string, string][] };
-export function linhaFormacao(salvo: SalvoAdicionais, fases: FaseCalc[], taxa: number | null, fmt: (v: number) => string, num: (v: number) => string): LinhaOpcao {
+export function linhaFormacao(s: Pick<Estado14, 'ctx'>, salvo: SalvoAdicionais, fases: FaseCalc[], taxa: number | null, fmt: (v: number) => string, num: (v: number) => string, moeda?: string): LinhaOpcao {
   const base = { chave: FORMACAO_AD.chave, rotulo: FORMACAO_AD.rotulo, tipo: 'percentual' as const, tipoPadrao: 'percentual' as const, fonte: null, qtdSugerida: false, unit: null, valoresFase: {} };
   const zero: Record<string, number> = {}; for (const x of fases) zero[x.id] = 0;
   if (salvo.temFormacao !== 'sim') return { ...base, qtd: 0, horas: null, unitRef: null, unitDaReferencia: false, porFase: zero, total: 0, status: 'informado', falta: [], naoAplica: true,
     capex: 0, opex: 0, uso: 0, memoria: t(salvo.temFormacao === 'nao' ? 'Não se aplica: o plano não lança o custo de formação.' : 'Responda Sim para lançar o custo de formação.') } as LinhaOpcao;
-  const pessoas = positivo(salvo.formPessoas) ? salvo.formPessoas as number : null;
-  const horasInf = positivo(salvo.formHoras), horas = horasInf ? salvo.formHoras as number : FORMACAO_AD.horas;
-  const par = parametro(PARAMETRO_FORMACAO), horaRef = taxa === null ? null : centavos(par.valor * taxa);
-  const horaInf = typeof salvo.formHora === 'number' && salvo.formHora >= 0, hora = horaInf ? salvo.formHora as number : horaRef;
-  const falta: string[] = []; if (pessoas === null) falta.push(t('pessoas a formar')); if (hora === null) falta.push(t('custo da hora de formação'));
-  const total = falta.length ? null : centavos((pessoas as number) * horas * (hora as number));
-  const H = fases.reduce((n, x) => n + x.meses, 0) || 1, porFase: Record<string, number> = {};
-  if (total !== null) { let resto = total; fases.forEach((x, i) => { const v = i === fases.length - 1 ? centavos(resto) : centavos(total * x.meses / H); porFase[x.id] = v; resto -= v; }); }
-  const tx = taxa === null ? '' : new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 4 }).format(taxa);
-  const partes: ParteConta[] = [
-    { rotulo: t('Pessoas a formar'), valor: pessoas === null ? '—' : num(pessoas), texto: t('informado por você'), fontes: [] },
-    { rotulo: t('Horas por pessoa'), valor: num(horas), texto: horasInf ? t('informado por você') : t('estimativa de referência (grau C): {n} horas por pessoa, uma formação curta', { n: FORMACAO_AD.horas }), fontes: [] },
-    { rotulo: t('Custo por hora'), valor: hora === null ? '—' : fmt(hora), fontes: [], texto: horaInf ? t('informado por você')
-      : t('Custo da hora de formação por participante: {v} (estimativa de referência, grau C, que pode variar conforme o contexto)', { v: formatarMoedaEst(par.valor, 'USD') }) + (tx && taxa !== 1 ? ' ' + t('× câmbio de {tx} por US$', { tx }) : '') },
-  ];
-  const estimado = !horasInf || !horaInf;
-  return { ...base, qtd: pessoas, horas, unitRef: horaRef, unitDaReferencia: !horaInf, porFase, total, status: falta.length ? 'falta' : estimado ? 'referencia' : 'informado', falta,
-    capex: total === null ? null : 0, opex: total, uso: total === null ? null : 0, pessoas: total,
-    conta: { formula: total === null ? '' : partes.map(p => p.valor).join(' × ') + ' = ' + fmt(total), partes },
-    memoria: total === null ? '' : t('{n} pessoas × {h} h × {v} por hora', { n: num(pessoas as number), h: num(horas), v: fmt(hora as number) }) } as LinhaOpcao;
+  const e = entradasFormacao({ pessoas: salvo.formPessoas, horas: salvo.formHoras, presencial: salvo.formPresencial }, null, '');
+  const r = custoFormacao(s, e.n, e.h, e.p, fases, taxa, moeda, fmt, num);
+  return { ...base, qtd: e.n, horas: e.h, unitRef: null, unitDaReferencia: false, porFase: r.porFase, total: r.total, status: r.falta.length ? 'falta' : 'referencia', falta: r.falta,
+    capex: r.capex, opex: r.opex, uso: r.total === null ? null : 0, pessoas: r.total === null ? null : 0, pessoasCapex: 0,
+    conta: r.total === null ? undefined : { formula: r.formula, partes: r.partes }, nota: r.textoTempo || undefined, memoria: r.memoria } as LinhaOpcao;
 }
 const positivo = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0;

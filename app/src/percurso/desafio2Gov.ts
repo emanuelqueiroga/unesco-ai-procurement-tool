@@ -9,12 +9,18 @@ import { LOC, getTabelaMoedas } from '../domain';
 import { calcularTime, custoMensalPerfil, chaveOpcao, type CustoSalvo, type FaseCalc, type LinhaOpcao, type ParteConta, type FonteConta, type EntradaD2 } from './custosV017';
 import { EQUIPES_GOV } from './equipesGov';
 import { paisSoberana, soberanaNacional, COEF_SOBERANA, FONTES_SOBERANA, NOME_GRUPO_FMI } from './nuvemSoberana';
+import { matriculasMil } from './formacaoGov';
+import { URL_MATRICULAS } from './paisExtraDados';
 
 export type Classe = 'capex' | 'opex' | 'uso';
 /** Preços de referência de nuvem (US$), tabela pública da Azure (consulta de 10/11/2026); máquina = mediana de 68 regiões. */
 export const PRECOS_NUVEM = { vmHora: 0.115, horasMes: 730, armazenamentoGB: 0.0208, frioGB: 0.0152, arquivoGB: 0.00099, saidaGB: 0.087 };
 /** Calculadoras oficiais de custo do X-Road (NIIS, 2021; valores em euros). */
 export const XROAD = { centralDias: 655, centralInfraAno: 62160, membroDias: 44, membroInfraAno: 6480, membroPessoas: 0.1, diasAno: 260 };
+/** v018.1: quantidades sugeridas das opções que dependem do tamanho do sistema (estimativas de referência, grau C), para a
+ *  página não travar: sistemas a integrar; dados por estudante matriculado (primário e secundário, Banco Mundial);
+ *  máquinas virtuais por milhão de estudantes, com um mínimo; dados guardados quando não há matrículas. */
+export const SUGESTOES_D2 = { sistemas: 5, mbPorEstudante: 10, vmPorMilhao: 4, vmMinimo: 4, tbSemDado: 10 };
 export const FONTES_D2: Record<string, FonteConta> = {
   azure: { titulo: 'Microsoft Azure: tabela pública de preços (Retail Prices API), consulta de 10/11/2026', url: 'https://prices.azure.com/api/retail/prices' },
   google: { titulo: 'Google Cloud Storage: preços', url: 'https://cloud.google.com/storage/pricing' },
@@ -23,6 +29,7 @@ export const FONTES_D2: Record<string, FonteConta> = {
   ckan: { titulo: 'CKAN: catálogo de dados de código aberto', url: 'https://ckan.org/' },
   keycloak: { titulo: 'Keycloak: gestão de identidade e acesso de código aberto', url: 'https://www.keycloak.org/' },
   dataAct: { titulo: 'União Europeia, Regulamento (UE) 2023/2854 (Data Act), art. 29: fim das tarifas de troca de fornecedor', url: 'https://eur-lex.europa.eu/eli/reg/2023/2854/oj' },
+  matriculas: { titulo: 'Banco Mundial: matrículas no ensino primário (SE.PRM.ENRL) e secundário (SE.SEC.ENRL)', url: URL_MATRICULAS },
 };
 
 /** Opções do desafio 2 com conta própria e a classe (CapEx ou OpEx) da equipe de referência de cada uma. */
@@ -71,6 +78,12 @@ export function calcularD2(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: Cust
   const anual = (id: string, r: string, classe: Classe, valorAno: number | null) => { if (valorAno !== null && valorAno > 0) add({ id, rotulo: t(r), classe, estimado: false, valor: valorAno * H / 12, texto: t('{v} por ano, informado por você, × {h} meses', { v: fmt(valorAno), h: n2(H) }), fontes: [] }); };
   const total1 = (id: string, r: string, classe: Classe, valor: number | null) => { if (valor !== null && valor > 0) add({ id, rotulo: t(r), classe, estimado: false, valor, texto: t('valor total informado por você'), fontes: [] }); };
   const diaria = (c: { valor: number }) => c.valor * 12 / XROAD.diasAno;
+  // v018.1: sugestões pelo tamanho da rede (matrículas do país)
+  const mat = matriculasMil(iso), S = SUGESTOES_D2;
+  const tbSug = mat === null ? S.tbSemDado : Math.max(1, Math.round(mat * 1000 * S.mbPorEstudante / 1048576 * 10) / 10);
+  const dicaTB = mat === null ? t('Vazio = {v} TB (estimativa de referência, grau C; sem dado de matrículas do país).', { v: n2(tbSug) })
+    : t('Vazio = {v} TB: {m} mil estudantes matriculados (Banco Mundial) × {mb} MB por estudante (estimativa de referência, grau C).', { v: n2(tbSug), m: n2(mat), mb: S.mbPorEstudante });
+  const vmSug = mat === null ? S.vmMinimo : Math.max(S.vmMinimo, Math.ceil(S.vmPorMilhao * mat / 1000));
 
   // a equipe de referência entra quando a opção tem equipe (na nuvem soberana, só no caminho "contratar")
   let usarEquipe = !!EQUIPES_GOV[rotulo];
@@ -92,10 +105,11 @@ export function calcularD2(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: Cust
       break;
     }
     case 'Interoperabilidade e portabilidade de dados': {
-      const n = numero('sistemas', 'Sistemas a integrar', { obrigatoria: true });
+      const nInf = numero('sistemas', 'Sistemas a integrar', { sugestao: String(SUGESTOES_D2.sistemas),
+        dica: t('Vazio = {n} sistemas: cadastro de estudantes, censo escolar, avaliação, pessoal e gestão financeira das escolas (estimativa de referência, grau C).', { n: SUGESTOES_D2.sistemas }) });
+      const n = nInf ?? SUGESTOES_D2.sistemas;
       const c = especialista();
-      if (n === null) falta.push(t('sistemas a integrar'));
-      else {
+      {
         add({ id: 'integracao', rotulo: t('Integração de cada sistema'), classe: 'capex', estimado: true, pessoas: true, valor: c ? n * XROAD.membroDias * diaria(c) : null,
           texto: t('{n} sistemas × {d} dias de trabalho × diária de {v} (custo mensal × 12 ÷ 260 dias)', { n: n2(n), d: XROAD.membroDias, v: c ? fmt(diaria(c)) : '—' }) + (c ? ' · ' + c.texto : ''), fontes: [FONTES_D2.xroad, ...(c ? c.fontes : [])] });
         add({ id: 'servidores', rotulo: t('Servidores e certificados de cada sistema'), classe: 'opex', estimado: true, valor: (() => { const v = eur(n * XROAD.membroInfraAno * H / 12); return v; })(),
@@ -114,8 +128,9 @@ export function calcularD2(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: Cust
       break;
     }
     case 'Nuvem soberana': {
-      const modelo = esc.modelo === 'construir' || esc.modelo === 'contratar' ? esc.modelo : '';
-      entradas.push({ id: 'modelo', rotulo: t('Como o governo terá a nuvem soberana?'), tipo: 'escolha', valor: modelo, obrigatoria: true,
+      // v018.1: sem escolha, vale "contratar" (sugestão), que a pessoa pode trocar
+      const modelo = esc.modelo === 'construir' ? 'construir' : 'contratar';
+      entradas.push({ id: 'modelo', rotulo: t('Como o governo terá a nuvem soberana?'), tipo: 'escolha', valor: modelo, sugestao: esc.modelo ? undefined : 'contratar',
         opcoes: [['construir', t('Construir a própria infraestrutura')], ['contratar', t('Contratar um provedor de nuvem soberana')]] });
       const pInf = numero('populacao', 'População do país (milhares)', {});
       const p = paisSoberana(iso, pInf);
@@ -123,7 +138,6 @@ export function calcularD2(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: Cust
       const parc = numero('parcela', 'Parcela da educação (%)', { sugestao: n2(p.edu), dica: t('Vazio = gasto com educação em % do gasto do governo ({v}%, Banco Mundial).', { v: n2(p.edu) }) });
       const parcela = (parc ?? p.edu) / 100;
       usarEquipe = modelo === 'contratar';
-      if (!modelo) { falta.push(t('construir ou contratar')); break; }
       const nac = soberanaNacional(p), c = especialista();
       if (!nac) { falta.push(t('população do país')); break; }
       const base = t('{pais}: {g}; {n} × 100 mil habitantes; CGSI {cgsi}{est}, m = {m}', { pais: iso || '—', g: t(NOME_GRUPO_FMI[p.grupo]), n: n2(p.N as number), cgsi: n2(p.cgsi), est: p.cgsiEstimado ? ' (' + t('mediana do grupo') + ')' : '', m: n2(p.m) });
@@ -151,26 +165,27 @@ export function calcularD2(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: Cust
       break;
     }
     case 'Hospedagem segura e armazenamento de dados': {
-      const v = numero('volumeTB', 'Dados guardados (TB)', { obrigatoria: true }), e = numero('saidaTB', 'Dados enviados para fora da nuvem (TB por mês)', { dica: t('Opcional.') });
-      if (v === null) falta.push(t('dados guardados (TB)'));
-      else add({ id: 'armazenamento', rotulo: t('Armazenamento'), classe: 'uso', estimado: true, valor: usd(v * 1024 * PRECOS_NUVEM.armazenamentoGB * H),
+      const v = numero('volumeTB', 'Dados guardados (TB)', { sugestao: n2(tbSug), dica: dicaTB }) ?? tbSug, e = numero('saidaTB', 'Dados enviados para fora da nuvem (TB por mês)', { dica: t('Opcional.') });
+      add({ id: 'armazenamento', rotulo: t('Armazenamento'), classe: 'uso', estimado: true, valor: usd(v * 1024 * PRECOS_NUVEM.armazenamentoGB * H),
         texto: t('{v} TB × 1.024 GB × {p} por GB por mês × {h} meses', { v: n2(v), p: usdF(PRECOS_NUVEM.armazenamentoGB), h: n2(H) }), fontes: [FONTES_D2.azure, FONTES_D2.google] });
       if (e !== null && e > 0) add({ id: 'saida', rotulo: t('Envio de dados para fora da nuvem'), classe: 'uso', estimado: true, valor: usd(e * 1024 * PRECOS_NUVEM.saidaGB * H),
         texto: t('{v} TB por mês × 1.024 GB × {p} por GB × {h} meses', { v: n2(e), p: usdF(PRECOS_NUVEM.saidaGB), h: n2(H) }), fontes: [FONTES_D2.azure] });
       break;
     }
     case 'Infraestrutura de computação e rede': {
-      const n = numero('maquinas', 'Máquinas virtuais (2 núcleos, 8 GB)', { obrigatoria: true });
-      if (n === null) falta.push(t('máquinas virtuais'));
-      else maquinas('maquinas', 'Máquinas virtuais', n, 'uso');
+      const n = numero('maquinas', 'Máquinas virtuais (2 núcleos, 8 GB)', { sugestao: String(vmSug),
+        dica: mat === null ? t('Vazio = {n} máquinas (estimativa de referência, grau C).', { n: vmSug }) : t('Vazio = {n} máquinas: {k} por milhão de estudantes matriculados, no mínimo {m} (estimativa de referência, grau C).', { n: vmSug, k: SUGESTOES_D2.vmPorMilhao, m: SUGESTOES_D2.vmMinimo }) }) ?? vmSug;
+      maquinas('maquinas', 'Máquinas virtuais', n, 'uso');
       anual('rede', 'Links de rede', 'opex', numero('redeAno', 'Links de rede (valor por ano)', { dica: t('Opcional. O preço dos links varia muito de país para país.') }));
       total1('equipamentos', 'Equipamentos de rede próprios', 'capex', numero('equipamentos', 'Equipamentos de rede próprios (valor total)', { dica: t('Opcional.') }));
       break;
     }
     case 'Backup e continuidade do serviço': {
-      const v = numero('volumeTB', 'Dados copiados (TB)', { obrigatoria: true });
-      if (v === null) falta.push(t('dados copiados (TB)'));
-      else add({ id: 'copias', rotulo: t('Cópias de segurança (regra 3-2-1)'), classe: 'uso', estimado: true, valor: usd(v * 1024 * (PRECOS_NUVEM.frioGB + PRECOS_NUVEM.arquivoGB) * H),
+      // a sugestão é o volume guardado em "Hospedagem segura", quando informado; senão, a mesma estimativa por matrículas
+      const hosp = (s as any).ctx?.govOrcamento?.itens?.g22?.custos?.[chaveOpcao('Hospedagem segura e armazenamento de dados')]?.q?.volumeTB;
+      const tbBackup = naoNeg(hosp) && hosp > 0 ? hosp : tbSug;
+      const v = numero('volumeTB', 'Dados copiados (TB)', { sugestao: n2(tbBackup), dica: naoNeg(hosp) && hosp > 0 ? t('Vazio = {v} TB, o volume guardado informado em "Hospedagem segura e armazenamento de dados".', { v: n2(tbBackup) }) : dicaTB }) ?? tbBackup;
+      add({ id: 'copias', rotulo: t('Cópias de segurança (regra 3-2-1)'), classe: 'uso', estimado: true, valor: usd(v * 1024 * (PRECOS_NUVEM.frioGB + PRECOS_NUVEM.arquivoGB) * H),
         texto: t('{v} TB × 1.024 GB × ({a} de uma cópia pouco acessada + {b} de uma cópia de arquivo) por GB por mês × {h} meses', { v: n2(v), a: usdF(PRECOS_NUVEM.frioGB), b: usdF(PRECOS_NUVEM.arquivoGB), h: n2(H) }), fontes: [FONTES_D2.cisa, FONTES_D2.azure] });
       anual('contingencia', 'Ambiente de contingência ligado', 'opex', numero('contingenciaAno', 'Ambiente de contingência ligado, se houver (valor por ano)', { dica: t('Opcional.') }));
       break;

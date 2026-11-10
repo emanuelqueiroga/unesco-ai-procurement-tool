@@ -18,6 +18,7 @@ import { gravarOrc } from './OrcamentoV16';
 import { CartaoComDica, DicaGov } from './InfoDica';
 import { CATEGORIAS } from '../domain/catalogo_v016.js';
 import { ADICIONAIS, ID_ADICIONAIS, PERGUNTAS_ADICIONAIS, FORMACAO_AD, type SalvoAdicionais } from '../percurso/adicionaisGov';
+import { FORMACAO_GOV } from '../percurso/formacaoGov';
 import './moldura.css';
 
 const telaFases = (f: FrenteEstimativa) => f === 'letramento' ? 'lit-fases' : 'ed-fases';
@@ -139,6 +140,7 @@ function LinhaValor({ s, frente, cat, l, moeda }: { s: CasoStore; frente: Frente
             hint={l.unitRef === null ? undefined : l.refPais ? t('Vazio = salário do país (ILOSTAT) com encargos ({v}).', { v: fmt(l.unitRef) }) : frente === 'governanca' ? t('Vazio = estimativa de referência ({v}).', { v: fmt(l.unitRef) }) : t('Vazio = referência genérica ({v}).', { v: fmt(l.unitRef) })} onChange={v => gravar('unit', v)} />
         </div>}
     {frente === 'governanca' && l.conta && l.status !== 'falta' ? <ComoCalculado l={l} /> : null}
+    {l.nota && l.status !== 'falta' ? <p className="pc-nota">{l.nota}</p> : null}
     {l.tipo === 'time' ? null
       : l.qtdSugerida ? <p className="pc-nota">{l.fonte === 'gov31' || l.fonte === 'plano' ? t('Quantidade sugerida pela ferramenta (estimativa de referência); altere se precisar.') : t('Quantidade sugerida a partir do Contexto; altere se precisar.')}</p> : null}
     {l.status === 'falta' ? <p className="pv-v17-falta">{t('Falta')}: {l.falta.join(', ')}</p>
@@ -261,11 +263,12 @@ function FormacaoAd({ l, salvo, gravar, moeda }: { l: LinhaOpcao; salvo: SalvoAd
         <CampoNumero label={t('Pessoas a formar')} value={typeof salvo.formPessoas === 'number' ? salvo.formPessoas : ''} decimais
           hint={t('Servidores, gestores ou equipes técnicas. Se marcou a categoria 3.2, conte aqui só quem não está nela.')} onChange={v => gravar('formPessoas', v === '' ? undefined : v)} />
         <CampoNumero label={t('Horas por pessoa')} value={typeof salvo.formHoras === 'number' ? salvo.formHoras : ''} placeholder={String(FORMACAO_AD.horas)} decimais
-          hint={t('Vazio = {n} horas (estimativa de referência).', { n: FORMACAO_AD.horas })} onChange={v => gravar('formHoras', v === '' ? undefined : v)} />
-        <CampoNumero label={t('Custo por hora') + ' (' + moeda + ')'} value={typeof salvo.formHora === 'number' ? salvo.formHora : ''} placeholder={l.unitRef == null ? undefined : n2(l.unitRef)} decimais
-          hint={l.unitRef == null ? undefined : t('Vazio = estimativa de referência ({v}).', { v: fmt(l.unitRef) })} onChange={v => gravar('formHora', v === '' ? undefined : v)} />
+          hint={t('Vazio = {n} horas (estimativa de referência, grau C).', { n: FORMACAO_AD.horas })} onChange={v => gravar('formHoras', v === '' ? undefined : v)} />
+        <CampoNumero label={t('Parte presencial (%)')} value={typeof salvo.formPresencial === 'number' ? salvo.formPresencial : ''} placeholder={String(FORMACAO_GOV.presencialPadrao)} decimais
+          hint={t('Vazio = {p}%. As aulas presenciais acontecem na região dos participantes; o restante é online ao vivo.', { p: FORMACAO_GOV.presencialPadrao })} onChange={v => gravar('formPresencial', v === '' ? undefined : Math.min(100, Math.max(0, v as number)))} />
       </div>
       {l.conta && l.status !== 'falta' ? <ComoCalculado l={l} /> : null}
+      {l.nota && l.status !== 'falta' ? <p className="pc-nota">{l.nota}</p> : null}
       {l.status === 'falta' ? <p className="pv-v17-falta">{t('Falta')}: {l.falta.join(', ')}</p> : null}
     </>}
   </div>;
