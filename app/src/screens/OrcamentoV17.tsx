@@ -326,7 +326,7 @@ function ComoCalculado({ l }: { l: LinhaOpcao }) {
     {c.formula ? <span className="pv-conta-formula">{c.formula}</span> : null}
     <span className="pv-conta-partes">{c.partes.map((p, i) => <span key={i} className="pv-conta-parte">
       <b>{p.rotulo}: {p.valor}</b> <span>{p.texto}</span>
-      {p.fontes.map(f => <span key={f.titulo} className="pv-conta-fonte">{t('Fonte')}: {f.url ? <a href={f.url} target="_blank" rel="noopener noreferrer">{f.titulo}</a> : f.titulo}</span>)}
+      {p.fontes.map(f => <span key={f.titulo} className="pv-conta-fonte">{t('Fonte')}: {f.url ? <a href={f.url} target="_blank" rel="noopener noreferrer">{t(f.titulo)}</a> : t(f.titulo)}</span>)}
       {p.pagina ? <span className="pv-conta-fonte"><a href={p.pagina}>{p.pagina.startsWith('#/esforcos') ? t('Ver as equipes de referência') : t('Ver salários e encargos por país')}</a></span> : null}
     </span>)}</span>
     <span className="pv-conta-grau">{t('Graus de confiança: A = estatística oficial; B = estudo ou caso real com fonte; C = estimativa da ferramenta, que pode variar conforme o contexto.')}</span>

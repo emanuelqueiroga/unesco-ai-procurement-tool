@@ -472,5 +472,17 @@
  "opcional: valor total informado": "optional: entered total amount",
  "TB (padrão: o volume guardado) × 1.024 × (ρ_frio + ρ_arq) × H × x": "TB (default: the stored volume) × 1,024 × (ρ_frio + ρ_arq) × H × x",
  "opcional: TB × 1.024 × ρ_saida × x": "optional: TB × 1,024 × ρ_saida × x",
- "opcional: meses × custo mensal do sistema atual": "optional: months × monthly cost of the current system"
+ "opcional: meses × custo mensal do sistema atual": "optional: months × monthly cost of the current system",
+ "* estimado (veja \"O que está sendo custeado\"). \"falta valor\": ainda sem valor, fora do custo conhecido. Duração: {n} meses.": "* estimated (see \"What is being costed\"). \"amount missing\": no amount yet, outside the known cost. Duration: {n} months.",
+ "BCG (2025), Cloud Cover: Price, Sovereignty Demands, and Waste": "BCG (2025), Cloud Cover: Price, Sovereignty Demands, and Waste",
+ "Banco Mundial, GovTech Maturity Index 2025 (CGSI)": "World Bank, GovTech Maturity Index 2025 (CGSI)",
+ "Banco Mundial: gasto do governo com educação, % do gasto total (SE.XPD.TOTL.GB.ZS)": "World Bank: government expenditure on education, % of total expenditure (SE.XPD.TOTL.GB.ZS)",
+ "CISA: Back Up Government Data (regra 3-2-1)": "CISA: Back Up Government Data (3-2-1 rule)",
+ "CKAN: catálogo de dados de código aberto": "CKAN: open-source data catalogue",
+ "FMI, World Economic Outlook (abril de 2025): grupos de países": "IMF, World Economic Outlook (April 2025): country groups",
+ "Google Cloud Storage: preços": "Google Cloud Storage: pricing",
+ "Keycloak: gestão de identidade e acesso de código aberto": "Keycloak: open-source identity and access management",
+ "Microsoft Azure: tabela pública de preços (Retail Prices API), consulta de 10/11/2026": "Microsoft Azure: public price list (Retail Prices API), accessed 10/11/2026",
+ "NIIS: calculadoras de custo do X-Road (2021)": "NIIS: X-Road cost calculators (2021)",
+ "ODC-Noord (2026): cerca de 200 profissionais na nuvem soberana do governo dos Países Baixos": "ODC-Noord (2026): about 200 professionals in the Dutch government sovereign cloud"
 }

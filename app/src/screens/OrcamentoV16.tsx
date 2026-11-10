@@ -137,7 +137,7 @@ function FontesValores({ linhas }: { linhas: { conta?: import('../percurso/custo
   if (!fontes.length && !conv) return null;
   return <><h3 className="pv-resumo-sub">{t('Fontes dos valores')}</h3>
     <ul className="pv-resumo-riscos">
-      {fontes.map(f => <li key={f.url}><a href={f.url!} target="_blank" rel="noopener noreferrer">{f.titulo}</a></li>)}
+      {fontes.map(f => <li key={f.url}><a href={f.url!} target="_blank" rel="noopener noreferrer">{t(f.titulo)}</a></li>)}
       {conv ? <li>{t('Equipes de referência (papéis, pessoas, dedicação e meses): estimativas da ferramenta (grau C), que podem variar conforme o contexto.')}</li> : null}
       <li><a href={href.metodologia()}>{t('Como o custo é calculado')}</a></li>
     </ul></>;
