@@ -78,16 +78,19 @@ export function OrcamentoV16({ s, frente, tentou }: { s: CasoStore; frente: Fren
 export function ResumoV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativa }) {
   const o = orcamentoV16(s, frente), linhas = matrizFases(o), fasesCol = o.fases.length === 1 && o.fases[0].id === 'total' ? [] : o.fases;
   const val = (v: number | null, tipo: string) => v === null ? (tipo === 'a_levantar' ? t('falta valor') : '—') : formatarMoedaEst(v, o.moeda);
+  const ck = frente === 'governanca';
   return <section className="pv-resumo" aria-labelledby={'pv-resumo-' + frente}>
     <h2 id={'pv-resumo-' + frente} className="pv-resumo-titulo">{t('Em resumo')}</h2>
     <p className="pv-resumo-prosa">{resumoProsa(o)}</p>
     {frente === 'governanca' && o.existentes > 0 ? <p className="pc-nota">{t('Desembolso novo: {v}. O custo conhecido inclui {e} de servidores que já existem, marcados em "Ajustar a equipe".', { v: formatarMoedaEst(totalConhecido(o) - o.existentes, o.moeda), e: formatarMoedaEst(o.existentes, o.moeda) })}</p> : null}
+    {/* v018.1 (governança): custo conhecido separado em investimento e operação */}
+    {frente === 'governanca' && totalConhecido(o) > 0 ? <p className="pv-v17-capex">{t('Investimento (CapEx): {k} · Operação (OpEx): {x}', { k: formatarMoedaEst(o.capex, o.moeda), x: formatarMoedaEst(o.opex, o.moeda) })}</p> : null}
     <div className="pv-matriz-rolagem" tabIndex={0} role="region" aria-label={t('Custo por categoria e fase')}>
       <table className="pv-matriz">
         <caption>{t('Custo por categoria e fase')}</caption>
-        <thead><tr><th scope="col">{t('Categoria')}</th>{fasesCol.map(f => <th scope="col" key={f.id}>{f.nome}<span className="pv-matriz-sub">{t('{n} meses', { n: f.meses })} · {f.alcance}%</span></th>)}<th scope="col">{t('Total')}</th></tr></thead>
-        <tbody>{linhas.map(l => <tr key={l.id} className={'pv-matriz--' + l.tipo + (l.nivel ? ' pv-matriz--opcao' : '')}><th scope="row">{(l.n ? l.n + ' ' : '') + l.nome}</th>{fasesCol.map(f => <td key={f.id}>{val(l.porFase[f.id], l.tipo)}</td>)}<td className="pv-matriz-total">{val(l.total, l.tipo)}</td></tr>)}</tbody>
-        <tfoot><tr><th scope="row">{t('Custo conhecido')}</th>{fasesCol.map(f => <td key={f.id}>{formatarMoedaEst(f.informado + f.estimado, o.moeda)}</td>)}<td className="pv-matriz-total">{formatarMoedaEst(totalConhecido(o), o.moeda)}</td></tr></tfoot>
+        <thead><tr><th scope="col">{t('Categoria')}</th>{fasesCol.map(f => <th scope="col" key={f.id}>{f.nome}<span className="pv-matriz-sub">{t('{n} meses', { n: f.meses })} · {f.alcance}%</span></th>)}{ck ? <><th scope="col">CapEx</th><th scope="col">OpEx</th></> : null}<th scope="col">{t('Total')}</th></tr></thead>
+        <tbody>{linhas.map(l => <tr key={l.id} className={'pv-matriz--' + l.tipo + (l.nivel ? ' pv-matriz--opcao' : '')}><th scope="row">{(l.n ? l.n + ' ' : '') + l.nome}</th>{fasesCol.map(f => <td key={f.id}>{val(l.porFase[f.id], l.tipo)}</td>)}{ck ? <><td>{val(l.capex ?? null, l.tipo)}</td><td>{val(l.opex ?? null, l.tipo)}</td></> : null}<td className="pv-matriz-total">{val(l.total, l.tipo)}</td></tr>)}</tbody>
+        <tfoot><tr><th scope="row">{t('Custo conhecido')}</th>{fasesCol.map(f => <td key={f.id}>{formatarMoedaEst(f.informado + f.estimado, o.moeda)}</td>)}{ck ? <><td>{formatarMoedaEst(o.capex, o.moeda)}</td><td>{formatarMoedaEst(o.opex, o.moeda)}</td></> : null}<td className="pv-matriz-total">{formatarMoedaEst(totalConhecido(o), o.moeda)}</td></tr></tfoot>
       </table>
     </div>
     <p className="pv-matriz-nota"><span className="pv-matriz-est">{t('Em âmbar')}</span>: {t('estimado (quantidades e valores unitários abaixo)')}. {t('"falta valor": ainda sem valor, fora do custo conhecido.')}</p>

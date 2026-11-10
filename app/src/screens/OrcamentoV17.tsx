@@ -4,13 +4,13 @@
 // Nada vem marcado; só quantidades e valores unitários com referência aparecem sugeridos depois da escolha.
 import { useId } from 'react';
 import { useCaso, type CasoStore } from '../store';
-import { OptionCard, OptionCardGroup, Popover } from '../ui';
+import { OptionCard, OptionCardGroup, Popover, TextField, Button } from '../ui';
 import { CampoNumero } from '../percurso/CampoNumero';
 import { LOC } from '../domain';
 import { t } from '../percurso/textos';
 import { href } from '../percurso/rota';
 import { orcamentoV16, raizOrcamento, resumoFases, categoriasEscolhidas, categoriaObrigatoria, todosObrigatorios, semFases, DURACAO_GOV_PADRAO, type CategoriaV16 } from '../percurso/orcamentoV016';
-import { TIPOS, ORDEM_TIPOS, NOME_PERFIL, chaveOpcao, ehParametro, PARAMETROS, type TipoCusto, type LinhaOpcao } from '../percurso/custosV017';
+import { TIPOS, ORDEM_TIPOS, NOME_PERFIL, chaveOpcao, ehParametro, PARAMETROS, type TipoCusto, type LinhaOpcao, type PapelExtra, type EntradaD2 } from '../percurso/custosV017';
 import { alterarLit, lerLit, selecoesLit } from '../percurso/letramento';
 import { ehSugerido } from '../percurso/padroesTeste';
 import { formatarMoedaEst, type FrenteEstimativa } from '../percurso/estimativasOrcamento';
@@ -123,9 +123,12 @@ function LinhaValor({ s, frente, cat, l, moeda }: { s: CasoStore; frente: Frente
       <h4 className="pv-v17-op">{nome}</h4>
       <p className={'pv-v17-total' + (l.status === 'referencia' ? ' pc-rec-valor--est' : '')}>{l.total === null ? '—' : fmt(l.total)}</p>
     </div>
+    {frente === 'governanca' && l.capex != null && l.opex != null && l.total !== null ? <p className="pv-v17-capex">CapEx {fmt(l.capex)} · OpEx {fmt(l.opex)}</p> : null}
+    {l.entradas?.length ? <EntradasD2 entradas={l.entradas} moeda={moeda} atual={atual} gravar={gravar} /> : null}
     {frente === 'governanca' ? null : <Selecao label={t('Como calcular')} value={l.tipo} opcoes={ORDEM_TIPOS.map(k => [k, t(k === 'fechado' && semFases(frente) ? 'Valor total' : TIPOS[k].rotulo)])}
       onChange={v => gravarOrc(frente, caminho, { ...atual(), tipo: v as TipoCusto, unit: undefined, horas: undefined, ...(v === 'fechado' ? {} : { fases: undefined }) })} />}
     {l.tipo === 'time' ? <EquipeV18 l={l} moeda={moeda} atual={atual} gravar={gravar} />
+      : l.tipo === 'comp' ? null
       : l.tipo === 'fechado'
       ? <div className="pv-v17-campos">{fases.map(f => <CampoNumero key={f.id} label={semFases(frente) ? t('Valor total') + ' (' + moeda + ')' : f.nome} value={l.valoresFase[f.id] ?? ''} decimais
           onChange={v => gravarOrc(frente, caminho, { ...atual(), fases: { ...(atual().fases || {}), [f.id]: v === '' ? undefined : v } })} />)}</div>
@@ -155,7 +158,7 @@ function EquipeV18({ l, moeda, atual, gravar }: { l: LinhaOpcao; moeda: string; 
     <p className="pc-nota">{t(l.continua ? 'Equipe de referência (grau C): {n} pessoas durante todo o plano.' : 'Equipe de referência (grau C): {n} pessoas.', { n: new Intl.NumberFormat(String(LOC())).format(l.qtd || 0) })} <a href={'#/esforcos/' + l.chave}>{t('De onde vem')}</a></p>
     <details className="pv-equipe">
       <summary>{t('Ajustar a equipe')}</summary>
-      {time.map(p => <div key={p.papel} className="pv-equipe-papel" role="group" aria-label={t(p.papel)}>
+      {time.filter(p => !p.extra).map(p => <div key={p.papel} className="pv-equipe-papel" role="group" aria-label={t(p.papel)}>
         <p className="pv-equipe-nome"><b>{t(p.papel)}</b> <span>{Math.round(p.dedicacao * 100)}% · {t(NOME_PERFIL[p.perfil])}{p.especialista ? ' · ' + t('prêmio de especialista') : ''}</span></p>
         <div className="pv-v17-campos">
           <CampoNumero label={t('Pessoas')} value={p.qtdInformada ? p.qtd : ''} placeholder={String(p.qtdRef)} decimais onChange={v => gravarPapel(p.papel, 'qtd', v)} />
@@ -164,8 +167,49 @@ function EquipeV18({ l, moeda, atual, gravar }: { l: LinhaOpcao; moeda: string; 
         </div>
         <label className="pv-equipe-existente"><input type="checkbox" checked={p.existente} onChange={e => gravarPapel(p.papel, 'existente', e.target.checked)} /> {t('Servidor que já existe (fora do desembolso novo)')}</label>
       </div>)}
+      <PapeisExtra atual={atual} gravar={gravar} moeda={moeda} time={time} />
     </details>
   </>;
+}
+
+/** v018.1: papéis que a pessoa acrescenta à equipe (nome, perfil, pessoas, dedicação, prêmio e servidor existente). */
+function PapeisExtra({ atual, gravar, moeda, time }: { atual: () => any; gravar: (campo: string, v: unknown) => void; moeda: string; time: LinhaOpcao['time'] }) {
+  const lista: PapelExtra[] = Array.isArray(atual().papeisExtra) ? atual().papeisExtra : [];
+  const salvar = (nova: PapelExtra[]) => gravar('papeisExtra', nova.length ? nova : undefined);
+  const mudar = (id: string, campo: keyof PapelExtra, v: unknown) => salvar(lista.map(x => x.id === id ? { ...x, [campo]: v === '' || v === false ? undefined : v } : x));
+  const adicionar = () => salvar([...lista, { id: 'p' + Date.now().toString(36), papel: '', perfil: 2, qtd: 1, dedicacao: 1 }]);
+  const n2 = (v: number) => new Intl.NumberFormat(String(LOC()), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+  return <div className="pv-equipe-extra">
+    {lista.map(x => { const calc = time?.find(p => p.extra === x.id);
+      return <div key={x.id} className="pv-equipe-papel" role="group" aria-label={x.papel || t('Novo papel')}>
+        <TextField label={t('Papel')} value={x.papel || ''} onChange={v => mudar(x.id, 'papel', v)} />
+        <Selecao label={t('Perfil (salário do país)')} value={String(x.perfil)} opcoes={([1, 2, 3, 4] as const).map(g => [String(g), t(NOME_PERFIL[g])])} onChange={v => mudar(x.id, 'perfil', Number(v))} />
+        <div className="pv-v17-campos">
+          <CampoNumero label={t('Pessoas')} value={x.qtd ?? ''} decimais onChange={v => mudar(x.id, 'qtd', v)} />
+          <CampoNumero label={t('Dedicação (%)')} value={x.dedicacao ? Math.round(x.dedicacao * 100) : ''} decimais onChange={v => mudar(x.id, 'dedicacao', v === '' ? '' : Number(v) / 100)} />
+          <CampoNumero label={t('Custo mensal por pessoa') + ' (' + moeda + ')'} value={x.unit ?? ''} placeholder={calc?.ref == null ? undefined : n2(calc.ref)} decimais
+            hint={t('Vazio = salário do país (ILOSTAT) do perfil, com encargos.')} onChange={v => mudar(x.id, 'unit', v)} />
+        </div>
+        <label className="pv-equipe-existente"><input type="checkbox" checked={!!x.especialista} onChange={e => mudar(x.id, 'especialista', e.target.checked)} /> {t('Exige competências de IA, dados ou segurança digital (prêmio de especialista)')}</label>
+        <label className="pv-equipe-existente"><input type="checkbox" checked={!!x.existente} onChange={e => mudar(x.id, 'existente', e.target.checked)} /> {t('Servidor que já existe (fora do desembolso novo)')}</label>
+        <p><Button variant="secondary" size="sm" onClick={() => salvar(lista.filter(y => y.id !== x.id))}>{t('Remover papel')}</Button></p>
+      </div>; })}
+    <p><Button variant="secondary" size="sm" onClick={adicionar}>{t('Adicionar papel')}</Button></p>
+  </div>;
+}
+
+/** v018.1 (desafio 2): campos da opção além da equipe (quantidades, valores e a escolha construir ou contratar). */
+function EntradasD2({ entradas, moeda, atual, gravar }: { entradas: EntradaD2[]; moeda: string; atual: () => any; gravar: (campo: string, v: unknown) => void }) {
+  const gravarQ = (id: string, v: number | '') => { const q = { ...(atual().q || {}) }; if (v === '') delete q[id]; else q[id] = v; gravar('q', Object.keys(q).length ? q : undefined); };
+  const gravarEsc = (id: string, v: string) => gravar('escolha', { ...(atual().escolha || {}), [id]: v });
+  const valorMonetario = (e: EntradaD2) => /valor|custo|licen|contrato|equipamento/i.test(e.id) || /(Ano|Atual)$/.test(e.id);
+  const numeros = entradas.filter(e => e.tipo === 'numero');
+  return <>{entradas.filter(e => e.tipo === 'escolha').map(e => <div key={e.id} className="pv-d2-escolha"><p className="pv-campo-titulo" aria-hidden="true">{e.rotulo}</p>
+      <OptionCardGroup className="pc-lit-opcoes pv-opcoes-linha" label={e.rotulo} type="radio">
+        {(e.opcoes || []).map(([id, txt]) => <OptionCard key={id} name={'d2-' + e.id} value={id} type="radio" label={txt} checked={e.valor === id} onChange={() => gravarEsc(e.id, id)} />)}
+      </OptionCardGroup></div>)}
+    {numeros.length ? <div className="pv-v17-campos">{numeros.map(e => <CampoNumero key={e.id} label={e.rotulo + (valorMonetario(e) ? ' (' + moeda + ')' : '')} value={e.valor === '' ? '' : Number(e.valor)}
+      placeholder={e.sugestao} decimais={e.decimais} hint={e.dica} onChange={v => gravarQ(e.id, v as number | '')} />)}</div> : null}</>;
 }
 
 /** v018 (governança): viagens, overhead e taxa administrativa — um percentual editável cada, com o padrão de fonte
@@ -188,7 +232,7 @@ function AdicionaisV18({ s, linhas, moeda }: { s: CasoStore; linhas: LinhaOpcao[
       </OptionCardGroup>
       {l.naoAplica ? <p className="pc-nota">{l.memoria}</p> : <>
         <div className="pv-v17-campos">
-          <CampoNumero label={t(a.base === 'opcoes' ? 'Percentual sobre os custos das opções (%)' : 'Percentual sobre os custos diretos (%)')} value={typeof salvo[a.chave] === 'number' ? salvo[a.chave] as number : ''}
+          <CampoNumero label={t(a.base === 'pessoas' ? 'Percentual sobre o trabalho de pessoas (%)' : a.base === 'pessoasViagens' ? 'Percentual sobre o trabalho de pessoas e as viagens (%)' : 'Percentual sobre os custos diretos (%)')} value={typeof salvo[a.chave] === 'number' ? salvo[a.chave] as number : ''}
             placeholder={n(a.padrao)} decimais hint={(fundacao ? t('Informe a taxa do contrato; no Brasil, fundações de apoio podem cobrar até 15%.') + ' ' : '') + t('Vazio = {p}% (referência com fonte).', { p: n(a.padrao) })}
             onChange={v => gravar(a.chave, v === '' ? undefined : v)} />
         </div>

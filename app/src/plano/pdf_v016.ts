@@ -52,9 +52,13 @@ function escritor(doc: any, cabecalho: string) {
   const titulo = (s: string, n = 13) => { cabe(n * 3); y += 8; texto(s, n, true, C.titulo); y += 2; };
   const lista = (itens: string[]) => { for (const i of itens) { cabe(14); fonte(10); doc.text('•', M, y); const yy = y; texto(i, 10, false, undefined, W - M * 2 - 12, M + 12); if (y === yy) y += 14; } };
   const tabela = (o: Orc) => {
-    const linhas = matrizFases(o), fases = o.fases.length === 1 && o.fases[0].id === 'total' ? [] : o.fases, colNome = 190, colW = (W - M * 2 - colNome) / (fases.length + 1);
+    const linhas = matrizFases(o), fases = o.fases.length === 1 && o.fases[0].id === 'total' ? [] : o.fases, colNome = 190;
+    // v018.1 (governança): colunas de investimento (CapEx) e operação (OpEx) antes do total
+    const ck = o.itens.some((i: any) => i.linhas.some((l: any) => l.capex != null)), extra = ck ? 2 : 0, colW = (W - M * 2 - colNome) / (fases.length + extra + 1);
+    const xk = (i: number) => M + colNome + colW * (fases.length + i + 1) - 4;
     const linhaCab = () => { cabe(24); doc.setFillColor(...C.cab); doc.rect(M, y - 11, W - M * 2, 18, 'F'); fonte(8, true);
       doc.text(pdfTxt(t('Categoria')), M + 4, y); fases.forEach((f, i) => doc.text(pdfTxt(f.nome), M + colNome + colW * (i + 1) - 4, y, { align: 'right' }));
+      if (ck) { doc.text('CapEx', xk(0), y, { align: 'right' }); doc.text('OpEx', xk(1), y, { align: 'right' }); }
       doc.text(pdfTxt(t('Total')), W - M - 4, y, { align: 'right' }); y += 14; };
     linhaCab();
     let grupo = '';
@@ -66,12 +70,14 @@ function escritor(doc: any, cabecalho: string) {
       nome.forEach((s, i) => doc.text(s, M + 4 + recuo, y + i * 11));
       fonte(8.5, false, est ? C.media : l.tipo === 'a_levantar' ? C.muted : C.tinta);
       fases.forEach((f, i) => doc.text(pdfTxt(val(l.porFase[f.id])), M + colNome + colW * (i + 1) - 4, y, { align: 'right' }));
+      if (ck) { doc.text(pdfTxt(val(l.capex ?? null)), xk(0), y, { align: 'right' }); doc.text(pdfTxt(val(l.opex ?? null)), xk(1), y, { align: 'right' }); }
       fonte(8.5, true, est ? C.media : C.tinta); doc.text(pdfTxt(val(l.total)), W - M - 4, y, { align: 'right' });
       y += h; doc.setDrawColor(...C.linha); doc.line(M, y - 8, W - M, y - 8);
     }
     cabe(18); fonte(8.5, true);
     doc.text(pdfTxt(t('Custo conhecido')), M + 4, y);
     fases.forEach((f, i) => doc.text(pdfTxt(curta(f.informado + f.estimado, o.moeda)), M + colNome + colW * (i + 1) - 4, y, { align: 'right' }));
+    if (ck) { doc.text(pdfTxt(curta(o.capex || 0, o.moeda)), xk(0), y, { align: 'right' }); doc.text(pdfTxt(curta(o.opex || 0, o.moeda)), xk(1), y, { align: 'right' }); }
     doc.text(pdfTxt(curta(totalConhecido(o), o.moeda)), W - M - 4, y, { align: 'right' }); y += 14;
     texto(fases.length ? t('* estimado (veja "O que está sendo custeado"). "falta valor": ainda sem valor, fora do custo conhecido. Meses e alcance acumulado: {fases}.', { fases: o.fases.map(f => f.nome + ' ' + t('{n} meses', { n: f.meses }) + ', ' + f.alcance + '%').join(' · ') }) : t('* estimado (veja "O que está sendo custeado"). "falta valor": ainda sem valor, fora do custo conhecido. Duração: {n} meses.', { n: o.fases[0]?.meses || 0 }), 7.5, false, C.muted);
   };
@@ -175,6 +181,7 @@ export async function gerarPDFFrenteV16(s: Estado14, opts: { frente: FrenteEstim
     const inst = instituicaoV16(v), pais = nomePais(paisDoCaso(v.caso));
     w.cab(); w.texto(rotulo, 10, true, PDF_COR.muted); w.avancar(14); w.texto(p.titulo, 20, true); w.texto([inst, pais].filter(Boolean).join(' · ') || t('País a definir'), 12); w.avancar(6);
     w.titulo(t('Em resumo')); w.texto(resumoProsa(o), 10.5);
+    if (opts.frente === 'governanca' && totalConhecido(o) > 0) w.texto(t('Investimento (CapEx): {k} · Operação (OpEx): {x}', { k: formatarMoedaEst(o.capex, o.moeda), x: formatarMoedaEst(o.opex, o.moeda) }), 10);
     if (opts.frente === 'governanca' && o.existentes > 0) w.texto(t('Desembolso novo: {v}. O custo conhecido inclui {e} de servidores que já existem, marcados em "Ajustar a equipe".', { v: formatarMoedaEst(totalConhecido(o) - o.existentes, o.moeda), e: formatarMoedaEst(o.existentes, o.moeda) }), 10);
     w.titulo(t('Custo por categoria e fase')); w.tabela(o);
     if (o.memoria.length) { w.titulo(t('O que está sendo custeado')); w.lista(linhasMemoria(o)); }

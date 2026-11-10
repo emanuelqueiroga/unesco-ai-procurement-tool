@@ -29,6 +29,8 @@ export interface DadosCusto {
   recursos: string | null;
   /** v016: custo por fase (informado + estimado) */
   fases?: { id: string; nome: string; meses: number; informado: number; estimado: number }[];
+  /** v018.1: custo conhecido separado em investimento e operação */
+  capex?: number; opex?: number;
 }
 
 /** Números do orçamento da frente atual; null no projeto de uso de IA. */
@@ -42,7 +44,7 @@ export function dadosCusto(s: CasoStore): DadosCusto | null {
     frente: f, informado: o.informado, informados: o.informados, estimado: o.estimado, estimados: o.estimados, faltam: o.faltam,
     total: o.total, totalComEstimativas: o.totalComEstimativas, moeda: o.moeda,
     itens: o.itens.map((i: any) => ({ id: String(i.id), nome: t(String(i.nome)), estimativa: i.estimativa })),
-    meses: mesesV16(s, f), recursos: tela ? href.pergunta(tela.capitulo, tela.id) : null, fases: (o as any).fases,
+    meses: mesesV16(s, f), recursos: tela ? href.pergunta(tela.capitulo, tela.id) : null, fases: (o as any).fases, capex: (o as any).capex, opex: (o as any).opex,
   };
 }
 
@@ -99,6 +101,11 @@ export function CartaoCustoFrente({ d, compacto = false }: { d: DadosCusto; comp
       <dd className="pc-custo-est">{d.estimados ? formatarMoedaEst(d.estimado, d.moeda) : '—'}</dd>
       <dt><i className="pc-custo-marca pc-custo-marca--lev" aria-hidden="true" />{t('Falta valor')}</dt>
       <dd>{itens(d.faltam)}</dd>
+      {/* v018.1: investimento e operação do custo conhecido */}
+      {d.capex !== undefined && d.opex !== undefined && d.capex + d.opex > 0 ? <>
+        <dt>{t('Investimento (CapEx)')}</dt><dd>{formatarMoedaEst(d.capex, d.moeda)}</dd>
+        <dt>{t('Operação (OpEx)')}</dt><dd>{formatarMoedaEst(d.opex, d.moeda)}</dd>
+      </> : null}
     </dl>}
     {!compacto && d.fases?.length && !(d.fases.length === 1 && d.fases[0].id === 'total') ? <dl className="pc-custo-fases" aria-label={t('Custo por fase')}>{d.fases.map(f => <div key={f.id}><dt>{f.nome}</dt><dd>{f.informado + f.estimado ? moedaCurta(f.informado + f.estimado, d.moeda) : '—'}</dd></div>)}</dl> : null}
   </section>;

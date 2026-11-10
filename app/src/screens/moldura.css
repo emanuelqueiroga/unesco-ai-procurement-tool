@@ -436,3 +436,9 @@ a.pc-faixa-custo:hover { color: var(--on-night); outline: 2px solid var(--primar
 /* v018: servidor que já existe (equipe de referência) */
 .pv-equipe-existente { display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 4px 0 0; cursor: pointer; }
 .pv-equipe-existente input { width: 18px; height: 18px; }
+/* v018.1 (governança): investimento e operação da opção, campos do desafio 2 e papéis acrescentados */
+.pv-v17-capex { margin: 0; font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.pv-d2-escolha { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pv-equipe-extra { display: flex; flex-direction: column; gap: 12px; margin-block-start: 12px; }
+.pv-equipe-extra .pv-equipe-papel { display: flex; flex-direction: column; gap: 10px; }
+.pv-equipe-extra p { margin: 0; }

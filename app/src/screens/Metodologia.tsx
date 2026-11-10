@@ -10,6 +10,7 @@ import { MET, NOTA_PDF, PLANILHA, EXEMPLO, contasExemplo } from '../percurso/met
 import { FORMULAS_MET } from '../percurso/formulasMet';
 import { EQUIPES_GOV, PAPEIS_ESPECIALISTA, pessoasDaEquipe } from '../percurso/equipesGov';
 import { MEDIANA_MUNDIAL } from '../percurso/custosV017';
+import { CASOS_SOBERANA, NOME_GRUPO_FMI, paisSoberana, soberanaNacional } from '../percurso/nuvemSoberana';
 import { LOC } from '../domain';
 import './salarios.css';
 
@@ -30,8 +31,8 @@ function FiguraCusto() {
       <g fill="none" stroke={edge} strokeWidth="1.25">{caminhos.map(d => <path key={d} d={d} markerEnd="url(#met-seta)" />)}</g>
       {no(c0, 281, w0, true, t(MET.fTotal), 'C = D + V + O + T')}
       {no(c1, 146, w1, false, t(MET.fDireto), t(MET.fDireto2))}
-      {no(c1, 296, w1, false, t(MET.fViagens), '25% × D')}
-      {no(c1, 356, w1, false, t(MET.fOverhead), '15% × (D + V)')}
+      {no(c1, 296, w1, false, t(MET.fViagens), t(MET.fViagens2))}
+      {no(c1, 356, w1, false, t(MET.fOverhead), t(MET.fOverhead2))}
       {no(c1, 416, w1, false, t(MET.fTaxa), '7% × (D + V)')}
       {no(c2, 56, w2, true, t(MET.fEquipe), t(MET.fEquipe2))}
       {no(c2, 116, w2, false, t(MET.fPessoal), '3.1: n × c₂ × H')}
@@ -67,8 +68,8 @@ function valoresExemplo(): Record<string, string | number> {
   const num = (v: number, d: number) => new Intl.NumberFormat(loc, { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
   const r: Record<string, string | number> = { ano: x.ano, meses: x.meses, h: x.h, participantes: x.participantes, horas: x.horas,
     pi1: pct(x.pi[0]), pi2: pct(x.pi[1]), e: pct(x.e), f1: num(1 + x.pi[0], 2), f2: num(1 + x.pi[1], 2), I: num(k.I, 4), fe: num(1 + x.e, 2), fp: num(1 + x.p, 2),
-    w1: usd(x.w1), w2: usd(x.w2), w4: usd(x.w4), cotacao: usd(x.cotacao) };
-  for (const c of ['w2i', 'c1', 'c2', 'c4', 'c2e', 'r1', 'r2', 'r3', 'r4', 'mensal', 'norma', 'integral', 'formacao', 'D', 'V', 'O', 'T', 'C', 'existente', 'desembolso'] as const) r[c] = usd(k[c]);
+    w1: usd(x.w1), w2: usd(x.w2), w4: usd(x.w4), tb: x.tb, equip: usd(x.equip), sobM: num(k.sobM, 2) };
+  for (const c of ['w2i', 'c1', 'c2', 'c4', 'c2e', 'r1', 'r2', 'r3', 'r4', 'mensal', 'norma', 'integral', 'formacao', 'hosp', 'vmsV', 'comp', 'P', 'D', 'V', 'O', 'T', 'C', 'TK', 'K', 'X', 'existente', 'desembolso', 'sobK', 'sobKe'] as const) r[c] = usd(k[c]);
   return r;
 }
 
@@ -80,7 +81,7 @@ export function Metodologia() {
   const med = { m1: usd(MEDIANA_MUNDIAL[1]), m2: usd(MEDIANA_MUNDIAL[2]), m3: usd(MEDIANA_MUNDIAL[3]), m4: usd(MEDIANA_MUNDIAL[4]) };
   const ir = (id: string) => (e: React.MouseEvent) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   const secoes: [string, string][] = [['met-notacao', MET.hNotacao], ['met-equacoes', MET.hEquacoes], ['met-parametros', MET.hParametros], ['met-dados', MET.hDados],
-    ['met-equipes', MET.hEquipes], ['met-incertezas', MET.hIncertezas], ['met-graus', MET.hGraus], ['met-refs', MET.hRefs]];
+    ['met-equipes', MET.hEquipes], ['met-soberana', MET.hSoberana], ['met-incertezas', MET.hIncertezas], ['met-graus', MET.hGraus], ['met-refs', MET.hRefs]];
   let n = 0;
   return <Shell nav={false} plano={false}>
     <section className="pc-sal pc-met" aria-labelledby="met-titulo">
@@ -151,6 +152,16 @@ export function Metodologia() {
           </tr>)}</tbody></table>
       </div>
       <p><a href={href.esforcos()}>{t('Ver as equipes de referência')}</a> · <a href={href.salarios()}>{t('Ver salários e encargos por país')}</a></p>
+
+      <h3 id="met-soberana">{t(MET.hSoberana)}</h3>
+      <p>{t(MET.soberana)}</p>
+      <div className="pc-sal-rolagem" tabIndex={0} role="region" aria-label={t(MET.hSoberana)}>
+        <table className="pc-sal-tabela"><thead><tr>{MET.cabSoberana.map(c => <th key={c} scope="col">{t(c)}</th>)}</tr></thead>
+          <tbody>{CASOS_SOBERANA.map(c => { const m = soberanaNacional(paisSoberana(c.iso, c.populacao * 1000))!.capexUSD;
+            return <tr key={c.iso}><th scope="row">{t(c.pais)}</th><td>{t(NOME_GRUPO_FMI[c.grupo])}</td><td>{num(c.populacao)}</td><td>{new Intl.NumberFormat(loc, { style: 'currency', currency: c.moeda, notation: 'compact', maximumFractionDigits: 2 }).format(c.investimento)}</td>
+              <td>{num(c.usd / 1e6)}</td><td>{num(m / 1e6)}</td><td>{c.usado ? num(m / c.usd) : t(MET.foraCalibracao)}</td>
+              <td><a href={c.fonte.url} target="_blank" rel="noopener noreferrer">{t(c.nota)}</a></td></tr>; })}</tbody></table>
+      </div>
 
       <h3 id="met-incertezas">{t(MET.hIncertezas)}</h3>
       {MET.incertezas.map(x => <p key={x}>{t(x)}</p>)}

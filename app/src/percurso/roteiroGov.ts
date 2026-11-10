@@ -54,6 +54,10 @@ export const TIPO_OPCAO: Record<string, TipoOpcao> = {
   'Padrões de governança e segurança de dados': 'diretriz', 'Diretrizes de garantia de qualidade e avaliação de IA': 'diretriz',
   'Governança e proteção de dados e infraestrutura pública digital': 'dados',
   'Serviços de nuvem soberana': 'infra', 'Hospedagem segura': 'infra', 'Armazenamento de dados': 'infra', 'Infraestrutura de computação': 'infra',
+  // v018.1: opções do desafio 2 conforme a figura
+  'Inventário e curadoria de dados': 'dados', 'Controles de acesso e regras de retenção': 'dados', 'Interoperabilidade e portabilidade de dados': 'dados', 'Infraestrutura pública de dados compartilhada': 'dados',
+  'Nuvem soberana': 'infra', 'Hospedagem segura e armazenamento de dados': 'infra', 'Infraestrutura de computação e rede': 'infra', 'Backup e continuidade do serviço': 'infra',
+  'Migração e saída': 'independencia',
   'Adoção e manutenção de código aberto': 'independencia', 'Transferência de tecnologia': 'independencia', 'Customização local': 'independencia', 'Redução da dependência de fornecedores': 'independencia',
   'Especialistas em TI (IA, dados, segurança, infraestrutura)': 'pessoal', 'Profissionais jurídicos': 'pessoal', 'Pessoal de governança de IA': 'pessoal', 'Especialistas em IA e educação': 'pessoal',
   'Formação e desenvolvimento profissional': 'formacao',
@@ -218,7 +222,10 @@ export function montarRoteiro(s: Pick<Estado14, 'ctx' | 'moeda'>): Roteiro {
       objetivo: 'Assegurar os recursos do plano no orçamento do exercício e nos exercícios seguintes.',
       porque: 'O orçamento estimado nesta ferramenta precisa entrar no ciclo orçamentário do país; os custos que continuam após o primeiro ano devem constar do planejamento plurianual.', passos: [
       r2,
-      { id: 'r1', oque: t('Incluir o orçamento do plano (cerca de {total} em {meses} meses) na proposta orçamentária, discriminado por exercício e por natureza de despesa (pessoal, serviços, viagens).', { total: redondo(somaOp + somaAd), meses: duracao }),
+      { id: 'r1', oque: o.capex > 0
+          // v018.1: com investimento no plano, a proposta separa investimento (CapEx) e operação (OpEx)
+          ? t('Incluir o orçamento do plano (cerca de {total} em {meses} meses, dos quais {k} de investimento e {x} de operação) na proposta orçamentária, discriminado por exercício e por natureza de despesa (investimento, pessoal, serviços, viagens).', { total: redondo(somaOp + somaAd), meses: duracao, k: redondo(o.capex), x: redondo(o.opex) })
+          : t('Incluir o orçamento do plano (cerca de {total} em {meses} meses) na proposta orçamentária, discriminado por exercício e por natureza de despesa (pessoal, serviços, viagens).', { total: redondo(somaOp + somaAd), meses: duracao }),
         quem: 'Unidade de planejamento e orçamento', pronto: 'Recursos previstos na lei orçamentária', prazo: 'conforme o calendário orçamentário do país (até um ano)', adaptar: true, depende: ['r2'] },
       ...(continuas.length ? [{ id: 'r3', oque: t('Prever nos orçamentos dos exercícios seguintes os custos continuados: {lista}.', { lista: continuas.map(({ l }) => t('{opcao} (cerca de {valor} por ano)', { opcao: t(l.rotulo), valor: redondo((l.total as number) / duracao * 12) })).join('; ') }),
         quem: 'Planejamento e orçamento', pronto: 'Custos continuados no plano plurianual', adaptar: true, depende: ['r1'] }] : []),

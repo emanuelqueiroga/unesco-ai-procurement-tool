@@ -35,6 +35,18 @@ export const EXPLICACOES_GOV: Record<string, string> = {
   'Padrões de transparência e documentação de IA': 'O que fornecedores e redes devem registrar e divulgar sobre cada sistema: finalidade, dados usados, limitações e responsáveis.',
   'Padrões de governança e segurança de dados': 'Requisitos técnicos e de gestão para guardar, acessar e compartilhar dados educacionais com segurança.',
   'Diretrizes de garantia de qualidade e avaliação de IA': 'Como verificar se um sistema de IA funciona como prometido e produz os resultados esperados, antes e depois da adoção.',
+  // 2.1 (v018.1)
+  'Inventário e curadoria de dados': 'Levantar as bases e os sistemas de dados educacionais, com dono, finalidade e qualidade de cada um, e manter curadores que cuidam desses dados ao longo do tempo.',
+  'Controles de acesso e regras de retenção': 'Definir quem pode acessar cada dado, por quanto tempo ele é guardado e quando é descartado, e manter o sistema que aplica esses controles.',
+  'Interoperabilidade e portabilidade de dados': 'Padrões para que os sistemas troquem dados entre si com segurança e para que os dados possam ser levados de um sistema ou fornecedor a outro.',
+  'Infraestrutura pública de dados compartilhada': 'Plataforma comum de troca segura de dados entre órgãos e sistemas, no modelo da infraestrutura pública digital (como o X-Road).',
+  // 2.2 (v018.1)
+  'Nuvem soberana': 'Nuvem sob a jurisdição e o controle do país, construída pelo governo ou contratada de um provedor. A ferramenta estima a parte da educação no custo nacional.',
+  'Hospedagem segura e armazenamento de dados': 'Espaço em nuvem para hospedar os sistemas e guardar os dados educacionais com segurança, pago pelo volume usado.',
+  'Infraestrutura de computação e rede': 'Máquinas virtuais para executar os sistemas e os modelos de IA, e os links de rede que os conectam.',
+  'Backup e continuidade do serviço': 'Cópias de segurança fora do ambiente principal (regra 3-2-1) e testes de restauração, para que os serviços voltem após uma falha ou ataque.',
+  // 2.3 (v018.1)
+  'Migração e saída': 'Levar dados e sistemas de um fornecedor ou ambiente para outro, com o período em que os dois funcionam juntos e a retirada dos dados.',
   // 2.2
   'Serviços de nuvem soberana': 'Nuvem contratada que mantém os dados sob a jurisdição e o controle do país.',
   'Data centers locais': 'Construção, ampliação ou uso de centros de dados próprios ou instalados no país.',
@@ -58,8 +70,8 @@ export const EXPLICACOES_GOV: Record<string, string> = {
   // tela de opções
   'Duração do plano (meses)': 'Período coberto pelo orçamento. Os custos mensais e anuais são calculados para esse período.',
   // v018: custos adicionais (percentual sobre as opções)
-  'Viagens e atividades presenciais': 'Passagens, diárias, transporte e os custos das atividades presenciais (reuniões técnicas, oficinas, consultas, capacitações, visitas às escolas), como percentual dos custos das opções.',
-  'Overhead (custos indiretos)': 'Custos da instituição que não dá para atribuir a uma opção (espaço, TI, RH, contabilidade, jurídico), como percentual dos custos diretos.',
+  'Viagens e atividades presenciais': 'Passagens, diárias, transporte e os custos das atividades presenciais (reuniões técnicas, oficinas, consultas, capacitações, visitas às escolas), como percentual do trabalho de pessoas das opções (sem infraestrutura, equipamentos e serviços de nuvem).',
+  'Overhead (custos indiretos)': 'Custos da instituição que não dá para atribuir a uma opção (espaço, TI, RH, contabilidade, jurídico), como percentual do trabalho de pessoas e das viagens.',
   'Taxa administrativa': 'Valor cobrado por quem administra o recurso (agência da ONU, fundação de apoio, fundo), como percentual dos custos diretos. Sem intermediário, use 0%.',
 };
 

@@ -113,13 +113,34 @@ export const EQUIPES_GOV: Record<string, EquipeRef> = {
     COORD(0.25), P('Especialista em avaliação educacional', 2, 1, 1, 'Define como medir os resultados esperados.'),
     P('Especialista em IA', 2, 1, 1, 'Define os testes de desempenho e de qualidade.'),
     P('Analista de dados', 3, 1, 0.5, 'Prepara os indicadores e os painéis.'), APOIO(0.25)] },
-  // 2.1 Governança e proteção de dados e infraestrutura pública digital (categoria sem opções)
-  'Governança e proteção de dados e infraestrutura pública digital': { base: 'quenia', porque: 'Equipe permanente de gestão dos dados educacionais. O caso do Quênia mostra o custo de um órgão de proteção de dados, para comparar.', papeis: [
-    COORD(1, 'Gerencia os dados educacionais e responde por eles.'),
-    P('Especialista em governança de dados', 2, 2, 1, 'Define e aplica as regras de uso e de compartilhamento.'),
-    P('Arquiteto de dados e interoperabilidade', 2, 1, 1, 'Integra os sistemas e mantém os padrões de dados.'),
-    P('Analista de dados', 3, 2, 1, 'Mantém a qualidade e os registros dos dados.'),
-    APOIO(0.5)] },
+  // 2.1 (v018.1) Governança e proteção de dados e infraestrutura pública digital: opções da figura. As partes que não são
+  // equipe (curadoria contínua, sistemas, integrações, plataforma) estão em desafio2Gov.ts.
+  'Inventário e curadoria de dados': { meses: 6, porque: 'Inventário inicial: levantar as bases e os sistemas, com dono, finalidade, qualidade e regras de uso de cada um. A curadoria contínua é contada à parte.', papeis: [
+    COORD(0.5, 'Coordena o inventário e articula com as áreas donas dos dados.'),
+    P('Especialista em governança de dados', 2, 1, 1, 'Define o modelo do inventário e as regras de uso.'),
+    P('Analista de dados', 3, 2, 1, 'Levanta e documenta as bases e os sistemas.'), APOIO(0.25)] },
+  'Controles de acesso e regras de retenção': { meses: 6, porque: 'Norma de acesso, perfis e prazos de guarda e descarte, e configuração do sistema de controle de acesso.', papeis: [
+    COORD(0.5),
+    P('Especialista em proteção de dados', 2, 1, 1, 'Define os perfis de acesso e os prazos de guarda e descarte.'),
+    P('Especialista em segurança da informação', 2, 1, 1, 'Configura o controle de acesso e os registros de auditoria.'),
+    P('Especialista em direito digital', 2, 1, 0.5, 'Compatibiliza as regras com a lei de proteção de dados.'), APOIO(0.25)] },
+  'Interoperabilidade e portabilidade de dados': { meses: 6, porque: 'Padrões de dados e de troca entre sistemas. A integração de cada sistema é contada à parte.', papeis: [
+    COORD(0.5),
+    P('Arquiteto de dados e interoperabilidade', 2, 1, 1, 'Define os padrões de dados e de troca.'),
+    P('Especialista em dados educacionais', 2, 1, 1, 'Mapeia os dados dos sistemas educacionais.'),
+    P('Analista de dados', 3, 1, 0.5, 'Documenta os formatos e testa as trocas.'), APOIO(0.25)] },
+  'Infraestrutura pública de dados compartilhada': { porque: 'Operação contínua da plataforma de troca de dados (1,5 pessoa, como na calculadora oficial do X-Road). A implantação e a infraestrutura são contadas à parte.', papeis: [
+    P('Especialista em infraestrutura e segurança de TI', 2, 1, 1, 'Administra a plataforma, os certificados e a segurança.'),
+    P('Técnico de suporte', 3, 1, 0.5, 'Atende os órgãos conectados e monitora o serviço.')] },
+  // 2.2 (v018.1)
+  'Nuvem soberana': { meses: 6, porque: 'No modelo "contratar": implantação e migração dos sistemas para o provedor de nuvem soberana. O serviço contratado é contado à parte.', papeis: [
+    COORD(0.5),
+    P('Arquiteto de TI', 2, 1, 1, 'Desenha a arquitetura na nuvem e o plano de migração.'),
+    P('Especialista em infraestrutura e segurança de TI', 2, 2, 1, 'Migra os sistemas e configura a segurança.'),
+    P('Gestor de contratos', 2, 1, 0.5, 'Acompanha o contrato e os níveis de serviço.'), APOIO(0.25)] },
+  'Backup e continuidade do serviço': { meses: 2, porque: 'Plano de backup e de continuidade e primeiros testes de restauração. O armazenamento das cópias é contado à parte.', papeis: [
+    P('Especialista em infraestrutura e segurança de TI', 2, 1, 0.5, 'Define a política de cópias e conduz os testes de restauração.'),
+    P('Técnico de suporte', 3, 1, 0.5, 'Configura as rotinas de cópia e registra os testes.')] },
   // 2.3 Independência tecnológica
   'Adoção e manutenção de código aberto': { porque: 'Manutenção, atualização e suporte contínuos das soluções de código aberto.', papeis: [
     P('Líder técnico', 1, 1, 0.5, 'Define as prioridades e revisa as entregas.'),
@@ -138,6 +159,11 @@ export const EQUIPES_GOV: Record<string, EquipeRef> = {
     COORD(0.25), P('Especialista em contratações públicas', 2, 1, 1, 'Revisa os contratos e redige as cláusulas de saída.'),
     P('Arquiteto de TI', 2, 1, 0.5, 'Define os padrões abertos e a portabilidade dos dados.'),
     P('Especialista jurídico', 2, 1, 0.5, 'Revisa os aspectos jurídicos.')] },
+  'Migração e saída': { meses: 6, porque: 'Migração de dados e sistemas para outro fornecedor ou ambiente, com o período de operação paralela. A retirada dos dados e o sistema atual durante a transição são contados à parte.', papeis: [
+    COORD(0.5),
+    P('Arquiteto de TI', 2, 1, 1, 'Planeja a migração e a ordem dos sistemas.'),
+    P('Desenvolvedor', 2, 2, 1, 'Adapta as interfaces e migra os dados.'),
+    P('Gestor de contratos', 2, 1, 0.5, 'Conduz a saída do contrato atual e a devolução dos dados.'), APOIO(0.25)] },
   // 3.3 Governança institucional e coordenação
   'Comitês de governança': { porque: 'Só a secretaria do comitê; o tempo dos membros fica de fora.', papeis: [
     P('Secretário executivo', 2, 1, 0.5, 'Prepara as pautas, os estudos e acompanha as decisões.'),

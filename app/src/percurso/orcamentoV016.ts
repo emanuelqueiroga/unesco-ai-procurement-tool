@@ -7,6 +7,7 @@ import type { Estado14 } from '../store/tipos';
 import { t } from './textos';
 import { calcularOpcao, chaveOpcao, ehParametro, PARAMETROS, type LinhaOpcao } from './custosV017';
 import { linhasAdicionais, ID_ADICIONAIS, ADICIONAIS } from './adicionaisGov';
+import { calcularD2, ehOpcaoD2, classeDaOpcao } from './desafio2Gov';
 import { lerLit } from './letramento';
 import { chaveEd, lerEd, usaIAEd, usuariosIAEd } from './pedagogico';
 import { PROBLEMA_POR_ID } from '../domain/prioridades.js';
@@ -277,7 +278,13 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
     const x = o.itens?.[c.id] || {}, custos = x.custos && typeof x.custos === 'object' ? x.custos : {};
     const marcadas = opcoesEscolhidas(s, f, c);
     const parametros = marcadas.filter(r => ehParametro(f, c.id, r));
-    const linhas = marcadas.filter(r => !ehParametro(f, c.id, r)).map(r => calcularOpcao(s, f, c.id, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num, moeda));
+    const linhas = marcadas.filter(r => !ehParametro(f, c.id, r)).map(r => {
+      // v018.1 (governança): o desafio 2 tem conta própria (equipe + partes); as demais opções são inteiras CapEx ou OpEx
+      if (f === 'governanca' && ehOpcaoD2(r)) return calcularD2(s, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num, moeda);
+      const l = calcularOpcao(s, f, c.id, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num, moeda);
+      if (f === 'governanca') { const cl = classeDaOpcao(r); l.capex = l.total === null ? null : cl === 'capex' ? l.total : 0; l.opex = l.total === null ? null : cl === 'opex' ? l.total : 0; }
+      return l;
+    });
     const inf = linhas.filter(l => l.status === 'informado'), est = linhas.filter(l => l.status === 'referencia');
     const informadoCat = centavos(inf.reduce((n, l) => n + (l.total as number), 0)), estimadoCat = centavos(est.reduce((n, l) => n + (l.total as number), 0));
     const pendentes = linhas.filter(l => l.status === 'falta').length + (marcadas.length ? 0 : 1)
@@ -291,7 +298,17 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
   if (f === 'governanca' && itens.length) {
     const direto: Record<string, number> = {};
     for (const x of fases) direto[x.id] = centavos(itens.flatMap(i => i.linhas).filter(l => l.status !== 'falta').reduce((n, l) => n + (l.porFase[x.id] || 0), 0));
-    const linhas = linhasAdicionais(direto, o.adicionais && typeof o.adicionais === 'object' ? o.adicionais : {}, fases, fmt, num);
+    // v018.1: viagens e overhead incidem sobre o trabalho de pessoas (sem as partes de compra do desafio 2)
+    const conhecidas = itens.flatMap(i => i.linhas).filter(l => l.status !== 'falta' && l.total !== null);
+    const pessoasDe = (l: LinhaOpcao) => l.pessoas ?? (l.total as number);
+    const pessoas: Record<string, number> = {};
+    for (const x of fases) pessoas[x.id] = centavos(conhecidas.reduce((n, l) => n + (l.total ? (l.porFase[x.id] || 0) * pessoasDe(l) / (l.total as number) : 0), 0));
+    const linhas = linhasAdicionais(direto, o.adicionais && typeof o.adicionais === 'object' ? o.adicionais : {}, fases, fmt, num, pessoas);
+    // cada custo adicional se divide entre CapEx e OpEx na proporção da sua base
+    const somaD = conhecidas.reduce((n, l) => n + (l.total as number), 0), somaK = conhecidas.reduce((n, l) => n + (l.capex || 0), 0);
+    const somaP = conhecidas.reduce((n, l) => n + pessoasDe(l), 0), somaPK = conhecidas.reduce((n, l) => n + (l.pessoas != null ? l.pessoasCapex || 0 : l.capex || 0), 0);
+    const parteK = somaD > 0 ? somaK / somaD : 0, partePK = somaP > 0 ? somaPK / somaP : 0;
+    for (const l of linhas) { const k = l.chave === 'taxa' ? parteK : partePK; l.capex = l.total === null ? null : centavos(l.total * k); l.opex = l.total === null ? null : centavos(l.total - (l.capex as number)); }
     const inf = linhas.filter(l => l.status === 'informado'), est = linhas.filter(l => l.status === 'referencia');
     const informadoCat = centavos(inf.reduce((n, l) => n + (l.total as number), 0)), estimadoCat = centavos(est.reduce((n, l) => n + (l.total as number), 0));
     itens.push({ id: ID_ADICIONAIS, n: '', nome: t('Viagens, overhead e taxa administrativa'), grupo: t('Custos adicionais'), opcoes: [], marcadas: ADICIONAIS.map(a => a.rotulo),
@@ -313,6 +330,9 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
     total: !faltam && !estimados ? informado : null, totalComEstimativas: !faltam ? centavos(informado + estimado) : null,
     memoria, premissasEquipe: usadas.filter(l => !l.unitDaReferencia).map(l => ({ pid: l.chave, item: t(l.rotulo) })), todasEquipe: usadas.length > 0 && usadas.every(l => !l.unitDaReferencia),
     eletricidade: null as number | null,
+    /** v018.1 (governança): custo conhecido separado em investimento (CapEx) e operação (OpEx) */
+    capex: centavos(todas.filter(l => l.status !== 'falta').reduce((n, l) => n + (l.capex || 0), 0)),
+    opex: centavos(todas.filter(l => l.status !== 'falta').reduce((n, l) => n + (l.opex ?? (l.capex == null ? l.total || 0 : 0)), 0)),
     /** v018 (governança): parte do custo conhecido que é de servidores que já existem (fora do desembolso novo) */
     existentes: centavos(todas.reduce((n, l) => n + (l.total !== null && typeof l.desembolso === 'number' ? l.total - l.desembolso : 0), 0)) };
 }
@@ -326,7 +346,8 @@ export function linhasFases(o: { fases?: { nome: string; meses: number; informad
 /** Instituição responsável (campo da tela País; a governança antiga guardava em "olhando"). */
 export function instituicaoV16(s: Pick<Estado14, 'ctx'>): string { return String(s.ctx.local || s.ctx.olhando || '').trim(); }
 
-export interface LinhaMatriz { id: string; n: string; nome: string; grupo: string; nivel: 0 | 1; tipo: 'informado' | 'estimado' | 'sem_custo' | 'a_levantar'; porFase: Record<string, number | null>; total: number | null }
+export interface LinhaMatriz { id: string; n: string; nome: string; grupo: string; nivel: 0 | 1; tipo: 'informado' | 'estimado' | 'sem_custo' | 'a_levantar'; porFase: Record<string, number | null>; total: number | null;
+  /** v018.1: investimento e operação da linha */ capex?: number | null; opex?: number | null }
 /** Categoria × fase, com uma sublinha por opção escolhida (v017). */
 export function matrizFases(o: ReturnType<typeof orcamentoV16>): LinhaMatriz[] {
   const out: LinhaMatriz[] = [];
@@ -334,10 +355,14 @@ export function matrizFases(o: ReturnType<typeof orcamentoV16>): LinhaMatriz[] {
     if (!i.linhas.length && i.parametros.length) continue; // 1.1: só parâmetros, sem custo próprio
     const porFase: Record<string, number | null> = {};
     for (const f of o.fases) porFase[f.id] = i.valor === null ? null : centavos(i.linhas.filter(l => l.status !== 'falta').reduce((n, l) => n + (l.porFase[f.id] || 0), 0));
-    out.push({ id: i.id, n: i.n, nome: i.nome, grupo: i.grupo, nivel: 0, tipo: i.valor === null ? 'a_levantar' : i.referencia ? 'estimado' : 'informado', porFase, total: i.valor });
+    const conhecidas = i.linhas.filter(l => l.status !== 'falta');
+    const capexCat = i.valor === null ? null : centavos(conhecidas.reduce((n, l) => n + (l.capex || 0), 0));
+    out.push({ id: i.id, n: i.n, nome: i.nome, grupo: i.grupo, nivel: 0, tipo: i.valor === null ? 'a_levantar' : i.referencia ? 'estimado' : 'informado', porFase, total: i.valor,
+      capex: capexCat, opex: capexCat === null || i.valor === null ? null : centavos(i.valor - capexCat) });
     if (i.linhas.length > 1 || i.opcoes.length) for (const l of i.linhas) {
       const pf: Record<string, number | null> = {}; for (const f of o.fases) pf[f.id] = l.status === 'falta' ? null : l.porFase[f.id] ?? 0;
-      out.push({ id: i.id + ':' + l.chave, n: '', nome: t(l.rotulo), grupo: i.grupo, nivel: 1, tipo: l.status === 'falta' ? 'a_levantar' : l.status === 'referencia' ? 'estimado' : 'informado', porFase: pf, total: l.total });
+      out.push({ id: i.id + ':' + l.chave, n: '', nome: t(l.rotulo), grupo: i.grupo, nivel: 1, tipo: l.status === 'falta' ? 'a_levantar' : l.status === 'referencia' ? 'estimado' : 'informado', porFase: pf, total: l.total,
+        capex: l.status === 'falta' ? null : l.capex ?? null, opex: l.status === 'falta' ? null : l.opex ?? null });
     }
   }
   return out;
