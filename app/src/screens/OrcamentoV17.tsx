@@ -54,8 +54,9 @@ export function CategoriasV17({ s, frente }: { s: CasoStore; frente: FrenteEstim
   </div>;
 }
 
-/** Passo 2: opções de cada categoria escolhida. */
-export function OpcoesV17({ s, frente }: { s: CasoStore; frente: FrenteEstimativa }) {
+/** Passo 2: opções de cada categoria escolhida. v018 (governança): com `cat`, só a categoria da página; a duração do
+ *  plano e os custos adicionais ficam na última página (AdicionaisPaginaV18). */
+export function OpcoesV17({ s, frente, cat }: { s: CasoStore; frente: FrenteEstimativa; cat?: string }) {
   const o = orcamentoV16(s, frente), fmt = (v: number) => formatarMoedaEst(v, o.moeda);
   const marcar = (c: CategoriaV16, r: string, on: boolean) => {
     const x = raizOrcamento(useCaso.getState(), frente).itens?.[c.id]?.opcoes, atual: string[] = Array.isArray(x) ? x : [];
@@ -64,11 +65,12 @@ export function OpcoesV17({ s, frente }: { s: CasoStore; frente: FrenteEstimativ
   if (!o.itens.length) return <p className="pc-nota">{t('Volte e escolha pelo menos uma categoria de custo.')}</p>;
   // v017: a tela Valores saiu; o que só existia nela (duração ou resumo das fases, total da categoria, valor das
   // categorias sem opções e custo por fase) fica aqui.
+  const lista = cat ? o.itens.filter(i => i.id === cat) : o.itens;
   return <div className="pv-v17" id="opcoes" tabIndex={-1}>
-    {semFases(frente) ? <div className="pv-v17-campos">{(() => { const campo = <CampoNumero label={t('Duração do plano (meses)')} value={raizOrcamento(s, frente).duracao ?? ''} placeholder={String(DURACAO_GOV_PADRAO)} onChange={v => gravarOrc(frente, 'duracao', v === '' ? undefined : v)} />;
+    {cat ? null : semFases(frente) ? <div className="pv-v17-campos">{(() => { const campo = <CampoNumero label={t('Duração do plano (meses)')} value={raizOrcamento(s, frente).duracao ?? ''} placeholder={String(DURACAO_GOV_PADRAO)} onChange={v => gravarOrc(frente, 'duracao', v === '' ? undefined : v)} />;
       return frente === 'governanca' ? <div className="pc-dica-campo">{campo}<DicaGov chave="Duração do plano (meses)" inicio /></div> : campo; })()}</div>
       : <p className="pv-v17-fases-resumo">{resumoFases(s, frente)} · {o.moeda} · <a href={href.pergunta(4, telaFases(frente))}>{t('Alterar fases')}</a></p>}
-    {porGrupo(o.itens).map(([grupo, itens]) => <section key={grupo} className="pv-v17-grupo">
+    {porGrupo(lista).map(([grupo, itens]) => <section key={grupo} className="pv-v17-grupo">
       {grupo ? <h2 className="pv-v17-desafio">{grupo}</h2> : null}
       {itens.map(i => <div key={i.id} className="pv-v17-cat">
         <div className="pv-v17-cat-cab"><h3 className="pv-v17-cat-nome">{nomeCat(i)}{frente === 'governanca' ? <DicaGov chave={nomeGovPt(i.id)} nome={nomeCat(i)} inicio /> : null}</h3><span className="pv-v17-cat-total">{i.valor === null ? '—' : fmt(i.valor)}</span></div>
@@ -87,6 +89,20 @@ export function OpcoesV17({ s, frente }: { s: CasoStore; frente: FrenteEstimativ
       {o.fases.map(f => <div key={f.id} className="pv-por-fase-linha"><span>{f.nome} · {t('{n} meses', { n: f.meses })}</span>
         <span className="pv-por-fase-num">{f.informado + f.estimado ? fmt(f.informado + f.estimado) : '—'}</span></div>)}
     </div> : null}
+  </div>;
+}
+
+/** v018 (governança): última página do fluxo: a duração do plano (padrão de 12 meses) e os custos adicionais. */
+export function AdicionaisPaginaV18({ s }: { s: CasoStore }) {
+  const frente: FrenteEstimativa = 'governanca', o = orcamentoV16(s, frente), i = o.itens.find(x => x.id === ID_ADICIONAIS);
+  const fmt = (v: number) => formatarMoedaEst(v, o.moeda);
+  return <div className="pv-v17" id="opcoes" tabIndex={-1}>
+    <div className="pv-v17-campos"><div className="pc-dica-campo"><CampoNumero label={t('Duração do plano (meses)')} value={raizOrcamento(s, frente).duracao ?? ''} placeholder={String(DURACAO_GOV_PADRAO)}
+      onChange={v => gravarOrc(frente, 'duracao', v === '' ? undefined : v)} /><DicaGov chave="Duração do plano (meses)" inicio /></div></div>
+    {i ? <section className="pv-v17-grupo"><div className="pv-v17-cat">
+      <div className="pv-v17-cat-cab"><h3 className="pv-v17-cat-nome">{nomeCat(i)}<DicaGov chave={nomeGovPt(i.id)} nome={nomeCat(i)} inicio /></h3><span className="pv-v17-cat-total">{i.valor === null ? '—' : fmt(i.valor)}</span></div>
+      <AdicionaisV18 s={s} linhas={i.linhas} moeda={o.moeda} />
+    </div></section> : <p className="pc-nota">{t('Volte e escolha pelo menos uma categoria de custo.')}</p>}
   </div>;
 }
 

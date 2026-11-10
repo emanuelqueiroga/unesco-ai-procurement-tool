@@ -2,6 +2,7 @@
 // Português é a chave de tradução; `t()` traduz quando há dicionário (os textos novos entram nos
 // dicionários em i18n/v14_<l>.json; até lá aparecem em português nos outros idiomas).
 import { tr, percursoGovernanca } from '../domain';
+import { CATEGORIAS } from '../domain/catalogo_v016.js';
 import type { Capitulo } from '../store';
 
 export const t = (s: string, vars?: Record<string, string | number>): string => {
@@ -163,4 +164,7 @@ Object.assign(CURTO, {
   'gov-solucoes': 'Soluções de política educacional', 'gov-atores': 'Instituições e grupos afetados', 'gov-acoes': 'Ações e responsabilidades',
   'gov-capacidade': 'Capacidade institucional', 'gov-recursos': 'Valores', 'gov-fases': 'Fases', 'gov-equipe': 'Equipe e formação',
   'gov-categorias': 'Categorias de custo', 'gov-opcoes': 'Opções de custo', 'gov-sandbox': 'Experimentação supervisionada', 'gov-revisao': 'Indicadores e revisão',
+  'gov-adicionais': 'Custos adicionais',
 });
+// v018: a página de cada categoria da governança leva o nome da categoria (o número entra no título da página)
+for (const c of (CATEGORIAS as unknown as { governanca: { id: string; nome: string }[] }).governanca) CURTO['gov-opcoes-' + c.id] = c.nome;

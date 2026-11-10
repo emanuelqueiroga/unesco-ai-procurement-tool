@@ -6,6 +6,7 @@ import { LOC } from '../domain/i18n.js';
 import { nomePais, paisDoCaso } from '../domain/pais.js';
 import { tamanhoRedeValido, projetoUsoDefinido } from '../domain/escopo.js';
 import type { Estado14 } from '../store/tipos';
+import { categoriaDaTelaGov, TELA_ADICIONAIS_GOV } from '../store/perguntas';
 import { t } from './textos';
 import { orcamentoV16, fasesSalvas, linhasFases, proximoV16, instituicaoV16 } from './orcamentoV016';
 import { estimativaReferencia, itemEmReferencia, valorEstimado, totaisOrcamento, linhasTotais, notaEstimativas, textoEstimado } from './estimativasOrcamento';
@@ -47,9 +48,16 @@ export function acoesGovernanca(s: Pick<Estado14, 'ctx'>) {
     sugerida: true, responsavel: '', prazo: '', marco: '', indicador: '' }));
 }
 function valorCusto(v: unknown): number | null { return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : null; }
+// v018: o progresso pergunta por cada página de categoria; a conta do orçamento é a mesma para o mesmo estado, então
+// a última fica guardada (mesmo contexto, caso, moeda e idioma).
+let ultimoOrc: { ctx: unknown; caso: unknown; moeda: unknown; lang: unknown; o: ReturnType<typeof orcamentoV16> } | null = null;
 export function orcamentoGovernanca(s: Pick<Estado14, 'ctx' | 'moeda'>) {
   // v016: 3 desafios × 9 categorias, com fases (orcamentoV016)
-  return orcamentoV16(s, 'governanca');
+  const caso = (s as Partial<Estado14>).caso, lang = (s as Partial<Estado14>).lang;
+  if (ultimoOrc && ultimoOrc.ctx === s.ctx && ultimoOrc.caso === caso && ultimoOrc.moeda === s.moeda && ultimoOrc.lang === lang) return ultimoOrc.o;
+  const o = orcamentoV16(s, 'governanca');
+  ultimoOrc = { ctx: s.ctx, caso, moeda: s.moeda, lang, o };
+  return o;
 }
 export function moedaGovernanca(v: number | null, cod: string, locale?: string): string {
   if (v === null) return t('Não informado');
@@ -73,7 +81,13 @@ export function governancaRespondida(s: Estado14, id: string): boolean {
     case 'gov-recursos': { const o = orcamentoGovernanca(s); return o.itens.length > 0 && o.itens.every(i => i.respondido); }
     case 'gov-categorias': return orcamentoGovernanca(s).itens.length > 0;
     case 'gov-opcoes': { const o = orcamentoGovernanca(s); return o.itens.length > 0 && o.itens.every(i => i.marcadas.length > 0 && i.respondido); }
-    default: return false;
+    // v018: custos adicionais e duração do plano têm padrão (percentuais de referência e 12 meses)
+    case TELA_ADICIONAIS_GOV: return true;
+    default: {
+      // v018: página de uma categoria: pelo menos uma opção marcada e nada faltando
+      const cat = categoriaDaTelaGov(id), i = cat ? orcamentoGovernanca(s).itens.find(x => x.id === cat) : undefined;
+      return !!i && i.marcadas.length > 0 && i.respondido;
+    }
   }
 }
 /** Telas opcionais: Próximo não é bloqueado nelas. */
@@ -120,6 +134,7 @@ export function telaGovernancaLegada(id: string): { n: 1 | 2 | 3 | 4; id: string
 
 export function pendenciasGov(s:Estado14,id:string) {
  const x=contextoGovProjetado(s), out:{caminho:string;label:string}[]=[];
- if(id==='gov-recursos'||id==='gov-opcoes')for(const i of orcamentoGovernanca(s).itens){if(i.id==='adicionais')continue;const extra=i.id.startsWith('extra-'),p=extra?'govOrcamento.extras.'+i.id.slice(6):'govOrcamento.itens.'+i.id,item=p.split('.').reduce((o:any,k)=>o?.[k],x);if(i.valor===null&&item?.situacao!=='a_estimar'&&!i.referencia)out.push({caminho:p,label:i.nome});if(extra&&!preenchido(item?.nome))out.push({caminho:p+'.nome',label:'Recurso adicional'});}
+ const cat=categoriaDaTelaGov(id);
+ if(id==='gov-recursos'||id==='gov-opcoes'||cat)for(const i of orcamentoGovernanca(s).itens){if(i.id==='adicionais'||(cat&&i.id!==cat))continue;const extra=i.id.startsWith('extra-'),p=extra?'govOrcamento.extras.'+i.id.slice(6):'govOrcamento.itens.'+i.id,item=p.split('.').reduce((o:any,k)=>o?.[k],x);if(i.valor===null&&item?.situacao!=='a_estimar'&&!i.referencia)out.push({caminho:p,label:i.nome});if(extra&&!preenchido(item?.nome))out.push({caminho:p+'.nome',label:'Recurso adicional'});}
  return out;
 }

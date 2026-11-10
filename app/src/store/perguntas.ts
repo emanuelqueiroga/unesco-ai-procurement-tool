@@ -2,6 +2,7 @@
 // (spec, "Mapa das 51 perguntas para as 24 do Essencial" e "Comportamentos que fazem a narrativa").
 import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoGovernanca } from '../domain';
 import type { Capitulo } from './tipos';
+import { CATEGORIAS } from '../domain/catalogo_v016.js';
 
 export interface TelaEssencial {
   /** id da tela (o id do campo principal; 'governanca' para as seis 1.3.x) */
@@ -52,19 +53,51 @@ export const CAPITULOS: Capitulo[] = [1, 2, 3, 4];
 export type EscopoPercurso = { ctx?: Record<string, any> };
 // v018: o fluxo da governança é o da v017 (Contexto → Categorias → Opções, com os valores de cada opção marcada); vale
 // quando a única prioridade é a governança. As demais combinações seguem o percurso da 0.0.14 (ESSENCIAL).
+// Cada categoria escolhida tem a sua página (na ordem do catálogo: 1.1, 1.2...), e os custos adicionais, com a
+// duração do plano, fecham o fluxo numa página própria.
+type CategoriaGov = { id: string; n: string; nome: string; desafio: string };
+const CATEGORIAS_GOV = (CATEGORIAS as unknown as { governanca: CategoriaGov[] }).governanca;
+export const PREFIXO_OPCOES_GOV = 'gov-opcoes-';
+export const TELA_ADICIONAIS_GOV = 'gov-adicionais';
+/** Id da página de uma categoria da governança ('gov-opcoes-g11'). */
+export const telaOpcoesGov = (cat: string) => PREFIXO_OPCOES_GOV + cat;
+/** Categoria da governança de uma página de opções (ou null). */
+export const categoriaDaTelaGov = (id: string) => id.startsWith(PREFIXO_OPCOES_GOV) ? id.slice(PREFIXO_OPCOES_GOV.length) : null;
+/** Nome (sem número) e número da categoria de uma página de opções da governança. */
+export function categoriaGov(id: string): CategoriaGov | undefined { const c = categoriaDaTelaGov(id); return c ? CATEGORIAS_GOV.find(x => x.id === c) : undefined; }
+/** Categorias da governança escolhidas e disponíveis para os desafios marcados, na ordem do catálogo. */
+export function categoriasGovAtivas(ctx?: Record<string, any>): string[] {
+  const problemas: unknown[] = Array.isArray(ctx?.problemas) ? ctx!.problemas : [], sel: unknown = ctx?.govOrcamento?.categorias;
+  const escolhidas = Array.isArray(sel) ? sel : [];
+  return CATEGORIAS_GOV.filter(c => problemas.includes(c.desafio) && escolhidas.includes(c.id)).map(c => c.id);
+}
+const TELAS_CATEGORIAS_GOV: TelaEssencial[] = CATEGORIAS_GOV.map(c => ({ id: telaOpcoesGov(c.id), capitulo: 3 as Capitulo, n: [], campos: ['govOrcamento'] }));
 export const GOVERNANCA: TelaEssencial[] = [
   ...ESSENCIAL.filter(t => ['local', 'prioridades', 'problemas'].includes(t.id)),
   { id: 'gov-categorias', capitulo: 2, n: [], campos: ['govOrcamento'] },
-  { id: 'gov-opcoes', capitulo: 3, n: [], campos: ['govOrcamento'] },
+  ...TELAS_CATEGORIAS_GOV,
+  { id: TELA_ADICIONAIS_GOV, capitulo: 3, n: [], campos: ['govOrcamento'] },
 ];
-/** Telas da governança que saíram do fluxo nas versões anteriores → a tela mantida mais próxima. */
+/** Fluxo da governança do caso: só as páginas das categorias escolhidas. */
+function governancaDoCaso(ctx?: Record<string, any>): TelaEssencial[] {
+  const ativas = new Set(categoriasGovAtivas(ctx).map(telaOpcoesGov));
+  return GOVERNANCA.filter(t => !t.id.startsWith(PREFIXO_OPCOES_GOV) || ativas.has(t.id));
+}
+/** Primeira página de opções da governança (a da primeira categoria escolhida; sem categoria, a dos custos adicionais).
+ *  É para onde vão os links antigos da página única de opções ('gov-opcoes'). */
+export function entradaOpcoesGov(e?: EscopoPercurso): string {
+  const c = categoriasGovAtivas(e?.ctx)[0];
+  return c ? telaOpcoesGov(c) : TELA_ADICIONAIS_GOV;
+}
+/** Telas da governança que saíram do fluxo nas versões anteriores → a tela mantida mais próxima ('gov-opcoes', a antiga
+ *  página única de opções, vai para entradaOpcoesGov). */
 export const TELAS_FORA_DO_FLUXO: Record<string, string> = {
-  'gov-recursos': 'gov-opcoes', 'gov-equipe': 'gov-categorias', 'gov-fases': 'gov-opcoes',
+  'gov-opcoes': 'gov-opcoes', 'gov-recursos': 'gov-opcoes', 'gov-equipe': 'gov-categorias', 'gov-fases': 'gov-opcoes',
   'gov-projeto': 'gov-categorias', 'gov-diagnostico': 'gov-categorias', 'gov-instrumentos': 'gov-categorias', 'gov-solucoes': 'gov-categorias',
   'gov-atores': 'gov-categorias', 'gov-capacidade': 'gov-categorias', 'gov-acoes': 'gov-opcoes', 'gov-sandbox': 'gov-opcoes', 'gov-revisao': 'gov-opcoes',
 };
 export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id))];
-export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] { return percursoGovernanca(e?.ctx) ? GOVERNANCA : ESSENCIAL; }
+export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] { return percursoGovernanca(e?.ctx) ? governancaDoCaso(e?.ctx) : ESSENCIAL; }
 export function telasDoCapitulo(n: Capitulo, e?: EscopoPercurso): TelaEssencial[] { return telasAtivas(e).filter(t => t.capitulo === n); }
 export function telaDoCampo(campo: string): TelaEssencial | undefined { return ESSENCIAL.find(t => t.campos.includes(campo)) || TODAS_TELAS.find(t => t.campos.includes(campo)); }
 export function essencial(campo: string): boolean { return CAMPOS_ESSENCIAIS.includes(campo); }
