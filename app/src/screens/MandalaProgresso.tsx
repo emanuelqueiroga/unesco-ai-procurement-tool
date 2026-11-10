@@ -1,7 +1,8 @@
-// v018.1: progresso do plano de governança na coluna direita, abaixo do custo e do resumo. Uma mandala em três setores,
-// um por desafio, com uma pétala por categoria: contorno tracejado quando a categoria não foi escolhida; escolhida, a
-// pétala se preenche do centro para fora na proporção das opções que já têm valor. O anel externo mostra a parte do
-// plano com valor, e o centro, a porcentagem. Os mesmos números ficam numa lista para leitores de tela.
+// v018.1: progresso do plano de governança na coluna direita, abaixo do custo e do resumo. Uma flor de nove pétalas, uma
+// por categoria, agrupadas por desafio e com a cor do desafio. Pétala não escolhida fica apagada; escolhida, ganha contorno
+// e se preenche do centro para a ponta na proporção das opções que já têm valor. O arco externo de cada desafio mostra a
+// parte já com valor, e o centro, a porcentagem do plano. Os mesmos números ficam numa lista para leitores de tela.
+import { useId } from 'react';
 import type { CasoStore } from '../store';
 import { t } from '../percurso/textos';
 import { LOC } from '../domain';
@@ -9,16 +10,21 @@ import { orcamentoGovernanca } from '../percurso/governanca';
 
 interface Petala { id: string; n: string; nome: string; desafio: number; escolhida: boolean; feitas: number; total: number }
 
-const C = 100, R0 = 38, R1 = 80, RA = 90;
-const pol = (r: number, a: number) => [C + r * Math.sin(a), C - r * Math.cos(a)] as const;
-/** Setor anular de a0 a a1 (radianos, sentido horário a partir do topo), entre os raios ri e re. */
-function setor(ri: number, re: number, a0: number, a1: number): string {
-  const [x0, y0] = pol(re, a0), [x1, y1] = pol(re, a1), [x2, y2] = pol(ri, a1), [x3, y3] = pol(ri, a0), g = a1 - a0 > Math.PI ? 1 : 0;
-  return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${re} ${re} 0 ${g} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}L${x2.toFixed(2)} ${y2.toFixed(2)}A${ri} ${ri} 0 ${g} 0 ${x3.toFixed(2)} ${y3.toFixed(2)}Z`;
+const C = 120, R0 = 34, R1 = 100, RA = 112, SETOR = 120, VAO = 8;
+const rad = (g: number) => (g * Math.PI) / 180;
+const pol = (r: number, g: number) => [C + r * Math.sin(rad(g)), C - r * Math.cos(rad(g))] as const;
+const f2 = (n: number) => n.toFixed(2);
+
+/** Pétala apontando para cima, da base (raio R0) à ponta (raio R1): duas curvas simétricas, ponta fina e bojo largo. */
+function petala(meia: number): string {
+  const h = R1 - R0, yb = C - R0, yt = C - R1;
+  return `M${C} ${f2(yb)}C${f2(C - meia * 1.3)} ${f2(yb - h * 0.28)} ${f2(C - meia * 0.95)} ${f2(yt + h * 0.12)} ${C} ${f2(yt)}`
+    + `C${f2(C + meia * 0.95)} ${f2(yt + h * 0.12)} ${f2(C + meia * 1.3)} ${f2(yb - h * 0.28)} ${C} ${f2(yb)}Z`;
 }
-function arco(r: number, a0: number, a1: number): string {
-  const [x0, y0] = pol(r, a0), [x1, y1] = pol(r, a1);
-  return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${r} ${r} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+/** Arco de g0 a g1 graus (sentido horário a partir do topo) no raio r. */
+function arco(r: number, g0: number, g1: number): string {
+  const [x0, y0] = pol(r, g0), [x1, y1] = pol(r, g1);
+  return `M${f2(x0)} ${f2(y0)}A${r} ${r} 0 ${g1 - g0 > 180 ? 1 : 0} 1 ${f2(x1)} ${f2(y1)}`;
 }
 
 export function petalasDoPlano(s: CasoStore): { petalas: Petala[]; desafios: string[]; feitas: number; total: number } {
@@ -33,39 +39,58 @@ export function petalasDoPlano(s: CasoStore): { petalas: Petala[]; desafios: str
 }
 
 export function MandalaProgresso({ s }: { s: CasoStore }) {
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const { petalas, desafios, feitas, total } = petalasDoPlano(s);
   if (!petalas.length) return null;
-  const frac = total ? feitas / total : 0, pct = new Intl.NumberFormat(String(LOC()), { style: 'percent', maximumFractionDigits: 0 }).format(frac);
+  const fmtPct = new Intl.NumberFormat(String(LOC()), { style: 'percent', maximumFractionDigits: 0 });
+  const frac = total ? feitas / total : 0, pct = fmtPct.format(frac);
   const porDesafio = [1, 2, 3].map(d => petalas.filter(p => p.desafio === d));
-  const vao = 0.05, setorD = (2 * Math.PI) / 3;
-  const formas = porDesafio.flatMap((lista, di) => {
-    const a0 = di * setorD + vao, larg = (setorD - 2 * vao) / Math.max(1, lista.length);
+  const resumo = porDesafio.map(l => { const e = l.filter(p => p.escolhida); return { esc: e.length, feitas: e.reduce((n, p) => n + p.feitas, 0), total: e.reduce((n, p) => n + p.total, 0) }; });
+
+  const flores = porDesafio.flatMap((lista, di) => {
+    // As pétalas ficam a intervalos iguais e o primeiro desafio é centrado no topo, para a flor ficar simétrica.
+    const passo = SETOR / Math.max(1, lista.length), meia = Math.min(24, (R0 + (R1 - R0) * 0.4) * Math.sin(rad(passo / 2)) * 1.0);
     return lista.map((p, k) => {
-      const b0 = a0 + k * larg + 0.02, b1 = a0 + (k + 1) * larg - 0.02, f = p.escolhida ? p.feitas / Math.max(1, p.total) : 0;
-      const meio = (b0 + b1) / 2, [tx, ty] = pol((R0 + R1) / 2 + 4, meio);
-      return <g key={p.id} className={'pc-mandala-petala' + (p.escolhida ? ' is-on' : '') + (p.escolhida && f >= 1 ? ' is-ok' : '')}>
+      const g = di * SETOR - SETOR / 2 + (k + 0.5) * passo, f = p.escolhida ? p.feitas / Math.max(1, p.total) : 0;
+      const cheia = p.escolhida && f >= 1, [tx, ty] = pol(R0 + (R1 - R0) * 0.6, g), clip = `${uid}-p${di}${k}`;
+      const forma = petala(meia), giro = `rotate(${f2(g)} ${C} ${C})`, rf = f2(R0 + (R1 - R0) * f + (cheia ? 6 : 0));
+      return <g key={p.id} className={'pc-flor-petala pc-flor-d' + (di + 1) + (p.escolhida ? ' is-on' : '') + (cheia ? ' is-ok' : '')}>
         <title>{p.n + ' ' + p.nome + ': ' + (p.escolhida ? t('{f} de {n} opções com valor', { f: p.feitas, n: p.total }) : t('não escolhida'))}</title>
-        <path className="pc-mandala-fundo" d={setor(R0, R1, b0, b1)} />
-        {f > 0 ? <path className="pc-mandala-cheio" d={setor(R0, R0 + (R1 - R0) * f, b0, b1)} /> : null}
-        <text x={tx} y={ty} className="pc-mandala-n" textAnchor="middle" dominantBaseline="central">{p.n}</text>
+        {p.escolhida ? <clipPath id={clip}><path d={forma} transform={giro} /></clipPath> : null}
+        {p.escolhida && f > 0 ? <clipPath id={clip + 'c'}><circle className="pc-flor-borda" cx={C} cy={C} r={rf} /></clipPath> : null}
+        <path className="pc-flor-fundo" d={forma} transform={giro} />
+        {p.escolhida && f > 0 ? <circle className="pc-flor-cheio" cx={C} cy={C} r={rf} clipPath={`url(#${clip})`} /> : null}
+        {p.escolhida ? <path className="pc-flor-contorno" d={forma} transform={giro} /> : null}
+        <text x={f2(tx)} y={f2(ty)} className="pc-flor-n" textAnchor="middle" dominantBaseline="central">{p.n}</text>
+        {/* o número muda de cor exatamente na borda do preenchimento */}
+        {p.escolhida && f > 0 ? <text x={f2(tx)} y={f2(ty)} className="pc-flor-n pc-flor-n--sobre" textAnchor="middle" dominantBaseline="central" clipPath={`url(#${clip}c)`} aria-hidden="true">{p.n}</text> : null}
       </g>;
     });
+  });
+  const arcos = resumo.map((r, di) => {
+    const g0 = di * SETOR - SETOR / 2 + VAO / 2, g1 = di * SETOR + SETOR / 2 - VAO / 2, fr = r.total ? r.feitas / r.total : 0;
+    return <g key={di} className={'pc-flor-d' + (di + 1)}>
+      <path className="pc-flor-trilho" d={arco(RA, g0, g1)} />
+      {fr > 0 ? <path className="pc-flor-arco" d={arco(RA, g0, g0 + (g1 - g0) * fr)} /> : null}
+    </g>;
   });
   const rotulo = t('Progresso do plano: {p} das opções escolhidas com valor ({f} de {n}).', { p: pct, f: feitas, n: total });
   return <section className="pc-mandala" aria-label={t('Progresso do plano')}>
     <h2 className="pc-mandala-titulo">{t('Progresso do plano')}</h2>
-    <svg viewBox="0 0 200 200" role="img" aria-label={rotulo} className="pc-mandala-svg">
-      <circle className="pc-mandala-trilho" cx={C} cy={C} r={RA} />
-      {frac > 0 ? <path className="pc-mandala-anel" d={frac >= 1 ? arco(RA, 0, 2 * Math.PI - 0.0001) : arco(RA, 0, 2 * Math.PI * frac)} /> : null}
-      {[0, 1, 2].map(i => { const [x0, y0] = pol(R0 - 2, i * setorD), [x1, y1] = pol(RA - 4, i * setorD); return <line key={i} className="pc-mandala-raio" x1={x0} y1={y0} x2={x1} y2={y1} />; })}
-      {formas}
-      <circle className="pc-mandala-miolo" cx={C} cy={C} r={R0 - 6} />
-      <text x={C} y={C - 4} className="pc-mandala-pct" textAnchor="middle" dominantBaseline="central">{pct}</text>
-      <text x={C} y={C + 14} className="pc-mandala-sub" textAnchor="middle" dominantBaseline="central">{t('com valor')}</text>
+    <svg viewBox="0 0 240 240" role="img" aria-label={rotulo} className="pc-flor">
+      {arcos}
+      {flores}
+      <circle className="pc-flor-miolo" cx={C} cy={C} r={R0 - 4} />
+      <text x={C} y={C - 3} className={"pc-flor-pct" + (pct.length > 4 ? " is-longo" : "")} textAnchor="middle" dominantBaseline="central">{pct}</text>
+      <text x={C} y={C + 14} className="pc-flor-sub" textAnchor="middle" dominantBaseline="central">{t('com valor')}</text>
     </svg>
-    <ol className="pc-mandala-legenda">{desafios.map((d, i) => { const l = porDesafio[i], esc = l.filter(p => p.escolhida);
-      return <li key={i}><span className="pc-mandala-num">{i + 1}</span><span className="pc-mandala-nome">{t(d)}</span>
-        <span className="pc-mandala-conta">{esc.length ? t('{f} de {n}', { f: esc.reduce((n, p) => n + p.feitas, 0), n: esc.reduce((n, p) => n + p.total, 0) }) : '—'}</span></li>; })}</ol>
+    <ol className="pc-mandala-legenda">{desafios.map((d, i) => { const r = resumo[i], fr = r.total ? r.feitas / r.total : 0;
+      return <li key={i} className={'pc-flor-d' + (i + 1) + (r.esc ? '' : ' is-vazio')}>
+        <span className="pc-mandala-num" aria-hidden="true">{i + 1}</span>
+        <span className="pc-mandala-nome">{t(d)}</span>
+        <span className="pc-mandala-conta">{r.esc ? t('{f} de {n}', { f: r.feitas, n: r.total }) : '—'}</span>
+        <span className="pc-mandala-barra" aria-hidden="true"><span style={{ inlineSize: `${Math.round(fr * 100)}%` }} /></span>
+      </li>; })}</ol>
     <p className="pc-mandala-nota">{t('Cada pétala é uma categoria; ela se preenche à medida que as opções escolhidas recebem valor.')}</p>
   </section>;
 }
