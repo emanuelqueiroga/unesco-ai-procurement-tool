@@ -29,7 +29,7 @@ function FiguraCusto() {
     <svg viewBox="0 40 760 448" role="img" aria-label={t(MET.figura)} fontSize="13">
       <defs><marker id="met-seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill={edge} /></marker></defs>
       <g fill="none" stroke={edge} strokeWidth="1.25">{caminhos.map(d => <path key={d} d={d} markerEnd="url(#met-seta)" />)}</g>
-      {no(c0, 281, w0, true, t(MET.fTotal), 'C = D + V + O + T')}
+      {no(c0, 281, w0, true, t(MET.fTotal), MET.fTotal2)}
       {no(c1, 146, w1, false, t(MET.fDireto), t(MET.fDireto2))}
       {no(c1, 296, w1, false, t(MET.fViagens), t(MET.fViagens2))}
       {no(c1, 356, w1, false, t(MET.fOverhead), t(MET.fOverhead2))}
@@ -69,7 +69,7 @@ function valoresExemplo(): Record<string, string | number> {
   const r: Record<string, string | number> = { ano: x.ano, meses: x.meses, h: x.h, participantes: x.participantes, horas: x.horas,
     pi1: pct(x.pi[0]), pi2: pct(x.pi[1]), e: pct(x.e), f1: num(1 + x.pi[0], 2), f2: num(1 + x.pi[1], 2), I: num(k.I, 4), fe: num(1 + x.e, 2), fp: num(1 + x.p, 2),
     w1: usd(x.w1), w2: usd(x.w2), w4: usd(x.w4), tb: x.tb, equip: usd(x.equip), sobM: num(k.sobM, 2) };
-  for (const c of ['w2i', 'c1', 'c2', 'c4', 'c2e', 'r1', 'r2', 'r3', 'r4', 'mensal', 'norma', 'integral', 'formacao', 'hosp', 'vmsV', 'comp', 'P', 'D', 'V', 'O', 'T', 'C', 'TK', 'K', 'X', 'existente', 'desembolso', 'sobK', 'sobKe'] as const) r[c] = usd(k[c]);
+  for (const c of ['w2i', 'c1', 'c2', 'c4', 'c2e', 'r1', 'r2', 'r3', 'r4', 'mensal', 'norma', 'integral', 'formacao', 'hosp', 'vmsV', 'comp', 'P', 'D', 'V', 'O', 'T', 'C', 'TK', 'K', 'TU', 'U', 'X', 'existente', 'desembolso', 'sobK', 'sobKe'] as const) r[c] = usd(k[c]);
   return r;
 }
 

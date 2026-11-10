@@ -26,23 +26,23 @@ export function contasExemplo() {
   const hosp = cent(x.tb * 1024 * x.armGB * x.h), vmsV = cent(x.vms * x.vmHora * 730 * x.h), comp = cent(vmsV + x.equip);
   const P = cent(norma + integral + formacao), D = cent(P + hosp + comp);
   const V = cent(x.pV * P), O = cent(x.pO * (P + V)), T = cent(x.pT * (D + V)), C = cent(D + V + O + T);
-  const TK = cent(T * x.equip / D), K = cent(x.equip + TK), X = cent(C - K);
+  const TK = cent(T * x.equip / D), K = cent(x.equip + TK), TU = cent(T * (hosp + vmsV) / D), U = cent(hosp + vmsV + TU), X = cent(C - K - U);
   const existente = cent(x.meses * 0.5 * c1), desembolso = cent(C - existente);
   const sobM = 0.5 + 0.5 * x.sobCgsi, sobK = 9e6 + 3e5 * x.sobPop * sobM, sobKe = cent(sobK * x.sobEdu);
-  return { I, w2i, c1, c2, c4, c2e, r1, r2, r3, r4, mensal, norma, integral, formacao, hosp, vmsV, comp, P, D, V, O, T, C, TK, K, X, existente, desembolso, sobM, sobK, sobKe };
+  return { I, w2i, c1, c2, c4, c2e, r1, r2, r3, r4, mensal, norma, integral, formacao, hosp, vmsV, comp, P, D, V, O, T, C, TK, K, TU, U, X, existente, desembolso, sobM, sobK, sobKe };
 }
 
 export interface Passo { titulo: string; textos: string[]; exemplo: string[] }
 export interface Equacao { titulo: string; tex: string[]; texto: string }
 
 export const MET = {
-  lead: 'O custo da governança é estimado opção por opção, com contas explícitas e parâmetros públicos, e separado em investimento (CapEx) e operação (OpEx). Esta página explica o cálculo em duas partes: primeiro em linguagem simples, com um exemplo fictício conta a conta; depois o modelo técnico completo, com a notação, as equações, os parâmetros e as fontes.',
+  lead: 'O custo da governança é estimado opção por opção, com contas explícitas e parâmetros públicos, e separado em investimento (CapEx), operação (OpEx) e uso. Esta página explica o cálculo em duas partes: primeiro em linguagem simples, com um exemplo fictício conta a conta; depois o modelo técnico completo, com a notação, as equações, os parâmetros e as fontes.',
   arquivos: 'A nota técnica traz o mesmo modelo, com um caso completo. A planilha refaz as contas para qualquer país.',
   indice: 'Nesta página',
   hSimples: 'Em linguagem simples',
   simples: [
     'A maior parte do custo da governança é trabalho de pessoas: quem redige uma norma, quem supervisiona o uso de IA, quem coordena um comitê. Por isso, a conta parte de uma pergunta simples, que é quanto custa, por mês, ter cada pessoa necessária trabalhando no tema, e de quantos meses de trabalho cada opção precisa. Nas opções de dados, infraestrutura e independência tecnológica, entram também o que se compra, como armazenamento, máquinas virtuais e a nuvem soberana, contado pelo consumo e com preços públicos.',
-    'Cada opção escolhida no plano tem a sua conta. A soma das opções é o custo direto, e sobre ele entram três custos que todo projeto público tem: viagens e atividades presenciais, custos indiretos da instituição e taxa de quem administra o recurso. Por fim, cada valor é separado em investimento, o que cria algo que dura além do plano, e operação. A figura mostra esse caminho, do total até os dados de origem.',
+    'Cada opção escolhida no plano tem a sua conta. A soma das opções é o custo direto, e sobre ele entram três custos que todo projeto público tem: viagens e atividades presenciais, custos indiretos da instituição e taxa de quem administra o recurso. Por fim, cada valor é separado em investimento, o que cria algo que dura além do plano, operação e uso, que é o consumo medido de nuvem. A figura mostra esse caminho, do total até os dados de origem.',
   ],
   figura: 'O custo total soma as opções e três percentuais sobre elas',
   exemploIntro: 'Para mostrar cada conta, usamos um exemplo fictício: um país hipotético que planeja em dólares, com valores redondos escolhidos só para facilitar a leitura. Num plano real, a ferramenta usa os dados oficiais do país escolhido e a cotação do dia.',
@@ -66,14 +66,14 @@ export const MET = {
     { titulo: '5. Montar a equipe e contar os meses',
       textos: [
         'Para cada opção de trabalho, a ferramenta tem uma equipe de referência, montada como um coordenador montaria o time: quem lidera, os especialistas de cada área e o apoio, com o número de pessoas e a parcela do tempo de cada uma (100% é tempo integral). O custo mensal da equipe é a soma, papel a papel, de pessoas × parcela do tempo × custo mensal.',
-        'O custo da opção é o custo mensal da equipe vezes os meses de trabalho. Opções pontuais, como uma norma ou uma diretriz, têm de 4 a 12 meses; opções contínuas, como a supervisão ou um comitê, duram todo o plano. As equipes e os meses foram comparados com casos públicos, como o AI Act europeu e o sandbox de IA da Noruega, e podem ser ajustados papel a papel.',
+        'O custo da opção é o custo mensal da equipe vezes os meses de trabalho. Opções pontuais, como uma norma ou uma diretriz, têm de 2 a 12 meses; opções contínuas, como a supervisão ou um comitê, duram todo o plano. As equipes e os meses foram comparados com casos públicos, como o AI Act europeu e o sandbox de IA da Noruega, e podem ser ajustados papel a papel.',
       ],
       exemplo: [
         'Uma norma fictícia, com {meses} meses de trabalho, tem coordenação a 50% ({r1}), dois especialistas em direito digital em tempo integral ({r2}), um especialista em políticas educacionais a 50% ({r3}) e apoio administrativo a 50% ({r4}).',
         'O custo mensal da equipe é {mensal}, e o custo da opção é {meses} × {mensal} = {norma}.',
       ] },
     { titulo: '6. Opções que não usam equipe de referência',
-      textos: ['Dois tipos de opção têm contas mais diretas, nas quais a quantidade é informada por quem faz o plano. O pessoal em tempo integral é o número de pessoas vezes o custo mensal vezes a duração do plano. A formação é o número de participantes vezes as horas vezes o custo da hora, estimado em US$ 12 por hora-participante e substituível pelo valor do contrato.'],
+      textos: ['Dois tipos de opção têm contas mais diretas. O pessoal em tempo integral é o número de pessoas vezes o custo mensal vezes a duração do plano. A formação é o número de participantes vezes as horas vezes o custo da hora, estimado em US$ 12 por hora-participante e substituível pelo valor do contrato.', 'Quando quem faz o plano não informa as quantidades, a ferramenta sugere duas pessoas por perfil no pessoal em tempo integral, que é a dupla mínima para o trabalho continuar em férias e ausências, e, na formação, as pessoas das equipes de referência e do pessoal escolhidos no plano, com 20 horas cada. São estimativas de referência (grau C), que podem ser trocadas.'],
       exemplo: [
         'Dois especialistas de TI em tempo integral por {h} meses: 2 × {c2e} × {h} = {integral}.',
         'Formação de {participantes} servidores por {horas} horas: {participantes} × {horas} × US$ 12 = {formacao}.',
@@ -91,7 +91,7 @@ export const MET = {
       ] },
     { titulo: '8. Somar as opções e acrescentar os custos de todo projeto',
       textos: [
-        'A soma das opções é o custo direto. Sobre ele entram viagens e atividades presenciais (25%, a parcela média nos orçamentos de programas do Fundo Global), custos indiretos da instituição, como espaço, TI, RH e contabilidade (15%, o limite usado pelo governo dos Estados Unidos), e a taxa de quem administra o recurso (7%, a taxa dos fundos conjuntos da ONU).',
+        'A soma das opções é o custo direto. Sobre ele entram viagens e atividades presenciais (25%, a parcela média nos orçamentos de programas do Fundo Global), custos indiretos da instituição, como espaço, TI, RH e contabilidade (15%, o limite usado pelo governo dos Estados Unidos), e a taxa de quem administra o recurso (7%, a taxa dos fundos conjuntos da ONU). Há ainda uma pergunta sobre a formação de pessoas: se quem faz o plano responder que sim e informar quantas pessoas serão formadas, entra o custo pessoas × horas (padrão de 20) × custo da hora (US$ 12), sem percentual por cima.',
         'As viagens incidem só sobre o trabalho de pessoas, e os custos indiretos, sobre esse trabalho mais as viagens; as compras de infraestrutura, equipamentos, licenças e serviços de nuvem ficam fora das duas bases, como nas fontes, que excluem a compra de produtos (Fundo Global) e os equipamentos e despesas de capital (governo dos Estados Unidos). A taxa incide sobre todo o custo direto mais as viagens. Cada um tem uma pergunta no plano: se não houver atividades presenciais, se a instituição já cobrir os custos indiretos ou se o próprio órgão executar o recurso, o percentual correspondente vale zero.',
       ],
       exemplo: [
@@ -102,16 +102,16 @@ export const MET = {
         'Taxa administrativa: 7% × ({D} + {V}) = {T}.',
         'Custo total: {D} + {V} + {O} + {T} = {C}.',
       ] },
-    { titulo: '9. Investimento e operação',
-      textos: ['Cada parte de cada opção é investimento (CapEx) ou operação (OpEx), por uma regra contábil simples. É investimento a compra de ativos, como equipamentos e a infraestrutura de uma nuvem própria, e a implantação de sistemas, plataformas, integrações e migrações, que criam algo que dura além do plano. É operação todo o resto: o trabalho de normas, diretrizes, supervisão, formação e pessoal, o consumo de nuvem, as licenças e os serviços contratados. Os custos adicionais se dividem entre os dois na proporção da sua base.'],
-      exemplo: ['No exemplo, só os equipamentos de rede são investimento ({equip}). A taxa administrativa se divide na proporção do custo direto, o que dá {TK} de investimento, e as viagens e os custos indiretos, que incidem só sobre trabalho de pessoas, são operação. Investimento: {equip} + {TK} = {K}; operação: {C} − {K} = {X}.'] },
+    { titulo: '9. Investimento, operação e uso',
+      textos: ['Cada parte de cada opção é investimento (CapEx), operação (OpEx) ou uso, por uma regra contábil simples. É investimento a compra de ativos, como equipamentos e a infraestrutura de uma nuvem própria, e a implantação de sistemas, plataformas, integrações e migrações, que criam algo que dura além do plano. É uso o consumo medido de nuvem, como armazenamento, máquinas virtuais, cópias de segurança e envio de dados, que cresce com o volume. É operação todo o resto: o trabalho de normas, diretrizes, supervisão, formação e pessoal, as licenças e os serviços contratados. Os custos adicionais se dividem na proporção da sua base, e o sumário executivo do plano mostra os três tipos por categoria e opção.'],
+      exemplo: ['No exemplo, os equipamentos de rede são investimento ({equip}) e a hospedagem e as máquinas virtuais são uso ({hosp} + {vmsV}). A taxa administrativa se divide na proporção do custo direto, o que dá {TK} de investimento e {TU} de uso, e as viagens e os custos indiretos, que incidem só sobre trabalho de pessoas, são operação. Investimento: {equip} + {TK} = {K}; uso: {hosp} + {vmsV} + {TU} = {U}; operação: {C} − {K} − {U} = {X}.'] },
     { titulo: '10. Custo do plano e dinheiro novo',
       textos: ['O custo do plano mede todo o trabalho necessário, inclusive o de pessoas que já são servidoras. Para saber quanto dinheiro novo será preciso, quem faz o plano marca, em cada equipe, os papéis já ocupados por servidores. A ferramenta mostra então o desembolso novo, que é o custo do plano sem o trabalho desses servidores. Em qualquer equipe, também é possível acrescentar papéis, com perfil, pessoas, dedicação e custo mensal, que entram na mesma conta.'],
       exemplo: ['Se a coordenação da norma for feita por uma servidora que já existe, o desembolso novo é {C} − {meses} × 50% × {c1} = {desembolso}.'] },
   ] as Passo[],
 
   hTecnico: 'Modelo técnico',
-  tecnico: 'O modelo é determinístico e paramétrico: cada linha de custo é o produto de quantidades, definidas pela equipe de referência ou informadas no plano, por preços unitários obtidos de estatística oficial ou de fonte pública, e os custos adicionais são percentuais sobre bases definidas a partir das linhas. Cada linha é classificada como investimento (CapEx) ou operação (OpEx), e todos os valores são arredondados ao centavo em cada linha. A seguir, a notação, as equações, os parâmetros com valor, fonte e grau de confiança, as regras de tratamento dos dados e as equipes de referência.',
+  tecnico: 'O modelo é determinístico e paramétrico: cada linha de custo é o produto de quantidades, definidas pela equipe de referência ou informadas no plano, por preços unitários obtidos de estatística oficial ou de fonte pública, e os custos adicionais são percentuais sobre bases definidas a partir das linhas. Cada linha é classificada como investimento (CapEx), operação (OpEx) ou uso, e todos os valores são arredondados ao centavo em cada linha. A seguir, a notação, as equações, os parâmetros com valor, fonte e grau de confiança, as regras de tratamento dos dados e as equipes de referência.',
   hNotacao: 'Notação',
   cabNotacao: ['Símbolo', 'Significado', 'Unidade'],
   notacao: [
@@ -135,7 +135,8 @@ export const MET = {
     [tex(String.raw`\delta_V,\ \delta_O,\ \delta_T`), 'Indicadores de que cada custo adicional se aplica ao plano', '0 ou 1'],
     [tex(String.raw`P`), 'Trabalho de pessoas: custo das opções sem as partes de compra (infraestrutura, equipamentos, licenças e serviços de nuvem)', 'moeda do plano'],
     [tex(String.raw`B_{o,j}`), 'Parte j da opção o do desafio 2 (consumo de nuvem, X-Road, nuvem soberana ou valor informado)', 'moeda do plano'],
-    [tex(String.raw`K,\ X`), 'Investimento (CapEx) e operação (OpEx) do plano, com C = K + X', 'moeda do plano'],
+    [tex(String.raw`K,\ X,\ U`), 'Investimento (CapEx), operação (OpEx) e uso (consumo medido de nuvem) do plano, com C = K + X + U', 'moeda do plano'],
+    [tex(String.raw`Q`), 'Formação de pessoas nos custos adicionais', 'moeda do plano'],
     [tex(String.raw`c_2^{*}`), 'Custo mensal de um profissional do grupo 2 com prêmio de especialista', 'moeda do plano por mês'],
     [tex(String.raw`N`), 'População do país dividida por 100 mil', 'unidades de 100 mil habitantes'],
     [tex(String.raw`G`), 'Componente de sistemas centrais do governo (CGSI) do GovTech Maturity Index 2025', 'índice de 0 a 1'],
@@ -145,8 +146,8 @@ export const MET = {
   ] as [string, string, string][],
   hEquacoes: 'Equações',
   equacoes: [
-    { titulo: 'Custo total e custo direto', tex: [tex(String.raw`C = D + V + O + T`), tex(String.raw`D = \sum_{o \in \mathcal{O}^{*}} C_o`)],
-      texto: 'O conjunto [[\\mathcal{O}^{*}]] reúne as opções escolhidas que já têm valor. Uma opção sem quantidade, preço ou meses fica fora de [[D]] e aparece como pendência ("falta valor"); valores em moedas diferentes nunca são somados.' },
+    { titulo: 'Custo total e custo direto', tex: [tex(String.raw`C = D + V + O + T + Q`), tex(String.raw`D = \sum_{o \in \mathcal{O}^{*}} C_o`)],
+      texto: 'A formação de pessoas [[Q]] só entra quando quem faz o plano responde que sim (equação 20). O conjunto [[\\mathcal{O}^{*}]] reúne as opções escolhidas que já têm valor. Uma opção sem quantidade, preço ou meses fica fora de [[D]] e aparece como pendência ("falta valor"); valores em moedas diferentes nunca são somados.' },
     { titulo: 'Opções com equipe de referência (31 opções)', tex: [tex(String.raw`C_o = M_o \sum_{r \in R_o} q_r \, d_r \, c_r`), tex(String.raw`M_o = \begin{cases} m_o, & o \in \mathcal{P} \\ H, & o \in \mathcal{K} \end{cases}`)],
       texto: 'As opções pontuais ([[\\mathcal{P}]]) têm meses de referência [[m_o]] de 2 a 12 e entram com todos eles, mesmo que ultrapassem [[H]]; as contínuas ([[\\mathcal{K}]]) duram o plano inteiro. Pessoas, dedicação, meses e custo mensal de cada papel podem ser substituídos por valores informados, e a pessoa pode acrescentar papéis, com perfil, pessoas, dedicação e custo mensal, que entram na soma como os demais.' },
     { titulo: 'Custo mensal de um papel', tex: [tex(String.raw`c_r = w_{g(r)} \cdot I \cdot (1 + e) \cdot (1 + p \, s_r)`)],
@@ -156,21 +157,23 @@ export const MET = {
     { titulo: 'Atualização pela inflação', tex: [tex(String.raw`I = \prod_{t = a + 1}^{2026} \left(1 + \pi_t\right)`)],
       texto: 'O ano [[a]] é o do dado salarial. No caso (a), usa-se a inflação do país; no caso (b), a dos Estados Unidos, porque o valor está em US$. As medianas do caso (c) não são atualizadas ([[I = 1]]). Anos sem dado no FMI contam inflação zero.' },
     { titulo: 'Pessoal em tempo integral (categoria 3.1)', tex: [tex(String.raw`C_o = n_o \cdot w_2 \cdot I \cdot (1 + e) \cdot (1 + p \, s_o) \cdot H`)],
-      texto: 'O número de pessoas [[n_o]] é informado no plano. O perfil é o grupo 2 (profissionais); [[s_o]] vale 1 nas opções de IA, dados e TI.' },
+      texto: 'O número de pessoas [[n_o]] pode ser informado no plano; sem ele, a ferramenta usa 2 pessoas por perfil (grau C), a dupla mínima para o trabalho continuar em férias e ausências. O perfil é o grupo 2 (profissionais); [[s_o]] vale 1 nas opções de IA, dados e TI.' },
     { titulo: 'Formação (categoria 3.2)', tex: [tex(String.raw`C_o = P_o \cdot h_o \cdot k \cdot x`)],
-      texto: 'Na formação, [[P_o]] é o número de participantes, [[h_o]] as horas por participante e [[k]] o custo da hora-participante em dólares.' },
+      texto: 'Na formação, [[P_o]] é o número de participantes, [[h_o]] as horas por participante e [[k]] o custo da hora-participante em dólares. Sem valores informados, [[P_o]] é o número de pessoas das equipes de referência (com os papéis acrescentados) e do pessoal em tempo integral escolhidos no plano, e [[h_o]] = 20 (grau C).' },
     { titulo: 'Opções de dados, infraestrutura e independência tecnológica (desafio 2)', tex: [tex(String.raw`C_o = C_o^{\mathrm{eq}} + \sum_{j \in J_o} B_{o,j}`)],
       texto: 'A equipe de referência [[C_o^{\\mathrm{eq}}]] segue a equação (3), quando a opção tem trabalho de pessoas; as partes [[B_{o,j}]] são consumo de nuvem, custos do X-Road, nuvem soberana ou valores informados (licenças, links de rede, equipamentos, contratos de suporte, sistema atual durante a migração). Uma parte obrigatória sem quantidade deixa a opção como pendência.' },
     { titulo: 'Consumo de nuvem e X-Road', tex: [tex(String.raw`B^{\mathrm{arm}} = 1024 \, V \, \rho_{\mathrm{arm}} \, H \, x`), tex(String.raw`B^{\mathrm{vm}} = n_{\mathrm{vm}} \, \rho_{\mathrm{vm}} \cdot 730 \cdot H \, x`), tex(String.raw`B^{\mathrm{int}} = n_s \cdot 44 \cdot \frac{12 \, c_2^{*}}{260}`)],
-      texto: 'O volume [[V]] está em TB e [[\\rho]] é o preço em US$ por GB por mês ou por hora de máquina. O armazenamento usa o preço de acesso frequente; as cópias de segurança (regra 3-2-1) somam uma cópia pouco acessada e uma de arquivo; o arquivo de registros usa o preço de arquivo; e o envio de dados para fora da nuvem e a retirada dos dados na migração usam o preço de saída. No X-Road, a conexão de cada sistema ([[n_s]] sistemas) leva 44 dias de trabalho, e a implantação da plataforma central, 655 dias, ambos à diária de um especialista; os servidores e certificados custam € 6.480 por ano por sistema conectado e € 62.160 por ano na plataforma central, e a manutenção das integrações ocupa 0,1 pessoa por sistema.' },
+      texto: 'O volume [[V]] está em TB e [[\\rho]] é o preço em US$ por GB por mês ou por hora de máquina. O armazenamento usa o preço de acesso frequente; as cópias de segurança (regra 3-2-1) somam uma cópia pouco acessada e uma de arquivo; o arquivo de registros usa o preço de arquivo; e o envio de dados para fora da nuvem e a retirada dos dados na migração usam o preço de saída. Esses consumos medidos são custos de uso, exceto a retirada dos dados, que é investimento da migração. No X-Road, a conexão de cada sistema ([[n_s]] sistemas) leva 44 dias de trabalho, e a implantação da plataforma central, 655 dias, ambos à diária de um especialista; os servidores e certificados custam € 6.480 por ano por sistema conectado e € 62.160 por ano na plataforma central, e a manutenção das integrações ocupa 0,1 pessoa por sistema.' },
     { titulo: 'Nuvem soberana: o governo constrói', tex: [tex(String.raw`K^{\mathrm{nac}} = F + k_g \, N \, m, \qquad m = \tfrac{1}{2} \, (1 + G)`), tex(String.raw`B^{K} = \lambda \, K^{\mathrm{nac}} x, \qquad B^{X} = \lambda \left[ r \, K^{\mathrm{nac}} x + 12 \, c_2^{*} (n_0 + n_1 N m) \right] \frac{H}{12}`)],
       texto: 'O investimento nacional [[K^{\\mathrm{nac}}]], em US$, tem um piso [[F]] e uma parte por 100 mil habitantes [[k_g]] que depende do grupo do FMI; [[m]] vai de 0,5 (governo sem sistemas centrais) a 1 (sistemas centrais plenos), porque um governo mais maduro digitalmente leva mais sistemas para a nuvem. A operação anual soma a manutenção das instalações ([[r]] do investimento) e a equipe da plataforma, com um piso de 24 horas [[n_0]] e [[n_1]] pessoas por 100 mil habitantes ajustados. A educação responde pela parcela [[\\lambda]]; o investimento é CapEx, e a operação, OpEx.' },
     { titulo: 'Nuvem soberana: o governo contrata', tex: [tex(String.raw`B^{X} = \lambda \left[ \frac{K^{\mathrm{nac}} x}{L} + r \, K^{\mathrm{nac}} x + 12 \, c_2^{*} (n_0 + n_1 N m) \right] (1 + \varphi) \, \frac{H}{12}`)],
       texto: 'O serviço contratado custa por ano o equivalente a construir, com o investimento distribuído pela vida útil [[L]], mais o prêmio [[\\varphi]] de preço da nuvem soberana sobre a nuvem comum; é OpEx. O investimento (CapEx) desse caminho é a equipe de referência de implantação e migração para o provedor.' },
     { titulo: 'Custos adicionais', tex: [tex(String.raw`V = \delta_V \, p_V \, P`), tex(String.raw`O = \delta_O \, p_O \,(P + V)`), tex(String.raw`T = \delta_T \, p_T \,(D + V)`)],
       texto: 'As viagens e o overhead incidem sobre o trabalho de pessoas [[P]], sem as partes de compra do desafio 2, porque as fontes dos dois percentuais excluem a compra de produtos (Fundo Global) e os equipamentos e despesas de capital (2 CFR 200.1, custos diretos totais modificados); nas demais opções, [[P]] é o custo inteiro. A taxa incide sobre [[D + V]], sem que o overhead e a taxa entrem na base um do outro. Cada indicador vale 0 quando a resposta à pergunta correspondente exclui o custo: plano sem atividades presenciais, instituição que já cobre os custos indiretos e recurso executado pelo próprio órgão. Com fundação de apoio, [[p_T]] é a taxa do contrato.' },
-    { titulo: 'Investimento e operação', tex: [tex(String.raw`K = \sum_{o} K_o + \frac{K_P}{P}\,(V + O) + \frac{K_D}{D}\,T, \qquad X = C - K`)],
-      texto: 'É investimento ([[K_o]]) a compra de ativos e a implantação de sistemas, plataformas, integrações e migração: as equipes de nuvem soberana (no caminho contratar), customização local e migração, a integração de sistemas e a implantação do X-Road, o investimento da nuvem soberana construída, os equipamentos de rede, o licenciamento da transferência de tecnologia e a retirada dos dados. Normas, diretrizes, supervisão, formação, pessoal, consumo e serviços são operação. Os custos adicionais seguem a proporção de investimento da sua base: [[K_P]] no trabalho de pessoas e [[K_D]] no custo direto.' },
+    { titulo: 'Formação de pessoas', tex: [tex(String.raw`Q = \delta_Q \, n_Q \, h_Q \, k \, x`)],
+      texto: 'O indicador [[\\delta_Q]] vale 1 quando quem faz o plano responde que quer lançar o custo de formação; o número de pessoas [[n_Q]] é sempre informado, e as horas [[h_Q]] (padrão de 20) e o custo da hora podem ser trocados. A formação é operação e não entra na base das viagens, do overhead e da taxa. Se o plano também tem a categoria 3.2, as pessoas contadas aqui devem ser outras.' },
+    { titulo: 'Investimento, operação e uso', tex: [tex(String.raw`K = \sum_{o} K_o + \frac{K_P}{P}\,(V + O) + \frac{K_D}{D}\,T, \qquad U = \sum_{o} U_o + \frac{U_D}{D}\,T, \qquad X = C - K - U`)],
+      texto: 'É investimento ([[K_o]]) a compra de ativos e a implantação de sistemas, plataformas, integrações e migração: as equipes de nuvem soberana (no caminho contratar), customização local e migração, a integração de sistemas e a implantação do X-Road, o investimento da nuvem soberana construída, os equipamentos de rede, o licenciamento da transferência de tecnologia e a retirada dos dados. É uso ([[U_o]]) o consumo medido de nuvem: armazenamento, máquinas virtuais (inclusive as do catálogo de dados e do controle de acesso), cópias de segurança, arquivo de registros e envio de dados. Normas, diretrizes, supervisão, formação, pessoal, licenças e serviços são operação. Os custos adicionais seguem a proporção da sua base: [[K_P]] no trabalho de pessoas, que não tem uso, e [[K_D]] e [[U_D]] no custo direto.' },
     { titulo: 'Desembolso novo', tex: [tex(String.raw`E = C - \sum_{o} \sum_{r \in R_o^{\mathrm{ex}}} M_o \, q_r \, d_r \, c_r`)],
       texto: 'O conjunto [[R_o^{\\mathrm{ex}}]] reúne os papéis, de referência ou acrescentados, que a pessoa marcou como ocupados por servidores que já existem. O custo do plano [[C]] mede o custo econômico de todo o trabalho, e [[E]], o recurso novo a programar.' },
   ] as Equacao[],
@@ -186,6 +189,9 @@ export const MET = {
     [tex(String.raw`H`), 'Duração do plano', '12 meses (editável)', 'Padrão da ferramenta', '—'],
     [tex(String.raw`m_o,\ q_r,\ d_r`), 'Meses, pessoas e dedicação das equipes de referência', 'ver a tabela das equipes', 'Estimativa da ferramenta, comparada com casos públicos', 'C'],
     [tex(String.raw`k`), 'Custo da hora-participante de formação', 'US$ 12', 'Estimativa de referência, substituível pelo contrato', 'C'],
+    [tex(String.raw`n_o`), 'Pessoal em tempo integral (3.1), quando não informado', '2 pessoas por perfil', 'Estimativa da ferramenta: dupla mínima para continuidade', 'C'],
+    [tex(String.raw`P_o,\ h_o`), 'Formação (3.2), quando não informada', 'pessoas das equipes do plano (sem equipes, uma turma de 20); 20 horas por pessoa', 'Estimativa da ferramenta', 'C'],
+    [tex(String.raw`h_Q`), 'Formação de pessoas nos custos adicionais: horas por pessoa', '20 (editável)', 'Estimativa da ferramenta', 'C'],
     [tex(String.raw`p_V`), 'Viagens e atividades presenciais', '25% de D', 'Fundo Global: 24,7% a 28,2% dos orçamentos de programa, ciclos 5 a 7', 'B'],
     [tex(String.raw`p_O`), 'Custos indiretos (overhead)', '15% de D + V', 'EUA, 2 CFR 200.414(f), revisão de 2024', 'B'],
     [tex(String.raw`p_T`), 'Taxa administrativa', '7% de D + V', 'Política do UNSDG para fundos conjuntos da ONU', 'B'],
@@ -221,11 +227,12 @@ export const MET = {
   continua: 'contínua',
   hIncertezas: 'Como o modelo trata as principais incertezas',
   incertezas: [
-    'A diferença entre o salário médio do grupo ocupacional e o de especialistas é tratada pelo prêmio de especialista. No caso de teste da nota técnica (Brasil, 12 meses), o custo varia −11,3% sem prêmio e +11,3% com o prêmio de 56% da PwC.',
+    'A diferença entre o salário médio do grupo ocupacional e o de especialistas é tratada pelo prêmio de especialista. No caso de teste da nota técnica (Brasil, 12 meses), o custo varia −11,1% sem prêmio e +11,1% com o prêmio de 56% da PwC.',
     'A defasagem dos dados salariais é tratada pela atualização pela inflação até 2026, e a ausência de dado nacional, pelas medianas regionais, do grupo de renda e mundial, sempre com a origem indicada na conta de cada linha.',
     'A composição das equipes, a dedicação e os meses são estimativas que podem ter leve variação conforme o contexto. Foram definidas para cada tipo de trabalho, comparadas com casos públicos e podem ser ajustadas papel a papel; se a mesma pessoa coordena mais de uma opção, basta ajustar a coordenação em cada equipe.',
     'O modelo da nuvem soberana é preliminar (grau C): há poucos casos públicos de investimento de governo em nuvem ou data center, e eles diferem em escopo. Nos oito casos usados, o modelo fica entre metade e quatro vezes e meia do valor observado, e tende a superestimar os projetos que são só uma fase de um programa maior (como o primeiro de quatro data centers da Indonésia). Os coeficientes devem ser recalibrados quando houver mais casos com fonte, e os grupos de menor renda não recebem custo menor, porque os casos não mostram isso.',
     'Os preços de nuvem são os de um grande provedor público, usados como referência de mercado; um provedor nacional ou um contrato de volume pode ter preços diferentes, e o valor do contrato pode substituir a estimativa em cada opção.',
+    'As quantidades sugeridas para o pessoal em tempo integral (2 por perfil) e para a formação (as pessoas do plano, 20 horas cada) não vêm de uma fonte externa: são estimativas da ferramenta para que nenhuma linha fique sem valor, e devem ser substituídas pelas quantidades do plano real.',
   ],
   hGraus: 'Graus de confiança',
   graus: 'A = estatística oficial (ILOSTAT, FMI, SSA e ISSA, Banco Mundial, câmbio do dia); B = estudo, tabela pública de preços ou caso real com fonte (percentuais adicionais, prêmio de especialista, medianas, preços de nuvem, X-Road, prêmio da nuvem soberana); C = estimativa da ferramenta, que pode variar conforme o contexto (composição das equipes, custo da hora de formação, coeficientes da nuvem soberana).',
@@ -261,7 +268,7 @@ export const MET = {
   cabSoberana: ['País', 'Grupo do FMI', 'População (milhões)', 'Investimento', 'Observado (US$ milhões)', 'Modelo (US$ milhões)', 'Modelo ÷ observado', 'Projeto'],
   foraCalibracao: 'fora da calibração',
   // rótulos da figura
-  fTotal: 'Custo total', fDireto: 'Custo direto, D', fDireto2: 'soma das opções com valor', fViagens2: '25% × trabalho de pessoas', fOverhead2: '15% × (pessoas + V)', fViagens: 'Viagens, V', fOverhead: 'Overhead, O', fTaxa: 'Taxa administrativa, T',
+  fTotal: 'Custo total', fDireto: 'Custo direto, D', fDireto2: 'soma das opções com valor', fTotal2: 'C = D + V + O + T + Q', fViagens2: '25% × trabalho de pessoas', fOverhead2: '15% × (pessoas + V)', fViagens: 'Viagens, V', fOverhead: 'Overhead, O', fTaxa: 'Taxa administrativa, T',
   fEquipe: 'Equipe de referência', fEquipe2: '31 opções: M × Σ q × d × c', fPessoal: 'Pessoal integral', fForm: 'Formação', fForm2: '3.2: p × h × custo da hora',
   fInf: 'Partes de compra', fInf2: '2.1 a 2.3: nuvem, X-Road', fMeses: 'Meses, M', fMeses2: '2 a 12, ou H se contínua', fPessoas: 'Pessoas × dedicação',
   fPessoas2: 'por papel da equipe', fMensal: 'Custo mensal, c',

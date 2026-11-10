@@ -5,8 +5,9 @@ import { CATEGORIAS, DIMENSOES_EDU, FASES_V016 } from '../domain/catalogo_v016.j
 import { LOC } from '../domain';
 import type { Estado14 } from '../store/tipos';
 import { t } from './textos';
-import { calcularOpcao, chaveOpcao, ehParametro, PARAMETROS, type LinhaOpcao } from './custosV017';
-import { linhasAdicionais, ID_ADICIONAIS, ADICIONAIS } from './adicionaisGov';
+import { calcularOpcao, chaveOpcao, ehParametro, PARAMETROS, PESSOAS_31, type LinhaOpcao } from './custosV017';
+import { EQUIPES_GOV } from './equipesGov';
+import { linhasAdicionais, linhaFormacao, ID_ADICIONAIS, ADICIONAIS } from './adicionaisGov';
 import { calcularD2, ehOpcaoD2, classeDaOpcao } from './desafio2Gov';
 import { lerLit } from './letramento';
 import { chaveEd, lerEd, usaIAEd, usuariosIAEd } from './pedagogico';
@@ -269,11 +270,27 @@ export function opcoesEscolhidas(s: Estado, f: FrenteEstimativa, c: CategoriaV16
   const x = raizOrcamento(s, f).itens?.[c.id]?.opcoes;
   return Array.isArray(x) ? c.opcoes.filter(o => x.includes(o)) : [];
 }
+/** v018.1 (governança): pessoas das equipes de referência (com as quantidades e os papéis acrescentados que a pessoa
+ *  informou) e do pessoal em tempo integral escolhidos no plano; é a quantidade sugerida da formação 3.2. */
+function pessoasDoPlano(s: Estado, sel: { c: CategoriaV16; marcadas: string[]; custos: Record<string, any> }[]): number {
+  let n = 0;
+  for (const { c, marcadas, custos } of sel) for (const r of marcadas) {
+    const salvo = custos[chaveOpcao(r)] || {}, eq = EQUIPES_GOV[r];
+    if (c.id === 'g31') { n += typeof salvo.qtd === 'number' && salvo.qtd > 0 ? salvo.qtd : PESSOAS_31; continue; }
+    if (!eq || (r === 'Nuvem soberana' && salvo.escolha?.modelo !== 'contratar')) continue;
+    for (const p of eq.papeis) { const q = salvo.papeis?.[p.papel]?.qtd; n += typeof q === 'number' && q > 0 ? q : p.qtd; }
+    for (const x of Array.isArray(salvo.papeisExtra) ? salvo.papeisExtra : []) if (x && typeof x.qtd === 'number' && x.qtd > 0 && String(x.papel || '').trim()) n += x.qtd;
+  }
+  return Math.round(n * 100) / 100;
+}
+
 /** Orçamento da frente (v017): soma das opções escolhidas, por fase. */
 export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
   const o = raizOrcamento(s, f), moeda = String(o.moeda || s.moeda?.cod || 'USD'), fases = fasesAtivas(s, f), taxa = taxaV16(moeda, s);
   const sel = categoriasEscolhidas(s, f), disponiveis = categoriasV16(s, f);
   const fmt = (v: number) => formatarMoedaEst(v, moeda);
+  // v018.1: a formação 3.2 sugere as pessoas do plano
+  const sx: any = f === 'governanca' ? { ...s, __pessoasPlano: pessoasDoPlano(s, disponiveis.filter(c => sel.includes(c.id)).map(c => ({ c, marcadas: opcoesEscolhidas(s, f, c), custos: o.itens?.[c.id]?.custos || {} }))) } : s;
   const itens: ItemV16[] = disponiveis.filter(c => sel.includes(c.id)).map(c => {
     const x = o.itens?.[c.id] || {}, custos = x.custos && typeof x.custos === 'object' ? x.custos : {};
     const marcadas = opcoesEscolhidas(s, f, c);
@@ -281,8 +298,8 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
     const linhas = marcadas.filter(r => !ehParametro(f, c.id, r)).map(r => {
       // v018.1 (governança): o desafio 2 tem conta própria (equipe + partes); as demais opções são inteiras CapEx ou OpEx
       if (f === 'governanca' && ehOpcaoD2(r)) return calcularD2(s, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num, moeda);
-      const l = calcularOpcao(s, f, c.id, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num, moeda);
-      if (f === 'governanca') { const cl = classeDaOpcao(r); l.capex = l.total === null ? null : cl === 'capex' ? l.total : 0; l.opex = l.total === null ? null : cl === 'opex' ? l.total : 0; }
+      const l = calcularOpcao(sx, f, c.id, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num, moeda);
+      if (f === 'governanca') { const cl = classeDaOpcao(r); l.capex = l.total === null ? null : cl === 'capex' ? l.total : 0; l.opex = l.total === null ? null : cl === 'opex' ? l.total : 0; l.uso = l.total === null ? null : 0; }
       return l;
     });
     const inf = linhas.filter(l => l.status === 'informado'), est = linhas.filter(l => l.status === 'referencia');
@@ -303,15 +320,22 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
     const pessoasDe = (l: LinhaOpcao) => l.pessoas ?? (l.total as number);
     const pessoas: Record<string, number> = {};
     for (const x of fases) pessoas[x.id] = centavos(conhecidas.reduce((n, l) => n + (l.total ? (l.porFase[x.id] || 0) * pessoasDe(l) / (l.total as number) : 0), 0));
-    const linhas = linhasAdicionais(direto, o.adicionais && typeof o.adicionais === 'object' ? o.adicionais : {}, fases, fmt, num, pessoas);
-    // cada custo adicional se divide entre CapEx e OpEx na proporção da sua base
-    const somaD = conhecidas.reduce((n, l) => n + (l.total as number), 0), somaK = conhecidas.reduce((n, l) => n + (l.capex || 0), 0);
+    const salvoAd = o.adicionais && typeof o.adicionais === 'object' ? o.adicionais : {};
+    const linhas = linhasAdicionais(direto, salvoAd, fases, fmt, num, pessoas);
+    // cada custo adicional se divide entre CapEx, OpEx e uso na proporção da sua base (o trabalho de pessoas não tem uso)
+    const somaD = conhecidas.reduce((n, l) => n + (l.total as number), 0), somaK = conhecidas.reduce((n, l) => n + (l.capex || 0), 0), somaU = conhecidas.reduce((n, l) => n + (l.uso || 0), 0);
     const somaP = conhecidas.reduce((n, l) => n + pessoasDe(l), 0), somaPK = conhecidas.reduce((n, l) => n + (l.pessoas != null ? l.pessoasCapex || 0 : l.capex || 0), 0);
-    const parteK = somaD > 0 ? somaK / somaD : 0, partePK = somaP > 0 ? somaPK / somaP : 0;
-    for (const l of linhas) { const k = l.chave === 'taxa' ? parteK : partePK; l.capex = l.total === null ? null : centavos(l.total * k); l.opex = l.total === null ? null : centavos(l.total - (l.capex as number)); }
+    const parteK = somaD > 0 ? somaK / somaD : 0, parteU = somaD > 0 ? somaU / somaD : 0, partePK = somaP > 0 ? somaPK / somaP : 0;
+    for (const l of linhas) {
+      const taxaAdm = l.chave === 'taxa', k = taxaAdm ? parteK : partePK, u = taxaAdm ? parteU : 0;
+      l.capex = l.total === null ? null : centavos(l.total * k); l.uso = l.total === null ? null : centavos(l.total * u);
+      l.opex = l.total === null ? null : centavos(l.total - (l.capex as number) - (l.uso as number));
+    }
+    // v018.1: formação de pessoas (pergunta própria; quantidade de pessoas definida por quem faz o plano), OpEx
+    linhas.push(linhaFormacao(salvoAd, fases, taxa, fmt, num));
     const inf = linhas.filter(l => l.status === 'informado'), est = linhas.filter(l => l.status === 'referencia');
     const informadoCat = centavos(inf.reduce((n, l) => n + (l.total as number), 0)), estimadoCat = centavos(est.reduce((n, l) => n + (l.total as number), 0));
-    itens.push({ id: ID_ADICIONAIS, n: '', nome: t('Viagens, overhead e taxa administrativa'), grupo: t('Custos adicionais'), opcoes: [], marcadas: ADICIONAIS.map(a => a.rotulo),
+    itens.push({ id: ID_ADICIONAIS, n: '', nome: t('Viagens, overhead, taxa administrativa e formação'), grupo: t('Custos adicionais'), opcoes: [], marcadas: ADICIONAIS.map(a => a.rotulo),
       linhas, parametros: [], valor: inf.length + est.length ? centavos(informadoCat + estimadoCat) : null, informadoCat, estimadoCat, valores: {}, situacao: '', detalhe: '',
       estimativa: null, referencia: est.length > 0, emReferencia: est.length > 0, estimado: est.length ? estimadoCat : null,
       respondido: true, compartilhado: false, origem: null, pendentes: linhas.filter(l => l.status === 'falta').length });
@@ -333,6 +357,8 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
     /** v018.1 (governança): custo conhecido separado em investimento (CapEx) e operação (OpEx) */
     capex: centavos(todas.filter(l => l.status !== 'falta').reduce((n, l) => n + (l.capex || 0), 0)),
     opex: centavos(todas.filter(l => l.status !== 'falta').reduce((n, l) => n + (l.opex ?? (l.capex == null ? l.total || 0 : 0)), 0)),
+    /** v018.1: consumo medido de nuvem (custos de uso) */
+    uso: centavos(todas.filter(l => l.status !== 'falta').reduce((n, l) => n + (l.uso || 0), 0)),
     /** v018 (governança): parte do custo conhecido que é de servidores que já existem (fora do desembolso novo) */
     existentes: centavos(todas.reduce((n, l) => n + (l.total !== null && typeof l.desembolso === 'number' ? l.total - l.desembolso : 0), 0)) };
 }
@@ -347,7 +373,7 @@ export function linhasFases(o: { fases?: { nome: string; meses: number; informad
 export function instituicaoV16(s: Pick<Estado14, 'ctx'>): string { return String(s.ctx.local || s.ctx.olhando || '').trim(); }
 
 export interface LinhaMatriz { id: string; n: string; nome: string; grupo: string; nivel: 0 | 1; tipo: 'informado' | 'estimado' | 'sem_custo' | 'a_levantar'; porFase: Record<string, number | null>; total: number | null;
-  /** v018.1: investimento e operação da linha */ capex?: number | null; opex?: number | null }
+  /** v018.1: investimento, operação e uso da linha */ capex?: number | null; opex?: number | null; uso?: number | null }
 /** Categoria × fase, com uma sublinha por opção escolhida (v017). */
 export function matrizFases(o: ReturnType<typeof orcamentoV16>): LinhaMatriz[] {
   const out: LinhaMatriz[] = [];
@@ -357,12 +383,13 @@ export function matrizFases(o: ReturnType<typeof orcamentoV16>): LinhaMatriz[] {
     for (const f of o.fases) porFase[f.id] = i.valor === null ? null : centavos(i.linhas.filter(l => l.status !== 'falta').reduce((n, l) => n + (l.porFase[f.id] || 0), 0));
     const conhecidas = i.linhas.filter(l => l.status !== 'falta');
     const capexCat = i.valor === null ? null : centavos(conhecidas.reduce((n, l) => n + (l.capex || 0), 0));
+    const usoCat = i.valor === null ? null : centavos(conhecidas.reduce((n, l) => n + (l.uso || 0), 0));
     out.push({ id: i.id, n: i.n, nome: i.nome, grupo: i.grupo, nivel: 0, tipo: i.valor === null ? 'a_levantar' : i.referencia ? 'estimado' : 'informado', porFase, total: i.valor,
-      capex: capexCat, opex: capexCat === null || i.valor === null ? null : centavos(i.valor - capexCat) });
+      capex: capexCat, uso: usoCat, opex: capexCat === null || usoCat === null || i.valor === null ? null : centavos(i.valor - capexCat - usoCat) });
     if (i.linhas.length > 1 || i.opcoes.length) for (const l of i.linhas) {
       const pf: Record<string, number | null> = {}; for (const f of o.fases) pf[f.id] = l.status === 'falta' ? null : l.porFase[f.id] ?? 0;
       out.push({ id: i.id + ':' + l.chave, n: '', nome: t(l.rotulo), grupo: i.grupo, nivel: 1, tipo: l.status === 'falta' ? 'a_levantar' : l.status === 'referencia' ? 'estimado' : 'informado', porFase: pf, total: l.total,
-        capex: l.status === 'falta' ? null : l.capex ?? null, opex: l.status === 'falta' ? null : l.opex ?? null });
+        capex: l.status === 'falta' ? null : l.capex ?? null, opex: l.status === 'falta' ? null : l.opex ?? null, uso: l.status === 'falta' ? null : l.uso ?? null });
     }
   }
   return out;
@@ -381,6 +408,19 @@ export function resumoProsa(o: ReturnType<typeof orcamentoV16>): string {
     o.fases.length && o.fases[0].id !== 'total' ? t('Por fase: {fases}.', { fases }) : '',
     faltam.length ? t('Ainda sem valor ({n}): {lista}.', { n: faltam.length, lista: faltam.join('; ') }) : '',
   ].filter(Boolean).join(' ');
+}
+/** v018.1 (governança): texto do sumário executivo que explica a divisão do custo conhecido em investimento (CapEx),
+ *  operação (OpEx) e uso (consumo medido de nuvem), com as porcentagens. */
+export function sumarioCapex(o: ReturnType<typeof orcamentoV16>): { intro: string; tipos: string[]; fecho: string[] } | null {
+  const C = totalConhecido(o); if (!(C > 0)) return null;
+  const f = (v: number) => formatarMoedaEst(v, o.moeda), pct = (v: number) => new Intl.NumberFormat(String(LOC()), { style: 'percent', maximumFractionDigits: 0 }).format(v / C);
+  const meses = o.fases.reduce((n, x) => n + x.meses, 0), uso = o.uso || 0;
+  const tipos = [t('Investimento (CapEx): {v}, {p} do total. É a compra de ativos e a implantação de sistemas, plataformas, integrações e migração, que criam algo que dura além do plano.', { v: f(o.capex), p: pct(o.capex) }),
+    t('Operação (OpEx): {v}, {p} do total. É o custo corrente: o trabalho das equipes, os serviços e licenças contratados e os custos adicionais (viagens, overhead, taxa administrativa e formação).', { v: f(o.opex), p: pct(o.opex) })];
+  if (uso > 0) tipos.push(t('Uso: {v}, {p} do total. É o consumo medido de nuvem (armazenamento, máquinas virtuais, cópias de segurança e envio de dados), que cresce com o volume de dados e de uso.', { v: f(uso), p: pct(uso) }));
+  const fecho = [t('Operação e uso somam {p} do total: são despesas que se repetem a cada ano e precisam estar no orçamento recorrente, não só no investimento inicial.', { p: pct(o.opex + uso) })];
+  if (o.faltam) fecho.push(t('Os valores ainda não incluem os itens sem valor listados abaixo.'));
+  return { intro: t('O plano soma {total} em {meses} meses, divididos em três tipos de custo que pedem decisões orçamentárias diferentes.', { total: f(C), meses }), tipos, fecho };
 }
 /** "O que está sendo custeado": uma linha por opção calculada, com quantidades e valores unitários. */
 export function linhasMemoria(o: ReturnType<typeof orcamentoV16>): string[] {

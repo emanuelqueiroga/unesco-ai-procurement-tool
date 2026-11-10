@@ -24,3 +24,7 @@
   .pv-prio-nome { flex: 1 1 0; min-width: 0; font-size: 17px; }
   .pv-prio-desc { flex-basis: 100%; }
 }
+/* v018.1: prioridades ainda não disponíveis nesta versão */
+.pv-prio-card.is-off { cursor: not-allowed; opacity: .6; background: var(--surface-2, var(--surface-1)); }
+.pv-prio-card.is-off:hover { border-color: var(--line); }
+.pv-prio-breve { margin-block-start: auto; font-size: 13px; font-weight: 600; color: var(--muted); }

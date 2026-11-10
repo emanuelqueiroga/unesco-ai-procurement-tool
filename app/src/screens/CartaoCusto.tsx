@@ -8,6 +8,7 @@ import { LOC, percursoGovernanca } from '../domain';
 import { t } from '../percurso/textos';
 import { href } from '../percurso/rota';
 import { orcamentoGovernanca } from '../percurso/governanca';
+import { MandalaProgresso } from './MandalaProgresso';
 import { formatarMoedaEst, type Estimativa, type FrenteEstimativa } from '../percurso/estimativasOrcamento';
 import { mesesV16 } from '../percurso/orcamentoV016';
 import { usePainel } from './PlanoVivo';
@@ -30,7 +31,7 @@ export interface DadosCusto {
   /** v016: custo por fase (informado + estimado) */
   fases?: { id: string; nome: string; meses: number; informado: number; estimado: number }[];
   /** v018.1: custo conhecido separado em investimento e operação */
-  capex?: number; opex?: number;
+  capex?: number; opex?: number; uso?: number;
 }
 
 /** Números do orçamento da frente atual; null no projeto de uso de IA. */
@@ -44,7 +45,7 @@ export function dadosCusto(s: CasoStore): DadosCusto | null {
     frente: f, informado: o.informado, informados: o.informados, estimado: o.estimado, estimados: o.estimados, faltam: o.faltam,
     total: o.total, totalComEstimativas: o.totalComEstimativas, moeda: o.moeda,
     itens: o.itens.map((i: any) => ({ id: String(i.id), nome: t(String(i.nome)), estimativa: i.estimativa })),
-    meses: mesesV16(s, f), recursos: tela ? href.pergunta(tela.capitulo, tela.id) : null, fases: (o as any).fases, capex: (o as any).capex, opex: (o as any).opex,
+    meses: mesesV16(s, f), recursos: tela ? href.pergunta(tela.capitulo, tela.id) : null, fases: (o as any).fases, capex: (o as any).capex, opex: (o as any).opex, uso: (o as any).uso,
   };
 }
 
@@ -105,6 +106,7 @@ export function CartaoCustoFrente({ d, compacto = false }: { d: DadosCusto; comp
       {d.capex !== undefined && d.opex !== undefined && d.capex + d.opex > 0 ? <>
         <dt>{t('Investimento (CapEx)')}</dt><dd>{formatarMoedaEst(d.capex, d.moeda)}</dd>
         <dt>{t('Operação (OpEx)')}</dt><dd>{formatarMoedaEst(d.opex, d.moeda)}</dd>
+        {d.uso ? <><dt>{t('Uso')}</dt><dd>{formatarMoedaEst(d.uso, d.moeda)}</dd></> : null}
       </> : null}
     </dl>}
     {!compacto && d.fases?.length && !(d.fases.length === 1 && d.fases[0].id === 'total') ? <dl className="pc-custo-fases" aria-label={t('Custo por fase')}>{d.fases.map(f => <div key={f.id}><dt>{f.nome}</dt><dd>{f.informado + f.estimado ? moedaCurta(f.informado + f.estimado, d.moeda) : '—'}</dd></div>)}</dl> : null}
@@ -146,6 +148,8 @@ export function ColunaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
     <CartaoCustoFrente d={d} />
     {!naRecursos && tela ? <RespostaMuda d={d} tela={tela} /> : null}
     <Links d={d} tela={tela} />
+    {/* v018.1: progresso do plano (mandala por desafio e categoria) */}
+    <MandalaProgresso s={s} />
   </aside>;
 }
 

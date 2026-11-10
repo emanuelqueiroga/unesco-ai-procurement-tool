@@ -72,6 +72,8 @@ export const EXPLICACOES_GOV: Record<string, string> = {
   // v018: custos adicionais (percentual sobre as opções)
   'Viagens e atividades presenciais': 'Passagens, diárias, transporte e os custos das atividades presenciais (reuniões técnicas, oficinas, consultas, capacitações, visitas às escolas), como percentual do trabalho de pessoas das opções (sem infraestrutura, equipamentos e serviços de nuvem).',
   'Overhead (custos indiretos)': 'Custos da instituição que não dá para atribuir a uma opção (espaço, TI, RH, contabilidade, jurídico), como percentual do trabalho de pessoas e das viagens.',
+  // v018.1: formação de pessoas nos custos adicionais
+  'Formação de pessoas': 'Custo de formar servidores, gestores ou equipes técnicas que vão aplicar o plano: pessoas × horas × custo da hora. Só entra se você responder Sim e informar quantas pessoas serão formadas.',
   'Taxa administrativa': 'Valor cobrado por quem administra o recurso (agência da ONU, fundação de apoio, fundo), como percentual dos custos diretos. Sem intermediário, use 0%.',
 };
 

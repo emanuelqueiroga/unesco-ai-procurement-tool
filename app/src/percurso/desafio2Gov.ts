@@ -1,7 +1,8 @@
 // v018.1 (governança, desafio 2 "Soberania"): opções conforme a figura "Governing AI in Education". Cada opção soma uma
 // equipe de referência (quando há trabalho de pessoas) e partes com fonte: consumo de nuvem pela tabela pública de preços,
 // as calculadoras oficiais do X-Road, o modelo da nuvem soberana e valores informados. Toda parte é CapEx (ativos e
-// implantação de sistemas, plataformas, integrações e migração) ou OpEx (operação, consumo e serviços), pela regra contábil.
+// implantação de sistemas, plataformas, integrações e migração), OpEx (custo corrente: trabalho, serviços e licenças) ou
+// uso (v018.1: consumo medido de nuvem, como armazenamento, máquinas virtuais, cópias e envio de dados).
 import type { Estado14 } from '../store/tipos';
 import { t } from './textos';
 import { LOC, getTabelaMoedas } from '../domain';
@@ -9,7 +10,7 @@ import { calcularTime, custoMensalPerfil, chaveOpcao, type CustoSalvo, type Fase
 import { EQUIPES_GOV } from './equipesGov';
 import { paisSoberana, soberanaNacional, COEF_SOBERANA, FONTES_SOBERANA, NOME_GRUPO_FMI } from './nuvemSoberana';
 
-export type Classe = 'capex' | 'opex';
+export type Classe = 'capex' | 'opex' | 'uso';
 /** Preços de referência de nuvem (US$), tabela pública da Azure (consulta de 10/11/2026); máquina = mediana de 68 regiões. */
 export const PRECOS_NUVEM = { vmHora: 0.115, horasMes: 730, armazenamentoGB: 0.0208, frioGB: 0.0152, arquivoGB: 0.00099, saidaGB: 0.087 };
 /** Calculadoras oficiais de custo do X-Road (NIIS, 2021; valores em euros). */
@@ -42,6 +43,8 @@ export const OPCOES_D2: Record<string, { equipe: Classe | null }> = {
 export const ehOpcaoD2 = (rotulo: string) => Object.hasOwn(OPCOES_D2, rotulo);
 /** Classe das demais opções: tudo é OpEx (trabalho de normas, diretrizes, supervisão, pessoal, formação). */
 export const classeDaOpcao = (rotulo: string): Classe => OPCOES_D2[rotulo]?.equipe === 'capex' ? 'capex' : 'opex';
+/** Rótulo curto da classe (CapEx, OpEx ou uso). */
+export const rotuloClasse = (c: Classe) => c === 'capex' ? 'CapEx' : c === 'opex' ? 'OpEx' : t('uso');
 
 interface Parte { id: string; rotulo: string; classe: Classe; valor: number | null; texto: string; fontes: FonteConta[]; estimado: boolean; pessoas?: boolean }
 const centavos = (v: number) => Math.round(v * 100) / 100;
@@ -77,13 +80,13 @@ export function calcularD2(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: Cust
       const c = especialista(), pessoas = n ?? 2;
       add({ id: 'curadoria', rotulo: t('Curadoria contínua dos dados'), classe: 'opex', estimado: n === null || !!c, pessoas: true,
         valor: c ? pessoas * c.valor * H : null, texto: t('{n} pessoas × {c} por mês × {h} meses', { n: n2(pessoas), c: c ? fmt(c.valor) : '—', h: n2(H) }) + (c ? ' · ' + c.texto : ''), fontes: c ? c.fontes : [] });
-      maquinas('catalogo', 'Catálogo de dados (código aberto, CKAN)', 1, 'opex', [FONTES_D2.ckan]);
+      maquinas('catalogo', 'Catálogo de dados (código aberto, CKAN)', 1, 'uso', [FONTES_D2.ckan]);
       break;
     }
     case 'Controles de acesso e regras de retenção': {
-      maquinas('acesso', 'Sistema de controle de acesso (código aberto, Keycloak)', 2, 'opex', [FONTES_D2.keycloak]);
+      maquinas('acesso', 'Sistema de controle de acesso (código aberto, Keycloak)', 2, 'uso', [FONTES_D2.keycloak]);
       const tb = numero('arquivoTB', 'Registros guardados para retenção (TB)', { dica: t('Opcional. Guardados em armazenamento de arquivo.') });
-      if (tb !== null && tb > 0) add({ id: 'arquivo', rotulo: t('Arquivo dos registros'), classe: 'opex', estimado: true, valor: usd(tb * 1024 * PRECOS_NUVEM.arquivoGB * H),
+      if (tb !== null && tb > 0) add({ id: 'arquivo', rotulo: t('Arquivo dos registros'), classe: 'uso', estimado: true, valor: usd(tb * 1024 * PRECOS_NUVEM.arquivoGB * H),
         texto: t('{v} TB × 1.024 GB × {p} por GB por mês × {h} meses', { v: n2(tb), p: usdF(PRECOS_NUVEM.arquivoGB), h: n2(H) }), fontes: [FONTES_D2.azure] });
       anual('licenca', 'Licença comercial de controle de acesso', 'opex', numero('licencaAno', 'Licença comercial, se houver (valor por ano)', { dica: t('Opcional. Substitui o sistema de código aberto quando o órgão já usa uma solução paga.') }));
       break;
@@ -150,16 +153,16 @@ export function calcularD2(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: Cust
     case 'Hospedagem segura e armazenamento de dados': {
       const v = numero('volumeTB', 'Dados guardados (TB)', { obrigatoria: true }), e = numero('saidaTB', 'Dados enviados para fora da nuvem (TB por mês)', { dica: t('Opcional.') });
       if (v === null) falta.push(t('dados guardados (TB)'));
-      else add({ id: 'armazenamento', rotulo: t('Armazenamento'), classe: 'opex', estimado: true, valor: usd(v * 1024 * PRECOS_NUVEM.armazenamentoGB * H),
+      else add({ id: 'armazenamento', rotulo: t('Armazenamento'), classe: 'uso', estimado: true, valor: usd(v * 1024 * PRECOS_NUVEM.armazenamentoGB * H),
         texto: t('{v} TB × 1.024 GB × {p} por GB por mês × {h} meses', { v: n2(v), p: usdF(PRECOS_NUVEM.armazenamentoGB), h: n2(H) }), fontes: [FONTES_D2.azure, FONTES_D2.google] });
-      if (e !== null && e > 0) add({ id: 'saida', rotulo: t('Envio de dados para fora da nuvem'), classe: 'opex', estimado: true, valor: usd(e * 1024 * PRECOS_NUVEM.saidaGB * H),
+      if (e !== null && e > 0) add({ id: 'saida', rotulo: t('Envio de dados para fora da nuvem'), classe: 'uso', estimado: true, valor: usd(e * 1024 * PRECOS_NUVEM.saidaGB * H),
         texto: t('{v} TB por mês × 1.024 GB × {p} por GB × {h} meses', { v: n2(e), p: usdF(PRECOS_NUVEM.saidaGB), h: n2(H) }), fontes: [FONTES_D2.azure] });
       break;
     }
     case 'Infraestrutura de computação e rede': {
       const n = numero('maquinas', 'Máquinas virtuais (2 núcleos, 8 GB)', { obrigatoria: true });
       if (n === null) falta.push(t('máquinas virtuais'));
-      else maquinas('maquinas', 'Máquinas virtuais', n, 'opex');
+      else maquinas('maquinas', 'Máquinas virtuais', n, 'uso');
       anual('rede', 'Links de rede', 'opex', numero('redeAno', 'Links de rede (valor por ano)', { dica: t('Opcional. O preço dos links varia muito de país para país.') }));
       total1('equipamentos', 'Equipamentos de rede próprios', 'capex', numero('equipamentos', 'Equipamentos de rede próprios (valor total)', { dica: t('Opcional.') }));
       break;
@@ -167,7 +170,7 @@ export function calcularD2(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: Cust
     case 'Backup e continuidade do serviço': {
       const v = numero('volumeTB', 'Dados copiados (TB)', { obrigatoria: true });
       if (v === null) falta.push(t('dados copiados (TB)'));
-      else add({ id: 'copias', rotulo: t('Cópias de segurança (regra 3-2-1)'), classe: 'opex', estimado: true, valor: usd(v * 1024 * (PRECOS_NUVEM.frioGB + PRECOS_NUVEM.arquivoGB) * H),
+      else add({ id: 'copias', rotulo: t('Cópias de segurança (regra 3-2-1)'), classe: 'uso', estimado: true, valor: usd(v * 1024 * (PRECOS_NUVEM.frioGB + PRECOS_NUVEM.arquivoGB) * H),
         texto: t('{v} TB × 1.024 GB × ({a} de uma cópia pouco acessada + {b} de uma cópia de arquivo) por GB por mês × {h} meses', { v: n2(v), a: usdF(PRECOS_NUVEM.frioGB), b: usdF(PRECOS_NUVEM.arquivoGB), h: n2(H) }), fontes: [FONTES_D2.cisa, FONTES_D2.azure] });
       anual('contingencia', 'Ambiente de contingência ligado', 'opex', numero('contingenciaAno', 'Ambiente de contingência ligado, se houver (valor por ano)', { dica: t('Opcional.') }));
       break;
@@ -198,17 +201,18 @@ export function calcularD2(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: Cust
   const totEq = base?.total ?? 0;
   const total = ok ? centavos(totEq + somaPartes()) : null;
   const capex = ok ? centavos((classeEq === 'capex' ? totEq : 0) + somaPartes('capex')) : null;
-  const opex = ok && total !== null && capex !== null ? centavos(total - capex) : null;
+  const uso = ok ? centavos(somaPartes('uso')) : null;
+  const opex = ok && total !== null && capex !== null && uso !== null ? centavos(total - capex - uso) : null;
   // trabalho de pessoas (equipe e partes de pessoal): base das viagens e do overhead
   const somaPessoas = (c?: Classe) => partes.filter(p => p.pessoas && p.valor !== null && (!c || p.classe === c)).reduce((n, p) => n + (p.valor as number), 0);
   const pessoas = ok ? centavos(totEq + somaPessoas()) : null, pessoasCapex = ok ? centavos((classeEq === 'capex' ? totEq : 0) + somaPessoas('capex')) : null;
   const porFase: Record<string, number> = {};
   if (total !== null) { let resto = total; fases.forEach((x, i) => { const v = i === fases.length - 1 ? centavos(resto) : centavos(total * x.meses / (H || 1)); porFase[x.id] = v; resto -= v; }); }
   const contaPartes: ParteConta[] = [...(base?.conta?.partes || [])];
-  if (base?.total != null) contaPartes.unshift({ rotulo: t('Equipe de referência') + ' (' + (classeEq === 'capex' ? 'CapEx' : 'OpEx') + ')', valor: fmt(base.total), texto: base.conta?.formula || '', fontes: [] });
-  for (const p of partes) contaPartes.push({ rotulo: p.rotulo + ' (' + (p.classe === 'capex' ? 'CapEx' : 'OpEx') + ')', valor: p.valor === null ? '—' : fmt(p.valor), texto: p.texto, fontes: p.fontes });
+  if (base?.total != null) contaPartes.unshift({ rotulo: t('Equipe de referência') + ' (' + rotuloClasse(classeEq) + ')', valor: fmt(base.total), texto: base.conta?.formula || '', fontes: [] });
+  for (const p of partes) contaPartes.push({ rotulo: p.rotulo + ' (' + rotuloClasse(p.classe) + ')', valor: p.valor === null ? '—' : fmt(p.valor), texto: p.texto, fontes: p.fontes });
   const formula = total === null ? '' : [base?.total != null ? t('equipe') + ' ' + fmt(base.total) : '', ...partes.filter(p => p.valor !== null).map(p => p.rotulo.toLocaleLowerCase() + ' ' + fmt(p.valor as number))].filter(Boolean).join(' + ') + ' = ' + fmt(total)
-    + (capex !== null && opex !== null ? ' (CapEx ' + fmt(capex) + '; OpEx ' + fmt(opex) + ')' : '');
+    + (capex !== null && opex !== null ? ' (CapEx ' + fmt(capex) + '; OpEx ' + fmt(opex) + (uso ? '; ' + t('uso') + ' ' + fmt(uso) : '') + ')' : '');
   const estimado = (base ? base.status === 'referencia' : false) || partes.some(p => p.estimado);
   const status: LinhaOpcao['status'] = !ok ? 'falta' : estimado ? 'referencia' : 'informado';
   const existentes = base?.time ? base.time.filter(p => p.existente).reduce((n, p) => n + (p.custo || 0), 0) : 0;
@@ -216,7 +220,7 @@ export function calcularD2(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: Cust
   return {
     ...(base || {}), chave: chaveOpcao(rotulo), rotulo, tipo: base ? 'time' : 'comp', tipoPadrao: base ? 'time' : 'comp', fonte: null,
     qtd: base?.qtd ?? null, qtdSugerida: false, horas: base?.horas ?? null, unit: null, unitRef: null, unitDaReferencia: estimado, valoresFase,
-    porFase, total, status, falta, capex, opex, pessoas, pessoasCapex, entradas, refPais: base?.refPais,
+    porFase, total, status, falta, capex, opex, uso, pessoas, pessoasCapex, entradas, refPais: base?.refPais,
     desembolso: total === null ? null : centavos(total - existentes),
     conta: { formula, partes: contaPartes },
     memoria: total === null ? '' : formula,

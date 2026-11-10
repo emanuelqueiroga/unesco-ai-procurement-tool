@@ -81,9 +81,13 @@ export const FORMULAS_MET: Record<string, { b: string; i: string }> = {
   "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msub><mi>B</mi><mrow><mi>o</mi><mo separator=\"true\">,</mo><mi>j</mi></mrow></msub></mrow><annotation encoding=\"application/x-tex\">B_{o,j}</annotation></semantics></math></span>",
   "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>B</mi><mrow><mi>o</mi><mo separator=\"true\">,</mo><mi>j</mi></mrow></msub></mrow><annotation encoding=\"application/x-tex\">B_{o,j}</annotation></semantics></math></span>"
  },
- "K,\\ X": {
-  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><mi>K</mi><mo separator=\"true\">,</mo><mtext> </mtext><mi>X</mi></mrow><annotation encoding=\"application/x-tex\">K,\\ X</annotation></semantics></math></span>",
-  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>K</mi><mo separator=\"true\">,</mo><mtext> </mtext><mi>X</mi></mrow><annotation encoding=\"application/x-tex\">K,\\ X</annotation></semantics></math></span>"
+ "K,\\ X,\\ U": {
+  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><mi>K</mi><mo separator=\"true\">,</mo><mtext> </mtext><mi>X</mi><mo separator=\"true\">,</mo><mtext> </mtext><mi>U</mi></mrow><annotation encoding=\"application/x-tex\">K,\\ X,\\ U</annotation></semantics></math></span>",
+  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>K</mi><mo separator=\"true\">,</mo><mtext> </mtext><mi>X</mi><mo separator=\"true\">,</mo><mtext> </mtext><mi>U</mi></mrow><annotation encoding=\"application/x-tex\">K,\\ X,\\ U</annotation></semantics></math></span>"
+ },
+ "Q": {
+  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><mi>Q</mi></mrow><annotation encoding=\"application/x-tex\">Q</annotation></semantics></math></span>",
+  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>Q</mi></mrow><annotation encoding=\"application/x-tex\">Q</annotation></semantics></math></span>"
  },
  "c_2^{*}": {
   "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msubsup><mi>c</mi><mn>2</mn><mo lspace=\"0em\" rspace=\"0em\">∗</mo></msubsup></mrow><annotation encoding=\"application/x-tex\">c_2^{*}</annotation></semantics></math></span>",
@@ -109,9 +113,9 @@ export const FORMULAS_MET: Record<string, { b: string; i: string }> = {
   "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><mi>λ</mi></mrow><annotation encoding=\"application/x-tex\">\\lambda</annotation></semantics></math></span>",
   "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>λ</mi></mrow><annotation encoding=\"application/x-tex\">\\lambda</annotation></semantics></math></span>"
  },
- "C = D + V + O + T": {
-  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><mi>C</mi><mo>=</mo><mi>D</mi><mo>+</mo><mi>V</mi><mo>+</mo><mi>O</mi><mo>+</mo><mi>T</mi></mrow><annotation encoding=\"application/x-tex\">C = D + V + O + T</annotation></semantics></math></span>",
-  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>C</mi><mo>=</mo><mi>D</mi><mo>+</mo><mi>V</mi><mo>+</mo><mi>O</mi><mo>+</mo><mi>T</mi></mrow><annotation encoding=\"application/x-tex\">C = D + V + O + T</annotation></semantics></math></span>"
+ "C = D + V + O + T + Q": {
+  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><mi>C</mi><mo>=</mo><mi>D</mi><mo>+</mo><mi>V</mi><mo>+</mo><mi>O</mi><mo>+</mo><mi>T</mi><mo>+</mo><mi>Q</mi></mrow><annotation encoding=\"application/x-tex\">C = D + V + O + T + Q</annotation></semantics></math></span>",
+  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>C</mi><mo>=</mo><mi>D</mi><mo>+</mo><mi>V</mi><mo>+</mo><mi>O</mi><mo>+</mo><mi>T</mi><mo>+</mo><mi>Q</mi></mrow><annotation encoding=\"application/x-tex\">C = D + V + O + T + Q</annotation></semantics></math></span>"
  },
  "D = \\sum_{o \\in \\mathcal{O}^{*}} C_o": {
   "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><mi>D</mi><mo>=</mo><munder><mo>∑</mo><mrow><mi>o</mi><mo>∈</mo><msup><mi mathvariant=\"script\">O</mi><mo lspace=\"0em\" rspace=\"0em\">∗</mo></msup></mrow></munder><msub><mi>C</mi><mi>o</mi></msub></mrow><annotation encoding=\"application/x-tex\">D = \\sum_{o \\in \\mathcal{O}^{*}} C_o</annotation></semantics></math></span>",
@@ -185,9 +189,13 @@ export const FORMULAS_MET: Record<string, { b: string; i: string }> = {
   "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><mi>T</mi><mo>=</mo><msub><mi>δ</mi><mi>T</mi></msub><mtext> </mtext><msub><mi>p</mi><mi>T</mi></msub><mtext> </mtext><mo stretchy=\"false\">(</mo><mi>D</mi><mo>+</mo><mi>V</mi><mo stretchy=\"false\">)</mo></mrow><annotation encoding=\"application/x-tex\">T = \\delta_T \\, p_T \\,(D + V)</annotation></semantics></math></span>",
   "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>T</mi><mo>=</mo><msub><mi>δ</mi><mi>T</mi></msub><mtext> </mtext><msub><mi>p</mi><mi>T</mi></msub><mtext> </mtext><mo stretchy=\"false\">(</mo><mi>D</mi><mo>+</mo><mi>V</mi><mo stretchy=\"false\">)</mo></mrow><annotation encoding=\"application/x-tex\">T = \\delta_T \\, p_T \\,(D + V)</annotation></semantics></math></span>"
  },
- "K = \\sum_{o} K_o + \\frac{K_P}{P}\\,(V + O) + \\frac{K_D}{D}\\,T, \\qquad X = C - K": {
-  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><mi>K</mi><mo>=</mo><munder><mo>∑</mo><mi>o</mi></munder><msub><mi>K</mi><mi>o</mi></msub><mo>+</mo><mfrac><msub><mi>K</mi><mi>P</mi></msub><mi>P</mi></mfrac><mtext> </mtext><mo stretchy=\"false\">(</mo><mi>V</mi><mo>+</mo><mi>O</mi><mo stretchy=\"false\">)</mo><mo>+</mo><mfrac><msub><mi>K</mi><mi>D</mi></msub><mi>D</mi></mfrac><mtext> </mtext><mi>T</mi><mo separator=\"true\">,</mo><mspace width=\"2em\"/><mi>X</mi><mo>=</mo><mi>C</mi><mo>−</mo><mi>K</mi></mrow><annotation encoding=\"application/x-tex\">K = \\sum_{o} K_o + \\frac{K_P}{P}\\,(V + O) + \\frac{K_D}{D}\\,T, \\qquad X = C - K</annotation></semantics></math></span>",
-  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>K</mi><mo>=</mo><msub><mo>∑</mo><mi>o</mi></msub><msub><mi>K</mi><mi>o</mi></msub><mo>+</mo><mfrac><msub><mi>K</mi><mi>P</mi></msub><mi>P</mi></mfrac><mtext> </mtext><mo stretchy=\"false\">(</mo><mi>V</mi><mo>+</mo><mi>O</mi><mo stretchy=\"false\">)</mo><mo>+</mo><mfrac><msub><mi>K</mi><mi>D</mi></msub><mi>D</mi></mfrac><mtext> </mtext><mi>T</mi><mo separator=\"true\">,</mo><mspace width=\"2em\"/><mi>X</mi><mo>=</mo><mi>C</mi><mo>−</mo><mi>K</mi></mrow><annotation encoding=\"application/x-tex\">K = \\sum_{o} K_o + \\frac{K_P}{P}\\,(V + O) + \\frac{K_D}{D}\\,T, \\qquad X = C - K</annotation></semantics></math></span>"
+ "Q = \\delta_Q \\, n_Q \\, h_Q \\, k \\, x": {
+  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><mi>Q</mi><mo>=</mo><msub><mi>δ</mi><mi>Q</mi></msub><mtext> </mtext><msub><mi>n</mi><mi>Q</mi></msub><mtext> </mtext><msub><mi>h</mi><mi>Q</mi></msub><mtext> </mtext><mi>k</mi><mtext> </mtext><mi>x</mi></mrow><annotation encoding=\"application/x-tex\">Q = \\delta_Q \\, n_Q \\, h_Q \\, k \\, x</annotation></semantics></math></span>",
+  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>Q</mi><mo>=</mo><msub><mi>δ</mi><mi>Q</mi></msub><mtext> </mtext><msub><mi>n</mi><mi>Q</mi></msub><mtext> </mtext><msub><mi>h</mi><mi>Q</mi></msub><mtext> </mtext><mi>k</mi><mtext> </mtext><mi>x</mi></mrow><annotation encoding=\"application/x-tex\">Q = \\delta_Q \\, n_Q \\, h_Q \\, k \\, x</annotation></semantics></math></span>"
+ },
+ "K = \\sum_{o} K_o + \\frac{K_P}{P}\\,(V + O) + \\frac{K_D}{D}\\,T, \\qquad U = \\sum_{o} U_o + \\frac{U_D}{D}\\,T, \\qquad X = C - K - U": {
+  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><mi>K</mi><mo>=</mo><munder><mo>∑</mo><mi>o</mi></munder><msub><mi>K</mi><mi>o</mi></msub><mo>+</mo><mfrac><msub><mi>K</mi><mi>P</mi></msub><mi>P</mi></mfrac><mtext> </mtext><mo stretchy=\"false\">(</mo><mi>V</mi><mo>+</mo><mi>O</mi><mo stretchy=\"false\">)</mo><mo>+</mo><mfrac><msub><mi>K</mi><mi>D</mi></msub><mi>D</mi></mfrac><mtext> </mtext><mi>T</mi><mo separator=\"true\">,</mo><mspace width=\"2em\"/><mi>U</mi><mo>=</mo><munder><mo>∑</mo><mi>o</mi></munder><msub><mi>U</mi><mi>o</mi></msub><mo>+</mo><mfrac><msub><mi>U</mi><mi>D</mi></msub><mi>D</mi></mfrac><mtext> </mtext><mi>T</mi><mo separator=\"true\">,</mo><mspace width=\"2em\"/><mi>X</mi><mo>=</mo><mi>C</mi><mo>−</mo><mi>K</mi><mo>−</mo><mi>U</mi></mrow><annotation encoding=\"application/x-tex\">K = \\sum_{o} K_o + \\frac{K_P}{P}\\,(V + O) + \\frac{K_D}{D}\\,T, \\qquad U = \\sum_{o} U_o + \\frac{U_D}{D}\\,T, \\qquad X = C - K - U</annotation></semantics></math></span>",
+  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>K</mi><mo>=</mo><msub><mo>∑</mo><mi>o</mi></msub><msub><mi>K</mi><mi>o</mi></msub><mo>+</mo><mfrac><msub><mi>K</mi><mi>P</mi></msub><mi>P</mi></mfrac><mtext> </mtext><mo stretchy=\"false\">(</mo><mi>V</mi><mo>+</mo><mi>O</mi><mo stretchy=\"false\">)</mo><mo>+</mo><mfrac><msub><mi>K</mi><mi>D</mi></msub><mi>D</mi></mfrac><mtext> </mtext><mi>T</mi><mo separator=\"true\">,</mo><mspace width=\"2em\"/><mi>U</mi><mo>=</mo><msub><mo>∑</mo><mi>o</mi></msub><msub><mi>U</mi><mi>o</mi></msub><mo>+</mo><mfrac><msub><mi>U</mi><mi>D</mi></msub><mi>D</mi></mfrac><mtext> </mtext><mi>T</mi><mo separator=\"true\">,</mo><mspace width=\"2em\"/><mi>X</mi><mo>=</mo><mi>C</mi><mo>−</mo><mi>K</mi><mo>−</mo><mi>U</mi></mrow><annotation encoding=\"application/x-tex\">K = \\sum_{o} K_o + \\frac{K_P}{P}\\,(V + O) + \\frac{K_D}{D}\\,T, \\qquad U = \\sum_{o} U_o + \\frac{U_D}{D}\\,T, \\qquad X = C - K - U</annotation></semantics></math></span>"
  },
  "E = C - \\sum_{o} \\sum_{r \\in R_o^{\\mathrm{ex}}} M_o \\, q_r \\, d_r \\, c_r": {
   "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><mi>E</mi><mo>=</mo><mi>C</mi><mo>−</mo><munder><mo>∑</mo><mi>o</mi></munder><munder><mo>∑</mo><mrow><mi>r</mi><mo>∈</mo><msubsup><mi>R</mi><mi>o</mi><mrow><mi mathvariant=\"normal\">e</mi><mi mathvariant=\"normal\">x</mi></mrow></msubsup></mrow></munder><msub><mi>M</mi><mi>o</mi></msub><mtext> </mtext><msub><mi>q</mi><mi>r</mi></msub><mtext> </mtext><msub><mi>d</mi><mi>r</mi></msub><mtext> </mtext><msub><mi>c</mi><mi>r</mi></msub></mrow><annotation encoding=\"application/x-tex\">E = C - \\sum_{o} \\sum_{r \\in R_o^{\\mathrm{ex}}} M_o \\, q_r \\, d_r \\, c_r</annotation></semantics></math></span>",
@@ -208,6 +216,18 @@ export const FORMULAS_MET: Record<string, { b: string; i: string }> = {
  "k": {
   "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><mi>k</mi></mrow><annotation encoding=\"application/x-tex\">k</annotation></semantics></math></span>",
   "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>k</mi></mrow><annotation encoding=\"application/x-tex\">k</annotation></semantics></math></span>"
+ },
+ "n_o": {
+  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msub><mi>n</mi><mi>o</mi></msub></mrow><annotation encoding=\"application/x-tex\">n_o</annotation></semantics></math></span>",
+  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>n</mi><mi>o</mi></msub></mrow><annotation encoding=\"application/x-tex\">n_o</annotation></semantics></math></span>"
+ },
+ "P_o,\\ h_o": {
+  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msub><mi>P</mi><mi>o</mi></msub><mo separator=\"true\">,</mo><mtext> </mtext><msub><mi>h</mi><mi>o</mi></msub></mrow><annotation encoding=\"application/x-tex\">P_o,\\ h_o</annotation></semantics></math></span>",
+  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>P</mi><mi>o</mi></msub><mo separator=\"true\">,</mo><mtext> </mtext><msub><mi>h</mi><mi>o</mi></msub></mrow><annotation encoding=\"application/x-tex\">P_o,\\ h_o</annotation></semantics></math></span>"
+ },
+ "h_Q": {
+  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msub><mi>h</mi><mi>Q</mi></msub></mrow><annotation encoding=\"application/x-tex\">h_Q</annotation></semantics></math></span>",
+  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>h</mi><mi>Q</mi></msub></mrow><annotation encoding=\"application/x-tex\">h_Q</annotation></semantics></math></span>"
  },
  "p_V": {
   "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msub><mi>p</mi><mi>V</mi></msub></mrow><annotation encoding=\"application/x-tex\">p_V</annotation></semantics></math></span>",
@@ -297,10 +317,6 @@ export const FORMULAS_MET: Record<string, { b: string; i: string }> = {
   "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><mi>I</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding=\"application/x-tex\">I = 1</annotation></semantics></math></span>",
   "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>I</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding=\"application/x-tex\">I = 1</annotation></semantics></math></span>"
  },
- "n_o": {
-  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msub><mi>n</mi><mi>o</mi></msub></mrow><annotation encoding=\"application/x-tex\">n_o</annotation></semantics></math></span>",
-  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>n</mi><mi>o</mi></msub></mrow><annotation encoding=\"application/x-tex\">n_o</annotation></semantics></math></span>"
- },
  "s_o": {
   "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msub><mi>s</mi><mi>o</mi></msub></mrow><annotation encoding=\"application/x-tex\">s_o</annotation></semantics></math></span>",
   "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>s</mi><mi>o</mi></msub></mrow><annotation encoding=\"application/x-tex\">s_o</annotation></semantics></math></span>"
@@ -345,9 +361,21 @@ export const FORMULAS_MET: Record<string, { b: string; i: string }> = {
   "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><mi>D</mi><mo>+</mo><mi>V</mi></mrow><annotation encoding=\"application/x-tex\">D + V</annotation></semantics></math></span>",
   "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>D</mi><mo>+</mo><mi>V</mi></mrow><annotation encoding=\"application/x-tex\">D + V</annotation></semantics></math></span>"
  },
+ "\\delta_Q": {
+  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msub><mi>δ</mi><mi>Q</mi></msub></mrow><annotation encoding=\"application/x-tex\">\\delta_Q</annotation></semantics></math></span>",
+  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>δ</mi><mi>Q</mi></msub></mrow><annotation encoding=\"application/x-tex\">\\delta_Q</annotation></semantics></math></span>"
+ },
+ "n_Q": {
+  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msub><mi>n</mi><mi>Q</mi></msub></mrow><annotation encoding=\"application/x-tex\">n_Q</annotation></semantics></math></span>",
+  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>n</mi><mi>Q</mi></msub></mrow><annotation encoding=\"application/x-tex\">n_Q</annotation></semantics></math></span>"
+ },
  "K_o": {
   "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msub><mi>K</mi><mi>o</mi></msub></mrow><annotation encoding=\"application/x-tex\">K_o</annotation></semantics></math></span>",
   "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>K</mi><mi>o</mi></msub></mrow><annotation encoding=\"application/x-tex\">K_o</annotation></semantics></math></span>"
+ },
+ "U_o": {
+  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msub><mi>U</mi><mi>o</mi></msub></mrow><annotation encoding=\"application/x-tex\">U_o</annotation></semantics></math></span>",
+  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>U</mi><mi>o</mi></msub></mrow><annotation encoding=\"application/x-tex\">U_o</annotation></semantics></math></span>"
  },
  "K_P": {
   "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msub><mi>K</mi><mi>P</mi></msub></mrow><annotation encoding=\"application/x-tex\">K_P</annotation></semantics></math></span>",
@@ -356,6 +384,10 @@ export const FORMULAS_MET: Record<string, { b: string; i: string }> = {
  "K_D": {
   "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msub><mi>K</mi><mi>D</mi></msub></mrow><annotation encoding=\"application/x-tex\">K_D</annotation></semantics></math></span>",
   "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>K</mi><mi>D</mi></msub></mrow><annotation encoding=\"application/x-tex\">K_D</annotation></semantics></math></span>"
+ },
+ "U_D": {
+  "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msub><mi>U</mi><mi>D</mi></msub></mrow><annotation encoding=\"application/x-tex\">U_D</annotation></semantics></math></span>",
+  "i": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><msub><mi>U</mi><mi>D</mi></msub></mrow><annotation encoding=\"application/x-tex\">U_D</annotation></semantics></math></span>"
  },
  "R_o^{\\mathrm{ex}}": {
   "b": "<span class=\"katex\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><semantics><mrow><msubsup><mi>R</mi><mi>o</mi><mrow><mi mathvariant=\"normal\">e</mi><mi mathvariant=\"normal\">x</mi></mrow></msubsup></mrow><annotation encoding=\"application/x-tex\">R_o^{\\mathrm{ex}}</annotation></semantics></math></span>",

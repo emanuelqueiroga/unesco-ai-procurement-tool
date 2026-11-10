@@ -11,6 +11,8 @@ import { Shell } from './Shell';
 import './prioridades.css';
 
 const OFERECIDAS = ['governar', 'sobre', 'com'];
+/** v018.1: só a governança pode ser marcada nesta versão; as demais aparecem desativadas. */
+const DISPONIVEIS = ['governar'];
 const svg = (d: ReactNode) => <svg width="40" height="40" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>;
 /** Ícones simples: governar (escudo com marca), educar sobre a IA (livro com circuito), com e sem IA (escola). */
 const ICONES: Record<string, ReactNode> = {
@@ -22,9 +24,9 @@ const ICONES: Record<string, ReactNode> = {
 /** A seleção fica local até Próximo, como na v017. */
 export function Prioridades() {
   const s = useCaso();
-  const [rascunho, setRascunho] = useState<string[]>(() => (s.ctx.prioridades || []).filter((id: string) => OFERECIDAS.includes(id)));
+  const [rascunho, setRascunho] = useState<string[]>(() => (s.ctx.prioridades || []).filter((id: string) => DISPONIVEIS.includes(id)));
   const P = (PRIORIDADES as any[]).filter(p => OFERECIDAS.includes(p.id));
-  const alternar = (id: string) => setRascunho(r => { const n = new Set(r); if (n.has(id)) n.delete(id); else n.add(id); return P.map(p => p.id).filter(k => n.has(k)); });
+  const alternar = (id: string) => DISPONIVEIS.includes(id) && setRascunho(r => { const n = new Set(r); if (n.has(id)) n.delete(id); else n.add(id); return P.map(p => p.id).filter(k => n.has(k)); });
   const telas = telasDoCapitulo(1), i = telas.findIndex(x => x.id === 'prioridades');
   const ant = i > 0 ? href.pergunta(1, telas[i - 1].id) : href.inicio();
   const avancar = () => {
@@ -41,12 +43,13 @@ export function Prioridades() {
       actions={<AcoesPercurso anterior={ant} avancar={avancar} disabled={!rascunho.length} />}>
       <div className="pv-prio" role="group" aria-label={t('Prioridades')}>
         {P.map(p => {
-          const on = rascunho.includes(p.id);
-          return <button key={p.id} type="button" role="checkbox" aria-checked={on} className={'pv-prio-card' + (on ? ' is-on' : '')} onClick={() => alternar(p.id)}>
+          const on = rascunho.includes(p.id), livre = DISPONIVEIS.includes(p.id);
+          return <button key={p.id} type="button" role="checkbox" aria-checked={on} aria-disabled={!livre || undefined} disabled={!livre} className={'pv-prio-card' + (on ? ' is-on' : '') + (livre ? '' : ' is-off')} onClick={() => alternar(p.id)}>
             <span className="pv-prio-marca" aria-hidden="true">{on ? '✓' : ''}</span>
             <span className="pv-prio-icone">{ICONES[p.id]}</span>
             <span className="pv-prio-nome">{t(p.nome)}</span>
             <span className="pv-prio-desc">{t(p.desc)}</span>
+            {livre ? null : <span className="pv-prio-breve">{t('Disponível em uma próxima versão')}</span>}
           </button>;
         })}
       </div>

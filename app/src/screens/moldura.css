@@ -442,3 +442,39 @@ a.pc-faixa-custo:hover { color: var(--on-night); outline: 2px solid var(--primar
 .pv-equipe-extra { display: flex; flex-direction: column; gap: 12px; margin-block-start: 12px; }
 .pv-equipe-extra .pv-equipe-papel { display: flex; flex-direction: column; gap: 10px; }
 .pv-equipe-extra p { margin: 0; }
+/* v018.1: quadro-síntese do sumário executivo (investimento, operação, uso e total) */
+.pv-sumario { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 4px 0 8px; }
+.pv-sumario > div { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-1); min-width: 0; }
+.pv-sumario dt { font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--muted); }
+.pv-sumario dd { margin: 0; font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); overflow-wrap: anywhere; }
+.pv-sumario-pct { font-size: 12px; color: var(--muted); }
+.pv-sumario > .pv-sumario-total { background: var(--primary); border-color: var(--primary); }
+.pv-sumario > .pv-sumario-total dt, .pv-sumario > .pv-sumario-total dd, .pv-sumario > .pv-sumario-total .pv-sumario-pct { color: #FFFFFF; }
+@media (max-width: 640px) { .pv-sumario { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* v018.1: tabela do sumário executivo da governança, compacta para caber CapEx, OpEx, uso e total */
+.pv-matriz--ck { font-size: 12.5px; }
+.pv-matriz--ck th, .pv-matriz--ck td { padding: 7px 8px; }
+.pv-matriz--ck th[scope="row"], .pv-matriz--ck thead th:first-child { min-width: 150px; }
+/* v018.1: mandala de progresso do plano (coluna direita) */
+.pc-mandala { display: flex; flex-direction: column; gap: 10px; padding: 16px 18px 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface-1); }
+.pc-mandala-titulo { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.pc-mandala-svg { inline-size: 100%; max-inline-size: 220px; align-self: center; block-size: auto; overflow: visible; }
+.pc-mandala-trilho { fill: none; stroke: var(--line); stroke-width: 5; }
+.pc-mandala-anel { fill: none; stroke: var(--primary); stroke-width: 5; stroke-linecap: round; }
+.pc-mandala-raio { stroke: var(--line); stroke-width: 1; }
+.pc-mandala-fundo { fill: transparent; stroke: var(--line-control, var(--line)); stroke-width: 1; stroke-dasharray: 3 3; }
+.pc-mandala-petala.is-on .pc-mandala-fundo { fill: var(--primary-tint); stroke: var(--primary); stroke-dasharray: none; stroke-opacity: .45; }
+.pc-mandala-cheio { fill: var(--primary); opacity: .78; }
+.pc-mandala-petala.is-ok .pc-mandala-cheio { opacity: 1; }
+.pc-mandala-n { font-size: 9.5px; font-weight: 600; fill: var(--muted); font-variant-numeric: tabular-nums; pointer-events: none; }
+.pc-mandala-petala.is-on .pc-mandala-n { fill: var(--ink); }
+.pc-mandala-petala.is-ok .pc-mandala-n { fill: var(--surface-1); }
+.pc-mandala-miolo { fill: var(--surface-1); stroke: var(--line); }
+.pc-mandala-pct { font-size: 20px; font-weight: 700; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.pc-mandala-sub { font-size: 9px; fill: var(--muted); }
+.pc-mandala-legenda { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.pc-mandala-legenda li { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; }
+.pc-mandala-num { display: inline-flex; inline-size: 20px; block-size: 20px; align-items: center; justify-content: center; border-radius: 50%; background: var(--primary-tint); color: var(--primary); font-size: 11px; font-weight: 700; }
+.pc-mandala-nome { color: var(--ink-2, var(--ink)); }
+.pc-mandala-conta { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pc-mandala-nota { margin: 0; font-size: 12px; line-height: 1.4; color: var(--muted); }

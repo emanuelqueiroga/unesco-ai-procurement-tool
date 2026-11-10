@@ -17,7 +17,7 @@ import { formatarMoedaEst, type FrenteEstimativa } from '../percurso/estimativas
 import { gravarOrc } from './OrcamentoV16';
 import { CartaoComDica, DicaGov } from './InfoDica';
 import { CATEGORIAS } from '../domain/catalogo_v016.js';
-import { ADICIONAIS, ID_ADICIONAIS, PERGUNTAS_ADICIONAIS, type SalvoAdicionais } from '../percurso/adicionaisGov';
+import { ADICIONAIS, ID_ADICIONAIS, PERGUNTAS_ADICIONAIS, FORMACAO_AD, type SalvoAdicionais } from '../percurso/adicionaisGov';
 import './moldura.css';
 
 const telaFases = (f: FrenteEstimativa) => f === 'letramento' ? 'lit-fases' : 'ed-fases';
@@ -123,7 +123,7 @@ function LinhaValor({ s, frente, cat, l, moeda }: { s: CasoStore; frente: Frente
       <h4 className="pv-v17-op">{nome}</h4>
       <p className={'pv-v17-total' + (l.status === 'referencia' ? ' pc-rec-valor--est' : '')}>{l.total === null ? '—' : fmt(l.total)}</p>
     </div>
-    {frente === 'governanca' && l.capex != null && l.opex != null && l.total !== null ? <p className="pv-v17-capex">CapEx {fmt(l.capex)} · OpEx {fmt(l.opex)}</p> : null}
+    {frente === 'governanca' && l.capex != null && l.opex != null && l.total !== null ? <p className="pv-v17-capex">CapEx {fmt(l.capex)} · OpEx {fmt(l.opex)}{l.uso ? ' · ' + t('Uso') + ' ' + fmt(l.uso) : ''}</p> : null}
     {l.entradas?.length ? <EntradasD2 entradas={l.entradas} moeda={moeda} atual={atual} gravar={gravar} /> : null}
     {frente === 'governanca' ? null : <Selecao label={t('Como calcular')} value={l.tipo} opcoes={ORDEM_TIPOS.map(k => [k, t(k === 'fechado' && semFases(frente) ? 'Valor total' : TIPOS[k].rotulo)])}
       onChange={v => gravarOrc(frente, caminho, { ...atual(), tipo: v as TipoCusto, unit: undefined, horas: undefined, ...(v === 'fechado' ? {} : { fases: undefined }) })} />}
@@ -134,13 +134,13 @@ function LinhaValor({ s, frente, cat, l, moeda }: { s: CasoStore; frente: Frente
           onChange={v => gravarOrc(frente, caminho, { ...atual(), fases: { ...(atual().fases || {}), [f.id]: v === '' ? undefined : v } })} />)}</div>
       : <div className="pv-v17-campos">
           <CampoNumero label={t(def.qtd!)} value={l.qtd ?? ''} suggested={l.qtdSugerida} decimais={l.tipo === 'equipe'} onChange={v => gravar('qtd', v)} />
-          {def.horas ? <CampoNumero label={t(def.horasRotulo || 'Horas por pessoa')} value={l.horas ?? ''} suggested={l.esforcoC && !!l.horas} decimais onChange={v => gravar('horas', v)} /> : null}
+          {def.horas ? <CampoNumero label={t(def.horasRotulo || 'Horas por pessoa')} value={l.horas ?? ''} suggested={(l.esforcoC && !!l.horas) || !!l.horasSugerida} decimais onChange={v => gravar('horas', v)} /> : null}
           <CampoNumero label={t(def.unit!) + ' (' + moeda + ')'} value={l.unitDaReferencia ? '' : l.unit ?? ''} decimais placeholder={l.unitRef === null ? undefined : new Intl.NumberFormat(String(LOC()), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(l.unitRef)}
             hint={l.unitRef === null ? undefined : l.refPais ? t('Vazio = salário do país (ILOSTAT) com encargos ({v}).', { v: fmt(l.unitRef) }) : frente === 'governanca' ? t('Vazio = estimativa de referência ({v}).', { v: fmt(l.unitRef) }) : t('Vazio = referência genérica ({v}).', { v: fmt(l.unitRef) })} onChange={v => gravar('unit', v)} />
         </div>}
     {frente === 'governanca' && l.conta && l.status !== 'falta' ? <ComoCalculado l={l} /> : null}
     {l.tipo === 'time' ? null
-      : l.qtdSugerida ? <p className="pc-nota">{t('Quantidade sugerida a partir do Contexto; altere se precisar.')}</p> : null}
+      : l.qtdSugerida ? <p className="pc-nota">{l.fonte === 'gov31' || l.fonte === 'plano' ? t('Quantidade sugerida pela ferramenta (estimativa de referência); altere se precisar.') : t('Quantidade sugerida a partir do Contexto; altere se precisar.')}</p> : null}
     {l.status === 'falta' ? <p className="pv-v17-falta">{t('Falta')}: {l.falta.join(', ')}</p>
       : semFases(frente) ? (l.status === 'referencia' && !l.refPais ? <p className="pv-v17-fases">{t('estimativa de referência, que pode variar conforme o contexto')}</p> : null)
       : <p className="pv-v17-fases">{fases.map(f => f.nome + ' ' + fmt(l.porFase[f.id] || 0)).join(' · ')}{l.status === 'referencia' ? ' · ' + (l.refPais ? t('salário do país (ILOSTAT)') : t('referência genérica, igual para todos os países')) : ''}</p>}
@@ -218,7 +218,8 @@ function AdicionaisV18({ s, linhas, moeda }: { s: CasoStore; linhas: LinhaOpcao[
   const fmt = (v: number) => formatarMoedaEst(v, moeda), n = (v: number) => new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 2 }).format(v);
   const salvo = (raizOrcamento(s, 'governanca').adicionais || {}) as SalvoAdicionais;
   const gravar = (k: string, v: unknown) => gravarOrc('governanca', 'adicionais', { ...(raizOrcamento(useCaso.getState(), 'governanca').adicionais || {}), [k]: v });
-  return <>{linhas.map(l => { const a = ADICIONAIS.find(x => x.chave === l.chave)!, nome = t(l.rotulo), q = PERGUNTAS_ADICIONAIS[a.chave];
+  return <>{linhas.map(l => { if (l.chave === FORMACAO_AD.chave) return <FormacaoAd key={l.chave} l={l} salvo={salvo} gravar={gravar} moeda={moeda} />;
+    const a = ADICIONAIS.find(x => x.chave === l.chave)!, nome = t(l.rotulo), q = PERGUNTAS_ADICIONAIS[a.chave];
     const fundacao = a.chave === 'taxa' && salvo.executor === 'fundacao';
     return <div key={l.chave} className={'pv-v17-linha pv-v17-linha--' + l.status} role="group" aria-label={nome}>
       <div className="pv-v17-linha-cab">
@@ -240,6 +241,34 @@ function AdicionaisV18({ s, linhas, moeda }: { s: CasoStore; linhas: LinhaOpcao[
         {l.status === 'falta' ? <p className="pv-v17-falta">{t('Falta')}: {l.falta.join(', ')}</p> : null}
       </>}
     </div>; })}</>;
+}
+
+/** v018.1: formação de pessoas nos custos adicionais — a pergunta, as pessoas (definidas por quem faz o plano), as horas e
+ *  o custo da hora, com a estimativa e "Como foi calculado". */
+function FormacaoAd({ l, salvo, gravar, moeda }: { l: LinhaOpcao; salvo: SalvoAdicionais; gravar: (k: string, v: unknown) => void; moeda: string }) {
+  const fmt = (v: number) => formatarMoedaEst(v, moeda), nome = t(l.rotulo), n2 = (v: number) => new Intl.NumberFormat(String(LOC()), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+  return <div className={'pv-v17-linha pv-v17-linha--' + l.status} role="group" aria-label={nome}>
+    <div className="pv-v17-linha-cab">
+      <h4 className="pv-v17-op">{nome}<DicaGov chave={FORMACAO_AD.rotulo} nome={nome} inicio /></h4>
+      <p className={'pv-v17-total' + (l.status === 'referencia' ? ' pc-rec-valor--est' : '')}>{l.total === null ? '—' : fmt(l.total)}</p>
+    </div>
+    <p className="pv-campo-titulo" aria-hidden="true">{t(FORMACAO_AD.pergunta)}</p>
+    <OptionCardGroup className="pc-lit-opcoes pv-opcoes-linha" label={t(FORMACAO_AD.pergunta)} type="radio">
+      {FORMACAO_AD.opcoes.map(([id, txt]) => <OptionCard key={id} name="adic-formacao" value={id} type="radio" label={t(txt)} checked={salvo.temFormacao === id} onChange={() => gravar('temFormacao', id)} />)}
+    </OptionCardGroup>
+    {l.naoAplica ? <p className="pc-nota">{l.memoria}</p> : <>
+      <div className="pv-v17-campos">
+        <CampoNumero label={t('Pessoas a formar')} value={typeof salvo.formPessoas === 'number' ? salvo.formPessoas : ''} decimais
+          hint={t('Servidores, gestores ou equipes técnicas. Se marcou a categoria 3.2, conte aqui só quem não está nela.')} onChange={v => gravar('formPessoas', v === '' ? undefined : v)} />
+        <CampoNumero label={t('Horas por pessoa')} value={typeof salvo.formHoras === 'number' ? salvo.formHoras : ''} placeholder={String(FORMACAO_AD.horas)} decimais
+          hint={t('Vazio = {n} horas (estimativa de referência).', { n: FORMACAO_AD.horas })} onChange={v => gravar('formHoras', v === '' ? undefined : v)} />
+        <CampoNumero label={t('Custo por hora') + ' (' + moeda + ')'} value={typeof salvo.formHora === 'number' ? salvo.formHora : ''} placeholder={l.unitRef == null ? undefined : n2(l.unitRef)} decimais
+          hint={l.unitRef == null ? undefined : t('Vazio = estimativa de referência ({v}).', { v: fmt(l.unitRef) })} onChange={v => gravar('formHora', v === '' ? undefined : v)} />
+      </div>
+      {l.conta && l.status !== 'falta' ? <ComoCalculado l={l} /> : null}
+      {l.status === 'falta' ? <p className="pv-v17-falta">{t('Falta')}: {l.falta.join(', ')}</p> : null}
+    </>}
+  </div>;
 }
 
 const valorLit = (v: any) => { const x = v && typeof v === 'object' ? v.valor : v; return typeof x === 'number' ? x : ''; };

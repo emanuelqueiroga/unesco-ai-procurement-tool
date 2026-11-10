@@ -15,7 +15,8 @@ import { paisPorIso, nomePais } from '../domain/pais.js';
 import { formatarMoedaEst, parametro, PARAMETRO_EQUIPE, PARAMETRO_FORMACAO, PARAMETRO_LICENCA, PARAMETRO_CONECTIVIDADE, PARAMETRO_DISPOSITIVO, type FrenteEstimativa } from './estimativasOrcamento';
 
 export type TipoCusto = 'formacao' | 'pessoa' | 'licenca' | 'escola_ano' | 'escola' | 'unidade' | 'equipe' | 'trabalho' | 'time' | 'percentual' | 'fechado' | 'comp';
-export type Fonte = 'professores' | 'estudantes' | 'escolas' | null;
+/** v018.1: 'gov31' = pessoal especializado da 3.1 (2 por perfil); 'plano' = pessoas das equipes do plano (formação 3.2) */
+export type Fonte = 'professores' | 'estudantes' | 'escolas' | 'gov31' | 'plano' | null;
 type Dist = 'novos' | 'acumulado_mes' | 'acumulado_ano' | 'tempo' | 'direto';
 
 export const TIPOS: Record<TipoCusto, { rotulo: string; qtd?: string; horas?: boolean; horasRotulo?: string; unit?: string; dist: Dist }> = {
@@ -41,11 +42,11 @@ export const ORDEM_TIPOS: TipoCusto[] = ['fechado', 'formacao', 'pessoa', 'licen
 /** Tipo padrão, de onde vem a quantidade sugerida e a referência de cada opção (pelo texto em português da opção). */
 const PADROES: Record<string, [TipoCusto, Fonte, string | null]> = {
   // governança
-  'Especialistas em TI (IA, dados, segurança, infraestrutura)': ['equipe', null, 'sal.eng_integracao'],
-  'Profissionais jurídicos': ['equipe', null, PARAMETRO_EQUIPE],
-  'Pessoal de governança de IA': ['equipe', null, PARAMETRO_EQUIPE],
-  'Especialistas em IA e educação': ['equipe', null, PARAMETRO_EQUIPE],
-  'Formação e desenvolvimento profissional': ['formacao', null, PARAMETRO_FORMACAO],
+  'Especialistas em TI (IA, dados, segurança, infraestrutura)': ['equipe', 'gov31', 'sal.eng_integracao'],
+  'Profissionais jurídicos': ['equipe', 'gov31', PARAMETRO_EQUIPE],
+  'Pessoal de governança de IA': ['equipe', 'gov31', PARAMETRO_EQUIPE],
+  'Especialistas em IA e educação': ['equipe', 'gov31', PARAMETRO_EQUIPE],
+  'Formação e desenvolvimento profissional': ['formacao', 'plano', PARAMETRO_FORMACAO],
   // v018: governança — equipe de referência por papel (equipesGov.ts, grau C) × salário do país por perfil
   'Classificação de segurança e risco de IA': ['time', null, PARAMETRO_EQUIPE],
   'Direitos e proteção de crianças': ['time', null, PARAMETRO_EQUIPE],
@@ -172,9 +173,16 @@ export function refDoTipo(tipo: TipoCusto, padrao: { tipo: TipoCusto; ref: strin
 /** Valor de referência em US$ (base de referências da ferramenta). */
 export const referenciaUSD = (pid: string | null) => pid ? parametro(pid).valor : null;
 
+/** v018.1: pessoas por perfil na 3.1 e horas por pessoa na formação 3.2 (estimativas de referência, grau C). */
+export const PESSOAS_31 = 2, HORAS_FORMACAO_GOV = 20;
+/** v018.1: sem equipes no plano, a formação 3.2 sugere uma turma de 20 pessoas (grau C). */
+export const TURMA_FORMACAO = 20;
 /** Quantidades sugeridas a partir do Contexto (e, no letramento, do número de professores e estudantes já informados). */
 export function quantidadeSugerida(s: Pick<Estado14, 'ctx'>, fonte: Fonte): number | null {
   if (!fonte) return null;
+  // v018.1 (governança): 3.1 com 2 pessoas por perfil; formação 3.2 com as pessoas das equipes do plano (grau C)
+  if (fonte === 'gov31') return PESSOAS_31;
+  if (fonte === 'plano') { const n = (s as any).__pessoasPlano; return typeof n === 'number' && n > 0 ? n : TURMA_FORMACAO; }
   const r = (s.ctx as any).redeNacional || {}, tot = totaisCtx(s.ctx);
   const alunos = +r.estudantes || tot.alunos || 0, escolas = +r.escolas || tot.escolas || 0;
   const num = (v: any) => { const x = v && typeof v === 'object' ? v.valor : v; return typeof x === 'number' && x > 0 ? x : null; };
@@ -231,6 +239,10 @@ export interface LinhaOpcao {
   conta?: ContaOpcao;
   /** v018.1: investimento (CapEx) e operação (OpEx) da linha; a soma dos dois é o total */
   capex?: number | null; opex?: number | null;
+  /** v018.1: consumo medido de nuvem (custos de uso); total = capex + opex + uso */
+  uso?: number | null;
+  /** v018.1: horas por pessoa vindas da estimativa de referência */
+  horasSugerida?: boolean;
   /** v018.1: parte do total que é trabalho de pessoas (base das viagens e do overhead) e a parte dela que é CapEx;
    *  ausente, vale o total inteiro */
   pessoas?: number | null; pessoasCapex?: number | null;
@@ -255,7 +267,9 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
   if (tipo === 'time' && EQUIPES_GOV[rotulo]) return calcularTime(s, rotulo, salvo, fases, taxa, fmt, num, moeda);
   const sug = def.qtd ? quantidadeSugerida(s, pad.fonte) : null;
   const qtd = positivo(salvo.qtd) ? salvo.qtd : (tipo === pad.tipo ? sug : null), qtdSugerida = !positivo(salvo.qtd) && qtd !== null;
-  const horas = positivo(salvo.horas) ? salvo.horas : null;
+  // v018.1: a formação da governança tem 20 horas por pessoa como estimativa de referência
+  const horasSugerida = !positivo(salvo.horas) && f === 'governanca' && tipo === 'formacao' && pad.fonte === 'plano';
+  const horas = positivo(salvo.horas) ? salvo.horas : horasSugerida ? HORAS_FORMACAO_GOV : null;
   // v018 (governança): custo de pessoal = salário médio mensal do país por ocupação (ILOSTAT) × encargos do país (SSA e
   // ISSA). Sem dado do país (ou país "outro"), vale a referência genérica, que já é custo carregado (sem encargos por cima).
   const pidRef = refDoTipo(tipo, pad), iso = (s as any).caso?.pais as string | undefined;
@@ -316,8 +330,12 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
     const partes: ParteConta[] = [], voce = t('informado por você');
     if (tipo === 'fechado') partes.push({ rotulo: t('Valor total'), valor: total === null ? '—' : fmt(total), texto: total === null ? t('ainda sem valor') : voce, fontes: [] });
     else {
-      if (qtd !== null) partes.push({ rotulo: t(def.qtd!), valor: num(qtd), fontes: [], texto: positivo(salvo.qtd) ? voce : t('sugerido a partir do Contexto') });
-      if (def.horas && horas !== null) partes.push({ rotulo: t(def.horasRotulo || 'Horas por pessoa'), valor: num(horas), fontes: [], texto: voce });
+      if (qtd !== null) partes.push({ rotulo: t(def.qtd!), valor: num(qtd), fontes: [], texto: positivo(salvo.qtd) ? voce
+        : pad.fonte === 'gov31' ? t('estimativa de referência (grau C): {n} pessoas por perfil, a dupla mínima para dar continuidade ao trabalho em férias e ausências', { n: PESSOAS_31 })
+        : pad.fonte === 'plano' ? ((s as any).__pessoasPlano > 0 ? t('estimativa de referência (grau C): as pessoas das equipes de referência e do pessoal em tempo integral escolhidos no plano')
+          : t('estimativa de referência (grau C): sem equipes escolhidas no plano, uma turma de {n} pessoas', { n: TURMA_FORMACAO }))
+        : t('sugerido a partir do Contexto') });
+      if (def.horas && horas !== null) partes.push({ rotulo: t(def.horasRotulo || 'Horas por pessoa'), valor: num(horas), fontes: [], texto: horasSugerida ? t('estimativa de referência (grau C): {n} horas por pessoa, uma formação curta', { n: HORAS_FORMACAO_GOV }) : voce });
       if (unit !== null) {
         if (!unitDaReferencia) partes.push({ rotulo: t(def.unit!), valor: fmt(unit), texto: voce, fontes: [] });
         else if (sal) {
@@ -362,7 +380,7 @@ export function calcularOpcao(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, cat
     conta = { formula, partes };
   }
   const status = falta.length ? 'falta' : tipo !== 'fechado' && unitDaReferencia ? 'referencia' : 'informado';
-  return { refPais: !!sal, conta, chave: chaveOpcao(rotulo), rotulo, tipo, tipoPadrao: pad.tipo, fonte: pad.fonte, qtd, qtdSugerida, horas, unit, unitRef, unitDaReferencia, valoresFase, porFase, total, status, falta, memoria };
+  return { refPais: !!sal, conta, chave: chaveOpcao(rotulo), rotulo, tipo, tipoPadrao: pad.tipo, fonte: pad.fonte, qtd, qtdSugerida, horas, horasSugerida, unit, unitRef, unitDaReferencia, valoresFase, porFase, total, status, falta, memoria };
 }
 
 /** v018 (governança): custo da equipe de referência da opção. Cada papel custa pessoas × dedicação × meses × custo mensal

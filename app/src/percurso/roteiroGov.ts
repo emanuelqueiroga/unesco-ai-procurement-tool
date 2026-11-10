@@ -224,7 +224,7 @@ export function montarRoteiro(s: Pick<Estado14, 'ctx' | 'moeda'>): Roteiro {
       r2,
       { id: 'r1', oque: o.capex > 0
           // v018.1: com investimento no plano, a proposta separa investimento (CapEx) e operação (OpEx)
-          ? t('Incluir o orçamento do plano (cerca de {total} em {meses} meses, dos quais {k} de investimento e {x} de operação) na proposta orçamentária, discriminado por exercício e por natureza de despesa (investimento, pessoal, serviços, viagens).', { total: redondo(somaOp + somaAd), meses: duracao, k: redondo(o.capex), x: redondo(o.opex) })
+          ? t('Incluir o orçamento do plano (cerca de {total} em {meses} meses, dos quais {k} de investimento e {x} de operação e uso) na proposta orçamentária, discriminado por exercício e por natureza de despesa (investimento, pessoal, serviços, viagens).', { total: redondo(somaOp + somaAd), meses: duracao, k: redondo(o.capex), x: redondo(o.opex + (o.uso || 0)) })
           : t('Incluir o orçamento do plano (cerca de {total} em {meses} meses) na proposta orçamentária, discriminado por exercício e por natureza de despesa (pessoal, serviços, viagens).', { total: redondo(somaOp + somaAd), meses: duracao }),
         quem: 'Unidade de planejamento e orçamento', pronto: 'Recursos previstos na lei orçamentária', prazo: 'conforme o calendário orçamentário do país (até um ano)', adaptar: true, depende: ['r2'] },
       ...(continuas.length ? [{ id: 'r3', oque: t('Prever nos orçamentos dos exercícios seguintes os custos continuados: {lista}.', { lista: continuas.map(({ l }) => t('{opcao} (cerca de {valor} por ano)', { opcao: t(l.rotulo), valor: redondo((l.total as number) / duracao * 12) })).join('; ') }),

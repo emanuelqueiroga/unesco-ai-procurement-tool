@@ -10,8 +10,10 @@ import { t } from '../percurso/textos';
 import { href } from '../percurso/rota';
 import { alterarLit } from '../percurso/letramento';
 import { alterarEd } from '../percurso/pedagogico';
-import { fasesV16, orcamentoV16, raizOrcamento, resumoFases, matrizFases, resumoProsa, riscosV16, totalConhecido, linhasMemoria, pidsDaBase, premissaV16, taxaV16, chavePremissa, type Base } from '../percurso/orcamentoV016';
+import { fasesV16, orcamentoV16, raizOrcamento, resumoFases, matrizFases, resumoProsa, sumarioCapex, riscosV16, totalConhecido, linhasMemoria, pidsDaBase, premissaV16, taxaV16, chavePremissa, type Base } from '../percurso/orcamentoV016';
 import { formatarMoedaEst, type FrenteEstimativa } from '../percurso/estimativasOrcamento';
+import { moedaCurta } from './CartaoCusto';
+import { LOC } from '../domain';
 import { TabelaRecursos, type LinhaRecurso } from './TabelaRecursos';
 import './moldura.css';
 
@@ -78,21 +80,29 @@ export function OrcamentoV16({ s, frente, tentou }: { s: CasoStore; frente: Fren
 export function ResumoV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativa }) {
   const o = orcamentoV16(s, frente), linhas = matrizFases(o), fasesCol = o.fases.length === 1 && o.fases[0].id === 'total' ? [] : o.fases;
   const val = (v: number | null, tipo: string) => v === null ? (tipo === 'a_levantar' ? t('falta valor') : '—') : formatarMoedaEst(v, o.moeda);
-  const ck = frente === 'governanca';
+  const ck = frente === 'governanca', sum = ck ? sumarioCapex(o) : null, C = totalConhecido(o);
+  const pctDe = (v: number) => C > 0 ? new Intl.NumberFormat(String(LOC()), { style: 'percent', maximumFractionDigits: 0 }).format(v / C) : '—';
   return <section className="pv-resumo" aria-labelledby={'pv-resumo-' + frente}>
-    <h2 id={'pv-resumo-' + frente} className="pv-resumo-titulo">{t('Em resumo')}</h2>
+    <h2 id={'pv-resumo-' + frente} className="pv-resumo-titulo">{t(ck ? 'Sumário executivo' : 'Em resumo')}</h2>
     <p className="pv-resumo-prosa">{resumoProsa(o)}</p>
+    {sum ? <>
+      <p className="pv-resumo-prosa">{sum.intro}</p>
+      {/* v018.1: quadro-síntese do sumário executivo (investimento, operação, uso e total) */}
+      <dl className="pv-sumario">{[[t('Investimento (CapEx)'), o.capex], [t('Operação (OpEx)'), o.opex], [t('Uso'), o.uso], [t('Total'), totalConhecido(o)]].map(([r, v], i) =>
+        <div key={i} className={i === 3 ? 'pv-sumario-total' : ''}><dt>{r as string}</dt><dd>{moedaCurta(v as number, o.moeda)}</dd>
+          <span className="pv-sumario-pct">{i === 3 ? t('{n} meses', { n: o.fases.reduce((n, f) => n + f.meses, 0) }) : pctDe(v as number)}</span></div>)}</dl>
+    </> : null}
     {frente === 'governanca' && o.existentes > 0 ? <p className="pc-nota">{t('Desembolso novo: {v}. O custo conhecido inclui {e} de servidores que já existem, marcados em "Ajustar a equipe".', { v: formatarMoedaEst(totalConhecido(o) - o.existentes, o.moeda), e: formatarMoedaEst(o.existentes, o.moeda) })}</p> : null}
     {/* v018.1 (governança): custo conhecido separado em investimento e operação */}
-    {frente === 'governanca' && totalConhecido(o) > 0 ? <p className="pv-v17-capex">{t('Investimento (CapEx): {k} · Operação (OpEx): {x}', { k: formatarMoedaEst(o.capex, o.moeda), x: formatarMoedaEst(o.opex, o.moeda) })}</p> : null}
     <div className="pv-matriz-rolagem" tabIndex={0} role="region" aria-label={t('Custo por categoria e fase')}>
-      <table className="pv-matriz">
-        <caption>{t('Custo por categoria e fase')}</caption>
-        <thead><tr><th scope="col">{t('Categoria')}</th>{fasesCol.map(f => <th scope="col" key={f.id}>{f.nome}<span className="pv-matriz-sub">{t('{n} meses', { n: f.meses })} · {f.alcance}%</span></th>)}{ck ? <><th scope="col">CapEx</th><th scope="col">OpEx</th></> : null}<th scope="col">{t('Total')}</th></tr></thead>
-        <tbody>{linhas.map(l => <tr key={l.id} className={'pv-matriz--' + l.tipo + (l.nivel ? ' pv-matriz--opcao' : '')}><th scope="row">{(l.n ? l.n + ' ' : '') + l.nome}</th>{fasesCol.map(f => <td key={f.id}>{val(l.porFase[f.id], l.tipo)}</td>)}{ck ? <><td>{val(l.capex ?? null, l.tipo)}</td><td>{val(l.opex ?? null, l.tipo)}</td></> : null}<td className="pv-matriz-total">{val(l.total, l.tipo)}</td></tr>)}</tbody>
-        <tfoot><tr><th scope="row">{t('Custo conhecido')}</th>{fasesCol.map(f => <td key={f.id}>{formatarMoedaEst(f.informado + f.estimado, o.moeda)}</td>)}{ck ? <><td>{formatarMoedaEst(o.capex, o.moeda)}</td><td>{formatarMoedaEst(o.opex, o.moeda)}</td></> : null}<td className="pv-matriz-total">{formatarMoedaEst(totalConhecido(o), o.moeda)}</td></tr></tfoot>
+      <table className={"pv-matriz" + (ck ? " pv-matriz--ck" : "")}>
+        <caption>{t(ck ? 'Custo por categoria e opção: investimento, operação e uso' : 'Custo por categoria e fase')}</caption>
+        <thead><tr><th scope="col">{t('Categoria')}</th>{fasesCol.map(f => <th scope="col" key={f.id}>{f.nome}<span className="pv-matriz-sub">{t('{n} meses', { n: f.meses })} · {f.alcance}%</span></th>)}{ck ? <><th scope="col">CapEx<span className="pv-matriz-sub">{t('investimento')}</span></th><th scope="col">OpEx<span className="pv-matriz-sub">{t('operação')}</span></th><th scope="col">{t('Uso')}<span className="pv-matriz-sub">{t('consumo medido')}</span></th></> : null}<th scope="col">{t('Total')}</th></tr></thead>
+        <tbody>{linhas.map(l => <tr key={l.id} className={'pv-matriz--' + l.tipo + (l.nivel ? ' pv-matriz--opcao' : '')}><th scope="row">{(l.n ? l.n + ' ' : '') + l.nome}</th>{fasesCol.map(f => <td key={f.id}>{val(l.porFase[f.id], l.tipo)}</td>)}{ck ? <><td>{val(l.capex ?? null, l.tipo)}</td><td>{val(l.opex ?? null, l.tipo)}</td><td>{val(l.uso ?? null, l.tipo)}</td></> : null}<td className="pv-matriz-total">{val(l.total, l.tipo)}</td></tr>)}</tbody>
+        <tfoot><tr><th scope="row">{t('Custo conhecido')}</th>{fasesCol.map(f => <td key={f.id}>{formatarMoedaEst(f.informado + f.estimado, o.moeda)}</td>)}{ck ? <><td>{formatarMoedaEst(o.capex, o.moeda)}</td><td>{formatarMoedaEst(o.opex, o.moeda)}</td><td>{formatarMoedaEst(o.uso, o.moeda)}</td></> : null}<td className="pv-matriz-total">{formatarMoedaEst(totalConhecido(o), o.moeda)}</td></tr></tfoot>
       </table>
     </div>
+    {sum ? <><ul className="pv-resumo-riscos pv-sumario-leia">{sum.tipos.map(x => <li key={x}>{x}</li>)}</ul>{sum.fecho.map(x => <p key={x} className="pv-resumo-prosa">{x}</p>)}</> : null}
     <p className="pv-matriz-nota"><span className="pv-matriz-est">{t('Em âmbar')}</span>: {t('estimado (quantidades e valores unitários abaixo)')}. {t('"falta valor": ainda sem valor, fora do custo conhecido.')}</p>
     {o.memoria.length ? <><h3 className="pv-resumo-sub">{t('O que está sendo custeado')}</h3><ul className="pv-resumo-riscos">{linhasMemoria(o).map(l => <li key={l}>{l}</li>)}</ul></> : null}
     <h3 className="pv-resumo-sub">{t('Riscos e condições')}</h3>
