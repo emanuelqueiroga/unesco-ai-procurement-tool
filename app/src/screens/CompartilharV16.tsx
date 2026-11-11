@@ -22,7 +22,8 @@ export function BotaoLinkPlano() {
 
 export function RecebidoHost() {
   const { pendente, erro } = useRecebido();
-  useEffect(() => { const f = () => { void lerLinkDoEndereco(); }; window.addEventListener('hashchange', f); return () => window.removeEventListener('hashchange', f); }, []);
+  // lê o link ao abrir a página (link colado num navegador) e a cada troca de endereço com a página aberta
+  useEffect(() => { const f = () => { void lerLinkDoEndereco(); }; f(); window.addEventListener('hashchange', f); return () => window.removeEventListener('hashchange', f); }, []);
   if (erro) return <div className="pv-recebido"><Alert kind="atencao" title={t('Não foi possível abrir o plano deste link.')}>{erro === 'navegador' ? t('Atualize o navegador ou peça o arquivo do caso (.json).') : t('O link está incompleto ou foi alterado. Peça o link de novo ou o arquivo do caso (.json).')}</Alert><Button size="sm" variant="secondary" onClick={() => useRecebido.setState({ erro: '' })}>{t('Fechar aviso')}</Button></div>;
   if (!pendente) return null;
   return <div className="pv-recebido" role="region" aria-label={t('Plano recebido por link')}>

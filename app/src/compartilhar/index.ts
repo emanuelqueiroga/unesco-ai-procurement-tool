@@ -35,4 +35,6 @@ export async function lerLinkDoEndereco(): Promise<void> {
     const motivo = err instanceof ErroLink ? err.motivo : 'dados';
     useRecebido.setState({ erro: motivo === 'navegador' ? 'navegador' : 'dados' });
   }
+  // o endereço foi trocado sem evento (replaceState): avisa a rota para mostrar o destino
+  try { window.dispatchEvent(new HashChangeEvent('hashchange')); } catch { /* a rota segue na próxima navegação */ }
 }
