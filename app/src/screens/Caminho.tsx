@@ -1,115 +1,115 @@
 // v019: coluna "Seu caminho" do design (Figma), à esquerda das telas da governança a partir da escolha dos desafios.
-// A árvore cresce com a navegação: a frente na raiz; os desafios marcados abaixo dela; na página de categorias de um
-// desafio, esse desafio se abre nas suas categorias (as escolhidas cheias, as demais só com contorno); na página de uma
-// categoria, o desafio mostra as categorias escolhidas e a categoria atual se abre em todas as suas opções (cheias
-// quando marcadas e com valor). O nó da tela atual fica em azul com halo; o caminho da raiz até ele, em linha cheia. Abaixo, a lista dos
-// desafios com quantas categorias foram escolhidas e, na barra, quantas opções já têm valor.
+// Árvore radial fixa: a frente no centro; os três desafios em ramos curvos (Soberania à esquerda, Capacidade do setor
+// público à direita, Direitos e inovação responsável abaixo), cada um com as suas três categorias nas pontas.
+// Estados: vazio (cinza com contorno na cor do desafio); feito (cheio na cor do desafio, com o galho na mesma cor);
+// caminho atual (azul, da frente até a tela atual); atual (azul com halo). Uma categoria fica feita quando foi
+// escolhida e todas as suas opções marcadas têm valor; um desafio, quando todas as suas categorias escolhidas estão
+// feitas. Desafios não marcados ficam esmaecidos. Abaixo, a lista dos desafios com "n de m" e uma barra na cor do desafio.
 import type { CasoStore } from '../store';
-import { categoriaGov, desafioDaTelaCategorias, TELA_ADICIONAIS_GOV } from '../store';
+import { categoriaGov, desafioDaTelaCategorias } from '../store';
 import { t } from '../percurso/textos';
 import { frentesDoPlano, frenteAtual } from '../percurso/frentes';
 import { orcamentoGovernanca } from '../percurso/governanca';
-import { DESAFIOS_GOV_V016 } from '../domain/catalogo_v016.js';
-import { petalasDoPlano } from './MandalaProgresso';
+import { DESAFIOS_GOV_V016, CATEGORIAS } from '../domain/catalogo_v016.js';
 
-/** Cor de cada desafio da governança (a mesma no diagrama e na lista). */
+/** Cor de cada desafio da governança (a mesma na árvore e na lista). */
 export const COR_DESAFIO: Record<string, string> = { G21: 'var(--v19-d1)', G22: 'var(--v19-d2)', G23: 'var(--v19-d3)' };
 
-interface No { id: string; nivel: number; pai: string | null; rotulo: string; cor: string; cheio: boolean; atual: boolean; noCaminho: boolean }
+type Estado = 'vazio' | 'feito' | 'caminho' | 'atual';
+type P = [number, number];
+const CENTRO: P = [170, 183];
+/** Posição de cada desafio e de cada categoria, e os galhos (curvas) que os ligam, como no Figma. */
+const GEO: Record<string, { no: P; galho: string; folhas: [string, P, string][] }> = {
+  G22: { no: [127, 158], galho: 'M170 183C152 183 140 170 127 158', folhas: [
+    ['g21', [71, 175], 'M127 158C110 160 88 176 71 175'], ['g22', [89, 137], 'M127 158C112 148 100 140 89 137'], ['g23', [113, 102], 'M127 158C127 135 112 125 113 102']] },
+  G23: { no: [213, 158], galho: 'M170 183C188 183 200 170 213 158', folhas: [
+    ['g31', [227, 102], 'M213 158C213 135 228 125 227 102'], ['g32', [251, 137], 'M213 158C228 148 240 140 251 137'], ['g33', [269, 175], 'M213 158C230 160 252 176 269 175']] },
+  G21: { no: [170, 233], galho: 'M170 183C170 203 166 213 170 233', folhas: [
+    ['g11', [128, 273], 'M170 233C160 245 140 250 128 273'], ['g12', [170, 277], 'M170 233C172 250 168 262 170 277'], ['g13', [212, 273], 'M170 233C180 245 200 250 212 273']] },
+};
+const ORDEM = ['G21', 'G22', 'G23'];
+const CATS_GOV = (CATEGORIAS as any).governanca as { id: string; n: string; nome: string; desafio: string }[];
 
-/** Onde a tela atual está na árvore: a raiz, um desafio (categorias) ou uma categoria (opções). */
-export function posicaoNaArvore(tela?: string): { desafio: string | null; categoria: string | null; raiz: boolean } {
-  if (!tela) return { desafio: null, categoria: null, raiz: false };
-  const d = desafioDaTelaCategorias(tela);
-  if (d) return { desafio: d, categoria: null, raiz: false };
-  const c = categoriaGov(tela);
-  if (c) return { desafio: c.desafio, categoria: c.id, raiz: false };
-  return { desafio: null, categoria: null, raiz: tela === 'problemas' || tela === TELA_ADICIONAIS_GOV };
-}
+interface Info { estado: Estado; desafio: string; marcado: boolean }
+export interface Arvore { centro: Estado; nos: Record<string, Info>; lista: { id: string; nome: string; cor: string; marcado: boolean; n: number; de: number; atual: boolean }[] }
 
-/** Os nós da árvore para a tela atual (exportado para os testes). */
-export function nosDaArvore(s: CasoStore, tela?: string): No[] {
-  const pos = posicaoNaArvore(tela);
-  const marcados: string[] = (Array.isArray(s.ctx.problemas) ? s.ctx.problemas : []).filter((x: unknown) => typeof x === 'string' && x in COR_DESAFIO);
-  const desafios = DESAFIOS_GOV_V016.filter((d: any) => marcados.includes(d.id));
-  const { petalas } = petalasDoPlano(s);
-  const nos: No[] = [{ id: 'raiz', nivel: 0, pai: null, rotulo: t('Plano de governança'), cor: 'var(--primary)', cheio: true, atual: pos.raiz, noCaminho: true }];
-  for (const d of desafios as any[]) {
-    const n = DESAFIOS_GOV_V016.findIndex((x: any) => x.id === d.id) + 1;
-    const cats = petalas.filter((p) => p.desafio === n);
-    const aberto = pos.desafio === d.id;
-    nos.push({ id: d.id, nivel: 1, pai: 'raiz', rotulo: t(d.t), cor: COR_DESAFIO[d.id], cheio: cats.some((p) => p.escolhida), atual: aberto && !pos.categoria, noCaminho: aberto });
-    if (!aberto) continue;
-    // na página de categorias, todas as categorias do desafio; na de uma categoria, só as escolhidas
-    for (const c of cats.filter((p) => !pos.categoria || p.escolhida)) {
-      const atual = pos.categoria === c.id;
-      nos.push({ id: c.id, nivel: 2, pai: d.id, rotulo: c.n + ' ' + c.nome, cor: COR_DESAFIO[d.id], cheio: c.escolhida, atual, noCaminho: atual });
-      if (!atual) continue;
-      const item: any = (orcamentoGovernanca(s).itens as any[]).find((i) => i.id === c.id);
-      // todas as opções da categoria: marcadas e com valor ficam cheias; as demais, só com contorno
-      ((item?.opcoes || []) as string[]).forEach((r, k) => {
-        const marcada = (item.marcadas || []).includes(r), l = (item.linhas || []).find((x: any) => x.rotulo === r);
-        nos.push({ id: c.id + ':' + k, nivel: 3, pai: c.id, rotulo: t(r), cor: COR_DESAFIO[d.id], cheio: marcada && (!l || (l.status !== 'falta' && l.total !== null)), atual: false, noCaminho: false });
-      });
+/** Estado de cada nó da árvore para a tela atual (exportado para os testes). */
+export function estadoDaArvore(s: CasoStore, tela?: string): Arvore {
+  const dTela = tela ? desafioDaTelaCategorias(tela) : null, cTela = tela ? categoriaGov(tela) : undefined;
+  const desafioAtual = dTela || cTela?.desafio || null, catAtual = cTela?.id || null;
+  const marcados: string[] = (Array.isArray(s.ctx.problemas) ? s.ctx.problemas : []).filter((x: unknown) => typeof x === 'string');
+  const itens = new Map<string, any>((orcamentoGovernanca(s).itens as any[]).map((i) => [i.id, i]));
+  const nos: Record<string, Info> = {};
+  const lista: Arvore['lista'] = [];
+  for (const d of ORDEM) {
+    const marcado = marcados.includes(d), cats = CATS_GOV.filter((c) => c.desafio === d);
+    const escolhidas = cats.filter((c) => itens.has(c.id)), feitas = escolhidas.filter((c) => itens.get(c.id).respondido);
+    for (const c of cats) {
+      const item = itens.get(c.id);
+      nos[c.id] = { desafio: d, marcado, estado: c.id === catAtual ? 'atual' : item && item.respondido ? 'feito' : 'vazio' };
     }
+    const noCaminho = desafioAtual === d;
+    nos[d] = { desafio: d, marcado, estado: noCaminho ? (catAtual ? 'caminho' : 'atual') : marcado && escolhidas.length > 0 && feitas.length === escolhidas.length ? 'feito' : 'vazio' };
+    const atualNele = !!catAtual && cats.some((c) => c.id === catAtual) && !itens.get(catAtual)?.respondido;
+    const de = escolhidas.length || cats.length;
+    const nome = String((DESAFIOS_GOV_V016 as any[]).find((x) => x.id === d)?.t || d);
+    lista.push({ id: d, nome: t(nome), cor: COR_DESAFIO[d], marcado, n: Math.min(de, feitas.length + (atualNele ? 1 : 0)), de, atual: noCaminho });
   }
-  return nos;
+  return { centro: desafioAtual ? 'caminho' : 'atual', nos, lista };
 }
 
-const W = 196, Y0 = 22, DY = 58, R = [9, 7, 6, 4];
+const corGalho = (e: Estado, cor: string) => e === 'feito' ? cor : e === 'caminho' || e === 'atual' ? 'var(--primary)' : 'var(--v19-galho)';
+const ordemGalho = (e: Estado) => e === 'vazio' ? 0 : e === 'feito' ? 1 : 2;
 
-function Arvore({ nos }: { nos: No[] }) {
-  const niveis = Math.max(...nos.map((n) => n.nivel)) + 1;
-  const xy: Record<string, { x: number; y: number }> = {};
-  for (let v = 0; v < niveis; v++) {
-    const linha = nos.filter((n) => n.nivel === v), m = linha.length, margem = v === 3 ? 10 : 22;
-    linha.forEach((n, i) => { xy[n.id] = { x: m === 1 ? W / 2 : margem + (i * (W - 2 * margem)) / (m - 1), y: Y0 + v * DY }; });
+function No({ p, e, cor, id, raio = 8.5 }: { p: P; e: Estado; cor: string; id: string; raio?: number }) {
+  return <g className={'v19-no is-' + e} data-id={id} data-estado={e}>
+    {e === 'atual' ? <circle cx={p[0]} cy={p[1]} r={raio + 6} fill="var(--primary)" fillOpacity=".45" /> : null}
+    <circle cx={p[0]} cy={p[1]} r={e === 'atual' ? raio + 1.5 : raio}
+      fill={e === 'vazio' ? 'var(--v19-no-vazio)' : e === 'feito' ? cor : 'var(--primary)'}
+      stroke={e === 'vazio' ? cor : 'none'} strokeWidth={1.1} />
+  </g>;
+}
+
+function ArvoreSVG({ a }: { a: Arvore }) {
+  // galhos: cinza por baixo, depois os feitos (na cor do desafio) e, por cima, o caminho atual (azul)
+  const galhos: { d: string; e: Estado; cor: string; marcado: boolean; k: string }[] = [];
+  for (const d of ORDEM) {
+    const g = GEO[d], info = a.nos[d], cor = COR_DESAFIO[d];
+    galhos.push({ k: d, d: g.galho, e: info.estado, cor, marcado: info.marcado });
+    for (const [id, , path] of g.folhas) galhos.push({ k: id, d: path, e: a.nos[id].estado, cor, marcado: info.marcado });
   }
-  const H = Y0 * 2 + (niveis - 1) * DY;
+  galhos.sort((x, y) => ordemGalho(x.e) - ordemGalho(y.e));
   return (
-    <svg className="v19-caminho-diagrama" viewBox={`0 0 ${W} ${H}`} style={{ maxBlockSize: H + 'px' }} role="img" aria-hidden="true" focusable="false" data-niveis={niveis} data-nos={nos.length}>
-      {nos.filter((n) => n.pai).map((n) => {
-        const a = xy[n.pai!], b = xy[n.id];
-        return <line key={'l' + n.id} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={n.noCaminho ? 'var(--primary)' : 'var(--line-control)'} strokeOpacity={n.noCaminho ? 1 : .6} strokeWidth={n.noCaminho ? 2 : 1.2} strokeDasharray={n.cheio || n.noCaminho ? undefined : '3 3'} />;
-      })}
-      {nos.map((n) => {
-        const p = xy[n.id], r = R[n.nivel] + (n.atual ? 3 : 0);
-        return <g key={n.id} className={'v19-no' + (n.atual ? ' is-atual' : '')} data-id={n.id}>
-          {n.atual ? <circle cx={p.x} cy={p.y} r={r + 5} fill="none" stroke="var(--primary)" strokeOpacity=".3" strokeWidth="4" /> : null}
-          <circle cx={p.x} cy={p.y} r={r} fill={n.atual ? 'var(--primary)' : n.cheio ? n.cor : 'var(--surface-1)'} stroke={n.atual ? 'var(--primary)' : n.cor} strokeWidth="1.5" />
-          <title>{n.rotulo}</title>
+    <svg className="v19-caminho-diagrama" viewBox="55 88 230 204" role="img" aria-hidden="true" focusable="false">
+      {galhos.map((g) => <path key={'g' + g.k} d={g.d} fill="none" stroke={corGalho(g.e, g.cor)} strokeWidth={g.e === 'vazio' ? 3 : 2.4} strokeLinecap="round" opacity={g.marcado ? 1 : .45} />)}
+      {ORDEM.map((d) => {
+        const g = GEO[d], cor = COR_DESAFIO[d], info = a.nos[d];
+        return <g key={d} opacity={info.marcado ? 1 : .45}>
+          {g.folhas.map(([id, p]) => <No key={id} id={id} p={p} e={a.nos[id].estado} cor={cor} />)}
+          <No id={d} p={g.no} e={info.estado} cor={cor} />
         </g>;
       })}
+      <No id="frente" p={CENTRO} e={a.centro} cor="var(--primary)" raio={9} />
     </svg>
   );
 }
 
 export function CaminhoLateral({ s, tela }: { s: CasoStore; tela?: string }) {
   const frente = frentesDoPlano(s).find((f) => f.id === frenteAtual(s));
-  const nos = nosDaArvore(s, tela);
-  const desafios = nos.filter((n) => n.nivel === 1);
-  const { petalas } = petalasDoPlano(s);
-  const pos = posicaoNaArvore(tela);
-  const naCategoria = !!pos.desafio;
+  const a = estadoDaArvore(s, tela);
   return (
     <aside className="v19-caminho" aria-label={t('Seu caminho')}>
       <p className="v19-caminho-rotulo">{t('Seu caminho')}</p>
       {frente ? <p className="v19-caminho-frente"><i aria-hidden="true" /><span><strong>{t('Frente:')}</strong> {t(frente.titulo)}</span></p> : null}
-      {desafios.length ? <Arvore nos={nos} /> : null}
-      {desafios.length ? <ul className="v19-caminho-lista">
-        {desafios.map((d) => {
-          const n = DESAFIOS_GOV_V016.findIndex((x: any) => x.id === d.id) + 1;
-          const cats = petalas.filter((p) => p.desafio === n), esc = cats.filter((p) => p.escolhida);
-          const total = esc.reduce((a, p) => a + p.total, 0), feitas = esc.reduce((a, p) => a + p.feitas, 0);
-          const frac = total ? feitas / total : 0, atual = pos.desafio === d.id;
-          return <li key={d.id} className={'v19-caminho-item' + (atual ? ' is-atual' : '')} aria-current={atual ? 'step' : undefined}>
-            <i className="v19-caminho-ponto" style={{ background: d.cor }} aria-hidden="true" />
-            <span className="v19-caminho-nome">{d.rotulo}</span>
-            {naCategoria && cats.length ? <span className="v19-caminho-conta">{t('{n} de {total}', { n: esc.length, total: cats.length })}</span> : null}
-            <span className="v19-caminho-barra" aria-hidden="true"><span style={{ inlineSize: (frac * 100).toFixed(1) + '%' }} /></span>
-          </li>;
-        })}
-      </ul> : null}
+      <ArvoreSVG a={a} />
+      <ul className="v19-caminho-lista">
+        {a.lista.map((d) => <li key={d.id} className={'v19-caminho-item' + (d.atual ? ' is-atual' : '') + (d.marcado ? '' : ' is-fora')} aria-current={d.atual ? 'step' : undefined}>
+          <i className="v19-caminho-ponto" style={{ background: d.cor }} aria-hidden="true" />
+          <span className="v19-caminho-nome">{d.nome}</span>
+          <span className="v19-caminho-conta">{d.marcado ? t('{n} de {total}', { n: d.n, total: d.de }) : '—'}</span>
+          <span className="v19-caminho-barra" aria-hidden="true"><span style={{ inlineSize: (d.de ? (d.n / d.de) * 100 : 0).toFixed(1) + '%', background: d.cor }} /></span>
+        </li>)}
+      </ul>
     </aside>
   );
 }
