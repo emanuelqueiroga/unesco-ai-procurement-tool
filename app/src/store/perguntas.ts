@@ -72,16 +72,37 @@ export function categoriasGovAtivas(ctx?: Record<string, any>): string[] {
   return CATEGORIAS_GOV.filter(c => problemas.includes(c.desafio) && escolhidas.includes(c.id)).map(c => c.id);
 }
 const TELAS_CATEGORIAS_GOV: TelaEssencial[] = CATEGORIAS_GOV.map(c => ({ id: telaOpcoesGov(c.id), capitulo: 3 as Capitulo, n: [], campos: ['govOrcamento'] }));
+// v019: as categorias de custo ficam numa página por desafio (como no Figma), na ordem dos desafios do catálogo; só as
+// dos desafios marcados entram no fluxo. A antiga página única ('gov-categorias') leva à do primeiro desafio marcado.
+export const PREFIXO_CATEGORIAS_GOV = 'gov-categorias-';
+export const DESAFIOS_COM_CATEGORIAS: string[] = [...new Set(CATEGORIAS_GOV.map(c => c.desafio))];
+/** Id da página das categorias de um desafio ('gov-categorias-G21'). */
+export const telaCategoriasGov = (desafio: string) => PREFIXO_CATEGORIAS_GOV + desafio;
+/** Desafio de uma página de categorias da governança (ou null). */
+export const desafioDaTelaCategorias = (id: string) => id.startsWith(PREFIXO_CATEGORIAS_GOV) ? id.slice(PREFIXO_CATEGORIAS_GOV.length) : null;
+const TELAS_ESCOLHA_GOV: TelaEssencial[] = DESAFIOS_COM_CATEGORIAS.map(d => ({ id: telaCategoriasGov(d), capitulo: 2 as Capitulo, n: [], campos: ['govOrcamento'] }));
 export const GOVERNANCA: TelaEssencial[] = [
   ...ESSENCIAL.filter(t => ['local', 'prioridades', 'problemas'].includes(t.id)),
-  { id: 'gov-categorias', capitulo: 2, n: [], campos: ['govOrcamento'] },
+  ...TELAS_ESCOLHA_GOV,
   ...TELAS_CATEGORIAS_GOV,
   { id: TELA_ADICIONAIS_GOV, capitulo: 3, n: [], campos: ['govOrcamento'] },
 ];
 /** Fluxo da governança do caso: só as páginas das categorias escolhidas. */
 function governancaDoCaso(ctx?: Record<string, any>): TelaEssencial[] {
   const ativas = new Set(categoriasGovAtivas(ctx).map(telaOpcoesGov));
-  return GOVERNANCA.filter(t => !t.id.startsWith(PREFIXO_OPCOES_GOV) || ativas.has(t.id));
+  const problemas: unknown[] = Array.isArray(ctx?.problemas) ? ctx!.problemas : [];
+  const desafios = DESAFIOS_COM_CATEGORIAS.filter(d => problemas.includes(d));
+  return GOVERNANCA.filter(t => {
+    if (t.id.startsWith(PREFIXO_OPCOES_GOV)) return ativas.has(t.id);
+    const d = desafioDaTelaCategorias(t.id);
+    // sem desafio marcado, a página do primeiro desafio fica no fluxo (e avisa para voltar e escolher)
+    return d === null || desafios.includes(d) || (!desafios.length && d === DESAFIOS_COM_CATEGORIAS[0]);
+  });
+}
+/** Página de categorias do primeiro desafio marcado (para onde vão os links antigos de 'gov-categorias'). */
+export function entradaCategoriasGov(e?: EscopoPercurso): string {
+  const problemas: unknown[] = Array.isArray(e?.ctx?.problemas) ? e!.ctx!.problemas : [];
+  return telaCategoriasGov(DESAFIOS_COM_CATEGORIAS.find(d => problemas.includes(d)) || DESAFIOS_COM_CATEGORIAS[0]);
 }
 /** Primeira página de opções da governança (a da primeira categoria escolhida; sem categoria, a dos custos adicionais).
  *  É para onde vão os links antigos da página única de opções ('gov-opcoes'). */
@@ -92,7 +113,7 @@ export function entradaOpcoesGov(e?: EscopoPercurso): string {
 /** Telas da governança que saíram do fluxo nas versões anteriores → a tela mantida mais próxima ('gov-opcoes', a antiga
  *  página única de opções, vai para entradaOpcoesGov). */
 export const TELAS_FORA_DO_FLUXO: Record<string, string> = {
-  'gov-opcoes': 'gov-opcoes', 'gov-recursos': 'gov-opcoes', 'gov-equipe': 'gov-categorias', 'gov-fases': 'gov-opcoes',
+  'gov-categorias': 'gov-categorias', 'gov-opcoes': 'gov-opcoes', 'gov-recursos': 'gov-opcoes', 'gov-equipe': 'gov-categorias', 'gov-fases': 'gov-opcoes',
   'gov-projeto': 'gov-categorias', 'gov-diagnostico': 'gov-categorias', 'gov-instrumentos': 'gov-categorias', 'gov-solucoes': 'gov-categorias',
   'gov-atores': 'gov-categorias', 'gov-capacidade': 'gov-categorias', 'gov-acoes': 'gov-opcoes', 'gov-sandbox': 'gov-opcoes', 'gov-revisao': 'gov-opcoes',
 };

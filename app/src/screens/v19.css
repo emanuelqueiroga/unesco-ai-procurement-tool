@@ -1,0 +1,196 @@
+/* v019: visual do design (Figma "AI in Education Procurement Tool"): azul UNESCO, Poppins nos títulos e Inter no texto,
+   cartões brancos sobre fundo #f8f9fe, cartões de opção com borda que escurece ao marcar, botões em pílula, coluna
+   "Seu caminho" à esquerda e cartão azul de custo total à direita. Os valores vêm dos tokens; aqui só o que é da v019. */
+:root {
+  --v19-d1: #6b2fb3;   /* Direitos e inovação responsável */
+  --v19-d2: #2f8a5c;   /* Soberania */
+  --v19-d3: #b3177f;   /* Capacidade do setor público */
+  --v19-sel: #396588;  /* borda do cartão marcado */
+  --v19-titulo: #1b1d21;
+  --v19-amarelo: #f2c230;
+  --v19-ciano: #2cc6ee;
+}
+[data-theme="dark"] { --v19-d1: #b48be6; --v19-d2: #6fcf99; --v19-d3: #ef7cc4; --v19-sel: #8cc6f0; --v19-titulo: #eef2f8; }
+
+body { font-family: var(--font-sans); }
+.pc-app h1, .pc-app h2, .pr-questionframe-title, .pc-gov-plano h1 { font-family: var(--font-serif); }
+.pr-questionframe-title { font-weight: 400; font-size: 24px; line-height: 32px; color: var(--v19-titulo); letter-spacing: -0.005em; }
+.pr-questionframe-kicker { font-family: var(--font-sans); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--primary); margin-bottom: 4px; }
+
+/* ---------- cabeçalho ---------- */
+.v19-cab { background: var(--surface-1); border-bottom: 0; position: relative; z-index: 5; }
+.v19-cab-l1 { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 14px 10px; }
+.v19-cab-marca { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+.v19-cab-logo { block-size: 30px; inline-size: auto; display: block; }
+[data-theme="dark"] .v19-cab-marca { background: #fff; padding: 4px 8px; border-radius: 6px; }
+.v19-cab-dir { display: flex; align-items: center; gap: 10px; }
+.v19-cab-dir .pc-idioma-rotulo { font-size: 12px; color: var(--muted); }
+.v19-cab-dir .pc-idioma-select { font-size: 13px; block-size: 30px; border-radius: 6px; }
+.v19-cab-dir .pr-button--icon-only { inline-size: 30px; block-size: 30px; border-radius: 6px; }
+.v19-cab-l2 { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 2px 10px; flex-wrap: wrap; }
+.v19-trilha ol { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.v19-trilha li { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); }
+.v19-trilha li + li::before { content: ""; inline-size: 6px; block-size: 6px; border: solid var(--muted); border-width: 1.5px 1.5px 0 0; transform: rotate(45deg); margin-inline: 6px 8px; }
+[dir="rtl"] .v19-trilha li + li::before { transform: rotate(-135deg); }
+.v19-trilha a { color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
+.v19-trilha a:hover { text-decoration: underline; }
+.v19-trilha [aria-current] { color: var(--ink-2); }
+.v19-cab-acoes { display: flex; align-items: center; flex-wrap: wrap; gap: 0; }
+.v19-acao + .v19-acao::before { content: "·"; color: var(--muted); margin-inline: 8px; }
+.v19-acao { display: inline-flex; align-items: center; }
+.v19-cab-acoes .pr-button { background: none; border: 0; padding: 0; min-block-size: 0; block-size: auto; color: var(--primary); font-size: 13px; font-weight: 500; box-shadow: none; }
+.v19-cab-acoes .pr-button:hover { text-decoration: underline; background: none; }
+.v19-barras { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; list-style: none; margin: 0 auto; padding-block: 0 0; }
+.v19-barra a { display: block; padding-block: 6px 0; }
+.v19-barra-trilho { display: block; block-size: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.v19-barra-trilho > span { display: block; block-size: 100%; background: var(--primary); border-radius: 2px; transition: inline-size .25s ease; }
+
+/* ---------- corpo: caminho | pergunta | custo ---------- */
+.pc-app--orientado { background: var(--surface-0); }
+.pc-app--orientado .pc-corpo--novo { padding-block: 0; }
+.pc-app .pc-grade.v19-corpo--caminho { grid-template-columns: 240px minmax(0, 1fr); column-gap: 0; }
+.pc-app .pc-grade.v19-corpo--caminho.pc-corpo--custo { grid-template-columns: 240px minmax(0, 1fr) 300px; }
+.pc-app--orientado .pc-main { padding-block: 32px 48px; }
+.pc-app .v19-corpo--caminho > .pc-main { padding-inline: 32px; }
+.pc-app--orientado .pc-corpo--novo { padding-block: 0 !important; }
+.pc-app--orientado .pc-coluna-custo { padding-block-start: 32px; }
+.pc-app--orientado .pc-coluna-custo { padding-block: 32px; }
+
+.v19-caminho { position: relative; background: var(--surface-1); padding: 32px 24px 48px 0; }
+.v19-caminho::before { content: ""; position: absolute; inset-block: 0; inset-inline-end: 100%; inline-size: 100vw; background: var(--surface-1); }
+.pc-app--orientado { overflow-x: clip; }
+.v19-caminho-rotulo { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 12px; }
+.v19-caminho-frente { display: inline-flex; align-items: center; gap: 8px; background: var(--primary-tint); color: var(--ink); border-radius: 999px; padding: 6px 12px; font-size: 12.5px; margin: 0; }
+.v19-caminho-frente i { inline-size: 10px; block-size: 10px; border-radius: 50%; background: var(--primary); flex: none; }
+.v19-caminho-diagrama { display: block; inline-size: 100%; max-inline-size: 190px; margin: 28px auto 20px; }
+.v19-caminho-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.v19-caminho-item { display: grid; grid-template-columns: 14px 1fr auto; column-gap: 10px; row-gap: 8px; align-items: start; font-size: 13px; color: var(--ink-2); }
+.v19-caminho-ponto { inline-size: 14px; block-size: 14px; border-radius: 50%; margin-top: 2px; }
+.v19-caminho-nome { line-height: 18px; }
+.v19-caminho-item.is-atual .v19-caminho-nome { color: var(--ink); font-weight: 600; }
+.v19-caminho-conta { font-size: 11.5px; color: var(--muted); white-space: nowrap; margin-top: 2px; }
+.v19-caminho-barra { grid-column: 2 / -1; display: block; block-size: 2px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.v19-caminho-barra > span { display: block; block-size: 100%; background: var(--primary); }
+
+/* ---------- moldura da pergunta e cartões de opção ---------- */
+.pc-app--orientado .pr-questionframe { background: var(--surface-1); border: 0; border-radius: 14px; box-shadow: 0 1px 2px rgba(17, 24, 39, .04); padding: 28px 32px 32px; }
+.pr-optioncard { border: 1px solid var(--line); border-radius: 10px; background: var(--surface-1); transition: border-color .15s, box-shadow .15s; }
+.pr-optioncard:hover { border-color: #c9d2de; }
+.pr-optioncard--selected, .pr-optioncard:has(input:checked) { border-color: var(--v19-sel); box-shadow: inset 0 0 0 .5px var(--v19-sel); background: var(--surface-1); }
+.pr-optioncard-input { accent-color: var(--primary); }
+.pr-optioncard-label { font-weight: 500; color: var(--ink); }
+.pr-optioncard-sub, .pr-optioncard-desc { color: var(--muted); font-size: 12.5px; }
+
+/* prioridades em cartões grandes */
+.pv-prio-card { border-radius: 10px; border: 1px solid var(--line); background: var(--surface-1); }
+.pv-prio-card.is-on { border-color: var(--v19-sel); box-shadow: inset 0 0 0 .5px var(--v19-sel); }
+.pv-prio-card.is-off { background: var(--surface-2); }
+.pv-prio-nome { font-family: var(--font-serif); font-weight: 400; font-size: 19px; }
+
+/* botões em pílula */
+.pr-button { border-radius: 999px; font-weight: 500; }
+.pr-button--primary { background: var(--primary); border-color: var(--primary); }
+.pr-button--primary:hover { background: var(--primary-strong); border-color: var(--primary-strong); }
+.pr-button--secondary { border-color: var(--primary); color: var(--primary); background: var(--surface-1); }
+.pc-ux-barra-botoes .pr-button { min-inline-size: 112px; justify-content: center; }
+.pr-textfield-input, .rf-select, .pr-textfield-row input, .pr-textfield-row select { border-radius: 8px; }
+
+/* ---------- cartão de custo total ---------- */
+.pc-custo { background: var(--night); border-radius: 12px; color: #fff; box-shadow: 0 6px 18px rgba(0, 104, 177, .18); }
+.pc-custo-rotulo { font-family: var(--font-sans) !important; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+.pc-custo-total { font-family: var(--font-serif); font-weight: 600; }
+.pc-custo-barra { background: repeating-linear-gradient(135deg, rgba(255,255,255,.55) 0 3px, rgba(255,255,255,.25) 3px 6px); border-radius: 4px; }
+.pc-custo-barra-inf { background: var(--v19-amarelo); }
+.pc-custo-barra-est { background: var(--v19-ciano); }
+.pc-custo-marca--inf { background: var(--v19-amarelo) !important; }
+.pc-custo-marca--est { background: var(--v19-ciano) !important; }
+.pc-custo-est { color: #fff !important; }
+.pc-custo-links .pc-custo-link { color: var(--primary); }
+
+/* ---------- rodapé ---------- */
+.pc-rodape-faixa { background: var(--surface-1); border-top: 2px solid var(--primary); }
+
+@media (max-width: 1279px) {
+  .pc-app .pc-grade.v19-corpo--caminho { grid-template-columns: 210px minmax(0, 1fr); }
+  .pc-app .pc-grade.v19-corpo--caminho.pc-corpo--custo { grid-template-columns: 210px minmax(0, 1fr) 260px; }
+  .v19-corpo--caminho .pc-main { padding-inline: 24px; }
+}
+
+/* cartões de categoria e de desafio: um por linha, com a contagem abaixo do nome (como no Figma) */
+.pc-app--orientado .pc-lit-opcoes { grid-template-columns: minmax(0, 1fr) !important; gap: 12px; }
+.pc-app--orientado .pc-lit-opcoes .pr-optioncard { padding: 16px 18px; }
+.pc-app--orientado .pc-lit-opcoes .pr-optioncard-sub { display: block; grid-column: 2; margin-top: 2px; }
+.pc-app--orientado .pc-ux-barra-botoes > .pr-button { border-radius: 999px; block-size: 42px; font-size: 15px; padding-inline: 22px; }
+.pc-app--orientado .pc-ux-barra-botoes > .pr-button--primary::after { content: "→"; margin-inline-start: 8px; }
+.pc-app--orientado .pc-ux-barra-botoes > .pr-button--secondary::before { content: "←"; margin-inline-end: 8px; }
+[dir="rtl"] .pc-app--orientado .pc-ux-barra-botoes > .pr-button--primary::after { content: "←"; }
+[dir="rtl"] .pc-app--orientado .pc-ux-barra-botoes > .pr-button--secondary::before { content: "→"; }
+/* página de uma categoria: o desafio já está no sobretítulo */
+[data-tela^="gov-opcoes-"] .pv-v17-desafio { display: none; }
+
+/* ---------- página inicial (v2 do Figma) ---------- */
+.pc-app--inicio { background: var(--surface-1); }
+.v19-cab--inicio { border-bottom: 1px solid var(--line); }
+.v19-cab-nome { text-align: center; padding-block: 2px 14px; }
+.v19-cab-nome p { margin: 0; font-family: var(--font-serif); font-size: 20px; line-height: 28px; color: var(--v19-titulo); }
+.v19-cab-nome span { display: block; font-size: 10.5px; color: var(--muted); }
+.pc-app--inicio .pc-main { padding: 0; max-width: none; }
+.pc-app--inicio .pc-corpo { display: block; padding: 0; }
+.v19-hero { position: relative; isolation: isolate; color: #fff; background: #0a4f86; overflow: hidden; }
+.v19-hero-foto { position: absolute; inset: 0; z-index: -1; background:
+  linear-gradient(90deg, rgba(0, 92, 168, .96) 0%, rgba(0, 104, 177, .9) 38%, rgba(0, 104, 177, .45) 70%, rgba(0, 104, 177, .25) 100%),
+  var(--v19-foto-hero, radial-gradient(120% 140% at 85% 30%, #6fa6cf 0%, #2a6fa5 45%, #0b4f86 100%)); background-size: cover; background-position: center; }
+.v19-hero-conteudo { padding-block: 72px 64px; }
+.v19-hero h1 { font-family: var(--font-serif); font-weight: 400; font-size: clamp(32px, 4vw, 46px); line-height: 1.15; max-inline-size: 15ch; margin: 0 0 18px; color: #fff; letter-spacing: -0.01em; }
+.v19-hero-lead { font-size: 17px; line-height: 26px; max-inline-size: 46ch; margin: 0 0 28px; color: rgba(255,255,255,.95); }
+.v19-hero .pr-alert { max-inline-size: 560px; margin-bottom: 20px; }
+.v19-hero-acoes { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 18px; }
+.v19-hero .v19-botao-claro { background: #fff; color: var(--primary); border-color: #fff; border-radius: 6px; font-weight: 600; padding-inline: 26px; block-size: 44px; }
+.v19-hero .v19-botao-claro:hover { background: #eef5fb; color: var(--primary-strong); }
+.v19-hero .v19-botao-contorno { background: transparent; color: #fff; border-color: rgba(255,255,255,.8); border-radius: 6px; block-size: 44px; }
+.v19-hero-importar summary { cursor: pointer; color: #fff; text-decoration: underline; font-size: 15px; list-style: none; }
+.v19-hero-importar summary::-webkit-details-marker { display: none; }
+.v19-hero-importar[open] .pc-botoes { margin-top: 10px; background: var(--surface-1); color: var(--ink); padding: 12px; border-radius: 10px; }
+.v19-hero-nota { font-size: 12.5px; line-height: 18px; color: rgba(255,255,255,.9); margin: 12px 0 0; max-inline-size: 38ch; }
+.v19-hero-sec { margin: 8px 0 0; display: flex; gap: 16px; }
+.v19-hero-sec .pr-button--link { color: #fff; padding: 0; font-size: 13px; }
+
+.v19-como { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: center; padding-block: 56px 32px; }
+.v19-como-foto { aspect-ratio: 4 / 3; border-radius: 4px; background: var(--v19-foto-como, linear-gradient(135deg, #dfe8f1, #b9cde0)); background-size: cover; background-position: center; }
+.v19-como h2, .v19-dg h2 { font-family: var(--font-serif); font-weight: 400; font-size: 34px; line-height: 42px; margin: 0 0 22px; color: var(--v19-titulo); }
+.v19-como-etapas { list-style: none; margin: 0 0 26px; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 22px 28px; }
+.v19-como-etapas h3 { font-family: var(--font-serif); font-weight: 500; font-size: 17px; line-height: 24px; margin: 0 0 4px; color: var(--v19-titulo); }
+.v19-como-etapas p { margin: 0; font-size: 13px; line-height: 18px; color: var(--ink-2); }
+.v19-como .pr-button { border-radius: 999px; padding-inline: 22px; }
+
+.v19-dg { padding-block: 24px 56px; }
+.v19-dg-grade { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.v19-dg-cab { background: var(--primary); color: #fff; border-radius: 4px; padding: 14px 16px 16px; min-block-size: 112px; }
+.v19-dg-num { font-size: 13px; opacity: .9; }
+.v19-dg-cab h3 { font-family: var(--font-serif); font-weight: 500; font-size: 18px; line-height: 23px; margin: 6px 0 4px; color: #fff; }
+.v19-dg-cab p { margin: 0; font-size: 12px; line-height: 16px; color: rgba(255,255,255,.92); }
+.v19-dg-col ul { list-style: none; margin: 8px 0 0; padding: 0 12px; }
+.v19-dg-col li { padding-block: 10px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.v19-dg-col li b { display: block; font-weight: 500; color: var(--ink); }
+.v19-dg-col li span { display: block; font-size: 12px; line-height: 16px; color: var(--muted); margin-top: 2px; }
+.v19-dg-faixa { display: flex; flex-wrap: wrap; gap: 8px 40px; margin-top: 24px; font-size: 12.5px; color: var(--ink-2); }
+.v19-dg-faixa p { margin: 0; max-inline-size: 48ch; }
+.v19-dg-faixa b { display: block; color: var(--primary); font-weight: 600; }
+.v19-dg-faixa a { color: var(--primary); font-weight: 500; }
+@media (max-width: 900px) {
+  .v19-como { grid-template-columns: 1fr; gap: 28px; }
+  .v19-dg-grade { grid-template-columns: 1fr 1fr; }
+  .v19-hero-conteudo { padding-block: 48px 44px; }
+}
+@media (max-width: 560px) { .v19-dg-grade, .v19-como-etapas { grid-template-columns: 1fr; } }
+
+/* ajustes de especificidade sobre a moldura anterior */
+.pc-app.pc-app--inicio .pc-corpo > .pc-main { max-width: none !important; padding: 0 !important; margin: 0 !important; inline-size: 100%; }
+.pc-app.pc-app--orientado .pc-corpo--novo > .pc-main { padding-block: 32px 56px !important; }
+.pc-app.pc-app--orientado .pc-corpo--novo { min-block-size: calc(100vh - 160px); align-items: stretch; }
+.pc-app--orientado .pc-lit-opcoes .pr-optioncard { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; row-gap: 2px; align-items: center; padding-inline-end: 52px; }
+.pc-app--orientado .pc-lit-opcoes .pr-optioncard-input { grid-row: 1 / span 2; margin: 0; inline-size: 18px; block-size: 18px; }
+.pc-app--orientado .pc-lit-opcoes .pr-optioncard-sub, .pc-app--orientado .pc-lit-opcoes .pr-optioncard-desc { grid-column: 2; margin: 0; text-align: start; }
+.pc-app.pc-app--inicio { --pc-largura: 1240px; --pc-margem: 32px; }
+@media (max-width: 640px) { .pc-app.pc-app--inicio { --pc-margem: 16px; } }
+[data-tela="problemas"] .pc-grupo-titulo { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip: rect(0 0 0 0); }

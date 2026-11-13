@@ -11,7 +11,8 @@ import { abrirFrente, type FrenteId } from '../percurso/frentes';
 import { presetGovernanca, selecoesGov, detalheGov, textoSelecaoGov } from '../percurso/governancaPresets';
 import { entradaEtapa, vizinhos, focarPendencia } from '../percurso/navegacaoOrientada';
 import { useEffect, useState, useContext } from 'react';
-import { useCaso, telasDoCapitulo, telasAtivas, faltamDe, telaRespondida, TELAS_FORA_DO_FLUXO, entradaOpcoesGov, categoriaDaTelaGov, categoriaGov, TELA_ADICIONAIS_GOV, type CasoStore, type Capitulo } from '../store';
+import { DESAFIOS_GOV_V016 } from '../domain/catalogo_v016.js';
+import { useCaso, telasDoCapitulo, telasAtivas, faltamDe, telaRespondida, TELAS_FORA_DO_FLUXO, entradaOpcoesGov, entradaCategoriasGov, desafioDaTelaCategorias, categoriaDaTelaGov, categoriaGov, TELA_ADICIONAIS_GOV, type CasoStore, type Capitulo } from '../store';
 import { temEducacao, percursoPedagogico, temGovernanca, temLetramento, percursoLetramento, percursoGovernanca, projetoUsoDefinido, tamanhoRedeValido, LOC } from '../domain';
 import { Button, TextField, OptionCard, OptionCardGroup, QuestionFrame, ChapterOpening, PlanPanel, PlanDrawer, useMediaQuery, BREAKPOINTS, Alert, Chip, ChipGroup } from '../ui';
 import { Shell } from './Shell';
@@ -176,7 +177,7 @@ function ControlesGov({ s, id, tentou = false }: { s: CasoStore; id: string; ten
     case 'gov-revisao': return <Grupo s={s} base="govRevisao" campos={[
       ['indicadores', 'Indicadores e metas institucionais'], ['responsavel', 'Responsável pelo acompanhamento'], ['periodicidade', 'Periodicidade da revisão'], ['data', 'Próxima revisão'], ['alcance', 'Alcance da política'], ['progresso', 'Progresso de implementação'], ['canal', 'Transparência e prestação de contas'],
     ]} />;
-    default: { const cat = categoriaDaTelaGov(id); return cat ? <OpcoesV17 s={s} frente="governanca" cat={cat} /> : null; }
+    default: { const d = desafioDaTelaCategorias(id); if (d) return <CategoriasV17 s={s} frente="governanca" desafio={d} />; const cat = categoriaDaTelaGov(id); return cat ? <OpcoesV17 s={s} frente="governanca" cat={cat} /> : null; }
   }
 }
 function PDFs({ s }: { s: CasoStore }) {
@@ -200,10 +201,17 @@ function PlanoGov({ s }: { s: CasoStore }) {
     <p><Button variant="secondary" href={href.pergunta(3, TELA_ADICIONAIS_GOV)}>{t('Voltar')}</Button></p>
   </div>;
 }
+/** v019: sobretítulo com o desafio da página (categorias de um desafio e opções de uma categoria). */
+function sobretituloGov(id: string): string | undefined {
+  const d = desafioDaTelaCategorias(id) || categoriaGov(id)?.desafio, x = d ? DESAFIOS_GOV_V016.find((y: any) => y.id === d) : undefined;
+  return x ? t(x.t) : undefined;
+}
 /** v018: títulos das telas compartilhadas como no fluxo da governança da v017. */
 const TITULOS_V017: Record<string, string> = { problemas: 'Quais desafios você quer enfrentar?' };
 /** Título de uma tela da governança; a página de uma categoria leva o número e o nome da categoria. */
 function tituloTelaGov(id: string): string {
+  // v019: página das categorias de um desafio (o nome do desafio vai no sobretítulo)
+  if (desafioDaTelaCategorias(id)) return t('Quais custos você quer incluir?');
   const c = categoriaGov(id);
   return c ? c.n + ' ' + t(c.nome) : t(TITULOS_V017[id] || TITULO_TELA[id] || CURTO[id] || id);
 }
@@ -212,7 +220,7 @@ export function Governanca({ rota }: { rota: Rota }) {
  const s=useCaso(),[tentou,setTentou]=useState(false),n:Capitulo=rota.tipo==='abertura'||rota.tipo==='pergunta'||rota.tipo==='sintese'?rota.n:3;
  const lista=telasDoCapitulo(n,s),qs=telasAtivas(s),ativa=rota.tipo==='pergunta'?lista.find(q=>q.id===rota.tela):undefined,legada=rota.tipo==='pergunta'?telaGovernancaLegada(rota.tela):null;
  // v018: a antiga página única de opções ('gov-opcoes') vai para a página da primeira categoria escolhida
- const resolve=(x?:string)=>x==='gov-opcoes'?entradaOpcoesGov(s):x;
+ const resolve=(x?:string)=>x==='gov-opcoes'?entradaOpcoesGov(s):x==='gov-categorias'?entradaCategoriasGov(s):x;
  const alvo=legada?qs.find(q=>q.id===resolve(legada.id)):rota.tipo==='pergunta'?qs.find(q=>q.id===resolve(TELAS_FORA_DO_FLUXO[rota.tela])):undefined;
  const remap=rota.tipo==='plano'?null:rota.tipo==='refinar'?href.pergunta(3,entradaOpcoesGov(s)):rota.tipo==='abertura'?entradaEtapa(s,n):rota.tipo==='sintese'?n<4?entradaEtapa(s,(n+1) as Capitulo):href.plano():!ativa?alvo?href.pergunta(alvo.capitulo,alvo.id):entradaEtapa(s,n):null;
  usePadroes('governanca',rota.tipo==='pergunta'&&rota.tela.startsWith('gov-'));
@@ -222,7 +230,7 @@ export function Governanca({ rota }: { rota: Rota }) {
  const id=ativa.id,info=infoCapitulo(n,s),dest=vizinhos(s,id),falta=!TELAS_OPCIONAIS.includes(id)&&!telaRespondida(s,ativa),pendencias=pendenciasGov(s,id);
  const focar=(p:string)=>focarPendencia('gov-'+p.replace(/[^a-zA-Z0-9_-]/g,'-'));
  const avancar=()=>{if(!falta){ir(dest.proxima);return;}setTentou(true);requestAnimationFrame(()=>pendencias.length?focar(pendencias[0].caminho):focarPendencia('gov-validacao'));};
- return <Shell pos={{capitulo:n,tela:id}} contexto={t(info.titulo)}><div className="pc-pergunta" data-tela={id}><QuestionFrame title={tituloTelaGov(id)} 
+ return <Shell pos={{capitulo:n,tela:id}} contexto={t(info.titulo)}><div className="pc-pergunta" data-tela={id}><QuestionFrame title={tituloTelaGov(id)} kicker={sobretituloGov(id)} 
  actions={<AcoesPercurso anterior={dest.anterior} avancar={avancar}/>}>
  {tentou&&falta?<div id="gov-validacao" className="pc-lit-validacao" role="alert" tabIndex={-1}><b>{t('Complete as respostas indicadas ou marque as informações a levantar.')}</b><ul>{pendencias.slice(0,3).map(p=><li key={p.caminho}><a href="#gov-validacao" onClick={e=>{e.preventDefault();focar(p.caminho);}}>{t(p.label)}</a></li>)}{!pendencias.length?<li>{t(id==='problemas'?'Selecione os desafios do plano e informe os totais da rede.':id==='local'?'Escolha o país para avançar.':'Selecione ao menos uma prioridade.')}</li>:null}</ul>{pendencias.length>3?<details><summary>{t('Ver outras {n} pendências',{n:pendencias.length-3})}</summary><ul>{pendencias.slice(3).map(p=><li key={p.caminho}><a href="#gov-validacao" onClick={e=>{e.preventDefault();focar(p.caminho);}}>{t(p.label)}</a></li>)}</ul></details>:null}</div>:null}
  <div className="pc-lit-campos"><ValidacaoCampos.Provider value={tentou}><ControlesGov s={s} id={id} tentou={tentou}/></ValidacaoCampos.Provider></div></QuestionFrame></div></Shell>;

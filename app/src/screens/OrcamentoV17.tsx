@@ -33,7 +33,7 @@ function porGrupo<T extends { grupo: string }>(lista: T[]): [string, T[]][] {
 }
 
 /** Passo 1: categorias de custo de cada desafio escolhido. */
-export function CategoriasV17({ s, frente }: { s: CasoStore; frente: FrenteEstimativa }) {
+export function CategoriasV17({ s, frente, desafio }: { s: CasoStore; frente: FrenteEstimativa; desafio?: string }) {
   const o = orcamentoV16(s, frente), sel = categoriasEscolhidas(s, frente);
   const marcar = (id: string, on: boolean) => {
     if (categoriaObrigatoria(frente, id)) return;
@@ -41,10 +41,12 @@ export function CategoriasV17({ s, frente }: { s: CasoStore; frente: FrenteEstim
     gravarOrc(frente, 'moeda', o.moeda);
     gravarOrc(frente, 'categorias', on ? [...atual.filter(x => x !== id), id] : atual.filter(x => x !== id));
   };
-  if (!o.disponiveis.length) return <p className="pc-nota">{t('Escolha pelo menos um desafio no Contexto para ver as categorias de custo.')}</p>;
+  // v019: com `desafio`, só as categorias desse desafio (uma página por desafio), sem repetir o nome do desafio
+  const disponiveis = desafio ? o.disponiveis.filter(c => c.desafio === desafio) : o.disponiveis;
+  if (!disponiveis.length) return <p className="pc-nota">{t('Escolha pelo menos um desafio no Contexto para ver as categorias de custo.')}</p>;
   return <div className="pv-v17" id="categorias" tabIndex={-1}>
-    {porGrupo(o.disponiveis).map(([grupo, cats]) => <section key={grupo} className="pv-v17-grupo">
-      {grupo ? <h2 className="pv-v17-desafio">{grupo}</h2> : null}
+    {porGrupo(disponiveis).map(([grupo, cats]) => <section key={grupo} className="pv-v17-grupo">
+      {grupo && !desafio ? <h2 className="pv-v17-desafio">{grupo}</h2> : null}
       <OptionCardGroup className="pc-lit-opcoes" label={grupo || t('Categorias de custo')} type="checkbox">
         {cats.map(c => { const cartao = <OptionCard key={c.id} name="categorias" value={c.id} type="checkbox" checked={sel.includes(c.id)} disabled={categoriaObrigatoria(frente, c.id)} label={nomeCat(c)}
           subtext={c.opcoes.length ? t('{n} opções', { n: c.opcoes.length }) : undefined} onChange={(id, on) => marcar(id, on)} />;

@@ -18,7 +18,7 @@ import { formatarMoedaEst, parametro, taxaMoeda, totaisOrcamento, PARAMETRO_EQUI
 
 type Estado = Pick<Estado14, 'ctx' | 'moeda'> & Partial<Pick<Estado14, 'caso'>>;
 export type Base = 'formacao' | 'equipe' | 'licenca' | 'infra';
-export interface CategoriaV16 { id: string; n: string; nome: string; grupo: string; opcoes: string[]; base?: Base }
+export interface CategoriaV16 { id: string; n: string; nome: string; grupo: string; desafio?: string; opcoes: string[]; base?: Base }
 export interface FaseV16 { id: string; nome: string; on: boolean; meses: number; alcance: number }
 
 const positivo = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0;
@@ -76,7 +76,7 @@ export function categoriasV16(s: Estado, f: FrenteEstimativa): CategoriaV16[] {
       return { id: c.id, n: '', nome: c.nome, grupo: '', opcoes, base: c.id === 'e4' && !ia ? undefined : c.base };
     });
   }
-  return (CATEGORIAS[f] as any[]).filter(c => marcados.includes(c.desafio)).map(c => ({ id: c.id, n: c.n, nome: c.nome, grupo: nomeDesafio(c.desafio), opcoes: c.opcoes, base: c.base }));
+  return (CATEGORIAS[f] as any[]).filter(c => marcados.includes(c.desafio)).map(c => ({ id: c.id, n: c.n, nome: c.nome, grupo: nomeDesafio(c.desafio), desafio: c.desafio, opcoes: c.opcoes, base: c.base }));
 }
 
 /** Componentes da conta: cada um multiplica uma quantidade por fase (pessoas novas × horas, pessoas-ano, usuários × meses,

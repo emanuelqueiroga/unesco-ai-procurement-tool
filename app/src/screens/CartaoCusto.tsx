@@ -8,7 +8,6 @@ import { LOC, percursoGovernanca } from '../domain';
 import { t } from '../percurso/textos';
 import { href } from '../percurso/rota';
 import { orcamentoGovernanca } from '../percurso/governanca';
-import { MandalaProgresso } from './MandalaProgresso';
 import { formatarMoedaEst, type Estimativa, type FrenteEstimativa } from '../percurso/estimativasOrcamento';
 import { mesesV16 } from '../percurso/orcamentoV016';
 import { usePainel } from './PlanoVivo';
@@ -148,8 +147,6 @@ export function ColunaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
     <CartaoCustoFrente d={d} />
     {!naRecursos && tela ? <RespostaMuda d={d} tela={tela} /> : null}
     <Links d={d} tela={tela} />
-    {/* v018.1: progresso do plano (mandala por desafio e categoria) */}
-    <MandalaProgresso s={s} />
   </aside>;
 }
 

@@ -13,6 +13,9 @@ import { frentesDoPlano, frenteAtual } from '../percurso/frentes';
 import { href, lerRota } from '../percurso/rota';
 import { nomePais, paisDoCaso, percursoGovernanca, tr } from '../domain';
 import { ColunaCusto, FaixaCusto } from './CartaoCusto';
+import { CaminhoLateral } from './Caminho';
+import { categoriaGov } from '../store';
+import './v19.css';
 import { CasoDialog } from './CasoDialog';
 import { SeletorIdioma, AvisoTraducao } from './Idioma';
 import { MatrizHost, abrirMatriz } from './Matriz';
@@ -20,6 +23,7 @@ import { RodapeCompleto, DentroDaMoldura } from './Rodape';
 import { LOGOS } from './logos';
 import { useSalvamento } from './salvamento';
 import { exportarCaso, comecarEmBranco } from './acoes';
+import { TESTE } from '../percurso/canal';
 import { exemploIlustrativo, nomeDoExemplo, tituloDaAba } from './transversal';
 import './shell.css';
 import './transversal.css';
@@ -54,10 +58,45 @@ function PilulaFrente({ s }: { s: CasoStore }) {
   return <span className="pc-frente-pilula pc-frente-pilula--fixa"><i className="pc-frente-ponto" aria-hidden="true" /><span className="pc-frente-rotulo">{t('Frente:')}</span> <strong>{t(atual.titulo)}</strong></span>;
 }
 
+/** v019: cabeçalho do design (Figma): marcas, idioma e tema; a trilha (Início › etapas) com os atalhos à direita; e as
+ *  etapas como barras finas, com o nome e a posição de cada uma para leitores de tela. */
+function CabecalhoV19({ passos, tela, acoes, direita }: { passos: Step[]; tela?: string; acoes: ReactNode[]; direita: ReactNode }) {
+  const i = passos.findIndex((p) => p.state === 'current');
+  const cat = tela ? categoriaGov(tela) : undefined;
+  return (
+    <header className="pc-cab v19-cab">
+      <div className="v19-cab-l1 pc-container">
+        <a className="v19-cab-marca" href={href.inicio()} aria-label={'AI in Education Procurement Tool · ' + t('Início')}>
+          {LOGOS.map((l) => <img key={l.src} className="v19-cab-logo" src={l.src} alt={String(tr(l.alt))} />)}
+        </a>
+        <div className="v19-cab-dir">{direita}</div>
+      </div>
+      <div className="v19-cab-l2 pc-container">
+        <nav className="v19-trilha" aria-label={t('Seu caminho')}>
+          <ol>
+            <li><a href={href.inicio()}><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 7.5 8 2.5l6 5M3.5 6.5V13.5h3.5V9.5h2v4h3.5V6.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /></svg>{t('Início')}</a></li>
+            {passos.slice(0, i < 0 ? 0 : i + 1).map((p, k) => <li key={p.n}>{k === i && !cat ? <span aria-current="page">{p.label}</span> : <a href={p.href}>{p.label}</a>}</li>)}
+            {cat ? <li><span aria-current="page">{cat.n} {t(cat.nome)}</span></li> : null}
+          </ol>
+        </nav>
+        <div className="v19-cab-acoes">{acoes.filter(Boolean).map((a, k) => <span key={k} className="v19-acao">{a}</span>)}</div>
+      </div>
+      {passos.length ? <ol className="v19-barras pc-container" aria-label={t('Seu caminho')}>
+        {passos.map((p) => <li key={p.n} className={'v19-barra is-' + p.state}>
+          <a href={p.href}><span className="v19-barra-trilho" aria-hidden="true"><span style={{ inlineSize: ((p.state === 'done' ? 1 : p.state === 'current' ? Math.max(p.progress || 0, 0.04) : 0) * 100).toFixed(1) + '%' }} /></span>
+          <span className="pc-sr">{p.label}{p.position ? ' · ' + p.position : ''}{p.state === 'done' ? ' ✓' : ''}</span></a>
+        </li>)}
+      </ol> : null}
+    </header>
+  );
+}
+
 export function Shell({ children, pos = {}, nav = true, plano = true, contexto }: { children: ReactNode; pos?: Posicao; nav?: boolean; plano?: boolean; contexto?: ReactNode }) {
   const s = useCaso();
   // como na v017: o cartão de custo aparece depois que a prioridade é escolhida
   plano = plano && (s.ctx.prioridades || []).length > 0;
+  // v019: como no Figma, o cartão de custo aparece a partir das categorias (não nas telas do Contexto)
+  if (percursoGovernanca(s.ctx) && pos.tela && ['local', 'prioridades', 'problemas'].includes(pos.tela)) plano = false;
   const estreito = useMediaQuery(BREAKPOINTS.cards);
   const celular = useMediaQuery(BREAKPOINTS.bar);           // cabeçalho compacto com menu
   const semColuna = useMediaQuery('(max-width: 1023px)');
@@ -146,7 +185,16 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
       <DentroDaMoldura.Provider value>
         <div className="pc-app pc-app--inicio">
           <a className="pc-pular" href="#conteudo" onClick={(e) => { e.preventDefault(); document.getElementById('conteudo')?.focus(); }}>{t('Pular para o conteúdo')}</a>
-          <Header logos={LOGOS} href={href.inicio()} compact={estreito} context={contexto} actions={<>{estreito ? null : botaoMatriz}<SeletorIdioma compacto={estreito} />{botaoTema}</>} />
+          {/* v019: cabeçalho da página inicial do design: marcas e, à direita, idioma e tema; o nome da ferramenta centrado */}
+          <header className="pc-cab v19-cab v19-cab--inicio">
+            <div className="v19-cab-l1 pc-container">
+              <a className="v19-cab-marca" href={href.inicio()} aria-label={'AI in Education Procurement Tool · ' + t('Início')}>
+                {LOGOS.map((l) => <img key={l.src} className="v19-cab-logo" src={l.src} alt={String(tr(l.alt))} />)}
+              </a>
+              <div className="v19-cab-dir"><SeletorIdioma compacto={estreito} />{botaoTema}</div>
+            </div>
+            <div className="v19-cab-nome pc-container"><p>AI in Education Procurement Tool</p>{TESTE ? <span dir="ltr">{TESTE} · teste</span> : null}</div>
+          </header>
           {faixas}
           <div className="pc-corpo"><main id="conteudo" className="pc-main" tabIndex={-1}>{children}</main></div>
           <RodapeCompleto />
@@ -162,6 +210,8 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   const lugar = String((gov ? s.ctx.local : s.caso?.local) || '').trim();
   const ctxCab = [lugar, pais].filter(Boolean).join(' · ') || contexto;
   const passos = nav ? etapas(s, pos) : [];
+  // v019: a coluna "Seu caminho" aparece depois da prioridade, a partir da escolha dos desafios (como no Figma)
+  const comCaminho = gov && !semColuna && !!pos.tela && !['local', 'prioridades'].includes(pos.tela);
   const marca = (
     <a className="pc-cab-marca" href={href.inicio()}>
       <span className="pr-header-plate pc-cab-plate">{LOGOS.map((l) => <img key={l.src} className="pc-cab-logo" src={l.src} alt={String(tr(l.alt))} />)}</span>
@@ -172,7 +222,8 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
     <DentroDaMoldura.Provider value>
       <div data-barra-acoes={barraAcoes || undefined} data-coluna={plano || undefined} className={'pc-app pc-app--novo' + (gov ? ' pc-app--orientado' : '')}>
         <a className="pc-pular" href="#conteudo" onClick={(e) => { e.preventDefault(); document.getElementById('conteudo')?.focus(); }}>{t('Pular para o conteúdo')}</a>
-        <header className={'pc-cab' + (celular ? ' pc-cab--celular' : '')}>
+        {gov && !celular ? <CabecalhoV19 passos={passos} tela={pos.tela} acoes={[botaoMatriz, botaoCalculo, verPlano, botaoCaso]} direita={<><SeletorIdioma />{botaoTema}</>} /> : null}
+        {gov && !celular ? null : <header className={'pc-cab' + (celular ? ' pc-cab--celular' : '')}>
           <div className="pc-cab-linha pc-container">
             <div className="pc-cab-esq">
               {marca}
@@ -203,10 +254,11 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
             </nav>
           ) : null}
           {nav && passos.length ? <div className="pc-cab-etapas pc-container"><StepBar steps={passos} compact={celular} label={t('Seu caminho')} /></div> : null}
-        </header>
+        </header>}
         {faixas}
         {plano && semColuna ? <div className="pc-container"><FaixaCusto s={s} tela={pos.tela} /></div> : null}
-        <div className={'pc-corpo pc-corpo--novo pc-container pc-grade' + (plano && !semColuna ? ' pc-corpo--custo' : '')}>
+        <div className={'pc-corpo pc-corpo--novo pc-container pc-grade' + (plano && !semColuna ? ' pc-corpo--custo' : '') + (comCaminho ? ' v19-corpo--caminho' : '')}>
+          {comCaminho ? <CaminhoLateral s={s} tela={pos.tela} /> : null}
           <main id="conteudo" className="pc-main" tabIndex={-1}><AcoesForaDoQuadro.Provider value>
             {rota.tipo === 'plano' && !gov ? <p className="pc-so-impressao">{t('Para imprimir o plano completo, use "Anexo técnico (PDF)".')}</p> : null}
             {children}

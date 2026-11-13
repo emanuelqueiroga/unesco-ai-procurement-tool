@@ -6,7 +6,7 @@ import { LOC } from '../domain/i18n.js';
 import { nomePais, paisDoCaso } from '../domain/pais.js';
 import { tamanhoRedeValido, projetoUsoDefinido } from '../domain/escopo.js';
 import type { Estado14 } from '../store/tipos';
-import { categoriaDaTelaGov, TELA_ADICIONAIS_GOV } from '../store/perguntas';
+import { categoriaDaTelaGov, desafioDaTelaCategorias, DESAFIOS_COM_CATEGORIAS, TELA_ADICIONAIS_GOV } from '../store/perguntas';
 import { t } from './textos';
 import { orcamentoV16, fasesSalvas, linhasFases, proximoV16, instituicaoV16 } from './orcamentoV016';
 import { estimativaReferencia, itemEmReferencia, valorEstimado, totaisOrcamento, linhasTotais, notaEstimativas, textoEstimado } from './estimativasOrcamento';
@@ -80,10 +80,21 @@ export function governancaRespondida(s: Estado14, id: string): boolean {
     case 'gov-equipe': return QUANT_GOV.every(k => numeroPositivo(s.ctx.govOrcamento?.quantidades?.[k]));
     case 'gov-recursos': { const o = orcamentoGovernanca(s); return o.itens.length > 0 && o.itens.every(i => i.respondido); }
     case 'gov-categorias': return orcamentoGovernanca(s).itens.length > 0;
+    // v019: página de categorias de um desafio: pelo menos uma categoria do desafio escolhida
     case 'gov-opcoes': { const o = orcamentoGovernanca(s); return o.itens.length > 0 && o.itens.every(i => i.marcadas.length > 0 && i.respondido); }
     // v018: custos adicionais e duração do plano têm padrão (percentuais de referência e 12 meses)
     case TELA_ADICIONAIS_GOV: return true;
     default: {
+      const d = desafioDaTelaCategorias(id);
+      // v019: a página de categorias de um desafio conta como respondida quando o plano tem alguma categoria (como a
+      // página única da v018.1): um desafio pode ficar sem categoria escolhida
+      if (d) {
+        // só a última página de categorias exige alguma categoria no plano; as anteriores podem ficar vazias
+        if (orcamentoGovernanca(s).itens.length > 0) return true;
+        const marcados: unknown[] = Array.isArray(s.ctx.problemas) ? s.ctx.problemas : [];
+        const ultimo = [...DESAFIOS_COM_CATEGORIAS].reverse().find(x => marcados.includes(x));
+        return !!ultimo && d !== ultimo;
+      }
       // v018: página de uma categoria: pelo menos uma opção marcada e nada faltando
       const cat = categoriaDaTelaGov(id), i = cat ? orcamentoGovernanca(s).itens.find(x => x.id === cat) : undefined;
       return !!i && i.marcadas.length > 0 && i.respondido;
