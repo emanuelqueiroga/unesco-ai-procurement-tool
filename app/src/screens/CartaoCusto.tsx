@@ -4,7 +4,8 @@
 // já devolve (informado, estimado, faltam), sempre na moeda do orçamento; nada é somado de novo.
 import type { ReactNode } from 'react';
 import { telasAtivas, type CasoStore } from '../store';
-import { LOC, percursoGovernanca } from '../domain';
+import { LOC, percursoGovernanca, percursoEducacaoV20 } from '../domain';
+import { orcamentoEducacao } from '../percurso/educacaoV20';
 import { t } from '../percurso/textos';
 import { href } from '../percurso/rota';
 import { orcamentoGovernanca } from '../percurso/governanca';
@@ -134,7 +135,29 @@ function Links({ d, tela }: { d: DadosCusto | null; tela?: string }) {
 }
 
 /** Coluna direita no computador: o cartão, o bloco "Esta resposta muda" (ou a legenda, no orçamento) e os links. */
+/** v020: cartão da educação com e sem IA: o total com IA em destaque e, abaixo, o sem IA e a divisão em CapEx, OpEx e uso. */
+function CartaoEducacao({ s, compacto = false }: { s: CasoStore; compacto?: boolean }) {
+  const r = orcamentoEducacao(s), f = (v: number) => formatarMoedaEst(v, r.moeda), meses = r.fases.reduce((a, x) => a + x.meses, 0);
+  return <section className={'pc-custo' + (compacto ? ' pc-custo--compacto' : '')} aria-label={t('Custo desta frente')}>
+    <div className="pc-custo-cab">
+      <h2 className="pc-custo-rotulo">{t('Com IA')} · {t('{n} meses', { n: meses })}</h2>
+      <p className="pc-custo-total" title={f(r.com.total)}>{moedaCurta(r.com.total, r.moeda)}</p>
+      <p className="pc-custo-nota">{t('Sem IA')}: {moedaCurta(r.sem.total, r.moeda)} · {t('valores simulados')}</p>
+    </div>
+    {compacto ? null : <dl className="pc-custo-lista">
+      <dt>{t('Investimento (CapEx)')}</dt><dd>{f(r.com.k)}</dd>
+      <dt>{t('Operação (OpEx)')}</dt><dd>{f(r.com.x)}</dd>
+      <dt>{t('Uso')}</dt><dd>{f(r.com.u)}</dd>
+      <dt>{t('Por estudante')}</dt><dd>{r.com.porEstudante === null ? '—' : f(r.com.porEstudante)}</dd>
+    </dl>}
+  </section>;
+}
+
 export function ColunaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
+  if (percursoEducacaoV20(s.ctx)) return <aside className="pc-coluna-custo" aria-label={t('Custo desta frente')}>
+    <CartaoEducacao s={s} />
+    <nav className="pc-custo-links" aria-label={t('Plano')}><a className="pc-custo-link" href={href.plano()}>{t('Resumo desta frente')} <span aria-hidden="true">→</span></a></nav>
+  </aside>;
   const d = dadosCusto(s);
   if (!d) return <aside className="pc-coluna-custo" aria-label={t('Custo deste projeto')}>
     <CartaoCustoProjeto s={s} />
@@ -152,6 +175,7 @@ export function ColunaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
 
 /** Celular e telas médias: faixa noite logo abaixo do cabeçalho, que leva ao orçamento (no orçamento, o cartão compacto). */
 export function FaixaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
+  if (percursoEducacaoV20(s.ctx)) return <div className="pc-faixa-custo-wrap"><CartaoEducacao s={s} compacto /></div>;
   const d = dadosCusto(s);
   if (!d) return <FaixaProjeto s={s} />;
   if (tela === TELA_RECURSOS[d.frente]) return <div className="pc-faixa-custo-wrap"><CartaoCustoFrente d={d} compacto /></div>;

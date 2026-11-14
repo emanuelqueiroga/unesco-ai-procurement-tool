@@ -1,8 +1,8 @@
 // Textos do percurso (v14): capítulos, a frase de abertura de cada pergunta e os rótulos dos trechos do plano.
 // Português é a chave de tradução; `t()` traduz quando há dicionário (os textos novos entram nos
 // dicionários em i18n/v14_<l>.json; até lá aparecem em português nos outros idiomas).
-import { tr, percursoGovernanca } from '../domain';
-import { CATEGORIAS } from '../domain/catalogo_v016.js';
+import { tr, percursoGovernanca, percursoEducacaoV20 } from '../domain';
+import { CATEGORIAS, DESAFIOS_EDU_V016 } from '../domain/catalogo_v016.js';
 import type { Capitulo } from '../store';
 
 export const t = (s: string, vars?: Record<string, string | number>): string => {
@@ -155,11 +155,19 @@ export const GOVERNANCA_INFO: Record<Capitulo, InfoCapitulo> = {
   3: { n: 3, titulo: 'Opções', guia: 'O que será feito em cada categoria?', texto: '', minutos: 8, entrega: '', alimenta: '' },
   4: { n: 4, titulo: 'Fases', guia: 'Quanto dura e quantas pessoas alcança cada fase?', texto: '', minutos: 3, entrega: '', alimenta: '' },
 };
+/** v020: capítulos da educação com e sem IA. */
+export const EDUCACAO_INFO: Record<Capitulo, InfoCapitulo> = {
+  1: { ...CAPITULOS_INFO[1], titulo: 'Contexto', guia: 'Quais desafios educacionais e para quem?' },
+  2: { n: 2, titulo: 'Fases', guia: 'Quanto dura e quantas pessoas alcança cada fase?', texto: '', minutos: 3, entrega: '', alimenta: '' },
+  3: { n: 3, titulo: 'Custos', guia: 'O que entra em cada desafio?', texto: '', minutos: 8, entrega: '', alimenta: '' },
+  4: { n: 4, titulo: 'Custos adicionais', guia: 'Viagens, overhead e taxa administrativa', texto: '', minutos: 2, entrega: '', alimenta: '' },
+};
 /** Capítulo n do percurso ativo: o da governança (v017) quando ela é a única prioridade; senão, o da 0.0.14. */
 export function infoCapitulo(n: Capitulo, s?: { ctx?: Record<string, any> }): InfoCapitulo {
-  return percursoGovernanca(s?.ctx) ? GOVERNANCA_INFO[n] : CAPITULOS_INFO[n];
+  return percursoGovernanca(s?.ctx) ? GOVERNANCA_INFO[n] : percursoEducacaoV20(s?.ctx) ? EDUCACAO_INFO[n] : CAPITULOS_INFO[n];
 }
 Object.assign(CURTO, {
+  'ed-desafios': 'Desafios educacionais', 'ed-publico': 'Público e ambiente', 'ed-fases': 'Fases', 'ed-adicionais': 'Custos adicionais',
   'gov-projeto': 'Projeto de uso de IA', 'gov-diagnostico': 'Lacunas e resultados', 'gov-instrumentos': 'Instrumentos e evidências',
   'gov-solucoes': 'Soluções de política educacional', 'gov-atores': 'Instituições e grupos afetados', 'gov-acoes': 'Ações e responsabilidades',
   'gov-capacidade': 'Capacidade institucional', 'gov-recursos': 'Valores', 'gov-fases': 'Fases', 'gov-equipe': 'Equipe e formação',
@@ -168,3 +176,5 @@ Object.assign(CURTO, {
 });
 // v018: a página de cada categoria da governança leva o nome da categoria (o número entra no título da página)
 for (const c of (CATEGORIAS as unknown as { governanca: { id: string; nome: string }[] }).governanca) CURTO['gov-opcoes-' + c.id] = c.nome;
+// v020: a página de custos de cada desafio da educação com e sem IA leva o nome do desafio
+for (const d of DESAFIOS_EDU_V016 as { id: string; t: string }[]) CURTO['ed-custos-' + d.id] = d.t;

@@ -11,6 +11,9 @@ import { t } from '../percurso/textos';
 import { frentesDoPlano, frenteAtual } from '../percurso/frentes';
 import { orcamentoGovernanca } from '../percurso/governanca';
 import { DESAFIOS_GOV_V016, CATEGORIAS } from '../domain/catalogo_v016.js';
+import { percursoEducacaoV20 } from '../domain';
+import { desafioDaTelaEd } from '../store';
+import { CATEGORIAS_ED, desafiosEscolhidos, opcoesEscolhidas, nomeDesafio } from '../percurso/educacaoV20';
 
 /** Cor de cada desafio da governança (a mesma na árvore e na lista). */
 export const COR_DESAFIO: Record<string, string> = { G21: 'var(--v19-d1)', G22: 'var(--v19-d2)', G23: 'var(--v19-d3)' };
@@ -94,7 +97,55 @@ function ArvoreSVG({ a }: { a: Arvore }) {
   );
 }
 
+/** v020: cores dos oito desafios da educação com e sem IA. */
+const CORES_ED = ['#2f7fb8', '#6b2fb3', '#2f8a5c', '#b3177f', '#c26a00', '#5b6b2f', '#1f8a8a', '#a8433a'];
+const IDS_ED = ['C31', 'C32', 'C33', 'C34', 'C35', 'C36', 'C37', 'C38'];
+const corEd = (d: string) => CORES_ED[Math.max(0, IDS_ED.indexOf(d))];
+
+/** v020: árvore radial da educação: a frente no centro, os desafios escolhidos em volta e as quatro categorias de cada um
+ *  nas pontas. Categoria feita = tem opção marcada; desafio feito = a página de custos dele tem opção; caminho e atual em azul. */
+function CaminhoEducacao({ s, tela, frente }: { s: CasoStore; tela?: string; frente?: { titulo: string } }) {
+  const ds = desafiosEscolhidos(s), atual = tela ? desafioDaTelaEd(tela) : null, n = ds.length;
+  const C: P = [120, 112], R1 = n <= 2 ? 44 : 50, R2 = 92;
+  const ang = (i: number) => (n === 1 ? 90 : -90 + (360 * i) / n) * Math.PI / 180;
+  const pos = (r: number, a: number): P => [C[0] + r * Math.cos(a), C[1] + r * Math.sin(a)];
+  const curva = (a: P, b: P) => `M${a[0].toFixed(1)} ${a[1].toFixed(1)}Q${((a[0] + b[0]) / 2 + (b[1] - a[1]) * 0.15).toFixed(1)} ${((a[1] + b[1]) / 2 - (b[0] - a[0]) * 0.15).toFixed(1)} ${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
+  const itens = ds.map((d, i) => {
+    const a = ang(i), no = pos(R1, a), sel = opcoesEscolhidas(s, d);
+    const folhas = CATEGORIAS_ED.map((c, k) => { const da = (k - 1.5) * (n > 4 ? 0.22 : 0.3); return { id: d + c.id, p: pos(R2, a + da), feito: sel.some(o => o.startsWith(c.id)) }; });
+    const eAtual = atual === d, feito = sel.length > 0 && !eAtual;
+    return { d, no, folhas, estado: (eAtual ? 'atual' : feito ? 'feito' : 'vazio') as Estado, cor: corEd(d), feitas: folhas.filter(f => f.feito).length };
+  });
+  const corG = (e: Estado, cor: string) => e === 'feito' ? cor : e === 'atual' ? 'var(--primary)' : 'var(--v19-galho)';
+  return (
+    <aside className="v19-caminho" aria-label={t('Seu caminho')}>
+      <p className="v19-caminho-rotulo">{t('Seu caminho')}</p>
+      {frente ? <p className="v19-caminho-frente"><i aria-hidden="true" /><span><strong>{t('Frente:')}</strong> {t(frente.titulo)}</span></p> : null}
+      {n ? <svg className="v19-caminho-diagrama" viewBox="0 0 240 224" role="img" aria-hidden="true" focusable="false">
+        {itens.map(x => <g key={'g' + x.d}>
+          {x.folhas.map(f => <path key={f.id} d={curva(x.no, f.p)} fill="none" stroke={f.feito ? x.cor : 'var(--v19-galho)'} strokeWidth={f.feito ? 2.2 : 2.6} strokeLinecap="round" />)}
+          <path d={curva(C, x.no)} fill="none" stroke={corG(x.estado, x.cor)} strokeWidth={x.estado === 'vazio' ? 2.6 : 2.4} strokeLinecap="round" />
+        </g>)}
+        {itens.map(x => <g key={x.d}>
+          {x.folhas.map(f => <g key={f.id} className={'v19-no is-' + (f.feito ? 'feito' : 'vazio')} data-id={f.id} data-estado={f.feito ? 'feito' : 'vazio'}><circle cx={f.p[0]} cy={f.p[1]} r={6} fill={f.feito ? x.cor : 'var(--v19-no-vazio)'} stroke={f.feito ? 'none' : x.cor} strokeWidth={1.1} /></g>)}
+          <No id={x.d} p={x.no} e={x.estado} cor={x.cor} raio={8} />
+        </g>)}
+        <No id="frente" p={C} e={atual ? 'caminho' : 'atual'} cor="var(--primary)" raio={9} />
+      </svg> : null}
+      <ul className="v19-caminho-lista">
+        {itens.map(x => <li key={x.d} className={'v19-caminho-item' + (atual === x.d ? ' is-atual' : '')} aria-current={atual === x.d ? 'step' : undefined}>
+          <i className="v19-caminho-ponto" style={{ background: x.cor }} aria-hidden="true" />
+          <span className="v19-caminho-nome">{nomeDesafio(x.d)}</span>
+          <span className="v19-caminho-conta">{t('{n} de {total}', { n: x.feitas, total: 4 })}</span>
+          <span className="v19-caminho-barra" aria-hidden="true"><span style={{ inlineSize: (x.feitas / 4 * 100).toFixed(1) + '%', background: x.cor }} /></span>
+        </li>)}
+      </ul>
+    </aside>
+  );
+}
+
 export function CaminhoLateral({ s, tela }: { s: CasoStore; tela?: string }) {
+  if (percursoEducacaoV20(s.ctx)) return <CaminhoEducacao s={s} tela={tela} frente={frentesDoPlano(s).find((f) => f.id === frenteAtual(s))} />;
   const frente = frentesDoPlano(s).find((f) => f.id === frenteAtual(s));
   const a = estadoDaArvore(s, tela);
   return (

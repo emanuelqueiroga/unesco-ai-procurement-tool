@@ -44,6 +44,17 @@ for (const [f, trecho] of mapas) {
   if (trecho) { const m = src.match(trecho); src = m ? m[0] : ''; }
   for (const m of src.matchAll(reValor)) { const v = limpa(m[1]); if (/[a-zà-ú]{2}/i.test(v) && !/^(pr-|pc-|var\(|#|\.\/)/.test(v)) chaves.add(v); }
 }
+// v020: catálogo da educação com e sem IA (nomes, ambientes, fases e as partes das contas, separadas por " + ")
+{
+  const src = readFileSync(join(APP, 'src/percurso/educacaoV20.ts'), 'utf8').replace(/^\s*\/\/.*$/gm, '').replace(/\/\*\*[\s\S]*?\*\//g, '');
+  for (const m of src.matchAll(new RegExp(lit, 'g'))) {
+    const partes = limpa(m[1]).split(' + '), conta = partes.length > 1 || /^ \+ /.test(m[1]);
+    for (const parte of partes) {
+      const v = parte.trim();
+      if (v && !v.includes('/') && !/^[A-Z]{2,4}$/.test(v) && /^[\p{L}\d]/u.test(v) && (conta || /\s/.test(v) || /^\p{Lu}/u.test(v))) chaves.add(v);
+    }
+  }
+}
 // fora: identificadores, rotas e textos sem letras
 const lista = [...chaves].filter((k) => !/\n|\('|'\)/.test(k) && (deChamada.has(k) ? /\p{L}/u.test(k) : /\p{L}{2}/u.test(k) && !/^[a-z]+([-.][a-z]+)*$/.test(k)) && !/^#\//.test(k)).sort((a, b) => a.localeCompare(b, 'pt'));
 writeFileSync(join(APP, '..', 'i18n', 'v14_chaves.json'), JSON.stringify(lista, null, 1) + '\n');

@@ -4,11 +4,12 @@ import { Inicio } from './screens/Inicio';
 import { Abertura, Pergunta, Sintese } from './screens/Percurso';
 import { Prioridades } from './screens/Prioridades';
 import { Governanca } from './screens/Governanca';
+import { EducacaoV20 } from './screens/EducacaoV20';
 import { Salarios } from './screens/Salarios';
 import { Esforcos } from './screens/Esforcos';
 import { Metodologia } from './screens/Metodologia';
 import { RecebidoHost } from './screens/CompartilharV16';
-import { percursoGovernanca } from './domain';
+import { percursoGovernanca, percursoEducacaoV20 } from './domain';
 import { Plano } from './screens/Plano';
 import { useRota } from './percurso/rota';
 import { useCaso } from './store';
@@ -38,6 +39,9 @@ export function App() {
     if (rota.tipo === 'metodologia') return <Metodologia />;
     if (percursoGovernanca(ctx) && !telaPrioridades && !['inicio', 'galeria'].includes(rota.tipo))
       return <Governanca key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo === 'abertura' || rota.tipo === 'sintese' ? `${rota.tipo}${rota.n}` : rota.tipo} rota={rota} />;
+    // v020: Educating with and without AI como única prioridade segue o percurso da figura
+    if (percursoEducacaoV20(ctx) && !telaPrioridades && !['inicio', 'galeria'].includes(rota.tipo))
+      return <EducacaoV20 key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo} rota={rota} />;
     switch (rota.tipo) {
       case 'galeria': return <Galeria />;
       // v018: sem abertura do capítulo 1; o início leva direto à primeira pergunta, como na v017

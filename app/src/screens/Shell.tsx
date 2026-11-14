@@ -11,7 +11,9 @@ import { infoCapitulo, t } from '../percurso/textos';
 import { entradaEtapa } from '../percurso/navegacaoOrientada';
 import { frentesDoPlano, frenteAtual } from '../percurso/frentes';
 import { href, lerRota } from '../percurso/rota';
-import { nomePais, paisDoCaso, percursoGovernanca, tr } from '../domain';
+import { nomePais, paisDoCaso, percursoGovernanca, percursoEducacaoV20, tr } from '../domain';
+import { desafioDaTelaEd } from '../store';
+import { nomeDesafio } from '../percurso/educacaoV20';
 import { ColunaCusto, FaixaCusto } from './CartaoCusto';
 import { CaminhoLateral } from './Caminho';
 import { categoriaGov } from '../store';
@@ -62,7 +64,8 @@ function PilulaFrente({ s }: { s: CasoStore }) {
  *  etapas como barras finas, com o nome e a posição de cada uma para leitores de tela. */
 function CabecalhoV19({ passos, tela, acoes, direita }: { passos: Step[]; tela?: string; acoes: ReactNode[]; direita: ReactNode }) {
   const i = passos.findIndex((p) => p.state === 'current');
-  const cat = tela ? categoriaGov(tela) : undefined;
+  const c = tela ? categoriaGov(tela) : undefined, dEd = tela ? desafioDaTelaEd(tela) : null;
+  const cat = c ? { n: c.n, nome: t(c.nome) } : dEd ? { n: '', nome: nomeDesafio(dEd) } : undefined;
   return (
     <header className="pc-cab v19-cab">
       <div className="v19-cab-l1 pc-container">
@@ -76,7 +79,7 @@ function CabecalhoV19({ passos, tela, acoes, direita }: { passos: Step[]; tela?:
           <ol>
             <li><a href={href.inicio()}><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 7.5 8 2.5l6 5M3.5 6.5V13.5h3.5V9.5h2v4h3.5V6.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /></svg>{t('Início')}</a></li>
             {passos.slice(0, i < 0 ? 0 : i + 1).map((p, k) => <li key={p.n}>{k === i && !cat ? <span aria-current="page">{p.label}</span> : <a href={p.href}>{p.label}</a>}</li>)}
-            {cat ? <li><span aria-current="page">{cat.n} {t(cat.nome)}</span></li> : null}
+            {cat ? <li><span aria-current="page">{cat.n ? cat.n + ' ' : ''}{cat.nome}</span></li> : null}
           </ol>
         </nav>
         <div className="v19-cab-acoes">{acoes.filter(Boolean).map((a, k) => <span key={k} className="v19-acao">{a}</span>)}</div>
@@ -96,7 +99,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   // como na v017: o cartão de custo aparece depois que a prioridade é escolhida
   plano = plano && (s.ctx.prioridades || []).length > 0;
   // v019: como no Figma, o cartão de custo aparece a partir das categorias (não nas telas do Contexto)
-  if (percursoGovernanca(s.ctx) && pos.tela && ['local', 'prioridades', 'problemas'].includes(pos.tela)) plano = false;
+  if ((percursoGovernanca(s.ctx) || percursoEducacaoV20(s.ctx)) && pos.tela && ['local', 'prioridades', 'problemas', 'ed-desafios', 'ed-publico'].includes(pos.tela)) plano = false;
   const estreito = useMediaQuery(BREAKPOINTS.cards);
   const celular = useMediaQuery(BREAKPOINTS.bar);           // cabeçalho compacto com menu
   const semColuna = useMediaQuery('(max-width: 1023px)');
@@ -107,7 +110,8 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   const botaoMenu = useRef<HTMLButtonElement>(null);
   const [tema, , alternarTema] = useTheme();
   const salvamento = useSalvamento();
-  const gov = percursoGovernanca(s.ctx);
+  // v020: a moldura orientada (cabeçalho, caminho e cartão de custo) vale também para a educação com e sem IA
+  const gov = percursoGovernanca(s.ctx) || percursoEducacaoV20(s.ctx);
   const respondidas = telasAtivas(s).length - progressoDe(s).reduce((a, p) => a + (p.total - p.feitas), 0);
   const rota = lerRota(typeof window === 'undefined' ? '' : window.location.hash);
 

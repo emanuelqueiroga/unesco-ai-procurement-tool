@@ -60,8 +60,17 @@ export function etapasCompletas(s: Estado14): boolean {
 }
 /** a tela do Essencial está respondida? (governança: as seis perguntas; as demais: o campo principal e os ativos obrigatórios,
  *  cada um com resposta real; etapas: todas as marcadas com escolas e estudantes; problemas: ao menos um ou "Outro problema") */
+/** v020: telas da educação com e sem IA. Público, fases e custos adicionais têm valores sugeridos; os desafios pedem
+ *  pelo menos um; a página de custos de um desafio pede pelo menos uma opção. */
+function educacaoRespondida(s: Estado14, id: string): boolean {
+  const e: any = s.ctx?.edV20 || {}, ds: string[] = Array.isArray(e.desafios) ? e.desafios : [];
+  if (id === 'ed-desafios' || id === 'ed-publico') return ds.length > 0;
+  if (id.startsWith('ed-custos-')) { const d = id.slice(10); return Array.isArray(e.opcoes?.[d]) && e.opcoes[d].length > 0; }
+  return true;
+}
 export function telaRespondida(s: Estado14, t: TelaEssencial): boolean {
   if (t.id.startsWith('gov-')) return governancaRespondida(s, t.id);
+  if (t.id.startsWith('ed-')) return educacaoRespondida(s, t.id);
   if (t.id === 'governanca') return t.campos.every(g => !!s.resp[g]);
   if (t.id === 'etapas') return (respondido(s, 'etapas') || respondido(s, 'grade')) && etapasCompletas(s);
   if (t.id === 'problemas') return String(s.ctx.problemaOutro || '').trim() !== '' || (respondido(s, 'problemas') && respostaReal(s, 'problemas'));

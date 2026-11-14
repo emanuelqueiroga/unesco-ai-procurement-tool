@@ -6,6 +6,15 @@ export function somenteGovernanca(ctx) {
   const p = (ctx || {}).prioridades;
   return Array.isArray(p) && p.length > 0 && p.every(id => id === 'governar');
 }
+/** v020: Educating with and without AI como única prioridade segue o percurso da figura (desafios, quatro categorias
+ *  compartilhadas, fases do ciclo e comparação com e sem IA). */
+export function somenteEducacao(ctx) {
+  const p = (ctx || {}).prioridades;
+  return Array.isArray(p) && p.length > 0 && p.every(id => id === 'com');
+}
+// v020: percurso novo da educação com e sem IA quando a única prioridade é "com" e o caso não traz problemas do
+// percurso anterior (os exemplos da galeria continuam no percurso 0.0.14, que é o que eles demonstram).
+export function percursoEducacaoV20(ctx) { const pr = (ctx || {}).problemas; return somenteEducacao(ctx) && !(Array.isArray(pr) && pr.some((x) => /^C[1-8]$/.test(String(x)))); }
 export function tamanhoRedeValido(ctx) {
   const r = (ctx || {}).redeNacional || {};
   return ['escolas', 'estudantes'].every(k => Number.isSafeInteger(r[k]) && r[k] > 0);

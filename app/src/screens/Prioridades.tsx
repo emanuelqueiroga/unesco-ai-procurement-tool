@@ -11,8 +11,9 @@ import { Shell } from './Shell';
 import './prioridades.css';
 
 const OFERECIDAS = ['governar', 'sobre', 'com'];
-/** v018.1: só a governança pode ser marcada nesta versão; as demais aparecem desativadas. */
-const DISPONIVEIS = ['governar'];
+/** v020: governança e educação com e sem IA podem ser marcadas, uma de cada vez (cada uma tem o seu percurso); educar
+ *  sobre a IA aparece desativada. */
+const DISPONIVEIS = ['governar', 'com'];
 const svg = (d: ReactNode) => <svg width="40" height="40" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>;
 /** Ícones simples: governar (escudo com marca), educar sobre a IA (livro com circuito), com e sem IA (escola). */
 const ICONES: Record<string, ReactNode> = {
@@ -26,7 +27,7 @@ export function Prioridades() {
   const s = useCaso();
   const [rascunho, setRascunho] = useState<string[]>(() => (s.ctx.prioridades || []).filter((id: string) => DISPONIVEIS.includes(id)));
   const P = (PRIORIDADES as any[]).filter(p => OFERECIDAS.includes(p.id));
-  const alternar = (id: string) => DISPONIVEIS.includes(id) && setRascunho(r => { const n = new Set(r); if (n.has(id)) n.delete(id); else n.add(id); return P.map(p => p.id).filter(k => n.has(k)); });
+  const alternar = (id: string) => DISPONIVEIS.includes(id) && setRascunho(r => r.includes(id) ? [] : [id]);
   const telas = telasDoCapitulo(1), i = telas.findIndex(x => x.id === 'prioridades');
   const ant = i > 0 ? href.pergunta(1, telas[i - 1].id) : href.inicio();
   const avancar = () => {

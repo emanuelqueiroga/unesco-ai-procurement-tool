@@ -1,6 +1,6 @@
 // Perguntas do modo Essencial e vínculo resposta → trecho do plano
 // (spec, "Mapa das 51 perguntas para as 24 do Essencial" e "Comportamentos que fazem a narrativa").
-import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoGovernanca } from '../domain';
+import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoGovernanca, percursoEducacaoV20 } from '../domain';
 import type { Capitulo } from './tipos';
 import { CATEGORIAS } from '../domain/catalogo_v016.js';
 
@@ -117,8 +117,27 @@ export const TELAS_FORA_DO_FLUXO: Record<string, string> = {
   'gov-projeto': 'gov-categorias', 'gov-diagnostico': 'gov-categorias', 'gov-instrumentos': 'gov-categorias', 'gov-solucoes': 'gov-categorias',
   'gov-atores': 'gov-categorias', 'gov-capacidade': 'gov-categorias', 'gov-acoes': 'gov-opcoes', 'gov-sandbox': 'gov-opcoes', 'gov-revisao': 'gov-opcoes',
 };
-export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id))];
-export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] { return percursoGovernanca(e?.ctx) ? governancaDoCaso(e?.ctx) : ESSENCIAL; }
+// v020: Educating with and without AI (figura do projeto): desafios, público e ambiente; fases do ciclo; uma página de
+// custos por desafio escolhido (as quatro categorias e as suas opções); custos adicionais.
+export const PREFIXO_CUSTOS_ED = 'ed-custos-';
+export const DESAFIOS_ED_IDS = ['C31', 'C32', 'C33', 'C34', 'C35', 'C36', 'C37', 'C38'];
+export const telaCustosEd = (d: string) => PREFIXO_CUSTOS_ED + d;
+export const desafioDaTelaEd = (id: string) => id.startsWith(PREFIXO_CUSTOS_ED) ? id.slice(PREFIXO_CUSTOS_ED.length) : null;
+export const EDUCACAO_V20: TelaEssencial[] = [
+  ...ESSENCIAL.filter(t => ['local', 'prioridades'].includes(t.id)),
+  { id: 'ed-desafios', capitulo: 1, n: [], campos: ['edV20'] },
+  { id: 'ed-publico', capitulo: 1, n: [], campos: ['edV20'] },
+  { id: 'ed-fases', capitulo: 2, n: [], campos: ['edV20'] },
+  ...DESAFIOS_ED_IDS.map(d => ({ id: telaCustosEd(d), capitulo: 3 as Capitulo, n: [], campos: ['edV20'] })),
+  { id: 'ed-adicionais', capitulo: 4, n: [], campos: ['edV20'] },
+];
+function educacaoDoCaso(ctx?: Record<string, any>): TelaEssencial[] {
+  const ds: unknown[] = Array.isArray(ctx?.edV20?.desafios) ? ctx!.edV20.desafios : [];
+  const algum = DESAFIOS_ED_IDS.some(d => ds.includes(d));
+  return EDUCACAO_V20.filter(t => { const d = desafioDaTelaEd(t.id); return d === null || ds.includes(d) || (!algum && d === DESAFIOS_ED_IDS[0]); });
+}
+export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id)), ...EDUCACAO_V20.filter(t => t.id.startsWith('ed-'))];
+export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] { return percursoGovernanca(e?.ctx) ? governancaDoCaso(e?.ctx) : percursoEducacaoV20(e?.ctx) ? educacaoDoCaso(e?.ctx) : ESSENCIAL; }
 export function telasDoCapitulo(n: Capitulo, e?: EscopoPercurso): TelaEssencial[] { return telasAtivas(e).filter(t => t.capitulo === n); }
 export function telaDoCampo(campo: string): TelaEssencial | undefined { return ESSENCIAL.find(t => t.campos.includes(campo)) || TODAS_TELAS.find(t => t.campos.includes(campo)); }
 export function essencial(campo: string): boolean { return CAMPOS_ESSENCIAIS.includes(campo); }
@@ -129,7 +148,7 @@ export function essencial(campo: string): boolean { return CAMPOS_ESSENCIAIS.inc
   if (!reg.subs) reg.subs = { id: 'subs', onde: 'ctx', tipo: 'extra', passo: '' };
   if (!reg.problemaOutro) reg.problemaOutro = { id: 'problemaOutro', onde: 'ctx', tipo: 'extra', passo: '' };
   // v018: dados do fluxo da governança (v017), guardados em ctx
-  for (const id of ['govOrcamento', 'frenteAtiva', 'govSelecoes', 'govDetalhes', 'letramento', 'educacao']) { if (!reg[id]) reg[id] = { id, onde: 'ctx', tipo: 'extra', passo: '' }; }
+  for (const id of ['govOrcamento', 'frenteAtiva', 'govSelecoes', 'govDetalhes', 'letramento', 'educacao', 'edV20']) { if (!reg[id]) reg[id] = { id, onde: 'ctx', tipo: 'extra', passo: '' }; }
 }
 /** capítulo dos campos de detalhe que não são perguntas de CAMPOS */
 const CAPITULO_EXTRA: Record<string, Capitulo> = { subs: 1, problemaOutro: 1, linhaBaseProblemas: 1, linhaBaseProblemaTxt: 1, linhaBaseMedida: 1 };

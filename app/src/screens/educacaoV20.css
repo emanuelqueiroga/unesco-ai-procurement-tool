@@ -1,0 +1,40 @@
+/* v020: telas da educação com e sem IA, na linguagem visual da v019. */
+.ed-cartao { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-block: 12px; background: var(--surface-1); }
+.ed-cartao-titulo { font-family: var(--font-serif); font-weight: 500; font-size: 17px; margin: 0 0 10px; }
+.ed-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px 16px; align-items: start; }
+.ed-select { display: grid; gap: 6px; font-size: 13px; font-weight: 500; color: var(--ink-2); }
+.ed-select select { block-size: 40px; border: 1px solid var(--line-control); border-radius: 8px; padding-inline: 10px; background: var(--surface-1); color: var(--ink); font: inherit; font-weight: 400; }
+.ed-tabela { inline-size: 100%; border-collapse: collapse; margin-block: 12px; font-size: 14px; }
+.ed-tabela th, .ed-tabela td { text-align: start; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.ed-tabela thead th { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.ed-tabela td { font-variant-numeric: tabular-nums; }
+.ed-tabela .ed-total th, .ed-tabela .ed-total td { font-weight: 700; }
+.ed-poc { font-size: 13px; color: var(--ink-2); }
+.ed-acoes-rapidas { margin: 4px 0 0; text-align: end; }
+.ed-cat { margin-block: 20px 8px; }
+.ed-cat-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.ed-cat-cab h2 { font-family: var(--font-serif); font-weight: 500; font-size: 18px; margin: 0; }
+.ed-cat-total { display: flex; gap: 16px; margin: 0; font-size: 13px; color: var(--muted); }
+.ed-cat-total b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.ed-opcao.is-on { border: 1px solid var(--v19-sel, var(--primary)); border-radius: 12px; padding: 4px; }
+.ed-opcao.is-on .pr-optioncard { border-color: transparent !important; box-shadow: none !important; }
+.ed-opcao-valores { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin: 0; padding: 4px 16px 12px 48px; font-size: 13px; }
+.ed-opcao-valores dt { color: var(--muted); font-size: 12px; }
+.ed-opcao-valores dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ed-opcao-valores small { display: block; color: var(--muted); font-size: 11.5px; }
+.ed-conta { grid-column: 1 / -1; margin: 2px 0 0; color: var(--ink-2); font-size: 12.5px; }
+.ed-plano h1 { font-family: var(--font-serif); font-weight: 400; font-size: 30px; line-height: 1.2; margin: 0 0 4px; }
+.ed-plano h2 { font-family: var(--font-serif); font-weight: 500; font-size: 20px; margin: 28px 0 8px; }
+.ed-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.ed-kpi { border-radius: 12px; padding: 16px 18px; background: var(--surface-1); border: 1px solid var(--line); }
+.ed-kpi--com { background: var(--primary); color: var(--on-primary, #fff); border-color: var(--primary); }
+.ed-kpi h3 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+.ed-kpi-total { font-family: var(--font-serif); font-size: 28px; font-weight: 600; margin: 6px 0 10px; font-variant-numeric: tabular-nums; }
+.ed-kpi dl { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin: 0; font-size: 13px; }
+.ed-kpi dt { opacity: .8; } .ed-kpi dd { margin: 0; font-weight: 600; } .ed-kpi small { opacity: .75; font-weight: 400; }
+.ed-lista, .ed-roteiro { padding-inline-start: 20px; display: grid; gap: 6px; font-size: 14px; }
+.ed-plano { background: var(--surface-1); border-radius: 14px; padding: 28px 32px; }
+@media (max-width: 640px) { .ed-kpis, .ed-opcao-valores { grid-template-columns: 1fr; } .ed-opcao-valores { padding-inline-start: 16px; } .ed-plano { padding: 20px 16px; } }
+.ed-rolo { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-inline: -4px; padding-inline: 4px; }
+.ed-rolo .ed-tabela { min-inline-size: 520px; }
+@media (max-width: 640px) { .ed-plano h1 { font-size: 24px; } }
