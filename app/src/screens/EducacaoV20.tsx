@@ -11,6 +11,9 @@ import { formatarMoedaEst } from '../percurso/estimativasOrcamento';
 import { nomePais, paisDoCaso, LOC } from '../domain';
 /** A conta de cada opção é traduzida por partes (separadas por " + "). */
 const traduzConta = (c: string) => c.split(' + ').map((x) => t(x)).join(' + ');
+/** O NumeroField com `percentual` mostra e devolve fração (0,25 = 25%); o percurso guarda pontos percentuais (25). */
+const paraFracao = (pp: number) => pp / 100;
+const paraPontos = (v: number | '') => v === '' ? undefined : Math.round(v * 100 * 1e6) / 1e6;
 const nfmt = (v: number) => new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 0 }).format(v);
 import {
   CATEGORIAS_ED, DESAFIOS_ED, AMBIENTES, MODALIDADES, ESCOLAS_POC, SIM, lerEd, publico, publicoSugerido, fases, desafiosEscolhidos,
@@ -49,12 +52,12 @@ function Publico({ s }: { s: CasoStore }) {
       const p = publico(s, d), sug = publicoSugerido(s, d), salvo = sv[d] || {};
       return <section key={d} className="ed-cartao">
         <h2 className="ed-cartao-titulo">{nomeDesafio(d)}</h2>
-        <div className="ed-campos">
+        <div className="ed-campos ed-campos--alinhados">
           <NumeroField locale={String(LOC())} label={t('Estudantes')} value={p.estudantes} suggested={salvo.estudantes === undefined} hint={t('Sugerido: {n}', { n: nfmt(sug.estudantes) })} onChange={v => gravarEd(`publico.${d}.estudantes`, v === '' ? undefined : v)} />
           <NumeroField locale={String(LOC())} label={t('Professores')} value={p.professores} suggested={salvo.professores === undefined} hint={t('Sugerido: {n}', { n: nfmt(sug.professores) })} onChange={v => gravarEd(`publico.${d}.professores`, v === '' ? undefined : v)} />
-          <label className="ed-select"><span>{t('Ambiente de implantação')}</span>
+          <label className="ed-select"><span className="ed-select-rotulo">{t('Ambiente de implantação')}</span>
             <select value={p.ambiente} onChange={e => gravarEd(`publico.${d}.ambiente`, e.target.value)}>{AMBIENTES.map(([v, r]) => <option key={v} value={v}>{t(r)}</option>)}</select></label>
-          <label className="ed-select"><span>{t('Modalidade')}</span>
+          <label className="ed-select"><span className="ed-select-rotulo">{t('Modalidade')}</span>
             <select value={p.modalidade} onChange={e => gravarEd(`publico.${d}.modalidade`, e.target.value)}>{MODALIDADES.map(([v, r]) => <option key={v} value={v}>{t(r)}</option>)}</select></label>
           <NumeroField locale={String(LOC())} label={t('Línguas de instrução')} value={p.linguas} suggested={salvo.linguas === undefined} onChange={v => gravarEd(`publico.${d}.linguas`, v === '' ? undefined : v)} />
         </div>
@@ -71,7 +74,7 @@ function Fases({ s }: { s: CasoStore }) {
     <div className="ed-rolo"><table className="ed-tabela"><thead><tr><th>{t('Fase')}</th><th>{t('Meses')}</th><th>{t('Alcance')}</th></tr></thead>
       <tbody>{fs.map((f, i) => <tr key={f.id}><th scope="row">{t(f.nome)}</th>
         <td><NumeroField locale={String(LOC())} label={t('Meses') + ' · ' + t(f.nome)} value={f.meses} size={4} onChange={v => grava(i, 'meses', v)} suggested={sv[i]?.meses === undefined} /></td>
-        <td>{f.id === 'poc' ? <span className="ed-poc">{t('{n} escolas', { n: ESCOLAS_POC })}</span> : <NumeroField locale={String(LOC())} label={t('Alcance (%)') + ' · ' + t(f.nome)} value={f.alcance} size={4} percentual onChange={v => grava(i, 'alcance', v)} suggested={sv[i]?.alcance === undefined} />}</td></tr>)}</tbody></table></div>
+        <td>{f.id === 'poc' ? <span className="ed-poc">{t('{n} escolas', { n: ESCOLAS_POC })}</span> : <NumeroField locale={String(LOC())} label={t('Alcance (%)') + ' · ' + t(f.nome)} value={paraFracao(f.alcance)} size={4} percentual onChange={v => grava(i, 'alcance', paraPontos(v) ?? '')} suggested={sv[i]?.alcance === undefined} />}</td></tr>)}</tbody></table></div>
     <p className="pc-nota">{t('Duração total: {n} meses.', { n: fs.reduce((a, f) => a + f.meses, 0) })}</p>
   </div>;
 }
@@ -105,11 +108,11 @@ function Custos({ s, d }: { s: CasoStore; d: string }) {
 
 function Adicionais({ s }: { s: CasoStore }) {
   const r = orcamentoEducacao(s), f = fmt(r), sv = lerEd(s);
-  const campo = (k: 'pV' | 'pO' | 'pT', rot: string, padrao: number, base: string) => <NumeroField locale={String(LOC())} label={t(rot)} percentual value={sv[k] ?? padrao} suggested={sv[k] === undefined}
-    hint={t('Padrão: {p}% de {b}', { p: padrao, b: t(base) })} onChange={v => gravarEd(k, v === '' ? undefined : v)} />;
+  const campo = (k: 'pV' | 'pO' | 'pT', rot: string, padrao: number, base: string) => <NumeroField locale={String(LOC())} label={t(rot)} percentual value={paraFracao(sv[k] ?? padrao)} suggested={sv[k] === undefined}
+    hint={t('Padrão: {p}% de {b}', { p: padrao, b: t(base) })} onChange={v => gravarEd(k, paraPontos(v))} />;
   return <div className="ed-adicionais">
     <p className="pc-nota">{t('Os mesmos percentuais e bases da governança: viagens sobre o trabalho de pessoas, overhead sobre esse trabalho e as viagens, e taxa administrativa sobre o custo direto e as viagens.')}</p>
-    <div className="ed-campos">
+    <div className="ed-campos ed-campos--alinhados">
       {campo('pV', 'Viagens e atividades presenciais', SIM.viagens, 'trabalho de pessoas')}
       {campo('pO', 'Overhead (custos indiretos)', SIM.overhead, 'trabalho e viagens')}
       {campo('pT', 'Taxa administrativa', SIM.taxa, 'custo direto e viagens')}

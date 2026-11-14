@@ -1,9 +1,20 @@
 /* v020: telas da educação com e sem IA, na linguagem visual da v019. */
 .ed-cartao { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-block: 12px; background: var(--surface-1); }
 .ed-cartao-titulo { font-family: var(--font-serif); font-weight: 500; font-size: 17px; margin: 0 0 10px; }
-.ed-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px 16px; align-items: start; }
-.ed-select { display: grid; gap: 6px; font-size: 13px; font-weight: 500; color: var(--ink-2); }
-.ed-select select { block-size: 40px; border: 1px solid var(--line-control); border-radius: 8px; padding-inline: 10px; background: var(--surface-1); color: var(--ink); font: inherit; font-weight: 400; }
+.ed-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 16px 20px; align-items: start; margin-block-start: 12px; }
+.ed-campos > * { min-inline-size: 0; }
+/* rótulo, campo e dica de cada coluna nas mesmas linhas, mesmo quando um rótulo quebra em duas linhas */
+@supports (grid-template-rows: subgrid) {
+  .ed-campos.ed-campos--alinhados > * { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: var(--space-2); align-content: start; }
+  .ed-campos--alinhados .pr-textfield-label, .ed-campos--alinhados .ed-select-rotulo { align-self: end; }
+}
+.ed-select { display: flex; flex-direction: column; gap: var(--space-2); min-inline-size: 0; }
+.ed-select-rotulo { font-size: 13px; line-height: 18px; color: var(--muted); }
+.ed-select select { inline-size: 100%; max-inline-size: 100%; min-inline-size: 0; min-block-size: 44px; border: 1px solid var(--line-control); border-radius: 8px; padding-inline: 12px; background: var(--surface-1); color: var(--ink); font: inherit; font-size: 16px; text-overflow: ellipsis; }
+.ed-select select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* na tabela das fases o rótulo de cada campo fica só para leitores de tela (a coluna já diz o que é) */
+.ed-tabela .pr-textfield-label { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ed-tabela td .pr-textfield { gap: 0; }
 .ed-tabela { inline-size: 100%; border-collapse: collapse; margin-block: 12px; font-size: 14px; }
 .ed-tabela th, .ed-tabela td { text-align: start; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .ed-tabela thead th { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
@@ -38,3 +49,4 @@
 .ed-rolo { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-inline: -4px; padding-inline: 4px; }
 .ed-rolo .ed-tabela { min-inline-size: 520px; }
 @media (max-width: 640px) { .ed-plano h1 { font-size: 24px; } }
+.ed-adicionais .ed-campos { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
