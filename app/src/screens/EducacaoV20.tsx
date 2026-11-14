@@ -121,7 +121,7 @@ function Adicionais({ s }: { s: CasoStore }) {
   </div>;
 }
 
-const TITULOS: Record<string, string> = { 'ed-desafios': 'Quais desafios educacionais você quer enfrentar?', 'ed-publico': 'Para quem e onde?', 'ed-fases': 'Fases do ciclo', 'ed-adicionais': 'Custos adicionais' };
+export const TITULOS: Record<string, string> = { 'ed-desafios': 'Quais desafios educacionais você quer enfrentar?', 'ed-publico': 'Para quem e onde?', 'ed-fases': 'Fases do ciclo', 'ed-adicionais': 'Custos adicionais' };
 function titulo(id: string) { const d = desafioDaTelaEd(id); return d ? t('Quais custos você quer incluir?') : t(TITULOS[id] || id); }
 
 export function EducacaoV20({ rota }: { rota: Rota }) {

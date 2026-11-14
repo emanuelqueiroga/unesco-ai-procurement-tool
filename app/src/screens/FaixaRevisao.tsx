@@ -1,8 +1,10 @@
 // Faixa das versões de revisão e de teste: diz que esta não é a ferramenta publicada e leva à versão estável.
 import { CANAL, VERSAO, URL_ESTAVEL, URL_VERSOES, TESTE } from '../percurso/canal';
 import { t } from '../percurso/textos';
+import { useCaso } from '../store';
 
 export function FaixaRevisao() {
+  useCaso((s) => s.lang);   // redesenha a faixa quando o idioma muda
   if (CANAL !== 'revisao' && !TESTE) return null;
   return (
     <details className="pc-faixa-revisao" aria-label={t('Versão de revisão')}>
