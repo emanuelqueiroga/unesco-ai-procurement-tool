@@ -145,9 +145,9 @@ function CartaoEducacao({ s, compacto = false }: { s: CasoStore; compacto?: bool
       <p className="pc-custo-nota">{t('Sem IA')}: {moedaCurta(r.sem.total, r.moeda)} · {t('valores simulados')}</p>
     </div>
     {compacto ? null : <dl className="pc-custo-lista">
-      <dt>{t('Investimento (CapEx)')}</dt><dd>{f(r.com.k)}</dd>
-      <dt>{t('Operação (OpEx)')}</dt><dd>{f(r.com.x)}</dd>
-      <dt>{t('Uso')}</dt><dd>{f(r.com.u)}</dd>
+      <dt>{t('Investimento (CapEx)')}</dt><dd title={f(r.com.k)}>{moedaCurta(r.com.k, r.moeda)}</dd>
+      <dt>{t('Operação (OpEx)')}</dt><dd title={f(r.com.x)}>{moedaCurta(r.com.x, r.moeda)}</dd>
+      <dt>{t('Uso')}</dt><dd title={f(r.com.u)}>{moedaCurta(r.com.u, r.moeda)}</dd>
       <dt>{t('Por estudante')}</dt><dd>{r.com.porEstudante === null ? '—' : f(r.com.porEstudante)}</dd>
     </dl>}
   </section>;
