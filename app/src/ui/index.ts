@@ -79,7 +79,7 @@ export type { PilotSizeProps, PilotMode, PilotValues, PilotHints, PilotField } f
 export { IconInfo, IconWarning, IconBlocked, IconMenu, IconChevronUp, IconChevronDown, IconClose, IconMoon, IconSun } from './icons';
 export { useFocusTrap } from './focusTrap';
 export { useMediaQuery, BREAKPOINTS } from './useMediaQuery';
-export { useTheme, applyTheme, initialTheme } from './theme';
+export { useTheme, applyTheme, initialTheme, TEMA_ESCURO } from './theme';
 export type { Theme } from './theme';
 export { setTradutorUI, tx } from './texto';
 export { NumeroField } from './NumeroField/NumeroField';

@@ -6,7 +6,7 @@
 // sem Matriz, Calculadora e modo, e o cartão "Custo desta frente".
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useCaso, telasAtivas, telasDoCapitulo, progressoDe, type Capitulo, type CasoStore } from '../store';
-import { AcoesForaDoQuadro, Header, StepBar, Segmented, Button, IconMoon, IconSun, IconMenu, IconClose, useMediaQuery, useTheme, BREAKPOINTS, type Step } from '../ui';
+import { AcoesForaDoQuadro, Header, StepBar, Segmented, Button, IconMoon, IconSun, IconMenu, IconClose, useMediaQuery, useTheme, TEMA_ESCURO, BREAKPOINTS, type Step } from '../ui';
 import { infoCapitulo, t } from '../percurso/textos';
 import { entradaEtapa } from '../percurso/navegacaoOrientada';
 import { frentesDoPlano, frenteAtual } from '../percurso/frentes';
@@ -152,7 +152,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
     />
   );
   const verPlano = comPlano ? <Button variant="link" size="sm" href={href.plano()}>{t('Ver o plano')}</Button> : null;
-  const botaoTema = (
+  const botaoTema = !TEMA_ESCURO ? null : (
     <Button
       variant="secondary"
       size="sm"

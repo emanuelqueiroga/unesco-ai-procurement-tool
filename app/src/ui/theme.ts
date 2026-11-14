@@ -3,6 +3,10 @@ import { useCallback, useSyncExternalStore } from 'react';
 export type Theme = 'light' | 'dark';
 
 const KEY = 'aiedu-theme';
+/** v020: o tema escuro está desativado por enquanto. A interface fica sempre no claro, inclusive com o sistema no
+ *  escuro (data-theme="light" neutraliza as regras de prefers-color-scheme), e os botões de tema não aparecem.
+ *  Para reativar, volte a constante para true. */
+export const TEMA_ESCURO = false;
 /** cor da barra do navegador (meta theme-color) em cada tema: a superfície do cabeçalho */
 const COR_BARRA: Record<Theme, string> = { light: '#ffffff', dark: '#111a2b' };
 
@@ -21,6 +25,7 @@ function doSistema(): Theme {
 
 /** Tema inicial: o guardado, senão `prefers-color-scheme`. */
 export function initialTheme(): Theme {
+  if (!TEMA_ESCURO) return 'light';
   return stored() ?? doSistema();
 }
 
@@ -29,6 +34,7 @@ export function initialTheme(): Theme {
 export function applyTheme(theme: Theme) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
+  if (!TEMA_ESCURO) { root.setAttribute('data-theme', 'light'); document.querySelector('meta[name="theme-color"]')?.setAttribute('content', COR_BARRA.light); return; }
   if (theme === 'dark') root.setAttribute('data-theme', 'dark');
   else root.removeAttribute('data-theme');
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', COR_BARRA[theme]);
@@ -48,7 +54,7 @@ const assinar = (f: () => void) => { ouvintes.add(f); return () => { ouvintes.de
 
 /** Enquanto a pessoa não escolher um tema, a interface acompanha o do sistema (também quando ele muda). */
 export function acompanharTemaDoSistema(): () => void {
-  if (typeof window === 'undefined' || !window.matchMedia) return () => {};
+  if (!TEMA_ESCURO || typeof window === 'undefined' || !window.matchMedia) return () => {};
   const mq = window.matchMedia('(prefers-color-scheme: dark)');
   const mudou = () => { if (!stored()) definir(mq.matches ? 'dark' : 'light'); };
   mq.addEventListener('change', mudou);
@@ -59,6 +65,7 @@ export function acompanharTemaDoSistema(): () => void {
 export function useTheme(): [Theme, (t: Theme) => void, () => void] {
   const theme = useSyncExternalStore(assinar, ler, () => 'light' as Theme);
   const setTheme = useCallback((t: Theme) => {
+    if (!TEMA_ESCURO) { definir('light'); return; }
     try {
       localStorage.setItem(KEY, t);
     } catch {

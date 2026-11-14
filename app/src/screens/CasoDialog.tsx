@@ -4,7 +4,7 @@
 import { useRef, useState } from 'react';
 import { CASOS, tr, LOC, versaoReferencias } from '../domain';
 import { useCaso } from '../store';
-import { Dialog, Button, Alert, Segmented, TextField, useTheme } from '../ui';
+import { Dialog, Button, Alert, Segmented, TextField, useTheme, TEMA_ESCURO } from '../ui';
 import { t } from '../percurso/textos';
 import { SeletorMoeda } from './refinar/SeletorMoeda';
 import { Pais } from '../percurso/Pais';
@@ -137,10 +137,10 @@ export function CasoDialog({ open, onClose }: { open: boolean; onClose: () => vo
           <SeletorMoeda compacto semNota />
           <p className="pc-dialogo-texto">{textoVersao()}</p>
         </section>
-        <section>
+        {TEMA_ESCURO ? <section>
           <h3 className="pc-dialogo-titulo">{t('Aparência')}</h3>
           <Segmented label={t('Aparência')} value={theme} onChange={(v) => setTheme(v)} options={[{ value: 'light', label: t('Claro') }, { value: 'dark', label: t('Escuro') }]} />
-        </section>
+        </section> : null}
       </div>
     </Dialog>
   );
