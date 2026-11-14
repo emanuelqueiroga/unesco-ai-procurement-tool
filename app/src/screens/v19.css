@@ -158,15 +158,9 @@ body { font-family: var(--font-sans); }
 .v19-hero-sec { margin: 8px 0 0; display: flex; gap: 16px; }
 .v19-hero-sec .pr-button--link { color: #fff; padding: 0; font-size: 13px; }
 
-.v19-como { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: center; padding-block: 56px 32px; }
-.v19-como-foto { aspect-ratio: 4 / 3; border-radius: 4px; background: var(--v19-foto-como, linear-gradient(135deg, #dfe8f1, #b9cde0)); background-size: cover; background-position: center; }
-.v19-como h2, .v19-dg h2 { font-family: var(--font-serif); font-weight: 400; font-size: 34px; line-height: 42px; margin: 0 0 22px; color: var(--v19-titulo); }
-.v19-como-etapas { list-style: none; margin: 0 0 26px; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 22px 28px; }
-.v19-como-etapas h3 { font-family: var(--font-serif); font-weight: 500; font-size: 17px; line-height: 24px; margin: 0 0 4px; color: var(--v19-titulo); }
-.v19-como-etapas p { margin: 0; font-size: 13px; line-height: 18px; color: var(--ink-2); }
-.v19-como .pr-button { border-radius: 999px; padding-inline: 22px; }
+.v19-dg h2 { font-family: var(--font-serif); font-weight: 400; font-size: 34px; line-height: 42px; margin: 0 0 22px; color: var(--v19-titulo); }
 
-.v19-dg { padding-block: 24px 56px; }
+.v19-dg { padding-block: 56px; }
 .v19-dg-grade { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .v19-dg-cab { background: var(--primary); color: #fff; border-radius: 4px; padding: 14px 16px 16px; min-block-size: 112px; }
 .v19-dg-num { font-size: 13px; opacity: .9; }
@@ -181,11 +175,10 @@ body { font-family: var(--font-sans); }
 .v19-dg-faixa b { display: block; color: var(--primary); font-weight: 600; }
 .v19-dg-faixa a { color: var(--primary); font-weight: 500; }
 @media (max-width: 900px) {
-  .v19-como { grid-template-columns: 1fr; gap: 28px; }
   .v19-dg-grade { grid-template-columns: 1fr 1fr; }
   .v19-hero-conteudo { padding-block: 48px 44px; }
 }
-@media (max-width: 560px) { .v19-dg-grade, .v19-como-etapas { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .v19-dg-grade { grid-template-columns: 1fr; } }
 
 /* ajustes de especificidade sobre a moldura anterior */
 .pc-app.pc-app--inicio .pc-corpo > .pc-main { max-width: none !important; padding: 0 !important; margin: 0 !important; inline-size: 100%; }

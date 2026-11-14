@@ -1,5 +1,5 @@
-// Início (v019): a página inicial v2 do design (Figma): faixa principal com foto e camada azul, "Como funciona" com foto e
-// as quatro etapas do percurso da governança, e o diagrama do modelo de custo em quatro colunas. O conteúdo é o da
+// Início (v019): a página inicial v2 do design (Figma): faixa principal com foto e camada azul e o diagrama do modelo de
+// custo em quatro colunas (v020: sem a seção "Como funciona" e a foto provisória dela). O conteúdo é o da
 // v018.1: governança ativa, as demais prioridades numa próxima versão, uma duração com custos adicionais (sem fases).
 // Com um caso salvo, oferece continuar ou começar um novo (o que pede confirmação, porque apaga o caso salvo).
 import { useState } from 'react';
@@ -12,13 +12,6 @@ import { destinoContinuar } from './transversal';
 import { t } from '../percurso/textos';
 import { href, ir } from '../percurso/rota';
 import './inicio.css';
-
-const ETAPAS: [string, string][] = [
-  ['Contexto', 'Qual é o lugar, o país e quais desafios você quer enfrentar?'],
-  ['Categorias de custo', 'Quais tipos de custo entram no plano?'],
-  ['Opções e valores', 'Quais medidas, com que equipes e por quanto tempo?'],
-  ['Plano de governança, resumo e anexo em PDF', 'O custo por categoria, em investimento, operação e uso, e o roteiro de implementação.'],
-];
 
 function Coluna({ n, titulo, sub, itens }: { n: number; titulo: string; sub: string; itens: [string, string?][] }) {
   return <section className="v19-dg-col">
@@ -63,17 +56,6 @@ export function Inicio() {
             <Button variant="link" onClick={() => { void abrirExemplo('B'); }}>{t('Ver um plano de exemplo')}</Button>
             {comCaso ? <Button variant="link" onClick={() => { void exportarCaso(); }}>{t('Exportar o plano')}</Button> : null}
           </p>
-        </div>
-      </section>
-
-      <section className="v19-como pc-container" aria-labelledby="como-titulo">
-        <div className="v19-como-foto" aria-hidden="true" />
-        <div className="v19-como-texto">
-          <h2 id="como-titulo">{t('Como funciona')}</h2>
-          <ol className="v19-como-etapas">
-            {ETAPAS.map(([a, b], i) => <li key={a}><h3><span>{i + 1}.</span> {t(a)}</h3><p>{t(b)}</p></li>)}
-          </ol>
-          <Button href={comecar}>{rotuloComecar} <span aria-hidden="true">→</span></Button>
         </div>
       </section>
 
