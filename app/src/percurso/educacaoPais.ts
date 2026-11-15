@@ -12,8 +12,8 @@ export const FONTES_ED = {
   uisEscolas: { nome: 'UNESCO UIS, escolas com eletricidade e com internet para fins pedagógicos (SCHBSP)', url: 'https://databrowser.uis.unesco.org/', licenca: 'CC BY-SA 3.0 IGO' },
   uisRazao: { nome: 'UNESCO UIS, estudantes por professor (PTRHC)', url: 'https://databrowser.uis.unesco.org/', licenca: 'CC BY-SA 3.0 IGO' },
   kwh: { nome: 'Banco Mundial, Doing Business 2019, preço da eletricidade (IC.ELC.PRI.KH.DB1619), atualizado pelo IPC (FP.CPI.TOTL) e pelo câmbio (PA.NUS.FCRF)', url: 'https://data.worldbank.org/indicator/IC.ELC.PRI.KH.DB1619', licenca: 'CC BY 4.0' },
-  banda: { nome: 'UIT, ICT Price Baskets 2024, cesta de banda larga fixa (5 GB)', url: 'https://www.itu.int/en/ITU-D/Statistics/Pages/ICTprices/default.aspx', licenca: 'uso livre com citação da UIT' },
-  movel: { nome: 'UIT, ICT Price Baskets 2024, cesta de dados móveis (2 GB)', url: 'https://www.itu.int/en/ITU-D/Statistics/Pages/ICTprices/default.aspx', licenca: 'uso livre com citação da UIT' },
+  banda: { nome: 'UIT, ICT Price Baskets 2024, cesta de banda larga fixa (5 GB)', url: 'https://www.itu.int/en/ITU-D/Statistics/Pages/ICTprices/default.aspx', licenca: 'CC BY-NC-SA 3.0 IGO (uso não comercial, com citação)' },
+  movel: { nome: 'UIT, ICT Price Baskets 2024, cesta de dados móveis (2 GB)', url: 'https://www.itu.int/en/ITU-D/Statistics/Pages/ICTprices/default.aspx', licenca: 'CC BY-NC-SA 3.0 IGO (uso não comercial, com citação)' },
   pvout: { nome: 'Banco Mundial/ESMAP e Solargis, Global Photovoltaic Power Potential by Country (PVOUT nível 1)', url: 'https://datacatalog.worldbank.org/search/dataset/0038379', licenca: 'CC BY 4.0' },
   unicef: { nome: 'UNICEF, crianças de 2 a 17 anos com dificuldade funcional (FD_FUNC_DIFFICULTY, MICS); sem dado do país, a estimativa mundial do relatório "Seen, Counted, Included" (2021)', url: 'https://data.unicef.org/resources/children-with-disabilities-report-2021/', licenca: 'termos de uso do UNICEF (uso com citação)' },
 } as const;
@@ -44,22 +44,32 @@ function mediaNiveis(tab: Partial<Record<string, [number, number]>> | undefined,
   if (!xs.length) return null;
   return { v: xs.reduce((n, x) => n + x[0], 0) / xs.length, ano: Math.min(...xs.map(x => x[1])) };
 }
+/** Mediana do grupo do FMI de uma série por desafio (sem dado do país). */
+const cacheMed: Record<string, Record<GrupoFMI, number>> = {};
+function medDesafio(chave: string, f: (iso: string) => number | null): Record<GrupoFMI, number> {
+  if (!cacheMed[chave]) { const tab: Record<string, number> = {};
+    for (const iso of new Set([...Object.keys(ESCOLAS_UIS), ...Object.keys(RAZAO_UIS)])) { const v = f(iso); if (v !== null) tab[iso] = v; }
+    cacheMed[chave] = medGrupo(tab); }
+  return cacheMed[chave];
+}
+const mediana_ = (chave: string, iso: string | undefined, f: (iso: string) => number | null, dec = 1): ValorPais =>
+  ({ v: Math.round(medDesafio(chave, f)[grupo(iso)] * 10 ** dec) / 10 ** dec, ano: null, fonte: 'mediana do grupo do país', grau: 'B', mediana: true });
 /** Locais sem energia (%) = 100 − escolas com eletricidade, nos níveis do desafio. */
-export function semEnergiaPais(iso: string | undefined, d: string): ValorPais | null {
+export function semEnergiaPais(iso: string | undefined, d: string, soPais = false): ValorPais | null {
   const n = NIVEIS_DESAFIO[d]?.escolas || ['1'], t = iso ? ESCOLAS_UIS[iso] : undefined;
   const m = mediaNiveis(t && { '1': t.el1, '2': t.el2, '3': t.el3 }, n);
-  return m ? { v: Math.round((100 - m.v) * 10) / 10, ano: m.ano, fonte: 'UIS', niveis: n, grau: 'A' } : null;
+  return m ? { v: Math.round((100 - m.v) * 10) / 10, ano: m.ano, fonte: 'UIS', niveis: n, grau: 'A' } : iso && !soPais ? mediana_('el' + d, iso, x => semEnergiaPais(x, d, true)?.v ?? null) : null;
 }
 /** Locais sem internet (%) = 100 − escolas com internet para fins pedagógicos, nos níveis do desafio. */
-export function semInternetPais(iso: string | undefined, d: string): ValorPais | null {
+export function semInternetPais(iso: string | undefined, d: string, soPais = false): ValorPais | null {
   const n = NIVEIS_DESAFIO[d]?.escolas || ['1'], t = iso ? ESCOLAS_UIS[iso] : undefined;
   const m = mediaNiveis(t && { '1': t.in1, '2': t.in2, '3': t.in3 }, n);
-  return m ? { v: Math.round((100 - m.v) * 10) / 10, ano: m.ano, fonte: 'UIS', niveis: n, grau: 'A' } : null;
+  return m ? { v: Math.round((100 - m.v) * 10) / 10, ano: m.ano, fonte: 'UIS', niveis: n, grau: 'A' } : iso && !soPais ? mediana_('in' + d, iso, x => semInternetPais(x, d, true)?.v ?? null) : null;
 }
 /** Estudantes por professor nos níveis do desafio (C37, jovens e adultos, usa o secundário inferior como aproximação). */
-export function razaoPais(iso: string | undefined, d: string): ValorPais | null {
+export function razaoPais(iso: string | undefined, d: string, soPais = false): ValorPais | null {
   const n = NIVEIS_DESAFIO[d]?.razao || ['1'], m = mediaNiveis(iso ? RAZAO_UIS[iso] as any : undefined, n);
-  return m ? { v: Math.round(m.v * 10) / 10, ano: m.ano, fonte: 'UIS', niveis: n, grau: d === 'C37' || d === 'C31' ? 'B' : 'A' } : null;
+  return m ? { v: Math.round(m.v * 10) / 10, ano: m.ano, fonte: 'UIS', niveis: n, grau: d === 'C37' || d === 'C31' ? 'B' : 'A' } : iso && !soPais ? mediana_('rz' + d, iso, x => razaoPais(x, d, true)?.v ?? null) : null;
 }
 /** Estudantes com deficiência (%): país (UNICEF/MICS) ou estimativa mundial. */
 export function deficienciaPais(iso: string | undefined): ValorPais {
@@ -81,7 +91,7 @@ export function precoPais(chave: string, iso: string | undefined): ValorPais | n
   if (chave === 'mbps') { const x = iso ? BANDA_UIT[iso] : undefined;
     return x ? { v: r4(x[0] / x[1]), ano: 2024, fonte: 'UIT, cesta de banda fixa', grau: 'B' } : { v: r4(MBPS_MED[g]), ano: 2024, fonte: 'mediana do grupo do país', grau: 'B', mediana: true }; }
   if (chave === 'gb') { const x = iso ? MOVEL_UIT[iso] : undefined;
-    return x ? { v: r4(x[0] / x[1]), ano: 2024, fonte: 'UIT, cesta de dados móveis', grau: 'A' } : { v: r4(GB_MED[g]), ano: 2024, fonte: 'mediana do grupo do país', grau: 'B', mediana: true }; }
+    return x ? { v: r4(x[0] / x[1]), ano: 2024, fonte: 'UIT, cesta de dados móveis', grau: 'B' } : { v: r4(GB_MED[g]), ano: 2024, fonte: 'mediana do grupo do país', grau: 'B', mediana: true }; }
   return null;
 }
 /** Parâmetro sugerido por país. */

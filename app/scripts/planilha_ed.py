@@ -18,7 +18,7 @@ def larg(ws, ws_w):
     for j, w in enumerate(ws_w, 1): ws.column_dimensions[get_column_letter(j)].width = w
 # ---------- Leia-me
 ws = wb.active; ws.title = T('Leia-me', 'Read me')
-txt = [T('Modelo de custeio: Educando com e sem IA (v022)', 'Costing model: Educating with and without AI (v022)'), '',
+txt = [T('Modelo de custeio: Educando com e sem IA (v022.1)', 'Costing model: Educating with and without AI (v022.1)'), '',
  T('Esta planilha refaz, com fórmulas visíveis, o caso de exemplo da metodologia: Brasil, desafio de alfabetização e numeracia (C32), todas as opções das quatro categorias, valores em US$ e as sugestões da ferramenta.',
    'This spreadsheet recomputes, with visible formulas, the methodology example case: Brazil, foundational literacy and numeracy challenge (C32), all options in the four categories, values in US$ and the tool suggestions.'),
  T('Na aba Linhas, cada valor é quantidade × preço unitário; nas linhas de pessoas, a quantidade é pessoas × dedicação × meses (pessoa-mês) e o preço é o custo mensal com encargos. A aba Resumo soma por alternativa e por classe com SOMASES e aplica os custos adicionais.',

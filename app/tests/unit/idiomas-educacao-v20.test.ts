@@ -33,7 +33,7 @@ const valor = (d: Record<string, string>, k: string) => d[k] ?? d[normalizar(k).
 // iguais ao inglês e corretos no idioma
 const IGUAIS: Record<string, string[]> = { fr: ['Infrastructure', 'Phase', 'Phases', 'Mode', 'Plan', 'Usage', 'maintenance', 'Offline', 'Online', 'kWh', 'Mediation', 'Coaching individuel', 'kits', 'pages'], es: ['Offline', 'Online', 'kWh', 'kits'], sw: ['Offline', 'Online', 'kWh'] };
 // siglas e unidades técnicas (GB, kWh, Mbps, GPU, RAG, ML, API, SaaS, US$) ficam em alfabeto latino também em árabe e chinês
-const NOMES = /\b(STEAM|UNESCO|IA\.EDU|Krueger|Jackson|AI|SEL|TVET|offline|Offline|online|Online|coaching|tokens|software|hardware|GB|kWh|kW|Mbps|GPUs?|RAG|ML|API|SaaS|US|ILOSTAT|IMF|SSA|PPP|ITU|ESMAP|PVOUT|UNICEF|MICS|UIS|Doing Business|ILO)\b|\{[a-zA-Z0-9]+\}/g;
+const NOMES = /\b(STEAM|UNESCO|IA\.EDU|Krueger|Jackson|AI|SEL|TVET|offline|Offline|online|Online|coaching|tokens|software|hardware|GB|kWh|kW|Mbps|GPUs?|RAG|ML|API|SaaS|US|ILOSTAT|IMF|SSA|PPP|ITU|ESMAP|PVOUT|UNICEF|MICS|UIS|Doing Business|ILO|GPU)\b|\{[a-zA-Z0-9]+\}/g;
 
 describe('v021: Educando com e sem IA traduzido em todos os idiomas', () => {
   it('o catálogo tem textos para conferir', () => { expect(TEXTOS.length).toBeGreaterThan(60); expect(contas.length).toBeGreaterThan(200); expect(motivos.length).toBe(3); });

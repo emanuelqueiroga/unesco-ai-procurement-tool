@@ -71,7 +71,7 @@ function Publico({ s, d }: { s: CasoStore; d: string }) {
     deficiencia: origem(deficienciaPais(iso)), estudantes: t('parte das matrículas do país (Banco Mundial), grau C'), dispositivos: t('referência da ferramenta (grau C)'),
   };
   const num = (k: 'estudantes' | 'professores' | 'escolas' | 'linguas', rot: string) => <NumeroField locale={String(LOC())} label={t(rot)} value={p[k]} suggested={salvo[k] === undefined}
-    hint={k === 'linguas' ? undefined : t('Sugerido: {n}', { n: nfmt(sug[k] as number) }) + (fonte[k] ? ' · ' + fonte[k] : '')} onChange={v => grava(k, v)} />;
+    hint={k === 'linguas' ? undefined : t('Sugerido: {n}', { n: nfmt(k === 'professores' ? Math.max(10, Math.round(sug.professores * p.estudantes / Math.max(1, sug.estudantes))) : sug[k] as number) }) + (fonte[k] ? ' · ' + fonte[k] : '')} onChange={v => grava(k, v)} />;
   const pct = (k: 'semEnergia' | 'semInternet' | 'dispositivos' | 'deficiencia', rot: string) => <NumeroField locale={String(LOC())} label={t(rot)} value={paraFracao(p[k])} percentual suggested={salvo[k] === undefined}
     hint={t('Sugerido: {n}%', { n: nfmt(sug[k] as number, 1) }) + (fonte[k] ? ' · ' + fonte[k] : '')} onChange={v => grava(k, paraPontos(v))} />;
   const semLocal = p.ambiente === 'casa';
@@ -337,7 +337,9 @@ function Papeis({ d, comps, base, moeda, f }: { d: string; comps: CompCalc[]; ba
 }
 
 /** "Como foi calculado": a conta, fase por fase, nas duas alternativas, e de onde vem cada número. */
-function ComoCalculadoEd({ comps, dc, f }: { comps: CompCalc[]; dc: DesafioCalc; f: (v: number) => string }) {
+function ComoCalculadoEd({ comps, dc, f: f0 }: { comps: CompCalc[]; dc: DesafioCalc; f: (v: number) => string }) {
+  const moedaCod = (useCaso.getState() as any).moeda?.cod || 'USD';
+  const f = f0, fu = (v: number) => v > 0 && v < 1 ? new Intl.NumberFormat(String(LOC()), { style: 'currency', currency: moedaCod, maximumFractionDigits: 4 }).format(v) : f0(v);
   const def = comps[0].def, unidade = def.unidade ? t(def.unidade) : '';
   const fechar = <button type="button" className="pc-est-fechar" onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))}>{t('Fechar')}</button>;
   const nomeFase = (id: string) => t(dc.fases.find(x => x.id === id)?.nome || id);
@@ -347,7 +349,7 @@ function ComoCalculadoEd({ comps, dc, f }: { comps: CompCalc[]; dc: DesafioCalc;
       <b>{rotAlt(c.alt)}: {f(c.total)}</b>
       {def.papeis ? c.papeis.flatMap(p => [<span key={(p.extra || p.papel) + ':t'} className="pv-conta-papel">{t(p.papel)}{p.existente ? ' · ' + t('já existe (fora do desembolso novo)') : ''}: {f(p.valor)}</span>,
         ...p.porFase.map(x => <span key={(p.extra || p.papel) + x.fase}>{nomeFase(x.fase)}: {nfmt(x.n, 1)} {t('pessoas')} × {nfmt(p.ded * 100)}% × {f(p.unit)} {t('por mês')} × {x.meses} {t('meses')} = {f(x.valor)}</span>)])
-        : c.porFase.filter(v => v.qtd > 0).map(v => <span key={v.fase}>{nomeFase(v.fase)}: {def.pctDe ? `${nfmt(v.unit * 100, 1)}% × ${f(v.qtd)}` : `${qfmt(v.qtd)} ${unidade} × ${f(v.unit)}`} = {f(v.valor)}</span>)}
+        : c.porFase.filter(v => v.qtd > 0).map(v => <span key={v.fase}>{nomeFase(v.fase)}: {def.pctDe ? `${nfmt(v.unit * 100, 1)}% × ${f(v.qtd)}` : `${qfmt(v.qtd)} ${unidade} × ${fu(v.unit)}`} = {f(v.valor)}</span>)}
       {!def.papeis && !c.porFase.some(v => v.qtd > 0) ? <span>{t('Sem quantidade neste caso.')}</span> : null}
     </span>)}</span>
     <span className="pv-conta-fonte">{def.preco?.pais ? t('Preço do país: {o}.', { o: origem(precoPais(def.preco.pais, isoCaso())) }) : def.preco?.perfil || def.papeis ? t('Salário: ILOSTAT, média mensal do perfil no país, atualizada pela inflação (FMI) e com os encargos patronais (SSA).') : def.preco?.local ? t('Serviço local: valor de referência em US$ ajustado ao nível de preços do país (Banco Mundial, PPC).') : t('Bem ou serviço internacional: valor de referência em US$, sem ajuste de preços locais.')}
@@ -494,7 +496,7 @@ function PlanoEducacao({ s }: { s: CasoStore }) {
     <h2>{t('Roteiro de implementação')}</h2>
     <ol className="ed-roteiro">
       <li><b>{t('Configurar e comparar')}</b> · {t('alternativas com e sem IA; nuvem, servidores próprios ou híbrido; prova de conceito, piloto, implantação e expansão; tarefas equivalentes no mesmo horizonte de tempo.')}</li>
-      {r.fases.map(x => <li key={x.id}><b>{t(x.nome)}</b> · {t('{m} meses', { m: x.meses })}{x.id === 'poc' ? ' · ' + t('{n} escolas', { n: r.desafios[0] ? escolasPoc(s, r.desafios[0]) : ESCOLAS_POC }) : ' · ' + t('{p}% do público', { p: x.alcance })}</li>)}
+      {r.fases.map(x => <li key={x.id}><b>{t(x.nome)}</b> · {t('{m} meses', { m: x.meses })}{x.id === 'poc' ? ' · ' + t('{n} escolas', { n: r.desafios[0] ? escolasPoc(s, r.desafios[0]) : ESCOLAS_POC }) : x.id === 'piloto' && x.sugerido && r.desafios[0] && r.porDesafio[r.desafios[0]]?.fases.find(y => y.id === 'piloto')?.E ? ' · ' + t('{n} escolas', { n: r.porDesafio[r.desafios[0]].fases.find(y => y.id === 'piloto')!.E }) : ' · ' + t('{p}% do público', { p: x.alcance })}</li>)}
       <li><b>{t('Avaliar e contratar')}</b> · {t('valor educacional e evidências; direitos, segurança e acessibilidade; custo do ciclo de vida; interoperabilidade, soberania e saída.')}</li>
       <li><b>{t('Monitorar e adaptar')}</b> · {t('custo por serviço e uso; aprendizagem, bem-estar e equidade; qualidade, confiabilidade e risco; otimizar o uso, revisar, renovar ou sair.')}</li>
     </ol>

@@ -113,3 +113,10 @@
 .pc-met-item { display: block; }
 @media (max-width: 560px) { .pc-met-dl > div { grid-template-columns: 1fr; gap: 0; } }
 .pv-conta-papel { font-weight: 600; margin-top: .25rem; }
+/* v022.1: "Como foi calculado" dentro do cartão no celular */
+.ed-linha { position: relative; }
+@media (max-width: 560px) {
+  .ed-linha .pr-popover { position: static; }
+  .ed-linha .pr-popover-painel { inset-inline: 0; width: auto; }
+  .ed-linha .pr-popover-painel, .ed-linha .pv-conta-partes { overflow-wrap: anywhere; }
+}

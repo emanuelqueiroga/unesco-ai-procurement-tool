@@ -28,8 +28,10 @@ describe('v022: dados por país', () => {
     expect(s.professores).toBe(Math.max(10, Math.round(s.estudantes / razaoPais('BRA', 'C32')!.v)));
   });
   it('sem dado do país: mediana do grupo (grau B) ou convenção (C)', () => {
-    expect(semEnergiaPais('XXX', 'C32')).toBeNull();
-    expect(publicoSugerido(estado({ desafios: ['C32'] }, 'XXX'), 'C32').semEnergia).toBe(30);
+    expect(semEnergiaPais('XXX', 'C32')).toMatchObject({ grau: 'B', mediana: true });
+    expect(semEnergiaPais(undefined, 'C32')).toBeNull();
+    const moz = semInternetPais('MOZ', 'C32')!; expect(moz.mediana).toBe(true); expect(moz.v).toBeGreaterThan(60);
+    expect(publicoSugerido(estado({ desafios: ['C32'] }, 'MOZ'), 'C32').semInternet).toBe(moz.v);
     expect(deficienciaPais('XXX')).toMatchObject({ v: DEFICIENCIA_MUNDO, grau: 'B' });
     const k = precoPais('kwh', 'XXX')!; expect(k.mediana).toBe(true); expect(k.v).toBeGreaterThan(0);
   });
@@ -39,6 +41,15 @@ describe('v022: dados por país', () => {
     const m = comp(s, 'C32', 'e22-mensalidade', 'com');
     expect(m.unitRef).toBeCloseTo(BANDA_UIT.KEN[0] / BANDA_UIT.KEN[1], 2); expect(m.params.minimo).toBe(BANDA_UIT.KEN[1]); expect(m.def.classe).toBe('opex');
     expect(comp(s, 'C32', 'e21-sistemas', 'com').params.pvout).toBe(PVOUT.KEN);
+  });
+  it('gestão segue o divisor editado dos dispositivos; quebra é percentual do investimento em dispositivos', () => {
+    const a = comp(base(), 'C32', 'e23-gestao', 'com').total, b = comp(base('BRA', { linhas: { C32: { 'e23-estudantes': { p: { porDisp: 1 } } } } }), 'C32', 'e23-gestao', 'com').total;
+    expect(b).toBeGreaterThan(a * 1.5);
+    const q = comp(base(), 'C32', 'e23-quebra', 'com'); expect(q.def.pctDe!.ids).toContain('e23-estudantes'); expect(q.total).toBeGreaterThan(0);
+  });
+  it('eletricidade só nos locais ligados à rede', () => {
+    const s = base('KEN'), c = comp(s, 'C32', 'e21-eletricidade', 'com'), f = calcularDesafio(s, 'C32').fases.at(-1)!;
+    expect(c.porFase.at(-1)!.qtd).toBeLessThan((f.A + f.P) * f.meses);
   });
   it('licença de estudantes: 0% nos desafios de crianças menores de 13 anos', () => {
     const pd = COMPONENTES.find((c) => c.id === 'e43-licenca')!.params![0];

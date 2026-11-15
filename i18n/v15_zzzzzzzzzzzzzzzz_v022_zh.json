@@ -47,5 +47,18 @@
  "UIT, cesta de dados móveis": "国际电信联盟，移动数据套餐",
  "Banco Mundial/ESMAP, PVOUT": "世界银行/ESMAP，PVOUT",
  "UIT, velocidade da cesta de banda fixa": "国际电信联盟，固定宽带套餐速率",
- "A produção solar por kW instalado vem do potencial fotovoltaico do país (Banco Mundial/ESMAP). A energia por local por dia é uma convenção: com IA, cerca de 20 dispositivos de 50 W por 6 horas; sem IA, iluminação e o equipamento do professor.": "每 kW 装机的太阳能发电量来自该国的光伏潜力（世界银行/ESMAP）。每个场所每日用电量为约定值：使用人工智能时约为 20 台 50 瓦设备运行 6 小时；不使用时为照明和教师设备。"
+ "A produção solar por kW instalado vem do potencial fotovoltaico do país (Banco Mundial/ESMAP). A energia por local por dia é uma convenção: com IA, cerca de 20 dispositivos de 50 W por 6 horas; sem IA, iluminação e o equipamento do professor.": "每 kW 装机的太阳能发电量来自该国的光伏潜力（世界银行/ESMAP）。每个场所每日用电量为约定值：使用人工智能时约为 20 台 50 瓦设备运行 6 小时；不使用时为照明和教师设备。",
+ "A dificuldade funcional medida pelo UNICEF inclui dificuldades de aprendizagem, de atenção e emocionais que não pedem equipamento; a parte que precisa de óculos, aparelho auditivo, cadeira de rodas ou comunicação alternativa é uma convenção da ferramenta (grau C), à espera da cesta por tipo de produto.": "联合国儿童基金会衡量的功能障碍包括不需要设备的学习、注意力和情绪困难；需要眼镜、助听器、轮椅或替代沟通工具的比例是本工具的约定值（C 级），有待按产品类型的组合确定。",
+ "Estudantes com deficiência que precisam de equipamento (%)": "需要设备的残疾学生（%）",
+ "estudantes e professores nos locais ligados à rede × kWh por pessoa por mês × meses × preço do kWh": "接入电网场所的学生和教师 × 每人每月 kWh × 月数 × 每 kWh 价格",
+ "Estudantes que usam dispositivo neste desafio (%)": "在此挑战中使用设备的学生（%）",
+ "No ensino em casa e na modalidade online, um dispositivo por estudante. Na educação infantil, a sugestão é que só o educador use dispositivo (0% dos estudantes); ajuste a parte conforme o tempo de tela previsto no seu desenho pedagógico.": "居家学习和在线方式下，每名学生一台设备。在幼儿教育中，建议只有教育者使用设备（0% 的学生）；请根据教学设计中预计的屏幕时间调整比例。",
+ "novos estudantes com deficiência × parte que precisa de equipamento × preço do equipamento": "新增残疾学生 × 需要设备的比例 × 设备价格",
+ "Numa assinatura, suporte e atualizações já estão no preço (0%); use cerca de 15% ao ano só para licença perpétua instalada na rede.": "订阅中，支持和更新已包含在价格中（0%）；仅在教育网络自行安装永久许可证时使用每年约 15%。",
+ "O mesmo preço nas duas alternativas: a plataforma é a mesma; o que a IA acrescenta está na categoria 4.3.": "两种方案价格相同：平台相同；人工智能增加的部分在类别 4.3 中。",
+ "Os dispositivos em uso seguem a linha de dispositivos para estudantes (estudantes por dispositivo; um por estudante no ensino em casa e online) e os professores sem dispositivo.": "在用设备与学生设备行一致（每台设备学生数；居家和在线学习每名学生一台）加上没有设备的教师。",
+ "percentual sobre o consumo de tokens ou as horas de GPU": "令牌消耗或 GPU 小时的百分比",
+ "Preço comercial do kWh do país no Doing Business 2019 (Banco Mundial), atualizado pela inflação do país e convertido ao câmbio atual (sem dado do país, a mediana do grupo do FMI do país); substitua pela tarifa da distribuidora. Não entram os locais que recebem sistema solar nem quem estuda em casa.": "该国 Doing Business 2019（世界银行）中的商业 kWh 电价，按该国通胀更新并以当前汇率换算（无国家数据时，采用该国所属国际货币基金组织组别的中位数）；请替换为配电公司的电价。不包括安装太阳能系统的场所和居家学习的学生。",
+ "quebra por ano (%) × investimento acumulado em dispositivos de estudantes e professores (preço com impostos) × anos": "每年损坏率（%）× 学生和教师设备的累计投资（含税价格）× 年数",
+ "Só quando a rede opera a aplicação (consumo de tokens ou GPUs próprias). Num produto pronto, o filtro vem no preço: confirme no contrato que ele está ativo e configurado para menores.": "仅当教育网络自行运营应用时（令牌消耗或自有 GPU）。现成产品的过滤功能已包含在价格中：请在合同中确认其已启用并针对未成年人配置。"
 }

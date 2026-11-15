@@ -45,11 +45,12 @@ def cambio(iso, y):
 kw = {}
 for iso, ser in kwh.items():
     if 2019 not in ser: continue
-    c = cpi.get(iso, {}); cy = [y for y in c if y >= 2020]
+    # ano t = o mais recente (2020 ou depois) com IPC e câmbio; sem o par no mesmo ano, o país ficaria sem dado
+    c = cpi.get(iso, {})
     f19 = cambio(iso, 2019) or (fx.get(iso, {}).get(2019))
+    cy = [y for y in c if y >= 2020 and (cambio(iso, y) or fx.get(iso, {}).get(y))]
     if not cy or 2019 not in c or not f19: continue
     yc = max(cy); fa = cambio(iso, yc) or fx.get(iso, {}).get(yc)
-    if not fa: continue
     usd = ser[2019] / 100 * f19 * (c[yc] / c[2019]) / fa
     if 0.005 <= usd <= 1.0: kw[iso] = (round(usd, 4), yc, round(ser[2019] / 100, 4))
 # --- UIT 2024: banda larga fixa (5 GB) e dados móveis (2 GB)
