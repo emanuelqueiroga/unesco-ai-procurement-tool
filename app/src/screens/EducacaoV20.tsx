@@ -12,12 +12,13 @@ import { formatarMoedaEst } from '../percurso/estimativasOrcamento';
 import { NOME_PERFIL } from '../percurso/custosV017';
 import { nomePais, paisDoCaso, LOC } from '../domain';
 import {
-  CATEGORIAS_ED, DESAFIOS_ED, AMBIENTES, MODALIDADES, ESCOLAS_POC, SIM, IA_TIPO, IA_ARQ, IA_PAG, IA_LIC, lerEd, publico, publicoSugerido, fases,
+  CATEGORIAS_ED, DESAFIOS_ED, AMBIENTES, MODALIDADES, ESCOLAS_POC, PILOTO_MIN, PILOTO_MAX, SIM, IA_TIPO, IA_ARQ, IA_PAG, IA_LIC, lerEd, publico, publicoSugerido, fases,
   desafiosEscolhidos, categoriasEscolhidas, opcoesEscolhidas, escolhaIA, escolasPoc, orcamentoEducacao, calcularDesafio, nomeDesafio, padraoParam, vale,
   type ResultadoEd, type Alternativa, type CompCalc, type OpcaoCalc, type DesafioCalc, type ParamDef, type PapelExtraEd, type AltSel,
 } from '../percurso/educacaoV20';
 import { AcoesPercurso } from './AcoesPercurso';
 import { Shell } from './Shell';
+import { semEnergiaPais, semInternetPais, razaoPais, deficienciaPais, precoPais, paramPais, origemTexto } from '../percurso/educacaoPais';
 import './educacaoV20.css';
 
 /** O NumeroField com `percentual` mostra e devolve fração (0,25 = 25%); o percurso guarda pontos percentuais (25). */
@@ -41,7 +42,9 @@ export function gravarEd(caminho: string, valor: unknown) {
 const lerCaminho = (caminho: string): any => caminho.split('.').reduce((o: any, k) => (o && typeof o === 'object' ? o[k] : undefined), useCaso.getState().ctx.edV20 || {});
 
 const fmtR = (r: { moeda: string }) => (v: number) => formatarMoedaEst(v, r.moeda);
-const AvisoSimulado = () => <Alert kind="info" title={t('Valores simulados')}>{t('Os custos unitários desta versão são simulados, para validar o ciclo e as telas; serão substituídos por valores com fonte.')}</Alert>;
+const isoCaso = () => (useCaso.getState() as any).caso?.pais as string | undefined;
+const origem = (x: Parameters<typeof origemTexto>[0]) => origemTexto(x, t);
+const AvisoSimulado = () => <Alert kind="info" title={t('De onde vêm os valores')}>{t('Condições de partida, professores por estudante, eletricidade, internet, dados móveis, energia solar e salários vêm de dados do país (UIS, Banco Mundial, UIT, UNICEF, ILOSTAT), com fonte e grau em cada linha. Os demais preços ainda são referências da ferramenta (grau C), ajustadas ao nível de preços do país quando são serviços locais.')} <a href={href.metodologiaEd()}>{t('Metodologia da educação')}</a></Alert>;
 
 // ---------------------------------------------------------------- desafios
 function Desafios({ s }: { s: CasoStore }) {
@@ -61,13 +64,19 @@ function Publico({ s, d }: { s: CasoStore; d: string }) {
   const p = publico(s, d), sug = publicoSugerido(s, d, p.ambiente), salvo = lerEd(s).publico?.[d] || {};
   const grava = (k: string, v: unknown) => gravarEd(`publico.${d}.${k}`, v === '' ? undefined : v);
   const anteriores = desafiosEscolhidos(s).filter((x, i, a) => i < a.indexOf(d));
+  const iso = isoCaso(), rz = razaoPais(iso, d);
+  const fonte: Record<string, string> = {
+    professores: rz ? t('{n} estudantes por professor', { n: nfmt(rz.v, 1) }) + ' · ' + origem(rz) : t('razão da ferramenta (grau C)'),
+    semEnergia: origem(semEnergiaPais(iso, d)) || t('referência da ferramenta (grau C)'), semInternet: origem(semInternetPais(iso, d)) || t('referência da ferramenta (grau C)'),
+    deficiencia: origem(deficienciaPais(iso)), estudantes: t('parte das matrículas do país (Banco Mundial), grau C'), dispositivos: t('referência da ferramenta (grau C)'),
+  };
   const num = (k: 'estudantes' | 'professores' | 'escolas' | 'linguas', rot: string) => <NumeroField locale={String(LOC())} label={t(rot)} value={p[k]} suggested={salvo[k] === undefined}
-    hint={k === 'linguas' ? undefined : t('Sugerido: {n}', { n: nfmt(sug[k] as number) })} onChange={v => grava(k, v)} />;
+    hint={k === 'linguas' ? undefined : t('Sugerido: {n}', { n: nfmt(sug[k] as number) }) + (fonte[k] ? ' · ' + fonte[k] : '')} onChange={v => grava(k, v)} />;
   const pct = (k: 'semEnergia' | 'semInternet' | 'dispositivos' | 'deficiencia', rot: string) => <NumeroField locale={String(LOC())} label={t(rot)} value={paraFracao(p[k])} percentual suggested={salvo[k] === undefined}
-    hint={t('Sugerido: {n}%', { n: nfmt(sug[k] as number) })} onChange={v => grava(k, paraPontos(v))} />;
+    hint={t('Sugerido: {n}%', { n: nfmt(sug[k] as number, 1) }) + (fonte[k] ? ' · ' + fonte[k] : '')} onChange={v => grava(k, paraPontos(v))} />;
   const semLocal = p.ambiente === 'casa';
   return <div className="ed-publico">
-    <p className="pc-nota">{t('Os números sugeridos partem das matrículas do país (Banco Mundial) e de razões simuladas; ajuste-os à sua rede.')}</p>
+    <p className="pc-nota">{t('Os números sugeridos vêm de dados do país: matrículas (Banco Mundial), estudantes por professor e escolas com eletricidade e internet (UNESCO UIS) e crianças com deficiência (UNICEF). Cada campo diz a fonte, o ano e o grau; ajuste-os à sua rede.')}</p>
     <section className="ed-cartao">
       <h2 className="ed-cartao-titulo">{t('Quem participa')}</h2>
       <div className="ed-campos ed-campos--alinhados">
@@ -114,6 +123,7 @@ function Fases({ s, d }: { s: CasoStore; d: string }) {
         <td><NumeroField locale={String(LOC())} label={t('Meses') + ' · ' + t(f.nome)} value={f.meses} size={4} onChange={v => grava(i, 'meses', v)} suggested={sugerido(i, 'meses')} /></td>
         <td>{f.id === 'poc' ? <NumeroField locale={String(LOC())} label={t('Locais na prova de conceito')} value={poc} size={4} suggested={lerEd(s).poc?.[d] === undefined} hint={t('locais')} onChange={v => gravarEd(`poc.${d}`, v === '' ? undefined : v)} />
           : <NumeroField locale={String(LOC())} label={t('Alcance (%)') + ' · ' + t(f.nome)} value={paraFracao(f.alcance)} size={4} percentual onChange={v => grava(i, 'alcance', paraPontos(v) ?? '')} suggested={sugerido(i, 'alcance')} />}</td></tr>)}</tbody></table></div>
+    <p className="pc-nota">{t('Piloto sugerido: um ano letivo (9 meses) em 5% dos locais, com no mínimo {min} (ou todos, se a rede for menor) e no máximo {max} locais, o bastante para uma avaliação com grupo de comparação. Ao mudar o alcance, vale o seu valor.', { min: PILOTO_MIN, max: PILOTO_MAX })}</p>
     <h2 className="ed-subtitulo">{t('Quem entra em cada fase')}</h2>
     <p className="pc-nota">{t('Compras feitas uma vez usam quem entra na fase (novos); custos mensais usam quem é atendido na fase, multiplicado pelos meses.')}</p>
     <div className="ed-rolo"><table className="ed-tabela ed-tabela--num"><thead><tr><th>{t('Fase')}</th><th>{p.ambiente === 'casa' ? t('Famílias') : t('Locais')}</th><th>{t('Estudantes')}</th><th>{t('Professores')}</th><th>{t('Novos estudantes')}</th><th>{t('Novos professores')}</th></tr></thead>
@@ -183,8 +193,8 @@ function Comuns({ d, oc }: { d: string; oc: OpcaoCalc }) {
       const difere = typeof pd.padrao !== 'number' && alts.length > 1;
       return (difere ? ALTS.filter(a => alts.includes(a)) : [null]).map(a => { const al = a || alts[0], salvo = lerCaminho(`${base}.${pd.id}`);
         const gravado = a ? (salvo && typeof salvo === 'object' ? salvo[a] : undefined) : (typeof salvo === 'number' ? salvo : undefined);
-        return <NumeroField key={pd.id + (a || '')} locale={String(LOC())} label={t(pd.rotulo) + (a ? ' · ' + rotAlt(a) : '')} value={valores[al] ?? padraoParam(pd, al)} decimais suffix={pd.pct ? '%' : undefined}
-          suggested={gravado === undefined} hint={t('Sugerido: {n}', { n: nfmt(padraoParam(pd, al), 2) + (pd.pct ? '%' : '') })} onChange={x => gravarEd(`${base}.${pd.id}${a ? '.' + a : ''}`, x === '' ? undefined : x)} />; });
+        return <NumeroField key={pd.id + (a || '')} locale={String(LOC())} label={t(pd.rotulo) + (a ? ' · ' + rotAlt(a) : '')} value={valores[al] ?? padraoParam(pd, al, isoCaso(), d)} decimais suffix={pd.pct ? '%' : undefined}
+          suggested={gravado === undefined} hint={t('Sugerido: {n}', { n: nfmt(padraoParam(pd, al, isoCaso(), d), 2) + (pd.pct ? '%' : '') })} onChange={x => gravarEd(`${base}.${pd.id}${a ? '.' + a : ''}`, x === '' ? undefined : x)} />; });
     })}</div>
   </section>;
 }
@@ -269,17 +279,17 @@ function CamposLinha({ d, comps, altsLinha, base, moeda, f }: { d: string; comps
   const def = comps[0].def, por = (a: Alternativa) => comps.find(c => c.alt === a) || comps[0];
   const campoParam = (pd: ParamDef) => { if (pd.comum) return [];
     const difere = typeof pd.padrao !== 'number' && altsLinha.length > 1;
-    const um = (a: Alternativa | null) => { const c = por(a || altsLinha[0]), v = c.params[pd.id], padrao = padraoParam(pd, a || altsLinha[0]);
+    const um = (a: Alternativa | null) => { const c = por(a || altsLinha[0]), v = c.params[pd.id], padrao = padraoParam(pd, a || altsLinha[0], isoCaso(), d), opp = pd.pais ? paramPais(pd.pais, isoCaso()) : null;
       const salvo = lerCaminho(`${base}.p.${pd.id}`), gravado = a ? (salvo && typeof salvo === 'object' ? salvo[a] : undefined) : (typeof salvo === 'number' ? salvo : undefined);
       return <NumeroField key={pd.id + (a || '')} locale={String(LOC())} label={t(pd.rotulo) + (a ? ' · ' + rotAlt(a) : '')} value={v} decimais suffix={pd.pct ? '%' : undefined} suggested={gravado === undefined}
-        hint={t('Sugerido: {n}', { n: nfmt(padrao, 2) + (pd.pct ? '%' : '') })} onChange={x => gravarEd(`${base}.p.${pd.id}${a ? '.' + a : ''}`, x === '' ? undefined : x)} />; };
+        hint={t('Sugerido: {n}', { n: nfmt(padrao, 2) + (pd.pct ? '%' : '') }) + (opp ? ' · ' + origem(opp) : '')} onChange={x => gravarEd(`${base}.p.${pd.id}${a ? '.' + a : ''}`, x === '' ? undefined : x)} />; };
     return difere ? altsLinha.map(a => um(a)) : [um(null)];
   };
   const precoDifere = def.preco && typeof def.preco.padrao !== 'number' && altsLinha.length > 1;
   const campoPreco = (a: Alternativa | null) => { const c = por(a || altsLinha[0]), salvo = lerCaminho(`${base}.unit`);
     const gravado = a ? (salvo && typeof salvo === 'object' ? salvo[a] : undefined) : (typeof salvo === 'number' ? salvo : undefined);
     return <NumeroField key={'u' + (a || '')} locale={String(LOC())} label={t(def.preco!.rotulo) + ' (' + moeda + ')' + (a ? ' · ' + rotAlt(a) : '')} value={c.unit} decimais suggested={gravado === undefined}
-      hint={t('Sugerido: {v}', { v: f(c.unitRef) }) + (def.preco!.perfil ? ' · ' + t('salário do país (ILOSTAT) com encargos') : def.preco!.local ? ' · ' + t('ajustado ao nível de preços do país') : '')}
+      hint={t('Sugerido: {v}', { v: f(c.unitRef) }) + (def.preco!.pais ? ' · ' + origem(precoPais(def.preco!.pais, isoCaso())) : def.preco!.perfil ? ' · ' + t('salário do país (ILOSTAT) com encargos') : def.preco!.local ? ' · ' + t('ajustado ao nível de preços do país') : '')}
       onChange={x => gravarEd(`${base}.unit${a ? '.' + a : ''}`, x === '' ? undefined : x)} />; };
   return <>
     {(def.params?.length || def.preco) ? <div className="ed-campos ed-campos--linha">
@@ -300,12 +310,13 @@ function Papeis({ d, comps, base, moeda, f }: { d: string; comps: CompCalc[]; ba
   return <div className="ed-papeis">
     {papeis.map(p => { const salvo = lerCaminho(`${base}.papeis.${p.papel}`) || {};
       return <div key={p.papel} className="ed-papel" role="group" aria-label={t(p.papel)}>
-        <p className="ed-papel-nome"><b>{t(p.papel)}</b> <span>{t(NOME_PERFIL[p.perfil])}{p.alt !== 'ambos' ? ' · ' + (p.alt === 'com' ? t('Só com IA') : t('Só sem IA')) : ''}</span></p>
+        <p className="ed-papel-nome"><b>{t(p.papel)}</b> <span>{t(NOME_PERFIL[p.perfil])}{p.especialista ? ' · ' + t('com prêmio de especialista de {p}%', { p: p.premio }) : ''}{p.alt !== 'ambos' ? ' · ' + (p.alt === 'com' ? t('Só com IA') : t('Só sem IA')) : ''}</span></p>
         <div className="ed-campos ed-campos--linha">
           <NumeroField locale={String(LOC())} label={t('Pessoas')} value={salvo.pessoas ?? ''} placeholder={nfmt(p.pessoas, 1)} decimais hint={t('Vazio = calculado ({n})', { n: nfmt(p.pessoas, 1) })} onChange={v => gravarEd(`${base}.papeis.${p.papel}.pessoas`, v === '' ? undefined : v)} />
           <NumeroField locale={String(LOC())} label={t('Dedicação (%)')} value={salvo.ded === undefined ? p.ded : salvo.ded} percentual suggested={salvo.ded === undefined} onChange={v => gravarEd(`${base}.papeis.${p.papel}.ded`, v === '' ? undefined : v)} />
           <NumeroField locale={String(LOC())} label={t('Custo mensal por pessoa') + ' (' + moeda + ')'} value={salvo.unit ?? ''} placeholder={nfmt(p.unitRef, 2)} decimais hint={t('Vazio = salário do país (ILOSTAT) com encargos ({v}).', { v: f(p.unitRef) })} onChange={v => gravarEd(`${base}.papeis.${p.papel}.unit`, v === '' ? undefined : v)} />
         </div>
+        <label className="pv-equipe-existente"><input type="checkbox" checked={!!salvo.existente} onChange={e => gravarEd(`${base}.papeis.${p.papel}.existente`, e.target.checked || undefined)} /> {t('Servidor que já existe (fora do desembolso novo)')}</label>
       </div>; })}
     {extras.map(x => <div key={x.id} className="ed-papel" role="group" aria-label={x.papel || t('Novo papel')}>
       <div className="ed-campos ed-campos--linha">
@@ -316,6 +327,8 @@ function Papeis({ d, comps, base, moeda, f }: { d: string; comps: CompCalc[]; ba
         <NumeroField locale={String(LOC())} label={t('Dedicação (%)')} value={x.ded ?? ''} percentual onChange={v => mudar(x.id, 'ded', v)} />
         <NumeroField locale={String(LOC())} label={t('Custo mensal por pessoa') + ' (' + moeda + ')'} value={x.unit ?? ''} decimais hint={t('Vazio = salário do país (ILOSTAT) do perfil, com encargos.')} onChange={v => mudar(x.id, 'unit', v)} />
       </div>
+      <label className="pv-equipe-existente"><input type="checkbox" checked={!!x.especialista} onChange={e => mudar(x.id, 'especialista', e.target.checked || undefined)} /> {t('Exige competências de IA, dados ou segurança digital (prêmio de especialista)')}</label>
+      <label className="pv-equipe-existente"><input type="checkbox" checked={!!x.existente} onChange={e => mudar(x.id, 'existente', e.target.checked || undefined)} /> {t('Servidor que já existe (fora do desembolso novo)')}</label>
       <p><Button variant="secondary" size="sm" onClick={() => salvarExtras(extras.filter(y => y.id !== x.id))}>{t('Remover papel')}</Button></p>
     </div>)}
     <p><Button variant="secondary" size="sm" onClick={() => salvarExtras([...extras, { id: 'p' + Date.now().toString(36), papel: '', perfil: 2, pessoas: 1, ded: 1, alt: 'ambos' }])}>{t('Adicionar papel')}</Button></p>
@@ -332,13 +345,17 @@ function ComoCalculadoEd({ comps, dc, f }: { comps: CompCalc[]; dc: DesafioCalc;
     <span className="pv-conta-formula">{t(def.formula)}</span>
     <span className="pv-conta-partes">{comps.map(c => <span key={c.alt} className="pv-conta-parte">
       <b>{rotAlt(c.alt)}: {f(c.total)}</b>
-      {def.papeis ? c.papeis.map(p => <span key={p.extra || p.papel}>{t(p.papel)}: {nfmt(p.pessoas, 1)} × {nfmt(p.ded * 100)}% × {f(p.unit)} {t('por mês')} = {f(p.valor)}</span>)
+      {def.papeis ? c.papeis.flatMap(p => [<span key={(p.extra || p.papel) + ':t'} className="pv-conta-papel">{t(p.papel)}{p.existente ? ' · ' + t('já existe (fora do desembolso novo)') : ''}: {f(p.valor)}</span>,
+        ...p.porFase.map(x => <span key={(p.extra || p.papel) + x.fase}>{nomeFase(x.fase)}: {nfmt(x.n, 1)} {t('pessoas')} × {nfmt(p.ded * 100)}% × {f(p.unit)} {t('por mês')} × {x.meses} {t('meses')} = {f(x.valor)}</span>)])
         : c.porFase.filter(v => v.qtd > 0).map(v => <span key={v.fase}>{nomeFase(v.fase)}: {def.pctDe ? `${nfmt(v.unit * 100, 1)}% × ${f(v.qtd)}` : `${qfmt(v.qtd)} ${unidade} × ${f(v.unit)}`} = {f(v.valor)}</span>)}
       {!def.papeis && !c.porFase.some(v => v.qtd > 0) ? <span>{t('Sem quantidade neste caso.')}</span> : null}
     </span>)}</span>
-    <span className="pv-conta-fonte">{def.preco?.perfil || def.papeis ? t('Salário: ILOSTAT, média mensal do perfil no país, atualizada pela inflação (FMI) e com os encargos patronais (SSA).') : def.preco?.local ? t('Serviço local: valor de referência em US$ ajustado ao nível de preços do país (Banco Mundial, PPC).') : t('Bem ou serviço internacional: valor de referência em US$, sem ajuste de preços locais.')}</span>
-    <span className="pv-conta-grau">{t('Grau C: valor simulado desta versão, que será substituído por valor com fonte.')}</span>
-    <span className="pv-conta-fonte"><a href={href.metodologia()}>{t('Como o custo é calculado')}</a></span>
+    <span className="pv-conta-fonte">{def.preco?.pais ? t('Preço do país: {o}.', { o: origem(precoPais(def.preco.pais, isoCaso())) }) : def.preco?.perfil || def.papeis ? t('Salário: ILOSTAT, média mensal do perfil no país, atualizada pela inflação (FMI) e com os encargos patronais (SSA).') : def.preco?.local ? t('Serviço local: valor de referência em US$ ajustado ao nível de preços do país (Banco Mundial, PPC).') : t('Bem ou serviço internacional: valor de referência em US$, sem ajuste de preços locais.')}
+      {(def.params || []).filter(pd => pd.pais).map(pd => ' ' + t('{p}: {o}.', { p: t(pd.rotulo), o: origem(paramPais(pd.pais!, isoCaso())) })).join('')}</span>
+    <span className="pv-conta-grau">{def.preco?.pais ? t('Grau do preço: {g}; quantidades e parâmetros sem fonte própria são convenções da ferramenta (grau C).', { g: precoPais(def.preco.pais, isoCaso())?.grau || 'C' })
+      : def.preco?.perfil || def.papeis ? t('Grau B: salário oficial do país (ILOSTAT) para o perfil; o número de pessoas e a dedicação são convenções da ferramenta (grau C), editáveis.')
+      : t('Grau C: valor de referência da ferramenta, ainda sem fonte por país; a metodologia diz de onde ele vem e o que o substituiria.')}</span>
+    <span className="pv-conta-fonte"><a href={href.metodologiaEd(def.id)}>{t('Metodologia desta linha')}</a></span>
   </Popover></p>;
 }
 
@@ -373,7 +390,7 @@ function Adicionais({ s }: { s: CasoStore }) {
   const campo = (k: 'pV' | 'pO' | 'pT', rot: string, padrao: number, base: string) => <NumeroField locale={String(LOC())} label={t(rot)} percentual value={paraFracao(sv[k] ?? padrao)} suggested={sv[k] === undefined}
     hint={t('Padrão: {p}% de {b}', { p: padrao, b: t(base) })} onChange={v => gravarEd(k, paraPontos(v))} />;
   return <div className="ed-adicionais">
-    <p className="pc-nota">{t('Os mesmos percentuais e bases da governança: viagens sobre o trabalho de pessoas, overhead sobre esse trabalho e as viagens, e taxa administrativa sobre o custo direto e as viagens.')}</p>
+    <p className="pc-nota">{t('Os mesmos percentuais e bases da governança: viagens sobre o trabalho de pessoas, overhead sobre esse trabalho e as viagens, e taxa administrativa sobre o custo direto e as viagens.')} {t('Nesta prioridade, as viagens vêm com 0%, porque as linhas já incluem visitas, deslocamentos, encontros presenciais, distribuição de material e entrega nos locais; use o percentual só para viagens que não estão nessas linhas.')}</p>
     <div className="ed-campos ed-campos--alinhados">
       {campo('pV', 'Viagens e atividades presenciais', SIM.viagens, 'trabalho de pessoas')}
       {campo('pO', 'Overhead (custos indiretos)', SIM.overhead, 'trabalho e viagens')}
@@ -448,6 +465,11 @@ function PlanoEducacao({ s }: { s: CasoStore }) {
     {faltam.length ? <Alert kind="atencao" title={t('Respostas que faltam')}><ul>{faltam.map(q => <li key={q.id}><a href={href.pergunta(q.capitulo, q.id)}>{nomeTela(q.id)}</a></li>)}</ul></Alert> : null}
     <h2>{t('Com IA e sem IA')}</h2>
     <div className="ed-kpis">{kpi('com')}{kpi('sem')}</div>
+    <h2>{t('Custo econômico, desembolso novo e o que já existe')}</h2>
+    <div className="ed-rolo"><table className="ed-tabela ed-tabela--num"><thead><tr><th></th><th>{t('Custo econômico total')}</th><th>{t('Desembolso novo')}</th><th>{t('Já existe (outros orçamentos)')}</th></tr></thead><tbody>
+      {ALTS.map(a => { const x = a === 'com' ? r.com : r.sem; return <tr key={a}><th scope="row">{rotAlt(a)}</th><td>{f(x.total)}</td><td>{f(x.desembolso)}</td><td>{f(x.existente)}</td></tr>; })}
+    </tbody></table></div>
+    <p className="pc-nota">{t('O custo econômico soma tudo o que o plano usa. O desembolso novo tira dele os salários das pessoas marcadas como servidores que já existem; essa parte já está paga por outro orçamento, mas é um custo real do plano.')}</p>
     <p>{dif >= 0 ? t('A alternativa com IA custa {v} a mais em {m} meses.', { v: f(dif), m: r.meses }) : t('A alternativa com IA custa {v} a menos em {m} meses.', { v: f(-dif), m: r.meses })} {t('Compare tarefas equivalentes no mesmo horizonte de tempo antes de decidir.')}</p>
     <h2>{t('Custo por desafio')}</h2>
     <div className="ed-rolo"><table className="ed-tabela ed-tabela--num"><thead><tr><th>{t('Desafio')}</th><th>{t('Estudantes')}</th><th>{t('Com IA')}</th><th>{t('Sem IA')}</th></tr></thead><tbody>
@@ -476,7 +498,7 @@ function PlanoEducacao({ s }: { s: CasoStore }) {
       <li><b>{t('Avaliar e contratar')}</b> · {t('valor educacional e evidências; direitos, segurança e acessibilidade; custo do ciclo de vida; interoperabilidade, soberania e saída.')}</li>
       <li><b>{t('Monitorar e adaptar')}</b> · {t('custo por serviço e uso; aprendizagem, bem-estar e equidade; qualidade, confiabilidade e risco; otimizar o uso, revisar, renovar ou sair.')}</li>
     </ol>
-    <p className="pc-nota">{t('Os PDFs desta prioridade entram numa próxima rodada.')}</p>
+    <p className="pc-nota">{t('Como cada número foi calculado, de onde vem e com que grau:')} <a href={href.metodologiaEd()}>{t('Metodologia da educação')}</a>.</p>
     <p><Button variant="secondary" href={href.pergunta(3, 'ed-adicionais')}>{t('Voltar')}</Button></p>
   </div>;
 }

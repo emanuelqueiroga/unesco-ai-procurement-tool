@@ -7,6 +7,7 @@ import { Governanca } from './screens/Governanca';
 import { EducacaoV20 } from './screens/EducacaoV20';
 import { Salarios } from './screens/Salarios';
 import { Esforcos } from './screens/Esforcos';
+import { MetodologiaEducacao } from './screens/MetodologiaEducacao';
 import { Metodologia } from './screens/Metodologia';
 import { RecebidoHost } from './screens/CompartilharV16';
 import { percursoGovernanca, percursoEducacaoV20 } from './domain';
@@ -36,7 +37,7 @@ export function App() {
     const telaPrioridades = rota.tipo === 'pergunta' && rota.n === 1 && ['local', 'prioridades'].includes(rota.tela);
     if (rota.tipo === 'salarios') return <Salarios pais={rota.pais} />;
     if (rota.tipo === 'esforcos') return <Esforcos chave={rota.chave} />;
-    if (rota.tipo === 'metodologia') return <Metodologia />;
+    if (rota.tipo === 'metodologia') return rota.parte === 'educacao' ? <MetodologiaEducacao foco={rota.foco} /> : <Metodologia />;
     if (percursoGovernanca(ctx) && !telaPrioridades && !['inicio', 'galeria'].includes(rota.tipo))
       return <Governanca key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo === 'abertura' || rota.tipo === 'sintese' ? `${rota.tipo}${rota.n}` : rota.tipo} rota={rota} />;
     // v020: Educating with and without AI como única prioridade segue o percurso da figura

@@ -11,8 +11,10 @@ import { nivelPrecos, matriculasMil } from './formacaoGov';
 import { taxaV16 } from './orcamentoV016';
 import { salarioDoPais, MEDIANA_MUNDIAL } from './custosV017';
 import { fatorEncargos } from './encargosPais';
+import { PAPEIS_ESPECIALISTA, premioEspecialista } from './equipesGov';
 import type { Grupo } from './salariosPais';
 import { t } from './textos';
+import { semEnergiaPais, semInternetPais, razaoPais, deficienciaPais, precoPais, paramPais } from './educacaoPais';
 
 export type Classe = 'capex' | 'opex' | 'uso';
 export type Alternativa = 'com' | 'sem';
@@ -42,17 +44,19 @@ export const MODALIDADES = [['presencial', 'Presencial'], ['hibrida', 'Híbrida'
 /** Estudantes por local de aprendizagem, por ambiente (sugestão; no ensino em casa não há local). */
 const ALUNOS_POR_LOCAL: Record<string, number> = { escolas: 300, centros: 60, profissional: 400, casa: 0 };
 
-export interface Fase { id: string; nome: string; meses: number; alcance: number }
+export interface Fase { id: string; nome: string; meses: number; alcance: number; sugerido?: boolean }
 /** Fases do ciclo; a prova de conceito alcança um número de locais, as demais uma parte do público. */
 export const FASES_PADRAO: Fase[] = [
   { id: 'poc', nome: 'Prova de conceito', meses: 3, alcance: 0 },
-  { id: 'piloto', nome: 'Piloto', meses: 6, alcance: 5 },
+  { id: 'piloto', nome: 'Piloto', meses: 9, alcance: 5 },
   { id: 'implantacao', nome: 'Implantação', meses: 12, alcance: 33 },
   { id: 'expansao', nome: 'Expansão', meses: 12, alcance: 100 },
 ];
 export const ESCOLAS_POC = 5;
+/** v022: piloto sugerido de 5% dos locais, com no mínimo 10 (ou todos, se a rede for menor) e no máximo 60 locais. */
+export const PILOTO_MIN = 10, PILOTO_MAX = 60;
 /** Percentuais-padrão dos custos adicionais (como na governança). */
-export const SIM = { viagens: 25, overhead: 15, taxa: 7 };
+export const SIM = { viagens: 0, overhead: 15, taxa: 7 };
 
 // ------------------------------------------------------------------ escolhas da ferramenta de IA (0.0.14, passo 2.3)
 /** Tipo de tecnologia (pergunta 2.3.4 da 0.0.14), para a ferramenta de IA (4.3) e para a plataforma de aprendizagem (4.2). */
@@ -76,8 +80,9 @@ export interface PublicoDesafio {
   estudantes: number; professores: number; escolas: number; ambiente: string; modalidade: string; linguas: number;
   semEnergia: number; semInternet: number; dispositivos: number; deficiencia: number; mesmas: string;
 }
-export interface SobreLinha { off?: boolean; on?: boolean; unit?: number | { com?: number; sem?: number }; p?: Record<string, number | { com?: number; sem?: number }>; papeis?: Record<string, { pessoas?: number; ded?: number; unit?: number }> }
-export interface PapelExtraEd { id: string; papel: string; perfil: Grupo; pessoas: number; ded: number; alt: AltSel; unit?: number }
+export interface SobreLinha { off?: boolean; on?: boolean; unit?: number | { com?: number; sem?: number }; p?: Record<string, number | { com?: number; sem?: number }>; papeis?: Record<string, { pessoas?: number; ded?: number; unit?: number; existente?: boolean }> }
+/** papel acrescentado pela pessoa, como na governança: perfil do país, prêmio de especialista e servidor que já existe */
+export interface PapelExtraEd { id: string; papel: string; perfil: Grupo; pessoas: number; ded: number; alt: AltSel; unit?: number; especialista?: boolean; existente?: boolean }
 export interface SalvoEd {
   desafios?: string[]; publico?: Record<string, Partial<PublicoDesafio>>;
   /** v020: fases comuns a todos os desafios (sugestão para quem não ajustou as do desafio) */
@@ -92,18 +97,21 @@ export interface SalvoEd {
 export const lerEd = (s: Pick<Estado14, 'ctx'>): SalvoEd => (s.ctx?.edV20 || {}) as SalvoEd;
 
 /** Parte das matrículas (primário + secundário) que forma o público sugerido de cada desafio, e alunos por professor. */
+/** v022: a razão de cada desafio só vale sem dado do país (UIS, PTRHC); no C34 o público são todos os estudantes das escolas participantes. */
 const PUBLICO_SIM: Record<string, [number, number]> = {
-  C31: [0.15, 15], C32: [0.25, 25], C33: [0.35, 20], C34: [0.1, 10], C35: [0.2, 25], C36: [0.08, 20], C37: [0.05, 25], C38: [0.5, 25],
+  C31: [0.15, 15], C32: [0.25, 25], C33: [0.35, 20], C34: [0.3, 25], C35: [0.2, 25], C36: [0.08, 20], C37: [0.05, 25], C38: [0.5, 25],
 };
 /** Público sugerido do desafio: parte das matrículas do país (ou 1 milhão sem dado), professores pela razão aluno/professor. */
 export function publicoSugerido(s: Pick<Estado14, 'ctx'>, d: string, ambiente?: string): PublicoDesafio {
-  const mil = matriculasMil((s as any).caso?.pais) ?? 1000, [parte, razao] = PUBLICO_SIM[d] || [0.1, 25];
+  const iso = (s as any).caso?.pais as string | undefined;
+  const mil = matriculasMil(iso) ?? 1000, [parte, razaoSim] = PUBLICO_SIM[d] || [0.1, 25];
+  const razao = razaoPais(iso, d)?.v || razaoSim;
   const estudantes = Math.max(1000, Math.round(mil * 1000 * parte / 1000) * 1000);
   const amb = ambiente || (d === 'C36' ? 'profissional' : d === 'C37' ? 'centros' : 'escolas'), apl = ALUNOS_POR_LOCAL[amb] || 0;
   return {
     estudantes, professores: Math.max(10, Math.round(estudantes / razao)), escolas: apl ? Math.max(1, Math.ceil(estudantes / apl)) : 0,
     ambiente: amb, modalidade: 'presencial', linguas: d === 'C35' ? 3 : 1,
-    semEnergia: 30, semInternet: 40, dispositivos: 20, deficiencia: d === 'C34' ? 30 : 5, mesmas: '',
+    semEnergia: semEnergiaPais(iso, d)?.v ?? 30, semInternet: semInternetPais(iso, d)?.v ?? 40, dispositivos: 20, deficiencia: deficienciaPais(iso).v, mesmas: '',
   };
 }
 export function publico(s: Pick<Estado14, 'ctx'>, d: string): PublicoDesafio {
@@ -126,7 +134,8 @@ export function fases(s: Pick<Estado14, 'ctx'>, d?: string): Fase[] {
   const e = lerEd(s), sv = (d && e.fasesD?.[d]) || [], comum = e.fases || [];
   return FASES_PADRAO.map((f, i) => {
     const pega = (k: 'meses' | 'alcance') => { for (const x of [sv[i] || {}, comum[i] || {}]) { const v = Number((x as any)[k]); if ((x as any)[k] !== undefined && Number.isFinite(v) && v >= 0 && (k === 'meses' || v <= 100)) return v; } return f[k]; };
-    return { ...f, meses: pega('meses'), alcance: f.id === 'poc' ? 0 : pega('alcance') };
+    const salvo = [sv[i] || {}, comum[i] || {}].some(x => (x as any).alcance !== undefined && Number.isFinite(Number((x as any).alcance)));
+    return { ...f, meses: pega('meses'), alcance: f.id === 'poc' ? 0 : pega('alcance'), sugerido: !salvo };
   });
 }
 export const escolasPoc = (s: Pick<Estado14, 'ctx'>, d: string) => { const v = Number(lerEd(s).poc?.[d]); return v > 0 ? v : ESCOLAS_POC; };
@@ -149,13 +158,15 @@ export function escolhaIA(s: Pick<Estado14, 'ctx'>, d: string): EscolhaIA {
  *  outro desafio com as mesmas escolas). casa: estudantes que estudam em casa. */
 export interface FaseCalc { id: string; nome: string; meses: number; i: number; inicio: number; E: number; A: number; P: number; nE: number; nA: number; nP: number; Ei: number; nEi: number; casa: number; ultima: boolean; primeira: boolean }
 /** comum: o mesmo valor vale para todas as linhas da opção (editado uma vez, no topo da opção) */
-export interface ParamDef { id: string; rotulo: string; padrao: number | { com: number; sem: number }; pct?: boolean; unidade?: string; comum?: boolean }
-export interface PapelDef { papel: string; perfil: Grupo; pessoas?: number; porParam?: string; base?: 'E' | 'A' | 'P' | 'def'; ded: number; fases?: string[]; alt?: AltSel }
+/** pais: valor sugerido pelo país (educacaoPais.paramPais); porDesafio: sugestão própria de alguns desafios */
+export interface ParamDef { id: string; rotulo: string; padrao: number | { com: number; sem: number }; pct?: boolean; unidade?: string; comum?: boolean; pais?: string; porDesafio?: Record<string, number> }
+/** especialista: prêmio de especialista (competências de IA, dados e segurança), como na governança; sem o campo, vale a lista da governança */
+export interface PapelDef { papel: string; perfil: Grupo; pessoas?: number; porParam?: string; base?: 'E' | 'A' | 'P' | 'def'; ded: number; fases?: string[]; alt?: AltSel; especialista?: boolean }
 interface Ctx { d: string; p: PublicoDesafio; alt: Alternativa; P: (id: string) => number; ia: EscolhaIA; fs: FaseCalc[]; meses: number }
 export interface CompDef {
   id: string; op: string; nome: string; alt: AltSel; classe: Classe;
   /** preço unitário em US$; local = serviço local (× nível de preços); perfil = custo da hora (hora) ou do mês de um perfil ILOSTAT */
-  preco?: { padrao: number | { com: number; sem: number }; rotulo: string; local?: boolean; perfil?: Grupo; hora?: boolean; mult?: string; porArq?: Record<string, number> };
+  preco?: { padrao: number | { com: number; sem: number }; rotulo: string; local?: boolean; perfil?: Grupo; hora?: boolean; mult?: string; porArq?: Record<string, number>; pais?: string };
   params?: ParamDef[];
   /** unidades cobradas na fase */
   qtd?: (c: Ctx, f: FaseCalc) => number;
@@ -232,26 +243,31 @@ export const COMPONENTES: CompDef[] = [
   { id: 'e14-offline', op: 'e14', nome: 'Modo offline da ferramenta de IA', alt: 'com', classe: 'capex', unidade: 'projetos', formula: 'adaptação da ferramenta para funcionar sem internet (uma vez)',
     preco: { padrao: 25000, rotulo: 'Custo' }, quando: c => c.p.modalidade === 'offline' || c.p.semInternet >= 50, qtd: (_c, f) => f.primeira ? 1 : 0 },
   // ---------------------------------------------------------------- 2.1 energia
-  { id: 'e21-sistemas', op: 'e21', nome: 'Sistemas de energia nos locais sem energia', alt: 'ambos', classe: 'capex', unidade: 'kW', infra: true, formula: 'novos locais sem energia × potência por local × custo por kW instalado',
-    params: [{ id: 'kw', rotulo: 'Potência por local (kW)', padrao: { com: 2, sem: 0.5 } }, { id: 'vida', rotulo: 'Vida útil (meses)', padrao: 240 }], preco: { padrao: 2500, rotulo: 'Custo por kW' }, vida: 'vida',
-    qtd: (c, f) => f.nEi * c.p.semEnergia / 100 * c.P('kw') },
+  { id: 'e21-sistemas', op: 'e21', nome: 'Sistemas de energia nos locais sem energia', alt: 'ambos', classe: 'capex', unidade: 'kW', infra: true, formula: 'novos locais sem energia × energia por local por dia ÷ (produção solar por kW × (1 − perdas)) × custo por kW instalado',
+    params: [{ id: 'kwhDia', rotulo: 'Energia por local por dia (kWh)', padrao: { com: 6, sem: 1.5 } }, { id: 'pvout', rotulo: 'Produção solar por kW instalado (kWh por dia)', padrao: 4.5, pais: 'pvout' },
+      { id: 'perdas', rotulo: 'Perdas e reserva (%)', padrao: 25, pct: true }, { id: 'vida', rotulo: 'Vida útil (meses)', padrao: 240 }], preco: { padrao: 2500, rotulo: 'Custo por kW' }, vida: 'vida',
+    qtd: (c, f) => f.nEi * c.p.semEnergia / 100 * c.P('kwhDia') / Math.max(0.5, c.P('pvout') * (1 - c.P('perdas') / 100)),
+    nota: 'A produção solar por kW instalado vem do potencial fotovoltaico do país (Banco Mundial/ESMAP). A energia por local por dia é uma convenção: com IA, cerca de 20 dispositivos de 50 W por 6 horas; sem IA, iluminação e o equipamento do professor.' },
   { id: 'e21-manutencao', op: 'e21', nome: 'Manutenção dos sistemas de energia', alt: 'ambos', classe: 'opex', infra: true, formula: 'percentual por ano do investimento em sistemas de energia',
     params: [{ id: 'pct', rotulo: 'Manutenção por ano (% do investimento)', padrao: 5, pct: true }], pctDe: { ids: ['e21-sistemas'], modo: 'ano', param: 'pct' } },
   { id: 'e21-eletricidade', op: 'e21', nome: 'Consumo de eletricidade', alt: 'ambos', classe: 'uso', unidade: 'kWh', formula: 'estudantes e professores na fase × kWh por pessoa por mês × meses × preço do kWh',
-    params: [{ id: 'kwh', rotulo: 'kWh por pessoa por mês', padrao: { com: 1, sem: 0.2 } }], preco: { padrao: 0.15, rotulo: 'Preço do kWh' }, qtd: (c, f) => (f.A + f.P) * c.P('kwh') * f.meses },
+    params: [{ id: 'kwh', rotulo: 'kWh por pessoa por mês', padrao: { com: 1, sem: 0.2 } }], preco: { padrao: 0.15, rotulo: 'Preço do kWh', pais: 'kwh' },
+    nota: 'Preço comercial do kWh do país no Doing Business 2019 (Banco Mundial), atualizado pela inflação do país e convertido ao câmbio atual; substitua pela tarifa da distribuidora.', qtd: (c, f) => (f.A + f.P) * c.P('kwh') * f.meses },
   { id: 'e21-carga', op: 'e21', nome: 'Carregadores e baterias (carrinhos de carga)', alt: 'com', classe: 'capex', unidade: 'carrinhos', infra: true, formula: 'novos locais × carrinhos por local × preço',
     params: [{ id: 'porLocal', rotulo: 'Carrinhos por local', padrao: 1 }], preco: { padrao: 800, rotulo: 'Preço do carrinho' }, qtd: (c, f) => f.nEi * c.P('porLocal') },
   // ---------------------------------------------------------------- 2.2 conectividade
   { id: 'e22-instalacao', op: 'e22', nome: 'Instalação de internet nos locais sem conexão', alt: 'com', classe: 'capex', unidade: 'locais', infra: true, formula: 'novos locais sem internet × custo de instalação',
     preco: { padrao: 3000, rotulo: 'Custo por local' }, quando: c => c.p.modalidade !== 'offline', qtd: (c, f) => f.nEi * c.p.semInternet / 100 },
-  { id: 'e22-mensalidade', op: 'e22', nome: 'Mensalidade de internet', alt: 'com', classe: 'uso', unidade: 'Mbps-mês', infra: true, formula: 'locais × banda por local (estudantes simultâneos × Mbps) × meses × preço por Mbps',
-    params: [{ id: 'simult', rotulo: 'Estudantes conectados ao mesmo tempo (%)', padrao: 20, pct: true }, { id: 'mbps', rotulo: 'Mbps por estudante conectado', padrao: 0.5 }, { id: 'minimo', rotulo: 'Banda mínima por local (Mbps)', padrao: 10 }],
-    preco: { padrao: 2, rotulo: 'Preço por Mbps por mês' }, quando: c => c.p.modalidade !== 'offline',
+  { id: 'e22-mensalidade', op: 'e22', nome: 'Mensalidade de internet', alt: 'com', classe: 'opex', unidade: 'Mbps-mês', infra: true, formula: 'locais × banda por local (a maior entre a banda mínima e estudantes simultâneos × Mbps) × meses × preço por Mbps',
+    params: [{ id: 'simult', rotulo: 'Estudantes conectados ao mesmo tempo (%)', padrao: 20, pct: true }, { id: 'mbps', rotulo: 'Mbps por estudante conectado', padrao: 0.5 }, { id: 'minimo', rotulo: 'Banda mínima por local (Mbps)', padrao: 10, pais: 'velBanda' }],
+    preco: { padrao: 2, rotulo: 'Preço por Mbps por mês', pais: 'mbps' },
+    nota: 'Preço por Mbps = preço mensal da cesta de banda larga fixa da UIT no país ÷ velocidade da cesta; a banda mínima sugerida é a velocidade da cesta, de modo que cada local paga pelo menos um plano. É um plano residencial, um piso para o plano escolar.', quando: c => c.p.modalidade !== 'offline',
     qtd: (c, f) => f.Ei > 0 ? f.Ei * Math.max(c.P('minimo'), (f.A - f.casa) / Math.max(1, f.E) * c.P('simult') / 100 * c.P('mbps')) * f.meses : 0 },
   { id: 'e22-wifi', op: 'e22', nome: 'Rede sem fio nos locais', alt: 'com', classe: 'capex', unidade: 'pontos de acesso', infra: true, formula: 'novos locais × pontos de acesso por local × preço', vida: 'vida',
     params: [{ id: 'porLocal', rotulo: 'Pontos de acesso por local', padrao: 4 }, { id: 'vida', rotulo: 'Vida útil (meses)', padrao: 60 }], preco: { padrao: 250, rotulo: 'Preço do ponto de acesso' }, qtd: (c, f) => f.nEi * c.P('porLocal') },
   { id: 'e22-dados', op: 'e22', nome: 'Dados móveis para estudar em casa', alt: 'com', classe: 'uso', unidade: 'GB', formula: 'estudantes em casa × GB por mês × meses × preço do GB',
-    params: [{ id: 'gb', rotulo: 'GB por estudante por mês', padrao: 3 }], preco: { padrao: 1, rotulo: 'Preço do GB' }, qtd: (c, f) => f.casa * c.P('gb') * f.meses },
+    params: [{ id: 'gb', rotulo: 'GB por estudante por mês', padrao: 3 }], preco: { padrao: 1, rotulo: 'Preço do GB', pais: 'gb' },
+    nota: 'Preço do GB = preço mensal da cesta de dados móveis da UIT no país ÷ franquia da cesta.', qtd: (c, f) => f.casa * c.P('gb') * f.meses },
   // ---------------------------------------------------------------- 2.3 dispositivos
   { id: 'e23-estudantes', op: 'e23', nome: 'Dispositivos para estudantes', alt: 'com', classe: 'capex', unidade: 'dispositivos', formula: 'novos estudantes sem dispositivo ÷ estudantes por dispositivo × preço com impostos e frete', vida: 'vida',
     params: [{ id: 'porDisp', rotulo: 'Estudantes por dispositivo', padrao: 3 }, { id: 'impostos', rotulo: 'Impostos e frete (%)', padrao: 20, pct: true }, { id: 'vida', rotulo: 'Vida útil (meses)', padrao: 60 }],
@@ -291,13 +307,13 @@ export const COMPONENTES: CompDef[] = [
   { id: 'e31-curso', op: 'e31', nome: 'Criação do curso', alt: 'ambos', classe: 'capex', unidade: 'horas', formula: 'horas de desenho instrucional × custo da hora (uma vez; o curso fica para a rede)',
     params: [{ id: 'desenho', rotulo: 'Horas de desenho', padrao: { com: 180, sem: 120 } }], preco: { padrao: 0, rotulo: 'Custo da hora', perfil: 2, hora: true }, qtd: (c, f) => f.primeira ? c.P('desenho') : 0 },
   { id: 'e31-formadores', op: 'e31', nome: 'Formadores', alt: 'ambos', classe: 'opex', unidade: 'horas', formula: 'turmas de novos professores × horas do curso × custo da hora do formador',
-    params: [{ id: 'turma', rotulo: 'Professores por turma', padrao: 30, comum: true }, { id: 'horas', rotulo: 'Horas do curso', padrao: { com: 30, sem: 20 }, comum: true }],
+    params: [{ id: 'turma', rotulo: 'Professores por turma', padrao: 30, comum: true }, { id: 'horas', rotulo: 'Horas do curso', padrao: { com: 58, sem: 48 }, comum: true }],
     preco: { padrao: 0, rotulo: 'Custo da hora', perfil: 2, hora: true }, qtd: (c, f) => turmas(f.nP, c.P('turma')) * c.P('horas') },
   { id: 'e31-encontros', op: 'e31', nome: 'Encontros presenciais na região', alt: 'ambos', classe: 'opex', unidade: 'participante-dia', formula: 'novos professores × dias presenciais × custo por participante por dia (sala e alimentação)',
-    params: [{ id: 'presencial', rotulo: 'Parte presencial (%)', padrao: 60, pct: true, comum: true }, { id: 'horas', rotulo: 'Horas do curso', padrao: { com: 30, sem: 20 }, comum: true }],
+    params: [{ id: 'presencial', rotulo: 'Parte presencial (%)', padrao: 60, pct: true, comum: true }, { id: 'horas', rotulo: 'Horas do curso', padrao: { com: 58, sem: 48 }, comum: true }],
     preco: { padrao: 12, rotulo: 'Custo por participante por dia', local: true }, qtd: (c, f) => f.nP * Math.ceil(c.P('horas') * c.P('presencial') / 100 / 7) },
   { id: 'e31-deslocamento', op: 'e31', nome: 'Deslocamento dos participantes', alt: 'ambos', classe: 'opex', unidade: 'participante-dia', formula: 'novos professores × dias presenciais × custo por dia',
-    params: [{ id: 'presencial', rotulo: 'Parte presencial (%)', padrao: 60, pct: true, comum: true }, { id: 'horas', rotulo: 'Horas do curso', padrao: { com: 30, sem: 20 }, comum: true }],
+    params: [{ id: 'presencial', rotulo: 'Parte presencial (%)', padrao: 60, pct: true, comum: true }, { id: 'horas', rotulo: 'Horas do curso', padrao: { com: 58, sem: 48 }, comum: true }],
     preco: { padrao: 15, rotulo: 'Custo por dia', local: true }, qtd: (c, f) => f.nP * Math.ceil(c.P('horas') * c.P('presencial') / 100 / 7) },
   { id: 'e31-plataforma', op: 'e31', nome: 'Plataforma das sessões online', alt: 'ambos', classe: 'opex', unidade: 'turma-mês', formula: 'turmas × meses de curso × licença',
     params: [{ id: 'turma', rotulo: 'Professores por turma', padrao: 30, comum: true }, { id: 'meses', rotulo: 'Meses de curso', padrao: 2 }], preco: { padrao: 50, rotulo: 'Licença por turma por mês' },
@@ -308,7 +324,7 @@ export const COMPONENTES: CompDef[] = [
     params: [{ id: 'turma', rotulo: 'Professores por turma', padrao: 30, comum: true }, { id: 'horasIA', rotulo: 'Horas a mais', padrao: 6 }], preco: { padrao: 0, rotulo: 'Custo da hora', perfil: 2, hora: true },
     qtd: (c, f) => turmas(f.nP, c.P('turma')) * c.P('horasIA') },
   { id: 'e31-tempo', op: 'e31', nome: 'Tempo dos professores em formação', alt: 'ambos', classe: 'opex', unidade: 'horas', informativo: true, formula: 'novos professores × horas do curso × custo da hora do professor (fora do total)',
-    params: [{ id: 'horas', rotulo: 'Horas do curso', padrao: { com: 30, sem: 20 }, comum: true }], preco: { padrao: 0, rotulo: 'Custo da hora', perfil: 2, hora: true }, qtd: (c, f) => f.nP * c.P('horas') },
+    params: [{ id: 'horas', rotulo: 'Horas do curso', padrao: { com: 58, sem: 48 }, comum: true }], preco: { padrao: 0, rotulo: 'Custo da hora', perfil: 2, hora: true }, qtd: (c, f) => f.nP * c.P('horas') },
   // ---------------------------------------------------------------- 3.2 desenvolvimento contínuo
   { id: 'e32-continuada', op: 'e32', nome: 'Formação continuada', alt: 'ambos', classe: 'opex', unidade: 'horas', formula: 'turmas de professores × horas por ano × anos × custo da hora do formador',
     params: [{ id: 'turma', rotulo: 'Professores por turma', padrao: 30, comum: true }, { id: 'horas', rotulo: 'Horas por ano', padrao: 10 }], preco: { padrao: 0, rotulo: 'Custo da hora', perfil: 2, hora: true },
@@ -328,7 +344,7 @@ export const COMPONENTES: CompDef[] = [
     params: [{ id: 'estudantes', rotulo: 'Estudantes por orientador', padrao: 500 }], papeis: [{ papel: 'Orientador ou psicólogo', perfil: 2, porParam: 'estudantes', base: 'A', ded: 1 }] },
   // ---------------------------------------------------------------- 3.4 reciclagem e coaching
   { id: 'e34-rotatividade', op: 'e34', nome: 'Formação de quem chega (rotatividade)', alt: 'ambos', classe: 'opex', unidade: 'horas', formula: 'professores × rotatividade por ano × anos ÷ professores por turma × horas do curso × custo da hora do formador',
-    params: [{ id: 'rot', rotulo: 'Rotatividade por ano (%)', padrao: 10, pct: true }, { id: 'turma', rotulo: 'Professores por turma', padrao: 30, comum: true }, { id: 'horas', rotulo: 'Horas do curso', padrao: { com: 30, sem: 20 } }],
+    params: [{ id: 'rot', rotulo: 'Rotatividade por ano (%)', padrao: 9, pct: true }, { id: 'turma', rotulo: 'Professores por turma', padrao: 30, comum: true }, { id: 'horas', rotulo: 'Horas do curso', padrao: { com: 58, sem: 48 } }],
     preco: { padrao: 0, rotulo: 'Custo da hora', perfil: 2, hora: true }, qtd: (c, f) => f.P * c.P('rot') / 100 * anos(f) / Math.max(1, c.P('turma')) * c.P('horas') },
   { id: 'e34-coaching', op: 'e34', nome: 'Coaching individual', alt: 'ambos', classe: 'opex', unidade: 'sessões', formula: 'professores com coaching × sessões por ano × anos × custo da sessão (1 hora)',
     params: [{ id: 'parte', rotulo: 'Professores com coaching (%)', padrao: 20, pct: true }, { id: 'sessoes', rotulo: 'Sessões por ano', padrao: 4 }],
@@ -337,7 +353,7 @@ export const COMPONENTES: CompDef[] = [
     params: [{ id: 'turma', rotulo: 'Professores por turma', padrao: 30, comum: true }, { id: 'horas', rotulo: 'Horas por ano', padrao: 4 }], preco: { padrao: 0, rotulo: 'Custo da hora', perfil: 2, hora: true },
     qtd: (c, f) => turmas(f.P, c.P('turma')) * c.P('horas') * anos(f) },
   // ---------------------------------------------------------------- 4.1 conteúdos e materiais
-  { id: 'e41-impresso', op: 'e41', nome: 'Material impresso do estudante', alt: 'sem', classe: 'opex', unidade: 'páginas', formula: '(novos estudantes e reposição anual dos que seguem) × páginas × preço por página',
+  { id: 'e41-impresso', op: 'e41', nome: 'Material impresso do estudante', alt: 'ambos', classe: 'opex', unidade: 'páginas', formula: '(novos estudantes e reposição anual dos que seguem) × páginas × preço por página',
     params: [{ id: 'paginas', rotulo: 'Páginas por estudante', padrao: 200 }, { id: 'repos', rotulo: 'Reposição por ano (%)', padrao: 30, pct: true }], preco: { padrao: 0.03, rotulo: 'Preço por página', local: true },
     qtd: (c, f) => (f.nA + (f.A - f.nA) * c.P('repos') / 100 * anos(f)) * c.P('paginas') },
   { id: 'e41-guia', op: 'e41', nome: 'Guia do professor', alt: 'ambos', classe: 'opex', unidade: 'professores', formula: 'novos professores × preço do guia', preco: { padrao: 15, rotulo: 'Preço do guia', local: true }, qtd: (_c, f) => f.nP },
@@ -349,7 +365,7 @@ export const COMPONENTES: CompDef[] = [
   { id: 'e41-revisao', op: 'e41', nome: 'Revisão pedagógica e de viés', alt: 'ambos', classe: 'opex', unidade: 'horas', formula: 'unidades didáticas × horas de revisão × custo da hora (uma vez)',
     params: [{ id: 'unidades', rotulo: 'Unidades didáticas', padrao: 20, comum: true }, { id: 'horas', rotulo: 'Horas de revisão por unidade', padrao: { com: 8, sem: 4 } }], preco: { padrao: 0, rotulo: 'Custo da hora', perfil: 2, hora: true },
     qtd: (c, f) => f.primeira ? c.P('unidades') * c.P('horas') : 0 },
-  { id: 'e41-distribuicao', op: 'e41', nome: 'Distribuição do material', alt: 'sem', classe: 'opex', unidade: 'locais', formula: 'locais × entregas por ano × anos × custo da entrega',
+  { id: 'e41-distribuicao', op: 'e41', nome: 'Distribuição do material', alt: 'ambos', classe: 'opex', unidade: 'locais', formula: 'locais × entregas por ano × anos × custo da entrega',
     params: [{ id: 'entregas', rotulo: 'Entregas por ano', padrao: 1 }], preco: { padrao: 40, rotulo: 'Custo por entrega', local: true }, qtd: (c, f) => (f.E || Math.ceil(f.A / 30)) * Math.max(1, Math.round(c.P('entregas') * anos(f))) },
   { id: 'e41-manipulaveis', op: 'e41', nome: 'Materiais manipuláveis e jogos', alt: 'ambos', classe: 'opex', unidade: 'estudantes', formula: 'novos estudantes × conjunto por estudante', extra: ['C31'],
     preco: { padrao: 12, rotulo: 'Custo por estudante', local: true }, qtd: (_c, f) => f.nA },
@@ -367,9 +383,9 @@ export const COMPONENTES: CompDef[] = [
     params: [{ id: 'horas', rotulo: 'Horas', padrao: 120 }], preco: { padrao: 0, rotulo: 'Custo da hora', perfil: 3, hora: true }, qtd: (c, f) => f.ultima ? c.P('horas') : 0 },
   // ---------------------------------------------------------------- 4.3 ferramentas de IA (só com IA)
   { id: 'e43-licenca', op: 'e43', nome: 'Licenças da ferramenta para estudantes', alt: 'com', classe: 'opex', unidade: 'licença-mês', formula: 'estudantes com licença × meses × preço da licença',
-    params: [{ id: 'parte', rotulo: 'Estudantes com licença (%)', padrao: 100, pct: true }], preco: { padrao: 2, rotulo: 'Licença por estudante por mês' },
+    params: [{ id: 'parte', rotulo: 'Estudantes com licença (%)', padrao: 100, pct: true, porDesafio: { C31: 0, C32: 0, C34: 0, C35: 0, C38: 0 } }], preco: { padrao: 2, rotulo: 'Licença por estudante por mês' },
     ia: e => naoPublica(e) && (e.arq === 'saas' || e.arq === 'preditivo') && e.pag === 'usuario', qtd: (c, f) => licPaga(c.ia) ? f.A * c.P('parte') / 100 * f.meses : 0,
-    nota: 'Ferramenta pública ou incluída numa plataforma que a rede já paga: sem licença.' },
+    nota: 'Ferramenta pública ou incluída numa plataforma que a rede já paga: sem licença. A orientação da UNESCO sobre IA generativa na educação (2023) sugere 13 anos como idade mínima para uso direto; por isso o padrão é 0% nos desafios da educação infantil, da alfabetização, da educação inclusiva, da multilíngue e do bem-estar, que atendem sobretudo crianças menores. Ajuste se o seu público tiver 13 anos ou mais.' },
   { id: 'e43-licencaProf', op: 'e43', nome: 'Licenças da ferramenta para professores', alt: 'com', classe: 'opex', unidade: 'licença-mês', formula: 'professores × meses × preço da licença',
     preco: { padrao: 9, rotulo: 'Licença por professor por mês' }, ia: e => naoPublica(e) && (e.arq === 'saas' || e.arq === 'preditivo') && e.pag === 'usuario', qtd: (c, f) => licPaga(c.ia) ? f.P * f.meses : 0 },
   { id: 'e43-gratuito', op: 'e43', nome: 'Licenças depois do período gratuito', alt: 'com', classe: 'opex', unidade: 'licença-mês', formula: 'gratuita na prova de conceito e no piloto; depois, estudantes e professores × meses × preço médio da licença',
@@ -396,7 +412,7 @@ export const COMPONENTES: CompDef[] = [
   { id: 'e43-infra', op: 'e43', nome: 'Armazenamento, rede e registros do modelo', alt: 'com', classe: 'opex', unidade: 'meses', formula: 'meses × custo mensal',
     preco: { padrao: 1500, rotulo: 'Custo por mês' }, ia: e => naoPublica(e) && e.arq === 'ow', qtd: (_c, f) => f.meses },
   { id: 'e43-equipe', op: 'e43', nome: 'Engenharia de ML e operação do modelo', alt: 'com', classe: 'opex', formula: 'pessoas × dedicação × custo mensal × meses',
-    ia: e => naoPublica(e) && (e.arq === 'ow' || e.arq === 'preditivo'), papeis: [{ papel: 'Engenheiro de ML', perfil: 2, pessoas: 1, ded: 1 }] },
+    ia: e => naoPublica(e) && (e.arq === 'ow' || e.arq === 'preditivo'), papeis: [{ papel: 'Engenheiro de ML', perfil: 2, pessoas: 1, ded: 1, especialista: true }] },
   { id: 'e43-equipeAberta', op: 'e43', nome: 'Equipe técnica da solução aberta', alt: 'com', classe: 'opex', formula: 'pessoas × dedicação × custo mensal × meses',
     ia: e => tipoEf(e.tipo) === 'aberta' && e.arq !== 'ow' && e.arq !== 'preditivo', papeis: [{ papel: 'Desenvolvedor', perfil: 2, pessoas: 1, ded: 0.5 }] },
   { id: 'e43-treino', op: 'e43', nome: 'Preparação dos dados e treinamento do modelo', alt: 'com', classe: 'capex', unidade: 'projetos', formula: 'um treinamento inicial (uma vez); o retreino anual entra na manutenção',
@@ -406,8 +422,9 @@ export const COMPONENTES: CompDef[] = [
   { id: 'e43-qualidade', op: 'e43', nome: 'Avaliação da qualidade das respostas', alt: 'com', classe: 'opex', unidade: 'horas', formula: 'amostras por mês × minutos por amostra × meses × custo da hora',
     params: [{ id: 'amostras', rotulo: 'Amostras por mês', padrao: 100 }, { id: 'minutos', rotulo: 'Minutos por amostra', padrao: 5 }], preco: { padrao: 0, rotulo: 'Custo da hora', perfil: 2, hora: true },
     qtd: (c, f) => c.P('amostras') * c.P('minutos') / 60 * f.meses },
-  { id: 'e43-juridico', op: 'e43', nome: 'Revisão jurídica do contrato e dos termos', alt: 'com', classe: 'opex', unidade: 'revisões', formula: 'uma revisão antes de contratar',
-    preco: { padrao: 8000, rotulo: 'Custo da revisão', local: true }, ia: e => e.lic !== 'aberta', qtd: (_c, f) => f.primeira ? 1 : 0 },
+  { id: 'e43-juridico', op: 'e43', nome: 'Revisão jurídica do contrato e dos termos', alt: 'com', classe: 'opex', unidade: 'revisões', formula: 'uma revisão antes do primeiro uso e outra do contrato de escala antes da implantação (metade do esforço com licença aberta)',
+    preco: { padrao: 8000, rotulo: 'Custo da revisão', local: true }, qtd: (c, f) => (f.primeira || f.id === 'implantacao' ? 1 : 0) * (c.ia.lic === 'aberta' ? 0.5 : 1),
+    nota: 'Vale também para ferramentas públicas e abertas: os termos de uso, o tratamento de dados de crianças e a licença do modelo precisam de revisão.' },
   { id: 'e43-saida', op: 'e43', nome: 'Saída e troca de fornecedor', alt: 'com', classe: 'opex', unidade: 'saídas', formula: 'exportação dos dados, nova base de conhecimento, novos testes e desativação, no fim do plano',
     preco: { padrao: 18000, rotulo: 'Custo da saída', porArq: { saas: 18000, api: 27000, ow_api: 27000, ow: 55000, preditivo: 27000 } }, qtd: (_c, f) => f.ultima ? 1 : 0,
     nota: 'Exemplo A do guia: US$ 18 mil (produto por licença); B: US$ 27 mil (API e RAG); C: US$ 55 mil (pesos abertos).' },
@@ -443,6 +460,9 @@ export function fasesCalc(s: Pick<Estado14, 'ctx'>, d: string, ref?: FaseCalc[])
       E = p.escolas ? Math.min(p.escolas, poc) : 0;
       const parte = p.escolas ? E / p.escolas : Math.min(1, poc * 30 / Math.max(1, p.estudantes));
       A = Math.round(p.estudantes * parte); P = Math.max(1, Math.round(p.professores * parte));
+    } else if (f.id === 'piloto' && f.sugerido && p.escolas > 0) {
+      E = Math.min(p.escolas, Math.max(Math.min(PILOTO_MIN, p.escolas), Math.min(PILOTO_MAX, Math.ceil(p.escolas * f.alcance / 100))));
+      A = Math.round(p.estudantes * E / p.escolas); P = Math.max(1, Math.round(p.professores * E / p.escolas));
     } else { E = Math.ceil(p.escolas * f.alcance / 100); A = Math.round(p.estudantes * f.alcance / 100); P = Math.round(p.professores * f.alcance / 100); }
     E = Math.max(E, antE); A = Math.max(A, antA); P = Math.max(P, antP);
     const r = ref?.find(x => x.id === f.id);
@@ -456,11 +476,14 @@ export function fasesCalc(s: Pick<Estado14, 'ctx'>, d: string, ref?: FaseCalc[])
 
 // ------------------------------------------------------------------ cálculo
 export interface ValorFase { fase: string; qtd: number; unit: number; valor: number }
-export interface PapelCalc { papel: string; perfil: Grupo; pessoas: number; ded: number; unit: number; unitRef: number; extra?: string; alt: AltSel; valor: number }
+/** porFase: pessoas, meses e valor de cada fase (para o "Como foi calculado" refazer a conta) */
+export interface PapelCalc { papel: string; perfil: Grupo; pessoas: number; ded: number; unit: number; unitRef: number; extra?: string; alt: AltSel; valor: number; especialista: boolean; existente: boolean; premio: number; porFase: { fase: string; n: number; meses: number; valor: number }[] }
 export interface CompCalc {
   def: CompDef; alt: Alternativa; on: boolean; ligadoPadrao: boolean; motivo?: string;
   unit: number; unitRef: number; params: Record<string, number>; porFase: ValorFase[]; papeis: PapelCalc[];
   k: number; x: number; u: number; total: number; pessoas: number;
+  /** parte do total que é salário de servidores que já existem (fora do desembolso novo) */
+  existente: number;
 }
 export interface OpcaoCalc { op: string; comps: CompCalc[]; com: { k: number; x: number; u: number; total: number }; sem: { k: number; x: number; u: number; total: number } }
 export interface DesafioCalc { d: string; fases: FaseCalc[]; opcoes: OpcaoCalc[]; ref: string }
@@ -475,6 +498,8 @@ export function mensalPerfil(pr: Precos, perfil: Grupo): number {
 function precoRef(def: CompDef, a: Alternativa, pr: Precos, ia: EscolhaIA): number {
   const p = def.preco; if (!p) return 0;
   if (p.perfil) { const m = mensalPerfil(pr, p.perfil); return Math.round((p.hora ? m / HORAS_MES : m) * 100) / 100; }
+  const doPais = p.pais ? precoPais(p.pais, pr.iso) : null;
+  if (doPais) return arredPreco(doPais.v * pr.taxa);
   const usd = p.porArq && p.porArq[ia.arq] !== undefined ? p.porArq[ia.arq] : typeof p.padrao === 'number' ? p.padrao : p.padrao[a];
   return arredPreco(usd * (p.local ? pr.nivel : 1) * pr.taxa);
 }
@@ -484,7 +509,11 @@ const lerNum = (v: unknown, a: Alternativa): number | undefined => {
   const x = typeof v === 'object' && v !== null ? (v as any)[a] : v;
   return typeof x === 'number' && Number.isFinite(x) && x >= 0 ? x : undefined;
 };
-export const padraoParam = (pd: ParamDef, a: Alternativa) => typeof pd.padrao === 'number' ? pd.padrao : pd.padrao[a];
+export const padraoParam = (pd: ParamDef, a: Alternativa, iso?: string, d?: string) => {
+  if (pd.pais) { const x = paramPais(pd.pais, iso); if (x) return x.v; }
+  if (d && pd.porDesafio && pd.porDesafio[d] !== undefined) return pd.porDesafio[d];
+  return typeof pd.padrao === 'number' ? pd.padrao : pd.padrao[a];
+};
 /** A linha vem ligada? Itens próprios só no desafio deles; itens que dependem do contexto ou da escolha de IA, quando se aplicam. */
 export function ligadoPadrao(def: CompDef, d: string, p: PublicoDesafio, ia: EscolhaIA, a: Alternativa = 'com'): { on: boolean; motivo?: string } {
   if (def.extra && !def.extra.includes(d)) return { on: false, motivo: 'item próprio de outro desafio' };
@@ -496,7 +525,7 @@ export function ligadoPadrao(def: CompDef, d: string, p: PublicoDesafio, ia: Esc
 function calcComp(def: CompDef, a: Alternativa, d: string, p: PublicoDesafio, fs: FaseCalc[], ia: EscolhaIA, pr: Precos, sob: SobreLinha, extras: PapelExtraEd[], prontos: Record<string, CompCalc>, sobOp: SobreLinha = {}): CompCalc {
   const lp = ligadoPadrao(def, d, p, ia, a), on = sob.off ? false : sob.on ? true : lp.on;
   const params: Record<string, number> = {};
-  for (const pd of def.params || []) params[pd.id] = lerNum((pd.comum ? sobOp : sob).p?.[pd.id], a) ?? padraoParam(pd, a);
+  for (const pd of def.params || []) params[pd.id] = lerNum((pd.comum ? sobOp : sob).p?.[pd.id], a) ?? padraoParam(pd, a, pr.iso, d);
   const mult = def.preco?.mult ? 1 + (params[def.preco.mult] || 0) / 100 : 1;
   const unitRef = arredPreco(precoRef(def, a, pr, ia) * mult), unit = lerNum(sob.unit, a) ?? unitRef;
   const meses = fs.reduce((n, f) => n + f.meses, 0);
@@ -504,22 +533,28 @@ function calcComp(def: CompDef, a: Alternativa, d: string, p: PublicoDesafio, fs
   let porFase: ValorFase[] = fs.map(f => ({ fase: f.id, qtd: 0, unit, valor: 0 }));
   const papeis: PapelCalc[] = [];
   if (def.papeis) {
-    const lista = [...def.papeis.map(x => ({ ...x, extra: undefined as string | undefined })), ...extras.map(x => ({ papel: x.papel || t('Novo papel'), perfil: x.perfil, pessoas: x.pessoas, ded: x.ded, alt: x.alt, extra: x.id, fases: undefined as string[] | undefined, porParam: undefined as string | undefined, base: undefined as any }))];
+    const premio = premioEspecialista().pct;
+    const lista = [...def.papeis.map(x => ({ ...x, extra: undefined as string | undefined, especialista: x.especialista ?? PAPEIS_ESPECIALISTA.has(x.papel), existenteExtra: false })),
+      ...extras.map(x => ({ papel: x.papel || t('Novo papel'), perfil: x.perfil, pessoas: x.pessoas, ded: x.ded, alt: x.alt, extra: x.id, fases: undefined as string[] | undefined, porParam: undefined as string | undefined, base: undefined as any, especialista: !!x.especialista, existenteExtra: !!x.existente }))];
     for (const r of lista) {
       if (r.alt && r.alt !== 'ambos' && r.alt !== a) continue;
       const so = r.extra ? {} : (sob.papeis?.[r.papel] || {});
-      const ref = mensalPerfil(pr, r.perfil), u = r.extra ? (lerNum(extras.find(x => x.id === r.extra)?.unit, a) ?? ref) : (lerNum(so.unit, a) ?? ref);
+      const ref = Math.round(mensalPerfil(pr, r.perfil) * (r.especialista ? 1 + premio / 100 : 1) * 100) / 100;
+      const u = r.extra ? (lerNum(extras.find(x => x.id === r.extra)?.unit, a) ?? ref) : (lerNum(so.unit, a) ?? ref);
+      const existente = r.extra ? r.existenteExtra : !!(so as any).existente;
       const ded = lerNum(so.ded, a) ?? r.ded;
       let total = 0, pessoasMax = 0;
+      const pf: PapelCalc['porFase'] = [];
       porFase = porFase.map((v, i) => {
         const f = fs[i]; if (r.fases && !r.fases.includes(f.id)) return v;
         const baseN = r.base === 'E' ? (f.E || Math.ceil(f.A / 30)) : r.base === 'A' ? f.A : r.base === 'P' ? f.P : r.base === 'def' ? f.A * p.deficiencia / 100 : 0;
         const n = lerNum(so.pessoas, a) ?? (r.porParam ? Math.ceil(baseN / Math.max(1, c.P(r.porParam))) : r.pessoas || 0);
         pessoasMax = Math.max(pessoasMax, n);
         const val = n * ded * u * f.meses; total += val;
+        if (n > 0 && f.meses > 0) pf.push({ fase: f.id, n, meses: f.meses, valor: Math.round(val * 100) / 100 });
         return { ...v, qtd: v.qtd + n * ded * f.meses, valor: v.valor + val };
       });
-      papeis.push({ papel: r.papel, perfil: r.perfil, pessoas: pessoasMax, ded, unit: u, unitRef: ref, extra: r.extra, alt: r.alt || 'ambos', valor: total });
+      papeis.push({ papel: r.papel, perfil: r.perfil, pessoas: pessoasMax, ded, unit: u, unitRef: ref, extra: r.extra, alt: r.alt || 'ambos', valor: total, especialista: r.especialista, existente, premio: r.especialista ? premio : 0, porFase: pf });
     }
   } else if (def.pctDe) {
     const pct = c.P(def.pctDe.param) / 100;
@@ -540,7 +575,8 @@ function calcComp(def: CompDef, a: Alternativa, d: string, p: PublicoDesafio, fs
   porFase = porFase.map(v => ({ ...v, valor: Math.round(v.valor * 100) / 100 }));
   const total = on ? porFase.reduce((n, v) => n + v.valor, 0) : 0;
   const k = def.classe === 'capex' ? total : 0, x = def.classe === 'opex' ? total : 0, u = def.classe === 'uso' ? total : 0;
-  return { def, alt: a, on, ligadoPadrao: lp.on, motivo: lp.motivo, unit, unitRef, params, porFase, papeis, k, x, u, total, pessoas: def.papeis || def.preco?.perfil ? total : 0 };
+  const existente = on ? Math.round(papeis.filter(r => r.existente).reduce((n, r) => n + r.valor, 0) * 100) / 100 : 0;
+  return { def, alt: a, on, ligadoPadrao: lp.on, motivo: lp.motivo, unit, unitRef, params, porFase, papeis, k, x, u, total, pessoas: def.papeis || def.preco?.perfil ? total : 0, existente };
 }
 
 function precosDoCaso(s: Pick<Estado14, 'ctx' | 'moeda'>): Precos {
@@ -567,8 +603,8 @@ export function calcularDesafio(s: Pick<Estado14, 'ctx' | 'moeda'>, d: string, c
   return { d, fases: fs, opcoes, ref: p.mesmas };
 }
 
-export interface Linha { desafio: string; opcao: string; cat: string; alt: Alternativa; total: number; k: number; x: number; u: number; porFase: Record<string, number>; pessoas: number; conta: string }
-export interface ResultadoAlt { linhas: Linha[]; k: number; x: number; u: number; direto: number; P: number; V: number; O: number; T: number; total: number; porFase: Record<string, number>; porDesafio: Record<string, number>; porCategoria: Record<string, number>; estudantes: number; porEstudante: number | null }
+export interface Linha { desafio: string; opcao: string; cat: string; alt: Alternativa; total: number; k: number; x: number; u: number; porFase: Record<string, number>; pessoas: number; existente: number; conta: string }
+export interface ResultadoAlt { linhas: Linha[]; k: number; x: number; u: number; direto: number; P: number; V: number; O: number; T: number; total: number; existente: number; desembolso: number; porFase: Record<string, number>; porDesafio: Record<string, number>; porCategoria: Record<string, number>; estudantes: number; porEstudante: number | null }
 export interface ResultadoEd { moeda: string; taxa: number; nivel: number; fases: Fase[]; meses: number; com: ResultadoAlt; sem: ResultadoAlt; desafios: string[]; porDesafio: Record<string, DesafioCalc> }
 
 /** Calcula o plano nas duas alternativas, na moeda do caso. */
@@ -585,7 +621,7 @@ export function orcamentoEducacao(s: Pick<Estado14, 'ctx' | 'moeda'>): Resultado
       const cs = o.comps.filter(c => c.alt === a && !c.def.informativo);
       const pf: Record<string, number> = {};
       porD[d].fases.forEach((f, i) => { pf[f.id] = r2(cs.reduce((n, c) => n + (c.on ? c.porFase[i].valor : 0), 0)); });
-      linhas.push({ desafio: d, opcao: o.op, cat: OPCOES_ED[o.op].cat, alt: a, k: o[a].k, x: o[a].x, u: o[a].u, total: o[a].total, porFase: pf, pessoas: r2(cs.reduce((n, c) => n + c.pessoas, 0)), conta: '' });
+      linhas.push({ desafio: d, opcao: o.op, cat: OPCOES_ED[o.op].cat, alt: a, k: o[a].k, x: o[a].x, u: o[a].u, total: o[a].total, porFase: pf, pessoas: r2(cs.reduce((n, c) => n + c.pessoas, 0)), existente: r2(cs.reduce((n, c) => n + c.existente, 0)), conta: '' });
     }
     const soma = (f: (l: Linha) => number) => r2(linhas.reduce((n, l) => n + f(l), 0));
     const direto = soma(l => l.total), P = soma(l => l.pessoas);
@@ -596,7 +632,8 @@ export function orcamentoEducacao(s: Pick<Estado14, 'ctx' | 'moeda'>): Resultado
     const porDesafio = Object.fromEntries(ds.map(d => [d, r2(linhas.filter(l => l.desafio === d).reduce((n, l) => n + l.total, 0) * (1 + fatorAd))]));
     const porCategoria = Object.fromEntries(CATEGORIAS_ED.map(c => [c.id, r2(linhas.filter(l => l.cat === c.id).reduce((n, l) => n + l.total, 0))]));
     const estudantes = ds.reduce((n, d) => n + publico(s, d).estudantes, 0);
-    return { linhas, k, x: r2(total - k - u), u, direto, P, V, O, T, total, porFase, porDesafio, porCategoria, estudantes, porEstudante: estudantes ? r2(total / estudantes) : null };
+    const existente = soma(l => l.existente);
+    return { linhas, k, x: r2(total - k - u), u, direto, P, V, O, T, total, existente, desembolso: r2(total - existente), porFase, porDesafio, porCategoria, estudantes, porEstudante: estudantes ? r2(total / estudantes) : null };
   };
   const meses = ds.length ? Math.max(...ds.map(d => fases(s, d).reduce((n, f) => n + f.meses, 0))) : fases(s).reduce((n, f) => n + f.meses, 0);
   // fases para os quadros: as do primeiro desafio (cada desafio pode ter as suas)

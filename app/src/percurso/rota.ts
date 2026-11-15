@@ -26,7 +26,7 @@ export type Rota =
   | { tipo: 'galeria' }
   | { tipo: 'salarios'; pais?: string }
   | { tipo: 'esforcos'; chave?: string }
-  | { tipo: 'metodologia' };
+  | { tipo: 'metodologia'; parte?: 'educacao'; foco?: string };
 
 const cap = (s: string): Capitulo | null => (['1', '2', '3', '4'].includes(s) ? (+s as Capitulo) : null);
 
@@ -35,7 +35,7 @@ export function lerRota(hash: string): Rota {
   if (p[0] === 'galeria') return { tipo: 'galeria' };
   // v018: salários de referência por país (ILOSTAT) e encargos
   if (p[0] === 'salarios') return p[1] ? { tipo: 'salarios', pais: p[1] } : { tipo: 'salarios' };
-  if (p[0] === 'metodologia') return { tipo: 'metodologia' };
+  if (p[0] === 'metodologia') return p[1] === 'educacao' ? { tipo: 'metodologia', parte: 'educacao', foco: p[2] || undefined } : { tipo: 'metodologia' };
   if (p[0] === 'esforcos') return p[1] ? { tipo: 'esforcos', chave: p[1] } : { tipo: 'esforcos' };
   // #/refinar/premissas/<campo> abre a aba com o campo em foco ("Ajustar premissas" do "de onde vem?")
   if (p[0] === 'refinar') return { tipo: 'refinar', aba: ABAS.includes(p[1] as AbaRefinar) ? (p[1] as AbaRefinar) : 'premissas', foco: p[2] || undefined };
@@ -66,6 +66,8 @@ export const href = {
   esforcos: (chave?: string) => '#/esforcos' + (chave ? '/' + chave : ''),
   /** v018: como o custo da governança é calculado */
   metodologia: () => '#/metodologia',
+  /** v022: metodologia de "Educando com e sem IA" (com a linha em foco, opcional) */
+  metodologiaEd: (linha?: string) => '#/metodologia/educacao' + (linha ? '/' + linha : ''),
   /** Onde responder um campo qualquer: a tela do Essencial, ou a síntese do capítulo com o campo em foco (Refinar). */
   campo: (campo: string) => {
     const base = String(campo).split('.')[0];

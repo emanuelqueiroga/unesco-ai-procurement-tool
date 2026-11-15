@@ -136,7 +136,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   const curtoMatriz = rota.tipo === 'inicio' ? estreito : matrizCurta;
   const botaoMatriz = <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={curtoMatriz ? t('Matriz camadas × fases') : undefined}>{curtoMatriz ? t('Matriz') : t('Matriz camadas × fases')}</Button>;
   // v018: como o custo da governança é calculado (ao lado da matriz, no percurso da governança)
-  const botaoCalculo = <Button variant="secondary" size="sm" href={href.metodologia()} aria-label={calculoCurto ? t('Como o custo é calculado') : undefined} title={calculoCurto ? t('Como o custo é calculado') : undefined}>{calculoCurto ? t('Cálculo') : t('Como o custo é calculado')}</Button>;
+  const botaoCalculo = <Button variant="secondary" size="sm" href={percursoEducacaoV20(s.ctx) && !percursoGovernanca(s.ctx) ? href.metodologiaEd() : href.metodologia()} aria-label={calculoCurto ? t('Como o custo é calculado') : undefined} title={calculoCurto ? t('Como o custo é calculado') : undefined}>{calculoCurto ? t('Cálculo') : t('Como o custo é calculado')}</Button>;
   const atalhos = (
     <>
       <Button variant="secondary" size="sm" href={href.inicio()}>{t('Início')}</Button>

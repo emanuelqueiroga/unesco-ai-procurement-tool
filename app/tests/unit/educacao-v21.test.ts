@@ -48,7 +48,7 @@ describe('v021: edição das linhas', () => {
   it('parâmetro diferente com IA e sem IA', () => {
     const s = base({ linhas: { C32: { e31: { p: { horas: { com: 40 } } } } } });
     expect(comp(s, 'C32', 'e31-formadores', 'com').params.horas).toBe(40);
-    expect(comp(s, 'C32', 'e31-formadores', 'sem').params.horas).toBe(20);
+    expect(comp(s, 'C32', 'e31-formadores', 'sem').params.horas).toBe(48);
     // valor comum da opção: vale para as outras linhas que usam as horas do curso
     expect(comp(s, 'C32', 'e31-encontros', 'com').params.horas).toBe(40);
   });
@@ -97,7 +97,7 @@ describe('v021: ferramenta de IA (formas de oferta da 0.0.14)', () => {
   const ligadas = (ia: Record<string, string>) => calcularDesafio(base({ ia: { C32: ia } }), 'C32').opcoes.find((o) => o.op === 'e43')!.comps.filter((c) => c.on).map((c) => c.def.id);
   it('SaaS por usuário: licenças', () => { const l = ligadas({}); expect(l).toContain('e43-licenca'); expect(l).not.toContain('e43-tokens'); });
   it('API: tokens, RAG, desenvolvimento e manutenção', () => { const l = ligadas({ arq: 'api', pag: 'consumo' }); for (const id of ['e43-tokens', 'e43-rag', 'e43-desenvolvimento', 'e43-manutencao']) expect(l).toContain(id); expect(l).not.toContain('e43-licenca'); });
-  it('pesos abertos: GPUs, infraestrutura e equipe de ML', () => { const l = ligadas({ arq: 'ow', tipo: 'aberta', pag: 'consumo', lic: 'aberta' }); for (const id of ['e43-gpu', 'e43-infra', 'e43-equipe']) expect(l).toContain(id); expect(l).not.toContain('e43-juridico'); });
+  it('pesos abertos: GPUs, infraestrutura e equipe de ML', () => { const l = ligadas({ arq: 'ow', tipo: 'aberta', pag: 'consumo', lic: 'aberta' }); for (const id of ['e43-gpu', 'e43-infra', 'e43-equipe']) expect(l).toContain(id); expect(l).toContain('e43-juridico'); });
   it('assinatura institucional e piloto gratuito', () => { expect(ligadas({ pag: 'institucional' })).toContain('e43-institucional'); expect(ligadas({ pag: 'gratuito' })).toContain('e43-gratuito'); });
   it('ferramenta pública: licença sem custo', () => {
     const c = calcularDesafio(base({ ia: { C32: { tipo: 'publica' } } }), 'C32').opcoes.find((o) => o.op === 'e43')!.comps.find((x) => x.def.id === 'e43-licenca')!;
@@ -122,10 +122,11 @@ describe('v021: tipo de tecnologia (pergunta 2.3.4 da 0.0.14) na 4.3 e na 4.2', 
     expect(on(ed, 'e43-juridico')).toBe(true);
     expect(on(ed, 'e43-qualidade')).toBe(true);
   });
-  it('aberta: sugere pesos abertos e licença aberta; ligam GPUs, desenvolvimento e manutenção; sem jurídico', () => {
+  it('aberta: sugere pesos abertos e licença aberta; ligam GPUs, desenvolvimento e manutenção; jurídico com metade do esforço', () => {
     const ed = { ia: { C32: { tipo: 'aberta' } } };
     for (const id of ['e43-gpu', 'e43-infra', 'e43-equipe', 'e43-desenvolvimento', 'e43-manutencao']) expect(on(ed, id), id).toBe(true);
-    for (const id of ['e43-licenca', 'e43-tokens', 'e43-juridico']) expect(on(ed, id), id).toBe(false);
+    for (const id of ['e43-licenca', 'e43-tokens']) expect(on(ed, id), id).toBe(false);
+    expect(on(ed, 'e43-juridico')).toBe(true);
     // aberta com API: equipe técnica e hospedagem da aplicação, no lugar das GPUs
     const api = { ia: { C32: { tipo: 'aberta', arq: 'api' } } };
     for (const id of ['e43-equipeAberta', 'e24-ia', 'e43-tokens']) expect(on(api, id), id).toBe(true);
