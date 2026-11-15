@@ -109,6 +109,44 @@ describe('v021: ferramenta de IA (formas de oferta da 0.0.14)', () => {
   });
 });
 
+describe('v021: tipo de tecnologia (pergunta 2.3.4 da 0.0.14) na 4.3 e na 4.2', () => {
+  const on = (ed: Record<string, unknown>, id: string, alt: 'com' | 'sem' = 'com') => comp(base(ed), 'C32', id, alt).on;
+  it('"Ainda não sei" conta como produto pago', () => {
+    for (const id of ['e43-licenca', 'e43-licencaProf', 'e42-licenca', 'e42-suporte']) expect(on({}, id), id).toBe(true);
+    expect(on({ ia: { C32: { tipo: 'paga' } }, plat: { C32: 'paga' } }, 'e43-licenca')).toBe(true);
+  });
+  it('pública: sem licença, consumo nem hospedagem; fica o acordo (jurídico)', () => {
+    const ed = { ia: { C32: { tipo: 'publica' } }, plat: { C32: 'publica' } };
+    for (const id of ['e43-licenca', 'e43-licencaProf', 'e43-tokens', 'e43-gratuito', 'e24-ia', 'e42-licenca', 'e42-suporte']) expect(on(ed, id), id).toBe(false);
+    expect(on(ed, 'e24-nuvem', 'sem')).toBe(false);
+    expect(on(ed, 'e43-juridico')).toBe(true);
+    expect(on(ed, 'e43-qualidade')).toBe(true);
+  });
+  it('aberta: sugere pesos abertos e licença aberta; ligam GPUs, desenvolvimento e manutenção; sem jurídico', () => {
+    const ed = { ia: { C32: { tipo: 'aberta' } } };
+    for (const id of ['e43-gpu', 'e43-infra', 'e43-equipe', 'e43-desenvolvimento', 'e43-manutencao']) expect(on(ed, id), id).toBe(true);
+    for (const id of ['e43-licenca', 'e43-tokens', 'e43-juridico']) expect(on(ed, id), id).toBe(false);
+    // aberta com API: equipe técnica e hospedagem da aplicação, no lugar das GPUs
+    const api = { ia: { C32: { tipo: 'aberta', arq: 'api' } } };
+    for (const id of ['e43-equipeAberta', 'e24-ia', 'e43-tokens']) expect(on(api, id), id).toBe(true);
+    expect(on(api, 'e43-gpu')).toBe(false);
+  });
+  it('produto pago (SaaS): a hospedagem vem no preço e não é cobrada de novo', () => {
+    expect(on({ ia: { C32: { tipo: 'paga' } } }, 'e24-ia')).toBe(false);
+    expect(on({ ia: { C32: { tipo: 'paga' } } }, 'e24-armazenamento')).toBe(false);
+  });
+  it('plataforma aberta: sem licença; ligam hospedagem e manutenção, nas duas alternativas', () => {
+    const ed = { plat: { C32: 'aberta' } };
+    for (const a of ['com', 'sem'] as const) {
+      expect(on(ed, 'e42-licenca', a)).toBe(false);
+      for (const id of ['e24-nuvem', 'e42-manutencao', 'e24-armazenamento']) expect(on(ed, id, a), id + a).toBe(true);
+    }
+  });
+  it('arquitetura, pagamento e licença escolhidos pela pessoa valem sobre a sugestão do tipo', () => {
+    expect(on({ ia: { C32: { tipo: 'aberta', arq: 'saas', pag: 'usuario', lic: 'assinatura' } } }, 'e43-licenca')).toBe(true);
+  });
+});
+
 describe('v021: telas por desafio e casos da v020', () => {
   it('ciclo por desafio, como na governança', () => {
     const s = estado({ desafios: ['C32', 'C34'], categorias: { C32: ['e1', 'e3'], C34: ['e2'] } });

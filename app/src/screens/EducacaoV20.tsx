@@ -161,7 +161,7 @@ function OpcaoAberta({ s, d, oc, dc, r }: { s: CasoStore; d: string; oc: OpcaoCa
   const ids = [...new Set(oc.comps.map(c => c.def.id))];
   return <div className="ed-aberta">
     <dl className="ed-opcao-valores">{ALTS.map(a => <Totais key={a} x={oc[a]} f={f} a={a} so={so} />)}</dl>
-    {oc.op === 'e43' ? <EscolhaIA s={s} d={d} /> : null}
+    {oc.op === 'e43' ? <EscolhaIA s={s} d={d} /> : oc.op === 'e42' ? <TipoTecnologia s={s} d={d} alvo="plat" /> : null}
     <Comuns d={d} oc={oc} />
     <div className="ed-linhas">{ids.map(id => <LinhaEd key={id} s={s} d={d} comps={oc.comps.filter(c => c.def.id === id)} dc={dc} r={r} />)}</div>
   </div>;
@@ -189,36 +189,62 @@ function Comuns({ d, oc }: { d: string; oc: OpcaoCalc }) {
   </section>;
 }
 
+/** O que cada tipo de tecnologia muda no custo (o mesmo texto para a ferramenta de IA e para a plataforma). */
+export const NOTA_TIPO: Record<string, string> = {
+  publica: 'Sem licença e sem hospedagem a pagar, mas com risco de continuidade: o serviço pode acabar, mudar de regras ou passar a ser cobrado. Combine por escrito prazo, uso dos dados e saída.',
+  aberta: 'Sem licença, mas alguém opera a solução: desenvolvimento ou adaptação, hospedagem, manutenção e equipe técnica entram no custo.',
+  paga: 'Licença, assinatura ou consumo, conforme a forma de pagamento; a hospedagem vem no preço; contrato e saída do fornecedor entram no custo.',
+  nao_sei: 'Até você decidir, a ferramenta usa a estimativa de produto pago, a mais conservadora.',
+};
+/** Pergunta 2.3.4 da 0.0.14 ("Que tipo de tecnologia você pretende usar?"), para a ferramenta de IA (ia) ou para a plataforma (plat). */
+function TipoTecnologia({ s, d, alvo }: { s: CasoStore; d: string; alvo: 'ia' | 'plat' }) {
+  const e = escolhaIA(s, d), v = alvo === 'ia' ? e.tipo : e.plat;
+  const grava = (x: string) => alvo === 'ia' ? gravarEd(`ia.${d}.tipo`, x) : gravarEd(`plat.${d}`, x);
+  const titulo = alvo === 'ia' ? t('Que tipo de tecnologia de IA você pretende usar?') : t('Que tipo de plataforma de aprendizagem você pretende usar?');
+  return <section className="ed-ia" aria-label={titulo}>
+    <h4 className="ed-ia-titulo">{titulo}</h4>
+    <p className="pc-nota">{alvo === 'ia' ? t('Exemplo: uma plataforma do ministério (pública), um modelo aberto instalado numa nuvem contratada (aberta), a assinatura de um assistente para professores (paga).')
+      : t('Exemplo: a plataforma de aprendizagem do ministério (pública), uma plataforma de código aberto instalada pela rede (aberta), uma plataforma comercial por assinatura (paga).')}</p>
+    <OptionCardGroup className="pc-lit-opcoes ed-tipo" label={titulo}>
+      {IA_TIPO.map(([k, r]) => <OptionCard key={k} name={`ed-tipo-${alvo}-${d}`} value={k} checked={v === k} label={t(r)} onChange={x => grava(x)} />)}
+    </OptionCardGroup>
+    <p className="pc-nota ed-tipo-nota">{t(NOTA_TIPO[v] || NOTA_TIPO.nao_sei)}</p>
+  </section>;
+}
+
 function EscolhaIA({ s, d }: { s: CasoStore; d: string }) {
   const e = escolhaIA(s, d), grava = (k: string, v: string) => gravarEd(`ia.${d}.${k}`, v);
-  return <section className="ed-ia" aria-label={t('Como a ferramenta de IA é oferecida')}>
-    <h4 className="ed-ia-titulo">{t('Como a ferramenta de IA é oferecida')}</h4>
-    <div className="ed-campos ed-campos--alinhados ed-campos--largos">
-      <Selecao rotulo={t('Tipo de tecnologia')} valor={e.tipo} opcoes={IA_TIPO} onChange={v => grava('tipo', v)} />
-      <Selecao rotulo={t('Arquitetura')} valor={e.arq} opcoes={IA_ARQ} onChange={v => grava('arq', v)} />
-      <Selecao rotulo={t('Forma de pagamento')} valor={e.pag} opcoes={IA_PAG} onChange={v => grava('pag', v)} />
-      <Selecao rotulo={t('Licença')} valor={e.lic} opcoes={IA_LIC} onChange={v => grava('lic', v)} />
-    </div>
-    <p className="pc-nota">{t('As linhas abaixo se ligam conforme a escolha: licenças, assinatura, consumo de tokens, base de conhecimento, desenvolvimento próprio ou GPUs. Código aberto e pesos abertos não eliminam custos: mudam onde eles aparecem.')}</p>
-  </section>;
+  const salvo = lerEd(s).ia?.[d] || {};
+  return <>
+    <TipoTecnologia s={s} d={d} alvo="ia" />
+    <section className="ed-ia" aria-label={t('Como a ferramenta de IA é oferecida')}>
+      <h4 className="ed-ia-titulo">{t('Como a ferramenta de IA é oferecida')}</h4>
+      <div className="ed-campos ed-campos--alinhados ed-campos--largos">
+        <Selecao rotulo={t('Arquitetura')} valor={e.arq} opcoes={IA_ARQ} onChange={v => grava('arq', v)} />
+        <Selecao rotulo={t('Forma de pagamento')} valor={e.pag} opcoes={IA_PAG} onChange={v => grava('pag', v)} />
+        <Selecao rotulo={t('Licença')} valor={e.lic} opcoes={IA_LIC} onChange={v => grava('lic', v)} />
+      </div>
+      <p className="pc-nota">{!salvo.arq && !salvo.pag && !salvo.lic ? t('Arquitetura, pagamento e licença vêm sugeridos pelo tipo de tecnologia; mude se o seu caso for outro.') + ' ' : ''}{t('As linhas abaixo se ligam conforme a escolha: licenças, assinatura, consumo de tokens, base de conhecimento, desenvolvimento próprio ou GPUs. Código aberto e pesos abertos não eliminam custos: mudam onde eles aparecem.')}</p>
+    </section>
+  </>;
 }
 
 /** Uma linha de custo (um componente) com as duas alternativas. */
 function LinhaEd({ s, d, comps, dc, r }: { s: CasoStore; d: string; comps: CompCalc[]; dc: DesafioCalc; r: ResultadoEd }) {
-  const def = comps[0].def, on = comps[0].on, f = fmtR(r), base = `linhas.${d}.${def.id}`;
+  const def = comps[0].def, on = comps.some(c => c.on), padraoOn = comps.some(c => c.ligadoPadrao), f = fmtR(r), base = `linhas.${d}.${def.id}`;
   const altsLinha = ALTS.filter(a => vale(def, a));
   const selo = def.alt === 'ambos' ? t('Com e sem IA') : def.alt === 'com' ? t('Só com IA') : t('Só sem IA');
-  const ligar = (v: boolean) => { gravarEd(base + '.off', v ? undefined : true); gravarEd(base + '.on', v && !comps[0].ligadoPadrao ? true : undefined); };
+  const ligar = (v: boolean) => { gravarEd(base + '.off', v ? undefined : true); gravarEd(base + '.on', v && !padraoOn ? true : undefined); };
   return <div className={'ed-linha' + (on ? '' : ' is-off') + (def.informativo ? ' is-info' : '')} role="group" aria-label={t(def.nome)}>
     <div className="ed-linha-cab">
       <label className="ed-linha-liga"><input type="checkbox" checked={on} onChange={e => ligar(e.target.checked)} /> <span className="ed-linha-nome">{t(def.nome)}</span></label>
       <span className="ed-selos"><span className={'ed-selo ed-selo--' + def.alt}>{selo}</span><span className="ed-selo ed-selo--classe">{def.informativo ? t('fora do total') : rotClasse(def.classe)}</span></span>
     </div>
     <p className="ed-linha-formula">{t(def.formula)}</p>
-    {!on && !comps[0].ligadoPadrao && comps[0].motivo ? <p className="pc-nota">{t('Desligada por padrão: {m}.', { m: t(comps[0].motivo) })}</p> : null}
+    {!on && !padraoOn && comps[0].motivo ? <p className="pc-nota">{t('Desligada por padrão: {m}.', { m: t(comps[0].motivo) })}</p> : null}
     {on ? <>
       <dl className="ed-linha-valores">{ALTS.map(a => { const c = comps.find(x => x.alt === a);
-        return <div key={a} className={'ed-tot ed-tot--' + a}><dt>{rotAlt(a)}</dt><dd>{c ? f(c.total) : t('não se aplica')}</dd></div>; })}</dl>
+        return <div key={a} className={'ed-tot ed-tot--' + a}><dt>{rotAlt(a)}</dt><dd>{c && c.on ? f(c.total) : t('não se aplica')}</dd></div>; })}</dl>
       <ResumoLinha comps={comps} altsLinha={altsLinha} f={f} />
       <details className="ed-ajustar"><summary>{t('Ajustar quantidades e preços')}</summary>
         <CamposLinha d={d} comps={comps} altsLinha={altsLinha} base={base} moeda={r.moeda} f={f} />

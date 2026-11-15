@@ -55,12 +55,21 @@ export const ESCOLAS_POC = 5;
 export const SIM = { viagens: 25, overhead: 15, taxa: 7 };
 
 // ------------------------------------------------------------------ escolhas da ferramenta de IA (0.0.14, passo 2.3)
-export const IA_TIPO = [['paga', 'Produto ou serviço pago de uma empresa'], ['publica', 'Pública ou gratuita, oferecida por governo ou instituição pública'], ['aberta', 'Aberta (código ou modelo aberto), operada pela rede ou por empresa contratada']] as const;
+/** Tipo de tecnologia (pergunta 2.3.4 da 0.0.14), para a ferramenta de IA (4.3) e para a plataforma de aprendizagem (4.2). */
+export const IA_TIPO = [['publica', 'Pública ou gratuita, oferecida por governo ou instituição pública'], ['aberta', 'Aberta (código ou modelo aberto), operada pela rede ou por empresa contratada'], ['paga', 'Produto ou serviço pago de uma empresa'], ['nao_sei', 'Ainda não sei']] as const;
 export const IA_ARQ = [['saas', 'Produto pronto (SaaS) por licença'], ['api', 'Aplicação própria ou contratada usando modelo por API, com base de conhecimento (RAG)'], ['ow', 'Modelo de pesos abertos em infraestrutura contratada'], ['ow_api', 'Modelo aberto usado pela API de uma empresa'], ['preditivo', 'Modelo preditivo treinado com dados da rede']] as const;
 export const IA_PAG = [['usuario', 'Licença por usuário'], ['institucional', 'Assinatura institucional (valor fixo para a rede)'], ['consumo', 'Por consumo (paga pelo uso)'], ['incluida', 'Incluída numa plataforma que a rede já paga'], ['gratuito', 'Doação ou piloto gratuito']] as const;
 export const IA_LIC = [['assinatura', 'Licença de uso por prazo (assinatura)'], ['aberta', 'Licença aberta (pode usar, modificar e hospedar)'], ['termos', 'Termos de uso padrão, sem contrato negociado']] as const;
-export interface EscolhaIA { tipo: string; arq: string; pag: string; lic: string }
-export const IA_PADRAO: EscolhaIA = { tipo: 'paga', arq: 'saas', pag: 'usuario', lic: 'assinatura' };
+/** plat: tipo de tecnologia da plataforma de aprendizagem (4.2) */
+export interface EscolhaIA { tipo: string; arq: string; pag: string; lic: string; plat: string }
+export const IA_PADRAO: EscolhaIA = { tipo: 'nao_sei', arq: 'saas', pag: 'usuario', lic: 'assinatura', plat: 'nao_sei' };
+/** Arquitetura, pagamento e licença sugeridos por tipo de tecnologia (como na 0.0.14); "Ainda não sei" usa a estimativa de produto pago. */
+export const PADRAO_TIPO: Record<string, Pick<EscolhaIA, 'arq' | 'pag' | 'lic'>> = {
+  publica: { arq: 'saas', pag: 'gratuito', lic: 'termos' }, aberta: { arq: 'ow', pag: 'consumo', lic: 'aberta' },
+  paga: { arq: 'saas', pag: 'usuario', lic: 'assinatura' }, nao_sei: { arq: 'saas', pag: 'usuario', lic: 'assinatura' },
+};
+/** Tipo efetivo: "Ainda não sei" conta como produto pago (a estimativa mais conservadora). */
+export const tipoEf = (v: string) => v === 'publica' || v === 'aberta' ? v : 'paga';
 
 // ------------------------------------------------------------------ dados salvos (ctx.edV20)
 export interface PublicoDesafio {
@@ -77,7 +86,7 @@ export interface SalvoEd {
   fasesD?: Record<string, Partial<Fase>[]>; poc?: Record<string, number>;
   categorias?: Record<string, string[]>; opcoes?: Record<string, string[]>;
   linhas?: Record<string, Record<string, SobreLinha>>; extras?: Record<string, Record<string, PapelExtraEd[]>>;
-  ia?: Record<string, Partial<EscolhaIA>>;
+  ia?: Record<string, Partial<EscolhaIA>>; plat?: Record<string, string>;
   pV?: number; pO?: number; pT?: number;
 }
 export const lerEd = (s: Pick<Estado14, 'ctx'>): SalvoEd => (s.ctx?.edV20 || {}) as SalvoEd;
@@ -129,7 +138,11 @@ export function categoriasEscolhidas(s: Pick<Estado14, 'ctx'>, d: string): strin
   return CATEGORIAS_ED.map(c => c.id).filter(id => lista.includes(id));
 }
 export const opcoesEscolhidas = (s: Pick<Estado14, 'ctx'>, d: string) => { const cats = categoriasEscolhidas(s, d); return (lerEd(s).opcoes?.[d] || []).filter(id => OPCOES_ED[id] && cats.includes(OPCOES_ED[id].cat)); };
-export const escolhaIA = (s: Pick<Estado14, 'ctx'>, d: string): EscolhaIA => ({ ...IA_PADRAO, ...(lerEd(s).ia?.[d] || {}) }) as EscolhaIA;
+export function escolhaIA(s: Pick<Estado14, 'ctx'>, d: string): EscolhaIA {
+  const e = lerEd(s), sv = e.ia?.[d] || {}, tipo = String(sv.tipo || 'nao_sei'), base = PADRAO_TIPO[tipo] || PADRAO_TIPO.nao_sei;
+  const pega = (k: 'arq' | 'pag' | 'lic') => typeof sv[k] === 'string' && sv[k] ? String(sv[k]) : base[k];
+  return { tipo, arq: pega('arq'), pag: pega('pag'), lic: pega('lic'), plat: String(e.plat?.[d] || 'nao_sei') };
+}
 
 // ------------------------------------------------------------------ catálogo de componentes
 /** Uma fase já com as quantidades do desafio. Ei/nEi: locais que contam para a infraestrutura (sem os já contados em
@@ -154,6 +167,8 @@ export interface CompDef {
   /** vida útil em meses: a compra se repete quando a vida acaba dentro do plano */
   vida?: string;
   extra?: string[]; quando?: (c: Omit<Ctx, 'alt' | 'P'>) => boolean; ia?: (e: EscolhaIA) => boolean; informativo?: boolean; infra?: boolean;
+  /** forma de oferta (tipo de tecnologia da ferramenta de IA e da plataforma), por alternativa */
+  oferta?: (e: EscolhaIA, a: Alternativa) => boolean;
   nota?: string;
 }
 const HORAS_MES = 2080 / 12;
@@ -161,7 +176,11 @@ const anos = (f: FaseCalc) => f.meses / 12;
 const fasesIniciais = ['poc', 'piloto'], fasesEscala = ['implantacao', 'expansao'];
 const em = (f: FaseCalc, ids: string[]) => ids.includes(f.id);
 const arqEf = (e: EscolhaIA) => e.arq;
-const licPaga = (e: EscolhaIA) => e.tipo !== 'publica' && e.pag !== 'incluida';
+const licPaga = (e: EscolhaIA) => tipoEf(e.tipo) !== 'publica' && e.pag !== 'incluida';
+const naoPublica = (e: EscolhaIA) => tipoEf(e.tipo) !== 'publica';
+/** a rede (ou a empresa que ela contrata) opera a aplicação de IA */
+const appOperada = (e: EscolhaIA) => naoPublica(e) && (tipoEf(e.tipo) === 'aberta' || ['api', 'ow_api', 'ow', 'preditivo'].includes(e.arq));
+const platEf = (e: EscolhaIA) => tipoEf(e.plat);
 const turmas = (n: number, tam: number) => n > 0 ? Math.ceil(n / Math.max(1, tam)) : 0;
 
 export const COMPONENTES: CompDef[] = [
@@ -254,12 +273,17 @@ export const COMPONENTES: CompDef[] = [
   { id: 'e23-insumos', op: 'e23', nome: 'Insumos de prática', alt: 'ambos', classe: 'opex', unidade: 'estudante-ano', formula: 'estudantes × anos × insumos por estudante por ano', extra: ['C36'],
     preco: { padrao: 40, rotulo: 'Custo por estudante por ano', local: true }, qtd: (_c, f) => f.A * anos(f) },
   // ---------------------------------------------------------------- 2.4 hospedagem
-  { id: 'e24-nuvem', op: 'e24', nome: 'Hospedagem e computação em nuvem', alt: 'ambos', classe: 'uso', unidade: 'usuário-mês', formula: 'estudantes e professores na fase × meses × custo por usuário por mês',
-    preco: { padrao: { com: 0.3, sem: 0.05 }, rotulo: 'Custo por usuário por mês' }, quando: c => c.p.modalidade !== 'offline', qtd: (_c, f) => (f.A + f.P) * f.meses },
+  { id: 'e24-nuvem', op: 'e24', nome: 'Hospedagem da plataforma de aprendizagem', alt: 'ambos', classe: 'uso', unidade: 'usuário-mês', formula: 'estudantes e professores na fase × meses × custo por usuário por mês',
+    preco: { padrao: 0.05, rotulo: 'Custo por usuário por mês' }, quando: c => c.p.modalidade !== 'offline', qtd: (_c, f) => (f.A + f.P) * f.meses,
+    oferta: e => platEf(e) === 'aberta', nota: 'Só quando a plataforma é aberta e operada pela rede; numa plataforma paga ou pública, a hospedagem vem com o serviço.' },
+  { id: 'e24-ia', op: 'e24', nome: 'Hospedagem e computação da aplicação de IA', alt: 'com', classe: 'uso', unidade: 'usuário-mês', formula: 'estudantes e professores na fase × meses × custo por usuário por mês',
+    preco: { padrao: 0.25, rotulo: 'Custo por usuário por mês' }, quando: c => c.p.modalidade !== 'offline', qtd: (_c, f) => (f.A + f.P) * f.meses,
+    oferta: e => appOperada(e) && e.arq !== 'ow', nota: 'Só quando a rede opera a aplicação (aberta, API ou modelo próprio); num produto pago, a hospedagem vem no preço; com pesos abertos, entra nas GPUs.' },
   { id: 'e24-armazenamento', op: 'e24', nome: 'Armazenamento e cópias de segurança', alt: 'ambos', classe: 'uso', unidade: 'GB-mês', formula: 'usuários × GB por usuário × meses × preço do GB',
-    params: [{ id: 'gb', rotulo: 'GB por usuário', padrao: { com: 0.5, sem: 0.2 } }], preco: { padrao: 0.02, rotulo: 'Preço do GB por mês' }, qtd: (c, f) => (f.A + f.P) * c.P('gb') * f.meses },
+    params: [{ id: 'gb', rotulo: 'GB por usuário', padrao: { com: 0.5, sem: 0.2 } }], preco: { padrao: 0.02, rotulo: 'Preço do GB por mês' }, qtd: (c, f) => (f.A + f.P) * c.P('gb') * f.meses,
+    oferta: (e, a) => platEf(e) === 'aberta' || (a === 'com' && appOperada(e)) },
   { id: 'e24-seguranca', op: 'e24', nome: 'Segurança e proteção de dados', alt: 'ambos', classe: 'opex', formula: 'percentual sobre a hospedagem e o armazenamento',
-    params: [{ id: 'pct', rotulo: 'Percentual sobre a hospedagem (%)', padrao: 15, pct: true }], pctDe: { ids: ['e24-nuvem', 'e24-armazenamento'], modo: 'fase', param: 'pct' } },
+    params: [{ id: 'pct', rotulo: 'Percentual sobre a hospedagem (%)', padrao: 15, pct: true }], pctDe: { ids: ['e24-nuvem', 'e24-ia', 'e24-armazenamento'], modo: 'fase', param: 'pct' } },
   { id: 'e24-servidores', op: 'e24', nome: 'Servidores locais nos locais sem internet', alt: 'com', classe: 'capex', unidade: 'servidores', infra: true, formula: 'novos locais sem internet × preço do servidor', vida: 'vida',
     params: [{ id: 'vida', rotulo: 'Vida útil (meses)', padrao: 60 }], preco: { padrao: 1200, rotulo: 'Preço do servidor' },
     quando: c => c.p.modalidade === 'offline' || c.p.semInternet >= 50, qtd: (c, f) => f.nEi * (c.p.modalidade === 'offline' ? 1 : c.p.semInternet / 100) },
@@ -331,47 +355,52 @@ export const COMPONENTES: CompDef[] = [
     preco: { padrao: 12, rotulo: 'Custo por estudante', local: true }, qtd: (_c, f) => f.nA },
   // ---------------------------------------------------------------- 4.2 plataformas e licenças
   { id: 'e42-licenca', op: 'e42', nome: 'Plataforma de aprendizagem', alt: 'ambos', classe: 'opex', unidade: 'usuário-ano', formula: 'estudantes e professores × anos × licença por usuário por ano',
-    preco: { padrao: { com: 8, sem: 3 }, rotulo: 'Licença por usuário por ano' }, qtd: (_c, f) => (f.A + f.P) * anos(f) },
+    preco: { padrao: { com: 8, sem: 3 }, rotulo: 'Licença por usuário por ano' }, qtd: (_c, f) => (f.A + f.P) * anos(f), oferta: e => platEf(e) === 'paga' },
   { id: 'e42-config', op: 'e42', nome: 'Configuração e personalização da plataforma', alt: 'ambos', classe: 'capex', unidade: 'horas', formula: 'horas × custo da hora (uma vez)',
     params: [{ id: 'horas', rotulo: 'Horas', padrao: 80 }], preco: { padrao: 0, rotulo: 'Custo da hora', perfil: 3, hora: true }, qtd: (c, f) => f.primeira ? c.P('horas') : 0 },
-  { id: 'e42-suporte', op: 'e42', nome: 'Suporte e atualizações do fornecedor', alt: 'com', classe: 'opex', formula: 'percentual sobre a licença da plataforma',
-    params: [{ id: 'pct', rotulo: 'Percentual sobre a licença (%)', padrao: 15, pct: true }], pctDe: { ids: ['e42-licenca'], modo: 'fase', param: 'pct' } },
+  { id: 'e42-suporte', op: 'e42', nome: 'Suporte e atualizações do fornecedor', alt: 'ambos', classe: 'opex', formula: 'percentual sobre a licença da plataforma',
+    params: [{ id: 'pct', rotulo: 'Percentual sobre a licença (%)', padrao: 15, pct: true }], pctDe: { ids: ['e42-licenca'], modo: 'fase', param: 'pct' }, oferta: e => platEf(e) === 'paga' },
+  { id: 'e42-manutencao', op: 'e42', nome: 'Manutenção e atualização da plataforma aberta', alt: 'ambos', classe: 'opex', unidade: 'horas', formula: 'horas por mês × meses × custo da hora',
+    params: [{ id: 'horas', rotulo: 'Horas por mês', padrao: 20 }], preco: { padrao: 0, rotulo: 'Custo da hora', perfil: 3, hora: true }, qtd: (c, f) => c.P('horas') * f.meses,
+    oferta: e => platEf(e) === 'aberta' },
   { id: 'e42-saida', op: 'e42', nome: 'Saída do contrato (exportação e migração dos dados)', alt: 'ambos', classe: 'opex', unidade: 'horas', formula: 'horas de exportação e migração × custo da hora, no fim do plano',
     params: [{ id: 'horas', rotulo: 'Horas', padrao: 120 }], preco: { padrao: 0, rotulo: 'Custo da hora', perfil: 3, hora: true }, qtd: (c, f) => f.ultima ? c.P('horas') : 0 },
   // ---------------------------------------------------------------- 4.3 ferramentas de IA (só com IA)
   { id: 'e43-licenca', op: 'e43', nome: 'Licenças da ferramenta para estudantes', alt: 'com', classe: 'opex', unidade: 'licença-mês', formula: 'estudantes com licença × meses × preço da licença',
     params: [{ id: 'parte', rotulo: 'Estudantes com licença (%)', padrao: 100, pct: true }], preco: { padrao: 2, rotulo: 'Licença por estudante por mês' },
-    ia: e => (e.arq === 'saas' || e.arq === 'preditivo') && e.pag === 'usuario', qtd: (c, f) => licPaga(c.ia) ? f.A * c.P('parte') / 100 * f.meses : 0,
+    ia: e => naoPublica(e) && (e.arq === 'saas' || e.arq === 'preditivo') && e.pag === 'usuario', qtd: (c, f) => licPaga(c.ia) ? f.A * c.P('parte') / 100 * f.meses : 0,
     nota: 'Ferramenta pública ou incluída numa plataforma que a rede já paga: sem licença.' },
   { id: 'e43-licencaProf', op: 'e43', nome: 'Licenças da ferramenta para professores', alt: 'com', classe: 'opex', unidade: 'licença-mês', formula: 'professores × meses × preço da licença',
-    preco: { padrao: 9, rotulo: 'Licença por professor por mês' }, ia: e => (e.arq === 'saas' || e.arq === 'preditivo') && e.pag === 'usuario', qtd: (c, f) => licPaga(c.ia) ? f.P * f.meses : 0 },
+    preco: { padrao: 9, rotulo: 'Licença por professor por mês' }, ia: e => naoPublica(e) && (e.arq === 'saas' || e.arq === 'preditivo') && e.pag === 'usuario', qtd: (c, f) => licPaga(c.ia) ? f.P * f.meses : 0 },
   { id: 'e43-gratuito', op: 'e43', nome: 'Licenças depois do período gratuito', alt: 'com', classe: 'opex', unidade: 'licença-mês', formula: 'gratuita na prova de conceito e no piloto; depois, estudantes e professores × meses × preço médio da licença',
-    preco: { padrao: 3, rotulo: 'Licença média por usuário por mês' }, ia: e => e.pag === 'gratuito', qtd: (_c, f) => em(f, fasesEscala) ? (f.A + f.P) * f.meses : 0 },
+    preco: { padrao: 3, rotulo: 'Licença média por usuário por mês' }, ia: e => naoPublica(e) && e.pag === 'gratuito', qtd: (_c, f) => em(f, fasesEscala) ? (f.A + f.P) * f.meses : 0 },
   { id: 'e43-institucional', op: 'e43', nome: 'Assinatura institucional', alt: 'com', classe: 'opex', unidade: 'anos', formula: 'anos × valor anual da assinatura',
-    preco: { padrao: 50000, rotulo: 'Valor por ano' }, ia: e => e.pag === 'institucional', qtd: (c, f) => licPaga(c.ia) ? anos(f) : 0 },
+    preco: { padrao: 50000, rotulo: 'Valor por ano' }, ia: e => naoPublica(e) && e.pag === 'institucional', qtd: (c, f) => licPaga(c.ia) ? anos(f) : 0 },
   { id: 'e43-tokens', op: 'e43', nome: 'Consumo do modelo de IA (tokens)', alt: 'com', classe: 'uso', unidade: 'milhões de tokens', formula: 'usuários ativos × interações por mês × tokens por interação × meses × preço por milhão de tokens',
     params: [{ id: 'ativos', rotulo: 'Usuários ativos (%)', padrao: 60, pct: true }, { id: 'interacoes', rotulo: 'Interações por usuário por mês', padrao: 40 }, { id: 'tokens', rotulo: 'Tokens por interação (entrada e saída)', padrao: 3000 }],
-    preco: { padrao: 4, rotulo: 'Preço por milhão de tokens' }, ia: e => e.arq === 'api' || e.arq === 'ow_api' || e.pag === 'consumo',
+    preco: { padrao: 4, rotulo: 'Preço por milhão de tokens' }, ia: e => naoPublica(e) && (e.arq === 'api' || e.arq === 'ow_api' || (e.pag === 'consumo' && e.arq !== 'ow' && e.arq !== 'preditivo')),
     qtd: (c, f) => (f.A + f.P) * c.P('ativos') / 100 * c.P('interacoes') * c.P('tokens') / 1e6 * f.meses,
     nota: 'Preço médio ponderado de um modelo intermediário: 2 US$ por milhão de tokens de entrada e 10 US$ de saída, com chamadas auxiliares (base de referências da ferramenta, grau C).' },
   { id: 'e43-rag', op: 'e43', nome: 'Base de conhecimento (RAG)', alt: 'com', classe: 'opex', unidade: 'meses', formula: 'meses × banco vetorial e indexação dos documentos',
-    preco: { padrao: 200, rotulo: 'Custo por mês' }, ia: e => e.arq === 'api' || e.arq === 'ow_api', qtd: (_c, f) => f.meses },
+    preco: { padrao: 200, rotulo: 'Custo por mês' }, ia: e => naoPublica(e) && (e.arq === 'api' || e.arq === 'ow_api'), qtd: (_c, f) => f.meses },
   { id: 'e43-desenvolvimento', op: 'e43', nome: 'Desenvolvimento da aplicação e integrações', alt: 'com', classe: 'capex', unidade: 'projetos', formula: 'um projeto de desenvolvimento (uma vez)',
-    preco: { padrao: 110000, rotulo: 'Custo do projeto', porArq: { saas: 80000, api: 110000, ow_api: 110000, ow: 180000, preditivo: 60000 } }, ia: e => e.arq === 'api' || e.arq === 'ow' || e.arq === 'ow_api' || e.arq === 'preditivo' || e.tipo === 'aberta', qtd: (_c, f) => f.primeira ? 1 : 0,
+    preco: { padrao: 110000, rotulo: 'Custo do projeto', porArq: { saas: 80000, api: 110000, ow_api: 110000, ow: 180000, preditivo: 60000 } }, ia: appOperada, qtd: (_c, f) => f.primeira ? 1 : 0,
     nota: 'Exemplo B do guia: US$ 110 mil (aplicação com API e RAG); exemplo C: US$ 180 mil (pesos abertos). Ajuste ao seu caso.' },
   { id: 'e43-manutencao', op: 'e43', nome: 'Manutenção evolutiva da aplicação', alt: 'com', classe: 'opex', formula: 'percentual por ano do desenvolvimento',
     params: [{ id: 'pct', rotulo: 'Manutenção por ano (% do desenvolvimento)', padrao: 20, pct: true }], pctDe: { ids: ['e43-desenvolvimento'], modo: 'ano', param: 'pct' },
-    ia: e => e.arq === 'api' || e.arq === 'ow' || e.arq === 'ow_api' || e.arq === 'preditivo' || e.tipo === 'aberta' },
+    ia: appOperada },
   { id: 'e43-gpu', op: 'e43', nome: 'GPUs de inferência', alt: 'com', classe: 'uso', unidade: 'horas de GPU', formula: 'GPUs necessárias no pico × horas por mês × meses × preço da hora de GPU',
     params: [{ id: 'ativos', rotulo: 'Usuários ativos (%)', padrao: 60, pct: true }, { id: 'porGpu', rotulo: 'Usuários ativos por GPU', padrao: 2500 }, { id: 'minimo', rotulo: 'GPUs mínimas', padrao: 2 }],
-    preco: { padrao: 1.32, rotulo: 'Preço da hora de GPU' }, ia: e => e.arq === 'ow',
+    preco: { padrao: 1.32, rotulo: 'Preço da hora de GPU' }, ia: e => naoPublica(e) && e.arq === 'ow',
     qtd: (c, f) => Math.max(c.P('minimo'), Math.ceil((f.A + f.P) * c.P('ativos') / 100 / Math.max(1, c.P('porGpu')))) * 730 * f.meses },
   { id: 'e43-infra', op: 'e43', nome: 'Armazenamento, rede e registros do modelo', alt: 'com', classe: 'opex', unidade: 'meses', formula: 'meses × custo mensal',
-    preco: { padrao: 1500, rotulo: 'Custo por mês' }, ia: e => e.arq === 'ow', qtd: (_c, f) => f.meses },
+    preco: { padrao: 1500, rotulo: 'Custo por mês' }, ia: e => naoPublica(e) && e.arq === 'ow', qtd: (_c, f) => f.meses },
   { id: 'e43-equipe', op: 'e43', nome: 'Engenharia de ML e operação do modelo', alt: 'com', classe: 'opex', formula: 'pessoas × dedicação × custo mensal × meses',
-    ia: e => e.arq === 'ow' || e.arq === 'preditivo', papeis: [{ papel: 'Engenheiro de ML', perfil: 2, pessoas: 1, ded: 1 }] },
+    ia: e => naoPublica(e) && (e.arq === 'ow' || e.arq === 'preditivo'), papeis: [{ papel: 'Engenheiro de ML', perfil: 2, pessoas: 1, ded: 1 }] },
+  { id: 'e43-equipeAberta', op: 'e43', nome: 'Equipe técnica da solução aberta', alt: 'com', classe: 'opex', formula: 'pessoas × dedicação × custo mensal × meses',
+    ia: e => tipoEf(e.tipo) === 'aberta' && e.arq !== 'ow' && e.arq !== 'preditivo', papeis: [{ papel: 'Desenvolvedor', perfil: 2, pessoas: 1, ded: 0.5 }] },
   { id: 'e43-treino', op: 'e43', nome: 'Preparação dos dados e treinamento do modelo', alt: 'com', classe: 'capex', unidade: 'projetos', formula: 'um treinamento inicial (uma vez); o retreino anual entra na manutenção',
-    preco: { padrao: 40000, rotulo: 'Custo' }, ia: e => e.arq === 'preditivo', qtd: (_c, f) => f.primeira ? 1 : 0 },
+    preco: { padrao: 40000, rotulo: 'Custo' }, ia: e => naoPublica(e) && e.arq === 'preditivo', qtd: (_c, f) => f.primeira ? 1 : 0 },
   { id: 'e43-moderacao', op: 'e43', nome: 'Filtros de conteúdo e moderação', alt: 'com', classe: 'opex', formula: 'percentual sobre a licença ou o consumo da ferramenta',
     params: [{ id: 'pct', rotulo: 'Percentual (%)', padrao: 10, pct: true }], pctDe: { ids: ['e43-licenca', 'e43-licencaProf', 'e43-gratuito', 'e43-institucional', 'e43-tokens', 'e43-gpu'], modo: 'fase', param: 'pct' } },
   { id: 'e43-qualidade', op: 'e43', nome: 'Avaliação da qualidade das respostas', alt: 'com', classe: 'opex', unidade: 'horas', formula: 'amostras por mês × minutos por amostra × meses × custo da hora',
@@ -457,15 +486,15 @@ const lerNum = (v: unknown, a: Alternativa): number | undefined => {
 };
 export const padraoParam = (pd: ParamDef, a: Alternativa) => typeof pd.padrao === 'number' ? pd.padrao : pd.padrao[a];
 /** A linha vem ligada? Itens próprios só no desafio deles; itens que dependem do contexto ou da escolha de IA, quando se aplicam. */
-export function ligadoPadrao(def: CompDef, d: string, p: PublicoDesafio, ia: EscolhaIA): { on: boolean; motivo?: string } {
+export function ligadoPadrao(def: CompDef, d: string, p: PublicoDesafio, ia: EscolhaIA, a: Alternativa = 'com'): { on: boolean; motivo?: string } {
   if (def.extra && !def.extra.includes(d)) return { on: false, motivo: 'item próprio de outro desafio' };
-  if (def.ia && !def.ia(ia)) return { on: false, motivo: 'não se aplica à forma de oferta escolhida' };
+  if ((def.ia && !def.ia(ia)) || (def.oferta && !def.oferta(ia, a))) return { on: false, motivo: 'não se aplica à forma de oferta escolhida' };
   if (def.quando && !def.quando({ d, p, ia, fs: [], meses: 0 })) return { on: false, motivo: 'não se aplica ao público e ambiente deste desafio' };
   return { on: true };
 }
 
 function calcComp(def: CompDef, a: Alternativa, d: string, p: PublicoDesafio, fs: FaseCalc[], ia: EscolhaIA, pr: Precos, sob: SobreLinha, extras: PapelExtraEd[], prontos: Record<string, CompCalc>, sobOp: SobreLinha = {}): CompCalc {
-  const lp = ligadoPadrao(def, d, p, ia), on = sob.off ? false : sob.on ? true : lp.on;
+  const lp = ligadoPadrao(def, d, p, ia, a), on = sob.off ? false : sob.on ? true : lp.on;
   const params: Record<string, number> = {};
   for (const pd of def.params || []) params[pd.id] = lerNum((pd.comum ? sobOp : sob).p?.[pd.id], a) ?? padraoParam(pd, a);
   const mult = def.preco?.mult ? 1 + (params[def.preco.mult] || 0) / 100 : 1;

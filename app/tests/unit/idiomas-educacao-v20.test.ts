@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CATEGORIAS_ED, DESAFIOS_ED, AMBIENTES, MODALIDADES, FASES_PADRAO, COMPONENTES, IA_TIPO, IA_ARQ, IA_PAG, IA_LIC, ligadoPadrao, publicoSugerido, IA_PADRAO } from '../../src/percurso/educacaoV20';
-import { TITULOS } from '../../src/screens/EducacaoV20';
+import { TITULOS, NOTA_TIPO } from '../../src/screens/EducacaoV20';
 import { normalizar } from '../../src/domain';
 
 const APP = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -24,7 +24,7 @@ const TEXTOS = [...new Set([
   ...DESAFIOS_ED.flatMap((d) => [d.nome, d.desc]),
   ...CATEGORIAS_ED.flatMap((c) => [c.nome, ...c.opcoes.map((o) => o.nome)]),
   ...AMBIENTES.map((a) => a[1]), ...MODALIDADES.map((m) => m[1]), ...FASES_PADRAO.map((f) => f.nome),
-  ...Object.values(TITULOS), ...linhas, ...motivos, ...ia,
+  ...Object.values(TITULOS), ...Object.values(NOTA_TIPO), ...linhas, ...motivos, ...ia,
   'trabalho de pessoas', 'trabalho e viagens', 'custo direto e viagens', 'Com IA', 'Sem IA', 'Meses',
   'Diagrama do modelo de custo', 'Desafios e dimensões', 'Cada desafio traz suas categorias de custo', 'Escolha uma ou mais',
   'valores que a equipe já tem', 'itens ainda sem valor',
