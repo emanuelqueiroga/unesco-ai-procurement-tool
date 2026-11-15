@@ -12,8 +12,8 @@ import { entradaEtapa } from '../percurso/navegacaoOrientada';
 import { frentesDoPlano, frenteAtual } from '../percurso/frentes';
 import { href, lerRota } from '../percurso/rota';
 import { nomePais, paisDoCaso, percursoGovernanca, percursoEducacaoV20, tr } from '../domain';
-import { desafioDaTelaEd } from '../store';
-import { nomeDesafio } from '../percurso/educacaoV20';
+import { desafioDaTelaEd, categoriaDaTelaEd } from '../store';
+import { nomeDesafio, CATEGORIAS_ED } from '../percurso/educacaoV20';
 import { ColunaCusto, FaixaCusto } from './CartaoCusto';
 import { CaminhoLateral } from './Caminho';
 import { categoriaGov } from '../store';
@@ -40,7 +40,8 @@ export interface Posicao { capitulo?: Capitulo; tela?: string; sintese?: boolean
 
 /** Os quatro capítulos em linha: ✓ nos concluídos, "nome · n de m" e o segmento preenchido até a pergunta atual. */
 export function etapas(s: CasoStore, pos: Posicao): Step[] {
-  const gov = percursoGovernanca(s.ctx);
+  // v021: também na educação com e sem IA (a etapa 4 não tem telas: o plano)
+  const gov = percursoGovernanca(s.ctx) || percursoEducacaoV20(s.ctx);
   // governança (v017): etapas sem telas (a 4) não aparecem na barra, e cada etapa leva à primeira tela pendente
   return progressoDe(s).filter((p) => !gov || p.capitulo === 1 || p.total > 0).map((p) => {
     const n = p.capitulo as Capitulo, label = t(infoCapitulo(n, s).titulo), atual = pos.capitulo === n;
@@ -64,8 +65,8 @@ function PilulaFrente({ s }: { s: CasoStore }) {
  *  etapas como barras finas, com o nome e a posição de cada uma para leitores de tela. */
 function CabecalhoV19({ passos, tela, acoes, direita }: { passos: Step[]; tela?: string; acoes: ReactNode[]; direita: ReactNode }) {
   const i = passos.findIndex((p) => p.state === 'current');
-  const c = tela ? categoriaGov(tela) : undefined, dEd = tela ? desafioDaTelaEd(tela) : null;
-  const cat = c ? { n: c.n, nome: t(c.nome) } : dEd ? { n: '', nome: nomeDesafio(dEd) } : undefined;
+  const c = tela ? categoriaGov(tela) : undefined, dEd = tela ? desafioDaTelaEd(tela) : null, cEd = tela ? CATEGORIAS_ED.find(x => x.id === categoriaDaTelaEd(tela)) : undefined;
+  const cat = c ? { n: c.n, nome: t(c.nome) } : dEd ? { n: '', nome: nomeDesafio(dEd) + (cEd ? ' · ' + cEd.n + ' ' + t(cEd.nome) : '') } : undefined;
   return (
     <header className="pc-cab v19-cab">
       <div className="v19-cab-l1 pc-container">
@@ -99,7 +100,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   // como na v017: o cartão de custo aparece depois que a prioridade é escolhida
   plano = plano && (s.ctx.prioridades || []).length > 0;
   // v019: como no Figma, o cartão de custo aparece a partir das categorias (não nas telas do Contexto)
-  if ((percursoGovernanca(s.ctx) || percursoEducacaoV20(s.ctx)) && pos.tela && ['local', 'prioridades', 'problemas', 'ed-desafios', 'ed-publico'].includes(pos.tela)) plano = false;
+  if ((percursoGovernanca(s.ctx) || percursoEducacaoV20(s.ctx)) && pos.tela && (['local', 'prioridades', 'problemas', 'ed-desafios', 'ed-publico'].includes(pos.tela) || pos.tela.startsWith('ed-publico-'))) plano = false;
   const estreito = useMediaQuery(BREAKPOINTS.cards);
   const celular = useMediaQuery(BREAKPOINTS.bar);           // cabeçalho compacto com menu
   const semColuna = useMediaQuery('(max-width: 1023px)');

@@ -158,9 +158,9 @@ export const GOVERNANCA_INFO: Record<Capitulo, InfoCapitulo> = {
 /** v020: capítulos da educação com e sem IA. */
 export const EDUCACAO_INFO: Record<Capitulo, InfoCapitulo> = {
   1: { ...CAPITULOS_INFO[1], titulo: 'Contexto', guia: 'Quais desafios educacionais e para quem?' },
-  2: { n: 2, titulo: 'Fases', guia: 'Quanto dura e quantas pessoas alcança cada fase?', texto: '', minutos: 3, entrega: '', alimenta: '' },
-  3: { n: 3, titulo: 'Custos', guia: 'O que entra em cada desafio?', texto: '', minutos: 8, entrega: '', alimenta: '' },
-  4: { n: 4, titulo: 'Custos adicionais', guia: 'Viagens, overhead e taxa administrativa', texto: '', minutos: 2, entrega: '', alimenta: '' },
+  2: { n: 2, titulo: 'Desafios', guia: 'Público, fases e custos de cada desafio', texto: '', minutos: 10, entrega: '', alimenta: '' },
+  3: { n: 3, titulo: 'Custos adicionais', guia: 'Viagens, overhead e taxa administrativa', texto: '', minutos: 2, entrega: '', alimenta: '' },
+  4: { n: 4, titulo: 'Plano', guia: 'Com IA e sem IA lado a lado', texto: '', minutos: 2, entrega: '', alimenta: '' },
 };
 /** Capítulo n do percurso ativo: o da governança (v017) quando ela é a única prioridade; senão, o da 0.0.14. */
 export function infoCapitulo(n: Capitulo, s?: { ctx?: Record<string, any> }): InfoCapitulo {
@@ -177,4 +177,9 @@ Object.assign(CURTO, {
 // v018: a página de cada categoria da governança leva o nome da categoria (o número entra no título da página)
 for (const c of (CATEGORIAS as unknown as { governanca: { id: string; nome: string }[] }).governanca) CURTO['gov-opcoes-' + c.id] = c.nome;
 // v020: a página de custos de cada desafio da educação com e sem IA leva o nome do desafio
-for (const d of DESAFIOS_EDU_V016 as { id: string; t: string }[]) CURTO['ed-custos-' + d.id] = d.t;
+for (const d of DESAFIOS_EDU_V016 as { id: string; t: string }[]) {
+  CURTO['ed-custos-' + d.id] = d.t;
+  // v021: o ciclo de telas de cada desafio
+  Object.assign(CURTO, { ['ed-publico-' + d.id]: 'Público e ambiente', ['ed-fases-' + d.id]: 'Fases', ['ed-categorias-' + d.id]: 'Categorias de custo', ['ed-resumo-' + d.id]: 'Resumo do desafio' });
+  for (const [c, nome] of [['e1', 'Escala e implementação'], ['e2', 'Infraestrutura'], ['e3', 'Formação docente'], ['e4', 'Recursos']]) CURTO['ed-opcoes-' + d.id + '-' + c] = nome;
+}

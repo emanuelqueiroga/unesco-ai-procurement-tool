@@ -117,24 +117,54 @@ export const TELAS_FORA_DO_FLUXO: Record<string, string> = {
   'gov-projeto': 'gov-categorias', 'gov-diagnostico': 'gov-categorias', 'gov-instrumentos': 'gov-categorias', 'gov-solucoes': 'gov-categorias',
   'gov-atores': 'gov-categorias', 'gov-capacidade': 'gov-categorias', 'gov-acoes': 'gov-opcoes', 'gov-sandbox': 'gov-opcoes', 'gov-revisao': 'gov-opcoes',
 };
-// v020: Educating with and without AI (figura do projeto): desafios, público e ambiente; fases do ciclo; uma página de
-// custos por desafio escolhido (as quatro categorias e as suas opções); custos adicionais.
+// v021: Educating with and without AI. Depois da escolha dos desafios, cada desafio tem o seu ciclo de telas, como na
+// governança: público e ambiente, fases, categorias, uma tela por categoria escolhida e o resumo do desafio. Depois do
+// último desafio, os custos adicionais e o plano. As telas da v020 ('ed-publico', 'ed-fases', 'ed-custos-Cxx') saíram do
+// fluxo; links antigos levam à primeira tela pendente.
 export const PREFIXO_CUSTOS_ED = 'ed-custos-';
 export const DESAFIOS_ED_IDS = ['C31', 'C32', 'C33', 'C34', 'C35', 'C36', 'C37', 'C38'];
+export const CATEGORIAS_ED_IDS = ['e1', 'e2', 'e3', 'e4'];
+const PASSOS_ED = ['publico', 'fases', 'categorias', 'opcoes', 'resumo'] as const;
+export type PassoEd = typeof PASSOS_ED[number];
 export const telaCustosEd = (d: string) => PREFIXO_CUSTOS_ED + d;
-export const desafioDaTelaEd = (id: string) => id.startsWith(PREFIXO_CUSTOS_ED) ? id.slice(PREFIXO_CUSTOS_ED.length) : null;
+export const telaEd = (passo: PassoEd, d: string, cat?: string) => passo === 'opcoes' ? `ed-opcoes-${d}-${cat}` : `ed-${passo}-${d}`;
+/** Passo, desafio e categoria de uma tela da educação (ou null). */
+export function partesTelaEd(id: string): { passo: PassoEd | 'custos'; d: string; cat?: string } | null {
+  const m = /^ed-(publico|fases|categorias|opcoes|resumo|custos)-(C\d+)(?:-(e\d))?$/.exec(id);
+  return m ? { passo: m[1] as PassoEd | 'custos', d: m[2], cat: m[3] } : null;
+}
+/** Desafio de uma tela da educação (ou null). */
+export const desafioDaTelaEd = (id: string) => partesTelaEd(id)?.d ?? null;
+/** Categoria de uma tela de opções da educação (ou null). */
+export const categoriaDaTelaEd = (id: string) => partesTelaEd(id)?.cat ?? null;
+const telasDoDesafioEd = (d: string, cats: string[]): TelaEssencial[] => [
+  { id: telaEd('publico', d), capitulo: 2, n: [], campos: ['edV20'] },
+  { id: telaEd('fases', d), capitulo: 2, n: [], campos: ['edV20'] },
+  { id: telaEd('categorias', d), capitulo: 2, n: [], campos: ['edV20'] },
+  ...cats.map(c => ({ id: telaEd('opcoes', d, c), capitulo: 2 as Capitulo, n: [], campos: ['edV20'] })),
+  { id: telaEd('resumo', d), capitulo: 2, n: [], campos: ['edV20'] },
+];
 export const EDUCACAO_V20: TelaEssencial[] = [
   ...ESSENCIAL.filter(t => ['local', 'prioridades'].includes(t.id)),
   { id: 'ed-desafios', capitulo: 1, n: [], campos: ['edV20'] },
-  { id: 'ed-publico', capitulo: 1, n: [], campos: ['edV20'] },
-  { id: 'ed-fases', capitulo: 2, n: [], campos: ['edV20'] },
-  ...DESAFIOS_ED_IDS.map(d => ({ id: telaCustosEd(d), capitulo: 3 as Capitulo, n: [], campos: ['edV20'] })),
-  { id: 'ed-adicionais', capitulo: 4, n: [], campos: ['edV20'] },
+  ...DESAFIOS_ED_IDS.flatMap(d => telasDoDesafioEd(d, CATEGORIAS_ED_IDS)),
+  { id: 'ed-adicionais', capitulo: 3, n: [], campos: ['edV20'] },
 ];
+/** Categorias escolhidas num desafio; sem escolha gravada (casos da v020), as das opções já marcadas. */
+export function categoriasEdDoCaso(ctx: Record<string, any> | undefined, d: string): string[] {
+  const e = ctx?.edV20 || {}, sel = e.categorias?.[d];
+  const lista: unknown[] = Array.isArray(sel) ? sel : (Array.isArray(e.opcoes?.[d]) ? e.opcoes[d] : []).map((o: string) => String(o).slice(0, 2));
+  return CATEGORIAS_ED_IDS.filter(c => lista.includes(c));
+}
 function educacaoDoCaso(ctx?: Record<string, any>): TelaEssencial[] {
   const ds: unknown[] = Array.isArray(ctx?.edV20?.desafios) ? ctx!.edV20.desafios : [];
-  const algum = DESAFIOS_ED_IDS.some(d => ds.includes(d));
-  return EDUCACAO_V20.filter(t => { const d = desafioDaTelaEd(t.id); return d === null || ds.includes(d) || (!algum && d === DESAFIOS_ED_IDS[0]); });
+  const escolhidos = DESAFIOS_ED_IDS.filter(d => ds.includes(d));
+  return [
+    ...EDUCACAO_V20.filter(t => !partesTelaEd(t.id) && t.id !== 'ed-adicionais'),
+    // sem desafio escolhido, o ciclo do primeiro fica no fluxo (e avisa para voltar e escolher)
+    ...(escolhidos.length ? escolhidos : [DESAFIOS_ED_IDS[0]]).flatMap(d => telasDoDesafioEd(d, categoriasEdDoCaso(ctx, d))),
+    ...EDUCACAO_V20.filter(t => t.id === 'ed-adicionais'),
+  ];
 }
 export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id)), ...EDUCACAO_V20.filter(t => t.id.startsWith('ed-'))];
 export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] { return percursoGovernanca(e?.ctx) ? governancaDoCaso(e?.ctx) : percursoEducacaoV20(e?.ctx) ? educacaoDoCaso(e?.ctx) : ESSENCIAL; }

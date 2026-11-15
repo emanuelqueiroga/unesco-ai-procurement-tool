@@ -3,7 +3,7 @@
 import { clone, cfgAtual, numerosCusto, casoAtual, perfil, recomendacoesCaso, premissasUnitarias, faltasEstimativa, modoTeste, QUESTOES_G, CAMPO_POR_ID,
   etapasAtivas, alunosEtapa, problemasMarcados, temLacuna, prioridadesDoPercurso } from '../domain';
 import type { Estado14, Origem, Capitulo } from './tipos';
-import { ESSENCIAL, telasAtivas, telasDoCapitulo, type TelaEssencial } from './perguntas';
+import { ESSENCIAL, telasAtivas, telasDoCapitulo, categoriasEdDoCaso, type TelaEssencial } from './perguntas';
 import { governancaRespondida } from '../percurso/governanca';
 import { soEstado, valorDe } from './caso';
 
@@ -60,12 +60,14 @@ export function etapasCompletas(s: Estado14): boolean {
 }
 /** a tela do Essencial está respondida? (governança: as seis perguntas; as demais: o campo principal e os ativos obrigatórios,
  *  cada um com resposta real; etapas: todas as marcadas com escolas e estudantes; problemas: ao menos um ou "Outro problema") */
-/** v020: telas da educação com e sem IA. Público, fases e custos adicionais têm valores sugeridos; os desafios pedem
- *  pelo menos um; a página de custos de um desafio pede pelo menos uma opção. */
+/** v021: telas da educação com e sem IA. Público, fases, resumo e custos adicionais têm valores sugeridos; os desafios
+ *  pedem pelo menos um; as categorias de um desafio, pelo menos uma; a tela de uma categoria, pelo menos uma opção dela. */
 function educacaoRespondida(s: Estado14, id: string): boolean {
   const e: any = s.ctx?.edV20 || {}, ds: string[] = Array.isArray(e.desafios) ? e.desafios : [];
-  if (id === 'ed-desafios' || id === 'ed-publico') return ds.length > 0;
-  if (id.startsWith('ed-custos-')) { const d = id.slice(10); return Array.isArray(e.opcoes?.[d]) && e.opcoes[d].length > 0; }
+  if (id === 'ed-desafios') return ds.length > 0;
+  const m = /^ed-(categorias|opcoes)-(C\d+)(?:-(e\d))?$/.exec(id);
+  if (m && m[1] === 'categorias') return categoriasEdDoCaso(s.ctx, m[2]).length > 0;
+  if (m && m[1] === 'opcoes') return (Array.isArray(e.opcoes?.[m[2]]) ? e.opcoes[m[2]] : []).some((o: string) => String(o).startsWith(m[3]));
   return true;
 }
 export function telaRespondida(s: Estado14, t: TelaEssencial): boolean {

@@ -50,3 +50,53 @@
 .ed-rolo .ed-tabela { min-inline-size: 520px; }
 @media (max-width: 640px) { .ed-plano h1 { font-size: 24px; } }
 .ed-adicionais .ed-campos { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
+
+/* v021: telas por desafio e linhas de custo com IA e sem IA */
+.ed-subtitulo { font-family: var(--font-serif); font-weight: 500; font-size: 18px; margin: 24px 0 4px; }
+.ed-tabela--num td { text-align: end; }
+.ed-aberta { padding: 4px 16px 16px; }
+.ed-aberta > .ed-opcao-valores { padding: 4px 0 12px 32px; }
+.ed-opcao-valores--grande { padding: 8px 0 12px; font-size: 15px; }
+.ed-opcao-valores--grande dd { font-size: 22px; font-family: var(--font-serif); }
+.ed-linhas { display: grid; gap: 10px; }
+.ed-linha { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--surface-1); }
+.ed-linha.is-off { background: transparent; border-style: dashed; }
+.ed-linha.is-off .ed-linha-nome { color: var(--muted); }
+.ed-linha.is-info { border-style: dotted; }
+.ed-linha-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px 12px; flex-wrap: wrap; }
+.ed-linha-liga { display: flex; align-items: flex-start; gap: 8px; cursor: pointer; min-inline-size: 0; }
+.ed-linha-liga input { inline-size: 18px; block-size: 18px; margin: 2px 0 0; flex: none; accent-color: var(--primary); }
+.ed-linha-nome { font-weight: 600; font-size: 15px; line-height: 22px; }
+.ed-selos { display: flex; gap: 6px; flex-wrap: wrap; }
+.ed-selo { font-size: 11.5px; line-height: 18px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-2); white-space: nowrap; }
+.ed-selo--com { border-color: var(--primary); color: var(--primary); }
+.ed-selo--sem { border-color: var(--ink-2); }
+.ed-selo--classe { background: var(--surface-2, transparent); }
+.ed-linha-formula { margin: 4px 0 0 26px; font-size: 13px; color: var(--ink-2); }
+.ed-linha-valores { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin: 8px 0 0 26px; font-size: 13px; }
+.ed-linha-valores dt, .ed-tot dt { color: var(--muted); font-size: 12px; }
+.ed-linha-valores dd, .ed-tot dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ed-tot small { display: block; color: var(--muted); font-size: 11.5px; }
+.ed-campos--linha { margin: 10px 0 0 26px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); gap: 12px 16px; }
+.ed-linha .pc-nota, .ed-linha .pv-v17-conta { margin-inline-start: 26px; }
+.ed-papeis { margin: 8px 0 0 26px; display: grid; gap: 8px; }
+.ed-papeis .ed-campos--linha { margin-inline-start: 0; }
+.ed-papel { border-inline-start: 3px solid var(--line); padding-inline-start: 10px; }
+.ed-papel-nome { margin: 0; font-size: 13px; } .ed-papel-nome span { color: var(--muted); }
+.ed-ia { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-block-end: 12px; background: var(--surface-1); }
+.ed-ia-titulo { margin: 0; font-size: 15px; font-weight: 600; }
+.ed-campos--largos { grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+@media (max-width: 640px) {
+  .ed-linha-valores, .ed-campos--linha, .ed-papeis, .ed-linha-formula, .ed-linha .pc-nota, .ed-linha .pv-v17-conta { margin-inline-start: 0; }
+  .ed-aberta { padding-inline: 8px; } .ed-aberta > .ed-opcao-valores { padding-inline-start: 0; }
+}
+.ed-classes { display: flex !important; flex-wrap: wrap; gap: 0 10px; }
+.ed-classes span { white-space: nowrap; }
+.ed-linha-resumo { margin: 6px 0 0 26px; font-size: 12.5px; color: var(--muted); }
+.ed-ajustar { margin: 6px 0 0 26px; }
+.ed-ajustar > summary { cursor: pointer; font-size: 13px; color: var(--primary); font-weight: 600; inline-size: fit-content; }
+.ed-ajustar > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.ed-ajustar .ed-campos--linha, .ed-ajustar .ed-papeis { margin-inline-start: 0; }
+.ed-comuns { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-block-end: 12px; background: var(--surface-1); }
+.ed-comuns .ed-campos--linha { margin-inline-start: 0; }
+@media (max-width: 640px) { .ed-linha-resumo, .ed-ajustar { margin-inline-start: 0; } }

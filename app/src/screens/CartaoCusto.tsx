@@ -137,7 +137,7 @@ function Links({ d, tela }: { d: DadosCusto | null; tela?: string }) {
 /** Coluna direita no computador: o cartão, o bloco "Esta resposta muda" (ou a legenda, no orçamento) e os links. */
 /** v020: cartão da educação com e sem IA: o total com IA em destaque e, abaixo, o sem IA e a divisão em CapEx, OpEx e uso. */
 function CartaoEducacao({ s, compacto = false }: { s: CasoStore; compacto?: boolean }) {
-  const r = orcamentoEducacao(s), f = (v: number) => formatarMoedaEst(v, r.moeda), meses = r.fases.reduce((a, x) => a + x.meses, 0);
+  const r = orcamentoEducacao(s), f = (v: number) => formatarMoedaEst(v, r.moeda), meses = r.meses;
   return <section className={'pc-custo' + (compacto ? ' pc-custo--compacto' : '')} aria-label={t('Custo desta frente')}>
     <div className="pc-custo-cab">
       <h2 className="pc-custo-rotulo">{t('Com IA')} · {t('{n} meses', { n: meses })}</h2>
@@ -147,7 +147,7 @@ function CartaoEducacao({ s, compacto = false }: { s: CasoStore; compacto?: bool
     {compacto ? null : <dl className="pc-custo-lista">
       <dt>{t('Investimento (CapEx)')}</dt><dd title={f(r.com.k)}>{moedaCurta(r.com.k, r.moeda)}</dd>
       <dt>{t('Operação (OpEx)')}</dt><dd title={f(r.com.x)}>{moedaCurta(r.com.x, r.moeda)}</dd>
-      <dt>{t('Uso')}</dt><dd title={f(r.com.u)}>{moedaCurta(r.com.u, r.moeda)}</dd>
+      <dt>{t('Utilidades (consumo)')}</dt><dd title={f(r.com.u)}>{moedaCurta(r.com.u, r.moeda)}</dd>
       <dt>{t('Por estudante')}</dt><dd>{r.com.porEstudante === null ? '—' : f(r.com.porEstudante)}</dd>
     </dl>}
   </section>;
