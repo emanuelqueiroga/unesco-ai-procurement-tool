@@ -63,6 +63,9 @@ function PilulaFrente({ s }: { s: CasoStore }) {
 
 /** v019: cabeçalho do design (Figma): marcas, idioma e tema; a trilha (Início › etapas) com os atalhos à direita; e as
  *  etapas como barras finas, com o nome e a posição de cada uma para leitores de tela. */
+/** v022.1: a segunda linha do cabeçalho (trilha, Matriz, Cálculo, Ver o plano, Caso e barras de etapas) saiu de toda a
+ *  ferramenta, a pedido; o cabeçalho fica com a marca (que leva ao início) e o idioma. */
+const SEM_LINHA2 = true;
 function CabecalhoV19({ passos, tela, acoes, direita }: { passos: Step[]; tela?: string; acoes: ReactNode[]; direita: ReactNode }) {
   const i = passos.findIndex((p) => p.state === 'current');
   const c = tela ? categoriaGov(tela) : undefined, dEd = tela ? desafioDaTelaEd(tela) : null, cEd = tela ? CATEGORIAS_ED.find(x => x.id === categoriaDaTelaEd(tela)) : undefined;
@@ -75,7 +78,7 @@ function CabecalhoV19({ passos, tela, acoes, direita }: { passos: Step[]; tela?:
         </a>
         <div className="v19-cab-dir">{direita}</div>
       </div>
-      <div className="v19-cab-l2 pc-container">
+      {SEM_LINHA2 ? null : <div className="v19-cab-l2 pc-container">
         <nav className="v19-trilha" aria-label={t('Seu caminho')}>
           <ol>
             <li><a href={href.inicio()}><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 7.5 8 2.5l6 5M3.5 6.5V13.5h3.5V9.5h2v4h3.5V6.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /></svg>{t('Início')}</a></li>
@@ -84,8 +87,8 @@ function CabecalhoV19({ passos, tela, acoes, direita }: { passos: Step[]; tela?:
           </ol>
         </nav>
         <div className="v19-cab-acoes">{acoes.filter(Boolean).map((a, k) => <span key={k} className="v19-acao">{a}</span>)}</div>
-      </div>
-      {passos.length ? <ol className="v19-barras pc-container" aria-label={t('Seu caminho')}>
+      </div>}
+      {!SEM_LINHA2 && passos.length ? <ol className="v19-barras pc-container" aria-label={t('Seu caminho')}>
         {passos.map((p) => <li key={p.n} className={'v19-barra is-' + p.state}>
           <a href={p.href}><span className="v19-barra-trilho" aria-hidden="true"><span style={{ inlineSize: ((p.state === 'done' ? 1 : p.state === 'current' ? Math.max(p.progress || 0, 0.04) : 0) * 100).toFixed(1) + '%' }} /></span>
           <span className="pc-sr">{p.label}{p.position ? ' · ' + p.position : ''}{p.state === 'done' ? ' ✓' : ''}</span></a>
@@ -231,7 +234,6 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
           <div className="pc-cab-linha pc-container">
             <div className="pc-cab-esq">
               {marca}
-              {gov ? <PilulaFrente s={s} /> : null}
               {!celular && ctxCab ? <span className="pc-cab-ctx">{ctxCab}</span> : null}
             </div>
             {celular ? (
@@ -240,24 +242,23 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
               </button>
             ) : (
               <div className="pc-cab-acoes">
-                {gov ? <>{botaoMatriz}{botaoCalculo}</> : atalhos}
+                {gov ? null : atalhos}
                 {modo}
-                {verPlano}
+                {gov ? null : verPlano}
                 <SeletorIdioma compacto />
                 {botaoTema}
-                {gov ? botaoCaso : null}
               </div>
             )}
           </div>
           {celular && menu ? (
             <nav id="pc-menu" className="pc-menu pc-container" aria-label={t('Menu')}>
               {ctxCab ? <p className="pc-menu-ctx">{ctxCab}</p> : null}
-              <div className="pc-menu-acoes">{gov ? <>{botaoMatriz}{botaoCalculo}</> : atalhos}{verPlano}</div>
+              <div className="pc-menu-acoes">{atalhos}</div>
               {modo ? <div className="pc-menu-linha">{modo}</div> : null}
-              <div className="pc-menu-linha"><SeletorIdioma />{botaoTema}{gov ? botaoCaso : null}</div>
+              <div className="pc-menu-linha"><SeletorIdioma />{botaoTema}</div>
             </nav>
           ) : null}
-          {gov && nav && passos.length ? <div className="pc-cab-etapas pc-container"><StepBar steps={passos} compact={celular} label={t('Seu caminho')} /></div> : null}
+          {!SEM_LINHA2 && gov && nav && passos.length ? <div className="pc-cab-etapas pc-container"><StepBar steps={passos} compact={celular} label={t('Seu caminho')} /></div> : null}
         </header>}
         {faixas}
         {plano && semColuna ? <div className="pc-container"><FaixaCusto s={s} tela={pos.tela} /></div> : null}
