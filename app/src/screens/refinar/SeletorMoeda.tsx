@@ -35,7 +35,7 @@ export function SeletorMoeda({ compacto, semNota }: { compacto?: boolean; semNot
             id={id}
             className="rf-select rf-select--moeda"
             value={cod}
-            onChange={(e) => setMoeda({ cod: e.target.value, taxa: '', taxaDe: '' })}
+            onChange={(e) => setMoeda({ cod: e.target.value, taxa: '', taxaDe: '', escolhida: true })}
           >
             {principais.map(op)}
             <option disabled value="">──────────</option>

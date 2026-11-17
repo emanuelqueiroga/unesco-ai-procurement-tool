@@ -15,7 +15,8 @@ export type RespDet = Record<string, { qual?: string; falta?: string } | undefin
 
 export interface Custo { base: string; cfg: any; editado: boolean; pendente?: boolean }
 /** Moeda de exibição; `doPais` = ISO3 do país que a ajustou (a ferramenta trocou o dólar pela moeda do país, REF-07) */
-export interface Moeda { cod: string; taxa: string | number; taxaDe?: string; doPais?: string }
+/** v022.1: `escolhida` = a pessoa escolheu a moeda na lista; sem ela, a moeda acompanha o país do caso */
+export interface Moeda { cod: string; taxa: string | number; taxaDe?: string; doPais?: string; escolhida?: boolean }
 
 export interface Estado14 {
   formato: 14;

@@ -1,13 +1,12 @@
 // v022.1: "Em que moeda o plano será apresentado?" na tela do lugar, numa lista: vem com a moeda do país; no topo da
 // lista, a moeda do país, o dólar e o euro, e depois as demais. Fora do dólar, a taxa por US$ 1 vem da cotação do dia e
 // pode ser substituída. A escolha grava a moeda do caso (setMoeda); trocar de país volta à moeda do novo país.
-import { useId } from 'react';
+import { useEffect, useId } from 'react';
 import { useCaso } from '../store';
-import { nomeMoeda, lerNumero, LOC, paisPorIso, getTabelaMoedas, OUTRO_PAIS } from '../domain';
+import { nomeMoeda, lerNumero, LOC, paisPorIso, OUTRO_PAIS } from '../domain';
 import { CampoNumero } from './CampoNumero';
 import { t } from './textos';
 import { listaMoedas, taxaReferencia } from '../screens/refinar/calc';
-import { dataTaxa } from '../screens/refinar/SeletorMoeda';
 import '../screens/refinar.css';
 
 export function MoedaPlano() {
@@ -26,7 +25,12 @@ export function MoedaPlano() {
   const op = (c: string) => <option key={c} value={c}>{String(nomeMoeda(c))} ({c}){c === doPais ? ' · ' + t('moeda do país') : ''}</option>;
   const ref = taxaReferencia(cod), informada = moeda && moeda.taxaDe === cod ? lerNumero(moeda.taxa) : '';
   const fmt = (v: number) => v.toLocaleString(String(LOC()), { maximumFractionDigits: 4 });
-  const escolher = (c: string) => setMoeda(c === doPais && pais ? { cod: c, taxa: '', taxaDe: '', doPais: pais } as any : { cod: c, taxa: '', taxaDe: '' });
+  const escolher = (c: string) => setMoeda(c === doPais && pais ? { cod: c, taxa: '', taxaDe: '', doPais: pais } as any : { cod: c, taxa: '', taxaDe: '', escolhida: true } as any);
+  // Por padrão, a moeda do país: vale também para casos salvos em que o país já estava escolhido e a moeda ficou no
+  // dólar (o país não foi trocado, então a troca automática não aconteceu). Só a escolha da pessoa na lista fica.
+  useEffect(() => {
+    if (doPais && cod !== doPais && !(moeda as any)?.escolhida) setMoeda({ cod: doPais, taxa: '', taxaDe: '', doPais: pais } as any);
+  }, [pais, doPais, cod]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="pc-moeda-plano">
       <div className="pc-moeda-plano-linha">
@@ -44,7 +48,6 @@ export function MoedaPlano() {
             onChange={(v) => setMoeda({ ...(moeda as any), cod, taxa: v === '' ? '' : v, taxaDe: v === '' ? '' : cod })} />
         </div> : null}
       </div>
-      <p className="rf-nota">{t('Os valores de referência estão em dólares e são convertidos pela cotação de {data} ({fonte}), que você pode substituir. Nunca se somam valores de moedas diferentes: todo o plano fica na moeda escolhida.', { data: dataTaxa(), fonte: getTabelaMoedas().fonte })}</p>
     </div>
   );
 }
