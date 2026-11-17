@@ -25,7 +25,8 @@ const ICONES: Record<string, ReactNode> = {
 /** A seleção fica local até Próximo, como na v017. */
 export function Prioridades() {
   const s = useCaso();
-  const [rascunho, setRascunho] = useState<string[]>(() => (s.ctx.prioridades || []).filter((id: string) => DISPONIVEIS.includes(id)));
+  // v022.1: sem prioridade salva, a governança vem marcada
+  const [rascunho, setRascunho] = useState<string[]>(() => { const r = (s.ctx.prioridades || []).filter((id: string) => DISPONIVEIS.includes(id)); return r.length ? r : ['governar']; });
   const P = (PRIORIDADES as any[]).filter(p => OFERECIDAS.includes(p.id));
   const alternar = (id: string) => DISPONIVEIS.includes(id) && setRascunho(r => r.includes(id) ? [] : [id]);
   const telas = telasDoCapitulo(1), i = telas.findIndex(x => x.id === 'prioridades');
