@@ -19,6 +19,7 @@ import {
 import { AcoesPercurso } from './AcoesPercurso';
 import { Shell } from './Shell';
 import { semEnergiaPais, semInternetPais, razaoPais, deficienciaPais, precoPais, paramPais, origemTexto } from '../percurso/educacaoPais';
+import { EquivalenteUSD } from './EquivalenteUSD';
 import './educacaoV20.css';
 
 /** O NumeroField com `percentual` mostra e devolve fração (0,25 = 25%); o percurso guarda pontos percentuais (25). */
@@ -467,6 +468,7 @@ function PlanoEducacao({ s }: { s: CasoStore }) {
     {faltam.length ? <Alert kind="atencao" title={t('Respostas que faltam')}><ul>{faltam.map(q => <li key={q.id}><a href={href.pergunta(q.capitulo, q.id)}>{nomeTela(q.id)}</a></li>)}</ul></Alert> : null}
     <h2>{t('Com IA e sem IA')}</h2>
     <div className="ed-kpis">{kpi('com')}{kpi('sem')}</div>
+    <EquivalenteUSD total={r.com.total} moeda={r.moeda} rotulo={t('Com IA')} /><EquivalenteUSD total={r.sem.total} moeda={r.moeda} rotulo={t('Sem IA')} />
     <h2>{t('Custo econômico, desembolso novo e o que já existe')}</h2>
     <div className="ed-rolo"><table className="ed-tabela ed-tabela--num"><thead><tr><th></th><th>{t('Custo econômico total')}</th><th>{t('Desembolso novo')}</th><th>{t('Já existe (outros orçamentos)')}</th></tr></thead><tbody>
       {ALTS.map(a => { const x = a === 'com' ? r.com : r.sem; return <tr key={a}><th scope="row">{rotAlt(a)}</th><td>{f(x.total)}</td><td>{f(x.desembolso)}</td><td>{f(x.existente)}</td></tr>; })}

@@ -1,0 +1,13 @@
+{
+ "Com o país, a moeda do plano passa à do país (você pode escolher outra) e as premissas usam os dados de referência do país. Você pode alterar qualquer valor.": "Con el país, la moneda del plan pasa a ser la del país (puede elegir otra) y los supuestos usan los datos de referencia del país. Puede cambiar cualquier valor.",
+ "Onde fica a rede e qual é o nome dela?": "¿Dónde está la red y cuál es su nombre?",
+ "O país define a moeda do plano e os dados de referência usados nas sugestões. O nome aparece na capa do plano e nos documentos que você levar à equipe.": "El país define la moneda del plan y los datos de referencia usados en las sugerencias. El nombre aparece en la portada del plan y en los documentos que lleve al equipo.",
+ "cotação de {data}, {fonte}": "tipo de cambio del {data}, {fonte}",
+ "Em que moeda o plano será apresentado?": "¿En qué moneda se presentará el plan?",
+ "equivale a {usd}, à taxa de 1 US$ = {taxa} {moeda}": "equivale a {usd}, al tipo de 1 US$ = {taxa} {moeda}",
+ "Escolha a moeda": "Elija la moneda",
+ "moeda do país": "moneda del país",
+ "Os valores de referência estão em dólares e são convertidos pela cotação de {data} ({fonte}), que você pode substituir. Nunca se somam valores de moedas diferentes: todo o plano fica na moeda escolhida.": "Los valores de referencia están en dólares y se convierten al tipo de cambio del {data} ({fonte}), que puede sustituir. Nunca se suman valores de monedas distintas: todo el plan queda en la moneda elegida.",
+ "Outra moeda": "Otra moneda",
+ "taxa informada no plano": "tipo informado en el plan"
+}

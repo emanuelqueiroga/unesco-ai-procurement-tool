@@ -114,3 +114,10 @@
 .pcx-faixa-campos, .pcx-volume-campos, .pcx-revisao-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: var(--space-3); align-items: start; }
 .pcx-volume-campos { grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
 .pcx-revisao-campos { grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+
+/* v022.2: moeda do plano na tela do lugar */
+.pc-moeda-plano { display: grid; gap: var(--space-2, 8px); margin-block: var(--space-4, 16px) var(--space-5, 24px); }
+.pc-moeda-plano-rotulo { margin: 0; }
+.pc-moeda-plano .pr-optioncard-group { margin: 0; }
+.pc-moeda-plano .rf-campo { margin: 0; max-width: 22rem; }
+.pc-moeda-plano .rf-nota { margin: 0; max-width: 60ch; }

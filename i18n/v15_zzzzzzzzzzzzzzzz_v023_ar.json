@@ -1,0 +1,13 @@
+{
+ "Com o país, a moeda do plano passa à do país (você pode escolher outra) e as premissas usam os dados de referência do país. Você pode alterar qualquer valor.": "مع اختيار البلد، تصبح عملة الخطة عملة البلد (يمكنك اختيار عملة أخرى) وتستخدم الافتراضات البيانات المرجعية للبلد. يمكنك تغيير أي قيمة.",
+ "Onde fica a rede e qual é o nome dela?": "أين تقع الشبكة وما اسمها؟",
+ "O país define a moeda do plano e os dados de referência usados nas sugestões. O nome aparece na capa do plano e nos documentos que você levar à equipe.": "يحدد البلد عملة الخطة والبيانات المرجعية المستخدمة في الاقتراحات. ويظهر الاسم على غلاف الخطة وفي الوثائق التي تقدّمها إلى الفريق.",
+ "cotação de {data}, {fonte}": "سعر الصرف بتاريخ {data}، {fonte}",
+ "Em que moeda o plano será apresentado?": "بأي عملة ستُعرض الخطة؟",
+ "equivale a {usd}, à taxa de 1 US$ = {taxa} {moeda}": "يعادل {usd}، بسعر 1 US$ = {taxa} {moeda}",
+ "Escolha a moeda": "اختر العملة",
+ "moeda do país": "عملة البلد",
+ "Os valores de referência estão em dólares e são convertidos pela cotação de {data} ({fonte}), que você pode substituir. Nunca se somam valores de moedas diferentes: todo o plano fica na moeda escolhida.": "القيم المرجعية بالدولار وتُحوَّل بسعر الصرف بتاريخ {data} ({fonte})، ويمكنك استبداله. لا تُجمع أبدًا قيم بعملات مختلفة: تبقى الخطة كلها بالعملة المختارة.",
+ "Outra moeda": "عملة أخرى",
+ "taxa informada no plano": "السعر المُدخل في الخطة"
+}

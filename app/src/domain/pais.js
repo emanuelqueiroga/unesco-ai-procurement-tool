@@ -146,12 +146,14 @@ function perfilDoPais(caso) {
  * própria ferramenta que a trocou pelo país anterior (moeda.doPais); a escolha da pessoa não muda. Sem país (ou "outro"),
  * uma moeda posta pelo país volta ao dólar. Devolve a moeda nova ({ cod, taxa: '', taxaDe: '', doPais? }) ou null (fica).
  */
+// v023: escolher um país sempre põe a moeda dele (antes, só se a moeda ainda fosse o dólar ou tivesse vindo do país
+// anterior, e por isso às vezes ficava o dólar ou a moeda de outro país). Escolher outra moeda continua possível logo
+// depois, na mesma tela; ela vale até a pessoa trocar de país. "Outro país" volta ao dólar se a moeda era a do país.
 function moedaAoEscolherPais(moeda, iso) {
   const m = moeda || { cod: 'USD', taxa: '' };
   const cod = m.cod || 'USD';
   const anterior = m.doPais ? paisPorIso(m.doPais) : null;
   const automatica = !!anterior && anterior.moeda === cod;
-  if (cod !== 'USD' && !automatica) return null;
   const p = iso && iso !== OUTRO_PAIS ? paisPorIso(iso) : null;
   if (p && p.moeda) return m.doPais === p.iso3 && cod === p.moeda ? null : { cod: p.moeda, taxa: '', taxaDe: '', doPais: p.iso3 };
   return automatica ? { cod: 'USD', taxa: '', taxaDe: '' } : null;

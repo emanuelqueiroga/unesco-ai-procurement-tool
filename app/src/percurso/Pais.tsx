@@ -2,7 +2,9 @@
 // "Dados do país" no Refinar. Não é uma das 25 perguntas: não conta como lacuna, não entra em ESSENCIAL.campos nem
 // na origem dos KPIs. Ao escolher o país, a moeda de exibição passa à do país só se ainda estiver em dólar (ou se foi
 // o país anterior que a pôs); a nota diz moeda, taxa de referência, região e grupo de renda, com a fonte. Trocar de
-// país com valores do perfil editados pede confirmação (eles voltam aos da base); com a calculadora editada, o aviso
+// país com valores do perfil editados pede confirmação. v023: escolher o país sempre põe a moeda do país; a pessoa
+// pode escolher outra moeda logo abaixo, e ela vale até trocar de país de novo.
+// (eles voltam aos da base); com a calculadora editada, o aviso
 // `pendente` da calculadora pergunta se mantém as edições (nada é descartado em silêncio).
 import { useEffect, useId } from 'react';
 import { notaPais, paisesOrdenados, nomeMoeda, tr, LOC, OUTRO_PAIS } from '../domain';
@@ -18,7 +20,7 @@ import '../screens/refinar/referencias.css';
 export function textoNotaPais(pais: string): string {
   if (pais === OUTRO_PAIS) return t('Sem dados de país: valem os valores ilustrativos da ferramenta. Informe os números da sua rede nas perguntas abaixo.');
   const n = notaPais({ pais });
-  if (!n) return t('Opcional. Com o país, a moeda de exibição passa à do país (se ainda estiver em dólar) e as premissas usam os dados de referência do país quando a base os tiver. Você pode alterar qualquer valor.');
+  if (!n) return t('Com o país, a moeda do plano passa à do país (você pode escolher outra) e as premissas usam os dados de referência do país. Você pode alterar qualquer valor.');
   const taxa = taxaReferencia(n.moeda);
   const partes = [
     t('Moeda do país:') + ' ' + n.moeda + ' · ' + String(nomeMoeda(n.moeda)) + '.',
@@ -32,7 +34,7 @@ export function textoNotaPais(pais: string): string {
 /** Sugestão pelo fuso horário: no máximo uma vez por carregamento da página. */
 let jaSugerido = false;
 
-export function Pais({ semNota, sugerir }: { semNota?: boolean; sugerir?: boolean }) {
+export function Pais({ semNota, sugerir, obrigatorio }: { semNota?: boolean; sugerir?: boolean; obrigatorio?: boolean }) {
   const pais = useCaso((s) => String(s.caso.pais || ''));
   const nEditados = useCaso((s) => Object.keys(s.caso.editados || {}).length);
   const escolherPais = useCaso((s) => s.escolherPais);
@@ -61,7 +63,7 @@ export function Pais({ semNota, sugerir }: { semNota?: boolean; sugerir?: boolea
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="rf-pais">
-      <label className="rf-rotulo" htmlFor={id}>{t('Em que país fica a rede?')} ({t('opcional')})</label>
+      <label className="rf-rotulo" htmlFor={id}>{t('Em que país fica a rede?')}{obrigatorio ? '' : ' (' + t('opcional') + ')'}</label>
       <select id={id} className="rf-select" value={pais} aria-describedby={semNota ? undefined : notaId} onChange={(e) => { void mudar(e.target.value); }}>
         <option value="">{t('Escolha o país')}</option>
         {paisesOrdenados().map((p: any) => <option key={p.iso3} value={p.iso3}>{p.nome}</option>)}

@@ -1,0 +1,13 @@
+{
+ "Com o país, a moeda do plano passa à do país (você pode escolher outra) e as premissas usam os dados de referência do país. Você pode alterar qualquer valor.": "With the country, the plan currency becomes the country’s (you can choose another) and the assumptions use the country reference data. You can change any value.",
+ "Onde fica a rede e qual é o nome dela?": "Where is the network and what is its name?",
+ "O país define a moeda do plano e os dados de referência usados nas sugestões. O nome aparece na capa do plano e nos documentos que você levar à equipe.": "The country sets the plan currency and the reference data used in the suggestions. The name appears on the plan cover and in the documents you take to the team.",
+ "cotação de {data}, {fonte}": "exchange rate of {data}, {fonte}",
+ "Em que moeda o plano será apresentado?": "In which currency will the plan be presented?",
+ "equivale a {usd}, à taxa de 1 US$ = {taxa} {moeda}": "equivalent to {usd}, at 1 US$ = {taxa} {moeda}",
+ "Escolha a moeda": "Choose the currency",
+ "moeda do país": "country currency",
+ "Os valores de referência estão em dólares e são convertidos pela cotação de {data} ({fonte}), que você pode substituir. Nunca se somam valores de moedas diferentes: todo o plano fica na moeda escolhida.": "Reference values are in dollars and are converted at the exchange rate of {data} ({fonte}), which you can replace. Values in different currencies are never added: the whole plan stays in the chosen currency.",
+ "Outra moeda": "Other currency",
+ "taxa informada no plano": "rate entered in the plan"
+}

@@ -314,15 +314,16 @@ describe('(6) faixa de referência de um campo da calculadora', () => {
   });
 });
 
-describe('(7) moeda ao escolher o país (decisão 4: só se ainda estiver em USD)', () => {
+describe('(7) moeda ao escolher o país (v023: sempre a do país; a pessoa escolhe outra depois)', () => {
   it('USD → moeda do país; escolha da pessoa fica; troca automática segue o país; sem país volta ao USD', () => {
     expect(moedaAoEscolherPais({ cod: 'USD', taxa: '' }, 'BRA')).toEqual({ cod: 'BRL', taxa: '', taxaDe: '', doPais: 'BRA' });
-    expect(moedaAoEscolherPais({ cod: 'EUR', taxa: 0.9, taxaDe: 'EUR' }, 'BRA')).toBeNull();
+    // v023: escolher o país sempre põe a moeda dele, mesmo que a pessoa tivesse escolhido outra antes
+    expect(moedaAoEscolherPais({ cod: 'EUR', taxa: 0.9, taxaDe: 'EUR' }, 'BRA')).toEqual({ cod: 'BRL', taxa: '', taxaDe: '', doPais: 'BRA' });
     expect(moedaAoEscolherPais({ cod: 'BRL', taxa: '', doPais: 'BRA' }, 'MEX')).toEqual({ cod: 'MXN', taxa: '', taxaDe: '', doPais: 'MEX' });
     expect(moedaAoEscolherPais({ cod: 'BRL', taxa: '', doPais: 'BRA' }, 'BRA')).toBeNull();
     expect(moedaAoEscolherPais({ cod: 'BRL', taxa: '', doPais: 'BRA' }, 'outro')).toEqual({ cod: 'USD', taxa: '', taxaDe: '' });
     // a pessoa trocou a moeda depois do país: a marca do país não vale mais
-    expect(moedaAoEscolherPais({ cod: 'EUR', taxa: '', doPais: 'BRA' }, 'MEX')).toBeNull();
+    expect(moedaAoEscolherPais({ cod: 'EUR', taxa: '', doPais: 'BRA' }, 'MEX')).toEqual({ cod: 'MXN', taxa: '', taxaDe: '', doPais: 'MEX' });
     expect(moedaAoEscolherPais({ cod: 'USD', taxa: '' }, '')).toBeNull();
   });
 });

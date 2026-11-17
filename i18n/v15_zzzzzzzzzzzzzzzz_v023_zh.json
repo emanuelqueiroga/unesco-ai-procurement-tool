@@ -1,0 +1,13 @@
+{
+ "Com o país, a moeda do plano passa à do país (você pode escolher outra) e as premissas usam os dados de referência do país. Você pode alterar qualquer valor.": "选择国家后，计划货币将改为该国货币（您可以选择其他货币），假设将使用该国的参考数据。您可以修改任何数值。",
+ "Onde fica a rede e qual é o nome dela?": "教育网络位于哪里？名称是什么？",
+ "O país define a moeda do plano e os dados de referência usados nas sugestões. O nome aparece na capa do plano e nos documentos que você levar à equipe.": "国家决定计划的货币以及建议所用的参考数据。名称会出现在计划封面和您带给团队的文件中。",
+ "cotação de {data}, {fonte}": "{data} 的汇率，{fonte}",
+ "Em que moeda o plano será apresentado?": "计划将以哪种货币呈现？",
+ "equivale a {usd}, à taxa de 1 US$ = {taxa} {moeda}": "相当于 {usd}，汇率为 1 US$ = {taxa} {moeda}",
+ "Escolha a moeda": "选择货币",
+ "moeda do país": "本国货币",
+ "Os valores de referência estão em dólares e são convertidos pela cotação de {data} ({fonte}), que você pode substituir. Nunca se somam valores de moedas diferentes: todo o plano fica na moeda escolhida.": "参考值以美元计，按 {data} 的汇率（{fonte}）换算，您可以替换该汇率。不同货币的数值从不相加：整个计划都使用所选货币。",
+ "Outra moeda": "其他货币",
+ "taxa informada no plano": "计划中填写的汇率"
+}

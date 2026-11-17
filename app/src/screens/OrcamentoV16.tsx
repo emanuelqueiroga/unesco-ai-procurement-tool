@@ -1,5 +1,6 @@
 // Versão de teste v016: tela de fases (Piloto, Implantação, Expansão) e tabela de orçamento por categoria,
 // comuns às três frentes.
+import { EquivalenteUSD } from './EquivalenteUSD';
 import { fontesDasContas } from '../percurso/custosV017';
 import { useState } from 'react';
 import { useCaso, type CasoStore } from '../store';
@@ -91,6 +92,7 @@ export function ResumoV16({ s, frente }: { s: CasoStore; frente: FrenteEstimativ
       <dl className="pv-sumario">{[[t('Investimento (CapEx)'), o.capex], [t('Operação (OpEx)'), o.opex], [t('Uso'), o.uso], [t('Total'), totalConhecido(o)]].map(([r, v], i) =>
         <div key={i} className={i === 3 ? 'pv-sumario-total' : ''}><dt>{r as string}</dt><dd>{moedaCurta(v as number, o.moeda)}</dd>
           <span className="pv-sumario-pct">{i === 3 ? t('{n} meses', { n: o.fases.reduce((n, f) => n + f.meses, 0) }) : pctDe(v as number)}</span></div>)}</dl>
+      <EquivalenteUSD total={totalConhecido(o)} moeda={o.moeda} rotulo={t('Total')} />
     </> : null}
     {frente === 'governanca' && o.existentes > 0 ? <p className="pc-nota">{t('Desembolso novo: {v}. O custo conhecido inclui {e} de servidores que já existem, marcados em "Ajustar a equipe".', { v: formatarMoedaEst(totalConhecido(o) - o.existentes, o.moeda), e: formatarMoedaEst(o.existentes, o.moeda) })}</p> : null}
     {/* v018.1 (governança): custo conhecido separado em investimento e operação */}

@@ -27,10 +27,12 @@ describe('escolher o país', () => {
     expect(S().escolherPais('outro').moeda).toBe('USD');
     expect(S().moeda.cod).toBe('USD');
   });
-  it('a moeda escolhida pela pessoa não muda', () => {
+  it('v023: escolher o país põe a moeda dele; a pessoa escolhe outra depois e ela fica até trocar de país', () => {
     S().setMoeda({ cod: 'EUR', taxa: '', taxaDe: '' });
-    expect(S().escolherPais('KEN').moeda).toBeNull();
-    expect(S().moeda.cod).toBe('EUR');
+    expect(S().escolherPais('KEN').moeda).toBe('KES');
+    expect(S().moeda.cod).toBe('KES');
+    S().setMoeda({ cod: 'USD', taxa: '', taxaDe: '' });
+    expect(S().moeda.cod).toBe('USD');
   });
   it('com os dados globais de hoje, escolher o país não muda nenhum número', () => {
     S().carregarExemplo('A');

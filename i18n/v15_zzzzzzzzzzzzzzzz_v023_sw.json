@@ -1,0 +1,13 @@
+{
+ "Com o país, a moeda do plano passa à do país (você pode escolher outra) e as premissas usam os dados de referência do país. Você pode alterar qualquer valor.": "Ukichagua nchi, sarafu ya mpango inakuwa ya nchi hiyo (unaweza kuchagua nyingine) na mawazo ya msingi yanatumia data ya marejeo ya nchi. Unaweza kubadilisha thamani yoyote.",
+ "Onde fica a rede e qual é o nome dela?": "Mtandao uko wapi na jina lake ni nani?",
+ "O país define a moeda do plano e os dados de referência usados nas sugestões. O nome aparece na capa do plano e nos documentos que você levar à equipe.": "Nchi inaamua sarafu ya mpango na data ya marejeo inayotumika katika mapendekezo. Jina linaonekana kwenye jalada la mpango na katika nyaraka utakazopeleka kwa timu.",
+ "cotação de {data}, {fonte}": "kiwango cha ubadilishaji cha {data}, {fonte}",
+ "Em que moeda o plano será apresentado?": "Mpango utawasilishwa kwa sarafu gani?",
+ "equivale a {usd}, à taxa de 1 US$ = {taxa} {moeda}": "ni sawa na {usd}, kwa kiwango cha 1 US$ = {taxa} {moeda}",
+ "Escolha a moeda": "Chagua sarafu",
+ "moeda do país": "sarafu ya nchi",
+ "Os valores de referência estão em dólares e são convertidos pela cotação de {data} ({fonte}), que você pode substituir. Nunca se somam valores de moedas diferentes: todo o plano fica na moeda escolhida.": "Thamani za marejeo ziko kwa dola na zinabadilishwa kwa kiwango cha {data} ({fonte}), ambacho unaweza kubadilisha. Thamani za sarafu tofauti hazijumlishwi kamwe: mpango wote unabaki katika sarafu iliyochaguliwa.",
+ "Outra moeda": "Sarafu nyingine",
+ "taxa informada no plano": "kiwango kilichowekwa katika mpango"
+}

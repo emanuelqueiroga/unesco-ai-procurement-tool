@@ -17,7 +17,7 @@ describe('país e dados do país na interface', () => {
     ['BRA', 'MEX', 'KEN', 'MAR', 'IDN', 'outro'].forEach((v) => expect(html).toContain(`value="${v}"`));
     expect(html).toContain('Em que país fica a rede?');
     expect(textoNotaPais('BRA')).toMatch(/^Moeda do país: BRL · .+\.( 1 US\$ = .+ BRL\.)? Região: América Latina e Caribe\. Grupo de renda: renda média-alta \(Banco Mundial, a verificar\)\.$/);
-    expect(textoNotaPais('')).toMatch(/^Opcional\./);
+    expect(textoNotaPais('')).toMatch(/^Com o país, a moeda do plano passa à do país/);
     expect(textoNotaPais('outro')).toMatch(/^Sem dados de país/);
   });
   it('"Dados do país" aberto: 9 campos, 7 "sem dado" e inflação e desconto com valor ilustrativo; fechado por padrão', () => {
