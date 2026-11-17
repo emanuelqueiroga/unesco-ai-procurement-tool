@@ -19,5 +19,7 @@
  "Total do programa": "Total del programa",
  "Viagens, custos indiretos e taxa administrativa das duas prioridades": "Viajes, costos indirectos y tasa administrativa de las dos prioridades",
  "O que inclui: {nome}": "Qué incluye: {nome}",
- "Campos a preencher": "Campos por completar"
+ "Campos a preencher": "Campos por completar",
+ "Custo já calculado: os valores de referência sugeridos pela ferramenta e os valores que você digitou, que substituem a sugestão. O que ainda não tem valor aparece em \"Falta valor\".": "Costo ya calculado: los valores de referencia sugeridos por la herramienta y los valores que usted ingresó, que reemplazan la sugerencia. Lo que aún no tiene valor aparece en \"Falta valor\".",
+ "Estimado {est}, {n} sem valor": "Estimado {est}, {n} sin valor"
 }

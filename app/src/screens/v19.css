@@ -108,6 +108,10 @@ body { font-family: var(--font-sans); }
 .pc-custo-barra-est { background: var(--v19-ciano); }
 .pc-custo-marca--inf { background: var(--v19-amarelo) !important; }
 .pc-custo-marca--est { background: var(--v19-ciano) !important; }
+/* v022.1: o "i" do Estimado, no cartão azul */
+.pc-custo-lista dt > .pc-dica { margin-inline-start: -4px; }
+.pc-custo .pc-dica-botao { color: inherit; inline-size: 28px; block-size: 28px; }
+.pc-custo .pc-dica-botao:hover, .pc-custo .pc-dica-botao[aria-expanded="true"] { color: #fff; background: rgba(255,255,255,.18); }
 .pc-custo-est { color: #fff !important; }
 .pc-custo-links .pc-custo-link { color: var(--primary); }
 

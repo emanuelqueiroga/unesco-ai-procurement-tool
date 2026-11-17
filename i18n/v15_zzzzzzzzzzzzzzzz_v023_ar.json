@@ -19,5 +19,7 @@
  "Total do programa": "إجمالي البرنامج",
  "Viagens, custos indiretos e taxa administrativa das duas prioridades": "السفر والتكاليف غير المباشرة والرسوم الإدارية للأولويتين",
  "O que inclui: {nome}": "ما يتضمنه: {nome}",
- "Campos a preencher": "الحقول المطلوب ملؤها"
+ "Campos a preencher": "الحقول المطلوب ملؤها",
+ "Custo já calculado: os valores de referência sugeridos pela ferramenta e os valores que você digitou, que substituem a sugestão. O que ainda não tem valor aparece em \"Falta valor\".": "التكلفة المحسوبة حتى الآن: القيم المرجعية التي تقترحها الأداة والقيم التي أدخلتها، والتي تحل محل الاقتراح. ما لم تُحدَّد له قيمة بعد يظهر تحت «قيمة مفقودة».",
+ "Estimado {est}, {n} sem valor": "مقدّر {est}، {n} بلا قيمة"
 }

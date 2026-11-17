@@ -19,5 +19,7 @@
  "Total do programa": "Jumla ya programu",
  "Viagens, custos indiretos e taxa administrativa das duas prioridades": "Safari, gharama zisizo za moja kwa moja na ada ya utawala kwa vipaumbele vyote viwili",
  "O que inclui: {nome}": "Kinachojumuishwa: {nome}",
- "Campos a preencher": "Sehemu za kujaza"
+ "Campos a preencher": "Sehemu za kujaza",
+ "Custo já calculado: os valores de referência sugeridos pela ferramenta e os valores que você digitou, que substituem a sugestão. O que ainda não tem valor aparece em \"Falta valor\".": "Gharama iliyokwisha kukokotolewa: thamani za marejeo zinazopendekezwa na zana na thamani ulizoweka, ambazo zinachukua nafasi ya pendekezo. Kisichokuwa na thamani bado kinaonekana chini ya \"Kiasi kinakosekana\".",
+ "Estimado {est}, {n} sem valor": "Imekadiriwa {est}, {n} bila kiasi"
 }

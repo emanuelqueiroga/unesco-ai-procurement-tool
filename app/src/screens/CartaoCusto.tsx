@@ -12,6 +12,7 @@ import { orcamentoGovernanca } from '../percurso/governanca';
 import { formatarMoedaEst, type Estimativa, type FrenteEstimativa } from '../percurso/estimativasOrcamento';
 import { mesesV16 } from '../percurso/orcamentoV016';
 import { usePainel } from './PlanoVivo';
+import { InfoDica } from './InfoDica';
 import './moldura.css';
 
 /** Telas de recursos de cada frente (a tabela de orçamento). */
@@ -68,13 +69,16 @@ export const faltam = (n: number) => n === 1 ? t('falta 1 item') : t('faltam {n}
 function Barra({ d }: { d: DadosCusto }) {
   const n = d.informados + d.estimados + d.faltam, soma = d.informado + d.estimado;
   const lev = n ? d.faltam / n : 0, resto = 1 - lev;
-  const inf = soma > 0 ? resto * d.informado / soma : 0, est = soma > 0 ? resto * d.estimado / soma : 0;
-  const rotulo = t('Informado {inf}, estimado {est}, {n} sem valor', { inf: formatarMoedaEst(d.informado, d.moeda), est: formatarMoedaEst(d.estimado, d.moeda), n: itens(d.faltam) });
+  // v022.1: um só segmento para o custo calculado (o que a pessoa digitou e as estimativas), e o que falta
+  const conhecido = soma > 0 ? resto : 0;
+  const rotulo = t('Estimado {est}, {n} sem valor', { est: formatarMoedaEst(soma, d.moeda), n: itens(d.faltam) });
   return <div className="pc-custo-barra" role="img" aria-label={rotulo}>
-    <span className="pc-custo-barra-inf" style={{ inlineSize: (inf * 100).toFixed(2) + '%' }} />
-    <span className="pc-custo-barra-est" style={{ inlineSize: (est * 100).toFixed(2) + '%' }} />
+    <span className="pc-custo-barra-est" style={{ inlineSize: (conhecido * 100).toFixed(2) + '%' }} />
   </div>;
 }
+
+const conhecidos = (d: DadosCusto) => d.informados + d.estimados > 0;
+const explicaEstimado = () => t('Custo já calculado: os valores de referência sugeridos pela ferramenta e os valores que você digitou, que substituem a sugestão. O que ainda não tem valor aparece em "Falta valor".');
 
 function rotuloPeriodo(base: string, meses: number | null) { return meses ? base + ' · ' + t('{n} meses', { n: meses }) : base; }
 
@@ -91,22 +95,20 @@ export function CartaoCustoFrente({ d, compacto = false }: { d: DadosCusto; comp
       {p.nota ? <p className="pc-custo-nota">{p.nota}</p> : null}
     </div>
     <Barra d={d} />
+    {/* v022.1: "Informado" e "Estimado" viram uma linha só (Estimado, com o "i"), e o uso fica sempre abaixo de CapEx e OpEx, como no sumário */}
     {compacto ? <dl className="pc-custo-tres">
-      <div><dt>{t('Informado')}</dt><dd>{d.informados ? moedaCurta(d.informado, d.moeda) : '—'}</dd></div>
-      <div><dt>{t('Estimado')}</dt><dd className="pc-custo-est">{d.estimados ? moedaCurta(d.estimado, d.moeda) : '—'}</dd></div>
+      <div><dt>{t('Estimado')}</dt><dd className="pc-custo-est">{conhecidos(d) ? moedaCurta(d.informado + d.estimado, d.moeda) : '—'}</dd></div>
       <div><dt>{t('Falta valor')}</dt><dd>{itens(d.faltam)}</dd></div>
+      <div><dt>{t('Uso')}</dt><dd>{moedaCurta(d.uso || 0, d.moeda)}</dd></div>
     </dl> : <dl className="pc-custo-lista">
-      <dt><i className="pc-custo-marca pc-custo-marca--inf" aria-hidden="true" />{t('Informado')}</dt>
-      <dd>{d.informados ? formatarMoedaEst(d.informado, d.moeda) : '—'}</dd>
-      <dt><i className="pc-custo-marca pc-custo-marca--est" aria-hidden="true" />{t('Estimado')}</dt>
-      <dd className="pc-custo-est">{d.estimados ? formatarMoedaEst(d.estimado, d.moeda) : '—'}</dd>
+      <dt><i className="pc-custo-marca pc-custo-marca--est" aria-hidden="true" />{t('Estimado')}<InfoDica nome={t('Estimado')} texto={explicaEstimado()} /></dt>
+      <dd className="pc-custo-est">{conhecidos(d) ? formatarMoedaEst(d.informado + d.estimado, d.moeda) : '—'}</dd>
       <dt><i className="pc-custo-marca pc-custo-marca--lev" aria-hidden="true" />{t('Falta valor')}</dt>
       <dd>{itens(d.faltam)}</dd>
-      {/* v018.1: investimento e operação do custo conhecido */}
-      {d.capex !== undefined && d.opex !== undefined && d.capex + d.opex > 0 ? <>
+      {d.capex !== undefined && d.opex !== undefined ? <>
         <dt>{t('Investimento (CapEx)')}</dt><dd>{formatarMoedaEst(d.capex, d.moeda)}</dd>
         <dt>{t('Operação (OpEx)')}</dt><dd>{formatarMoedaEst(d.opex, d.moeda)}</dd>
-        {d.uso ? <><dt>{t('Uso')}</dt><dd>{formatarMoedaEst(d.uso, d.moeda)}</dd></> : null}
+        <dt>{t('Uso')}</dt><dd>{formatarMoedaEst(d.uso || 0, d.moeda)}</dd>
       </> : null}
     </dl>}
     {!compacto && d.fases?.length && !(d.fases.length === 1 && d.fases[0].id === 'total') ? <dl className="pc-custo-fases" aria-label={t('Custo por fase')}>{d.fases.map(f => <div key={f.id}><dt>{f.nome}</dt><dd>{f.informado + f.estimado ? moedaCurta(f.informado + f.estimado, d.moeda) : '—'}</dd></div>)}</dl> : null}
@@ -128,9 +130,10 @@ export function RespostaMuda({ d, tela }: { d: DadosCusto; tela: string }) {
 
 function Links({ d, tela }: { d: DadosCusto | null; tela?: string }) {
   const naRecursos = !!d && tela === TELA_RECURSOS[d.frente];
+  // v022.1: sem o link "Resumo desta frente"
+  if (!d?.recursos || naRecursos) return null;
   return <nav className="pc-custo-links" aria-label={t('Orçamento e resumo')}>
     {d?.recursos && !naRecursos ? <a className="pc-custo-link" href={d.recursos}>{t('Valores')} <span aria-hidden="true">→</span></a> : null}
-    <a className="pc-custo-link" href={href.plano()}>{t('Resumo desta frente')} <span aria-hidden="true">→</span></a>
   </nav>;
 }
 
@@ -157,7 +160,6 @@ export function ColunaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
   // v022.1: no percurso combinado, o cartão da educação nas telas da educação e o da governança nas demais
   if (percursoEducacaoV20(s.ctx) || (percursoCombinado(s.ctx) && telaDaEducacao(tela))) return <aside className="pc-coluna-custo" aria-label={t('Custo desta frente')}>
     <CartaoEducacao s={s} />
-    <nav className="pc-custo-links" aria-label={t('Plano')}><a className="pc-custo-link" href={href.plano()}>{t('Resumo desta frente')} <span aria-hidden="true">→</span></a></nav>
   </aside>;
   const d = dadosCusto(s);
   if (!d) return <aside className="pc-coluna-custo" aria-label={t('Custo deste projeto')}>

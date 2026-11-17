@@ -19,5 +19,7 @@
  "Total do programa": "Total du programme",
  "Viagens, custos indiretos e taxa administrativa das duas prioridades": "Déplacements, coûts indirects et frais administratifs des deux priorités",
  "O que inclui: {nome}": "Ce que cela comprend : {nome}",
- "Campos a preencher": "Champs à remplir"
+ "Campos a preencher": "Champs à remplir",
+ "Custo já calculado: os valores de referência sugeridos pela ferramenta e os valores que você digitou, que substituem a sugestão. O que ainda não tem valor aparece em \"Falta valor\".": "Coût déjà calculé : les valeurs de référence proposées par l’outil et les valeurs que vous avez saisies, qui remplacent la proposition. Ce qui n’a pas encore de valeur apparaît sous « Montant manquant ».",
+ "Estimado {est}, {n} sem valor": "Estimé {est}, {n} sans montant"
 }
