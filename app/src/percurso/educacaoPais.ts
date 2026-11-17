@@ -8,15 +8,17 @@ export type Grau = 'A' | 'B' | 'C';
 /** Um valor sugerido com a origem: fonte curta, ano (quando houver) e grau. mediana = valor do grupo do FMI, sem dado do país. */
 export interface ValorPais { v: number; ano: number | null; fonte: string; grau: Grau; mediana?: boolean; niveis?: string[] }
 
+/** v022.1: nome e licença em português e em inglês (a página de metodologia é em português ou em inglês). */
 export const FONTES_ED = {
-  uisEscolas: { nome: 'UNESCO UIS, escolas com eletricidade e com internet para fins pedagógicos (SCHBSP)', url: 'https://databrowser.uis.unesco.org/', licenca: 'CC BY-SA 3.0 IGO' },
-  uisRazao: { nome: 'UNESCO UIS, estudantes por professor (PTRHC)', url: 'https://databrowser.uis.unesco.org/', licenca: 'CC BY-SA 3.0 IGO' },
-  kwh: { nome: 'Banco Mundial, Doing Business 2019, preço da eletricidade (IC.ELC.PRI.KH.DB1619), atualizado pelo IPC (FP.CPI.TOTL) e pelo câmbio (PA.NUS.FCRF)', url: 'https://data.worldbank.org/indicator/IC.ELC.PRI.KH.DB1619', licenca: 'CC BY 4.0' },
-  banda: { nome: 'UIT, ICT Price Baskets 2024, cesta de banda larga fixa (5 GB)', url: 'https://www.itu.int/en/ITU-D/Statistics/Pages/ICTprices/default.aspx', licenca: 'CC BY-NC-SA 3.0 IGO (uso não comercial, com citação)' },
-  movel: { nome: 'UIT, ICT Price Baskets 2024, cesta de dados móveis (2 GB)', url: 'https://www.itu.int/en/ITU-D/Statistics/Pages/ICTprices/default.aspx', licenca: 'CC BY-NC-SA 3.0 IGO (uso não comercial, com citação)' },
-  pvout: { nome: 'Banco Mundial/ESMAP e Solargis, Global Photovoltaic Power Potential by Country (PVOUT nível 1)', url: 'https://datacatalog.worldbank.org/search/dataset/0038379', licenca: 'CC BY 4.0' },
-  unicef: { nome: 'UNICEF, crianças de 2 a 17 anos com dificuldade funcional (FD_FUNC_DIFFICULTY, MICS); sem dado do país, a estimativa mundial do relatório "Seen, Counted, Included" (2021)', url: 'https://data.unicef.org/resources/children-with-disabilities-report-2021/', licenca: 'termos de uso do UNICEF (uso com citação)' },
+  uisEscolas: { nome: 'UNESCO UIS, escolas com eletricidade e com internet para fins pedagógicos (SCHBSP)', en: 'UNESCO UIS, schools with electricity and with internet for pedagogical purposes (SCHBSP)', url: 'https://databrowser.uis.unesco.org/', licenca: 'CC BY-SA 3.0 IGO', licencaEn: 'CC BY-SA 3.0 IGO' },
+  uisRazao: { nome: 'UNESCO UIS, estudantes por professor (PTRHC)', en: 'UNESCO UIS, pupils per teacher (PTRHC)', url: 'https://databrowser.uis.unesco.org/', licenca: 'CC BY-SA 3.0 IGO', licencaEn: 'CC BY-SA 3.0 IGO' },
+  kwh: { nome: 'Banco Mundial, Doing Business 2019, preço da eletricidade (IC.ELC.PRI.KH.DB1619), atualizado pelo IPC (FP.CPI.TOTL) e pelo câmbio (PA.NUS.FCRF)', en: 'World Bank, Doing Business 2019, price of electricity (IC.ELC.PRI.KH.DB1619), updated by the CPI (FP.CPI.TOTL) and the exchange rate (PA.NUS.FCRF)', url: 'https://data.worldbank.org/indicator/IC.ELC.PRI.KH.DB1619', licenca: 'CC BY 4.0', licencaEn: 'CC BY 4.0' },
+  banda: { nome: 'UIT, ICT Price Baskets 2024, cesta de banda larga fixa (5 GB)', en: 'ITU, ICT Price Baskets 2024, fixed-broadband basket (5 GB)', url: 'https://www.itu.int/en/ITU-D/Statistics/Pages/ICTprices/default.aspx', licenca: 'CC BY-NC-SA 3.0 IGO (uso não comercial, com citação)', licencaEn: 'CC BY-NC-SA 3.0 IGO (non-commercial use, with attribution)' },
+  movel: { nome: 'UIT, ICT Price Baskets 2024, cesta de dados móveis (2 GB)', en: 'ITU, ICT Price Baskets 2024, mobile-data basket (2 GB)', url: 'https://www.itu.int/en/ITU-D/Statistics/Pages/ICTprices/default.aspx', licenca: 'CC BY-NC-SA 3.0 IGO (uso não comercial, com citação)', licencaEn: 'CC BY-NC-SA 3.0 IGO (non-commercial use, with attribution)' },
+  pvout: { nome: 'Banco Mundial/ESMAP e Solargis, Global Photovoltaic Power Potential by Country (PVOUT nível 1)', en: 'World Bank/ESMAP and Solargis, Global Photovoltaic Power Potential by Country (PVOUT level 1)', url: 'https://datacatalog.worldbank.org/search/dataset/0038379', licenca: 'CC BY 4.0', licencaEn: 'CC BY 4.0' },
+  unicef: { nome: 'UNICEF, crianças de 2 a 17 anos com dificuldade funcional (FD_FUNC_DIFFICULTY, MICS); sem dado do país, a estimativa mundial do relatório "Seen, Counted, Included" (2021)', en: 'UNICEF, children aged 2 to 17 with functional difficulty (FD_FUNC_DIFFICULTY, MICS); without country data, the world estimate of the report "Seen, Counted, Included" (2021)', url: 'https://data.unicef.org/resources/children-with-disabilities-report-2021/', licenca: 'termos de uso do UNICEF (uso com citação)', licencaEn: 'UNICEF terms of use (use with attribution)' },
 } as const;
+export const nomeFonteEd = (f: { nome: string; en: string }, l: 'pt' | 'en') => l === 'pt' ? f.nome : f.en;
 /** Estimativa mundial do UNICEF (2021): cerca de 240 milhões de crianças com deficiência, 1 em cada 10. */
 export const DEFICIENCIA_MUNDO = 10.1;
 

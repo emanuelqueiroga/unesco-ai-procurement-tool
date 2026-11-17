@@ -40,9 +40,9 @@ export function Esforcos({ chave }: { chave?: string }) {
           <p className="pc-esf-meta">{e.meses ? t('Trabalho pontual: {m} meses', { m: e.meses }) : t('Operação contínua: durante todo o plano')} · {t('{n} pessoas ({e} em tempo integral)', { n: n2(pessoasDaEquipe(e)), e: n2(integral) })} · {t('grau C')}</p>
           <div className="pc-sal-rolagem" tabIndex={0} role="region" aria-label={t(opcao)}>
             <table className="pc-sal-tabela">
-              <thead><tr><th scope="col">{t('Papel')}</th><th scope="col">{t('Pessoas')}</th><th scope="col">{t('Dedicação')}</th><th scope="col">{t('Perfil')}</th><th scope="col">{t('O que faz')}</th></tr></thead>
+              <thead><tr><th scope="col">{t('Papel')}</th><th scope="col">{t('Pessoas')}</th><th scope="col">{t('Dedicação')}</th><th scope="col">{t('Meses')}</th><th scope="col">{t('Perfil')}</th><th scope="col">{t('O que faz')}</th></tr></thead>
               <tbody>{e.papeis.map(p => <tr key={p.papel}>
-                <th scope="row">{t(p.papel)}</th><td>{n2(p.qtd)}</td><td>{Math.round(p.dedicacao * 100)}%</td>
+                <th scope="row">{t(p.papel)}</th><td>{n2(p.qtd)}</td><td>{Math.round(p.dedicacao * 100)}%</td><td>{!e.meses || p.prazo === 'plano' ? t('Durante todo o plano') : n2(typeof p.prazo === 'number' ? p.prazo : e.meses)}</td>
                 <td>{t(NOME_PERFIL[p.perfil])}</td><td>{t(p.faz)}</td>
               </tr>)}</tbody>
             </table>

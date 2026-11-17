@@ -22,5 +22,15 @@
  "Campos a preencher": "Fields to fill in",
  "Estimado {est}, {n} sem valor": "Estimated {est}, {n} without a value",
  "Custo já calculado: os valores de referência sugeridos pela ferramenta e os valores que você digitou, que substituem a sugestão.": "Cost already calculated: the reference values suggested by the tool and the values you entered, which replace the suggestion.",
- "Custo de utilidades": "Utility cost"
+ "Custo de utilidades": "Utility cost",
+ "Lidera o trabalho e acompanha a norma até a aprovação e a publicação, que costumam levar mais tempo que a redação.": "Leads the work and follows the regulation through approval and publication, which usually take longer than the drafting.",
+ "Traz a prática de proteção de dados, define os procedimentos e continua respondendo por eles durante todo o plano.": "Brings data protection practice, defines the procedures and remains responsible for them throughout the plan.",
+ "Configura as rotinas de cópia, faz os testes periódicos de restauração e registra os resultados.": "Sets up the backup routines, runs the periodic restore tests and records the results.",
+ "(alguns papéis com prazo próprio)": "(some roles with their own duration)",
+ "Durante todo o plano": "Throughout the plan",
+ "Não se aplica: o plano não lança o custo de formação.": "Does not apply: the plan does not include the training cost.",
+ "Locais sem energia confiável": "Sites without reliable electricity",
+ "Locais sem internet": "Sites without internet",
+ "Estudantes que já têm dispositivo": "Students who already have a device",
+ "Não, são outras escolas": "No, they are other schools"
 }

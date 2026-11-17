@@ -22,5 +22,14 @@
  "Campos a preencher": "الحقول المطلوب ملؤها",
  "Estimado {est}, {n} sem valor": "مقدّر {est}، {n} بلا قيمة",
  "Custo já calculado: os valores de referência sugeridos pela ferramenta e os valores que você digitou, que substituem a sugestão.": "التكلفة المحسوبة حتى الآن: القيم المرجعية التي تقترحها الأداة والقيم التي أدخلتها، والتي تحل محل الاقتراح.",
- "Custo de utilidades": "تكلفة الاستهلاك"
+ "Custo de utilidades": "تكلفة الاستهلاك",
+ "Lidera o trabalho e acompanha a norma até a aprovação e a publicação, que costumam levar mais tempo que a redação.": "يقود العمل ويتابع اللائحة حتى اعتمادها ونشرها، وهو ما يستغرق عادةً وقتًا أطول من الصياغة.",
+ "Traz a prática de proteção de dados, define os procedimentos e continua respondendo por eles durante todo o plano.": "يقدّم خبرة حماية البيانات، ويحدد الإجراءات ويظل مسؤولًا عنها طوال مدة الخطة.",
+ "Configura as rotinas de cópia, faz os testes periódicos de restauração e registra os resultados.": "يُعدّ إجراءات النسخ الاحتياطي، ويجري اختبارات الاستعادة الدورية ويسجّل النتائج.",
+ "(alguns papéis com prazo próprio)": "(بعض الأدوار لها مدة خاصة)",
+ "Durante todo o plano": "طوال مدة الخطة",
+ "Locais sem energia confiável": "المواقع التي لا تتوفر فيها كهرباء موثوقة",
+ "Locais sem internet": "المواقع التي لا يتوفر فيها إنترنت",
+ "Estudantes que já têm dispositivo": "الطلاب الذين يملكون جهازًا بالفعل",
+ "Não, são outras escolas": "لا، إنها مدارس أخرى"
 }

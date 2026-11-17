@@ -22,5 +22,14 @@
  "Campos a preencher": "需填写的字段",
  "Estimado {est}, {n} sem valor": "估算 {est}，{n} 项无金额",
  "Custo já calculado: os valores de referência sugeridos pela ferramenta e os valores que você digitou, que substituem a sugestão.": "已计算的成本：工具建议的参考值，以及您填写的数值（会取代建议值）。",
- "Custo de utilidades": "使用量成本"
+ "Custo de utilidades": "使用量成本",
+ "Lidera o trabalho e acompanha a norma até a aprovação e a publicação, que costumam levar mais tempo que a redação.": "领导工作，并跟进规章直至批准和发布，这通常比起草耗时更长。",
+ "Traz a prática de proteção de dados, define os procedimentos e continua respondendo por eles durante todo o plano.": "提供数据保护实践经验，制定程序，并在整个计划期间持续对其负责。",
+ "Configura as rotinas de cópia, faz os testes periódicos de restauração e registra os resultados.": "设置备份例程，进行定期恢复测试并记录结果。",
+ "(alguns papéis com prazo próprio)": "（部分角色有各自的期限）",
+ "Durante todo o plano": "整个计划期间",
+ "Locais sem energia confiável": "没有可靠电力的场所",
+ "Locais sem internet": "没有互联网的场所",
+ "Estudantes que já têm dispositivo": "已有设备的学生",
+ "Não, são outras escolas": "不，是其他学校"
 }

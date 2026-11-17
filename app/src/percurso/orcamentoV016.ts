@@ -38,7 +38,7 @@ export function caminhoOrcamento(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa, 
 }
 
 /** Governança: sem fases — o custo é direto, com uma duração do plano em meses (padrão 12) e alcance total. */
-export const DURACAO_GOV_PADRAO = 12;
+export const DURACAO_GOV_PADRAO = 24;
 export const semFases = (f: FrenteEstimativa) => f === 'governanca';
 export function duracaoGov(s: Pick<Estado14, 'ctx'>): number { const d = raizOrcamento(s, 'governanca').duracao; return positivo(d) ? d : DURACAO_GOV_PADRAO; }
 export function fasesV16(s: Pick<Estado14, 'ctx'>, f: FrenteEstimativa): FaseV16[] {

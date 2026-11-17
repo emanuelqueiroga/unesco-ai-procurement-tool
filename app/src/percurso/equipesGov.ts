@@ -5,13 +5,16 @@
 // 4 = apoio administrativo. Trabalho pontual tem `meses`; sem `meses`, é operação contínua durante todo o plano.
 import type { Grupo } from './salariosPais';
 
-export interface Papel { papel: string; perfil: Grupo; qtd: number; dedicacao: number; faz: string }
+/** `prazo` (v022.1): papel com prazo próprio, diferente do da opção: um número de meses ou 'plano' (durante todo o plano). */
+export interface Papel { papel: string; perfil: Grupo; qtd: number; dedicacao: number; faz: string; prazo?: number | 'plano' }
 export interface EquipeRef { meses?: number; papeis: Papel[]; porque: string; base?: 'aiact' | 'noruega' | 'quenia' }
 
 const COORD = (dedicacao: number, faz = 'Lidera o trabalho, articula com o ministério e as demais áreas e aprova as versões.'): Papel => ({ papel: 'Coordenação', perfil: 1, qtd: 1, dedicacao, faz });
 const APOIO = (dedicacao: number): Papel => ({ papel: 'Apoio administrativo', perfil: 4, qtd: 1, dedicacao, faz: 'Agenda, atas, documentação e tramitação.' });
 const CONSULTA = (dedicacao: number): Papel => ({ papel: 'Analista de consulta pública', perfil: 3, qtd: 1, dedicacao, faz: 'Organiza a consulta pública e sistematiza as contribuições.' });
 const P = (papel: string, perfil: Grupo, qtd: number, dedicacao: number, faz: string): Papel => ({ papel, perfil, qtd, dedicacao, faz });
+/** v022.1: a coordenação de uma norma acompanha a aprovação e a publicação, que vão além da redação (12 meses). */
+const COORD_NORMA = (dedicacao: number): Papel => ({ ...COORD(dedicacao, 'Lidera o trabalho e acompanha a norma até a aprovação e a publicação, que costumam levar mais tempo que a redação.'), prazo: 12 });
 
 const POR_QUE_NORMA = 'Elaborar uma norma: estudo técnico, minuta, consulta pública e versão final.';
 const POR_QUE_DIRETRIZ = 'Documento orientador, sem força de lei: estudo, redação, validação com escolas e redes e publicação.';
@@ -19,25 +22,25 @@ const POR_QUE_DIRETRIZ = 'Documento orientador, sem força de lei: estudo, reda�
 export const EQUIPES_GOV: Record<string, EquipeRef> = {
   // 1.1 Regulação e salvaguardas de direitos humanos
   'Classificação de segurança e risco de IA': { meses: 8, porque: POR_QUE_NORMA, papeis: [
-    COORD(0.5),
+    COORD_NORMA(0.5),
     P('Especialista em direito digital e regulação', 2, 2, 1, 'Redige a minuta e a compatibiliza com as leis do país.'),
     P('Especialista em IA e avaliação de risco', 2, 1, 1, 'Define as categorias de risco e os critérios técnicos de cada uma.'),
     P('Especialista em políticas educacionais', 2, 1, 0.5, 'Traz os usos de IA na educação e avalia os impactos nas escolas.'),
     CONSULTA(1), APOIO(0.5)] },
   'Direitos e proteção de crianças': { meses: 6, porque: 'Norma específica que se apoia nas leis de proteção da infância já existentes.', papeis: [
-    COORD(0.5),
+    COORD_NORMA(0.5),
     P('Especialista em direitos da criança', 2, 1, 1, 'Redige as regras de consentimento, limites de uso e uso dos dados de crianças.'),
     P('Especialista em desenvolvimento infantil e educação', 2, 1, 0.5, 'Define o que é adequado para cada faixa etária.'),
     P('Especialista em IA', 2, 1, 0.5, 'Avalia como as regras se aplicam às ferramentas de IA.'),
     CONSULTA(0.5), APOIO(0.5)] },
   'Proteção de dados pessoais e privacidade': { meses: 8, base: 'quenia', porque: 'Adapta a lei de proteção de dados do país ao uso de IA na educação. O caso do Quênia mostra o custo de manter um órgão próprio, para comparar.', papeis: [
-    COORD(0.5),
+    COORD_NORMA(0.5),
     P('Especialista em direito de proteção de dados', 2, 2, 1, 'Redige as regras de coleta, uso, guarda e compartilhamento de dados.'),
     P('Especialista em dados educacionais', 2, 1, 1, 'Mapeia os dados que as ferramentas de IA usam e os fluxos entre sistemas.'),
-    P('Encarregado de proteção de dados', 2, 1, 0.5, 'Traz a prática de proteção de dados e define os procedimentos.'),
+    { ...P('Encarregado de proteção de dados', 2, 1, 0.5, 'Traz a prática de proteção de dados, define os procedimentos e continua respondendo por eles durante todo o plano.'), prazo: 'plano' },
     CONSULTA(1), APOIO(0.5)] },
   'Equidade algorítmica, não discriminação, transparência, explicabilidade e prestação de contas': { meses: 9, porque: 'Exige métodos técnicos de teste de viés e de explicabilidade, além da redação jurídica: análise mais longa que a de outras normas.', papeis: [
-    COORD(0.5),
+    COORD_NORMA(0.5),
     P('Especialista em ética e equidade de IA', 2, 1, 1, 'Define os princípios e os critérios de não discriminação.'),
     P('Cientista de dados', 2, 1, 1, 'Define os testes de viés e as métricas de equidade.'),
     P('Especialista em explicabilidade de IA', 2, 1, 1, 'Define o que cada sistema deve explicar e como.'),
@@ -46,13 +49,13 @@ export const EQUIPES_GOV: Record<string, EquipeRef> = {
     P('Analista técnico', 3, 1, 1, 'Apoia os testes e organiza as evidências.'),
     APOIO(0.5)] },
   'Cibersegurança e notificação de incidentes': { meses: 6, porque: 'Parte das normas de cibersegurança que o país já tem e acrescenta o que é próprio da IA.', papeis: [
-    COORD(0.5),
+    COORD_NORMA(0.5),
     P('Especialista em segurança da informação', 2, 2, 1, 'Define os requisitos de segurança dos sistemas de IA.'),
     P('Especialista em direito digital', 2, 1, 0.5, 'Redige a obrigação de notificar incidentes e os prazos.'),
     P('Analista de resposta a incidentes', 3, 1, 1, 'Desenha o fluxo de notificação e de resposta.'),
     APOIO(0.5)] },
   'Propriedade intelectual e direitos autorais': { meses: 5, porque: 'Ajusta as regras de direitos autorais a conteúdos gerados por IA e a materiais didáticos.', papeis: [
-    COORD(0.25),
+    COORD_NORMA(0.25),
     P('Especialista em propriedade intelectual', 2, 1, 1, 'Redige as regras de autoria e de uso de conteúdos.'),
     P('Especialista em recursos educacionais', 2, 1, 0.5, 'Traz os casos de materiais didáticos e trabalhos escolares.'),
     P('Especialista em IA generativa', 2, 1, 0.25, 'Explica como os modelos usam e geram conteúdos.'),
@@ -137,10 +140,10 @@ export const EQUIPES_GOV: Record<string, EquipeRef> = {
     COORD(0.5),
     P('Arquiteto de TI', 2, 1, 1, 'Desenha a arquitetura na nuvem e o plano de migração.'),
     P('Especialista em infraestrutura e segurança de TI', 2, 2, 1, 'Migra os sistemas e configura a segurança.'),
-    P('Gestor de contratos', 2, 1, 0.5, 'Acompanha o contrato e os níveis de serviço.'), APOIO(0.25)] },
+    { ...P('Gestor de contratos', 2, 1, 0.25, 'Acompanha o contrato e os níveis de serviço.'), prazo: 'plano' }, APOIO(0.25)] },
   'Backup e continuidade do serviço': { meses: 2, porque: 'Plano de backup e de continuidade e primeiros testes de restauração. O armazenamento das cópias é contado à parte.', papeis: [
     P('Especialista em infraestrutura e segurança de TI', 2, 1, 0.5, 'Define a política de cópias e conduz os testes de restauração.'),
-    P('Técnico de suporte', 3, 1, 0.5, 'Configura as rotinas de cópia e registra os testes.')] },
+    { ...P('Técnico de suporte', 3, 1, 0.1, 'Configura as rotinas de cópia, faz os testes periódicos de restauração e registra os resultados.'), prazo: 'plano' }] },
   // 2.3 Independência tecnológica
   'Adoção e manutenção de código aberto': { porque: 'Manutenção, atualização e suporte contínuos das soluções de código aberto.', papeis: [
     P('Líder técnico', 1, 1, 0.5, 'Define as prioridades e revisa as entregas.'),
@@ -148,7 +151,7 @@ export const EQUIPES_GOV: Record<string, EquipeRef> = {
     P('Técnico de suporte', 3, 1, 1, 'Atende as escolas e as redes que usam as soluções.')] },
   'Transferência de tecnologia': { meses: 8, porque: 'Acordos com fornecedores e capacitação das equipes do governo.', papeis: [
     COORD(0.5), P('Especialista em TI', 2, 2, 1, 'Absorve o conhecimento técnico das soluções.'),
-    P('Gestor de contratos', 2, 1, 0.5, 'Negocia e acompanha os acordos.'),
+    { ...P('Gestor de contratos', 2, 1, 0.25, 'Negocia e acompanha os acordos.'), prazo: 'plano' },
     P('Instrutor técnico', 3, 1, 0.5, 'Capacita as equipes internas.'), APOIO(0.25)] },
   'Customização local': { meses: 8, porque: 'Adaptação das soluções à língua e ao currículo do país.', papeis: [
     COORD(0.5), P('Desenvolvedor', 2, 2, 1, 'Adapta o código e as interfaces.'),

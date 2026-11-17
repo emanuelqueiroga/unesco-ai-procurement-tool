@@ -22,14 +22,14 @@ export const ID_ADICIONAIS = 'adicionais';
 export interface SalvoAdicionais extends Partial<Record<ChaveAdicional, number>> { temViagens?: 'sim' | 'nao'; overheadCoberto?: 'sim' | 'nao'; executor?: 'proprio' | 'onu' | 'fundacao';
   /** v018.1: formação de pessoas — se entra no plano, quantas pessoas, horas por pessoa e custo da hora (moeda do plano) */
   temFormacao?: 'sim' | 'nao'; formPessoas?: number; formHoras?: number; formHora?: number; formPresencial?: number }
-export interface PerguntaAdicional { campo: 'temViagens' | 'overheadCoberto' | 'executor'; pergunta: string; opcoes: [string, string][]; naoAplica: string; motivo: string }
+export interface PerguntaAdicional { campo: 'temViagens' | 'overheadCoberto' | 'executor'; pergunta: string; opcoes: [string, string][]; naoAplica: string; motivo: string; /** v022.1: a opção que vale sem resposta (aparece marcada) */ padrao: string }
 /** v018: uma pergunta por custo adicional, para saber se ele se aplica (sem resposta, entra com o padrão). */
 export const PERGUNTAS_ADICIONAIS: Record<ChaveAdicional, PerguntaAdicional> = {
-  viagens: { campo: 'temViagens', pergunta: 'O plano terá reuniões técnicas, oficinas ou viagens?', opcoes: [['sim', 'Sim'], ['nao', 'Não']], naoAplica: 'nao',
+  viagens: { campo: 'temViagens', pergunta: 'O plano terá reuniões técnicas, oficinas ou viagens?', opcoes: [['sim', 'Sim'], ['nao', 'Não']], naoAplica: 'nao', padrao: 'sim',
     motivo: 'Não se aplica: o plano não terá reuniões técnicas, oficinas nem viagens.' },
-  overhead: { campo: 'overheadCoberto', pergunta: 'A instituição já cobre os custos indiretos (espaço, TI, RH, contabilidade)?', opcoes: [['sim', 'Sim, já cobre (não somar)'], ['nao', 'Não, somar ao plano']], naoAplica: 'sim',
+  overhead: { campo: 'overheadCoberto', pergunta: 'A instituição já cobre os custos indiretos (espaço, TI, RH, contabilidade)?', opcoes: [['sim', 'Sim, já cobre (não somar)'], ['nao', 'Não, somar ao plano']], naoAplica: 'sim', padrao: 'nao',
     motivo: 'Não se aplica: a instituição já cobre os custos indiretos.' },
-  taxa: { campo: 'executor', pergunta: 'Quem vai executar o recurso?', opcoes: [['proprio', 'O próprio órgão (sem taxa)'], ['onu', 'Agência da ONU ou organismo internacional'], ['fundacao', 'Fundação de apoio ou outra entidade']], naoAplica: 'proprio',
+  taxa: { campo: 'executor', pergunta: 'Quem vai executar o recurso?', opcoes: [['proprio', 'O próprio órgão (sem taxa)'], ['onu', 'Agência da ONU ou organismo internacional'], ['fundacao', 'Fundação de apoio ou outra entidade']], naoAplica: 'proprio', padrao: 'onu',
     motivo: 'Não se aplica: o próprio órgão executa o recurso, sem taxa de intermediário.' },
 };
 /** O custo adicional não se aplica, pela resposta da pergunta dele. */
@@ -105,7 +105,7 @@ export function linhaFormacao(s: Pick<Estado14, 'ctx'>, salvo: SalvoAdicionais, 
   const base = { chave: FORMACAO_AD.chave, rotulo: FORMACAO_AD.rotulo, tipo: 'percentual' as const, tipoPadrao: 'percentual' as const, fonte: null, qtdSugerida: false, unit: null, valoresFase: {} };
   const zero: Record<string, number> = {}; for (const x of fases) zero[x.id] = 0;
   if (salvo.temFormacao !== 'sim') return { ...base, qtd: 0, horas: null, unitRef: null, unitDaReferencia: false, porFase: zero, total: 0, status: 'informado', falta: [], naoAplica: true,
-    capex: 0, opex: 0, uso: 0, memoria: t(salvo.temFormacao === 'nao' ? 'Não se aplica: o plano não lança o custo de formação.' : 'Responda Sim para lançar o custo de formação.') } as LinhaOpcao;
+    capex: 0, opex: 0, uso: 0, memoria: t('Não se aplica: o plano não lança o custo de formação.') } as LinhaOpcao;
   const e = entradasFormacao({ pessoas: salvo.formPessoas, horas: salvo.formHoras, presencial: salvo.formPresencial }, null, '');
   const r = custoFormacao(s, e.n, e.h, e.p, fases, taxa, moeda, fmt, num);
   return { ...base, qtd: e.n, horas: e.h, unitRef: null, unitDaReferencia: false, porFase: r.porFase, total: r.total, status: r.falta.length ? 'falta' : 'referencia', falta: r.falta,

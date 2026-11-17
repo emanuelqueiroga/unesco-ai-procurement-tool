@@ -22,5 +22,14 @@
  "Campos a preencher": "Sehemu za kujaza",
  "Estimado {est}, {n} sem valor": "Imekadiriwa {est}, {n} bila kiasi",
  "Custo já calculado: os valores de referência sugeridos pela ferramenta e os valores que você digitou, que substituem a sugestão.": "Gharama iliyokwisha kukokotolewa: thamani za marejeo zinazopendekezwa na zana na thamani ulizoweka, ambazo zinachukua nafasi ya pendekezo.",
- "Custo de utilidades": "Gharama za matumizi"
+ "Custo de utilidades": "Gharama za matumizi",
+ "Lidera o trabalho e acompanha a norma até a aprovação e a publicação, que costumam levar mais tempo que a redação.": "Anaongoza kazi na kufuatilia kanuni hadi kuidhinishwa na kuchapishwa, jambo ambalo kwa kawaida huchukua muda mrefu kuliko uandishi.",
+ "Traz a prática de proteção de dados, define os procedimentos e continua respondendo por eles durante todo o plano.": "Analeta uzoefu wa ulinzi wa data, anaweka taratibu na anaendelea kuwajibika kwazo katika kipindi chote cha mpango.",
+ "Configura as rotinas de cópia, faz os testes periódicos de restauração e registra os resultados.": "Anaweka taratibu za kunakili data, anafanya majaribio ya mara kwa mara ya kurejesha data na kurekodi matokeo.",
+ "(alguns papéis com prazo próprio)": "(baadhi ya majukumu yana muda wake)",
+ "Durante todo o plano": "Katika kipindi chote cha mpango",
+ "Locais sem energia confiável": "Maeneo yasiyo na umeme wa uhakika",
+ "Locais sem internet": "Maeneo yasiyo na intaneti",
+ "Estudantes que já têm dispositivo": "Wanafunzi ambao tayari wana kifaa",
+ "Não, são outras escolas": "Hapana, ni shule nyingine"
 }

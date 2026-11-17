@@ -73,7 +73,7 @@ export function OpcoesV17({ s, frente, cat }: { s: CasoStore; frente: FrenteEsti
   // categorias sem opções e custo por fase) fica aqui.
   const lista = cat ? o.itens.filter(i => i.id === cat) : o.itens;
   return <div className="pv-v17" id="opcoes" tabIndex={-1}>
-    {cat ? null : semFases(frente) ? <div className="pv-v17-campos">{(() => { const campo = <CampoNumero label={t('Duração do plano (meses)')} value={raizOrcamento(s, frente).duracao ?? ''} placeholder={String(DURACAO_GOV_PADRAO)} onChange={v => gravarOrc(frente, 'duracao', v === '' ? undefined : v)} />;
+    {cat ? null : semFases(frente) ? <div className="pv-v17-campos">{(() => { const campo = <CampoNumero label={t('Duração do plano (meses)')} value={raizOrcamento(s, frente).duracao ?? DURACAO_GOV_PADRAO} suggested={raizOrcamento(s, frente).duracao == null} onChange={v => gravarOrc(frente, 'duracao', v === '' ? undefined : v)} />;
       return frente === 'governanca' ? <div className="pc-dica-campo">{campo}<DicaGov chave="Duração do plano (meses)" inicio /></div> : campo; })()}</div>
       : <p className="pv-v17-fases-resumo">{resumoFases(s, frente)} · {o.moeda} · <a href={href.pergunta(4, telaFases(frente))}>{t('Alterar fases')}</a></p>}
     {porGrupo(lista).map(([grupo, itens]) => <section key={grupo} className="pv-v17-grupo">
@@ -105,7 +105,7 @@ export function AdicionaisPaginaV18({ s }: { s: CasoStore }) {
   const frente: FrenteEstimativa = 'governanca', o = orcamentoV16(s, frente), i = o.itens.find(x => x.id === ID_ADICIONAIS);
   const fmt = (v: number) => formatarMoedaEst(v, o.moeda);
   return <div className="pv-v17" id="opcoes" tabIndex={-1}>
-    <div className="pv-v17-campos"><div className="pc-dica-campo"><CampoNumero label={t('Duração do plano (meses)')} value={raizOrcamento(s, frente).duracao ?? ''} placeholder={String(DURACAO_GOV_PADRAO)}
+    <div className="pv-v17-campos"><div className="pc-dica-campo"><CampoNumero label={t('Duração do plano (meses)')} value={raizOrcamento(s, frente).duracao ?? DURACAO_GOV_PADRAO} suggested={raizOrcamento(s, frente).duracao == null}
       onChange={v => gravarOrc(frente, 'duracao', v === '' ? undefined : v)} /><DicaGov chave="Duração do plano (meses)" inicio /></div></div>
     {i ? <section className="pv-v17-grupo"><div className="pv-v17-cat">
       <div className="pv-v17-cat-cab"><h3 className="pv-v17-cat-nome">{nomeCat(i)}<DicaGov chave={nomeGovPt(i.id)} nome={nomeCat(i)} inicio /></h3><span className="pv-v17-cat-total">{i.valor === null ? '—' : fmt(i.valor)}</span></div>
@@ -180,7 +180,7 @@ function LinhaValor({ s, frente, cat, l, moeda }: { s: CasoStore; frente: Frente
  *  pedido, pessoas e custo mensal de cada papel. Os detalhes de cada papel ficam em "Como foi calculado". */
 function EquipeV18({ l, moeda, atual, gravar }: { l: LinhaOpcao; moeda: string; atual: () => any; gravar: (campo: string, v: unknown) => void }) {
   const n2 = (v: number) => new Intl.NumberFormat(String(LOC()), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
-  const gravarPapel = (papel: string, campo: 'qtd' | 'unit' | 'existente', v: number | '' | boolean) => { const ps = { ...(atual().papeis || {}) }; ps[papel] = { ...(ps[papel] || {}), [campo]: v === '' || v === false ? undefined : v }; gravar('papeis', ps); };
+  const gravarPapel = (papel: string, campo: 'qtd' | 'unit' | 'existente' | 'meses', v: number | '' | boolean) => { const ps = { ...(atual().papeis || {}) }; ps[papel] = { ...(ps[papel] || {}), [campo]: v === '' || v === false ? undefined : v }; gravar('papeis', ps); };
   const salvo = atual(), time = l.time || [];
   return <>
     {l.continua ? null : <div className="pv-v17-campos"><CampoNumero label={t('Meses de trabalho')} value={l.horas ?? ''} suggested={!(salvo.horas > 0)} decimais onChange={v => gravar('horas', v)} /></div>}
@@ -188,9 +188,11 @@ function EquipeV18({ l, moeda, atual, gravar }: { l: LinhaOpcao; moeda: string; 
     <details className="pv-equipe">
       <summary>{t('Ajustar a equipe')}</summary>
       {time.filter(p => !p.extra).map(p => <div key={p.papel} className="pv-equipe-papel" role="group" aria-label={t(p.papel)}>
-        <p className="pv-equipe-nome"><b>{t(p.papel)}</b> <span>{Math.round(p.dedicacao * 100)}% · {t(NOME_PERFIL[p.perfil])}{p.especialista ? ' · ' + t('prêmio de especialista') : ''}</span></p>
+        <p className="pv-equipe-nome"><b>{t(p.papel)}</b> <span>{Math.round(p.dedicacao * 100)}% · {t(NOME_PERFIL[p.perfil])}{p.especialista ? ' · ' + t('prêmio de especialista') : ''}{p.prazo === 'plano' && !l.continua ? ' · ' + t('Durante todo o plano') : ''}</span></p>
         <div className="pv-v17-campos">
           <CampoNumero label={t('Pessoas')} value={p.qtdInformada ? p.qtd : ''} placeholder={String(p.qtdRef)} decimais onChange={v => gravarPapel(p.papel, 'qtd', v)} />
+          {/* v022.1: meses de cada papel (o prazo próprio ou o da opção), na opção de trabalho pontual */}
+          {l.continua || p.prazo === 'plano' ? null : <CampoNumero label={t('Meses')} value={p.mesesInformado ? p.meses ?? '' : ''} placeholder={p.mesesRef == null ? undefined : String(p.mesesRef)} decimais onChange={v => gravarPapel(p.papel, 'meses', v)} />}
           <CampoNumero label={t('Custo mensal por pessoa') + ' (' + moeda + ')'} value={p.daRef ? '' : p.unit ?? ''} placeholder={p.ref === null ? undefined : n2(p.ref)} decimais
             hint={p.ref === null ? undefined : p.salPais ? t(p.especialista ? 'Vazio = salário do país (ILOSTAT) com encargos e prêmio de especialista.' : 'Vazio = salário do país (ILOSTAT) com encargos.') : t('Vazio = mediana mundial do ILOSTAT.')} onChange={v => gravarPapel(p.papel, 'unit', v)} />
         </div>
@@ -257,7 +259,7 @@ function AdicionaisV18({ s, linhas, moeda }: { s: CasoStore; linhas: LinhaOpcao[
       </div>
       <p className="pv-campo-titulo" aria-hidden="true">{t(q.pergunta)}</p>
       <OptionCardGroup className={'pc-lit-opcoes ' + (q.opcoes.length > 2 ? 'pv-opcoes-coluna' : 'pv-opcoes-linha')} label={t(q.pergunta)} type="radio">
-        {q.opcoes.map(([id, txt]) => <OptionCard key={id} name={'adic-' + a.chave} value={id} type="radio" label={t(txt)} checked={salvo[q.campo] === id}
+        {q.opcoes.map(([id, txt]) => <OptionCard key={id} name={'adic-' + a.chave} value={id} type="radio" label={t(txt)} checked={(salvo[q.campo] ?? q.padrao) === id}
           onChange={() => gravar(q.campo, id)} />)}
       </OptionCardGroup>
       {l.naoAplica ? <p className="pc-nota">{l.memoria}</p> : <>
@@ -283,7 +285,7 @@ function FormacaoAd({ l, salvo, gravar, moeda }: { l: LinhaOpcao; salvo: SalvoAd
     </div>
     <p className="pv-campo-titulo" aria-hidden="true">{t(FORMACAO_AD.pergunta)}</p>
     <OptionCardGroup className="pc-lit-opcoes pv-opcoes-linha" label={t(FORMACAO_AD.pergunta)} type="radio">
-      {FORMACAO_AD.opcoes.map(([id, txt]) => <OptionCard key={id} name="adic-formacao" value={id} type="radio" label={t(txt)} checked={salvo.temFormacao === id} onChange={() => gravar('temFormacao', id)} />)}
+      {FORMACAO_AD.opcoes.map(([id, txt]) => <OptionCard key={id} name="adic-formacao" value={id} type="radio" label={t(txt)} checked={(salvo.temFormacao ?? 'nao') === id} onChange={() => gravar('temFormacao', id)} />)}
     </OptionCardGroup>
     {l.naoAplica ? <p className="pc-nota">{l.memoria}</p> : <>
       <div className="pv-v17-campos">
@@ -327,7 +329,7 @@ export function ValoresV17({ s, frente }: { s: CasoStore; frente: FrenteEstimati
   const o = orcamentoV16(s, frente), fmt = (v: number) => formatarMoedaEst(v, o.moeda);
   if (!o.itens.length) return <p className="pc-nota">{t('Volte e escolha pelo menos uma categoria de custo.')}</p>;
   return <div className="pv-v17" id="valores" tabIndex={-1}>
-    {semFases(frente) ? <div className="pv-v17-campos"><CampoNumero label={t('Duração do plano (meses)')} value={raizOrcamento(s, frente).duracao ?? ''} placeholder={String(DURACAO_GOV_PADRAO)} onChange={v => gravarOrc(frente, 'duracao', v === '' ? undefined : v)} /></div>
+    {semFases(frente) ? <div className="pv-v17-campos"><CampoNumero label={t('Duração do plano (meses)')} value={raizOrcamento(s, frente).duracao ?? DURACAO_GOV_PADRAO} suggested={raizOrcamento(s, frente).duracao == null} onChange={v => gravarOrc(frente, 'duracao', v === '' ? undefined : v)} /></div>
       : <p className="pv-v17-fases-resumo">{resumoFases(s, frente)} · {o.moeda} · <a href={href.pergunta(4, telaFases(frente))}>{t('Alterar fases')}</a></p>}
     {porGrupo(o.itens).map(([grupo, itens]) => <section key={grupo} className="pv-v17-grupo">
       {grupo ? <h2 className="pv-v17-desafio">{grupo}</h2> : null}

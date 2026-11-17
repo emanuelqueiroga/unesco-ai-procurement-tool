@@ -13,7 +13,7 @@ import { useCaso } from '../store';
 import { MET_ED, NOTA_PDF_ED, PLANILHA_ED } from '../percurso/metodologiaEd';
 import { FORMULAS_MET_ED } from '../percurso/formulasMetEd';
 import { COMPONENTES, CATEGORIAS_ED, DESAFIOS_ED, FASES_PADRAO, ESCOLAS_POC, PILOTO_MIN, PILOTO_MAX, SIM, type CompDef, type ParamDef } from '../percurso/educacaoV20';
-import { FONTES_ED, DEFICIENCIA_MUNDO, NIVEIS_DESAFIO, semEnergiaPais, semInternetPais, razaoPais, deficienciaPais, precoPais, paramPais, origemTexto, nomesNiveis, type ValorPais } from '../percurso/educacaoPais';
+import { FONTES_ED, nomeFonteEd, DEFICIENCIA_MUNDO, NIVEIS_DESAFIO, semEnergiaPais, semInternetPais, razaoPais, deficienciaPais, precoPais, paramPais, origemTexto, nomesNiveis, type ValorPais } from '../percurso/educacaoPais';
 import { ESCOLAS_UIS, RAZAO_UIS, KWH_PAIS, BANDA_UIT, MOVEL_UIT, PVOUT, DEFICIENCIA_UNICEF } from '../percurso/educacaoDados';
 import { PAPEIS_ESPECIALISTA, premioEspecialista } from '../percurso/equipesGov';
 import { NOME_PERFIL } from '../percurso/custosV017';
@@ -61,12 +61,12 @@ function LinhaCatalogo({ def, l }: { def: CompDef; l: L }) {
   const num = (v: number) => new Intl.NumberFormat(loc, { maximumFractionDigits: 4 }).format(v);
   const val = (pd: ParamDef) => { const p = pd.padrao, u = pd.pct ? '%' : '';
     let s = typeof p === 'number' ? num(p) + u : `${t('Com IA')} ${num(p.com)}${u} · ${t('Sem IA')} ${num(p.sem)}${u}`;
-    if (pd.pais) return `${r(l, 'doPais')}: ${FONTE_PARAM[pd.pais] || pd.pais} (${r(l, 'mediana')})`;
+    if (pd.pais) return `${r(l, 'doPais')}: ${FONTE_PARAM[pd.pais] ? nomeFonteEd(FONTE_PARAM[pd.pais], l) : pd.pais} (${r(l, 'mediana')})`;
     if (pd.porDesafio) s += ` (${r(l, 'porDesafio')}: ${Object.entries(pd.porDesafio).map(([d, v]) => d + ' ' + num(v) + u).join(', ')})`;
     return s; };
   const pr = def.preco;
   const preco = pr ? (pr.perfil ? r(l, pr.hora ? 'perfilH' : 'perfilM', { g: pr.perfil + ' · ' + t(NOME_PERFIL[pr.perfil]) })
-    : pr.pais ? `${r(l, 'doPais')}: ${FONTE_PRECO[pr.pais] || pr.pais} (${r(l, 'mediana')})`
+    : pr.pais ? `${r(l, 'doPais')}: ${FONTE_PRECO[pr.pais] ? nomeFonteEd(FONTE_PRECO[pr.pais], l) : pr.pais} (${r(l, 'mediana')})`
     : `${typeof pr.padrao === 'number' ? usd(pr.padrao) : `${t('Com IA')} ${usd(pr.padrao.com)} · ${t('Sem IA')} ${usd(pr.padrao.sem)}`}${pr.porArq ? ' (' + r(l, 'porArq') + ': ' + Object.entries(pr.porArq).map(([a, v]) => a + ' ' + usd(v)).join(', ') + ')' : ''}; ${pr.pais ? r(l, 'doPais') + ': ' + (FONTE_PRECO[pr.pais] || pr.pais) : pr.local ? r(l, 'local') : r(l, 'intl')}${pr.mult ? '; ' + r(l, 'mult') : ''}`) : '';
   const premio = premioEspecialista().pct;
   return <section id={'met-' + def.id} className="pc-met-linha" aria-label={t(def.nome)}>
@@ -85,8 +85,8 @@ function LinhaCatalogo({ def, l }: { def: CompDef; l: L }) {
     </dl>
   </section>;
 }
-const FONTE_PRECO: Record<string, string> = { kwh: FONTES_ED.kwh.nome, mbps: FONTES_ED.banda.nome, gb: FONTES_ED.movel.nome };
-const FONTE_PARAM: Record<string, string> = { pvout: FONTES_ED.pvout.nome, velBanda: FONTES_ED.banda.nome };
+const FONTE_PRECO: Record<string, typeof FONTES_ED[keyof typeof FONTES_ED]> = { kwh: FONTES_ED.kwh, mbps: FONTES_ED.banda, gb: FONTES_ED.movel };
+const FONTE_PARAM: Record<string, typeof FONTES_ED[keyof typeof FONTES_ED]> = { pvout: FONTES_ED.pvout, velBanda: FONTES_ED.banda };
 
 export function MetodologiaEducacao({ foco }: { foco?: string }) {
   const l: L = getLang() === 'pt' ? 'pt' : 'en', M = MET_ED, loc = String(LOC());
@@ -97,17 +97,17 @@ export function MetodologiaEducacao({ foco }: { foco?: string }) {
   const usd = (v: number) => new Intl.NumberFormat(loc, { style: 'currency', currency: 'USD', maximumFractionDigits: 4 }).format(v);
   const n = (o: object) => Object.keys(o).length;
   const linhasDados: [string, string, string, number, string, string][] = [
-    [l === 'pt' ? 'Locais sem energia (%)' : 'Sites without electricity (%)', l === 'pt' ? 'Público: condições de partida; 2.1 Energia' : 'Population: starting conditions; 2.1 Energy', FONTES_ED.uisEscolas.nome + '; 100 − SCHBSP.x.WELEC', n(ESCOLAS_UIS), 'A', l === 'pt' ? 'mediana do grupo do FMI (B)' : 'IMF group median (B)'],
-    [l === 'pt' ? 'Locais sem internet (%)' : 'Sites without internet (%)', l === 'pt' ? 'Público: condições de partida; 2.2 Conectividade; 2.4 servidores locais' : 'Population: starting conditions; 2.2 Connectivity; 2.4 local servers', FONTES_ED.uisEscolas.nome + '; 100 − SCHBSP.x.WINTERN', n(ESCOLAS_UIS), 'A', l === 'pt' ? 'mediana do grupo do FMI (B)' : 'IMF group median (B)'],
-    [l === 'pt' ? 'Estudantes por professor' : 'Pupils per teacher', l === 'pt' ? 'Público: professores sugeridos' : 'Population: suggested teachers', FONTES_ED.uisRazao.nome, n(RAZAO_UIS), 'A (C31, C37: B)', l === 'pt' ? 'mediana do grupo do FMI (B)' : 'IMF group median (B)'],
-    [l === 'pt' ? 'Estudantes com deficiência (%)' : 'Students with disabilities (%)', l === 'pt' ? 'Público; 2.3 assistivos; 3.3 apoio; 4.4 acessíveis' : 'Population; 2.3 assistive; 3.3 support; 4.4 accessible', FONTES_ED.unicef.nome, n(DEFICIENCIA_UNICEF), 'A', (l === 'pt' ? 'estimativa mundial do UNICEF, ' : 'UNICEF world estimate, ') + num(DEFICIENCIA_MUNDO, 1) + '% (B)'],
-    [l === 'pt' ? 'Preço do kWh' : 'Price per kWh', '2.1 ' + t('Consumo de eletricidade'), FONTES_ED.kwh.nome, n(KWH_PAIS), 'B', l === 'pt' ? 'mediana do grupo do FMI (B)' : 'IMF group median (B)'],
-    [l === 'pt' ? 'Produção solar por kW (kWh/dia)' : 'Solar output per kW (kWh/day)', '2.1 ' + t('Sistemas de energia nos locais sem energia'), FONTES_ED.pvout.nome, n(PVOUT), 'A', l === 'pt' ? 'mediana do grupo do FMI (B)' : 'IMF group median (B)'],
-    [l === 'pt' ? 'Preço por Mbps e banda mínima' : 'Price per Mbps and minimum bandwidth', '2.2 ' + t('Mensalidade de internet'), FONTES_ED.banda.nome + (l === 'pt' ? '; preço da cesta ÷ velocidade' : '; basket price ÷ speed'), n(BANDA_UIT), 'B', l === 'pt' ? 'mediana do grupo do FMI (B)' : 'IMF group median (B)'],
-    [l === 'pt' ? 'Preço do GB de dados móveis' : 'Price per GB of mobile data', '2.2 ' + t('Dados móveis para estudar em casa'), FONTES_ED.movel.nome + (l === 'pt' ? '; preço da cesta ÷ franquia' : '; basket price ÷ allowance'), n(MOVEL_UIT), 'A', l === 'pt' ? 'mediana do grupo do FMI (B)' : 'IMF group median (B)'],
-    [l === 'pt' ? 'Salários por perfil' : 'Salaries by profile', l === 'pt' ? 'Todas as linhas de pessoas e horas de perfis' : 'All people and profile-hour lines', 'ILOSTAT (DF_EAR_EMTA_SEX_OCU_CUR_NB), FMI (inflação), SSA (encargos)', 0, 'B', l === 'pt' ? 'mediana mundial do perfil' : 'world median of the profile'],
-    [l === 'pt' ? 'Nível de preços' : 'Price level', l === 'pt' ? 'Serviços locais sem dado do país' : 'Local services without country data', 'Banco Mundial, PA.NUS.PRVT.PP ÷ PA.NUS.FCRF', 0, 'A', l === 'pt' ? 'mediana do grupo do FMI' : 'IMF group median'],
-    [l === 'pt' ? 'Matrículas' : 'Enrolment', l === 'pt' ? 'Público: estudantes sugeridos (parte por desafio, grau C)' : 'Population: suggested students (share by challenge, grade C)', 'Banco Mundial, SE.PRM.ENRL + SE.SEC.ENRL', 0, 'A', l === 'pt' ? '1 milhão' : '1 million'],
+    [l === 'pt' ? 'Locais sem energia (%)' : 'Sites without electricity (%)', l === 'pt' ? 'Público: condições de partida; 2.1 Energia' : 'Population: starting conditions; 2.1 Energy', nomeFonteEd(FONTES_ED.uisEscolas, l) + '; 100 − SCHBSP.x.WELEC', n(ESCOLAS_UIS), 'A', l === 'pt' ? 'mediana do grupo do FMI (B)' : 'IMF group median (B)'],
+    [l === 'pt' ? 'Locais sem internet (%)' : 'Sites without internet (%)', l === 'pt' ? 'Público: condições de partida; 2.2 Conectividade; 2.4 servidores locais' : 'Population: starting conditions; 2.2 Connectivity; 2.4 local servers', nomeFonteEd(FONTES_ED.uisEscolas, l) + '; 100 − SCHBSP.x.WINTERN', n(ESCOLAS_UIS), 'A', l === 'pt' ? 'mediana do grupo do FMI (B)' : 'IMF group median (B)'],
+    [l === 'pt' ? 'Estudantes por professor' : 'Pupils per teacher', l === 'pt' ? 'Público: professores sugeridos' : 'Population: suggested teachers', nomeFonteEd(FONTES_ED.uisRazao, l), n(RAZAO_UIS), 'A (C31, C37: B)', l === 'pt' ? 'mediana do grupo do FMI (B)' : 'IMF group median (B)'],
+    [l === 'pt' ? 'Estudantes com deficiência (%)' : 'Students with disabilities (%)', l === 'pt' ? 'Público; 2.3 assistivos; 3.3 apoio; 4.4 acessíveis' : 'Population; 2.3 assistive; 3.3 support; 4.4 accessible', nomeFonteEd(FONTES_ED.unicef, l), n(DEFICIENCIA_UNICEF), 'A', (l === 'pt' ? 'estimativa mundial do UNICEF, ' : 'UNICEF world estimate, ') + num(DEFICIENCIA_MUNDO, 1) + '% (B)'],
+    [l === 'pt' ? 'Preço do kWh' : 'Price per kWh', '2.1 ' + t('Consumo de eletricidade'), nomeFonteEd(FONTES_ED.kwh, l), n(KWH_PAIS), 'B', l === 'pt' ? 'mediana do grupo do FMI (B)' : 'IMF group median (B)'],
+    [l === 'pt' ? 'Produção solar por kW (kWh/dia)' : 'Solar output per kW (kWh/day)', '2.1 ' + t('Sistemas de energia nos locais sem energia'), nomeFonteEd(FONTES_ED.pvout, l), n(PVOUT), 'A', l === 'pt' ? 'mediana do grupo do FMI (B)' : 'IMF group median (B)'],
+    [l === 'pt' ? 'Preço por Mbps e banda mínima' : 'Price per Mbps and minimum bandwidth', '2.2 ' + t('Mensalidade de internet'), nomeFonteEd(FONTES_ED.banda, l) + (l === 'pt' ? '; preço da cesta ÷ velocidade' : '; basket price ÷ speed'), n(BANDA_UIT), 'B', l === 'pt' ? 'mediana do grupo do FMI (B)' : 'IMF group median (B)'],
+    [l === 'pt' ? 'Preço do GB de dados móveis' : 'Price per GB of mobile data', '2.2 ' + t('Dados móveis para estudar em casa'), nomeFonteEd(FONTES_ED.movel, l) + (l === 'pt' ? '; preço da cesta ÷ franquia' : '; basket price ÷ allowance'), n(MOVEL_UIT), 'A', l === 'pt' ? 'mediana do grupo do FMI (B)' : 'IMF group median (B)'],
+    [l === 'pt' ? 'Salários por perfil' : 'Salaries by profile', l === 'pt' ? 'Todas as linhas de pessoas e horas de perfis' : 'All people and profile-hour lines', (l === 'pt' ? 'ILOSTAT (DF_EAR_EMTA_SEX_OCU_CUR_NB), FMI (inflação), SSA (encargos)' : 'ILOSTAT (DF_EAR_EMTA_SEX_OCU_CUR_NB), IMF (inflation), SSA (payroll charges)'), 0, 'B', l === 'pt' ? 'mediana mundial do perfil' : 'world median of the profile'],
+    [l === 'pt' ? 'Nível de preços' : 'Price level', l === 'pt' ? 'Serviços locais sem dado do país' : 'Local services without country data', (l === 'pt' ? 'Banco Mundial' : 'World Bank') + ', PA.NUS.PRVT.PP ÷ PA.NUS.FCRF', 0, 'A', l === 'pt' ? 'mediana do grupo do FMI' : 'IMF group median'],
+    [l === 'pt' ? 'Matrículas' : 'Enrolment', l === 'pt' ? 'Público: estudantes sugeridos (parte por desafio, grau C)' : 'Population: suggested students (share by challenge, grade C)', (l === 'pt' ? 'Banco Mundial' : 'World Bank') + ', SE.PRM.ENRL + SE.SEC.ENRL', 0, 'A', l === 'pt' ? '1 milhão' : '1 million'],
   ];
   const ds = ['C32', 'C33', 'C36'];
   const linhasPais: [string, ValorPais | null, string][] = [
@@ -165,7 +165,7 @@ export function MetodologiaEducacao({ foco }: { foco?: string }) {
           <tbody>{linhasDados.map(([v, onde, f, c, g, sem]) => <tr key={v}><th scope="row">{v}</th><td>{onde}</td><td>{f}</td><td>{c || '—'}</td><td>{g}</td><td>{sem}</td></tr>)}</tbody></table>
       </div>
       <p className="pc-nota">{r(l, 'niveis')}: {Object.entries(NIVEIS_DESAFIO).map(([d, x]) => `${d} (${r(l, 'escolasN')}: ${nomesNiveis(x.escolas, t)}; ${r(l, 'razaoN')}: ${nomesNiveis(x.razao, t)})`).join('; ')}.</p>
-      <ul className="pc-met-refs">{Object.values(FONTES_ED).map(f => <li key={f.url + f.nome}>{f.nome} ({r(l, 'licenca')}: {f.licenca}) <a href={f.url} target="_blank" rel="noopener noreferrer">{f.url}</a></li>)}</ul>
+      <ul className="pc-met-refs">{Object.values(FONTES_ED).map(f => <li key={f.url + f.nome}>{nomeFonteEd(f, l)} ({r(l, 'licenca')}: {l === 'pt' ? f.licenca : f.licencaEn}) <a href={f.url} target="_blank" rel="noopener noreferrer">{f.url}</a></li>)}</ul>
 
       <h3 id="med-pais">{M.hPais[l]}: {nomePais(paisDoCaso({ pais: iso }))}</h3>
       <p>{M.pais[l]}</p>
@@ -191,7 +191,7 @@ export function MetodologiaEducacao({ foco }: { foco?: string }) {
       <h3 id="med-graus">{M.hGraus[l]}</h3>
       <p>{M.graus[l]}</p>
       <h3 id="med-refs">{M.hRefs[l]}</h3>
-      <ul className="pc-met-refs">{M.refs.map(([x, u]) => <li key={u}>{x} <a href={u} target="_blank" rel="noopener noreferrer">{u}</a></li>)}</ul>
+      <ul className="pc-met-refs">{M.refs.map(([x, u, en]) => <li key={u}>{l === 'pt' || !en ? x : en} <a href={u} target="_blank" rel="noopener noreferrer">{u}</a></li>)}</ul>
       <p><Button variant="secondary" onClick={() => history.length > 1 ? history.back() : (location.hash = href.plano())}>{r(l, 'voltar')}</Button></p>
     </section>
   </Shell>;

@@ -200,7 +200,7 @@ export const chaveOpcao = (rotulo: string) => rotulo.normalize('NFD').replace(/[
 export interface FaseCalc { id: string; nome: string; meses: number; alcance: number }
 export interface CustoSalvo { tipo?: TipoCusto; qtd?: number; horas?: number; unit?: number; fases?: Record<string, number>;
   /** v018 (equipe de referência): pessoas e custo mensal informados por papel (chave = nome do papel) */
-  papeis?: Record<string, { qtd?: number; unit?: number; existente?: boolean }>;
+  papeis?: Record<string, { qtd?: number; unit?: number; existente?: boolean; meses?: number }>;
   /** v018.1: papéis que a pessoa acrescentou à equipe (entram na mesma conta dos papéis de referência) */
   papeisExtra?: PapelExtra[];
   /** v018.1 (desafio 2): quantidades e valores das partes que não são equipe (chave = id da parte) */
@@ -212,7 +212,9 @@ export interface PapelExtra { id: string; papel: string; perfil: Grupo; qtd: num
 /** v018: um papel da equipe de referência, já com a quantidade, o custo mensal (com encargos) e o custo no plano. */
 export interface PapelCalc extends Papel { qtdRef: number; qtdInformada: boolean; ref: number | null; unit: number | null; daRef: boolean; viaPais: boolean; salPais: boolean; custo: number | null;
   /** v018: papel com prêmio de especialista (IA, dados, segurança digital) */ especialista: boolean; /** v018: servidor que já existe (fora do desembolso novo) */ existente: boolean;
-  /** v018.1: id do papel acrescentado pela pessoa (ausente nos papéis de referência) */ extra?: string }
+  /** v018.1: id do papel acrescentado pela pessoa (ausente nos papéis de referência) */ extra?: string;
+  /** v022.1: meses do papel (o prazo próprio, o da opção ou o informado), o de referência e se a pessoa informou */
+  meses?: number | null; mesesRef?: number | null; mesesInformado?: boolean; mesesProprio?: boolean }
 export interface ParteConta { rotulo: string; valor: string; texto: string; fontes: FonteConta[]; /** link para a página de salários por país */ pagina?: string }
 export interface ContaOpcao { formula: string; partes: ParteConta[] }
 /** v018.1 (desafio 2): um campo da opção (número ou escolha), com o valor salvo e a sugestão. */
@@ -404,8 +406,12 @@ export function calcularTime(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: Cu
     const sal = salDe(p.perfil), especialista = PAPEIS_ESPECIALISTA.has(p.papel), base = sal ? sal.mensal * fator : refMundial(p.perfil);
     const ref = base === null ? null : centavos(base * (especialista ? fPrem : 1));
     const unit = positivo(sv.unit) ? sv.unit : ref, daRef = !positivo(sv.unit) && ref !== null;
-    const custo = unit === null || meses === null ? null : centavos(qtd * p.dedicacao * meses * unit);
-    return { ...p, qtd, qtdRef: p.qtd, qtdInformada, ref, unit, daRef, viaPais: daRef && !!sal, salPais: !!sal, custo, especialista, existente: sv.existente === true };
+    // v022.1: papel com prazo próprio (meses ou o plano todo); a pessoa pode informar os meses de cada papel
+    const mesesRef = continua || p.prazo === 'plano' ? (duracao || null) : typeof p.prazo === 'number' ? p.prazo : meses;
+    const mesesInformado = !continua && p.prazo !== 'plano' && positivo(sv.meses), mp = mesesInformado ? sv.meses as number : mesesRef;
+    const custo = unit === null || mp === null ? null : centavos(qtd * p.dedicacao * mp * unit);
+    return { ...p, qtd, qtdRef: p.qtd, qtdInformada, ref, unit, daRef, viaPais: daRef && !!sal, salPais: !!sal, custo, especialista, existente: sv.existente === true,
+      meses: mp, mesesRef, mesesInformado, mesesProprio: !continua && (p.prazo !== undefined || mesesInformado) };
   });
   // v018.1: papéis acrescentados pela pessoa, com a mesma conta (salário do país do perfil, encargos e prêmio, se marcado)
   for (const x of papeisExtra(salvo)) {
@@ -413,25 +419,32 @@ export function calcularTime(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: Cu
     const ref = base === null ? null : centavos(base * (especialista ? fPrem : 1));
     const unit = positivo(x.unit) ? x.unit : ref, daRef = !positivo(x.unit) && ref !== null;
     const custo = unit === null || meses === null ? null : centavos(x.qtd * x.dedicacao * meses * unit);
-    time.push({ papel: x.papel, perfil: x.perfil, qtd: x.qtd, dedicacao: x.dedicacao, faz: '', qtdRef: 0, qtdInformada: true, ref, unit, daRef, viaPais: daRef && !!sal, salPais: !!sal, custo, especialista, existente: x.existente === true, extra: x.id });
+    time.push({ papel: x.papel, perfil: x.perfil, qtd: x.qtd, dedicacao: x.dedicacao, faz: '', qtdRef: 0, qtdInformada: true, ref, unit, daRef, viaPais: daRef && !!sal, salPais: !!sal, custo, especialista, existente: x.existente === true, extra: x.id, meses, mesesRef: meses, mesesInformado: false, mesesProprio: false });
   }
   const falta: string[] = [];
   if (!fases.length) falta.push(t('as fases do plano'));
   if (meses === null) falta.push(t('meses de trabalho'));
   if (time.some(p => p.unit === null)) falta.push(t('custo mensal por pessoa'));
-  const mensal = time.reduce((n, p) => n + (p.unit === null ? 0 : p.qtd * p.dedicacao * p.unit), 0);
   const porFase: Record<string, number> = {};
+  const outrosPrazos = time.some(p => p.mesesProprio && p.meses !== meses);
   let total: number | null = null, memoria = '';
   const pessoas = time.reduce((n, p) => n + p.qtd, 0), integral = Math.round(time.reduce((n, p) => n + p.qtd * p.dedicacao, 0) * 100) / 100;
   if (!falta.length) {
-    let resta = meses as number;
-    fases.forEach((x, i) => {
-      const m = continua ? x.meses : i === fases.length - 1 ? resta : Math.min(resta, x.meses);
-      if (!continua) resta = Math.max(0, resta - m);
-      porFase[x.id] = centavos(mensal * m);
-    });
+    // cada papel ocupa as primeiras fases até somar os seus meses (o plano todo, no papel contínuo)
+    for (const x of fases) porFase[x.id] = 0;
+    for (const p of time) {
+      if (p.unit === null || !p.meses) continue;
+      const mensalP = p.qtd * p.dedicacao * p.unit, todo = continua || p.prazo === 'plano';
+      let resta = p.meses;
+      fases.forEach((x, i) => {
+        const m = todo ? x.meses : i === fases.length - 1 ? resta : Math.min(resta, x.meses);
+        if (!todo) resta = Math.max(0, resta - m);
+        porFase[x.id] += mensalP * m;
+      });
+    }
+    for (const x of fases) porFase[x.id] = centavos(porFase[x.id]);
     total = centavos(Object.values(porFase).reduce((a, b) => a + b, 0));
-    memoria = t('equipe de {n} pessoas ({e} em tempo integral) × {m} meses', { n: num(pessoas), e: num(integral), m: num(meses as number) })
+    memoria = t('equipe de {n} pessoas ({e} em tempo integral) × {m} meses', { n: num(pessoas), e: num(integral), m: num(meses as number) }) + (outrosPrazos ? ' ' + t('(alguns papéis com prazo próprio)') : '')
       + (time.some(p => p.viaPais) ? ' · ' + t('custo mensal de cada perfil: salário do país (ILOSTAT)') : time.some(p => p.daRef) ? ' · ' + t('mediana mundial do ILOSTAT') : '')
       + (time.some(p => p.especialista && p.daRef) ? ' · ' + t('com prêmio de especialista de {p}%', { p: num(premio.pct) }) : '')
       + (time.some(p => p.viaPais) && fator !== 1 ? ' · ' + t('com encargos do país (× {f})', { f: num(Math.round(fator * 1000) / 1000) }) : '')
@@ -447,7 +460,8 @@ export function calcularTime(s: Pick<Estado14, 'ctx'>, rotulo: string, salvo: Cu
   if (continua && eq.base) partes[partes.length - 1].fontes = fonteEq;
   for (const p of time) {
     const pct = Math.round(p.dedicacao * 100);
-    const quem = t(p.qtd === 1 ? '{q} pessoa, {d}% do tempo' : '{q} pessoas, {d}% do tempo cada', { q: num(p.qtd), d: pct }) + (p.qtdInformada && !p.extra ? ' (' + voce + ')' : '');
+    const quem = t(p.qtd === 1 ? '{q} pessoa, {d}% do tempo' : '{q} pessoas, {d}% do tempo cada', { q: num(p.qtd), d: pct }) + (p.qtdInformada && !p.extra ? ' (' + voce + ')' : '')
+      + (p.mesesProprio && p.meses ? ' · ' + (p.prazo === 'plano' ? t('Durante todo o plano') + ' (' + t('{n} meses', { n: num(p.meses) }) + ')' : t('{n} meses', { n: num(p.meses) }) + (p.mesesInformado ? ' (' + voce + ')' : '')) : '');
     const custoMes = p.unit === null ? '' : ' · ' + t('{v} por mês por pessoa', { v: fmt(p.unit) }) + (p.daRef ? '' : ' (' + voce + ')');
     partes.push({ rotulo: p.extra ? p.papel : t(p.papel), valor: p.custo === null ? '—' : fmt(p.custo), fontes: [],
       texto: quem + ' · ' + t(NOME_PERFIL[p.perfil]) + custoMes + (p.especialista && p.daRef ? ' · ' + t('com prêmio de especialista') : '') + (p.existente ? ' · ' + t('servidor que já existe') : '') + (p.extra ? ' · ' + t('papel acrescentado por você') : '') + '.' + (p.faz ? ' ' + t(p.faz) : '') });
