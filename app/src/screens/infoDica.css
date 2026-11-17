@@ -6,6 +6,16 @@
 .pc-dica-balao { position: absolute; z-index: 40; inset-block-start: calc(100% + 4px); inset-inline-end: 0; inline-size: min(300px, calc(100vw - 48px)); padding: var(--space-3) var(--space-4); background: var(--surface-1); color: var(--ink-2); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-md); font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: normal; text-transform: none; text-align: start; white-space: normal; }
 .pc-dica--inicio .pc-dica-balao { inset-inline-end: auto; inset-inline-start: 0; }
 
+/* v022.1: o "i" como lista do que se abre depois de marcar o item */
+.pc-dica-grupo { display: block; }
+.pc-dica-grupo + .pc-dica-grupo { margin-block-start: var(--space-3); }
+.pc-dica-grupo-titulo { display: block; margin-block-end: 4px; color: var(--ink); font-weight: 600; }
+.pc-dica-lista { display: flex; flex-direction: column; gap: 4px; }
+.pc-dica-item { display: block; position: relative; padding-inline-start: 14px; }
+.pc-dica-item::before { content: '•'; position: absolute; inset-inline-start: 2px; color: var(--muted); }
+.pc-dica-lista--numerada > .pc-dica-item { padding-inline-start: 0; }
+.pc-dica-lista--numerada > .pc-dica-item::before { content: none; }
+
 /* no cartão de opção: o "i" no canto superior, fora do <label> */
 .pc-dica-cartao { position: relative; display: flex; min-width: 0; }
 .pc-dica-cartao > .pr-optioncard { flex: 1; min-width: 0; }

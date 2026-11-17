@@ -17,7 +17,9 @@ import {
 import { fmt } from './ambiente';
 import { CampoNumero } from './CampoNumero';
 import { t, plural } from './textos';
-import { CartaoComDica } from '../screens/InfoDica';
+import { CartaoComDica, CartaoComLista } from '../screens/InfoDica';
+import { explicacaoGov } from './explicacoesGov';
+import { CATEGORIAS as CATEGORIAS_V016 } from '../domain/catalogo_v016.js';
 import { href } from './rota';
 import {
   MAX_POR_CAMPO, linhasDeOndas, ondaEditada, errosDaOnda, avisoOndas, casasDoCampo, valorComCasas, erroDeIntervalo, horizonteDoCaso,
@@ -701,10 +703,14 @@ function ProblemasGov({ e }: { e: Estado14 }) {
         const legados = p.problemas.filter((q: any) => !q.v016 && atual.includes(q.id));
         const cartao = (q: any) => {
           const on = atual.includes(q.id);
-          return <CartaoComDica key={q.id} chave={q.t}><OptionCard type="checkbox" name="problemas" value={q.id}
-            label={<>{t(q.t)}{q.v015 ? (q.desc ? <span className="pr-optioncard-desc">{t(q.desc)}</span> : null) : <span className="pr-optioncard-desc"><span className="pcx-obj">{t('Objetivo:')}</span> {t(q.obj)}</span>}</>}
+          const card = <OptionCard type="checkbox" name="problemas" value={q.id}
+            label={<>{t(q.t)}{q.v016 && explicacaoGov(q.t) ? <span className="pr-optioncard-desc">{t(explicacaoGov(q.t)!)}</span> : q.v015 ? (q.desc ? <span className="pr-optioncard-desc">{t(q.desc)}</span> : null) : <span className="pr-optioncard-desc"><span className="pcx-obj">{t('Objetivo:')}</span> {t(q.obj)}</span>}</>}
             checked={on}
-            onChange={(v, marcado) => grava(problemasDoGrupo(atual, ORDEM_PROBLEMAS, [v], marcado))} /></CartaoComDica>;
+            onChange={(v, marcado) => grava(problemasDoGrupo(atual, ORDEM_PROBLEMAS, [v], marcado))} />;
+          // v022.1: nos desafios atuais, a legenda é a explicação e o "i" lista as categorias que vêm depois
+          if (q.v016) return <CartaoComLista key={q.id} nome={t(q.t)}
+            grupos={[{ titulo: t('Categorias de custo'), numerada: true, itens: ((CATEGORIAS_V016 as any).governanca as any[]).filter(c => c.desafio === q.id).map(c => c.n + ' ' + t(c.nome)) }]}>{card}</CartaoComLista>;
+          return <CartaoComDica key={q.id} chave={q.t}>{card}</CartaoComDica>;
         };
         const ids: string[] = [...atuais, ...legados].map((q: any) => q.id);
         const n = ids.filter((k) => atual.includes(k)).length;

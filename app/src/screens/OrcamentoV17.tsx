@@ -15,7 +15,8 @@ import { alterarLit, lerLit, selecoesLit } from '../percurso/letramento';
 import { ehSugerido } from '../percurso/padroesTeste';
 import { formatarMoedaEst, type FrenteEstimativa } from '../percurso/estimativasOrcamento';
 import { gravarOrc } from './OrcamentoV16';
-import { CartaoComDica, DicaGov } from './InfoDica';
+import { CartaoComLista, DicaGov, type GrupoDica } from './InfoDica';
+import { explicacaoGov } from '../percurso/explicacoesGov';
 import { CATEGORIAS } from '../domain/catalogo_v016.js';
 import { ADICIONAIS, ID_ADICIONAIS, PERGUNTAS_ADICIONAIS, FORMACAO_AD, type SalvoAdicionais } from '../percurso/adicionaisGov';
 import { FORMACAO_GOV } from '../percurso/formacaoGov';
@@ -48,10 +49,12 @@ export function CategoriasV17({ s, frente, desafio }: { s: CasoStore; frente: Fr
     {porGrupo(disponiveis).map(([grupo, cats]) => <section key={grupo} className="pv-v17-grupo">
       {grupo && !desafio ? <h2 className="pv-v17-desafio">{grupo}</h2> : null}
       <OptionCardGroup className="pc-lit-opcoes" label={grupo || t('Categorias de custo')} type="checkbox">
-        {cats.map(c => { const cartao = <OptionCard key={c.id} name="categorias" value={c.id} type="checkbox" checked={sel.includes(c.id)} disabled={categoriaObrigatoria(frente, c.id)} label={nomeCat(c)}
-          subtext={c.opcoes.length ? t('{n} opções', { n: c.opcoes.length }) : undefined} onChange={(id, on) => marcar(id, on)} />;
-          // v018: o "i" de explicação no fluxo da governança
-          return frente === 'governanca' ? <CartaoComDica key={c.id} chave={c.nome} nome={nomeCat(c)}>{cartao}</CartaoComDica> : cartao; })}
+        {cats.map(c => { const gov = frente === 'governanca', exp = gov ? explicacaoGov(c.nome) : undefined;
+          // v022.1 (governança): a legenda é a explicação da categoria e o "i" lista as opções que vêm depois
+          const cartao = <OptionCard key={c.id} name="categorias" value={c.id} type="checkbox" checked={sel.includes(c.id)} disabled={categoriaObrigatoria(frente, c.id)}
+            label={exp ? <>{nomeCat(c)}<span className="pr-optioncard-desc">{t(exp)}</span></> : nomeCat(c)}
+            subtext={!gov && c.opcoes.length ? t('{n} opções', { n: c.opcoes.length }) : undefined} onChange={(id, on) => marcar(id, on)} />;
+          return gov ? <CartaoComLista key={c.id} nome={nomeCat(c)} grupos={[{ titulo: t('Opções'), itens: c.opcoes.map(r => t(r)) }]}>{cartao}</CartaoComLista> : cartao; })}
       </OptionCardGroup>
     </section>)}
   </div>;
@@ -80,10 +83,12 @@ export function OpcoesV17({ s, frente, cat }: { s: CasoStore; frente: FrenteEsti
         {i.id === ID_ADICIONAIS ? <AdicionaisV18 s={s} linhas={i.linhas} moeda={o.moeda} />
         : todosObrigatorios(frente, i.id) ? i.opcoes.map(r => <CampoParametro key={r} s={s} rotulo={r} titulo />)
         : i.opcoes.length ? <OptionCardGroup className="pc-lit-opcoes" label={nomeCat(i)} type="checkbox">
-          {i.opcoes.map(r => { const on = i.marcadas.includes(r), l = i.linhas.find(x => x.rotulo === r);
-            const cartao = <OptionCard key={r} name={'op-' + i.id} value={r} type="checkbox" checked={on} label={t(r)} onChange={(_v, v) => marcar(i, r, v)} />;
-            return [frente === 'governanca' ? <CartaoComDica key={r} chave={r}>{cartao}</CartaoComDica> : cartao,
-              on ? <div key={r + '-abre'} className="pv-v17-abre">{ehParametro(frente, i.id, r) ? <CampoParametro s={s} rotulo={r} /> : l ? <LinhaValor s={s} frente={frente} cat={i.id} l={l} moeda={o.moeda} /> : null}</div> : null]; })}
+          {(() => { const previa = frente === 'governanca' ? previaGov(s, i) : null; return i.opcoes.map(r => { const on = i.marcadas.includes(r), l = i.linhas.find(x => x.rotulo === r);
+            const exp = previa ? explicacaoGov(r) : undefined;
+            // v022.1 (governança): a legenda é a explicação da opção e o "i" lista a equipe e os campos que se abrem ao marcá-la
+            const cartao = <OptionCard key={r} name={'op-' + i.id} value={r} type="checkbox" checked={on} label={exp ? <>{t(r)}<span className="pr-optioncard-desc">{t(exp)}</span></> : t(r)} onChange={(_v, v) => marcar(i, r, v)} />;
+            return [previa ? <CartaoComLista key={r} nome={t(r)} grupos={gruposOpcaoGov(previa.get(r))}>{cartao}</CartaoComLista> : cartao,
+              on ? <div key={r + '-abre'} className="pv-v17-abre">{ehParametro(frente, i.id, r) ? <CampoParametro s={s} rotulo={r} /> : l ? <LinhaValor s={s} frente={frente} cat={i.id} l={l} moeda={o.moeda} /> : null}</div> : null]; }); })()}
         </OptionCardGroup> : i.linhas.map(l => <LinhaValor key={l.chave} s={s} frente={frente} cat={i.id} l={l} moeda={o.moeda} />)}
       </div>)}
     </section>)}
@@ -107,6 +112,26 @@ export function AdicionaisPaginaV18({ s }: { s: CasoStore }) {
       <AdicionaisV18 s={s} linhas={i.linhas} moeda={o.moeda} />
     </div></section> : <p className="pc-nota">{t('Volte e escolha pelo menos uma categoria de custo.')}</p>}
   </div>;
+}
+
+/** v022.1 (governança): as linhas de todas as opções da categoria, como ficariam se fossem marcadas (para o "i"). */
+function previaGov(s: CasoStore, c: CategoriaV16): Map<string, LinhaOpcao> {
+  const raiz = raizOrcamento(s, 'governanca'), itens = raiz.itens || {};
+  const sx: any = { ...s, ctx: { ...s.ctx, govOrcamento: { ...raiz, categorias: [c.id], itens: { ...itens, [c.id]: { ...(itens[c.id] || {}), opcoes: [...c.opcoes] } } } } };
+  const item = orcamentoV16(sx, 'governanca').itens.find(x => x.id === c.id);
+  return new Map((item?.linhas || []).map(l => [l.rotulo, l]));
+}
+
+/** v022.1 (governança): o que se abre ao marcar a opção: os papéis da equipe de referência e os campos a preencher. */
+function gruposOpcaoGov(l?: LinhaOpcao): GrupoDica[] {
+  if (!l) return [];
+  const def = TIPOS[l.tipo], papeis = (l.time || []).filter(p => !p.extra).map(p => t(p.papel));
+  const campos = [
+    ...(l.tipo === 'time' && !l.continua ? [t('Meses de trabalho')] : []),
+    ...(l.entradas || []).map(e => e.rotulo),
+    ...(l.tipo !== 'time' && def.qtd ? [t(def.qtd), ...(def.horas ? [t(def.horasRotulo || 'Horas por pessoa')] : []), ...(def.unit ? [t(def.unit)] : [])] : []),
+  ];
+  return [{ titulo: t('Equipe de referência'), itens: papeis }, { titulo: t('Campos a preencher'), itens: campos }];
 }
 
 function Selecao({ label, value, opcoes, onChange }: { label: string; value: string; opcoes: [string, string][]; onChange: (v: string) => void }) {
