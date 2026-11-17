@@ -78,7 +78,7 @@ function Barra({ d }: { d: DadosCusto }) {
 }
 
 const conhecidos = (d: DadosCusto) => d.informados + d.estimados > 0;
-const explicaEstimado = () => t('Custo já calculado: os valores de referência sugeridos pela ferramenta e os valores que você digitou, que substituem a sugestão. O que ainda não tem valor aparece em "Falta valor".');
+const explicaEstimado = () => t('Custo já calculado: os valores de referência sugeridos pela ferramenta e os valores que você digitou, que substituem a sugestão.');
 
 function rotuloPeriodo(base: string, meses: number | null) { return meses ? base + ' · ' + t('{n} meses', { n: meses }) : base; }
 
@@ -95,20 +95,17 @@ export function CartaoCustoFrente({ d, compacto = false }: { d: DadosCusto; comp
       {p.nota ? <p className="pc-custo-nota">{p.nota}</p> : null}
     </div>
     <Barra d={d} />
-    {/* v022.1: "Informado" e "Estimado" viram uma linha só (Estimado, com o "i"), e o uso fica sempre abaixo de CapEx e OpEx, como no sumário */}
-    {compacto ? <dl className="pc-custo-tres">
+    {/* v022.1: "Informado" e "Estimado" viram uma linha só (Estimado, com o "i"); sai "Falta valor"; o custo de utilidades (o uso do sumário) fica sempre abaixo de CapEx e OpEx */}
+    {compacto ? <dl className="pc-custo-tres pc-custo-tres--dois">
       <div><dt>{t('Estimado')}</dt><dd className="pc-custo-est">{conhecidos(d) ? moedaCurta(d.informado + d.estimado, d.moeda) : '—'}</dd></div>
-      <div><dt>{t('Falta valor')}</dt><dd>{itens(d.faltam)}</dd></div>
-      <div><dt>{t('Uso')}</dt><dd>{moedaCurta(d.uso || 0, d.moeda)}</dd></div>
+      <div><dt>{t('Custo de utilidades')}</dt><dd>{moedaCurta(d.uso || 0, d.moeda)}</dd></div>
     </dl> : <dl className="pc-custo-lista">
       <dt><i className="pc-custo-marca pc-custo-marca--est" aria-hidden="true" />{t('Estimado')}<InfoDica nome={t('Estimado')} texto={explicaEstimado()} /></dt>
       <dd className="pc-custo-est">{conhecidos(d) ? formatarMoedaEst(d.informado + d.estimado, d.moeda) : '—'}</dd>
-      <dt><i className="pc-custo-marca pc-custo-marca--lev" aria-hidden="true" />{t('Falta valor')}</dt>
-      <dd>{itens(d.faltam)}</dd>
       {d.capex !== undefined && d.opex !== undefined ? <>
         <dt>{t('Investimento (CapEx)')}</dt><dd>{formatarMoedaEst(d.capex, d.moeda)}</dd>
         <dt>{t('Operação (OpEx)')}</dt><dd>{formatarMoedaEst(d.opex, d.moeda)}</dd>
-        <dt>{t('Uso')}</dt><dd>{formatarMoedaEst(d.uso || 0, d.moeda)}</dd>
+        <dt>{t('Custo de utilidades')}</dt><dd>{formatarMoedaEst(d.uso || 0, d.moeda)}</dd>
       </> : null}
     </dl>}
     {!compacto && d.fases?.length && !(d.fases.length === 1 && d.fases[0].id === 'total') ? <dl className="pc-custo-fases" aria-label={t('Custo por fase')}>{d.fases.map(f => <div key={f.id}><dt>{f.nome}</dt><dd>{f.informado + f.estimado ? moedaCurta(f.informado + f.estimado, d.moeda) : '—'}</dd></div>)}</dl> : null}

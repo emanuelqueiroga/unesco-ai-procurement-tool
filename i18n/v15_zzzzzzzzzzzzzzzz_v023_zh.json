@@ -20,6 +20,7 @@
  "Viagens, custos indiretos e taxa administrativa das duas prioridades": "两个优先事项的差旅、间接成本和管理费",
  "O que inclui: {nome}": "包含内容：{nome}",
  "Campos a preencher": "需填写的字段",
- "Custo já calculado: os valores de referência sugeridos pela ferramenta e os valores que você digitou, que substituem a sugestão. O que ainda não tem valor aparece em \"Falta valor\".": "已计算的成本：工具建议的参考值，以及您填写的数值（会取代建议值）。尚无数值的项目显示在“缺少金额”中。",
- "Estimado {est}, {n} sem valor": "估算 {est}，{n} 项无金额"
+ "Estimado {est}, {n} sem valor": "估算 {est}，{n} 项无金额",
+ "Custo já calculado: os valores de referência sugeridos pela ferramenta e os valores que você digitou, que substituem a sugestão.": "已计算的成本：工具建议的参考值，以及您填写的数值（会取代建议值）。",
+ "Custo de utilidades": "使用量成本"
 }

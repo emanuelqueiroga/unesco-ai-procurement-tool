@@ -137,6 +137,7 @@ a.pc-frente-pilula:hover { border-color: var(--primary); color: var(--ink); }
 .pc-custo--compacto .pc-custo-total { font-size: 26px; line-height: 32px; text-align: end; }
 .pc-custo--compacto .pc-custo-nota { grid-column: 1 / -1; font-size: 13px; line-height: 18px; }
 .pc-custo-tres { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pc-custo-tres--dois { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .pc-custo-tres > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .pc-custo-tres dt { font-size: 13px; line-height: 18px; color: var(--on-night-2); }
 .pc-custo-tres dd { margin: 0; font-size: 14px; line-height: 20px; font-weight: 700; overflow-wrap: anywhere; }

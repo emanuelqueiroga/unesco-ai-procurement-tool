@@ -20,6 +20,7 @@
  "Viagens, custos indiretos e taxa administrativa das duas prioridades": "Travel, indirect costs and administrative fee for both priorities",
  "O que inclui: {nome}": "What it includes: {nome}",
  "Campos a preencher": "Fields to fill in",
- "Custo já calculado: os valores de referência sugeridos pela ferramenta e os valores que você digitou, que substituem a sugestão. O que ainda não tem valor aparece em \"Falta valor\".": "Cost already calculated: the reference values suggested by the tool and the values you entered, which replace the suggestion. Anything that still has no value appears under \"Amount missing\".",
- "Estimado {est}, {n} sem valor": "Estimated {est}, {n} without a value"
+ "Estimado {est}, {n} sem valor": "Estimated {est}, {n} without a value",
+ "Custo já calculado: os valores de referência sugeridos pela ferramenta e os valores que você digitou, que substituem a sugestão.": "Cost already calculated: the reference values suggested by the tool and the values you entered, which replace the suggestion.",
+ "Custo de utilidades": "Utility cost"
 }
