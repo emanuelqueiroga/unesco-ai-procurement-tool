@@ -43,5 +43,6 @@
  "Os valores da educação são os da alternativa com IA. A alternativa sem IA soma {v}.": "教育数值为使用人工智能方案的数值。不使用人工智能方案合计 {v}。",
  "Resumo do investimento": "投资摘要",
  "Salvaguardas, soberania e capacidade do setor público": "保障措施、主权和公共部门能力",
- "Todos os valores cobrem o período completo do plano.": "所有金额涵盖整个计划期。"
+ "Todos os valores cobrem o período completo do plano.": "所有金额涵盖整个计划期。",
+ "Custo de utilidades: {v}, {p} do total. É o consumo medido (nuvem, energia, internet e dados), que cresce com o volume de uso.": "使用量成本：{v}，占总额的 {p}。这是计量消耗（云服务、电力、互联网和数据），随使用量增长。"
 }

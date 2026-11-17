@@ -46,5 +46,6 @@
  "Os valores da educação são os da alternativa com IA. A alternativa sem IA soma {v}.": "Education figures are those of the with-AI alternative. The without-AI alternative totals {v}.",
  "Resumo do investimento": "Investment summary",
  "Salvaguardas, soberania e capacidade do setor público": "Safeguards, sovereignty and public-sector capacity",
- "Todos os valores cobrem o período completo do plano.": "All amounts cover the full plan period."
+ "Todos os valores cobrem o período completo do plano.": "All amounts cover the full plan period.",
+ "Custo de utilidades: {v}, {p} do total. É o consumo medido (nuvem, energia, internet e dados), que cresce com o volume de uso.": "Utility cost: {v}, {p} of the total. It is metered consumption (cloud, electricity, internet and data), which grows with the volume of use."
 }

@@ -46,5 +46,6 @@
  "Os valores da educação são os da alternativa com IA. A alternativa sem IA soma {v}.": "Les montants de l’éducation sont ceux de l’alternative avec IA. L’alternative sans IA totalise {v}.",
  "Resumo do investimento": "Résumé de l’investissement",
  "Salvaguardas, soberania e capacidade do setor público": "Garanties, souveraineté et capacités du secteur public",
- "Todos os valores cobrem o período completo do plano.": "Tous les montants couvrent toute la durée du plan."
+ "Todos os valores cobrem o período completo do plano.": "Tous les montants couvrent toute la durée du plan.",
+ "Custo de utilidades: {v}, {p} do total. É o consumo medido (nuvem, energia, internet e dados), que cresce com o volume de uso.": "Coût de consommation (utility) : {v}, {p} du total. C’est la consommation mesurée (cloud, électricité, internet et données), qui augmente avec le volume d’utilisation."
 }

@@ -59,7 +59,7 @@ function escritor(doc: any, cabecalho: string) {
     const xk = (i: number) => M + colNome + colW * (fases.length + i + 1) - 4;
     const linhaCab = () => { cabe(24); doc.setFillColor(...C.cab); doc.rect(M, y - 11, W - M * 2, 18, 'F'); fonte(8, true);
       doc.text(pdfTxt(t('Categoria')), M + 4, y); fases.forEach((f, i) => doc.text(pdfTxt(f.nome), M + colNome + colW * (i + 1) - 4, y, { align: 'right' }));
-      if (ck) { doc.text('CapEx', xk(0), y, { align: 'right' }); doc.text('OpEx', xk(1), y, { align: 'right' }); doc.text(pdfTxt(t('Uso')), xk(2), y, { align: 'right' }); }
+      if (ck) { doc.text('CapEx', xk(0), y, { align: 'right' }); doc.text('OpEx', xk(1), y, { align: 'right' }); doc.text(pdfTxt(t('Custo de utilidades')), xk(2), y, { align: 'right' }); }
       doc.text(pdfTxt(t('Total')), W - M - 4, y, { align: 'right' }); y += 14; };
     linhaCab();
     let grupo = '';
@@ -200,28 +200,45 @@ export async function gerarPDFFrenteV16(s: Estado14, opts: { frente: FrenteEstim
     const inst = instituicaoV16(v), pais = nomePais(paisDoCaso(v.caso));
     w.cab(); w.texto(rotulo, 10, true, PDF_COR.muted); w.avancar(14); w.texto(p.titulo, 20, true); w.texto([inst, pais].filter(Boolean).join(' · ') || t('País a definir'), 12); w.avancar(6);
     const gov = opts.frente === 'governanca';
-    w.titulo(t(gov ? 'Sumário executivo' : 'Em resumo')); w.texto(resumoProsa(o), 10.5);
-    const sm = gov ? sumarioCapex(o) : null;
-    if (sm) { w.texto(sm.intro, 10); w.sintese([[t('Investimento (CapEx)'), curta(o.capex, o.moeda)], [t('Operação (OpEx)'), curta(o.opex, o.moeda)], [t('Uso'), curta(o.uso || 0, o.moeda)], [t('Total'), curta(totalConhecido(o), o.moeda)]]); w.lista(sm.tipos); for (const x of sm.fecho) w.texto(x, 10); }
-    if (opts.frente === 'governanca' && o.existentes > 0) w.texto(t('Desembolso novo: {v}. O custo conhecido inclui {e} de servidores que já existem, marcados em "Ajustar a equipe".', { v: formatarMoedaEst(totalConhecido(o) - o.existentes, o.moeda), e: formatarMoedaEst(o.existentes, o.moeda) }), 10);
-    // v022.1: resumo do investimento por prioridade (do caso inteiro: no percurso combinado, governança e educação)
-    if (opts.tipo === 'brief') { const ri = resumoInvestimento(s as any);
-      if (ri && ri.prioridades.length) {
-        const cf = (v: number) => curta(v, ri.moeda), cab = (p: string, m: number) => [p, 'CapEx', 'OpEx', t('Custo de utilidades'), t('Total') + ' (' + t('{n} meses', { n: m }) + ')'];
-        const cels = (l: LinhaInvestimento, nome: string) => [nome, l.semValor ? t('falta valor') : cf(l.k), l.semValor ? '—' : cf(l.x), l.semValor ? '—' : cf(l.u), l.semValor ? '—' : cf(l.total)];
-        w.titulo(t('Resumo do investimento'));
-        w.texto((ri.mesesIguais ? t('Orçamento de {n} meses · {moeda}', { n: ri.meses, moeda: ri.moeda }) : t('Orçamento de até {n} meses · {moeda}', { n: ri.meses, moeda: ri.moeda })) + '. ' + t('Todos os valores cobrem o período completo do plano.'), 10);
-        w.avancar(6);
-        w.tabelaSimples(cab(t('Prioridade'), ri.meses), [...ri.prioridades.map(p => ({ cels: cels(p, p.rotulo), sub: p.descricao + (ri.mesesIguais ? '' : ' · ' + t('{n} meses', { n: p.meses })) })), { cels: cels(ri.total, t('Total')), forte: true }]);
-        w.texto(t('Investimento total') + ': ' + formatarMoedaEst(ri.total.total, ri.moeda) + (ri.pctOperacaoUso === null ? '' : ' · ' + t('{p}% vai para operação e uso', { p: ri.pctOperacaoUso })), 10.5, true);
-        for (const p of ri.prioridades) {
-          w.titulo(p.rotulo + ' · ' + t('{n} meses', { n: p.meses }), 11);
-          w.tabelaSimples(cab(t('Categoria'), p.meses), [...p.categorias.map(c => ({ cels: cels(c, c.rotulo) })), { cels: cels(p, t('Total')), forte: true }]);
-          if (p.semIA !== undefined) w.texto(t('Os valores da educação são os da alternativa com IA. A alternativa sem IA soma {v}.', { v: formatarMoedaEst(p.semIA, ri.moeda) }), 8.5, false, PDF_COR.muted);
-        }
-        w.texto(t('O OpEx não inclui o consumo medido, que aparece em custo de utilidades. Custos compartilhados entram uma vez só.'), 8.5, false, PDF_COR.muted);
-      } }
-    w.titulo(t(opts.frente === 'governanca' ? 'Custo por categoria e opção: investimento, operação e uso' : 'Custo por categoria e fase')); w.tabela(o);
+    // v022.1 (governança): o sumário executivo começa com a tabela geral (uma linha por prioridade), depois o texto que
+    // explica os tipos de custo e, por fim, as tabelas com os custos específicos de cada prioridade
+    const ri = gov ? resumoInvestimento(s as any) : null;
+    if (ri && ri.prioridades.length) {
+      const cf = (v: number) => curta(v, ri.moeda), fm = (v: number) => formatarMoedaEst(v, ri.moeda);
+      const cab = (p: string, m: number) => [p, 'CapEx', 'OpEx', t('Custo de utilidades'), t('Total') + ' (' + t('{n} meses', { n: m }) + ')'];
+      const cels = (l: LinhaInvestimento, nome: string) => [nome, l.semValor ? t('falta valor') : cf(l.k), l.semValor ? '—' : cf(l.x), l.semValor ? '—' : cf(l.u), l.semValor ? '—' : cf(l.total)];
+      w.titulo(t('Sumário executivo'));
+      w.texto((ri.mesesIguais ? t('Orçamento de {n} meses · {moeda}', { n: ri.meses, moeda: ri.moeda }) : t('Orçamento de até {n} meses · {moeda}', { n: ri.meses, moeda: ri.moeda })) + '. ' + t('Todos os valores cobrem o período completo do plano.'), 10);
+      w.avancar(6);
+      w.tabelaSimples(cab(t('Prioridade'), ri.meses), [...ri.prioridades.map(p => ({ cels: cels(p, p.rotulo), sub: p.descricao + (ri.mesesIguais ? '' : ' · ' + t('{n} meses', { n: p.meses })) })), { cels: cels(ri.total, t('Total')), forte: true }]);
+      w.texto(t('Investimento total') + ': ' + fm(ri.total.total) + (ri.pctOperacaoUso === null ? '' : ' · ' + t('{p}% vai para operação e uso', { p: ri.pctOperacaoUso })), 10.5, true);
+      // texto explicativo dos custos
+      const T = ri.total.total, pc = (v: number) => T > 0 ? new Intl.NumberFormat(String(LOC()), { style: 'percent', maximumFractionDigits: 0 }).format(v / T) : '—';
+      if (T > 0) {
+        w.avancar(4);
+        w.texto(t('O plano soma {total} em {meses} meses, divididos em três tipos de custo que pedem decisões orçamentárias diferentes.', { total: fm(T), meses: ri.meses }), 10);
+        w.lista([t('Investimento (CapEx): {v}, {p} do total. É a compra de ativos e a implantação de sistemas, plataformas, integrações e migração, que criam algo que dura além do plano.', { v: fm(ri.total.k), p: pc(ri.total.k) }),
+          t('Operação (OpEx): {v}, {p} do total. É o custo corrente: o trabalho das equipes, os serviços e licenças contratados e os custos adicionais (viagens, overhead, taxa administrativa e formação).', { v: fm(ri.total.x), p: pc(ri.total.x) }),
+          t('Custo de utilidades: {v}, {p} do total. É o consumo medido (nuvem, energia, internet e dados), que cresce com o volume de uso.', { v: fm(ri.total.u), p: pc(ri.total.u) })]);
+        w.texto(t('Operação e uso somam {p} do total: são despesas que se repetem a cada ano e precisam estar no orçamento recorrente, não só no investimento inicial.', { p: pc(ri.total.x + ri.total.u) }), 10);
+      }
+      if (o.faltam) w.texto(t('Os valores ainda não incluem os itens sem valor listados abaixo.'), 10);
+      if (o.existentes > 0) w.texto(t('Desembolso novo: {v}. O custo conhecido inclui {e} de servidores que já existem, marcados em "Ajustar a equipe".', { v: formatarMoedaEst(totalConhecido(o) - o.existentes, o.moeda), e: formatarMoedaEst(o.existentes, o.moeda) }), 10);
+      // custos específicos: a governança com categorias e opções; a educação (percurso combinado) com as categorias
+      w.titulo(t('Custo por categoria e opção: investimento, operação e uso')); w.tabela(o);
+      for (const p of ri.prioridades.filter(x => x.id !== 'governanca')) {
+        w.titulo(p.rotulo + ' · ' + t('{n} meses', { n: p.meses }), 11);
+        w.tabelaSimples(cab(t('Categoria'), p.meses), [...p.categorias.map(c => ({ cels: cels(c, c.rotulo) })), { cels: cels(p, t('Total')), forte: true }]);
+        if (p.semIA !== undefined) w.texto(t('Os valores da educação são os da alternativa com IA. A alternativa sem IA soma {v}.', { v: fm(p.semIA) }), 8.5, false, PDF_COR.muted);
+      }
+      w.texto(t('O OpEx não inclui o consumo medido, que aparece em custo de utilidades. Custos compartilhados entram uma vez só.'), 8.5, false, PDF_COR.muted);
+    } else {
+      w.titulo(t(gov ? 'Sumário executivo' : 'Em resumo')); w.texto(resumoProsa(o), 10.5);
+      const sm = gov ? sumarioCapex(o) : null;
+      if (sm) { w.texto(sm.intro, 10); w.sintese([[t('Investimento (CapEx)'), curta(o.capex, o.moeda)], [t('Operação (OpEx)'), curta(o.opex, o.moeda)], [t('Uso'), curta(o.uso || 0, o.moeda)], [t('Total'), curta(totalConhecido(o), o.moeda)]]); w.lista(sm.tipos); for (const x of sm.fecho) w.texto(x, 10); }
+      if (opts.frente === 'governanca' && o.existentes > 0) w.texto(t('Desembolso novo: {v}. O custo conhecido inclui {e} de servidores que já existem, marcados em "Ajustar a equipe".', { v: formatarMoedaEst(totalConhecido(o) - o.existentes, o.moeda), e: formatarMoedaEst(o.existentes, o.moeda) }), 10);
+      w.titulo(t(opts.frente === 'governanca' ? 'Custo por categoria e opção: investimento, operação e uso' : 'Custo por categoria e fase')); w.tabela(o);
+    }
     if (o.memoria.length) { w.titulo(t('O que está sendo custeado')); w.lista(linhasMemoria(o)); }
     // v018: fontes públicas dos valores (governança)
     if (opts.frente === 'governanca') { const fs = fontesDasContas(o.itens.flatMap((i: any) => i.linhas)); const conv = o.itens.some((i: any) => i.linhas.some((l: any) => l.esforcoC));
