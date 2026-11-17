@@ -9,5 +9,13 @@
  "moeda do país": "country currency",
  "Os valores de referência estão em dólares e são convertidos pela cotação de {data} ({fonte}), que você pode substituir. Nunca se somam valores de moedas diferentes: todo o plano fica na moeda escolhida.": "Reference values are in dollars and are converted at the exchange rate of {data} ({fonte}), which you can replace. Values in different currencies are never added: the whole plan stays in the chosen currency.",
  "Outra moeda": "Other currency",
- "taxa informada no plano": "rate entered in the plan"
+ "taxa informada no plano": "rate entered in the plan",
+ "A governança entra igual nas duas colunas; a diferença entre elas é a da educação com IA e sem IA. Cada prioridade usa as suas fases e os seus custos adicionais, mostrados nas seções abaixo.": "Governance enters both columns equally; the difference between them is that of education with and without AI. Each priority uses its own phases and additional costs, shown in the sections below.",
+ "Categorias e opções de custo da governança": "Governance cost categories and options",
+ "Com IA na educação": "With AI in education",
+ "Desafios, público, fases e custos de cada desafio": "Challenges, population, phases and costs of each challenge",
+ "Plano do programa: governança e educação com e sem IA": "Programme plan: governance and education with and without AI",
+ "Sem IA na educação": "Without AI in education",
+ "Total do programa": "Programme total",
+ "Viagens, custos indiretos e taxa administrativa das duas prioridades": "Travel, indirect costs and administrative fee for both priorities"
 }

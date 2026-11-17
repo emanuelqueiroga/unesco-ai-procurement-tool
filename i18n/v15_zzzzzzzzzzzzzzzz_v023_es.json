@@ -9,5 +9,13 @@
  "moeda do país": "moneda del país",
  "Os valores de referência estão em dólares e são convertidos pela cotação de {data} ({fonte}), que você pode substituir. Nunca se somam valores de moedas diferentes: todo o plano fica na moeda escolhida.": "Los valores de referencia están en dólares y se convierten al tipo de cambio del {data} ({fonte}), que puede sustituir. Nunca se suman valores de monedas distintas: todo el plan queda en la moneda elegida.",
  "Outra moeda": "Otra moneda",
- "taxa informada no plano": "tipo informado en el plan"
+ "taxa informada no plano": "tipo informado en el plan",
+ "A governança entra igual nas duas colunas; a diferença entre elas é a da educação com IA e sem IA. Cada prioridade usa as suas fases e os seus custos adicionais, mostrados nas seções abaixo.": "La gobernanza entra igual en las dos columnas; la diferencia entre ellas es la de la educación con IA y sin IA. Cada prioridad usa sus propias fases y costos adicionales, que se muestran en las secciones de abajo.",
+ "Categorias e opções de custo da governança": "Categorías y opciones de costo de la gobernanza",
+ "Com IA na educação": "Con IA en la educación",
+ "Desafios, público, fases e custos de cada desafio": "Desafíos, público, fases y costos de cada desafío",
+ "Plano do programa: governança e educação com e sem IA": "Plan del programa: gobernanza y educación con y sin IA",
+ "Sem IA na educação": "Sin IA en la educación",
+ "Total do programa": "Total del programa",
+ "Viagens, custos indiretos e taxa administrativa das duas prioridades": "Viajes, costos indirectos y tasa administrativa de las dos prioridades"
 }

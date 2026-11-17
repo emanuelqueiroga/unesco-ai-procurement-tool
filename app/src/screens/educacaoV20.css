@@ -121,3 +121,6 @@
   .ed-linha .pr-popover-painel, .ed-linha .pv-conta-partes { overflow-wrap: anywhere; }
 }
 .pc-equivalente-usd { margin-top: .25rem; }
+/* v022.1: plano combinado: a seção da governança na mesma largura da página */
+.ed-plano .pc-gov-plano { margin-inline: 0; max-width: none; padding-inline: 0; }
+.ed-plano > hr { margin-block: 2rem; border: 0; border-top: 1px solid var(--line, #d9d9d9); }

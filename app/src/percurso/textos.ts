@@ -1,7 +1,7 @@
 // Textos do percurso (v14): capítulos, a frase de abertura de cada pergunta e os rótulos dos trechos do plano.
 // Português é a chave de tradução; `t()` traduz quando há dicionário (os textos novos entram nos
 // dicionários em i18n/v14_<l>.json; até lá aparecem em português nos outros idiomas).
-import { tr, percursoGovernanca, percursoEducacaoV20 } from '../domain';
+import { tr, percursoGovernanca, percursoEducacaoV20, percursoCombinado } from '../domain';
 import { CATEGORIAS, DESAFIOS_EDU_V016 } from '../domain/catalogo_v016.js';
 import type { Capitulo } from '../store';
 
@@ -162,7 +162,15 @@ export const EDUCACAO_INFO: Record<Capitulo, InfoCapitulo> = {
   4: { n: 4, titulo: 'Plano', guia: 'Com IA e sem IA lado a lado', texto: '', minutos: 2, entrega: '', alimenta: '' },
 };
 /** Capítulo n do percurso ativo: o da governança (v017) quando ela é a única prioridade; senão, o da 0.0.14. */
+/** v022.1: capítulos do percurso combinado (governança e educação com e sem IA). */
+export const COMBINADO_INFO: Record<Capitulo, InfoCapitulo> = {
+  1: { ...CAPITULOS_INFO[1], titulo: 'Contexto', guia: 'Qual é o contexto da sua rede e o que você quer melhorar?' },
+  2: { n: 2, titulo: 'Governança', guia: 'Categorias e opções de custo da governança', texto: '', minutos: 8, entrega: '', alimenta: '' },
+  3: { n: 3, titulo: 'Educação com e sem IA', guia: 'Desafios, público, fases e custos de cada desafio', texto: '', minutos: 10, entrega: '', alimenta: '' },
+  4: { n: 4, titulo: 'Custos adicionais', guia: 'Viagens, custos indiretos e taxa administrativa das duas prioridades', texto: '', minutos: 2, entrega: '', alimenta: '' },
+};
 export function infoCapitulo(n: Capitulo, s?: { ctx?: Record<string, any> }): InfoCapitulo {
+  if (percursoCombinado(s?.ctx)) return COMBINADO_INFO[n];
   return percursoGovernanca(s?.ctx) ? GOVERNANCA_INFO[n] : percursoEducacaoV20(s?.ctx) ? EDUCACAO_INFO[n] : CAPITULOS_INFO[n];
 }
 Object.assign(CURTO, {

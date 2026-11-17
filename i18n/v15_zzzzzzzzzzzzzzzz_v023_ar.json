@@ -9,5 +9,13 @@
  "moeda do país": "عملة البلد",
  "Os valores de referência estão em dólares e são convertidos pela cotação de {data} ({fonte}), que você pode substituir. Nunca se somam valores de moedas diferentes: todo o plano fica na moeda escolhida.": "القيم المرجعية بالدولار وتُحوَّل بسعر الصرف بتاريخ {data} ({fonte})، ويمكنك استبداله. لا تُجمع أبدًا قيم بعملات مختلفة: تبقى الخطة كلها بالعملة المختارة.",
  "Outra moeda": "عملة أخرى",
- "taxa informada no plano": "السعر المُدخل في الخطة"
+ "taxa informada no plano": "السعر المُدخل في الخطة",
+ "A governança entra igual nas duas colunas; a diferença entre elas é a da educação com IA e sem IA. Cada prioridade usa as suas fases e os seus custos adicionais, mostrados nas seções abaixo.": "تدخل الحوكمة بالقيمة نفسها في العمودين؛ والفرق بينهما هو فرق التعليم بالذكاء الاصطناعي ومن دونه. وتستخدم كل أولوية مراحلها وتكاليفها الإضافية الخاصة، المعروضة في الأقسام أدناه.",
+ "Categorias e opções de custo da governança": "فئات تكاليف الحوكمة وخياراتها",
+ "Com IA na educação": "مع الذكاء الاصطناعي في التعليم",
+ "Desafios, público, fases e custos de cada desafio": "التحديات والفئة المستهدفة والمراحل وتكاليف كل تحدٍّ",
+ "Plano do programa: governança e educação com e sem IA": "خطة البرنامج: الحوكمة والتعليم بالذكاء الاصطناعي ومن دونه",
+ "Sem IA na educação": "من دون الذكاء الاصطناعي في التعليم",
+ "Total do programa": "إجمالي البرنامج",
+ "Viagens, custos indiretos e taxa administrativa das duas prioridades": "السفر والتكاليف غير المباشرة والرسوم الإدارية للأولويتين"
 }

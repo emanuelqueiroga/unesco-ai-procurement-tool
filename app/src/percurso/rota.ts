@@ -47,7 +47,8 @@ export function lerRota(hash: string): Rota {
     // #/capitulo/:n/sintese/<campo>: a síntese com as premissas do capítulo abertas e o campo em foco
     if (p[2] === 'sintese') return p[3] ? { tipo: 'sintese', n, foco: p[3] } : { tipo: 'sintese', n };
     // v018: inclui as telas da governança (v017); as que saíram do fluxo seguem como pergunta e são remapeadas
-    const t = TODAS_TELAS.find((x) => x.id === p[2] && x.capitulo === n);
+    // v022.1: no percurso combinado, telas da governança e da educação mudam de capítulo; a tela conhecida vale
+    const t = TODAS_TELAS.find((x) => x.id === p[2] && x.capitulo === n) || (/^(gov|ed)-/.test(p[2]) ? TODAS_TELAS.find((x) => x.id === p[2]) : undefined);
     return t || TELAS_FORA_DO_FLUXO[p[2]] ? { tipo: 'pergunta', n, tela: t ? t.id : p[2] } : { tipo: 'abertura', n };
   }
   return { tipo: 'inicio' };

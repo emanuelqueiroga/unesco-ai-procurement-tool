@@ -190,15 +190,16 @@ function PDFs({ s }: { s: CasoStore }) {
   };
   return <><div className="pc-botoes"><Button disabled={ocupado} onClick={() => void baixar('brief')}>{t('Policy brief (PDF)')}</Button><Button disabled={ocupado} variant="secondary" onClick={() => void baixar('anexo')}>{t('Anexo de governança (PDF)')}</Button></div>{erro ? <p role="alert">{erro}</p> : null}</>;
 }
-function PlanoGov({ s }: { s: CasoStore }) {
+/** v022.1: `embutido` = seção do plano combinado (governança e educação): título h2, sem as respostas que faltam e sem Voltar. */
+export function PlanoGov({ s, embutido }: { s: CasoStore; embutido?: boolean }) {
   const p = planoGovernanca(s), faltam = faltamDe(s);
   return <div className="pc-gov-plano">
-    <h1>{p.titulo}</h1><p className="pc-lead">{[instituicaoV16(s), p.pais].filter(Boolean).join(' · ')}</p>
+    {embutido ? <h2 id="plano-governanca">{p.titulo}</h2> : <><h1>{p.titulo}</h1><p className="pc-lead">{[instituicaoV16(s), p.pais].filter(Boolean).join(' · ')}</p></>}
     <Alert kind="info" title={p.proxima}>{p.escopo}</Alert>
     <ResumoV16 s={s} frente="governanca" /><BotoesPDFV16 s={s} frente="governanca" />
-    {faltam.length ? <details className="pc-gov-card" open><summary>{t('Respostas que faltam')} ({faltam.length})</summary><ul>{faltam.map(q => <li key={q.id}><a href={href.pergunta(q.capitulo, q.id)}>{tituloTelaGov(q.id)}</a></li>)}</ul></details> : null}
+    {!embutido && faltam.length ? <details className="pc-gov-card" open><summary>{t('Respostas que faltam')} ({faltam.length})</summary><ul>{faltam.map(q => <li key={q.id}><a href={href.pergunta(q.capitulo, q.id)}>{tituloTelaGov(q.id)}</a></li>)}</ul></details> : null}
     {p.blocos.map((b, i) => <section className="pc-gov-card" key={i}><h2>{b.titulo}</h2><dl className="pc-gov-dados">{b.linhas.map((l, j) => <div key={j}><dt>{l.rotulo}</dt><dd>{l.valor}</dd></div>)}</dl></section>)}
-    <p><Button variant="secondary" href={href.pergunta(3, TELA_ADICIONAIS_GOV)}>{t('Voltar')}</Button></p>
+    {embutido ? null : <p><Button variant="secondary" href={href.pergunta(3, TELA_ADICIONAIS_GOV)}>{t('Voltar')}</Button></p>}
   </div>;
 }
 /** v019: sobretítulo com o desafio da página (categorias de um desafio e opções de uma categoria). */

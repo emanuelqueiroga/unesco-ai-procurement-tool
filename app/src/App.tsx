@@ -10,7 +10,9 @@ import { Esforcos } from './screens/Esforcos';
 import { MetodologiaEducacao } from './screens/MetodologiaEducacao';
 import { Metodologia } from './screens/Metodologia';
 import { RecebidoHost } from './screens/CompartilharV16';
-import { percursoGovernanca, percursoEducacaoV20 } from './domain';
+import { percursoGovernanca, percursoEducacaoV20, percursoCombinado, telaDaEducacao } from './domain';
+import { PlanoCombinado } from './screens/PlanoCombinado';
+import { telasAtivas as telasDoPercurso } from './store';
 import { Plano } from './screens/Plano';
 import { useRota } from './percurso/rota';
 import { useCaso } from './store';
@@ -25,6 +27,12 @@ export function App() {
   const irPara = useCaso((s) => s.irPara);
   const ctx = useCaso((s) => s.ctx);
   const chave = rota.tipo === 'pergunta' ? `${rota.n}/${rota.tela}` : '';
+  // v022.1: no percurso combinado as telas mudam de capítulo; um link com o capítulo antigo vai para o certo
+  useEffect(() => {
+    if (rota.tipo !== 'pergunta' || !percursoCombinado(ctx)) return;
+    const q = telasDoPercurso(useCaso.getState()).find(x => x.id === rota.tela);
+    if (q && q.capitulo !== rota.n) window.location.replace(`#/capitulo/${q.capitulo}/${q.id}`);
+  }, [chave, ctx]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (rota.tipo !== 'pergunta') return;
     const c = useCaso.getState().capitulo;
@@ -38,6 +46,13 @@ export function App() {
     if (rota.tipo === 'salarios') return <Salarios pais={rota.pais} />;
     if (rota.tipo === 'esforcos') return <Esforcos chave={rota.chave} />;
     if (rota.tipo === 'metodologia') return rota.parte === 'educacao' ? <MetodologiaEducacao foco={rota.foco} /> : <Metodologia />;
+    // v022.1: governança e educação juntas: primeiro as telas da governança, depois as da educação, e um plano só
+    if (percursoCombinado(ctx) && !telaPrioridades && !['inicio', 'galeria'].includes(rota.tipo)) {
+      if (rota.tipo === 'plano') return <PlanoCombinado />;
+      const daEd = rota.tipo === 'pergunta' ? telaDaEducacao(rota.tela) : (rota.tipo === 'abertura' || rota.tipo === 'sintese') ? rota.n >= 3 : false;
+      return daEd ? <EducacaoV20 key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo + (rota.tipo === 'abertura' || rota.tipo === 'sintese' ? rota.n : '')} rota={rota} />
+        : <Governanca key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo === 'abertura' || rota.tipo === 'sintese' ? `${rota.tipo}${rota.n}` : rota.tipo} rota={rota} />;
+    }
     if (percursoGovernanca(ctx) && !telaPrioridades && !['inicio', 'galeria'].includes(rota.tipo))
       return <Governanca key={rota.tipo === 'pergunta' ? rota.tela : rota.tipo === 'abertura' || rota.tipo === 'sintese' ? `${rota.tipo}${rota.n}` : rota.tipo} rota={rota} />;
     // v020: Educating with and without AI como única prioridade segue o percurso da figura

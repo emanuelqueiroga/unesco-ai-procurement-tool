@@ -11,7 +11,7 @@ import { t } from '../percurso/textos';
 import { frentesDoPlano, frenteAtual } from '../percurso/frentes';
 import { orcamentoGovernanca } from '../percurso/governanca';
 import { DESAFIOS_GOV_V016, CATEGORIAS } from '../domain/catalogo_v016.js';
-import { percursoEducacaoV20 } from '../domain';
+import { percursoEducacaoV20, percursoCombinado, telaDaEducacao } from '../domain';
 import { desafioDaTelaEd } from '../store';
 import { CATEGORIAS_ED, desafiosEscolhidos, opcoesEscolhidas, nomeDesafio } from '../percurso/educacaoV20';
 
@@ -146,6 +146,8 @@ function CaminhoEducacao({ s, tela, frente }: { s: CasoStore; tela?: string; fre
 
 export function CaminhoLateral({ s, tela }: { s: CasoStore; tela?: string }) {
   if (percursoEducacaoV20(s.ctx)) return <CaminhoEducacao s={s} tela={tela} frente={frentesDoPlano(s).find((f) => f.id === frenteAtual(s))} />;
+  // v022.1: no percurso combinado, a árvore da educação nas telas da educação e a da governança nas demais
+  if (percursoCombinado(s.ctx) && telaDaEducacao(tela)) return <CaminhoEducacao s={s} tela={tela} frente={frentesDoPlano(s).find((f) => f.id === 'educacao')} />;
   const frente = frentesDoPlano(s).find((f) => f.id === frenteAtual(s));
   const a = estadoDaArvore(s, tela);
   return (

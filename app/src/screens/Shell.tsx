@@ -11,7 +11,7 @@ import { infoCapitulo, t } from '../percurso/textos';
 import { entradaEtapa } from '../percurso/navegacaoOrientada';
 import { frentesDoPlano, frenteAtual } from '../percurso/frentes';
 import { href, lerRota } from '../percurso/rota';
-import { nomePais, paisDoCaso, percursoGovernanca, percursoEducacaoV20, tr } from '../domain';
+import { nomePais, paisDoCaso, percursoGovernanca, percursoEducacaoV20, percursoCombinado, telaDaEducacao, tr } from '../domain';
 import { desafioDaTelaEd, categoriaDaTelaEd } from '../store';
 import { nomeDesafio, CATEGORIAS_ED } from '../percurso/educacaoV20';
 import { ColunaCusto, FaixaCusto } from './CartaoCusto';
@@ -41,7 +41,7 @@ export interface Posicao { capitulo?: Capitulo; tela?: string; sintese?: boolean
 /** Os quatro capítulos em linha: ✓ nos concluídos, "nome · n de m" e o segmento preenchido até a pergunta atual. */
 export function etapas(s: CasoStore, pos: Posicao): Step[] {
   // v021: também na educação com e sem IA (a etapa 4 não tem telas: o plano)
-  const gov = percursoGovernanca(s.ctx) || percursoEducacaoV20(s.ctx);
+  const gov = percursoGovernanca(s.ctx) || percursoEducacaoV20(s.ctx) || percursoCombinado(s.ctx);
   // governança (v017): etapas sem telas (a 4) não aparecem na barra, e cada etapa leva à primeira tela pendente
   return progressoDe(s).filter((p) => !gov || p.capitulo === 1 || p.total > 0).map((p) => {
     const n = p.capitulo as Capitulo, label = t(infoCapitulo(n, s).titulo), atual = pos.capitulo === n;
@@ -100,7 +100,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   // como na v017: o cartão de custo aparece depois que a prioridade é escolhida
   plano = plano && (s.ctx.prioridades || []).length > 0;
   // v019: como no Figma, o cartão de custo aparece a partir das categorias (não nas telas do Contexto)
-  if ((percursoGovernanca(s.ctx) || percursoEducacaoV20(s.ctx)) && pos.tela && (['local', 'prioridades', 'problemas', 'ed-desafios', 'ed-publico'].includes(pos.tela) || pos.tela.startsWith('ed-publico-'))) plano = false;
+  if ((percursoGovernanca(s.ctx) || percursoEducacaoV20(s.ctx) || percursoCombinado(s.ctx)) && pos.tela && (['local', 'prioridades', 'problemas', 'ed-desafios', 'ed-publico'].includes(pos.tela) || pos.tela.startsWith('ed-publico-'))) plano = false;
   const estreito = useMediaQuery(BREAKPOINTS.cards);
   const celular = useMediaQuery(BREAKPOINTS.bar);           // cabeçalho compacto com menu
   const semColuna = useMediaQuery('(max-width: 1023px)');
@@ -112,7 +112,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   const [tema, , alternarTema] = useTheme();
   const salvamento = useSalvamento();
   // v020: a moldura orientada (cabeçalho, caminho e cartão de custo) vale também para a educação com e sem IA
-  const gov = percursoGovernanca(s.ctx) || percursoEducacaoV20(s.ctx);
+  const gov = percursoGovernanca(s.ctx) || percursoEducacaoV20(s.ctx) || percursoCombinado(s.ctx);
   const respondidas = telasAtivas(s).length - progressoDe(s).reduce((a, p) => a + (p.total - p.feitas), 0);
   const rota = lerRota(typeof window === 'undefined' ? '' : window.location.hash);
 
@@ -136,7 +136,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   const curtoMatriz = rota.tipo === 'inicio' ? estreito : matrizCurta;
   const botaoMatriz = <Button variant="secondary" size="sm" onClick={() => abrirMatriz()} aria-haspopup="dialog" aria-label={curtoMatriz ? t('Matriz camadas × fases') : undefined}>{curtoMatriz ? t('Matriz') : t('Matriz camadas × fases')}</Button>;
   // v018: como o custo da governança é calculado (ao lado da matriz, no percurso da governança)
-  const botaoCalculo = <Button variant="secondary" size="sm" href={percursoEducacaoV20(s.ctx) && !percursoGovernanca(s.ctx) ? href.metodologiaEd() : href.metodologia()} aria-label={calculoCurto ? t('Como o custo é calculado') : undefined} title={calculoCurto ? t('Como o custo é calculado') : undefined}>{calculoCurto ? t('Cálculo') : t('Como o custo é calculado')}</Button>;
+  const botaoCalculo = <Button variant="secondary" size="sm" href={percursoEducacaoV20(s.ctx) || (percursoCombinado(s.ctx) && telaDaEducacao(pos.tela)) ? href.metodologiaEd() : href.metodologia()} aria-label={calculoCurto ? t('Como o custo é calculado') : undefined} title={calculoCurto ? t('Como o custo é calculado') : undefined}>{calculoCurto ? t('Cálculo') : t('Como o custo é calculado')}</Button>;
   const atalhos = (
     <>
       <Button variant="secondary" size="sm" href={href.inicio()}>{t('Início')}</Button>

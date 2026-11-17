@@ -9,5 +9,13 @@
  "moeda do país": "sarafu ya nchi",
  "Os valores de referência estão em dólares e são convertidos pela cotação de {data} ({fonte}), que você pode substituir. Nunca se somam valores de moedas diferentes: todo o plano fica na moeda escolhida.": "Thamani za marejeo ziko kwa dola na zinabadilishwa kwa kiwango cha {data} ({fonte}), ambacho unaweza kubadilisha. Thamani za sarafu tofauti hazijumlishwi kamwe: mpango wote unabaki katika sarafu iliyochaguliwa.",
  "Outra moeda": "Sarafu nyingine",
- "taxa informada no plano": "kiwango kilichowekwa katika mpango"
+ "taxa informada no plano": "kiwango kilichowekwa katika mpango",
+ "A governança entra igual nas duas colunas; a diferença entre elas é a da educação com IA e sem IA. Cada prioridade usa as suas fases e os seus custos adicionais, mostrados nas seções abaixo.": "Utawala unaingia sawa katika safu zote mbili; tofauti kati yake ni ile ya elimu kwa akili bandia na bila akili bandia. Kila kipaumbele kinatumia awamu zake na gharama zake za ziada, zinazoonyeshwa katika sehemu zilizo hapa chini.",
+ "Categorias e opções de custo da governança": "Makundi na chaguo za gharama za utawala",
+ "Com IA na educação": "Kwa akili bandia katika elimu",
+ "Desafios, público, fases e custos de cada desafio": "Changamoto, walengwa, awamu na gharama za kila changamoto",
+ "Plano do programa: governança e educação com e sem IA": "Mpango wa programu: utawala na elimu kwa na bila akili bandia",
+ "Sem IA na educação": "Bila akili bandia katika elimu",
+ "Total do programa": "Jumla ya programu",
+ "Viagens, custos indiretos e taxa administrativa das duas prioridades": "Safari, gharama zisizo za moja kwa moja na ada ya utawala kwa vipaumbele vyote viwili"
 }

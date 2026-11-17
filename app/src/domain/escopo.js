@@ -15,6 +15,15 @@ export function somenteEducacao(ctx) {
 // v020: percurso novo da educação com e sem IA quando a única prioridade é "com" e o caso não traz problemas do
 // percurso anterior, C1 a C10 (os exemplos da galeria continuam no percurso 0.0.14, que é o que eles demonstram).
 export function percursoEducacaoV20(ctx) { const pr = (ctx || {}).problemas; return somenteEducacao(ctx) && !(Array.isArray(pr) && pr.some((x) => /^C([1-9]|10)$/.test(String(x)))); }
+/** v022.1: governança e educação com e sem IA marcadas juntas (e nada além delas): percurso combinado, primeiro o da
+ *  governança e depois o da educação, com uma tela de custos adicionais no fim e um plano com total geral. */
+export function prioridadesCombinadas(ctx) {
+  const p = (ctx || {}).prioridades;
+  return Array.isArray(p) && p.includes('governar') && p.includes('com') && p.every(id => id === 'governar' || id === 'com');
+}
+export function percursoCombinado(ctx) { const pr = (ctx || {}).problemas; return prioridadesCombinadas(ctx) && !(Array.isArray(pr) && pr.some((x) => /^C([1-9]|10)$/.test(String(x)))); }
+/** No percurso combinado, as telas da educação começam com "ed-"; as demais são da governança. */
+export const telaDaEducacao = (id) => typeof id === 'string' && id.startsWith('ed-');
 export function tamanhoRedeValido(ctx) {
   const r = (ctx || {}).redeNacional || {};
   return ['escolas', 'estudantes'].every(k => Number.isSafeInteger(r[k]) && r[k] > 0);

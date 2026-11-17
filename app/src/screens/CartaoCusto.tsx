@@ -4,7 +4,7 @@
 // já devolve (informado, estimado, faltam), sempre na moeda do orçamento; nada é somado de novo.
 import type { ReactNode } from 'react';
 import { telasAtivas, type CasoStore } from '../store';
-import { LOC, percursoGovernanca, percursoEducacaoV20 } from '../domain';
+import { LOC, percursoGovernanca, percursoEducacaoV20, percursoCombinado, telaDaEducacao } from '../domain';
 import { orcamentoEducacao } from '../percurso/educacaoV20';
 import { t } from '../percurso/textos';
 import { href } from '../percurso/rota';
@@ -37,7 +37,7 @@ export interface DadosCusto {
 /** Números do orçamento da frente atual; null no projeto de uso de IA. */
 export function dadosCusto(s: CasoStore): DadosCusto | null {
   // v018: só o fluxo da governança (v017) tem cartão próprio; o percurso da 0.0.14 usa o cartão do projeto
-  if (!percursoGovernanca(s.ctx)) return null;
+  if (!percursoGovernanca(s.ctx) && !percursoCombinado(s.ctx)) return null;
   const f: FrenteEstimativa = 'governanca';
   const o = orcamentoGovernanca(s);
   const tela = telasAtivas(s).find(q => q.id === TELA_RECURSOS[f]);
@@ -154,7 +154,8 @@ function CartaoEducacao({ s, compacto = false }: { s: CasoStore; compacto?: bool
 }
 
 export function ColunaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
-  if (percursoEducacaoV20(s.ctx)) return <aside className="pc-coluna-custo" aria-label={t('Custo desta frente')}>
+  // v022.1: no percurso combinado, o cartão da educação nas telas da educação e o da governança nas demais
+  if (percursoEducacaoV20(s.ctx) || (percursoCombinado(s.ctx) && telaDaEducacao(tela))) return <aside className="pc-coluna-custo" aria-label={t('Custo desta frente')}>
     <CartaoEducacao s={s} />
     <nav className="pc-custo-links" aria-label={t('Plano')}><a className="pc-custo-link" href={href.plano()}>{t('Resumo desta frente')} <span aria-hidden="true">→</span></a></nav>
   </aside>;
@@ -175,7 +176,7 @@ export function ColunaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
 
 /** Celular e telas médias: faixa noite logo abaixo do cabeçalho, que leva ao orçamento (no orçamento, o cartão compacto). */
 export function FaixaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
-  if (percursoEducacaoV20(s.ctx)) return <div className="pc-faixa-custo-wrap"><CartaoEducacao s={s} compacto /></div>;
+  if (percursoEducacaoV20(s.ctx) || (percursoCombinado(s.ctx) && telaDaEducacao(tela))) return <div className="pc-faixa-custo-wrap"><CartaoEducacao s={s} compacto /></div>;
   const d = dadosCusto(s);
   if (!d) return <FaixaProjeto s={s} />;
   if (tela === TELA_RECURSOS[d.frente]) return <div className="pc-faixa-custo-wrap"><CartaoCustoFrente d={d} compacto /></div>;

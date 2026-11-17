@@ -9,5 +9,13 @@
  "moeda do país": "本国货币",
  "Os valores de referência estão em dólares e são convertidos pela cotação de {data} ({fonte}), que você pode substituir. Nunca se somam valores de moedas diferentes: todo o plano fica na moeda escolhida.": "参考值以美元计，按 {data} 的汇率（{fonte}）换算，您可以替换该汇率。不同货币的数值从不相加：整个计划都使用所选货币。",
  "Outra moeda": "其他货币",
- "taxa informada no plano": "计划中填写的汇率"
+ "taxa informada no plano": "计划中填写的汇率",
+ "A governança entra igual nas duas colunas; a diferença entre elas é a da educação com IA e sem IA. Cada prioridade usa as suas fases e os seus custos adicionais, mostrados nas seções abaixo.": "治理在两列中相同；两列之间的差异来自使用和不使用人工智能的教育。每个优先事项使用各自的阶段和附加成本，见下方各部分。",
+ "Categorias e opções de custo da governança": "治理的成本类别和选项",
+ "Com IA na educação": "教育中使用人工智能",
+ "Desafios, público, fases e custos de cada desafio": "各项挑战的对象、阶段和成本",
+ "Plano do programa: governança e educação com e sem IA": "项目计划：治理以及使用和不使用人工智能的教育",
+ "Sem IA na educação": "教育中不使用人工智能",
+ "Total do programa": "项目总计",
+ "Viagens, custos indiretos e taxa administrativa das duas prioridades": "两个优先事项的差旅、间接成本和管理费"
 }

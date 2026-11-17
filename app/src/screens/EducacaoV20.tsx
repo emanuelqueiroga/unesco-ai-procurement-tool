@@ -20,6 +20,8 @@ import { AcoesPercurso } from './AcoesPercurso';
 import { Shell } from './Shell';
 import { semEnergiaPais, semInternetPais, razaoPais, deficienciaPais, precoPais, paramPais, origemTexto } from '../percurso/educacaoPais';
 import { EquivalenteUSD } from './EquivalenteUSD';
+import { AdicionaisPaginaV18 } from './OrcamentoV17';
+import { percursoCombinado } from '../domain';
 import './educacaoV20.css';
 
 /** O NumeroField com `percentual` mostra e devolve fração (0,25 = 25%); o percurso guarda pontos percentuais (25). */
@@ -406,6 +408,15 @@ function Adicionais({ s }: { s: CasoStore }) {
   </div>;
 }
 
+/** v022.1: governança e educação juntas: uma tela de custos adicionais para as duas, cada prioridade com os seus
+ *  percentuais e a sua base (nada é contado duas vezes). */
+function AdicionaisCombinados({ s }: { s: CasoStore }) {
+  return <div className="ed-adicionais-comb">
+    <section aria-labelledby="adic-gov"><h2 id="adic-gov" className="ed-subtitulo">{t('Governança')}</h2><AdicionaisPaginaV18 s={s} /></section>
+    <section aria-labelledby="adic-ed"><h2 id="adic-ed" className="ed-subtitulo">{t('Educação com e sem IA')}</h2><Adicionais s={s} /></section>
+  </div>;
+}
+
 // ---------------------------------------------------------------- moldura
 export const TITULOS: Record<string, string> = {
   'ed-desafios': 'Quais desafios educacionais você quer enfrentar?', 'ed-adicionais': 'Custos adicionais',
@@ -433,7 +444,7 @@ export function EducacaoV20({ rota }: { rota: Rota }) {
   const semDesafio = d && !desafiosEscolhidos(s).includes(d);
   let corpo: ReactNode = null;
   if (id === 'ed-desafios') corpo = <Desafios s={s} />;
-  else if (id === 'ed-adicionais') corpo = <Adicionais s={s} />;
+  else if (id === 'ed-adicionais') corpo = percursoCombinado(s.ctx) ? <AdicionaisCombinados s={s} /> : <Adicionais s={s} />;
   else if (semDesafio) corpo = <p className="pc-nota">{t('Volte e escolha pelo menos um desafio.')}</p>;
   else if (pt && d) corpo = pt.passo === 'publico' ? <Publico s={s} d={d} /> : pt.passo === 'fases' ? <Fases s={s} d={d} /> : pt.passo === 'categorias' ? <Categorias s={s} d={d} />
     : pt.passo === 'opcoes' && pt.cat ? <Opcoes s={s} d={d} cat={pt.cat} /> : pt.passo === 'resumo' ? <Resumo s={s} d={d} /> : null;
@@ -449,7 +460,8 @@ export function EducacaoV20({ rota }: { rota: Rota }) {
 }
 
 // ---------------------------------------------------------------- plano
-function PlanoEducacao({ s }: { s: CasoStore }) {
+/** v022.1: `embutido` = seção do plano combinado: título h2, sem as respostas que faltam e sem Voltar. */
+export function PlanoEducacao({ s, embutido }: { s: CasoStore; embutido?: boolean }) {
   const r = orcamentoEducacao(s), f = fmtR(r), lugar = String(s.ctx.local || '').trim(), pais = s.caso?.pais ? nomePais(paisDoCaso(s.caso)) : '';
   const faltam = telasAtivas(s).filter(q => !telaRespondida(s, q));
   const pct = (a: number, b: number) => b ? Math.round(a / b * 100) + '%' : '—';
@@ -462,10 +474,10 @@ function PlanoEducacao({ s }: { s: CasoStore }) {
   </section>; };
   const nomeTela = (id: string) => { const pt = partesTelaEd(id); return titulo(id) + (pt ? ' · ' + nomeDesafio(pt.d) : ''); };
   return <div className="ed-plano">
-    <h1>{t('Plano de educação com e sem IA')}</h1>
-    <p className="pc-lead">{[lugar, pais].filter(Boolean).join(' · ')}</p>
+    {embutido ? <h2 id="plano-educacao">{t('Plano de educação com e sem IA')}</h2> : <><h1>{t('Plano de educação com e sem IA')}</h1>
+    <p className="pc-lead">{[lugar, pais].filter(Boolean).join(' · ')}</p></>}
     <AvisoSimulado />
-    {faltam.length ? <Alert kind="atencao" title={t('Respostas que faltam')}><ul>{faltam.map(q => <li key={q.id}><a href={href.pergunta(q.capitulo, q.id)}>{nomeTela(q.id)}</a></li>)}</ul></Alert> : null}
+    {!embutido && faltam.length ? <Alert kind="atencao" title={t('Respostas que faltam')}><ul>{faltam.map(q => <li key={q.id}><a href={href.pergunta(q.capitulo, q.id)}>{nomeTela(q.id)}</a></li>)}</ul></Alert> : null}
     <h2>{t('Com IA e sem IA')}</h2>
     <div className="ed-kpis">{kpi('com')}{kpi('sem')}</div>
     <EquivalenteUSD total={r.com.total} moeda={r.moeda} rotulo={t('Com IA')} /><EquivalenteUSD total={r.sem.total} moeda={r.moeda} rotulo={t('Sem IA')} />
@@ -503,6 +515,6 @@ function PlanoEducacao({ s }: { s: CasoStore }) {
       <li><b>{t('Monitorar e adaptar')}</b> · {t('custo por serviço e uso; aprendizagem, bem-estar e equidade; qualidade, confiabilidade e risco; otimizar o uso, revisar, renovar ou sair.')}</li>
     </ol>
     <p className="pc-nota">{t('Como cada número foi calculado, de onde vem e com que grau:')} <a href={href.metodologiaEd()}>{t('Metodologia da educação')}</a>.</p>
-    <p><Button variant="secondary" href={href.pergunta(3, 'ed-adicionais')}>{t('Voltar')}</Button></p>
+    {embutido ? null : <p><Button variant="secondary" href={href.pergunta(3, 'ed-adicionais')}>{t('Voltar')}</Button></p>}
   </div>;
 }

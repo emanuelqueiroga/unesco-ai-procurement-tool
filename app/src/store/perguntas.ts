@@ -1,6 +1,6 @@
 // Perguntas do modo Essencial e vínculo resposta → trecho do plano
 // (spec, "Mapa das 51 perguntas para as 24 do Essencial" e "Comportamentos que fazem a narrativa").
-import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoGovernanca, percursoEducacaoV20 } from '../domain';
+import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoGovernanca, percursoEducacaoV20, percursoCombinado } from '../domain';
 import type { Capitulo } from './tipos';
 import { CATEGORIAS } from '../domain/catalogo_v016.js';
 
@@ -167,7 +167,15 @@ function educacaoDoCaso(ctx?: Record<string, any>): TelaEssencial[] {
   ];
 }
 export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id)), ...EDUCACAO_V20.filter(t => t.id.startsWith('ed-'))];
-export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] { return percursoGovernanca(e?.ctx) ? governancaDoCaso(e?.ctx) : percursoEducacaoV20(e?.ctx) ? educacaoDoCaso(e?.ctx) : ESSENCIAL; }
+/** v022.1: governança e educação juntas. Capítulo 1: lugar, prioridades e desafios da governança; 2: categorias e
+ *  opções da governança; 3: desafios e ciclo de cada desafio da educação; 4: uma tela de custos adicionais para as
+ *  duas (a 'ed-adicionais', que no combinado mostra também os da governança). */
+function combinadoDoCaso(ctx?: Record<string, any>): TelaEssencial[] {
+  const gov = governancaDoCaso(ctx).filter(t => t.id !== TELA_ADICIONAIS_GOV).map(t => t.capitulo === 3 ? { ...t, capitulo: 2 as Capitulo } : t);
+  const ed = educacaoDoCaso(ctx).filter(t => !['local', 'prioridades'].includes(t.id)).map(t => ({ ...t, capitulo: (t.id === 'ed-adicionais' ? 4 : 3) as Capitulo }));
+  return [...gov, ...ed];
+}
+export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] { return percursoCombinado(e?.ctx) ? combinadoDoCaso(e?.ctx) : percursoGovernanca(e?.ctx) ? governancaDoCaso(e?.ctx) : percursoEducacaoV20(e?.ctx) ? educacaoDoCaso(e?.ctx) : ESSENCIAL; }
 export function telasDoCapitulo(n: Capitulo, e?: EscopoPercurso): TelaEssencial[] { return telasAtivas(e).filter(t => t.capitulo === n); }
 export function telaDoCampo(campo: string): TelaEssencial | undefined { return ESSENCIAL.find(t => t.campos.includes(campo)) || TODAS_TELAS.find(t => t.campos.includes(campo)); }
 export function essencial(campo: string): boolean { return CAMPOS_ESSENCIAIS.includes(campo); }

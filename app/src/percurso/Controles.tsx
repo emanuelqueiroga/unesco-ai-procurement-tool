@@ -7,7 +7,7 @@
 import { Fragment, createContext, useContext, useId, useState, type ReactNode } from 'react';
 import {
   CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
-  somenteGovernanca, prioridadesDoPercurso, listaOpc, totaisCtx, alunosEtapa, etapasAtivas, modoTeste, horasEstimativa, lerNumero, problemasMarcados, sugProblemas, temLacuna, rotulo, pct, tr,
+  somenteGovernanca, percursoCombinado, prioridadesDoPercurso, listaOpc, totaisCtx, alunosEtapa, etapasAtivas, modoTeste, horasEstimativa, lerNumero, problemasMarcados, sugProblemas, temLacuna, rotulo, pct, tr,
 } from '../domain';
 import { useCaso, origemDe, valorDe, type Estado14, type TelaEssencial } from '../store';
 import {
@@ -736,7 +736,7 @@ function ProblemasGov({ e }: { e: Estado14 }) {
 function Problemas({ e }: { e: Estado14 }) {
   const responder = useCaso((s) => s.responder);
   const refinando = useRefinando();
-  if (somenteGovernanca(e.ctx)) return <ProblemasGov e={e} />;
+  if (somenteGovernanca(e.ctx) || percursoCombinado(e.ctx)) return <ProblemasGov e={e} />;
   const pr: string[] = e.ctx.prioridades || [];
   const atual: string[] = e.ctx.problemas || [];
   const P = (PRIORIDADES as any[]).filter((p) => pr.includes(p.id));

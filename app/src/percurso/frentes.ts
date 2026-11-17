@@ -1,4 +1,4 @@
-import { percursoGovernanca, percursoLetramento, percursoPedagogico, projetoUsoDefinido, temGovernanca, temLetramento, temEducacao } from '../domain';
+import { percursoCombinado, percursoGovernanca, percursoLetramento, percursoPedagogico, projetoUsoDefinido, temGovernanca, temLetramento, temEducacao } from '../domain';
 import { useCaso, telasAtivas, telaRespondida, type Estado14 } from '../store';
 import { href } from './rota';
 
@@ -14,7 +14,7 @@ export function frentesDoPlano(s: Estado14): Frente[] {
  return frentes;
 }
 export function frenteAtual(s: Estado14): FrenteId {
- return percursoGovernanca(s.ctx)?'governanca':percursoLetramento(s.ctx)?'letramento':percursoPedagogico(s.ctx)?'educacao':'projeto';
+ return percursoGovernanca(s.ctx)||percursoCombinado(s.ctx)?'governanca':percursoLetramento(s.ctx)?'letramento':percursoPedagogico(s.ctx)?'educacao':'projeto';
 }
 /** Retoma a primeira pergunta pendente da frente, preservando as demais. */
 export function abrirFrente(id: FrenteId): string | null {
