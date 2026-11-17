@@ -50,7 +50,8 @@ body { font-family: var(--font-sans); }
 /* ---------- corpo: caminho | pergunta | custo ---------- */
 .pc-app--orientado { background: var(--surface-0); }
 .pc-app--orientado .pc-corpo--novo { padding-block: 0; }
-.pc-app .pc-grade.v19-corpo--caminho { grid-template-columns: 240px minmax(0, 1fr); column-gap: 0; }
+/* v022.1: espaço entre as três colunas (caminho, pergunta e custo), que ficavam coladas */
+.pc-app .pc-grade.v19-corpo--caminho { grid-template-columns: 240px minmax(0, 1fr); column-gap: 24px; }
 .pc-app .pc-grade.v19-corpo--caminho.pc-corpo--custo { grid-template-columns: 240px minmax(0, 1fr) 300px; }
 .pc-app--orientado .pc-main { padding-block: 32px 48px; }
 .pc-app .v19-corpo--caminho > .pc-main { padding-inline: 32px; }
@@ -114,7 +115,7 @@ body { font-family: var(--font-sans); }
 .pc-rodape-faixa { background: var(--surface-1); border-top: 2px solid var(--primary); }
 
 @media (max-width: 1279px) {
-  .pc-app .pc-grade.v19-corpo--caminho { grid-template-columns: 210px minmax(0, 1fr); }
+  .pc-app .pc-grade.v19-corpo--caminho { grid-template-columns: 210px minmax(0, 1fr); column-gap: 20px; }
   .pc-app .pc-grade.v19-corpo--caminho.pc-corpo--custo { grid-template-columns: 210px minmax(0, 1fr) 260px; }
   .v19-corpo--caminho .pc-main { padding-inline: 24px; }
 }
