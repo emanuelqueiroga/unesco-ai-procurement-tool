@@ -121,3 +121,8 @@
 .pc-moeda-plano .pr-optioncard-group { margin: 0; }
 .pc-moeda-plano .rf-campo { margin: 0; max-width: 22rem; }
 .pc-moeda-plano .rf-nota { margin: 0; max-width: 60ch; }
+.pc-moeda-plano-linha { display: flex; flex-wrap: wrap; gap: var(--space-3, 12px) var(--space-4, 16px); align-items: flex-start; }
+.pc-moeda-plano-linha .rf-campo--sel { flex: 1 1 18rem; max-width: 26rem; }
+.pc-moeda-plano-linha .rf-campo { flex: 0 1 12rem; }
+.pc-moeda-plano-linha .rf-campo--sel { flex: 0 0 min(100%, 26rem); max-width: 26rem; }
+.pc-moeda-plano-linha .rf-select { width: 100%; }
