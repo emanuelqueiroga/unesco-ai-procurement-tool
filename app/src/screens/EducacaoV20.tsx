@@ -2,6 +2,7 @@
 // governança: público e ambiente, fases, categorias, uma tela por categoria (as opções e, em cada opção marcada, as linhas
 // de custo com IA e sem IA, com quantidades e preços editáveis e "Como foi calculado") e o resumo do desafio. Depois do
 // último desafio, os custos adicionais e o plano. Valores simulados, marcados como tal.
+import { ResumoInvestimento } from './ResumoInvestimento';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useCaso, telasAtivas, telaRespondida, partesTelaEd, type CasoStore, type Capitulo } from '../store';
 import { QuestionFrame, OptionCard, OptionCardGroup, NumeroField, Alert, Button, Popover, TextField } from '../ui';
@@ -478,6 +479,7 @@ export function PlanoEducacao({ s, embutido }: { s: CasoStore; embutido?: boolea
     <p className="pc-lead">{[lugar, pais].filter(Boolean).join(' · ')}</p></>}
     <AvisoSimulado />
     {!embutido && faltam.length ? <Alert kind="atencao" title={t('Respostas que faltam')}><ul>{faltam.map(q => <li key={q.id}><a href={href.pergunta(q.capitulo, q.id)}>{nomeTela(q.id)}</a></li>)}</ul></Alert> : null}
+    {embutido ? null : <ResumoInvestimento s={s} />}
     <h2>{t('Com IA e sem IA')}</h2>
     <div className="ed-kpis">{kpi('com')}{kpi('sem')}</div>
     <EquivalenteUSD total={r.com.total} moeda={r.moeda} rotulo={t('Com IA')} /><EquivalenteUSD total={r.sem.total} moeda={r.moeda} rotulo={t('Sem IA')} />

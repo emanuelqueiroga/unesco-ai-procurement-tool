@@ -36,5 +36,15 @@
  "Estudantes que já têm dispositivo": "Élèves qui ont déjà un appareil",
  "Não, são outras escolas": "Non, ce sont d’autres écoles",
  "Categorias e opções de cada desafio, um desafio por vez": "Catégories et options de chaque défi, un défi à la fois",
- "Duração do plano, viagens, overhead, taxa administrativa e formação": "Durée du plan, déplacements, frais généraux, frais administratifs et formation"
+ "Duração do plano, viagens, overhead, taxa administrativa e formação": "Durée du plan, déplacements, frais généraux, frais administratifs et formation",
+ "{p}% vai para operação e uso": "{p} % va au fonctionnement et à la consommation",
+ "Ensino, aprendizagem e inclusão; alternativa com IA": "Enseignement, apprentissage et inclusion ; alternative avec IA",
+ "Investimento total": "Investissement total",
+ "O OpEx não inclui o consumo medido, que aparece em custo de utilidades. Custos compartilhados entram uma vez só.": "L’OpEx n’inclut pas la consommation mesurée, qui figure dans le coût de consommation. Les coûts partagés ne sont comptés qu’une fois.",
+ "Orçamento de {n} meses · {moeda}": "Budget sur {n} mois · {moeda}",
+ "Orçamento de até {n} meses · {moeda}": "Budget sur {n} mois au plus · {moeda}",
+ "Os valores da educação são os da alternativa com IA. A alternativa sem IA soma {v}.": "Les montants de l’éducation sont ceux de l’alternative avec IA. L’alternative sans IA totalise {v}.",
+ "Resumo do investimento": "Résumé de l’investissement",
+ "Salvaguardas, soberania e capacidade do setor público": "Garanties, souveraineté et capacités du secteur public",
+ "Todos os valores cobrem o período completo do plano.": "Tous les montants couvrent toute la durée du plan."
 }

@@ -12,6 +12,7 @@ import { planoEd } from '../percurso/pedagogico';
 import { estadoDaFrente, type FrenteId } from '../percurso/frentes';
 import { instituicaoV16, linhasMemoria, matrizFases, resumoProsa, sumarioCapex, riscosV16, totalConhecido, type orcamentoV16 } from '../percurso/orcamentoV016';
 import { consolidadoV16 } from '../percurso/consolidadoV016';
+import { resumoInvestimento, type LinhaInvestimento } from '../percurso/resumoInvestimento';
 import { formatarMoedaEst, type FrenteEstimativa } from '../percurso/estimativasOrcamento';
 import { nomePais, paisDoCaso } from '../domain/pais.js';
 import { carregarJsPDF, carregarFontesPDF, fontePDF, limparFontePDF, pdfTxt, PDF_COR, IDIOMAS_FONTE } from './pdf.js';
@@ -82,6 +83,24 @@ function escritor(doc: any, cabecalho: string) {
     texto(fases.length ? t('* estimado (veja "O que está sendo custeado"). "falta valor": ainda sem valor, fora do custo conhecido. Meses e alcance acumulado: {fases}.', { fases: o.fases.map(f => f.nome + ' ' + t('{n} meses', { n: f.meses }) + ', ' + f.alcance + '%').join(' · ') }) : t('* estimado (veja "O que está sendo custeado"). "falta valor": ainda sem valor, fora do custo conhecido. Duração: {n} meses.', { n: o.fases[0]?.meses || 0 }), 7.5, false, C.muted);
   };
   const rodape = (rotulo: string, data: string) => { const N = doc.getNumberOfPages(); for (let n = 1; n <= N; n++) { doc.setPage(n); doc.setDrawColor(...C.linha); doc.line(M, H - 47, W - M, H - 47); fonte(8, false, C.muted); doc.text(pdfTxt(rotulo + ' · ' + VERSAO_TESTE + ' · ' + data), M, H - 30); doc.text(n + ' / ' + N, W - M, H - 30, { align: 'right' }); } };
+  /** v022.1: tabela simples (primeira coluna com o nome, as demais com números alinhados à direita); `forte` = linha de total. */
+  const tabelaSimples = (cab: string[], linhas: { cels: string[]; sub?: string; forte?: boolean }[], colNome = 190) => {
+    const n = cab.length - 1, colW = (W - M * 2 - colNome) / n, xc = (i: number) => M + colNome + colW * (i + 1) - 4;
+    const linhaCab = () => { cabe(26); doc.setFillColor(...C.cab); doc.rect(M, y - 11, W - M * 2, 18, 'F'); fonte(8, true);
+      doc.text(pdfTxt(cab[0]), M + 4, y); cab.slice(1).forEach((c, i) => doc.text(pdfTxt(c), xc(i), y, { align: 'right' })); y += 14; };
+    linhaCab();
+    for (const l of linhas) {
+      fonte(8.5, true); const nome: string[] = doc.splitTextToSize(pdfTxt(l.cels[0]), colNome - 8);
+      fonte(7.5); const sub: string[] = l.sub ? doc.splitTextToSize(pdfTxt(l.sub), colNome - 8) : [];
+      const h = nome.length * 11 + sub.length * 9 + 4; if (y + h > LIM) { nova(); linhaCab(); }
+      if (l.forte) { doc.setFillColor(...C.fundo); doc.rect(M, y - 11, W - M * 2, h + 2, 'F'); }
+      fonte(8.5, true); nome.forEach((x, i) => doc.text(x, M + 4, y + i * 11));
+      fonte(7.5, false, C.muted); sub.forEach((x, i) => doc.text(x, M + 4, y + nome.length * 11 + i * 9));
+      l.cels.slice(1).forEach((c, i) => { fonte(8.5, !!l.forte || i === n - 1); doc.text(pdfTxt(c), xc(i), y, { align: 'right' }); });
+      y += h; doc.setDrawColor(...C.linha); doc.line(M, y - 8, W - M, y - 8);
+    }
+    y += 4;
+  };
   /** v018 (roteiro): quadro-síntese com até quatro números, numa faixa cinza. */
   const sintese = (cels: [string, string][]) => {
     cabe(56); const lw = (W - M * 2) / cels.length; doc.setFillColor(...C.fundo); doc.rect(M, y, W - M * 2, 46, 'F');
@@ -169,7 +188,7 @@ function escritor(doc: any, cabecalho: string) {
     }
     texto(legenda, 7.5, false, C.muted);
   };
-  return { cab, texto, titulo, lista, tabela, rodape, sintese, ficha, acao, fluxo, quadro, calendario, pagina: nova, reservar: (h: number) => cabe(h), avancar: (n: number) => { y += n; } };
+  return { cab, texto, titulo, lista, tabela, tabelaSimples, rodape, sintese, ficha, acao, fluxo, quadro, calendario, pagina: nova, reservar: (h: number) => cabe(h), avancar: (n: number) => { y += n; } };
 }
 
 const planoDe = (s: Estado14, f: FrenteEstimativa) => f === 'governanca' ? planoGovernanca(s) : f === 'letramento' ? planoLetramento(s) : planoEd(s);
@@ -185,6 +204,23 @@ export async function gerarPDFFrenteV16(s: Estado14, opts: { frente: FrenteEstim
     const sm = gov ? sumarioCapex(o) : null;
     if (sm) { w.texto(sm.intro, 10); w.sintese([[t('Investimento (CapEx)'), curta(o.capex, o.moeda)], [t('Operação (OpEx)'), curta(o.opex, o.moeda)], [t('Uso'), curta(o.uso || 0, o.moeda)], [t('Total'), curta(totalConhecido(o), o.moeda)]]); w.lista(sm.tipos); for (const x of sm.fecho) w.texto(x, 10); }
     if (opts.frente === 'governanca' && o.existentes > 0) w.texto(t('Desembolso novo: {v}. O custo conhecido inclui {e} de servidores que já existem, marcados em "Ajustar a equipe".', { v: formatarMoedaEst(totalConhecido(o) - o.existentes, o.moeda), e: formatarMoedaEst(o.existentes, o.moeda) }), 10);
+    // v022.1: resumo do investimento por prioridade (do caso inteiro: no percurso combinado, governança e educação)
+    if (opts.tipo === 'brief') { const ri = resumoInvestimento(s as any);
+      if (ri && ri.prioridades.length) {
+        const cf = (v: number) => curta(v, ri.moeda), cab = (p: string, m: number) => [p, 'CapEx', 'OpEx', t('Custo de utilidades'), t('Total') + ' (' + t('{n} meses', { n: m }) + ')'];
+        const cels = (l: LinhaInvestimento, nome: string) => [nome, l.semValor ? t('falta valor') : cf(l.k), l.semValor ? '—' : cf(l.x), l.semValor ? '—' : cf(l.u), l.semValor ? '—' : cf(l.total)];
+        w.titulo(t('Resumo do investimento'));
+        w.texto((ri.mesesIguais ? t('Orçamento de {n} meses · {moeda}', { n: ri.meses, moeda: ri.moeda }) : t('Orçamento de até {n} meses · {moeda}', { n: ri.meses, moeda: ri.moeda })) + '. ' + t('Todos os valores cobrem o período completo do plano.'), 10);
+        w.avancar(6);
+        w.tabelaSimples(cab(t('Prioridade'), ri.meses), [...ri.prioridades.map(p => ({ cels: cels(p, p.rotulo), sub: p.descricao + (ri.mesesIguais ? '' : ' · ' + t('{n} meses', { n: p.meses })) })), { cels: cels(ri.total, t('Total')), forte: true }]);
+        w.texto(t('Investimento total') + ': ' + formatarMoedaEst(ri.total.total, ri.moeda) + (ri.pctOperacaoUso === null ? '' : ' · ' + t('{p}% vai para operação e uso', { p: ri.pctOperacaoUso })), 10.5, true);
+        for (const p of ri.prioridades) {
+          w.titulo(p.rotulo + ' · ' + t('{n} meses', { n: p.meses }), 11);
+          w.tabelaSimples(cab(t('Categoria'), p.meses), [...p.categorias.map(c => ({ cels: cels(c, c.rotulo) })), { cels: cels(p, t('Total')), forte: true }]);
+          if (p.semIA !== undefined) w.texto(t('Os valores da educação são os da alternativa com IA. A alternativa sem IA soma {v}.', { v: formatarMoedaEst(p.semIA, ri.moeda) }), 8.5, false, PDF_COR.muted);
+        }
+        w.texto(t('O OpEx não inclui o consumo medido, que aparece em custo de utilidades. Custos compartilhados entram uma vez só.'), 8.5, false, PDF_COR.muted);
+      } }
     w.titulo(t(opts.frente === 'governanca' ? 'Custo por categoria e opção: investimento, operação e uso' : 'Custo por categoria e fase')); w.tabela(o);
     if (o.memoria.length) { w.titulo(t('O que está sendo custeado')); w.lista(linhasMemoria(o)); }
     // v018: fontes públicas dos valores (governança)

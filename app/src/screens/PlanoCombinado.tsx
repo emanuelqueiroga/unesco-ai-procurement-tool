@@ -2,6 +2,7 @@
 // alternativas (a governança entra igual nas duas; a educação com o valor com IA ou sem IA), separado em CapEx, OpEx e
 // consumo, com o desembolso novo; depois vêm as seções da governança e da educação, como nos planos de cada uma.
 // Tudo na mesma moeda do plano: nada de moedas diferentes é somado.
+import { ResumoInvestimento } from './ResumoInvestimento';
 import { useCaso, telasAtivas, telaRespondida, type CasoStore } from '../store';
 import { Alert } from '../ui';
 import { t, CURTO } from '../percurso/textos';
@@ -37,6 +38,8 @@ export function PlanoCombinado() {
       <h1>{t('Plano do programa: governança e educação com e sem IA')}</h1>
       <p className="pc-lead">{[lugar, pais].filter(Boolean).join(' · ')}</p>
       {faltam.length ? <Alert kind="atencao" title={t('Respostas que faltam')}><ul>{faltam.map(q => <li key={q.id}><a href={href.pergunta(q.capitulo, q.id)}>{nomeTela(q.id)}</a></li>)}</ul></Alert> : null}
+      {/* v022.1: resumo do investimento por prioridade */}
+      <ResumoInvestimento s={s} />
       <h2>{t('Total do programa')}</h2>
       <div className="ed-rolo"><table className="ed-tabela ed-tabela--num"><thead><tr><th></th><th>{t('Com IA na educação')}</th><th>{t('Sem IA na educação')}</th></tr></thead><tbody>
         {linha(t('Governança'), gT, gT)}

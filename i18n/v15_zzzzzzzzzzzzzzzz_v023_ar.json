@@ -33,5 +33,15 @@
  "Estudantes que já têm dispositivo": "الطلاب الذين يملكون جهازًا بالفعل",
  "Não, são outras escolas": "لا، إنها مدارس أخرى",
  "Categorias e opções de cada desafio, um desafio por vez": "فئات كل تحدٍّ وخياراته، تحدٍّ واحد في كل مرة",
- "Duração do plano, viagens, overhead, taxa administrativa e formação": "مدة الخطة والسفر والتكاليف غير المباشرة والرسوم الإدارية والتدريب"
+ "Duração do plano, viagens, overhead, taxa administrativa e formação": "مدة الخطة والسفر والتكاليف غير المباشرة والرسوم الإدارية والتدريب",
+ "{p}% vai para operação e uso": "{p}% للتشغيل والاستهلاك",
+ "Ensino, aprendizagem e inclusão; alternativa com IA": "التعليم والتعلّم والإدماج؛ البديل باستخدام الذكاء الاصطناعي",
+ "Investimento total": "إجمالي الاستثمار",
+ "O OpEx não inclui o consumo medido, que aparece em custo de utilidades. Custos compartilhados entram uma vez só.": "لا تشمل النفقات التشغيلية (OpEx) الاستهلاك المقيس، الذي يظهر في تكلفة الاستهلاك. تُحتسب التكاليف المشتركة مرة واحدة فقط.",
+ "Orçamento de {n} meses · {moeda}": "ميزانية لمدة {n} شهرًا · {moeda}",
+ "Orçamento de até {n} meses · {moeda}": "ميزانية لمدة تصل إلى {n} شهرًا · {moeda}",
+ "Os valores da educação são os da alternativa com IA. A alternativa sem IA soma {v}.": "قيم التعليم هي قيم البديل باستخدام الذكاء الاصطناعي. ويبلغ مجموع البديل من دون ذكاء اصطناعي {v}.",
+ "Resumo do investimento": "ملخص الاستثمار",
+ "Salvaguardas, soberania e capacidade do setor público": "الضمانات والسيادة وقدرات القطاع العام",
+ "Todos os valores cobrem o período completo do plano.": "تغطي جميع المبالغ كامل مدة الخطة."
 }

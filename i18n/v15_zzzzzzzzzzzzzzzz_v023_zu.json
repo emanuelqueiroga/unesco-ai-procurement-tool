@@ -34,5 +34,15 @@
  "Estudantes que já têm dispositivo": "Students who already have a device",
  "Não, são outras escolas": "No, they are other schools",
  "Categorias e opções de cada desafio, um desafio por vez": "Categories and options for each challenge, one challenge at a time",
- "Duração do plano, viagens, overhead, taxa administrativa e formação": "Plan duration, travel, overhead, administrative fee and training"
+ "Duração do plano, viagens, overhead, taxa administrativa e formação": "Plan duration, travel, overhead, administrative fee and training",
+ "{p}% vai para operação e uso": "{p}% funds operation and usage",
+ "Ensino, aprendizagem e inclusão; alternativa com IA": "Teaching, learning and inclusion; with-AI alternative",
+ "Investimento total": "Total investment",
+ "O OpEx não inclui o consumo medido, que aparece em custo de utilidades. Custos compartilhados entram uma vez só.": "OpEx excludes metered consumption, which appears under utility cost. Shared costs are counted only once.",
+ "Orçamento de {n} meses · {moeda}": "{n}-month budget · {moeda}",
+ "Orçamento de até {n} meses · {moeda}": "Budget of up to {n} months · {moeda}",
+ "Os valores da educação são os da alternativa com IA. A alternativa sem IA soma {v}.": "Education figures are those of the with-AI alternative. The without-AI alternative totals {v}.",
+ "Resumo do investimento": "Investment summary",
+ "Salvaguardas, soberania e capacidade do setor público": "Safeguards, sovereignty and public-sector capacity",
+ "Todos os valores cobrem o período completo do plano.": "All amounts cover the full plan period."
 }

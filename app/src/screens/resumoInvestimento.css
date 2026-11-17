@@ -1,0 +1,24 @@
+/* v022.1: Resumo do investimento (plano) */
+.ri { margin-block: var(--space-6, 24px); }
+.ri h2 { margin-block-end: 4px; }
+.ri-periodo { margin: 0 0 4px; font-size: 16px; color: var(--ink-2); }
+.ri-rolo { overflow-x: auto; margin-block: 12px; border: 1px solid var(--line); border-radius: var(--radius-md, 10px); }
+.ri-tabela { inline-size: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.ri-tabela th, .ri-tabela td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: end; vertical-align: middle; white-space: nowrap; }
+.ri-tabela th[scope="row"], .ri-tabela thead th:first-child { text-align: start; white-space: normal; }
+.ri-tabela thead th { background: var(--primary-tint, #eef5fb); color: var(--ink); font-weight: 600; font-size: 13px; }
+.ri-tabela thead th:last-child, .ri-tabela .ri-total { background: color-mix(in srgb, var(--primary) 10%, transparent); font-weight: 700; }
+.ri-sub { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+.ri-nome { display: block; font-weight: 600; color: var(--ink); }
+.ri-desc { display: block; font-size: 12.5px; color: var(--muted); font-weight: 400; }
+h3 .ri-desc { display: inline; margin-inline-start: 6px; }
+.ri-prioridade--governanca > th { box-shadow: inset 4px 0 0 #2e7dc5; }
+.ri-prioridade--educacao > th { box-shadow: inset 4px 0 0 #8a63c9; }
+[dir="rtl"] .ri-prioridade--governanca > th { box-shadow: inset -4px 0 0 #2e7dc5; }
+[dir="rtl"] .ri-prioridade--educacao > th { box-shadow: inset -4px 0 0 #8a63c9; }
+.ri-linha-total th, .ri-linha-total td { background: var(--primary); color: #fff; font-weight: 700; border-bottom: 0; }
+.ri-faixa { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding: 14px 16px; border-radius: var(--radius-md, 10px); background: var(--primary-tint, #eef5fb); font-size: 16px; }
+.ri-faixa b { margin-inline-end: 8px; }
+.ri-bloco { margin-block-start: 20px; }
+.ri-bloco h3 { margin: 0; font-size: 16px; }
+.ri-linha-total .ri-total, .ri-tabela .ri-linha-total td.ri-total { background: color-mix(in srgb, var(--primary) 80%, #000); color: #fff; }

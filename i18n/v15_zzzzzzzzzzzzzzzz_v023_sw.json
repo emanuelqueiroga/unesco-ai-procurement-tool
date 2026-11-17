@@ -33,5 +33,15 @@
  "Estudantes que já têm dispositivo": "Wanafunzi ambao tayari wana kifaa",
  "Não, são outras escolas": "Hapana, ni shule nyingine",
  "Categorias e opções de cada desafio, um desafio por vez": "Makundi na machaguo ya kila changamoto, changamoto moja kwa wakati",
- "Duração do plano, viagens, overhead, taxa administrativa e formação": "Muda wa mpango, safari, gharama za uendeshaji, ada ya utawala na mafunzo"
+ "Duração do plano, viagens, overhead, taxa administrativa e formação": "Muda wa mpango, safari, gharama za uendeshaji, ada ya utawala na mafunzo",
+ "{p}% vai para operação e uso": "{p}% inaenda kwenye uendeshaji na matumizi",
+ "Ensino, aprendizagem e inclusão; alternativa com IA": "Kufundisha, kujifunza na ujumuishi; mbadala wenye AI",
+ "Investimento total": "Jumla ya uwekezaji",
+ "O OpEx não inclui o consumo medido, que aparece em custo de utilidades. Custos compartilhados entram uma vez só.": "OpEx haijumuishi matumizi yanayopimwa, ambayo yanaonekana kwenye gharama za matumizi. Gharama zinazoshirikiwa zinahesabiwa mara moja tu.",
+ "Orçamento de {n} meses · {moeda}": "Bajeti ya miezi {n} · {moeda}",
+ "Orçamento de até {n} meses · {moeda}": "Bajeti ya hadi miezi {n} · {moeda}",
+ "Os valores da educação são os da alternativa com IA. A alternativa sem IA soma {v}.": "Thamani za elimu ni za mbadala wenye AI. Mbadala bila AI unafikia jumla ya {v}.",
+ "Resumo do investimento": "Muhtasari wa uwekezaji",
+ "Salvaguardas, soberania e capacidade do setor público": "Ulinzi, mamlaka ya nchi na uwezo wa sekta ya umma",
+ "Todos os valores cobrem o período completo do plano.": "Kiasi chote kinashughulikia kipindi chote cha mpango."
 }

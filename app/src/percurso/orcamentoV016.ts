@@ -287,7 +287,8 @@ function pessoasDoPlano(s: Estado, sel: { c: CategoriaV16; marcadas: string[]; c
 
 /** Orçamento da frente (v017): soma das opções escolhidas, por fase. */
 export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
-  const o = raizOrcamento(s, f), moeda = String(o.moeda || s.moeda?.cod || 'USD'), fases = fasesAtivas(s, f), taxa = taxaV16(moeda, s);
+  // v022.1 (governança): sempre a moeda escolhida pela pessoa no plano (a gravada no orçamento ficava velha ao trocar)
+  const o = raizOrcamento(s, f), moeda = String((f === 'governanca' ? s.moeda?.cod || o.moeda : o.moeda || s.moeda?.cod) || 'USD'), fases = fasesAtivas(s, f), taxa = taxaV16(moeda, s);
   const sel = categoriasEscolhidas(s, f), disponiveis = categoriasV16(s, f);
   const fmt = (v: number) => formatarMoedaEst(v, moeda);
   // v018.1: a formação 3.2 sugere as pessoas do plano
