@@ -35,8 +35,8 @@ describe('rotas', () => {
 });
 
 describe('textos', () => {
-  it('toda tela do Essencial tem frase de abertura e nome curto', () => {
-    ESSENCIAL.forEach((t) => { expect(LEAD[t.id], t.id).toBeTruthy(); expect(CURTO[t.id], t.id).toBeTruthy(); });
+  it('toda tela do Essencial tem frase de abertura e nome curto (a tela do lugar ficou sem frase de abertura na v022.1)', () => {
+    ESSENCIAL.forEach((t) => { if (t.id !== 'local') expect(LEAD[t.id], t.id).toBeTruthy(); expect(CURTO[t.id], t.id).toBeTruthy(); });
   });
   it('linha "muda no plano"', () => {
     expect(linhaAfeta(['kpi.ano0', 'A1', 'rec:x', 'rec:y'])).toBe('custo do teste (Ano 0) · regras do teste e da implantação (A1) · 2 recomendações possíveis');

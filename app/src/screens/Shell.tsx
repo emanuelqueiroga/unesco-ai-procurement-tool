@@ -140,11 +140,10 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
   const atalhos = (
     <>
       <Button variant="secondary" size="sm" href={href.inicio()}>{t('Início')}</Button>
-      {botaoMatriz}
-      {s.modo === 'refinar' ? <Button variant="secondary" size="sm" href={href.refinar()}>{t('Calculadora')}</Button> : null}
     </>
   );
-  const modo = gov ? null : (
+  // v022.1: o seletor Essencial/Refinar saiu do cabeçalho (gerava confusão); fica só o percurso orientado
+  const modo = true ? null : (
     <Segmented
       label={t('Modo')}
       value={s.modo}
@@ -246,7 +245,7 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
                 {verPlano}
                 <SeletorIdioma compacto />
                 {botaoTema}
-                {botaoCaso}
+                {gov ? botaoCaso : null}
               </div>
             )}
           </div>
@@ -255,10 +254,10 @@ export function Shell({ children, pos = {}, nav = true, plano = true, contexto }
               {ctxCab ? <p className="pc-menu-ctx">{ctxCab}</p> : null}
               <div className="pc-menu-acoes">{gov ? <>{botaoMatriz}{botaoCalculo}</> : atalhos}{verPlano}</div>
               {modo ? <div className="pc-menu-linha">{modo}</div> : null}
-              <div className="pc-menu-linha"><SeletorIdioma />{botaoTema}{botaoCaso}</div>
+              <div className="pc-menu-linha"><SeletorIdioma />{botaoTema}{gov ? botaoCaso : null}</div>
             </nav>
           ) : null}
-          {nav && passos.length ? <div className="pc-cab-etapas pc-container"><StepBar steps={passos} compact={celular} label={t('Seu caminho')} /></div> : null}
+          {gov && nav && passos.length ? <div className="pc-cab-etapas pc-container"><StepBar steps={passos} compact={celular} label={t('Seu caminho')} /></div> : null}
         </header>}
         {faixas}
         {plano && semColuna ? <div className="pc-container"><FaixaCusto s={s} tela={pos.tela} /></div> : null}
