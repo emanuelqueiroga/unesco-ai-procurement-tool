@@ -29,7 +29,8 @@ export function App() {
   const chave = rota.tipo === 'pergunta' ? `${rota.n}/${rota.tela}` : '';
   // v022.1: no percurso combinado as telas mudam de capítulo; um link com o capítulo antigo vai para o certo
   useEffect(() => {
-    if (rota.tipo !== 'pergunta' || !percursoCombinado(ctx)) return;
+    // v022.1: também na governança, onde as páginas de opções passaram do capítulo 3 para o 2 (navegação em profundidade)
+    if (rota.tipo !== 'pergunta' || !(percursoCombinado(ctx) || percursoGovernanca(ctx))) return;
     const q = telasDoPercurso(useCaso.getState()).find(x => x.id === rota.tela);
     if (q && q.capitulo !== rota.n) window.location.replace(`#/capitulo/${q.capitulo}/${q.id}`);
   }, [chave, ctx]); // eslint-disable-line react-hooks/exhaustive-deps

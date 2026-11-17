@@ -150,8 +150,9 @@ export const TEXTOS_REC_R6_TELAS = [
 // v018: o fluxo da governança é o da v017 — Contexto → Categorias → Opções (a etapa 4 fica vazia e some da barra).
 export const GOVERNANCA_INFO: Record<Capitulo, InfoCapitulo> = {
   1: { ...CAPITULOS_INFO[1], titulo: 'Contexto', guia: 'Qual é o contexto da sua rede e o que você quer melhorar?' },
-  2: { n: 2, titulo: 'Categorias', guia: 'Quais categorias de custo entram no plano?', texto: '', minutos: 5, entrega: '', alimenta: '' },
-  3: { n: 3, titulo: 'Opções', guia: 'O que será feito em cada categoria?', texto: '', minutos: 8, entrega: '', alimenta: '' },
+  // v022.1: em profundidade: o capítulo 2 tem as categorias e as opções de cada desafio; o 3, os custos adicionais
+  2: { n: 2, titulo: 'Desafios', guia: 'Categorias e opções de cada desafio, um desafio por vez', texto: '', minutos: 12, entrega: '', alimenta: '' },
+  3: { n: 3, titulo: 'Custos adicionais', guia: 'Duração do plano, viagens, overhead, taxa administrativa e formação', texto: '', minutos: 2, entrega: '', alimenta: '' },
   4: { n: 4, titulo: 'Fases', guia: 'Quanto dura e quantas pessoas alcança cada fase?', texto: '', minutos: 3, entrega: '', alimenta: '' },
 };
 /** v020: capítulos da educação com e sem IA. */

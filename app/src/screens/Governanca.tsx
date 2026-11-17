@@ -223,7 +223,9 @@ export function Governanca({ rota }: { rota: Rota }) {
  // v018: a antiga página única de opções ('gov-opcoes') vai para a página da primeira categoria escolhida
  const resolve=(x?:string)=>x==='gov-opcoes'?entradaOpcoesGov(s):x==='gov-categorias'?entradaCategoriasGov(s):x;
  const alvo=legada?qs.find(q=>q.id===resolve(legada.id)):rota.tipo==='pergunta'?qs.find(q=>q.id===resolve(TELAS_FORA_DO_FLUXO[rota.tela])):undefined;
- const remap=rota.tipo==='plano'?null:rota.tipo==='refinar'?href.pergunta(3,entradaOpcoesGov(s)):rota.tipo==='abertura'?entradaEtapa(s,n):rota.tipo==='sintese'?n<4?entradaEtapa(s,(n+1) as Capitulo):href.plano():!ativa?alvo?href.pergunta(alvo.capitulo,alvo.id):entradaEtapa(s,n):null;
+ // v022.1: a tela existe no fluxo, mas noutro capítulo (as opções passaram do capítulo 3 para o 2): vai para o certo
+ const outroCap=rota.tipo==='pergunta'?qs.find(q=>q.id===rota.tela):undefined;
+ const remap=rota.tipo==='plano'?null:rota.tipo==='refinar'?href.pergunta(3,entradaOpcoesGov(s)):rota.tipo==='abertura'?entradaEtapa(s,n):rota.tipo==='sintese'?n<4?entradaEtapa(s,(n+1) as Capitulo):href.plano():!ativa?(outroCap?href.pergunta(outroCap.capitulo,outroCap.id):alvo?href.pergunta(alvo.capitulo,alvo.id):entradaEtapa(s,n)):null;
  usePadroes('governanca',rota.tipo==='pergunta'&&rota.tela.startsWith('gov-'));
  useEffect(()=>{if(remap)window.location.replace(remap);},[remap]);if(remap)return null;
  if(rota.tipo==='plano')return <Shell plano={false}><PlanoGov s={s}/></Shell>;

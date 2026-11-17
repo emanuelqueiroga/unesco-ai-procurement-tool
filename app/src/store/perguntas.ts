@@ -71,7 +71,8 @@ export function categoriasGovAtivas(ctx?: Record<string, any>): string[] {
   const escolhidas = Array.isArray(sel) ? sel : [];
   return CATEGORIAS_GOV.filter(c => problemas.includes(c.desafio) && escolhidas.includes(c.id)).map(c => c.id);
 }
-const TELAS_CATEGORIAS_GOV: TelaEssencial[] = CATEGORIAS_GOV.map(c => ({ id: telaOpcoesGov(c.id), capitulo: 3 as Capitulo, n: [], campos: ['govOrcamento'] }));
+// v022.1: navegação em profundidade: as páginas de opções ficam no capítulo 2, logo depois das categorias do desafio
+const TELAS_CATEGORIAS_GOV: TelaEssencial[] = CATEGORIAS_GOV.map(c => ({ id: telaOpcoesGov(c.id), capitulo: 2 as Capitulo, n: [], campos: ['govOrcamento'] }));
 // v019: as categorias de custo ficam numa página por desafio (como no Figma), na ordem dos desafios do catálogo; só as
 // dos desafios marcados entram no fluxo. A antiga página única ('gov-categorias') leva à do primeiro desafio marcado.
 export const PREFIXO_CATEGORIAS_GOV = 'gov-categorias-';
@@ -83,8 +84,10 @@ export const desafioDaTelaCategorias = (id: string) => id.startsWith(PREFIXO_CAT
 const TELAS_ESCOLHA_GOV: TelaEssencial[] = DESAFIOS_COM_CATEGORIAS.map(d => ({ id: telaCategoriasGov(d), capitulo: 2 as Capitulo, n: [], campos: ['govOrcamento'] }));
 export const GOVERNANCA: TelaEssencial[] = [
   ...ESSENCIAL.filter(t => ['local', 'prioridades', 'problemas'].includes(t.id)),
-  ...TELAS_ESCOLHA_GOV,
-  ...TELAS_CATEGORIAS_GOV,
+  // v022.1: em profundidade: para cada desafio, a página das categorias dele e, em seguida, as opções de cada categoria
+  // (1.1, 1.2...); depois o próximo desafio; os custos adicionais fecham o fluxo, no capítulo 3
+  ...TELAS_ESCOLHA_GOV.flatMap(tc => [tc, ...TELAS_CATEGORIAS_GOV.filter(to => CATEGORIAS_GOV.find(c => telaOpcoesGov(c.id) === to.id)?.desafio === desafioDaTelaCategorias(tc.id))]),
+  ...TELAS_CATEGORIAS_GOV.filter(to => !TELAS_ESCOLHA_GOV.some(tc => CATEGORIAS_GOV.find(c => telaOpcoesGov(c.id) === to.id)?.desafio === desafioDaTelaCategorias(tc.id))),
   { id: TELA_ADICIONAIS_GOV, capitulo: 3, n: [], campos: ['govOrcamento'] },
 ];
 /** Fluxo da governança do caso: só as páginas das categorias escolhidas. */
