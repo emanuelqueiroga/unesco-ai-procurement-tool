@@ -101,7 +101,8 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
   const prox = telas[i + 1] ? href.pergunta(n, telas[i + 1].id) : href.sintese(n);
   const ant = i > 0 ? href.pergunta(n, telas[i - 1].id) : n === 1 ? href.inicio() : href.abertura(n);
   const sugeridos = sugeridosDaTela(s, tela);
-  const ajuda = ajudaDeTela(tela.n, { modo: modoTeste(s.caso) });
+  // v022.1: a tela do lugar fica sem o "Por que perguntamos isso?"
+  const ajuda = SEM_POR_QUE.has(id) ? null : ajudaDeTela(tela.n, { modo: modoTeste(s.caso) });
   const dica = dicaDaTela(tela.campos);
   const afetados = Array.from(new Set(tela.campos.flatMap((c) => afetadosPor(c))));
   // um texto sugerido que ainda tem lacuna (__) não é confirmado: a pessoa precisa completá-lo
@@ -141,6 +142,8 @@ export function Pergunta({ n, tela: id }: { n: Capitulo; tela: string }) {
     </Shell>
   );
 }
+
+const SEM_POR_QUE = new Set(['local']);
 
 /** títulos dos detalhes do Refinar que não são perguntas de CAMPOS (EXTRAS_REFINAR) */
 const TITULO_EXTRA: Record<string, string> = {
