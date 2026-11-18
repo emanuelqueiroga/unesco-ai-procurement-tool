@@ -11,6 +11,7 @@ import { linhasAdicionais, linhaFormacao, ID_ADICIONAIS, ADICIONAIS } from './ad
 import { calcularD2, ehOpcaoD2, classeDaOpcao } from './desafio2Gov';
 import { linhaFormacao32, OPCAO_FORMACAO_32 } from './formacaoGov';
 import { lerLit } from './letramento';
+import { calcularLit, temContaLit } from './letramentoV23';
 import { chaveEd, lerEd, usaIAEd, usuariosIAEd } from './pedagogico';
 import { PROBLEMA_POR_ID } from '../domain/prioridades.js';
 import { formatarMoedaEst, parametro, taxaMoeda, totaisOrcamento, PARAMETRO_EQUIPE, PARAMETRO_FORMACAO, PARAMETRO_LICENCA, PARAMETRO_CONECTIVIDADE, PARAMETRO_DISPOSITIVO,
@@ -303,6 +304,8 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
       if (f === 'governanca' && ehOpcaoD2(r)) return calcularD2(s, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num, moeda);
       // v018.1: a formação 3.2 é contada por componentes (criação, instrutores, sala e alimentação, deslocamento, coordenação)
       if (f === 'governanca' && r === OPCAO_FORMACAO_32) return linhaFormacao32(sx, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num, moeda);
+      // v022.1 (letramento, etapa 4): cada opção tem a sua conta fixa (letramentoV23.ts)
+      if (f === 'letramento' && temContaLit(r)) return calcularLit(s, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num, moeda);
       const l = calcularOpcao(sx, f, c.id, r, custos[chaveOpcao(r)] || {}, fases, taxa, fmt, num, moeda);
       if (f === 'governanca') { const cl = classeDaOpcao(r); l.capex = l.total === null ? null : cl === 'capex' ? l.total : 0; l.opex = l.total === null ? null : cl === 'opex' ? l.total : 0; l.uso = l.total === null ? null : 0; }
       return l;

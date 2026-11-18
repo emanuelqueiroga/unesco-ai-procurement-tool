@@ -18,6 +18,7 @@ import { gravarOrc } from './OrcamentoV16';
 import { CartaoComLista, DicaGov, type GrupoDica } from './InfoDica';
 import { explicacaoGov } from '../percurso/explicacoesGov';
 import { CATEGORIAS } from '../domain/catalogo_v016.js';
+import { OPCOES_ESCALA_LIT } from '../percurso/letramentoV23';
 import { ADICIONAIS, ID_ADICIONAIS, PERGUNTAS_ADICIONAIS, FORMACAO_AD, type SalvoAdicionais } from '../percurso/adicionaisGov';
 import { FORMACAO_GOV } from '../percurso/formacaoGov';
 import './moldura.css';
@@ -160,9 +161,9 @@ function LinhaValor({ s, frente, cat, l, moeda }: { s: CasoStore; frente: Frente
       <h4 className="pv-v17-op">{nome}</h4>
       <p className={'pv-v17-total' + (l.status === 'referencia' ? ' pc-rec-valor--est' : '')}>{l.total === null ? '—' : fmt(l.total)}</p>
     </div>
-    {frente === 'governanca' && l.capex != null && l.opex != null && l.total !== null ? <p className="pv-v17-capex">CapEx {fmt(l.capex)} · OpEx {fmt(l.opex)}{l.uso ? ' · ' + t('Uso') + ' ' + fmt(l.uso) : ''}</p> : null}
+    {comExplicacao(frente) && l.capex != null && l.opex != null && l.total !== null ? <p className="pv-v17-capex">CapEx {fmt(l.capex)} · OpEx {fmt(l.opex)}{l.uso ? ' · ' + t(frente === 'letramento' ? 'Custo de utilidades' : 'Uso') + ' ' + fmt(l.uso) : ''}</p> : null}
     {l.entradas?.length ? <EntradasD2 entradas={l.entradas} moeda={moeda} atual={atual} gravar={gravar} /> : null}
-    {frente === 'governanca' ? null : <Selecao label={t('Como calcular')} value={l.tipo} opcoes={ORDEM_TIPOS.map(k => [k, t(k === 'fechado' && semFases(frente) ? 'Valor total' : TIPOS[k].rotulo)])}
+    {comExplicacao(frente) ? null : <Selecao label={t('Como calcular')} value={l.tipo} opcoes={ORDEM_TIPOS.map(k => [k, t(k === 'fechado' && semFases(frente) ? 'Valor total' : TIPOS[k].rotulo)])}
       onChange={v => gravarOrc(frente, caminho, { ...atual(), tipo: v as TipoCusto, unit: undefined, horas: undefined, ...(v === 'fechado' ? {} : { fases: undefined }) })} />}
     {l.tipo === 'time' ? <EquipeV18 l={l} moeda={moeda} atual={atual} gravar={gravar} />
       : l.tipo === 'comp' ? null
@@ -175,13 +176,13 @@ function LinhaValor({ s, frente, cat, l, moeda }: { s: CasoStore; frente: Frente
           <CampoNumero label={t(def.unit!) + ' (' + moeda + ')'} value={l.unitDaReferencia ? '' : l.unit ?? ''} decimais placeholder={l.unitRef === null ? undefined : new Intl.NumberFormat(String(LOC()), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(l.unitRef)}
             hint={l.unitRef === null ? undefined : l.refPais ? t('Vazio = salário do país (ILOSTAT) com encargos ({v}).', { v: fmt(l.unitRef) }) : frente === 'governanca' ? t('Vazio = estimativa de referência ({v}).', { v: fmt(l.unitRef) }) : t('Vazio = referência genérica ({v}).', { v: fmt(l.unitRef) })} onChange={v => gravar('unit', v)} />
         </div>}
-    {frente === 'governanca' && l.conta && l.status !== 'falta' ? <ComoCalculado l={l} /> : null}
+    {comExplicacao(frente) && l.conta && l.status !== 'falta' ? <ComoCalculado l={l} /> : null}
     {l.nota && l.status !== 'falta' ? <p className="pc-nota">{l.nota}</p> : null}
     {l.tipo === 'time' ? null
       : l.qtdSugerida ? <p className="pc-nota">{l.fonte === 'gov31' || l.fonte === 'plano' ? t('Quantidade sugerida pela ferramenta (estimativa de referência); altere se precisar.') : t('Quantidade sugerida a partir do Contexto; altere se precisar.')}</p> : null}
     {l.status === 'falta' ? <p className="pv-v17-falta">{t('Falta')}: {l.falta.join(', ')}</p>
       : semFases(frente) ? (l.status === 'referencia' && !l.refPais ? <p className="pv-v17-fases">{t('estimativa de referência, que pode variar conforme o contexto')}</p> : null)
-      : <p className="pv-v17-fases">{fases.map(f => f.nome + ' ' + fmt(l.porFase[f.id] || 0)).join(' · ')}{l.status === 'referencia' ? ' · ' + (l.refPais ? t('salário do país (ILOSTAT)') : t('referência genérica, igual para todos os países')) : ''}</p>}
+      : <p className="pv-v17-fases">{fases.map(f => f.nome + ' ' + fmt(l.porFase[f.id] || 0)).join(' · ')}{l.status === 'referencia' ? ' · ' + (l.refPais ? t('salário do país (ILOSTAT)') : frente === 'letramento' ? t('estimativa de referência, que pode variar conforme o contexto') : t('referência genérica, igual para todos os países')) : ''}</p>}
   </div>;
 }
 
@@ -317,7 +318,18 @@ const gravarLit = (caminho: string, valor: any) => { const st = useCaso.getState
 const numeroLit = (v: number | '') => ({ valor: v, situacao: 'informado', origem: 'informado' });
 /** Item da 1.1 marcado: o campo do parâmetro (no número de professores, também se inclui diretores e coordenadores). */
 function CampoParametro({ s, rotulo, titulo }: { s: CasoStore; rotulo: string; titulo?: boolean }) {
-  const p = PARAMETROS[rotulo], lider = selecoesLit(s, 'publicos.A11.incluiLiderancas');
+  // v022.1 (letramento, etapa 4): as opções da 1.1 abrem os números da escala; vazios, valem as sugestões
+  const escala = OPCOES_ESCALA_LIT[rotulo];
+  if (escala) return <div className="pv-v17-linha" role="group" aria-label={t(rotulo)}>
+    {titulo ? <div className="pv-v17-linha-cab"><h4 className="pv-v17-op">{t(rotulo)}</h4></div> : null}
+    <div className="pv-v17-campos">{escala.map(p => { const sug = p.sug(s), salvo = valorLit(lerLit(s, p.campo)), marcado = ehSugerido(s, 'letramento', p.campo);
+      return <CampoNumero key={p.campo} label={t(p.rotulo)} value={marcado ? '' : salvo} decimais={p.decimais} placeholder={sug === null ? undefined : new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 2 }).format(sug)}
+        hint={t(p.dica)} onChange={v => gravarLit(p.campo, v === '' ? undefined : numeroLit(v))} />; })}</div>
+    <p className="pc-nota">{t('Sem custo próprio: estes números definem a escala das demais categorias de professores.')}</p>
+  </div>;
+  const p = PARAMETROS[rotulo];
+  if (!p) return null;
+  const lider = selecoesLit(s, 'publicos.A11.incluiLiderancas');
   return <div className="pv-v17-linha" role="group" aria-label={t(rotulo)}>
     {titulo ? <div className="pv-v17-linha-cab"><h4 className="pv-v17-op">{t(rotulo)}</h4></div> : null}
     <div className="pv-v17-campos">

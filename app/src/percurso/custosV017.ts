@@ -153,7 +153,8 @@ export const PARAMETROS: Record<string, Parametro> = {
   'Duração e calendário': { campo: 'orcamento.parametros.duracao', rotulo: 'Duração (meses)' },
   'Frequência de reciclagem': { campo: 'orcamento.parametros.reciclagem', rotulo: 'Reciclagens por ano' },
 };
-export const ehParametro = (f: FrenteEstimativa, catId: string, rotulo: string) => f === 'letramento' && catId === 'l11' && Object.hasOwn(PARAMETROS, rotulo);
+// v022.1: todas as opções da 1.1 do letramento são parâmetros de escala (letramentoV23.ts), sem custo próprio
+export const ehParametro = (f: FrenteEstimativa, catId: string, _rotulo: string) => f === 'letramento' && catId === 'l11';
 
 /** Opções de formação docente da educação (um tipo de profissional por desafio). */
 const FORMACAO_ED = /^(Educadores|Professores|Instrutores)/;
