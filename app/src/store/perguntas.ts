@@ -169,8 +169,8 @@ function educacaoDoCaso(ctx?: Record<string, any>): TelaEssencial[] {
     ...EDUCACAO_V20.filter(t => t.id === 'ed-adicionais'),
   ];
 }
-// v022.1: Educando sobre a IA (letramento), com o fluxo da governança: os desafios (A11, A12, A16), as fases e, para cada
-// desafio marcado, a página das categorias dele e uma página de opções por categoria marcada; os custos adicionais no fim.
+// v022.1: Educando sobre a IA (letramento), com o fluxo da governança: os desafios (A11, A12, A16) e, para cada desafio
+// marcado, a página das categorias dele e uma página de opções por categoria marcada; depois as fases e os custos adicionais.
 type CategoriaLit = { id: string; n: string; nome: string; desafio: string };
 const CATEGORIAS_LIT = (CATEGORIAS as unknown as { letramento: CategoriaLit[] }).letramento;
 export const DESAFIOS_LIT_IDS: string[] = [...new Set(CATEGORIAS_LIT.map(c => c.desafio))];
@@ -187,16 +187,17 @@ export function categoriasLitAtivas(ctx?: Record<string, any>): string[] {
   const escolhidas = Array.isArray(sel) ? sel : [];
   return CATEGORIAS_LIT.filter(c => problemas.includes(c.desafio) && escolhidas.includes(c.id)).map(c => c.id);
 }
-/** As páginas de um percurso de letramento (sem as do contexto): fases, e em profundidade categorias e opções de cada desafio. */
+/** As páginas de um percurso de letramento (sem as do contexto): em profundidade, categorias e opções de cada desafio; depois as fases. */
 function letramentoDoDesafio(ctx?: Record<string, any>): TelaEssencial[] {
   const problemas: unknown[] = Array.isArray(ctx?.problemas) ? ctx!.problemas : [];
   const ds = DESAFIOS_LIT_IDS.filter(d => problemas.includes(d)), ativas = categoriasLitAtivas(ctx);
+  // v022.1 (18/11): as fases vêm depois dos itens de todos os desafios (primeiro se escolhe o que entra, depois o ritmo)
   return [
-    { id: TELA_FASES_LIT, capitulo: 2, n: [], campos: ['letramento'] },
     ...(ds.length ? ds : [DESAFIOS_LIT_IDS[0]]).flatMap(d => [
       { id: telaCategoriasLit(d), capitulo: 2 as Capitulo, n: [], campos: ['letramento'] },
       ...CATEGORIAS_LIT.filter(c => c.desafio === d && ativas.includes(c.id)).map(c => ({ id: telaOpcoesLit(c.id), capitulo: 2 as Capitulo, n: [], campos: ['letramento'] })),
     ]),
+    { id: TELA_FASES_LIT, capitulo: 2, n: [], campos: ['letramento'] },
   ];
 }
 function letramentoDoCaso(ctx?: Record<string, any>): TelaEssencial[] {
