@@ -13,7 +13,7 @@ import { orcamentoGovernanca } from '../percurso/governanca';
 import { DESAFIOS_GOV_V016, CATEGORIAS } from '../domain/catalogo_v016.js';
 import { percursoEducacaoV20, percursoCombinado, telaDaEducacao } from '../domain';
 import { desafioDaTelaEd } from '../store';
-import { CATEGORIAS_ED, desafiosEscolhidos, opcoesEscolhidas, nomeDesafio } from '../percurso/educacaoV20';
+import { CATEGORIAS_ED, desafiosEscolhidos, opcoesEscolhidas, nomeDesafio, categoriasEscolhidas as categoriasEdEscolhidas } from '../percurso/educacaoV20';
 
 /** Cor de cada desafio da governança (a mesma na árvore e na lista). */
 export const COR_DESAFIO: Record<string, string> = { G21: 'var(--v19-d1)', G22: 'var(--v19-d2)', G23: 'var(--v19-d3)' };
@@ -33,7 +33,8 @@ const GEO: Record<string, { no: P; galho: string; folhas: [string, P, string][] 
 const ORDEM = ['G21', 'G22', 'G23'];
 const CATS_GOV = (CATEGORIAS as any).governanca as { id: string; n: string; nome: string; desafio: string }[];
 
-interface Info { estado: Estado; desafio: string; marcado: boolean }
+/** `fora` (v022.1): categoria que ficou de fora (o desafio já tem categorias escolhidas e esta não está entre elas) */
+interface Info { estado: Estado; desafio: string; marcado: boolean; fora?: boolean }
 export interface Arvore { centro: Estado; nos: Record<string, Info>; lista: { id: string; nome: string; cor: string; marcado: boolean; n: number; de: number; atual: boolean }[] }
 
 /** Estado de cada nó da árvore para a tela atual (exportado para os testes). */
@@ -49,7 +50,7 @@ export function estadoDaArvore(s: CasoStore, tela?: string): Arvore {
     const escolhidas = cats.filter((c) => itens.has(c.id)), feitas = escolhidas.filter((c) => itens.get(c.id).respondido);
     for (const c of cats) {
       const item = itens.get(c.id);
-      nos[c.id] = { desafio: d, marcado, estado: c.id === catAtual ? 'atual' : item && item.respondido ? 'feito' : 'vazio' };
+      nos[c.id] = { desafio: d, marcado, estado: c.id === catAtual ? 'atual' : item && item.respondido ? 'feito' : 'vazio', fora: escolhidas.length > 0 && !item };
     }
     const noCaminho = desafioAtual === d;
     nos[d] = { desafio: d, marcado, estado: noCaminho ? (catAtual ? 'caminho' : 'atual') : marcado && escolhidas.length > 0 && feitas.length === escolhidas.length ? 'feito' : 'vazio' };
@@ -61,6 +62,8 @@ export function estadoDaArvore(s: CasoStore, tela?: string): Arvore {
   return { centro: desafioAtual ? 'caminho' : 'atual', nos, lista };
 }
 
+/** v022.1: opacidade do que ficou de fora do caminho (desafio não marcado ou categoria não escolhida). */
+const APAGADO = .2;
 const corGalho = (e: Estado, cor: string) => e === 'feito' ? cor : e === 'caminho' || e === 'atual' ? 'var(--primary)' : 'var(--v19-galho)';
 const ordemGalho = (e: Estado) => e === 'vazio' ? 0 : e === 'feito' ? 1 : 2;
 
@@ -75,20 +78,20 @@ function No({ p, e, cor, id, raio = 8.5 }: { p: P; e: Estado; cor: string; id: s
 
 function ArvoreSVG({ a }: { a: Arvore }) {
   // galhos: cinza por baixo, depois os feitos (na cor do desafio) e, por cima, o caminho atual (azul)
-  const galhos: { d: string; e: Estado; cor: string; marcado: boolean; k: string }[] = [];
+  const galhos: { d: string; e: Estado; cor: string; marcado: boolean; k: string; fora?: boolean }[] = [];
   for (const d of ORDEM) {
     const g = GEO[d], info = a.nos[d], cor = COR_DESAFIO[d];
     galhos.push({ k: d, d: g.galho, e: info.estado, cor, marcado: info.marcado });
-    for (const [id, , path] of g.folhas) galhos.push({ k: id, d: path, e: a.nos[id].estado, cor, marcado: info.marcado });
+    for (const [id, , path] of g.folhas) galhos.push({ k: id, d: path, e: a.nos[id].estado, cor, marcado: info.marcado, fora: a.nos[id].fora });
   }
   galhos.sort((x, y) => ordemGalho(x.e) - ordemGalho(y.e));
   return (
     <svg className="v19-caminho-diagrama" viewBox="55 88 230 204" role="img" aria-hidden="true" focusable="false">
-      {galhos.map((g) => <path key={'g' + g.k} d={g.d} fill="none" stroke={corGalho(g.e, g.cor)} strokeWidth={g.e === 'vazio' ? 3 : 2.4} strokeLinecap="round" opacity={g.marcado ? 1 : .45} />)}
+      {galhos.map((g) => <path key={'g' + g.k} d={g.d} fill="none" stroke={corGalho(g.e, g.cor)} strokeWidth={g.e === 'vazio' ? 3 : 2.4} strokeLinecap="round" opacity={!g.marcado ? APAGADO : g.fora ? APAGADO : 1} />)}
       {ORDEM.map((d) => {
         const g = GEO[d], cor = COR_DESAFIO[d], info = a.nos[d];
-        return <g key={d} opacity={info.marcado ? 1 : .45}>
-          {g.folhas.map(([id, p]) => <No key={id} id={id} p={p} e={a.nos[id].estado} cor={cor} />)}
+        return <g key={d} opacity={info.marcado ? 1 : APAGADO}>
+          {g.folhas.map(([id, p]) => <g key={id} opacity={info.marcado && a.nos[id].fora ? APAGADO : 1}><No id={id} p={p} e={a.nos[id].estado} cor={cor} /></g>)}
           <No id={d} p={g.no} e={info.estado} cor={cor} />
         </g>;
       })}
@@ -111,8 +114,8 @@ function CaminhoEducacao({ s, tela, frente }: { s: CasoStore; tela?: string; fre
   const pos = (r: number, a: number): P => [C[0] + r * Math.cos(a), C[1] + r * Math.sin(a)];
   const curva = (a: P, b: P) => `M${a[0].toFixed(1)} ${a[1].toFixed(1)}Q${((a[0] + b[0]) / 2 + (b[1] - a[1]) * 0.15).toFixed(1)} ${((a[1] + b[1]) / 2 - (b[0] - a[0]) * 0.15).toFixed(1)} ${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
   const itens = ds.map((d, i) => {
-    const a = ang(i), no = pos(R1, a), sel = opcoesEscolhidas(s, d);
-    const folhas = CATEGORIAS_ED.map((c, k) => { const da = (k - 1.5) * (n > 4 ? 0.22 : 0.3); return { id: d + c.id, p: pos(R2, a + da), feito: sel.some(o => o.startsWith(c.id)) }; });
+    const a = ang(i), no = pos(R1, a), sel = opcoesEscolhidas(s, d), cats = categoriasEdEscolhidas(s, d);
+    const folhas = CATEGORIAS_ED.map((c, k) => { const da = (k - 1.5) * (n > 4 ? 0.22 : 0.3); return { id: d + c.id, p: pos(R2, a + da), feito: sel.some(o => o.startsWith(c.id)), fora: cats.length > 0 && !cats.includes(c.id) }; });
     const eAtual = atual === d, feito = sel.length > 0 && !eAtual;
     return { d, no, folhas, estado: (eAtual ? 'atual' : feito ? 'feito' : 'vazio') as Estado, cor: corEd(d), feitas: folhas.filter(f => f.feito).length };
   });
@@ -123,11 +126,11 @@ function CaminhoEducacao({ s, tela, frente }: { s: CasoStore; tela?: string; fre
       {frente ? <p className="v19-caminho-frente"><i aria-hidden="true" /><span><strong>{t('Frente:')}</strong> {t(frente.titulo)}</span></p> : null}
       {n ? <svg className="v19-caminho-diagrama" viewBox="0 0 240 224" role="img" aria-hidden="true" focusable="false">
         {itens.map(x => <g key={'g' + x.d}>
-          {x.folhas.map(f => <path key={f.id} d={curva(x.no, f.p)} fill="none" stroke={f.feito ? x.cor : 'var(--v19-galho)'} strokeWidth={f.feito ? 2.2 : 2.6} strokeLinecap="round" />)}
+          {x.folhas.map(f => <path key={f.id} opacity={f.fora ? APAGADO : 1} d={curva(x.no, f.p)} fill="none" stroke={f.feito ? x.cor : 'var(--v19-galho)'} strokeWidth={f.feito ? 2.2 : 2.6} strokeLinecap="round" />)}
           <path d={curva(C, x.no)} fill="none" stroke={corG(x.estado, x.cor)} strokeWidth={x.estado === 'vazio' ? 2.6 : 2.4} strokeLinecap="round" />
         </g>)}
         {itens.map(x => <g key={x.d}>
-          {x.folhas.map(f => <g key={f.id} className={'v19-no is-' + (f.feito ? 'feito' : 'vazio')} data-id={f.id} data-estado={f.feito ? 'feito' : 'vazio'}><circle cx={f.p[0]} cy={f.p[1]} r={6} fill={f.feito ? x.cor : 'var(--v19-no-vazio)'} stroke={f.feito ? 'none' : x.cor} strokeWidth={1.1} /></g>)}
+          {x.folhas.map(f => <g key={f.id} opacity={f.fora ? APAGADO : 1} className={'v19-no is-' + (f.feito ? 'feito' : 'vazio')} data-id={f.id} data-estado={f.feito ? 'feito' : 'vazio'}><circle cx={f.p[0]} cy={f.p[1]} r={6} fill={f.feito ? x.cor : 'var(--v19-no-vazio)'} stroke={f.feito ? 'none' : x.cor} strokeWidth={1.1} /></g>)}
           <No id={x.d} p={x.no} e={x.estado} cor={x.cor} raio={8} />
         </g>)}
         <No id="frente" p={C} e={atual ? 'caminho' : 'atual'} cor="var(--primary)" raio={9} />
