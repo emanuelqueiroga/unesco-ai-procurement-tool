@@ -12,9 +12,9 @@ import { abrirFrente, type FrenteId } from '../percurso/frentes';
 import { presetGovernanca, selecoesGov, detalheGov, textoSelecaoGov } from '../percurso/governancaPresets';
 import { entradaEtapa, vizinhos, focarPendencia } from '../percurso/navegacaoOrientada';
 import { useEffect, useState, useContext } from 'react';
-import { DESAFIOS_GOV_V016 } from '../domain/catalogo_v016.js';
-import { useCaso, telasDoCapitulo, telasAtivas, faltamDe, telaRespondida, TELAS_FORA_DO_FLUXO, entradaOpcoesGov, entradaCategoriasGov, desafioDaTelaCategorias, categoriaDaTelaGov, categoriaGov, TELA_ADICIONAIS_GOV, type CasoStore, type Capitulo } from '../store';
-import { temEducacao, percursoPedagogico, temGovernanca, temLetramento, percursoLetramento, percursoGovernanca, projetoUsoDefinido, tamanhoRedeValido, LOC } from '../domain';
+import { DESAFIOS_GOV_V016, DESAFIOS_LIT_V023 } from '../domain/catalogo_v016.js';
+import { useCaso, telasDoCapitulo, telasAtivas, faltamDe, telaRespondida, TELAS_FORA_DO_FLUXO, entradaOpcoesGov, entradaCategoriasGov, desafioDaTelaCategorias, categoriaDaTelaGov, categoriaGov, TELA_ADICIONAIS_GOV, TELA_FASES_LIT, TELA_ADICIONAIS_LIT, desafioDaTelaCategoriasLit, categoriaDaTelaLit, categoriaLit, type CasoStore, type Capitulo } from '../store';
+import { temEducacao, percursoPedagogico, temGovernanca, temLetramento, percursoLetramento, percursoGovernanca, projetoUsoDefinido, tamanhoRedeValido, LOC, somenteLetramento, percursoCombinado } from '../domain';
 import { Button, TextField, OptionCard, OptionCardGroup, QuestionFrame, ChapterOpening, PlanPanel, PlanDrawer, useMediaQuery, BREAKPOINTS, Alert, Chip, ChipGroup } from '../ui';
 import { Shell } from './Shell';
 import { ControlesTela } from '../percurso/Controles';
@@ -174,11 +174,20 @@ function ControlesGov({ s, id, tentou = false }: { s: CasoStore; id: string; ten
     case 'gov-categorias': return <CategoriasV17 s={s} frente="governanca" />;
     case 'gov-opcoes': return <OpcoesV17 s={s} frente="governanca" />;
     case TELA_ADICIONAIS_GOV: return <AdicionaisPaginaV18 s={s} />;
+    // v022.1: Educando sobre a IA (letramento)
+    case TELA_FASES_LIT: return <FasesV16 s={s} frente="letramento" />;
+    case TELA_ADICIONAIS_LIT: return percursoCombinado(s.ctx) && temGovernanca(s.ctx) ? <div className="ed-adicionais-comb">
+      <section aria-labelledby="adic-gov"><h2 id="adic-gov" className="ed-subtitulo">{t('Governança')}</h2><AdicionaisPaginaV18 s={s} /></section>
+      <section aria-labelledby="adic-lit"><h2 id="adic-lit" className="ed-subtitulo">{t('Educando sobre a IA')}</h2><AdicionaisPaginaV18 s={s} frente="letramento" /></section>
+    </div> : <AdicionaisPaginaV18 s={s} frente="letramento" />;
     case 'gov-sandbox': return <Grupo s={s} base="govSandbox" campos={CAMPOS_SANDBOX} />;
     case 'gov-revisao': return <Grupo s={s} base="govRevisao" campos={[
       ['indicadores', 'Indicadores e metas institucionais'], ['responsavel', 'Responsável pelo acompanhamento'], ['periodicidade', 'Periodicidade da revisão'], ['data', 'Próxima revisão'], ['alcance', 'Alcance da política'], ['progresso', 'Progresso de implementação'], ['canal', 'Transparência e prestação de contas'],
     ]} />;
-    default: { const d = desafioDaTelaCategorias(id); if (d) return <CategoriasV17 s={s} frente="governanca" desafio={d} />; const cat = categoriaDaTelaGov(id); return cat ? <OpcoesV17 s={s} frente="governanca" cat={cat} /> : null; }
+    default: {
+      const dl = desafioDaTelaCategoriasLit(id); if (dl) return <CategoriasV17 s={s} frente="letramento" desafio={dl} />;
+      const cl = categoriaDaTelaLit(id); if (cl) return <OpcoesV17 s={s} frente="letramento" cat={cl} />;
+      const d = desafioDaTelaCategorias(id); if (d) return <CategoriasV17 s={s} frente="governanca" desafio={d} />; const cat = categoriaDaTelaGov(id); return cat ? <OpcoesV17 s={s} frente="governanca" cat={cat} /> : null; }
   }
 }
 function PDFs({ s }: { s: CasoStore }) {
@@ -204,18 +213,30 @@ export function PlanoGov({ s, embutido }: { s: CasoStore; embutido?: boolean }) 
     {embutido ? null : <p><Button variant="secondary" href={href.pergunta(3, TELA_ADICIONAIS_GOV)}>{t('Voltar')}</Button></p>}
   </div>;
 }
+/** v022.1: plano de Educando sobre a IA (prioridade única). `embutido` = seção do plano combinado. */
+export function PlanoLit({ s, embutido }: { s: CasoStore; embutido?: boolean }) {
+  const faltam = faltamDe(s);
+  return <div className="pc-gov-plano">
+    {embutido ? <h2 id="plano-letramento">{t('Educando sobre a IA')}</h2> : <><h1>{t('Educando sobre a IA')}</h1><p className="pc-lead">{instituicaoV16(s)}</p></>}
+    {embutido ? null : <ResumoInvestimento s={s} />}
+    <ResumoV16 s={s} frente="letramento" />
+    {!embutido && faltam.length ? <details className="pc-gov-card" open><summary>{t('Respostas que faltam')} ({faltam.length})</summary><ul>{faltam.map(q => <li key={q.id}><a href={href.pergunta(q.capitulo, q.id)}>{tituloTelaGov(q.id)}</a></li>)}</ul></details> : null}
+    {embutido ? null : <p><Button variant="secondary" href={href.pergunta(3, TELA_ADICIONAIS_LIT)}>{t('Voltar')}</Button></p>}
+  </div>;
+}
 /** v019: sobretítulo com o desafio da página (categorias de um desafio e opções de uma categoria). */
 function sobretituloGov(id: string): string | undefined {
-  const d = desafioDaTelaCategorias(id) || categoriaGov(id)?.desafio, x = d ? DESAFIOS_GOV_V016.find((y: any) => y.id === d) : undefined;
+  const d = desafioDaTelaCategorias(id) || categoriaGov(id)?.desafio || desafioDaTelaCategoriasLit(id) || categoriaLit(id)?.desafio;
+  const x = d ? [...DESAFIOS_GOV_V016, ...DESAFIOS_LIT_V023].find((y: any) => y.id === d) : undefined;
   return x ? t(x.t) : undefined;
 }
 /** v018: títulos das telas compartilhadas como no fluxo da governança da v017. */
-const TITULOS_V017: Record<string, string> = { problemas: 'Quais desafios você quer enfrentar?' };
+const TITULOS_V017: Record<string, string> = { problemas: 'Quais desafios você quer enfrentar?', [TELA_FASES_LIT]: 'Fases do ciclo', [TELA_ADICIONAIS_LIT]: 'Custos adicionais' };
 /** Título de uma tela da governança; a página de uma categoria leva o número e o nome da categoria. */
 function tituloTelaGov(id: string): string {
   // v019: página das categorias de um desafio (o nome do desafio vai no sobretítulo)
-  if (desafioDaTelaCategorias(id)) return t('Quais custos você quer incluir?');
-  const c = categoriaGov(id);
+  if (desafioDaTelaCategorias(id) || desafioDaTelaCategoriasLit(id)) return t('Quais custos você quer incluir?');
+  const c = categoriaGov(id) || categoriaLit(id);
   return c ? c.n + ' ' + t(c.nome) : t(TITULOS_V017[id] || TITULO_TELA[id] || CURTO[id] || id);
 }
 // Links e posições antigas são remapeados; as respostas antigas continuam guardadas no caso.
@@ -227,10 +248,11 @@ export function Governanca({ rota }: { rota: Rota }) {
  const alvo=legada?qs.find(q=>q.id===resolve(legada.id)):rota.tipo==='pergunta'?qs.find(q=>q.id===resolve(TELAS_FORA_DO_FLUXO[rota.tela])):undefined;
  // v022.1: a tela existe no fluxo, mas noutro capítulo (as opções passaram do capítulo 3 para o 2): vai para o certo
  const outroCap=rota.tipo==='pergunta'?qs.find(q=>q.id===rota.tela):undefined;
- const remap=rota.tipo==='plano'?null:rota.tipo==='refinar'?href.pergunta(3,entradaOpcoesGov(s)):rota.tipo==='abertura'?entradaEtapa(s,n):rota.tipo==='sintese'?n<4?entradaEtapa(s,(n+1) as Capitulo):href.plano():!ativa?(outroCap?href.pergunta(outroCap.capitulo,outroCap.id):alvo?href.pergunta(alvo.capitulo,alvo.id):entradaEtapa(s,n)):null;
+ const remap=rota.tipo==='plano'?null:rota.tipo==='refinar'?(somenteLetramento(s.ctx)?href.plano():href.pergunta(3,entradaOpcoesGov(s))):rota.tipo==='abertura'?entradaEtapa(s,n):rota.tipo==='sintese'?n<4?entradaEtapa(s,(n+1) as Capitulo):href.plano():!ativa?(outroCap?href.pergunta(outroCap.capitulo,outroCap.id):alvo?href.pergunta(alvo.capitulo,alvo.id):entradaEtapa(s,n)):null;
  usePadroes('governanca',rota.tipo==='pergunta'&&rota.tela.startsWith('gov-'));
+ usePadroes('letramento',rota.tipo==='pergunta'&&rota.tela.startsWith('lit-'));
  useEffect(()=>{if(remap)window.location.replace(remap);},[remap]);if(remap)return null;
- if(rota.tipo==='plano')return <Shell plano={false}><PlanoGov s={s}/></Shell>;
+ if(rota.tipo==='plano')return <Shell plano={false}>{somenteLetramento(s.ctx)?<PlanoLit s={s}/>:<PlanoGov s={s}/>}</Shell>;
  if(!ativa)return null;
  const id=ativa.id,info=infoCapitulo(n,s),dest=vizinhos(s,id),falta=!TELAS_OPCIONAIS.includes(id)&&!telaRespondida(s,ativa),pendencias=pendenciasGov(s,id);
  const focar=(p:string)=>focarPendencia('gov-'+p.replace(/[^a-zA-Z0-9_-]/g,'-'));

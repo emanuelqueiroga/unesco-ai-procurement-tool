@@ -1,7 +1,7 @@
 // Textos do percurso (v14): capítulos, a frase de abertura de cada pergunta e os rótulos dos trechos do plano.
 // Português é a chave de tradução; `t()` traduz quando há dicionário (os textos novos entram nos
 // dicionários em i18n/v14_<l>.json; até lá aparecem em português nos outros idiomas).
-import { tr, percursoGovernanca, percursoEducacaoV20, percursoCombinado } from '../domain';
+import { tr, percursoGovernanca, percursoEducacaoV20, percursoCombinado, percursoLetramentoV23, prioridadesNoCombinado } from '../domain';
 import { CATEGORIAS, DESAFIOS_EDU_V016 } from '../domain/catalogo_v016.js';
 import type { Capitulo } from '../store';
 
@@ -170,8 +170,19 @@ export const COMBINADO_INFO: Record<Capitulo, InfoCapitulo> = {
   3: { n: 3, titulo: 'Educação com e sem IA', guia: 'Desafios, público, fases e custos de cada desafio', texto: '', minutos: 10, entrega: '', alimenta: '' },
   4: { n: 4, titulo: 'Custos adicionais', guia: 'Viagens, custos indiretos e taxa administrativa das duas prioridades', texto: '', minutos: 2, entrega: '', alimenta: '' },
 };
+/** v022.1: capítulos do combinado conforme as prioridades marcadas (2: governança e/ou letramento; 3: educação, ou os
+ *  custos adicionais quando não há educação; 4: custos adicionais com a educação). */
+function combinadoInfo(n: Capitulo, ctx?: Record<string, any>): InfoCapitulo {
+  const pr = prioridadesNoCombinado(ctx), gov = pr.includes('governar'), lit = pr.includes('sobre'), ed = pr.includes('com');
+  if (n === 2) return gov && lit ? { ...COMBINADO_INFO[2], titulo: 'Governança e Educando sobre a IA', guia: 'Categorias e opções de custo da governança e de Educando sobre a IA' }
+    : lit ? { ...COMBINADO_INFO[2], titulo: 'Educando sobre a IA', guia: 'Fases, categorias e opções de custo de Educando sobre a IA' } : COMBINADO_INFO[2];
+  if (n === 3 && !ed) return { ...COMBINADO_INFO[4], n: 3, guia: 'Viagens, custos indiretos e taxa administrativa das prioridades' };
+  if (n === 4 && lit) return { ...COMBINADO_INFO[4], guia: 'Viagens, custos indiretos e taxa administrativa das prioridades' };
+  return COMBINADO_INFO[n];
+}
 export function infoCapitulo(n: Capitulo, s?: { ctx?: Record<string, any> }): InfoCapitulo {
-  if (percursoCombinado(s?.ctx)) return COMBINADO_INFO[n];
+  if (percursoCombinado(s?.ctx)) return combinadoInfo(n, s?.ctx);
+  if (percursoLetramentoV23(s?.ctx)) return n === 3 ? { ...GOVERNANCA_INFO[3], guia: 'Viagens, overhead e taxa administrativa' } : GOVERNANCA_INFO[n];
   return percursoGovernanca(s?.ctx) ? GOVERNANCA_INFO[n] : percursoEducacaoV20(s?.ctx) ? EDUCACAO_INFO[n] : CAPITULOS_INFO[n];
 }
 Object.assign(CURTO, {
@@ -184,6 +195,9 @@ Object.assign(CURTO, {
 });
 // v018: a página de cada categoria da governança leva o nome da categoria (o número entra no título da página)
 for (const c of (CATEGORIAS as unknown as { governanca: { id: string; nome: string }[] }).governanca) CURTO['gov-opcoes-' + c.id] = c.nome;
+// v022.1: Educando sobre a IA (letramento), com as mesmas telas da governança
+Object.assign(CURTO, { 'lit-fases': 'Fases', 'lit-adicionais': 'Custos adicionais' });
+for (const c of (CATEGORIAS as unknown as { letramento: { id: string; nome: string; desafio: string }[] }).letramento) Object.assign(CURTO, { ['lit-opcoes-' + c.id]: c.nome, ['lit-categorias-' + c.desafio]: 'Categorias de custo' });
 // v020: a página de custos de cada desafio da educação com e sem IA leva o nome do desafio
 for (const d of DESAFIOS_EDU_V016 as { id: string; t: string }[]) {
   CURTO['ed-custos-' + d.id] = d.t;

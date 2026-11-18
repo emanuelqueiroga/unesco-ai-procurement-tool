@@ -4,7 +4,7 @@ import { clone, cfgAtual, numerosCusto, casoAtual, perfil, recomendacoesCaso, pr
   etapasAtivas, alunosEtapa, problemasMarcados, temLacuna, prioridadesDoPercurso } from '../domain';
 import type { Estado14, Origem, Capitulo } from './tipos';
 import { ESSENCIAL, telasAtivas, telasDoCapitulo, categoriasEdDoCaso, type TelaEssencial } from './perguntas';
-import { governancaRespondida } from '../percurso/governanca';
+import { governancaRespondida, letramentoRespondida } from '../percurso/governanca';
 import { soEstado, valorDe } from './caso';
 
 /** cfg de custo do caso (ou do preset escolhido em custo.base), sem gravar no estado */
@@ -73,6 +73,7 @@ function educacaoRespondida(s: Estado14, id: string): boolean {
 export function telaRespondida(s: Estado14, t: TelaEssencial): boolean {
   if (t.id.startsWith('gov-')) return governancaRespondida(s, t.id);
   if (t.id.startsWith('ed-')) return educacaoRespondida(s, t.id);
+  if (t.id.startsWith('lit-')) return letramentoRespondida(s, t.id);
   if (t.id === 'governanca') return t.campos.every(g => !!s.resp[g]);
   if (t.id === 'etapas') return (respondido(s, 'etapas') || respondido(s, 'grade')) && etapasCompletas(s);
   if (t.id === 'problemas') return String(s.ctx.problemaOutro || '').trim() !== '' || (respondido(s, 'problemas') && respostaReal(s, 'problemas'));

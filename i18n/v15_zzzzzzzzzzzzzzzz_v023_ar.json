@@ -155,5 +155,13 @@
  "Expansão do currículo para as escolas em fases, com metas para cada uma.": "توسيع المنهج ليشمل المدارس على مراحل، مع أهداف لكل مرحلة.",
  "Equipe que acompanha as escolas e os professores na adoção do currículo.": "فريق يدعم المدارس والمعلمين في اعتماد المنهج.",
  "Divulgação do novo currículo para escolas, professores e famílias.": "التعريف بالمنهج الجديد لدى المدارس والمعلمين والأسر.",
- "Revisão periódica do currículo para acompanhar a evolução da IA.": "مراجعة دورية للمنهج لمواكبة تطوّر الذكاء الاصطناعي."
+ "Revisão periódica do currículo para acompanhar a evolução da IA.": "مراجعة دورية للمنهج لمواكبة تطوّر الذكاء الاصطناعي.",
+ "Cada prioridade usa as suas fases e os seus custos adicionais, mostrados nas seções abaixo.": "لكل أولوية مراحلها وتكاليفها الإضافية الخاصة، المعروضة في الأقسام أدناه.",
+ "Categorias e opções de custo da governança e de Educando sobre a IA": "فئات التكلفة وخياراتها للحوكمة وللتعليم حول الذكاء الاصطناعي",
+ "Educando sobre a IA e Educação com e sem IA têm cada uma a sua formação de professores. Se forem os mesmos professores, revise as quantidades para não contar a mesma formação duas vezes.": "لكلٍّ من «التعليم حول الذكاء الاصطناعي» و«التعليم مع الذكاء الاصطناعي وبدونه» تدريبه الخاص للمعلمين. إذا كان المعلمون أنفسهم، فراجع الكميات حتى لا يُحسب التدريب نفسه مرتين.",
+ "Fases, categorias e opções de custo de Educando sobre a IA": "مراحل التعليم حول الذكاء الاصطناعي وفئات التكلفة وخياراتها",
+ "Formação de professores nas duas prioridades": "تدريب المعلمين في الأولويتين",
+ "Governança e Educando sobre a IA": "الحوكمة والتعليم حول الذكاء الاصطناعي",
+ "Plano do programa: {p}": "خطة البرنامج: {p}",
+ "Viagens, custos indiretos e taxa administrativa das prioridades": "السفر والتكاليف غير المباشرة والرسوم الإدارية للأولويات"
 }

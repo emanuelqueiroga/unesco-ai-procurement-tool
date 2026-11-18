@@ -6,12 +6,13 @@
 // escolhida e todas as suas opções marcadas têm valor; um desafio, quando todas as suas categorias escolhidas estão
 // feitas. Desafios não marcados ficam esmaecidos. Abaixo, a lista dos desafios com "n de m" e uma barra na cor do desafio.
 import type { CasoStore } from '../store';
-import { categoriaGov, desafioDaTelaCategorias } from '../store';
+import { categoriaGov, desafioDaTelaCategorias, categoriaLit, desafioDaTelaCategoriasLit } from '../store';
 import { t } from '../percurso/textos';
 import { frentesDoPlano, frenteAtual } from '../percurso/frentes';
 import { orcamentoGovernanca } from '../percurso/governanca';
-import { DESAFIOS_GOV_V016, CATEGORIAS } from '../domain/catalogo_v016.js';
-import { percursoEducacaoV20, percursoCombinado, telaDaEducacao } from '../domain';
+import { DESAFIOS_GOV_V016, DESAFIOS_LIT_V023, CATEGORIAS } from '../domain/catalogo_v016.js';
+import { orcamentoV16 } from '../percurso/orcamentoV016';
+import { percursoEducacaoV20, percursoCombinado, telaDaEducacao, telaDoLetramento, somenteLetramento, temGovernanca } from '../domain';
 import { desafioDaTelaEd } from '../store';
 import { CATEGORIAS_ED, desafiosEscolhidos, opcoesEscolhidas, nomeDesafio, categoriasEscolhidas as categoriasEdEscolhidas } from '../percurso/educacaoV20';
 
@@ -31,22 +32,47 @@ const GEO: Record<string, { no: P; galho: string; folhas: [string, P, string][] 
     ['g11', [128, 273], 'M170 233C160 245 140 250 128 273'], ['g12', [170, 277], 'M170 233C172 250 168 262 170 277'], ['g13', [212, 273], 'M170 233C180 245 200 250 212 273']] },
 };
 const ORDEM = ['G21', 'G22', 'G23'];
-const CATS_GOV = (CATEGORIAS as any).governanca as { id: string; n: string; nome: string; desafio: string }[];
+type Cat = { id: string; n: string; nome: string; desafio: string };
+const CATS_GOV = (CATEGORIAS as any).governanca as Cat[];
+type Geo = { no: P; galho: string; folhas: [string, P, string][] };
+
+/** v022.1: Educando sobre a IA: a mesma árvore, com as folhas calculadas em leque (o desafio 1 tem cinco categorias). */
+const r1 = (v: number) => Math.round(v * 10) / 10;
+function leque(no: P, galho: string, ang: number, abertura: number, ids: string[], r = 48): Geo {
+  const rad = Math.PI / 180, c: P = [r1(no[0] + r * .45 * Math.cos(ang * rad)), r1(no[1] + r * .45 * Math.sin(ang * rad))];
+  return { no, galho, folhas: ids.map((id, i) => {
+    const a = (ang - abertura / 2 + (ids.length > 1 ? abertura * i / (ids.length - 1) : abertura / 2)) * rad, p: P = [r1(no[0] + r * Math.cos(a)), r1(no[1] + r * Math.sin(a))];
+    return [id, p, `M${no[0]} ${no[1]}Q${c[0]} ${c[1]} ${p[0]} ${p[1]}`];
+  }) };
+}
+const CATS_LIT = (CATEGORIAS as any).letramento as Cat[];
+const idsLit = (d: string) => CATS_LIT.filter(c => c.desafio === d).map(c => c.id);
+const GEO_LIT: Record<string, Geo> = {
+  A11: leque(GEO.G21.no, GEO.G21.galho, 90, 150, idsLit('A11'), 50),
+  A12: leque(GEO.G22.no, GEO.G22.galho, 210, 95, idsLit('A12')),
+  A16: leque(GEO.G23.no, GEO.G23.galho, 330, 95, idsLit('A16')),
+};
+interface Modelo { frente: 'governanca' | 'letramento'; ordem: string[]; cats: Cat[]; desafios: any[]; geo: Record<string, Geo>; cor: Record<string, string>; dTela: (id: string) => string | null; cTela: (id: string) => Cat | undefined }
+const MODELO_GOV: Modelo = { frente: 'governanca', ordem: ORDEM, cats: CATS_GOV, desafios: DESAFIOS_GOV_V016 as any[], geo: GEO, cor: COR_DESAFIO, dTela: desafioDaTelaCategorias, cTela: categoriaGov };
+const MODELO_LIT: Modelo = { frente: 'letramento', ordem: ['A11', 'A12', 'A16'], cats: CATS_LIT, desafios: DESAFIOS_LIT_V023 as any[], geo: GEO_LIT,
+  cor: { A11: 'var(--v19-d1)', A12: 'var(--v19-d2)', A16: 'var(--v19-d3)' }, dTela: desafioDaTelaCategoriasLit, cTela: categoriaLit };
+/** Árvore da governança ou do letramento: a do letramento só quando ele é a prioridade única ou a tela é dele. */
+const modeloDe = (s: CasoStore, tela?: string) => somenteLetramento(s.ctx) || (percursoCombinado(s.ctx) && (telaDoLetramento(tela) || !temGovernanca(s.ctx))) ? MODELO_LIT : MODELO_GOV;
 
 /** `fora` (v022.1): categoria que ficou de fora (o desafio já tem categorias escolhidas e esta não está entre elas) */
 interface Info { estado: Estado; desafio: string; marcado: boolean; fora?: boolean }
-export interface Arvore { centro: Estado; nos: Record<string, Info>; lista: { id: string; nome: string; cor: string; marcado: boolean; n: number; de: number; atual: boolean }[] }
+export interface Arvore { modelo?: Modelo; centro: Estado; nos: Record<string, Info>; lista: { id: string; nome: string; cor: string; marcado: boolean; n: number; de: number; atual: boolean }[] }
 
 /** Estado de cada nó da árvore para a tela atual (exportado para os testes). */
-export function estadoDaArvore(s: CasoStore, tela?: string): Arvore {
-  const dTela = tela ? desafioDaTelaCategorias(tela) : null, cTela = tela ? categoriaGov(tela) : undefined;
+export function estadoDaArvore(s: CasoStore, tela?: string, m: Modelo = modeloDe(s, tela)): Arvore {
+  const dTela = tela ? m.dTela(tela) : null, cTela = tela ? m.cTela(tela) : undefined;
   const desafioAtual = dTela || cTela?.desafio || null, catAtual = cTela?.id || null;
   const marcados: string[] = (Array.isArray(s.ctx.problemas) ? s.ctx.problemas : []).filter((x: unknown) => typeof x === 'string');
-  const itens = new Map<string, any>((orcamentoGovernanca(s).itens as any[]).map((i) => [i.id, i]));
+  const itens = new Map<string, any>(((m.frente === 'governanca' ? orcamentoGovernanca(s) : orcamentoV16(s, 'letramento')).itens as any[]).map((i) => [i.id, i]));
   const nos: Record<string, Info> = {};
   const lista: Arvore['lista'] = [];
-  for (const d of ORDEM) {
-    const marcado = marcados.includes(d), cats = CATS_GOV.filter((c) => c.desafio === d);
+  for (const d of m.ordem) {
+    const marcado = marcados.includes(d), cats = m.cats.filter((c) => c.desafio === d);
     const escolhidas = cats.filter((c) => itens.has(c.id)), feitas = escolhidas.filter((c) => itens.get(c.id).respondido);
     for (const c of cats) {
       const item = itens.get(c.id);
@@ -56,10 +82,10 @@ export function estadoDaArvore(s: CasoStore, tela?: string): Arvore {
     nos[d] = { desafio: d, marcado, estado: noCaminho ? (catAtual ? 'caminho' : 'atual') : marcado && escolhidas.length > 0 && feitas.length === escolhidas.length ? 'feito' : 'vazio' };
     const atualNele = !!catAtual && cats.some((c) => c.id === catAtual) && !itens.get(catAtual)?.respondido;
     const de = escolhidas.length || cats.length;
-    const nome = String((DESAFIOS_GOV_V016 as any[]).find((x) => x.id === d)?.t || d);
-    lista.push({ id: d, nome: t(nome), cor: COR_DESAFIO[d], marcado, n: Math.min(de, feitas.length + (atualNele ? 1 : 0)), de, atual: noCaminho });
+    const nome = String(m.desafios.find((x) => x.id === d)?.t || d);
+    lista.push({ id: d, nome: t(nome), cor: m.cor[d], marcado, n: Math.min(de, feitas.length + (atualNele ? 1 : 0)), de, atual: noCaminho });
   }
-  return { centro: desafioAtual ? 'caminho' : 'atual', nos, lista };
+  return { modelo: m, centro: desafioAtual ? 'caminho' : 'atual', nos, lista };
 }
 
 /** v022.1: opacidade do que ficou de fora do caminho (desafio não marcado ou categoria não escolhida). */
@@ -77,10 +103,11 @@ function No({ p, e, cor, id, raio = 8.5 }: { p: P; e: Estado; cor: string; id: s
 }
 
 function ArvoreSVG({ a }: { a: Arvore }) {
+  const m = a.modelo || MODELO_GOV;
   // galhos: cinza por baixo, depois os feitos (na cor do desafio) e, por cima, o caminho atual (azul)
   const galhos: { d: string; e: Estado; cor: string; marcado: boolean; k: string; fora?: boolean }[] = [];
-  for (const d of ORDEM) {
-    const g = GEO[d], info = a.nos[d], cor = COR_DESAFIO[d];
+  for (const d of m.ordem) {
+    const g = m.geo[d], info = a.nos[d], cor = m.cor[d];
     galhos.push({ k: d, d: g.galho, e: info.estado, cor, marcado: info.marcado });
     for (const [id, , path] of g.folhas) galhos.push({ k: id, d: path, e: a.nos[id].estado, cor, marcado: info.marcado, fora: a.nos[id].fora });
   }
@@ -88,8 +115,8 @@ function ArvoreSVG({ a }: { a: Arvore }) {
   return (
     <svg className="v19-caminho-diagrama" viewBox="55 88 230 204" role="img" aria-hidden="true" focusable="false">
       {galhos.map((g) => <path key={'g' + g.k} d={g.d} fill="none" stroke={corGalho(g.e, g.cor)} strokeWidth={g.e === 'vazio' ? 3 : 2.4} strokeLinecap="round" opacity={!g.marcado ? APAGADO : g.fora ? APAGADO : 1} />)}
-      {ORDEM.map((d) => {
-        const g = GEO[d], cor = COR_DESAFIO[d], info = a.nos[d];
+      {m.ordem.map((d) => {
+        const g = m.geo[d], cor = m.cor[d], info = a.nos[d];
         return <g key={d} opacity={info.marcado ? 1 : APAGADO}>
           {g.folhas.map(([id, p]) => <g key={id} opacity={info.marcado && a.nos[id].fora ? APAGADO : 1}><No id={id} p={p} e={a.nos[id].estado} cor={cor} /></g>)}
           <No id={d} p={g.no} e={info.estado} cor={cor} />
@@ -151,8 +178,8 @@ export function CaminhoLateral({ s, tela }: { s: CasoStore; tela?: string }) {
   if (percursoEducacaoV20(s.ctx)) return <CaminhoEducacao s={s} tela={tela} frente={frentesDoPlano(s).find((f) => f.id === frenteAtual(s))} />;
   // v022.1: no percurso combinado, a árvore da educação nas telas da educação e a da governança nas demais
   if (percursoCombinado(s.ctx) && telaDaEducacao(tela)) return <CaminhoEducacao s={s} tela={tela} frente={frentesDoPlano(s).find((f) => f.id === 'educacao')} />;
-  const frente = frentesDoPlano(s).find((f) => f.id === frenteAtual(s));
   const a = estadoDaArvore(s, tela);
+  const frente = frentesDoPlano(s).find((f) => f.id === (a.modelo?.frente === 'letramento' ? 'letramento' : frenteAtual(s)));
   return (
     <aside className="v19-caminho" aria-label={t('Seu caminho')}>
       <p className="v19-caminho-rotulo">{t('Seu caminho')}</p>

@@ -1,6 +1,6 @@
 // Perguntas do modo Essencial e vínculo resposta → trecho do plano
 // (spec, "Mapa das 51 perguntas para as 24 do Essencial" e "Comportamentos que fazem a narrativa").
-import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoGovernanca, percursoEducacaoV20, percursoCombinado } from '../domain';
+import { CAMPOS, CAMPO_POR_ID, QUESTOES_G, REGRAS_REC, modoTeste, percursoGovernanca, percursoEducacaoV20, percursoCombinado, percursoLetramentoV23, prioridadesNoCombinado } from '../domain';
 import type { Capitulo } from './tipos';
 import { CATEGORIAS } from '../domain/catalogo_v016.js';
 
@@ -169,16 +169,59 @@ function educacaoDoCaso(ctx?: Record<string, any>): TelaEssencial[] {
     ...EDUCACAO_V20.filter(t => t.id === 'ed-adicionais'),
   ];
 }
-export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id)), ...EDUCACAO_V20.filter(t => t.id.startsWith('ed-'))];
+// v022.1: Educando sobre a IA (letramento), com o fluxo da governança: os desafios (A11, A12, A16), as fases e, para cada
+// desafio marcado, a página das categorias dele e uma página de opções por categoria marcada; os custos adicionais no fim.
+type CategoriaLit = { id: string; n: string; nome: string; desafio: string };
+const CATEGORIAS_LIT = (CATEGORIAS as unknown as { letramento: CategoriaLit[] }).letramento;
+export const DESAFIOS_LIT_IDS: string[] = [...new Set(CATEGORIAS_LIT.map(c => c.desafio))];
+export const PREFIXO_CATEGORIAS_LIT = 'lit-categorias-', PREFIXO_OPCOES_LIT = 'lit-opcoes-', TELA_FASES_LIT = 'lit-fases', TELA_ADICIONAIS_LIT = 'lit-adicionais';
+export const telaCategoriasLit = (d: string) => PREFIXO_CATEGORIAS_LIT + d;
+export const telaOpcoesLit = (c: string) => PREFIXO_OPCOES_LIT + c;
+export const desafioDaTelaCategoriasLit = (id: string) => id.startsWith(PREFIXO_CATEGORIAS_LIT) ? id.slice(PREFIXO_CATEGORIAS_LIT.length) : null;
+export const categoriaDaTelaLit = (id: string) => id.startsWith(PREFIXO_OPCOES_LIT) ? id.slice(PREFIXO_OPCOES_LIT.length) : null;
+/** Categoria do letramento de uma página de opções (ou undefined). */
+export function categoriaLit(id: string): CategoriaLit | undefined { const c = categoriaDaTelaLit(id); return c ? CATEGORIAS_LIT.find(x => x.id === c) : undefined; }
+/** Categorias do letramento escolhidas, dos desafios marcados, na ordem do catálogo. */
+export function categoriasLitAtivas(ctx?: Record<string, any>): string[] {
+  const problemas: unknown[] = Array.isArray(ctx?.problemas) ? ctx!.problemas : [], sel: unknown = ctx?.letramento?.orcamento?.categorias;
+  const escolhidas = Array.isArray(sel) ? sel : [];
+  return CATEGORIAS_LIT.filter(c => problemas.includes(c.desafio) && escolhidas.includes(c.id)).map(c => c.id);
+}
+/** As páginas de um percurso de letramento (sem as do contexto): fases, e em profundidade categorias e opções de cada desafio. */
+function letramentoDoDesafio(ctx?: Record<string, any>): TelaEssencial[] {
+  const problemas: unknown[] = Array.isArray(ctx?.problemas) ? ctx!.problemas : [];
+  const ds = DESAFIOS_LIT_IDS.filter(d => problemas.includes(d)), ativas = categoriasLitAtivas(ctx);
+  return [
+    { id: TELA_FASES_LIT, capitulo: 2, n: [], campos: ['letramento'] },
+    ...(ds.length ? ds : [DESAFIOS_LIT_IDS[0]]).flatMap(d => [
+      { id: telaCategoriasLit(d), capitulo: 2 as Capitulo, n: [], campos: ['letramento'] },
+      ...CATEGORIAS_LIT.filter(c => c.desafio === d && ativas.includes(c.id)).map(c => ({ id: telaOpcoesLit(c.id), capitulo: 2 as Capitulo, n: [], campos: ['letramento'] })),
+    ]),
+  ];
+}
+function letramentoDoCaso(ctx?: Record<string, any>): TelaEssencial[] {
+  return [...ESSENCIAL.filter(t => ['local', 'prioridades', 'problemas'].includes(t.id)), ...letramentoDoDesafio(ctx), { id: TELA_ADICIONAIS_LIT, capitulo: 3, n: [], campos: ['letramento'] }];
+}
+export const TODAS_TELAS = [...ESSENCIAL, ...GOVERNANCA.filter(t => !ESSENCIAL.some(e => e.id === t.id)), ...EDUCACAO_V20.filter(t => t.id.startsWith('ed-')),
+  { id: TELA_FASES_LIT, capitulo: 2 as Capitulo, n: [], campos: ['letramento'] },
+  ...DESAFIOS_LIT_IDS.flatMap(d => [{ id: telaCategoriasLit(d), capitulo: 2 as Capitulo, n: [], campos: ['letramento'] },
+    ...CATEGORIAS_LIT.filter(c => c.desafio === d).map(c => ({ id: telaOpcoesLit(c.id), capitulo: 2 as Capitulo, n: [], campos: ['letramento'] }))]),
+  { id: TELA_ADICIONAIS_LIT, capitulo: 3 as Capitulo, n: [], campos: ['letramento'] }];
 /** v022.1: governança e educação juntas. Capítulo 1: lugar, prioridades e desafios da governança; 2: categorias e
  *  opções da governança; 3: desafios e ciclo de cada desafio da educação; 4: uma tela de custos adicionais para as
  *  duas (a 'ed-adicionais', que no combinado mostra também os da governança). */
+// v022.1: qualquer combinação de duas ou três prioridades, na ordem governança, educando sobre a IA, educando com e sem
+// IA. Capítulo 1: contexto (com os desafios da governança e do letramento); 2: governança e letramento; 3: educação com e
+// sem IA; os custos adicionais de todas numa tela só, no fim ('ed-adicionais' com a educação; sem ela, 'lit-adicionais').
 function combinadoDoCaso(ctx?: Record<string, any>): TelaEssencial[] {
-  const gov = governancaDoCaso(ctx).filter(t => t.id !== TELA_ADICIONAIS_GOV).map(t => t.capitulo === 3 ? { ...t, capitulo: 2 as Capitulo } : t);
-  const ed = educacaoDoCaso(ctx).filter(t => !['local', 'prioridades'].includes(t.id)).map(t => ({ ...t, capitulo: (t.id === 'ed-adicionais' ? 4 : 3) as Capitulo }));
-  return [...gov, ...ed];
+  const pr = prioridadesNoCombinado(ctx), gov = pr.includes('governar'), lit = pr.includes('sobre'), ed = pr.includes('com');
+  const contexto = ESSENCIAL.filter(t => ['local', 'prioridades', ...(gov || lit ? ['problemas'] : [])].includes(t.id));
+  const telasGov = gov ? governancaDoCaso(ctx).filter(t => t.capitulo !== 1 && t.id !== TELA_ADICIONAIS_GOV).map(t => ({ ...t, capitulo: 2 as Capitulo })) : [];
+  const telasLit = lit ? letramentoDoDesafio(ctx) : [];
+  const telasEd = ed ? educacaoDoCaso(ctx).filter(t => !['local', 'prioridades'].includes(t.id)).map(t => ({ ...t, capitulo: (t.id === 'ed-adicionais' ? 4 : 3) as Capitulo })) : [];
+  return [...contexto, ...telasGov, ...telasLit, ...telasEd, ...(ed ? [] : [{ id: TELA_ADICIONAIS_LIT, capitulo: 3 as Capitulo, n: [], campos: ['letramento'] }])];
 }
-export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] { return percursoCombinado(e?.ctx) ? combinadoDoCaso(e?.ctx) : percursoGovernanca(e?.ctx) ? governancaDoCaso(e?.ctx) : percursoEducacaoV20(e?.ctx) ? educacaoDoCaso(e?.ctx) : ESSENCIAL; }
+export function telasAtivas(e?: EscopoPercurso): TelaEssencial[] { return percursoCombinado(e?.ctx) ? combinadoDoCaso(e?.ctx) : percursoGovernanca(e?.ctx) ? governancaDoCaso(e?.ctx) : percursoLetramentoV23(e?.ctx) ? letramentoDoCaso(e?.ctx) : percursoEducacaoV20(e?.ctx) ? educacaoDoCaso(e?.ctx) : ESSENCIAL; }
 export function telasDoCapitulo(n: Capitulo, e?: EscopoPercurso): TelaEssencial[] { return telasAtivas(e).filter(t => t.capitulo === n); }
 export function telaDoCampo(campo: string): TelaEssencial | undefined { return ESSENCIAL.find(t => t.campos.includes(campo)) || TODAS_TELAS.find(t => t.campos.includes(campo)); }
 export function essencial(campo: string): boolean { return CAMPOS_ESSENCIAIS.includes(campo); }

@@ -6,7 +6,7 @@ import { LOC } from '../domain/i18n.js';
 import { nomePais, paisDoCaso } from '../domain/pais.js';
 import { tamanhoRedeValido, projetoUsoDefinido } from '../domain/escopo.js';
 import type { Estado14 } from '../store/tipos';
-import { categoriaDaTelaGov, desafioDaTelaCategorias, DESAFIOS_COM_CATEGORIAS, TELA_ADICIONAIS_GOV } from '../store/perguntas';
+import { categoriaDaTelaGov, desafioDaTelaCategorias, DESAFIOS_COM_CATEGORIAS, TELA_ADICIONAIS_GOV, desafioDaTelaCategoriasLit, categoriaDaTelaLit, DESAFIOS_LIT_IDS } from '../store/perguntas';
 import { t } from './textos';
 import { orcamentoV16, fasesSalvas, linhasFases, proximoV16, instituicaoV16 } from './orcamentoV016';
 import { estimativaReferencia, itemEmReferencia, valorEstimado, totaisOrcamento, linhasTotais, notaEstimativas, textoEstimado } from './estimativasOrcamento';
@@ -100,6 +100,21 @@ export function governancaRespondida(s: Estado14, id: string): boolean {
       return !!i && i.marcadas.length > 0 && i.respondido;
     }
   }
+}
+/** v022.1: Educando sobre a IA, no fluxo da governança. A página de categorias de um desafio segue a regra da governança
+ *  (só a última exige alguma categoria no plano); a de uma categoria pede pelo menos uma opção marcada. */
+export function letramentoRespondida(s: Estado14, id: string): boolean {
+  if (id === 'lit-fases') return fasesSalvas(s, 'letramento');
+  if (id === 'lit-adicionais') return true;
+  const o = orcamentoV16(s, 'letramento'), d = desafioDaTelaCategoriasLit(id);
+  if (d) {
+    if (o.itens.length > 0) return true;
+    const marcados: unknown[] = Array.isArray(s.ctx.problemas) ? s.ctx.problemas : [];
+    const ultimo = [...DESAFIOS_LIT_IDS].reverse().find(x => marcados.includes(x));
+    return !!ultimo && d !== ultimo;
+  }
+  const cat = categoriaDaTelaLit(id), i = cat ? o.itens.find(x => x.id === cat) : undefined;
+  return !!i && i.marcadas.length > 0;
 }
 /** Telas opcionais: Próximo não é bloqueado nelas. */
 export const TELAS_OPCIONAIS = ['gov-equipe', 'lit-escolas', 'lit-participantes', 'gov-fases', 'lit-fases', 'ed-fases'];

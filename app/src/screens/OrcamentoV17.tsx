@@ -3,7 +3,7 @@
 // (presencial, online…). 3) Valores: para cada opção marcada, quantidade × valor unitário (ou valor por fase).
 // Nada vem marcado; só quantidades e valores unitários com referência aparecem sugeridos depois da escolha.
 import { useId } from 'react';
-import { useCaso, type CasoStore } from '../store';
+import { useCaso, telasAtivas, type CasoStore } from '../store';
 import { OptionCard, OptionCardGroup, Popover, TextField, Button } from '../ui';
 import { CampoNumero } from '../percurso/CampoNumero';
 import { LOC } from '../domain';
@@ -23,9 +23,16 @@ import { FORMACAO_GOV } from '../percurso/formacaoGov';
 import './moldura.css';
 
 const telaFases = (f: FrenteEstimativa) => f === 'letramento' ? 'lit-fases' : 'ed-fases';
+/** v022.1: link para a tela das fases no capítulo em que ela está no fluxo do caso. */
+const hrefFases = (s: CasoStore, f: FrenteEstimativa) => { const id = telaFases(f), x = telasAtivas(s).find(q => q.id === id); return href.pergunta(x ? x.capitulo : 2, id); };
+/** v022.1: governança e letramento têm explicações, "i" com listas e a mesma página de custos adicionais. */
+const comExplicacao = (f: FrenteEstimativa) => f === 'governanca' || f === 'letramento';
+const nomeCatPt = (f: FrenteEstimativa, id: string) => String(((CATEGORIAS as any)[f] as any[] || []).find(c => c.id === id)?.nome || '');
 /** v018: o nome em português de uma categoria da governança (chave da explicação do "i"). */
 const nomeGovPt = (id: string) => String(((CATEGORIAS as any).governanca as any[]).find(c => c.id === id)?.nome || '');
 const nomeCat = (c: { n: string; nome: string }) => (c.n ? c.n + ' ' : '') + t(c.nome);
+/** Item do orçamento: o nome já vem traduzido. */
+const nomeItem = (c: { n: string; nome: string }) => (c.n ? c.n + ' ' : '') + c.nome;
 /** Agrupa as categorias pelo desafio (na educação, um grupo só). */
 function porGrupo<T extends { grupo: string }>(lista: T[]): [string, T[]][] {
   const m = new Map<string, T[]>();
@@ -49,7 +56,7 @@ export function CategoriasV17({ s, frente, desafio }: { s: CasoStore; frente: Fr
     {porGrupo(disponiveis).map(([grupo, cats]) => <section key={grupo} className="pv-v17-grupo">
       {grupo && !desafio ? <h2 className="pv-v17-desafio">{grupo}</h2> : null}
       <OptionCardGroup className="pc-lit-opcoes" label={grupo || t('Categorias de custo')} type="checkbox">
-        {cats.map(c => { const gov = frente === 'governanca', exp = gov ? explicacaoGov(c.nome) : undefined;
+        {cats.map(c => { const gov = comExplicacao(frente), exp = gov ? explicacaoGov(c.nome) : undefined;
           // v022.1 (governança): a legenda é a explicação da categoria e o "i" lista as opções que vêm depois
           const cartao = <OptionCard key={c.id} name="categorias" value={c.id} type="checkbox" checked={sel.includes(c.id)} disabled={categoriaObrigatoria(frente, c.id)}
             label={exp ? <>{nomeCat(c)}<span className="pr-optioncard-desc">{t(exp)}</span></> : nomeCat(c)}
@@ -75,15 +82,15 @@ export function OpcoesV17({ s, frente, cat }: { s: CasoStore; frente: FrenteEsti
   return <div className="pv-v17" id="opcoes" tabIndex={-1}>
     {cat ? null : semFases(frente) ? <div className="pv-v17-campos">{(() => { const campo = <CampoNumero label={t('Duração do plano (meses)')} value={raizOrcamento(s, frente).duracao ?? DURACAO_GOV_PADRAO} suggested={raizOrcamento(s, frente).duracao == null} onChange={v => gravarOrc(frente, 'duracao', v === '' ? undefined : v)} />;
       return frente === 'governanca' ? <div className="pc-dica-campo">{campo}<DicaGov chave="Duração do plano (meses)" inicio /></div> : campo; })()}</div>
-      : <p className="pv-v17-fases-resumo">{resumoFases(s, frente)} · {o.moeda} · <a href={href.pergunta(4, telaFases(frente))}>{t('Alterar fases')}</a></p>}
+      : <p className="pv-v17-fases-resumo">{resumoFases(s, frente)} · {o.moeda} · <a href={hrefFases(s, frente)}>{t('Alterar fases')}</a></p>}
     {porGrupo(lista).map(([grupo, itens]) => <section key={grupo} className="pv-v17-grupo">
       {grupo ? <h2 className="pv-v17-desafio">{grupo}</h2> : null}
       {itens.map(i => <div key={i.id} className="pv-v17-cat">
-        <div className="pv-v17-cat-cab"><h3 className="pv-v17-cat-nome">{nomeCat(i)}{frente === 'governanca' ? <DicaGov chave={nomeGovPt(i.id)} nome={nomeCat(i)} inicio /> : null}</h3><span className="pv-v17-cat-total">{i.valor === null ? '—' : fmt(i.valor)}</span></div>
-        {i.id === ID_ADICIONAIS ? <AdicionaisV18 s={s} linhas={i.linhas} moeda={o.moeda} />
+        <div className="pv-v17-cat-cab"><h3 className="pv-v17-cat-nome">{nomeItem(i)}{comExplicacao(frente) ? <DicaGov chave={nomeCatPt(frente, i.id)} nome={nomeItem(i)} inicio /> : null}</h3><span className="pv-v17-cat-total">{i.valor === null ? '—' : fmt(i.valor)}</span></div>
+        {i.id === ID_ADICIONAIS ? <AdicionaisV18 s={s} frente={frente} linhas={i.linhas} moeda={o.moeda} />
         : todosObrigatorios(frente, i.id) ? i.opcoes.map(r => <CampoParametro key={r} s={s} rotulo={r} titulo />)
-        : i.opcoes.length ? <OptionCardGroup className="pc-lit-opcoes" label={nomeCat(i)} type="checkbox">
-          {(() => { const previa = frente === 'governanca' ? previaGov(s, i) : null; return i.opcoes.map(r => { const on = i.marcadas.includes(r), l = i.linhas.find(x => x.rotulo === r);
+        : i.opcoes.length ? <OptionCardGroup className="pc-lit-opcoes" label={nomeItem(i)} type="checkbox">
+          {(() => { const previa = comExplicacao(frente) ? previaGov(s, i, frente) : null; return i.opcoes.map(r => { const on = i.marcadas.includes(r), l = i.linhas.find(x => x.rotulo === r);
             const exp = previa ? explicacaoGov(r) : undefined;
             // v022.1 (governança): a legenda é a explicação da opção e o "i" lista a equipe e os campos que se abrem ao marcá-la
             const cartao = <OptionCard key={r} name={'op-' + i.id} value={r} type="checkbox" checked={on} label={exp ? <>{t(r)}<span className="pr-optioncard-desc">{t(exp)}</span></> : t(r)} onChange={(_v, v) => marcar(i, r, v)} />;
@@ -101,24 +108,26 @@ export function OpcoesV17({ s, frente, cat }: { s: CasoStore; frente: FrenteEsti
 }
 
 /** v018 (governança): última página do fluxo: a duração do plano (padrão de 12 meses) e os custos adicionais. */
-export function AdicionaisPaginaV18({ s }: { s: CasoStore }) {
-  const frente: FrenteEstimativa = 'governanca', o = orcamentoV16(s, frente), i = o.itens.find(x => x.id === ID_ADICIONAIS);
+export function AdicionaisPaginaV18({ s, frente = 'governanca' }: { s: CasoStore; frente?: FrenteEstimativa }) {
+  const o = orcamentoV16(s, frente), i = o.itens.find(x => x.id === ID_ADICIONAIS);
   const fmt = (v: number) => formatarMoedaEst(v, o.moeda);
   return <div className="pv-v17" id="opcoes" tabIndex={-1}>
-    <div className="pv-v17-campos"><div className="pc-dica-campo"><CampoNumero label={t('Duração do plano (meses)')} value={raizOrcamento(s, frente).duracao ?? DURACAO_GOV_PADRAO} suggested={raizOrcamento(s, frente).duracao == null}
+    {semFases(frente) ? <div className="pv-v17-campos"><div className="pc-dica-campo"><CampoNumero label={t('Duração do plano (meses)')} value={raizOrcamento(s, frente).duracao ?? DURACAO_GOV_PADRAO} suggested={raizOrcamento(s, frente).duracao == null}
       onChange={v => gravarOrc(frente, 'duracao', v === '' ? undefined : v)} /><DicaGov chave="Duração do plano (meses)" inicio /></div></div>
+      : <p className="pv-v17-fases-resumo">{resumoFases(s, frente)} · {o.moeda} · <a href={hrefFases(s, frente)}>{t('Alterar fases')}</a></p>}
     {i ? <section className="pv-v17-grupo"><div className="pv-v17-cat">
-      <div className="pv-v17-cat-cab"><h3 className="pv-v17-cat-nome">{nomeCat(i)}<DicaGov chave={nomeGovPt(i.id)} nome={nomeCat(i)} inicio /></h3><span className="pv-v17-cat-total">{i.valor === null ? '—' : fmt(i.valor)}</span></div>
-      <AdicionaisV18 s={s} linhas={i.linhas} moeda={o.moeda} />
+      <div className="pv-v17-cat-cab"><h3 className="pv-v17-cat-nome">{nomeItem(i)}<DicaGov chave={nomeGovPt(i.id)} nome={nomeItem(i)} inicio /></h3><span className="pv-v17-cat-total">{i.valor === null ? '—' : fmt(i.valor)}</span></div>
+      <AdicionaisV18 s={s} frente={frente} linhas={i.linhas} moeda={o.moeda} />
     </div></section> : <p className="pc-nota">{t('Volte e escolha pelo menos uma categoria de custo.')}</p>}
   </div>;
 }
 
 /** v022.1 (governança): as linhas de todas as opções da categoria, como ficariam se fossem marcadas (para o "i"). */
-function previaGov(s: CasoStore, c: CategoriaV16): Map<string, LinhaOpcao> {
-  const raiz = raizOrcamento(s, 'governanca'), itens = raiz.itens || {};
-  const sx: any = { ...s, ctx: { ...s.ctx, govOrcamento: { ...raiz, categorias: [c.id], itens: { ...itens, [c.id]: { ...(itens[c.id] || {}), opcoes: [...c.opcoes] } } } } };
-  const item = orcamentoV16(sx, 'governanca').itens.find(x => x.id === c.id);
+function previaGov(s: CasoStore, c: CategoriaV16, f: FrenteEstimativa = 'governanca'): Map<string, LinhaOpcao> {
+  const raiz = raizOrcamento(s, f), itens = raiz.itens || {};
+  const nova = { ...raiz, categorias: [c.id], itens: { ...itens, [c.id]: { ...(itens[c.id] || {}), opcoes: [...c.opcoes] } } };
+  const sx: any = { ...s, ctx: f === 'letramento' ? { ...s.ctx, letramento: { ...(s.ctx.letramento || {}), orcamento: nova } } : { ...s.ctx, govOrcamento: nova } };
+  const item = orcamentoV16(sx, f).itens.find(x => x.id === c.id);
   return new Map((item?.linhas || []).map(l => [l.rotulo, l]));
 }
 
@@ -131,7 +140,7 @@ function gruposOpcaoGov(l?: LinhaOpcao): GrupoDica[] {
     ...(l.entradas || []).map(e => e.rotulo),
     ...(l.tipo !== 'time' && def.qtd ? [t(def.qtd), ...(def.horas ? [t(def.horasRotulo || 'Horas por pessoa')] : []), ...(def.unit ? [t(def.unit)] : [])] : []),
   ];
-  return [{ titulo: t('Equipe de referência'), itens: papeis }, { titulo: t('Campos a preencher'), itens: campos }];
+  return [{ titulo: t('Equipe de referência'), itens: papeis }, { titulo: t('Campos a preencher'), itens: campos }].filter(g => g.itens.length);
 }
 
 function Selecao({ label, value, opcoes, onChange }: { label: string; value: string; opcoes: [string, string][]; onChange: (v: string) => void }) {
@@ -245,10 +254,10 @@ function EntradasD2({ entradas, moeda, atual, gravar }: { entradas: EntradaD2[];
 
 /** v018 (governança): viagens, overhead e taxa administrativa — um percentual editável cada, com o padrão de fonte
  *  pública e "Como foi calculado". */
-function AdicionaisV18({ s, linhas, moeda }: { s: CasoStore; linhas: LinhaOpcao[]; moeda: string }) {
+function AdicionaisV18({ s, frente = 'governanca', linhas, moeda }: { s: CasoStore; frente?: FrenteEstimativa; linhas: LinhaOpcao[]; moeda: string }) {
   const fmt = (v: number) => formatarMoedaEst(v, moeda), n = (v: number) => new Intl.NumberFormat(String(LOC()), { maximumFractionDigits: 2 }).format(v);
-  const salvo = (raizOrcamento(s, 'governanca').adicionais || {}) as SalvoAdicionais;
-  const gravar = (k: string, v: unknown) => gravarOrc('governanca', 'adicionais', { ...(raizOrcamento(useCaso.getState(), 'governanca').adicionais || {}), [k]: v });
+  const salvo = (raizOrcamento(s, frente).adicionais || {}) as SalvoAdicionais;
+  const gravar = (k: string, v: unknown) => gravarOrc(frente, 'adicionais', { ...(raizOrcamento(useCaso.getState(), frente).adicionais || {}), [k]: v });
   return <>{linhas.map(l => { if (l.chave === FORMACAO_AD.chave) return <FormacaoAd key={l.chave} l={l} salvo={salvo} gravar={gravar} moeda={moeda} />;
     const a = ADICIONAIS.find(x => x.chave === l.chave)!, nome = t(l.rotulo), q = PERGUNTAS_ADICIONAIS[a.chave];
     const fundacao = a.chave === 'taxa' && salvo.executor === 'fundacao';
@@ -259,7 +268,7 @@ function AdicionaisV18({ s, linhas, moeda }: { s: CasoStore; linhas: LinhaOpcao[
       </div>
       <p className="pv-campo-titulo" aria-hidden="true">{t(q.pergunta)}</p>
       <OptionCardGroup className={'pc-lit-opcoes ' + (q.opcoes.length > 2 ? 'pv-opcoes-coluna' : 'pv-opcoes-linha')} label={t(q.pergunta)} type="radio">
-        {q.opcoes.map(([id, txt]) => <OptionCard key={id} name={'adic-' + a.chave} value={id} type="radio" label={t(txt)} checked={(salvo[q.campo] ?? q.padrao) === id}
+        {q.opcoes.map(([id, txt]) => <OptionCard key={id} name={'adic-' + frente + '-' + a.chave} value={id} type="radio" label={t(txt)} checked={(salvo[q.campo] ?? q.padrao) === id}
           onChange={() => gravar(q.campo, id)} />)}
       </OptionCardGroup>
       {l.naoAplica ? <p className="pc-nota">{l.memoria}</p> : <>
@@ -330,7 +339,7 @@ export function ValoresV17({ s, frente }: { s: CasoStore; frente: FrenteEstimati
   if (!o.itens.length) return <p className="pc-nota">{t('Volte e escolha pelo menos uma categoria de custo.')}</p>;
   return <div className="pv-v17" id="valores" tabIndex={-1}>
     {semFases(frente) ? <div className="pv-v17-campos"><CampoNumero label={t('Duração do plano (meses)')} value={raizOrcamento(s, frente).duracao ?? DURACAO_GOV_PADRAO} suggested={raizOrcamento(s, frente).duracao == null} onChange={v => gravarOrc(frente, 'duracao', v === '' ? undefined : v)} /></div>
-      : <p className="pv-v17-fases-resumo">{resumoFases(s, frente)} · {o.moeda} · <a href={href.pergunta(4, telaFases(frente))}>{t('Alterar fases')}</a></p>}
+      : <p className="pv-v17-fases-resumo">{resumoFases(s, frente)} · {o.moeda} · <a href={hrefFases(s, frente)}>{t('Alterar fases')}</a></p>}
     {porGrupo(o.itens).map(([grupo, itens]) => <section key={grupo} className="pv-v17-grupo">
       {grupo ? <h2 className="pv-v17-desafio">{grupo}</h2> : null}
       {itens.map(i => <div key={i.id} className="pv-v17-cat">

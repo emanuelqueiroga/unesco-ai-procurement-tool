@@ -7,7 +7,7 @@
 import { Fragment, createContext, useContext, useId, useState, type ReactNode } from 'react';
 import {
   CAMPO_POR_ID, ETAPAS_ENS, PRIORIDADES, RESP_G, QUESTOES_G, OPC, ARQ_DESC, AVISO_SEM_FERRAMENTA, OPC_UNIDADE_RESULTADO, OPC_PERIODO_RESULTADO,
-  somenteGovernanca, percursoCombinado, prioridadesDoPercurso, listaOpc, totaisCtx, alunosEtapa, etapasAtivas, modoTeste, horasEstimativa, lerNumero, problemasMarcados, sugProblemas, temLacuna, rotulo, pct, tr,
+  somenteGovernanca, somenteLetramento, percursoCombinado, prioridadesDoPercurso, listaOpc, totaisCtx, alunosEtapa, etapasAtivas, modoTeste, horasEstimativa, lerNumero, problemasMarcados, sugProblemas, temLacuna, rotulo, pct, tr,
 } from '../domain';
 import { useCaso, origemDe, valorDe, type Estado14, type TelaEssencial } from '../store';
 import {
@@ -693,7 +693,8 @@ function ProblemasGov({ e }: { e: Estado14 }) {
   const refinando = useRefinando();
   const pr: string[] = prioridadesDoPercurso(e.ctx);
   const atual: string[] = e.ctx.problemas || [];
-  const P = (PRIORIDADES as any[]).filter((p) => pr.includes(p.id));
+  // v022.1: só as prioridades com desafios nesta tela (os da educação com e sem IA têm tela própria)
+  const P = (PRIORIDADES as any[]).filter((p) => pr.includes(p.id) && p.problemas.some((q: any) => q.v016 || atual.includes(q.id)));
   if (!P.length) return <p className="pc-aviso">{t('Escolha uma prioridade para ver os desafios.')}</p>;
   const grava = (lista: string[]) => responder('problemas', lista);
   return (
@@ -709,7 +710,7 @@ function ProblemasGov({ e }: { e: Estado14 }) {
             onChange={(v, marcado) => grava(problemasDoGrupo(atual, ORDEM_PROBLEMAS, [v], marcado))} />;
           // v022.1: nos desafios atuais, a legenda é a explicação e o "i" lista as categorias que vêm depois
           if (q.v016) return <CartaoComLista key={q.id} nome={t(q.t)}
-            grupos={[{ titulo: t('Categorias de custo'), numerada: true, itens: ((CATEGORIAS_V016 as any).governanca as any[]).filter(c => c.desafio === q.id).map(c => c.n + ' ' + t(c.nome)) }]}>{card}</CartaoComLista>;
+            grupos={[{ titulo: t('Categorias de custo'), numerada: true, itens: ((CATEGORIAS_V016 as any)[q.letramento ? 'letramento' : 'governanca'] as any[]).filter(c => c.desafio === q.id).map(c => c.n + ' ' + t(c.nome)) }]}>{card}</CartaoComLista>;
           return <CartaoComDica key={q.id} chave={q.t}>{card}</CartaoComDica>;
         };
         const ids: string[] = [...atuais, ...legados].map((q: any) => q.id);
@@ -742,7 +743,7 @@ function ProblemasGov({ e }: { e: Estado14 }) {
 function Problemas({ e }: { e: Estado14 }) {
   const responder = useCaso((s) => s.responder);
   const refinando = useRefinando();
-  if (somenteGovernanca(e.ctx) || percursoCombinado(e.ctx)) return <ProblemasGov e={e} />;
+  if (somenteGovernanca(e.ctx) || somenteLetramento(e.ctx) || percursoCombinado(e.ctx)) return <ProblemasGov e={e} />;
   const pr: string[] = e.ctx.prioridades || [];
   const atual: string[] = e.ctx.problemas || [];
   const P = (PRIORIDADES as any[]).filter((p) => pr.includes(p.id));

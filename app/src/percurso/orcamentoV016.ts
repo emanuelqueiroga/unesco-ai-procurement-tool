@@ -244,12 +244,13 @@ export interface ItemV16 {
  *  sem elas. A governança não tem categorias obrigatórias. */
 export const OBRIGATORIAS: Record<FrenteEstimativa, string[]> = {
   governanca: [],
-  letramento: ['l11', 'l12', 'l13', 'l21', 'l22', 'l31', 'l32'],
+  // v022.1: o novo letramento (figura) não tem categorias obrigatórias; a 1.1 só define a escala das demais
+  letramento: [],
   educacao: ['e3', 'e4'],
 };
 export const categoriaObrigatoria = (f: FrenteEstimativa, id: string) => OBRIGATORIAS[f].includes(id);
 /** Categorias cujos itens são todos obrigatórios (vêm abertos, sem caixa de marcar): a 1.1 do letramento. */
-export const todosObrigatorios = (f: FrenteEstimativa, id: string) => f === 'letramento' && id === 'l11';
+export const todosObrigatorios = (_f: FrenteEstimativa, _id: string) => false;
 /** Escolhidas pela equipe mais as obrigatórias dos desafios marcados. */
 export function categoriasEscolhidas(s: Estado, f: FrenteEstimativa): string[] {
   const sel: unknown = raizOrcamento(s, f).categorias;
@@ -288,7 +289,7 @@ function pessoasDoPlano(s: Estado, sel: { c: CategoriaV16; marcadas: string[]; c
 /** Orçamento da frente (v017): soma das opções escolhidas, por fase. */
 export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
   // v022.1 (governança): sempre a moeda escolhida pela pessoa no plano (a gravada no orçamento ficava velha ao trocar)
-  const o = raizOrcamento(s, f), moeda = String((f === 'governanca' ? s.moeda?.cod || o.moeda : o.moeda || s.moeda?.cod) || 'USD'), fases = fasesAtivas(s, f), taxa = taxaV16(moeda, s);
+  const o = raizOrcamento(s, f), moeda = String((f !== 'educacao' ? s.moeda?.cod || o.moeda : o.moeda || s.moeda?.cod) || 'USD'), fases = fasesAtivas(s, f), taxa = taxaV16(moeda, s);
   const sel = categoriasEscolhidas(s, f), disponiveis = categoriasV16(s, f);
   const fmt = (v: number) => formatarMoedaEst(v, moeda);
   // v018.1: a formação 3.2 sugere as pessoas do plano
@@ -316,7 +317,8 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
       respondido: pendentes === 0, compartilhado: false, origem: null, pendentes };
   });
   // v018 (governança): viagens, overhead e taxa administrativa, sobre o custo por fase das opções que já têm valor
-  if (f === 'governanca' && itens.length) {
+  // v022.1: o letramento tem os mesmos custos adicionais (sem a formação de pessoas, que já está nas categorias dele)
+  if ((f === 'governanca' || f === 'letramento') && itens.length) {
     const direto: Record<string, number> = {};
     for (const x of fases) direto[x.id] = centavos(itens.flatMap(i => i.linhas).filter(l => l.status !== 'falta').reduce((n, l) => n + (l.porFase[x.id] || 0), 0));
     // v018.1: viagens e overhead incidem sobre o trabalho de pessoas (sem as partes de compra do desafio 2)
@@ -336,10 +338,10 @@ export function orcamentoV16(s: Estado, f: FrenteEstimativa) {
       l.opex = l.total === null ? null : centavos(l.total - (l.capex as number) - (l.uso as number));
     }
     // v018.1: formação de pessoas (pergunta própria; quantidade de pessoas definida por quem faz o plano), OpEx
-    linhas.push(linhaFormacao(s, salvoAd, fases, taxa, fmt, num, moeda));
+    if (f === 'governanca') linhas.push(linhaFormacao(s, salvoAd, fases, taxa, fmt, num, moeda));
     const inf = linhas.filter(l => l.status === 'informado'), est = linhas.filter(l => l.status === 'referencia');
     const informadoCat = centavos(inf.reduce((n, l) => n + (l.total as number), 0)), estimadoCat = centavos(est.reduce((n, l) => n + (l.total as number), 0));
-    itens.push({ id: ID_ADICIONAIS, n: '', nome: t('Viagens, overhead, taxa administrativa e formação'), grupo: t('Custos adicionais'), opcoes: [], marcadas: ADICIONAIS.map(a => a.rotulo),
+    itens.push({ id: ID_ADICIONAIS, n: '', nome: t(f === 'governanca' ? 'Viagens, overhead, taxa administrativa e formação' : 'Viagens, overhead e taxa administrativa'), grupo: t('Custos adicionais'), opcoes: [], marcadas: ADICIONAIS.map(a => a.rotulo),
       linhas, parametros: [], valor: inf.length + est.length ? centavos(informadoCat + estimadoCat) : null, informadoCat, estimadoCat, valores: {}, situacao: '', detalhe: '',
       estimativa: null, referencia: est.length > 0, emReferencia: est.length > 0, estimado: est.length ? estimadoCat : null,
       respondido: true, compartilhado: false, origem: null, pendentes: linhas.filter(l => l.status === 'falta').length });

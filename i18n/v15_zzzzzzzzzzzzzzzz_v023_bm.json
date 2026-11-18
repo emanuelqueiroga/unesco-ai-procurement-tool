@@ -156,5 +156,13 @@
  "Expansão do currículo para as escolas em fases, com metas para cada uma.": "Rolling the curriculum out to schools in phases, with targets for each.",
  "Equipe que acompanha as escolas e os professores na adoção do currículo.": "A team that supports schools and teachers in adopting the curriculum.",
  "Divulgação do novo currículo para escolas, professores e famílias.": "Communicating the new curriculum to schools, teachers and families.",
- "Revisão periódica do currículo para acompanhar a evolução da IA.": "Periodic review of the curriculum to keep pace with developments in AI."
+ "Revisão periódica do currículo para acompanhar a evolução da IA.": "Periodic review of the curriculum to keep pace with developments in AI.",
+ "Cada prioridade usa as suas fases e os seus custos adicionais, mostrados nas seções abaixo.": "Each priority uses its own phases and additional costs, shown in the sections below.",
+ "Categorias e opções de custo da governança e de Educando sobre a IA": "Governance and Educating about AI cost categories and options",
+ "Educando sobre a IA e Educação com e sem IA têm cada uma a sua formação de professores. Se forem os mesmos professores, revise as quantidades para não contar a mesma formação duas vezes.": "Educating about AI and Education with and without AI each have their own teacher training. If they are the same teachers, review the quantities so the same training is not counted twice.",
+ "Fases, categorias e opções de custo de Educando sobre a IA": "Educating about AI phases, cost categories and options",
+ "Formação de professores nas duas prioridades": "Teacher training in both priorities",
+ "Governança e Educando sobre a IA": "Governance and Educating about AI",
+ "Plano do programa: {p}": "Programme plan: {p}",
+ "Viagens, custos indiretos e taxa administrativa das prioridades": "Travel, indirect costs and administrative fee for the priorities"
 }

@@ -17,13 +17,25 @@ export function somenteEducacao(ctx) {
 export function percursoEducacaoV20(ctx) { const pr = (ctx || {}).problemas; return somenteEducacao(ctx) && !(Array.isArray(pr) && pr.some((x) => /^C([1-9]|10)$/.test(String(x)))); }
 /** v022.1: governança e educação com e sem IA marcadas juntas (e nada além delas): percurso combinado, primeiro o da
  *  governança e depois o da educação, com uma tela de custos adicionais no fim e um plano com total geral. */
+// v022.1: duas ou três das prioridades com percurso novo (governança, educando sobre a IA, educando com e sem IA)
+const NOVAS = ['governar', 'sobre', 'com'];
 export function prioridadesCombinadas(ctx) {
   const p = (ctx || {}).prioridades;
-  return Array.isArray(p) && p.includes('governar') && p.includes('com') && p.every(id => id === 'governar' || id === 'com');
+  return Array.isArray(p) && new Set(p.filter(id => NOVAS.includes(id))).size >= 2 && p.every(id => NOVAS.includes(id));
 }
 export function percursoCombinado(ctx) { const pr = (ctx || {}).problemas; return prioridadesCombinadas(ctx) && !(Array.isArray(pr) && pr.some((x) => /^C([1-9]|10)$/.test(String(x)))); }
 /** No percurso combinado, as telas da educação começam com "ed-"; as demais são da governança. */
 export const telaDaEducacao = (id) => typeof id === 'string' && id.startsWith('ed-');
+/** v022.1: telas de Educando sobre a IA (letramento) começam com "lit-". */
+export const telaDoLetramento = (id) => typeof id === 'string' && id.startsWith('lit-');
+/** v022.1: Educando sobre a IA como única prioridade segue o percurso da figura, igual ao da governança. */
+export function somenteLetramento(ctx) {
+  const p = (ctx || {}).prioridades;
+  return Array.isArray(p) && p.length > 0 && p.every(id => id === 'sobre');
+}
+export const percursoLetramentoV23 = (ctx) => somenteLetramento(ctx);
+/** v022.1: prioridades do percurso combinado, na ordem do fluxo. */
+export const prioridadesNoCombinado = (ctx) => NOVAS.filter(id => (ctx?.prioridades || []).includes(id));
 export function tamanhoRedeValido(ctx) {
   const r = (ctx || {}).redeNacional || {};
   return ['escolas', 'estudantes'].every(k => Number.isSafeInteger(r[k]) && r[k] > 0);

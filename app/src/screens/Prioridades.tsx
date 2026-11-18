@@ -11,9 +11,8 @@ import { Shell } from './Shell';
 import './prioridades.css';
 
 const OFERECIDAS = ['governar', 'sobre', 'com'];
-/** v020: governança e educação com e sem IA podem ser marcadas (v022.1: as duas juntas, num percurso combinado); educar
- *  sobre a IA aparece desativada. */
-const DISPONIVEIS = ['governar', 'com'];
+/** v020: governança e educação com e sem IA podem ser marcadas; v022.1: as três, sozinhas ou juntas (percurso combinado). */
+const DISPONIVEIS = ['governar', 'sobre', 'com'];
 const svg = (d: ReactNode) => <svg width="40" height="40" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>;
 /** Ícones simples: governar (escudo com marca), educar sobre a IA (livro com circuito), com e sem IA (escola). */
 const ICONES: Record<string, ReactNode> = {
@@ -28,7 +27,7 @@ export function Prioridades() {
   // v022.1: sem prioridade salva, a governança vem marcada
   const [rascunho, setRascunho] = useState<string[]>(() => { const r = (s.ctx.prioridades || []).filter((id: string) => DISPONIVEIS.includes(id)); return r.length ? r : ['governar']; });
   const P = (PRIORIDADES as any[]).filter(p => OFERECIDAS.includes(p.id));
-  // v022.1: dá para marcar as duas (governança e educação com e sem IA); clicar de novo desmarca
+  // v022.1: dá para marcar duas ou as três; clicar de novo desmarca
   const alternar = (id: string) => DISPONIVEIS.includes(id) && setRascunho(r => r.includes(id) ? r.filter(x => x !== id) : DISPONIVEIS.filter(x => x === id || r.includes(x)));
   const telas = telasDoCapitulo(1), i = telas.findIndex(x => x.id === 'prioridades');
   const ant = i > 0 ? href.pergunta(1, telas[i - 1].id) : href.inicio();

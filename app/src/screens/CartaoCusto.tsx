@@ -4,13 +4,13 @@
 // já devolve (informado, estimado, faltam), sempre na moeda do orçamento; nada é somado de novo.
 import type { ReactNode } from 'react';
 import { telasAtivas, type CasoStore } from '../store';
-import { LOC, percursoGovernanca, percursoEducacaoV20, percursoCombinado, telaDaEducacao } from '../domain';
+import { LOC, percursoGovernanca, percursoEducacaoV20, percursoCombinado, telaDaEducacao, telaDoLetramento, somenteLetramento, temGovernanca } from '../domain';
 import { orcamentoEducacao } from '../percurso/educacaoV20';
 import { t } from '../percurso/textos';
 import { href } from '../percurso/rota';
 import { orcamentoGovernanca } from '../percurso/governanca';
 import { formatarMoedaEst, type Estimativa, type FrenteEstimativa } from '../percurso/estimativasOrcamento';
-import { mesesV16 } from '../percurso/orcamentoV016';
+import { mesesV16, orcamentoV16 } from '../percurso/orcamentoV016';
 import { usePainel } from './PlanoVivo';
 import { InfoDica } from './InfoDica';
 import './moldura.css';
@@ -36,16 +36,17 @@ export interface DadosCusto {
 }
 
 /** Números do orçamento da frente atual; null no projeto de uso de IA. */
-export function dadosCusto(s: CasoStore): DadosCusto | null {
+export function dadosCusto(s: CasoStore, telaAtual?: string): DadosCusto | null {
   // v018: só o fluxo da governança (v017) tem cartão próprio; o percurso da 0.0.14 usa o cartão do projeto
-  if (!percursoGovernanca(s.ctx) && !percursoCombinado(s.ctx)) return null;
-  const f: FrenteEstimativa = 'governanca';
-  const o = orcamentoGovernanca(s);
+  // v022.1: Educando sobre a IA (sozinha, ou nas telas dela no combinado) tem o cartão do letramento
+  if (!percursoGovernanca(s.ctx) && !percursoCombinado(s.ctx) && !somenteLetramento(s.ctx)) return null;
+  const f: FrenteEstimativa = somenteLetramento(s.ctx) || (percursoCombinado(s.ctx) && (telaDoLetramento(telaAtual) || !temGovernanca(s.ctx))) ? 'letramento' : 'governanca';
+  const o: any = f === 'governanca' ? orcamentoGovernanca(s) : orcamentoV16(s, 'letramento');
   const tela = telasAtivas(s).find(q => q.id === TELA_RECURSOS[f]);
   return {
     frente: f, informado: o.informado, informados: o.informados, estimado: o.estimado, estimados: o.estimados, faltam: o.faltam,
     total: o.total, totalComEstimativas: o.totalComEstimativas, moeda: o.moeda,
-    itens: o.itens.map((i: any) => ({ id: String(i.id), nome: t(String(i.nome)), estimativa: i.estimativa })),
+    itens: o.itens.map((i: any) => ({ id: String(i.id), nome: String(i.nome), estimativa: i.estimativa })),
     meses: mesesV16(s, f), recursos: tela ? href.pergunta(tela.capitulo, tela.id) : null, fases: (o as any).fases, capex: (o as any).capex, opex: (o as any).opex, uso: (o as any).uso,
   };
 }
@@ -158,7 +159,7 @@ export function ColunaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
   if (percursoEducacaoV20(s.ctx) || (percursoCombinado(s.ctx) && telaDaEducacao(tela))) return <aside className="pc-coluna-custo" aria-label={t('Custo desta frente')}>
     <CartaoEducacao s={s} />
   </aside>;
-  const d = dadosCusto(s);
+  const d = dadosCusto(s, tela);
   if (!d) return <aside className="pc-coluna-custo" aria-label={t('Custo deste projeto')}>
     <CartaoCustoProjeto s={s} />
     <nav className="pc-custo-links" aria-label={t('Plano')}>
@@ -176,7 +177,7 @@ export function ColunaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
 /** Celular e telas médias: faixa noite logo abaixo do cabeçalho, que leva ao orçamento (no orçamento, o cartão compacto). */
 export function FaixaCusto({ s, tela }: { s: CasoStore; tela?: string }) {
   if (percursoEducacaoV20(s.ctx) || (percursoCombinado(s.ctx) && telaDaEducacao(tela))) return <div className="pc-faixa-custo-wrap"><CartaoEducacao s={s} compacto /></div>;
-  const d = dadosCusto(s);
+  const d = dadosCusto(s, tela);
   if (!d) return <FaixaProjeto s={s} />;
   if (tela === TELA_RECURSOS[d.frente]) return <div className="pc-faixa-custo-wrap"><CartaoCustoFrente d={d} compacto /></div>;
   const p = principal(d);

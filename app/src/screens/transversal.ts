@@ -1,5 +1,5 @@
-import { desafioDaTelaCategorias } from '../store';
-import { DESAFIOS_GOV_V016 } from '../domain/catalogo_v016.js';
+import { desafioDaTelaCategorias, desafioDaTelaCategoriasLit } from '../store';
+import { DESAFIOS_GOV_V016, DESAFIOS_LIT_V023 } from '../domain/catalogo_v016.js';
 // Lógica pura do pacote transversal (sem React nem DOM, para testar em Vitest): quando pedir confirmação antes de
 // substituir o caso, mensagens de erro de importação no idioma da interface, versão e data do rodapé, título da
 // aba por tela, "continuar de onde parei" e a regra de retradução do exemplo ao trocar de idioma.
@@ -77,7 +77,7 @@ export function tituloDaAba(rota: Rota, s?: { ctx?: Record<string, any> }): stri
     case 'abertura': parte = `${t('Capítulo {n}', { n: rota.n })} · ${t(infoCapitulo(rota.n, s).titulo)}`; break;
     case 'pergunta': {
       const telas = telasAtivas(s), i = telas.findIndex((x) => x.id === rota.tela);
-      const d = desafioDaTelaCategorias(rota.tela), nd = d ? DESAFIOS_GOV_V016.find((x: any) => x.id === d) : undefined;
+      const d = desafioDaTelaCategorias(rota.tela) || desafioDaTelaCategoriasLit(rota.tela), nd = d ? [...DESAFIOS_GOV_V016, ...DESAFIOS_LIT_V023].find((x: any) => x.id === d) : undefined;
       parte = `${t('Pergunta {n} de {total}', { n: i + 1, total: telas.length })} · ${nd ? t(CURTO['gov-categorias']) + ' · ' + t(nd.t) : t(CURTO[rota.tela] || rota.tela)}`;
       break;
     }

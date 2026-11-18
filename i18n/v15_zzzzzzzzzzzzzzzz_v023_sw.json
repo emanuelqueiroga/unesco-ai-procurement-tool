@@ -155,5 +155,13 @@
  "Expansão do currículo para as escolas em fases, com metas para cada uma.": "Kupanua mtaala kwa shule kwa awamu, na malengo kwa kila awamu.",
  "Equipe que acompanha as escolas e os professores na adoção do currículo.": "Timu inayosaidia shule na walimu kupokea mtaala.",
  "Divulgação do novo currículo para escolas, professores e famílias.": "Kuutangaza mtaala mpya kwa shule, walimu na familia.",
- "Revisão periódica do currículo para acompanhar a evolução da IA.": "Mapitio ya mara kwa mara ya mtaala ili kwenda sambamba na maendeleo ya AI."
+ "Revisão periódica do currículo para acompanhar a evolução da IA.": "Mapitio ya mara kwa mara ya mtaala ili kwenda sambamba na maendeleo ya AI.",
+ "Cada prioridade usa as suas fases e os seus custos adicionais, mostrados nas seções abaixo.": "Kila kipaumbele kina awamu zake na gharama zake za ziada, zinazoonyeshwa katika sehemu zilizo hapa chini.",
+ "Categorias e opções de custo da governança e de Educando sobre a IA": "Aina na chaguo za gharama za utawala na za Kuelimisha kuhusu AI",
+ "Educando sobre a IA e Educação com e sem IA têm cada uma a sua formação de professores. Se forem os mesmos professores, revise as quantidades para não contar a mesma formação duas vezes.": "Kuelimisha kuhusu AI na Elimu kwa AI na bila AI kila kimoja kina mafunzo yake ya walimu. Ikiwa ni walimu wale wale, kagua idadi ili mafunzo yale yale yasihesabiwe mara mbili.",
+ "Fases, categorias e opções de custo de Educando sobre a IA": "Awamu, aina na chaguo za gharama za Kuelimisha kuhusu AI",
+ "Formação de professores nas duas prioridades": "Mafunzo ya walimu katika vipaumbele vyote viwili",
+ "Governança e Educando sobre a IA": "Utawala na Kuelimisha kuhusu AI",
+ "Plano do programa: {p}": "Mpango wa programu: {p}",
+ "Viagens, custos indiretos e taxa administrativa das prioridades": "Safari, gharama zisizo za moja kwa moja na ada ya utawala za vipaumbele"
 }
