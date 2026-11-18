@@ -11,8 +11,9 @@ import { Shell } from './Shell';
 import './prioridades.css';
 
 const OFERECIDAS = ['governar', 'sobre', 'com'];
-/** v020: governança e educação com e sem IA podem ser marcadas; v022.1: as três, sozinhas ou juntas (percurso combinado). */
-const DISPONIVEIS = ['governar', 'sobre', 'com'];
+/** v020: governança e educação com e sem IA podem ser marcadas; v022.1: governança e Educando sobre a IA, sozinhas ou
+ *  juntas (percurso combinado); Educando com e sem IA fechada por enquanto (decisão de 18/11), com o percurso guardado. */
+const DISPONIVEIS = ['governar', 'sobre'];
 const svg = (d: ReactNode) => <svg width="40" height="40" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>;
 /** Ícones simples: governar (escudo com marca), educar sobre a IA (livro com circuito), com e sem IA (escola). */
 const ICONES: Record<string, ReactNode> = {
