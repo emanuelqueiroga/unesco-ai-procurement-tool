@@ -1,3 +1,4 @@
+import { EXPLICACOES_LIT } from './explicacoesLit';
 // v018: o que é cada item do fluxo da governança (desafios, categorias, opções e a duração do plano), para o "i".
 // Chave: o texto em português do item, como no catálogo (domain/catalogo_v016.js). O texto é traduzido por t().
 export const EXPLICACOES_GOV: Record<string, string> = {
@@ -77,4 +78,5 @@ export const EXPLICACOES_GOV: Record<string, string> = {
   'Taxa administrativa': 'Valor cobrado por quem administra o recurso (agência da ONU, fundação de apoio, fundo), como percentual dos custos diretos. Sem intermediário, use 0%.',
 };
 
-export function explicacaoGov(chave: string): string | undefined { return EXPLICACOES_GOV[chave]; }
+/** O texto do item (governança ou, desde a v022.1, Educando sobre a IA). */
+export function explicacaoGov(chave: string): string | undefined { return EXPLICACOES_GOV[chave] ?? EXPLICACOES_LIT[chave]; }

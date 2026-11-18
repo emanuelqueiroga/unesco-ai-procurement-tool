@@ -29,6 +29,12 @@ export const DESAFIOS_EDU_V016 = [
 ];
 /** Letramento: professores (A11), estudantes (A12) e currículo (A16) seguem; A13–A15 saem do fluxo. */
 export const DESAFIOS_LIT_V016 = ['A11', 'A12', 'A16'];
+/** v022.1: os três desafios de Educando sobre a IA, como na figura (letramento de professores, de estudantes e currículo). */
+export const DESAFIOS_LIT_V023 = [
+  d('A11', 'Letramento em IA para professores', 'Escala, entrega, recursos, avaliação e apoio contínuo da formação.', { impactos: ['letramento_ia'], letramento: true }),
+  d('A12', 'Letramento em IA para estudantes', 'Recursos, ferramentas e atividades para os estudantes aprenderem sobre IA.', { impactos: ['letramento_ia'], letramento: true }),
+  d('A16', 'Currículo de IA', 'Desenho, conteúdo e implementação do currículo de IA.', { impactos: ['letramento_ia'], letramento: true }),
+];
 
 /** Por desafio da educação: quem forma e quais recursos (tabela "Application across educational challenges"). */
 export const DIMENSOES_EDU = {
@@ -61,19 +67,21 @@ export const CATEGORIAS = {
     { id: 'g32', n: '3.2', desafio: 'G23', nome: 'Formação e desenvolvimento profissional', base: 'formacao', opcoes: [] },
     { id: 'g33', n: '3.3', desafio: 'G23', nome: 'Governança institucional e coordenação', opcoes: ['Comitês de governança', 'Coordenação interministerial', 'Estruturas institucionais de governança'] },
   ],
+  // v022.1: categorias e opções como na figura "Educating about AI" (11 categorias, 41 opções)
   letramento: [
-    { id: 'l11', n: '1.1', desafio: 'A11', nome: 'Escala, duração e frequência da formação', base: 'formacao', opcoes: ['Número de professores a formar', 'Horas por curso', 'Número de cursos por professor', 'Frequência da formação', 'Duração e calendário', 'Frequência de reciclagem'] },
-    { id: 'l12', n: '1.2', desafio: 'A11', nome: 'Entrega e implementação da formação', opcoes: ['Formação presencial', 'Formação online', 'Formação híbrida', 'Formação de formadores', 'Formação na escola'] },
-    { id: 'l13', n: '1.3', desafio: 'A11', nome: 'Recursos e plataformas de formação', base: 'licenca', opcoes: ['Plataformas digitais de formação', 'Ferramentas e licenças de IA para a formação', 'Materiais e recursos de formação', 'Ambientes práticos de experimentação com IA'] },
+    { id: 'l11', n: '1.1', desafio: 'A11', nome: 'Escala, duração e frequência da formação', base: 'formacao', opcoes: ['Número de professores e de cursos', 'Horas, duração e calendário da formação', 'Frequência de oferta e de reciclagem'] },
+    { id: 'l12', n: '1.2', desafio: 'A11', nome: 'Entrega e implementação da formação', opcoes: ['Formação presencial, online ou híbrida', 'Formação de formadores', 'Aprendizagem profissional na escola'] },
+    { id: 'l13', n: '1.3', desafio: 'A11', nome: 'Recursos e plataformas de formação', base: 'licenca', opcoes: ['Plataformas digitais de formação', 'Ferramentas e licenças de IA para a formação', 'Materiais e ambientes práticos de IA'] },
     { id: 'l14', n: '1.4', desafio: 'A11', nome: 'Avaliação e certificação de competências docentes', opcoes: ['Avaliações de competências em IA', 'Certificação profissional', 'Credenciais digitais'] },
-    { id: 'l15', n: '1.5', desafio: 'A11', nome: 'Desenvolvimento profissional contínuo e apoio', opcoes: ['Cursos de reciclagem', 'Comunidades de aprendizagem profissional', 'Mentoria e coaching', 'Apoio técnico e pedagógico'] },
-    { id: 'l21', n: '2.1', desafio: 'A12', nome: 'Recursos de aprendizagem de letramento em IA', opcoes: ['Materiais adequados à idade', 'Atividades interativas de IA', 'Recursos educacionais abertos', 'Recursos multilíngues', 'Materiais acessíveis'] },
-    { id: 'l22', n: '2.2', desafio: 'A12', nome: 'Ferramentas e ambientes de aprendizagem', base: 'licenca', opcoes: ['Plataformas de aprendizagem de IA', 'Softwares e licenças educacionais de IA', 'Ferramentas práticas de experimentação com IA', 'Recursos offline e desplugados'] },
-    { id: 'l23', n: '2.3', desafio: 'A12', nome: 'Engajamento, conscientização e avaliação dos estudantes', opcoes: ['Campanhas de conscientização sobre IA', 'Clubes de IA e atividades extracurriculares', 'Oficinas para estudantes', 'Competições e desafios de IA', 'Avaliações de letramento em IA'] },
-    { id: 'l31', n: '3.1', desafio: 'A16', nome: 'Desenho e desenvolvimento curricular', opcoes: ['Marcos nacionais de currículo de IA', 'Objetivos de aprendizagem por série', 'Modelos de progressão de competências', 'Integração curricular entre disciplinas', 'Consultas às partes interessadas'] },
+    { id: 'l15', n: '1.5', desafio: 'A11', nome: 'Desenvolvimento profissional contínuo e apoio', opcoes: ['Cursos de reciclagem e comunidades de aprendizagem', 'Mentoria e coaching', 'Apoio técnico e pedagógico'] },
+    { id: 'l21', n: '2.1', desafio: 'A12', nome: 'Recursos de aprendizagem de letramento em IA', opcoes: ['Materiais adequados à idade', 'Atividades interativas de aprendizagem de IA', 'Recursos educacionais abertos', 'Materiais multilíngues e acessíveis'] },
+    { id: 'l22', n: '2.2', desafio: 'A12', nome: 'Ferramentas e ambientes de aprendizagem', base: 'licenca', opcoes: ['Plataformas de aprendizagem de IA', 'Softwares e licenças educacionais de IA', 'Ferramentas de experimentação prática', 'Recursos offline e desplugados'] },
+    { id: 'l23', n: '2.3', desafio: 'A12', nome: 'Engajamento, conscientização e avaliação dos estudantes', opcoes: ['Campanhas de conscientização sobre IA', 'Clubes de IA e atividades extracurriculares', 'Oficinas e competições', 'Avaliações de letramento em IA'] },
+    { id: 'l31', n: '3.1', desafio: 'A16', nome: 'Desenho e desenvolvimento curricular', opcoes: ['Marcos nacionais de currículo de IA', 'Objetivos de aprendizagem por série', 'Modelos de progressão de competências', 'Integração entre disciplinas', 'Consultas às partes interessadas'] },
     { id: 'l32', n: '3.2', desafio: 'A16', nome: 'Conteúdo curricular e materiais de aprendizagem', opcoes: ['Livros didáticos e guias do professor', 'Recursos curriculares digitais', 'Contextualização e localização', 'Recursos educacionais abertos'] },
     { id: 'l33', n: '3.3', desafio: 'A16', nome: 'Implementação, expansão e manutenção do currículo', opcoes: ['Pilotos do currículo', 'Implementação nacional em etapas', 'Apoio à implementação nas escolas', 'Disseminação do currículo', 'Frequência de atualização do currículo'] },
   ],
+
   educacao: [
     { id: 'e2', n: '2', nome: 'Infraestrutura', base: 'infra', opcoes: ['Eletricidade', 'Conectividade', 'Largura de banda', 'Dispositivos'] },
     { id: 'e3', n: '3', nome: 'Formação docente', base: 'formacao', opcoes: [] },
