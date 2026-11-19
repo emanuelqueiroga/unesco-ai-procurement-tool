@@ -277,5 +277,18 @@
  "sem dado do país: 1 milhão de estudantes (convenção, grau C)": "no country data: 1 million students (convention, grade C)",
  "sem horas de formação": "no training hours",
  "turmas de estudantes (estudantes ÷ 30)": "student classes (students ÷ 30)",
- "turmas de professores (professores ÷ 25)": "teacher cohorts (teachers ÷ 25)"
+ "turmas de professores (professores ÷ 25)": "teacher cohorts (teachers ÷ 25)",
+ "Custo do kit por escola (30 placas)": "Kit cost per school (30 boards)",
+ "US$ {u} × câmbio": "US$ {u} × exchange rate",
+ "Khanmigo para redes: US$ 35 por estudante por ano (THE Journal, 2023)": "Khanmigo for districts: US$ 35 per student per year (THE Journal, 2023)",
+ "OpenAI: US$ 20 por usuário por mês no plano anual (preço de tabela)": "OpenAI: US$ 20 per user per month on the annual plan (list price)",
+ "GPT-5.4 mini: US$ 0,75 por milhão de tokens de entrada e US$ 4,50 por milhão de saída": "GPT-5.4 mini: US$ 0.75 per million input tokens and US$ 4.50 per million output tokens",
+ "SparkFun Educator Lab Pack, 10 micro:bit: US$ 320,95": "SparkFun Educator Lab Pack, 10 micro:bits: US$ 320.95",
+ "micro:bit V2.2, pacote de 300: AUD 21,82 por placa sem imposto (cerca de US$ 14,30)": "micro:bit V2.2, pack of 300: AUD 21.82 per board before tax (about US$ 14.30)",
+ "Credly: US$ 2 a US$ 6 por credencial (faixas relatadas por usuários)": "Credly: US$ 2 to US$ 6 per credential (user-reported tiers)",
+ "Camarões: US$ 2,90 por livro didático em 2020 (Banco Mundial, 2024)": "Cameroon: US$ 2.90 per textbook in 2020 (World Bank, 2024)",
+ "Chapman Alliance (2010): 43 horas de desenvolvimento por hora de aula com professor": "Chapman Alliance (2010): 43 development hours per hour of instructor-led training",
+ "uso: 60 interações de 3 mil tokens por mês (estimativa, grau C)": "usage: 60 interactions of 3,000 tokens per month (estimate, grade C)",
+ "uso: 20 interações de 3 mil tokens por mês (estimativa, grau C)": "usage: 20 interactions of 3,000 tokens per month (estimate, grade C)",
+ "Vazio = estudantes da rede ÷ estudantes por professor do país (UIS; sem dado, mediana do grupo do país).": "Empty = students in the system ÷ the country's students per teacher (UIS; without data, the median of the country's group)."
 }

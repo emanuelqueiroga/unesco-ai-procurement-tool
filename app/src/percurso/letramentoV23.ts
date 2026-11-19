@@ -15,6 +15,7 @@ import { LOC } from '../domain';
 import { lerLit } from './letramento';
 import { custoMensalPerfil, quantidadeSugerida, chaveOpcao, type CustoSalvo, type FaseCalc, type LinhaOpcao, type ParteConta, type EntradaD2, type FonteConta } from './custosV017';
 import { custoFormacao, nivelPrecos, matriculasMil, FONTES_FORMACAO, FORMACAO_GOV } from './formacaoGov';
+import { razaoPais } from './educacaoPais';
 
 // ---------------------------------------------------------------- público (Contexto, dados do país ou convenção)
 /** Estudantes por escola e por professor quando a rede não informou (estimativas de referência, grau C). */
@@ -25,6 +26,11 @@ export function estudantesLit(s: Estado): { v: number; origem: string } {
   const mil = matriculasMil((s as any).caso?.pais);
   return mil ? { v: Math.round(mil * 1000), origem: 'matrículas do país no ensino primário e secundário (Banco Mundial, grau A)' }
     : { v: ESTUDANTES_PADRAO, origem: 'sem dado do país: 1 milhão de estudantes (convenção, grau C)' };
+}
+/** v022.1 (18/11): estudantes por professor do país (UIS, primário e secundário; sem dado, mediana do grupo, grau B). */
+export function razaoLit(s: Estado): { v: number; origem: string } {
+  const r = razaoPais((s as any).caso?.pais, 'LIT');
+  return r && r.v > 0 ? { v: r.v, origem: r.mediana ? 'mediana do grupo do país (UIS, grau B)' : 'UIS, ' + (r.ano ?? '') + ', grau ' + r.grau } : { v: ESTUDANTES_POR_PROFESSOR, origem: 'estimativa de referência, grau C' };
 }
 export function escolasLit(s: Estado): { v: number; origem: string } {
   const informado = quantidadeSugerida(s, 'escolas');
@@ -41,7 +47,7 @@ export interface ParametroLit { campo: string; rotulo: string; sug: (s: Estado) 
 const posNum = (v: any): number | null => { const x = v && typeof v === 'object' ? v.valor : v; return typeof x === 'number' && Number.isFinite(x) && x > 0 ? x : null; };
 const naoNegNum = (v: any): number | null => { const x = v && typeof v === 'object' ? v.valor : v; return typeof x === 'number' && Number.isFinite(x) && x >= 0 ? x : null; };
 export const PARAM_LIT = {
-  professores: { campo: 'publicos.A11.participantes', rotulo: 'Professores a formar', sug: (s: Estado) => Math.max(1, Math.round(estudantesLit(s).v / ESTUDANTES_POR_PROFESSOR)), dica: 'Vazio = estudantes da rede ÷ 25 (estimativa de referência, grau C).' },
+  professores: { campo: 'publicos.A11.participantes', rotulo: 'Professores a formar', sug: (s: Estado) => Math.max(1, Math.round(estudantesLit(s).v / razaoLit(s).v)), dica: 'Vazio = estudantes da rede ÷ estudantes por professor do país (UIS; sem dado, mediana do grupo do país).' },
   cursos: { campo: 'publicos.A11.cursos', rotulo: 'Cursos por professor', sug: () => 1, dica: 'Vazio = 1 curso.' },
   horas: { campo: 'publicos.A11.horas', rotulo: 'Horas por curso', sug: () => 30, dica: 'Vazio = 30 horas (estimativa de referência, grau C).', decimais: true },
   reciclagem: { campo: 'orcamento.parametros.reciclagem', rotulo: 'Reciclagens por ano', sug: () => 1, dica: 'Vazio = 1 por ano.', decimais: true },
@@ -61,7 +67,21 @@ export function valorParametroLit(s: Estado, p: ParametroLit): { v: number | nul
 }
 
 // ---------------------------------------------------------------- definições das opções
-interface Fator { id: string; rotulo: string; sug: number; dica?: string; decimais?: boolean; /** preço em US$ dos EUA, levado ao país */ usd?: boolean; /** custo mensal do perfil ILOSTAT */ salario?: 2 | 3 }
+interface FonteLit { titulo: string; url: string; grau: 'A' | 'B' | 'C' }
+interface Fator { id: string; rotulo: string; sug: number; dica?: string; decimais?: boolean; /** preço em US$ dos EUA, levado ao país */ usd?: boolean; /** custo mensal do perfil ILOSTAT */ salario?: 2 | 3;
+  /** v022.1 (18/11): fonte do valor sugerido; `global` = preço de mercado internacional, só pelo câmbio (sem o nível de preços) */ fonte?: FonteLit; global?: boolean; nota?: string }
+/** Fontes dos valores sugeridos (doc "Educando sobre a IA: fontes para os custos", 18/11/2026). */
+const FONTES_LIT: Record<string, FonteLit> = {
+  khan: { titulo: 'Khanmigo para redes: US$ 35 por estudante por ano (THE Journal, 2023)', url: 'https://thejournal.com/Articles/2023/11/16/Khan-Academy-Cuts-District-Price-of-Khanmigo-AI-Teaching-Assistant.aspx', grau: 'B' },
+  openai: { titulo: 'OpenAI: US$ 20 por usuário por mês no plano anual (preço de tabela)', url: 'https://openai.com/api/pricing/', grau: 'B' },
+  tokens: { titulo: 'GPT-5.4 mini: US$ 0,75 por milhão de tokens de entrada e US$ 4,50 por milhão de saída', url: 'https://pricepertoken.com/pricing-page/model/openai-gpt-5.4-mini', grau: 'B' },
+  sparkfun: { titulo: 'SparkFun Educator Lab Pack, 10 micro:bit: US$ 320,95', url: 'https://www.sparkfun.com/sparkfun-educator-lab-pack-for-micro-bit-v2.html', grau: 'B' },
+  microbit: { titulo: 'micro:bit V2.2, pacote de 300: AUD 21,82 por placa sem imposto (cerca de US$ 14,30)', url: 'https://core-electronics.com.au/micro-bit-v2-bulk-300-pack-australia.html.md', grau: 'B' },
+  credly: { titulo: 'Credly: US$ 2 a US$ 6 por credencial (faixas relatadas por usuários)', url: 'https://certifier.io/blog/credly-pricing-is-credly-worth-it', grau: 'B' },
+  livro: { titulo: 'Camarões: US$ 2,90 por livro didático em 2020 (Banco Mundial, 2024)', url: 'https://www.worldbank.org/en/results/2024/02/01/turning-pages-transforming-lives-cameroon-textbook-revolution', grau: 'B' },
+  chapman: { titulo: 'Chapman Alliance (2010): 43 horas de desenvolvimento por hora de aula com professor', url: 'https://www.slideshare.net/slideshow/cost-to-develop-elearning/69322684', grau: 'B' },
+};
+const comFonte = (f: Fator, fonte: FonteLit, extra: Partial<Fator> = {}): Fator => ({ ...f, fonte, global: true, dica: undefined, ...extra });
 interface Escala { id: 'professores' | 'estudantes' | 'escolas' | 'turmasProf' | 'turmasEst' | 'formadores' | 'mentores' | 'anos' | 'cursosHoras' | 'reciclagemHoras'; rotulo: string }
 interface Parcela { rotulo: string; classe: Classe; dist: Dist; escala?: Escala['id']; fatores: Fator[]; pessoas?: boolean; texto?: string }
 interface DefLit { parcelas?: Parcela[]; formacao?: { pessoas: Escala['id']; horas: Escala['id'] | number; presencial: number } }
@@ -86,14 +106,14 @@ export const OPCOES_LIT: Record<string, DefLit> = {
     { rotulo: 'Implantação da plataforma', classe: 'capex', dist: 'inicio', fatores: [preco('custoImplantacao', 'Custo de implantação', 50000)] },
     { rotulo: 'Licenças', classe: 'opex', dist: 'alcance', escala: 'professores', fatores: [preco('custoLicenca', 'Preço por professor por mês', 2)] }] },
   'Ferramentas e licenças de IA para a formação': { parcelas: [
-    { rotulo: 'Licenças de IA', classe: 'opex', dist: 'novos', escala: 'professores', fatores: [preco('custoLicenca', 'Preço por professor por mês', 10), { id: 'meses', rotulo: 'Meses de acesso por professor', sug: 3, decimais: true }] },
-    { rotulo: 'Uso medido de IA', classe: 'uso', dist: 'novos', escala: 'professores', fatores: [preco('custoUso', 'Uso de IA por professor por mês', 1), { id: 'mesesUso', rotulo: 'Meses de uso por professor', sug: 3, decimais: true }] }] },
-  'Materiais e ambientes práticos de IA': { parcelas: [{ rotulo: 'Kits por turma', classe: 'capex', dist: 'novos', escala: 'turmasProf', fatores: [preco('custoKit', 'Custo do kit por turma', 300)] }] },
+    { rotulo: 'Licenças de IA', classe: 'opex', dist: 'novos', escala: 'professores', fatores: [comFonte(preco('custoLicenca', 'Preço por professor por mês', 20), FONTES_LIT.openai), { id: 'meses', rotulo: 'Meses de acesso por professor', sug: 3, decimais: true }] },
+    { rotulo: 'Uso medido de IA', classe: 'uso', dist: 'novos', escala: 'professores', fatores: [comFonte(preco('custoUso', 'Uso de IA por professor por mês', 0.36), FONTES_LIT.tokens, { nota: 'uso: 60 interações de 3 mil tokens por mês (estimativa, grau C)' }), { id: 'mesesUso', rotulo: 'Meses de uso por professor', sug: 3, decimais: true }] }] },
+  'Materiais e ambientes práticos de IA': { parcelas: [{ rotulo: 'Kits por turma', classe: 'capex', dist: 'novos', escala: 'turmasProf', fatores: [comFonte(preco('custoKit', 'Custo do kit por turma', 320.95), FONTES_LIT.sparkfun)] }] },
   // 1.4 avaliação e certificação
   'Avaliações de competências em IA': { parcelas: [equipe('Desenho do instrumento', 3, 2),
     { rotulo: 'Aplicação', classe: 'opex', dist: 'novos', escala: 'professores', fatores: [preco('custoAplicacao', 'Custo por professor avaliado', 5)] }] },
   'Certificação profissional': { parcelas: [{ rotulo: 'Certificação', classe: 'opex', dist: 'novos', escala: 'professores', fatores: [preco('custoCertificado', 'Custo por professor certificado', 20)] }] },
-  'Credenciais digitais': { parcelas: [{ rotulo: 'Credenciais', classe: 'opex', dist: 'novos', escala: 'professores', fatores: [preco('custoCredencial', 'Custo por credencial', 2)] }] },
+  'Credenciais digitais': { parcelas: [{ rotulo: 'Credenciais', classe: 'opex', dist: 'novos', escala: 'professores', fatores: [comFonte(preco('custoCredencial', 'Custo por credencial', 2), FONTES_LIT.credly)] }] },
   // 1.5 desenvolvimento contínuo
   'Cursos de reciclagem e comunidades de aprendizagem': { formacao: { pessoas: 'professores', horas: 'reciclagemHoras', presencial: 0 } },
   'Mentoria e coaching': { parcelas: [{ rotulo: 'Mentores', classe: 'opex', dist: 'alcance', escala: 'mentores', pessoas: true,
@@ -103,7 +123,7 @@ export const OPCOES_LIT: Record<string, DefLit> = {
   // 2.1 recursos de aprendizagem
   'Materiais adequados à idade': { parcelas: [{ rotulo: 'Desenvolvimento', classe: 'opex', dist: 'inicio', pessoas: true, fatores: [
     { id: 'series', rotulo: 'Séries atendidas', sug: 9 }, { id: 'horasSerie', rotulo: 'Horas de atividade por série', sug: 10, decimais: true },
-    { id: 'horasDev', rotulo: 'Horas de desenvolvimento por hora de atividade', sug: 28, decimais: true, dica: 'ATD (2017): 28 horas por hora de conteúdo online' }, { id: 'custoHora', rotulo: 'Custo por hora do especialista', sug: 0, salario: 2 }] }] },
+    { id: 'horasDev', rotulo: 'Horas de desenvolvimento por hora de atividade', sug: 43, decimais: true, fonte: FONTES_LIT.chapman }, { id: 'custoHora', rotulo: 'Custo por hora do especialista', sug: 0, salario: 2 }] }] },
   'Atividades interativas de aprendizagem de IA': { parcelas: [{ rotulo: 'Desenvolvimento', classe: 'opex', dist: 'inicio', pessoas: true, fatores: [
     { id: 'atividades', rotulo: 'Atividades', sug: 20 }, { id: 'horasAtividade', rotulo: 'Horas de desenvolvimento por atividade', sug: 40, decimais: true }, { id: 'custoHora', rotulo: 'Custo por hora do especialista', sug: 0, salario: 2 }] }] },
   'Recursos educacionais abertos': { parcelas: [{ rotulo: 'Seleção e adaptação', classe: 'opex', dist: 'inicio', pessoas: true, fatores: [
@@ -116,9 +136,9 @@ export const OPCOES_LIT: Record<string, DefLit> = {
     { rotulo: 'Implantação da plataforma', classe: 'capex', dist: 'inicio', fatores: [preco('custoImplantacao', 'Custo de implantação', 50000)] },
     { rotulo: 'Licenças', classe: 'opex', dist: 'alcance', escala: 'estudantes', fatores: [{ id: 'pct13', rotulo: 'Estudantes com 13 anos ou mais (%)', sug: 40, decimais: true, dica: 'abaixo de 13 anos, sem licença' }, preco('custoLicenca', 'Preço por estudante por mês', 0.5)] }] },
   'Softwares e licenças educacionais de IA': { parcelas: [
-    { rotulo: 'Licenças de IA', classe: 'opex', dist: 'alcance', escala: 'estudantes', fatores: [{ id: 'pct13', rotulo: 'Estudantes com 13 anos ou mais (%)', sug: 40, decimais: true, dica: 'abaixo de 13 anos, sem licença' }, preco('custoLicenca', 'Preço por estudante por mês', 2)] },
-    { rotulo: 'Uso medido de IA', classe: 'uso', dist: 'alcance', escala: 'estudantes', fatores: [{ id: 'pct13', rotulo: 'Estudantes com 13 anos ou mais (%)', sug: 40, decimais: true }, preco('custoUso', 'Uso de IA por estudante por mês', 0.3)] }] },
-  'Ferramentas de experimentação prática': { parcelas: [{ rotulo: 'Kits por escola', classe: 'capex', dist: 'novos', escala: 'escolas', fatores: [preco('custoKit', 'Custo do kit por escola', 500)] }] },
+    { rotulo: 'Licenças de IA', classe: 'opex', dist: 'alcance', escala: 'estudantes', fatores: [{ id: 'pct13', rotulo: 'Estudantes com 13 anos ou mais (%)', sug: 40, decimais: true, dica: 'abaixo de 13 anos, sem licença' }, comFonte(preco('custoLicenca', 'Preço por estudante por mês', 2.92), FONTES_LIT.khan)] },
+    { rotulo: 'Uso medido de IA', classe: 'uso', dist: 'alcance', escala: 'estudantes', fatores: [{ id: 'pct13', rotulo: 'Estudantes com 13 anos ou mais (%)', sug: 40, decimais: true }, comFonte(preco('custoUso', 'Uso de IA por estudante por mês', 0.12), FONTES_LIT.tokens, { nota: 'uso: 20 interações de 3 mil tokens por mês (estimativa, grau C)' })] }] },
+  'Ferramentas de experimentação prática': { parcelas: [{ rotulo: 'Kits por escola', classe: 'capex', dist: 'novos', escala: 'escolas', fatores: [comFonte(preco('custoKit', 'Custo do kit por escola (30 placas)', 430), FONTES_LIT.microbit)] }] },
   'Recursos offline e desplugados': { parcelas: [{ rotulo: 'Kits desplugados por turma', classe: 'capex', dist: 'novos', escala: 'turmasEst', fatores: [preco('custoKit', 'Custo do kit por turma', 20)] }] },
   // 2.3 engajamento e avaliação
   'Campanhas de conscientização sobre IA': { parcelas: [{ rotulo: 'Contrato da campanha', classe: 'opex', dist: 'ano', fatores: [preco('custoAno', 'Custo da campanha por ano', 100000)] }] },
@@ -136,7 +156,7 @@ export const OPCOES_LIT: Record<string, DefLit> = {
   // 3.2 conteúdo e materiais
   'Livros didáticos e guias do professor': { parcelas: [
     { rotulo: 'Produção dos títulos', classe: 'opex', dist: 'inicio', fatores: [{ id: 'titulos', rotulo: 'Títulos (um por série)', sug: 9 }, preco('custoTitulo', 'Custo de produção por título', 20000)] },
-    { rotulo: 'Impressão', classe: 'capex', dist: 'novos', escala: 'estudantes', fatores: [preco('custoExemplar', 'Custo por exemplar impresso', 3)] }] },
+    { rotulo: 'Impressão', classe: 'capex', dist: 'novos', escala: 'estudantes', fatores: [comFonte(preco('custoExemplar', 'Custo por exemplar impresso', 2.9), FONTES_LIT.livro)] }] },
   'Recursos curriculares digitais': { parcelas: [{ rotulo: 'Desenvolvimento', classe: 'opex', dist: 'inicio', pessoas: true, fatores: [
     { id: 'titulos', rotulo: 'Títulos (um por série)', sug: 9 }, { id: 'horasTitulo', rotulo: 'Horas de desenvolvimento por título', sug: 200, decimais: true }, { id: 'custoHora', rotulo: 'Custo por hora do especialista', sug: 0, salario: 2 }] }] },
   'Contextualização e localização': { parcelas: [{ rotulo: 'Adaptação local', classe: 'opex', dist: 'inicio', pessoas: true, fatores: [
@@ -223,9 +243,16 @@ export function calcularLit(s: Estado, rotulo: string, salvo: CustoSalvo, fases:
       if (f.salario) {
         const c = custoMensalPerfil(s, f.salario, false, taxa, moeda, num);
         if (!c) { sug = null; } else { sug = /Hora/.test(f.id) ? cent(c.valor * 12 / FORMACAO_GOV.horasAno) : c.valor; origem = c.texto + (/Hora/.test(f.id) ? ' · ' + t('custo mensal × 12 ÷ 2.080 horas') : ''); for (const x of c.fontes) if (!fontesSal.some(y => y.titulo === x.titulo)) fontesSal.push(x); }
+      } else if (f.usd && f.global) {
+        sug = taxa === null ? null : cent(f.sug * taxa);
+        origem = t('US$ {u} × câmbio', { u: n2(f.sug) }) + ' · ' + t(f.fonte!.titulo) + ', ' + t('grau') + ' ' + f.fonte!.grau + (f.nota ? ' · ' + t(f.nota) : '');
+        if (!fontesSal.some(y => y.titulo === f.fonte!.titulo)) fontesSal.push({ titulo: f.fonte!.titulo, url: f.fonte!.url });
       } else if (f.usd) {
         sug = taxa === null ? null : cent(f.sug * pl.v * taxa);
         origem = t('US$ {u} × nível de preços do país {v} ({o}) × câmbio (estimativa de referência, grau C)', { u: n2(f.sug), v: n2(pl.v), o: pl.mediana ? t('mediana do grupo') : t('Banco Mundial, {a}', { a: String(pl.ano) }) });
+      } else if (f.fonte) {
+        origem = t(f.fonte.titulo) + ', ' + t('grau') + ' ' + f.fonte.grau;
+        if (!fontesSal.some(y => y.titulo === f.fonte!.titulo)) fontesSal.push({ titulo: f.fonte.titulo, url: f.fonte.url });
       } else origem = f.dica ? t(f.dica) : t('estimativa de referência (grau C)');
       const salvoV = q[f.id], tem = typeof salvoV === 'number' && Number.isFinite(salvoV) && salvoV >= 0;
       const v = tem ? salvoV : sug;

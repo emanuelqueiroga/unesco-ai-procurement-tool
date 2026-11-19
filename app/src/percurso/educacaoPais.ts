@@ -36,6 +36,8 @@ export const NIVEIS_DESAFIO: Record<string, { escolas: ('1' | '2' | '3')[]; raza
   C31: { escolas: ['1'], razao: ['0'] }, C32: { escolas: ['1'], razao: ['1'] }, C33: { escolas: ['2', '3'], razao: ['2', '3'] },
   C34: { escolas: ['1'], razao: ['1'] }, C35: { escolas: ['1'], razao: ['1'] }, C36: { escolas: ['3'], razao: ['3'] },
   C37: { escolas: ['2'], razao: ['2'] }, C38: { escolas: ['1', '2'], razao: ['1', '2'] },
+  // v022.1: Educando sobre a IA (professores do primário e do secundário)
+  LIT: { escolas: ['1', '2', '3'], razao: ['1', '2', '3'] },
 };
 const NOME_NIVEL: Record<string, string> = { '0': 'pré-escola', '1': 'primário', '2': 'secundário inferior', '3': 'secundário superior' };
 export const nomesNiveis = (ns: string[], tr: (x: string) => string = x => x) => ns.map(n => tr(NOME_NIVEL[n])).join(tr(' e '));
